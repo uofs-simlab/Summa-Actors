@@ -65,6 +65,7 @@ public::writeData
 public::writeBasin
 public::writeTime
 public::writeRestart
+public::hru_writeRestart
 public::setFinalizeStatsFalse
 integer(i4b),parameter      :: maxSpectral=2              ! maximum number of spectral bands
 contains
@@ -111,6 +112,7 @@ subroutine writeHRUOutput(indxGRU, indxHRU, timestep, outputStep, hru_data, err,
   err=0; message='summa_manageOutputFiles/'
   ! identify the start of the writing
   ! Many variables get there values from summa4chm_util.f90:getCommandArguments()
+  ! print*, 'writeHRUoutput', outputStep
   call summa_setWriteAlarms(hru_data%oldTime_hru%var, hru_data%timeStruct%var, & 
                             hru_data%finishTime_hru%var, newOutputFile,        &
                             defNewOutputFile, ixRestart, printRestart,         &
@@ -262,12 +264,12 @@ end subroutine writeHRUOutput
 
 
 subroutine hru_writeRestart(&
-  indxHRU,                   &
   indxGRU,                   &
-  checkPoint,                & ! model checkPoint, index into the output Struc
+  indxHRU,                   &
+  timestep,                & ! model checkPoint, index into the output Struc
   outputStep,                & ! unused :(
-  handle_hru_data,           & ! local HRU data  
-  err) bind(C, name="hru_writeRestart")
+  hru_data,           & ! local HRU data  
+  err) 
   USE nrtype
   USE globalData,only:structInfo
   USE globalData,only:startWrite,endWrite
@@ -299,13 +301,13 @@ subroutine hru_writeRestart(&
   implicit none
   integer(c_int),intent(in)             :: indxHRU               ! index of hru in GRU
   integer(c_int),intent(in)             :: indxGRU               ! index of the GRU
-  integer(c_int),intent(in)             :: checkPoint              ! model checkPoint
+  integer(c_int),intent(in)             :: timestep              ! model checkPoint
   integer(c_int),intent(in)             :: outputStep            ! index into the output Struc
-  type(c_ptr),intent(in),value          :: handle_hru_data       ! local HRU data
+  type(hru_type),intent(in),value          :: hru_data       ! local HRU data
   integer(c_int),intent(out)            :: err
 
   ! local pointers
-  type(hru_type), pointer               :: hru_data              ! local HRU data
+  ! type(hru_type), pointer               :: hru_data              ! local HRU data
   ! local variables
   character(len=256)                    :: cmessage
   character(len=256)                    :: message 
@@ -320,10 +322,14 @@ subroutine hru_writeRestart(&
   integer(i4b)                          :: iFreq             ! index of the output frequency
   integer(i4b)                          :: iVar 
   integer(i4b)                          :: iDat
+  integer(i4b) :: checkPoint
   
   ! convert the C pointers to Fortran pointers
-  call c_f_pointer(handle_hru_data, hru_data)
+  ! call c_f_pointer(handle_hru_data, hru_data)
   err=0; message='summa_manageOutputFiles/'
+
+  checkpoint = mod(timestep, summa_struct(1)%nTimeSteps)
+  if (checkpoint == 0) checkpoint = summa_struct(1)%nTimeSteps
   
   ! ****************************************************************************
   ! *** write restart data
@@ -358,6 +364,8 @@ subroutine hru_writeRestart(&
 
   ! write Basin var
   summa_struct(1)%bvarStruct%gru(indxGRU)%hru(indxHRU)%var(iLookBVAR%routingRunoffFuture)%tim(checkPoint)%dat(:) = hru_data%bvarstruct%var(iLookBVAR%routingRunoffFuture)%dat(:)
+  summa_struct(1)%indxStruct%gru(indxGRU)%hru(indxHRU)%var(iLookINDEX%nSnow)%tim(checkPoint)%dat(1) = hru_data%indxStruct%var(iLookINDEX%nSnow)%dat(1)
+  ! print*, 'nSnow', hru_data%indxStruct%var(iLookINDEX%nSnow)%dat(1)
 
   
 end subroutine hru_writeRestart
@@ -551,6 +559,7 @@ subroutine writeData(indxGRU,indxHRU,iStep,structName,finalizeStats, &
           case(iLookVarType%ifcToto); datLength = nLayers+1
           case(iLookVarType%ifcSnow); datLength = nSnow+1
           case(iLookVarType%ifcSoil); datLength = nSoil+1
+          ! case(iLookVarType%scalarv); datLength = 1
           case default; cycle
         end select ! vartype
       
@@ -560,6 +569,7 @@ subroutine writeData(indxGRU,indxHRU,iStep,structName,finalizeStats, &
             select case(trim(structName))
               case('prog')
                 summa_struct(1)%progStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep)%dat(1:datLength) = dat%var(iVar)%dat(:)
+                ! print*, prog_meta(iVar)%varName, indxGRU, indxHRU, iStep, datLength, summa_struct(1)%progStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep)%dat(1:datLength)
               case('diag')
                 summa_struct(1)%diagStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep)%dat(1:datLength) = dat%var(iVar)%dat(:)
               case('flux')

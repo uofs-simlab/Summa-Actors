@@ -21,11 +21,15 @@ behavior FileAccessActor::make_behavior() {
     num_gru_ = num_gru_info_.num_gru_local;
   }
 
+  // self_->println("\n num hru {} {}\n", num_hru_);
+  // hru_timesteps_.resize(num_hru_, 0);
+
   return {
     [this](init_file_access_actor, int file_gru, int num_hru) {
       int err = 0;
       self_->println("File Access Actor: Initializing\n");
       num_hru_ = num_hru;
+      hru_timesteps_.resize(num_hru_, 0);
 
       f_getNumTimeSteps(num_steps_);
 
@@ -124,27 +128,83 @@ behavior FileAccessActor::make_behavior() {
       timing_info_.updateEndPoint("write_duration");
     },
 
-    [this](write_restart, int gru, int gru_timestep, int gru_checkpoint, 
+    [this](write_restart, int gru, int gru_timestep, 
           int output_structure_index, int year, int month, int day, int hour) {
+            int err = 0;
       // update hru progress vecs
-      int gru_index = abs(start_gru_ - gru);
+      self_->println("\n----------Restart sent {} {}----------\n", gru, gru_timestep);
+      // int gru_index = abs(gru - start_gru_);
+      int gru_index = gru-1;
+      // self_->println("\n----------Restart sent {} {} {}----------\n", gru_index, start_gru_, num_hru_);
+
       hru_timesteps_[gru_index] = gru_timestep;
-      hru_checkpoints_[gru_index] = gru_checkpoint;
+      // for (int i=0; i < num_hru_; i++) {
+      //   std::cout << " " << hru_timesteps_[i];
+      // }
+      // std::cout << "\n";
+      self_->println("\n----------Restart sent {}----------\n", hru_timesteps_[gru_index]);
+
       // find slowest time step of all hrus in job, stored hru_timesteps_
+      // int slowest_timestep = gru_timestep;
+      // for (int i=output_buffer_->getPartitionStart(gru_index); i <= output_buffer_->getPartitionEnd(gru_index); i++) {
+      //   slowest_timestep = std::min(hru_timesteps_[i], slowest_timestep);
+      // output_buffer_->writeRestart(gru_index, num_gru_, output_structure_index-1, year, month, day, hour);
+      // }
       int slowest_timestep = *std::min_element(
           hru_timesteps_.begin(), hru_timesteps_.end());
-      int slowest_checkpoint = *std::min_element(
-          hru_checkpoints_.begin(), hru_checkpoints_.end());
     
+        // self_->println("slowest timestep {} {}", slowest_timestep, completed_checkpoints_);
       // if the slowest hru is past the ith checkpoint (current threshold)
-      if (slowest_checkpoint >= completed_checkpoints_) {
-        Output_Partition *output_partition = 
-            output_container_->getOutputPartition(gru - 1);
-        writeRestart(output_partition, start_gru_, num_gru_, 
-                     output_structure_index, year, month, day, hour);
-        completed_checkpoints_++;
+      if (slowest_timestep > completed_checkpoints_) {
+        // self_->println("\n --- Writing Restart {} {} -- \n", slowest_timestep, start_gru_);
+        err = output_buffer_->writeRestart(start_gru_, num_hru_, output_structure_index-1, year, month, day, hour);
+        // Output_Partition *output_partition = 
+        //     output_container_->getOutputPartition(gru - 1);
+        // writeRestart(output_partition, start_gru_, num_gru_, 
+        //              output_structure_index, year, month, day, hour);
+        completed_checkpoints_ = slowest_timestep;
       }
     },
+
+    [this](write_restart_da, int gru, int gru_timestep, 
+      int output_structure_index, int year, int month, int day, int hour) {
+        int err = 0;
+  // update hru progress vecs
+  // self_->println("\n----------Restart sent {} {}----------\n", gru, gru_timestep);
+  // int gru_index = abs(gru - start_gru_);
+  int gru_index = gru-1;
+  // self_->println("\n----------Restart sent {} {} {}----------\n", gru_index, start_gru_, num_hru_);
+
+  hru_timesteps_[gru_index] = gru_timestep;
+  // for (int i=0; i < num_hru_; i++) {
+  //   std::cout << " " << hru_timesteps_[i];
+  // }
+  // std::cout << "\n";
+  // self_->println("\n----------Restart sent {}----------\n", hru_timesteps_[gru_index]);
+
+  // find slowest time step of all hrus in job, stored hru_timesteps_
+  // int slowest_timestep = gru_timestep;
+  // for (int i=output_buffer_->getPartitionStart(gru_index); i <= output_buffer_->getPartitionEnd(gru_index); i++) {
+  //   slowest_timestep = std::min(hru_timesteps_[i], slowest_timestep);
+  // output_buffer_->writeRestart(gru_index, num_gru_, output_structure_index-1, year, month, day, hour);
+  // }
+  int slowest_timestep = *std::min_element(
+      hru_timesteps_.begin(), hru_timesteps_.end());
+
+    // self_->println("slowest timestep {} {}", slowest_timestep, completed_checkpoints_);
+  // if the slowest hru is past the ith checkpoint (current threshold)
+  if (slowest_timestep > 0) {
+    self_->println("\n --- Writing Restart {} {} {} {} {} -- \n", year, month, day, hour, start_gru_);
+    err = output_buffer_->writeRestart(start_gru_, num_hru_, output_structure_index, year, month, day, hour);
+    std::fill(hru_timesteps_.begin(), hru_timesteps_.end(), 0);
+    // Output_Partition *output_partition = 
+    //     output_container_->getOutputPartition(gru - 1);
+    // writeRestart(output_partition, start_gru_, num_gru_, 
+    //              output_structure_index, year, month, day, hour);
+    // completed_checkpoints_ = slowest_timestep;
+  }
+},
+
 
     // Write Output From the Job Actor
     [this](write_output, int output_step) {

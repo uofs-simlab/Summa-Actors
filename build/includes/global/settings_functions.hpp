@@ -179,6 +179,7 @@ class HRUActorSettings {
   public:
     bool print_output_;
     int output_frequency_;
+    int restart_frequency_;
 
     double abs_tolWat_;
     double abs_tolNrg_;    
@@ -186,6 +187,7 @@ class HRUActorSettings {
     int be_steps_;
 
     HRUActorSettings(bool print_output = false, int output_frequency = OUTPUT_FREQUENCY,
+      int restart_frequency_ = 0,
         double abs_tolWat = MISSING_DOUBLE, double abs_tolNrg = MISSING_DOUBLE, double rel_tol = MISSING_DOUBLE, int be_steps = MISSING_INT) 
         : print_output_(print_output), output_frequency_(output_frequency), 
         abs_tolWat_(abs_tolWat), abs_tolNrg_(abs_tolNrg), rel_tol_(rel_tol), be_steps_(be_steps)  {};

@@ -165,7 +165,7 @@ behavior JobActor::async_mode() {
             job_index, num_steps_, hru_actor_settings_,
             job_actor_settings_.data_assimilation_mode_, 
             fa_actor_settings_.num_timesteps_in_output_buffer_,
-            file_access_actor_, self_);
+            file_access_actor_, self_,restart_);
         gru_struc_->decrementNumGruFailed();
         std::unique_ptr<GRU> gru_obj = std::make_unique<GRU>(
             netcdf_index, job_index, gru_actor, dt_init_factor_, be_steps_, rel_tol_, 
@@ -329,7 +329,7 @@ void JobActor::spawnGruActors() {
         job_index, num_steps_, hru_actor_settings_,
         job_actor_settings_.data_assimilation_mode_,
         fa_actor_settings_.num_timesteps_in_output_buffer_, file_access_actor_, 
-        self_);
+        self_,restart_);
     std::unique_ptr<GRU> gru_obj = std::make_unique<GRU>(
         netcdf_index, job_index, gru_actor, dt_init_factor_, be_steps_, rel_tol_, 
         abs_tolWat_, abs_tolNrg_, job_actor_settings_.max_run_attempts_);
@@ -392,7 +392,7 @@ void JobActor::spawnGruBatches() {
     auto gru_batch = self_->spawn(actor_from_state<GruBatchActor>, 
         netcdf_start_index, job_start_index, current_batch_size, num_steps_,
         hru_actor_settings_, fa_actor_settings_.num_timesteps_in_output_buffer_,
-        file_access_actor_, self_);
+        file_access_actor_, self_, restart_);
 
     std::unique_ptr<GRU> gru_obj = std::make_unique<GRU>(
         netcdf_start_index, job_start_index, gru_batch, dt_init_factor_, be_steps_,

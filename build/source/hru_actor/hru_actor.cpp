@@ -27,7 +27,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int ref_gru, int indx_gru,
   self->state.dt_init_factor = hru_actor_settings.dt_init_factor;
 
   // Set the restart frequency
-  self->state.restartFrequency = 0; // TODO: obtain this value from command line arg
+  self->state.restartFrequency = 1; // TODO: obtain this value from command line arg
 
 
   return {
@@ -300,7 +300,7 @@ int runHRU(stateful_actor<hru_state>* self) {
       return err;
     }
 
-    self->state.currentDate.y = y;
+    self->state.currentDate.y = y
     self->state.currentDate.m = m;
     self->state.currentDate.d = d;
     self->state.currentDate.h = h;
@@ -309,6 +309,7 @@ int runHRU(stateful_actor<hru_state>* self) {
     if (self->state.timestep == 1 ){
         self->state.startDate = self->state.currentDate;
     }
+    aout(self) << "HRU checkpoint " << self->state.checkpoint << "\n";
 
     // check if hru reached a checkpoint, if so it will write restart data to outputsructure and
     // send an update to the FAA

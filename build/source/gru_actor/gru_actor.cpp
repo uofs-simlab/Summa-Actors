@@ -77,6 +77,8 @@ behavior GruActor::async_mode() {
     
     [this](run_hru) {
       int err = 0;
+      int y, m, h, d;
+      // self_->println("Starting {}\n", timestep_);
       std::unique_ptr<char[]> message(new char[256]);
       while (num_steps_until_write_ > 0) {
         if (forcingStep_ > stepsInCurrentFFile_) {
@@ -105,10 +107,17 @@ behavior GruActor::async_mode() {
         }
         std::fill(message.get(), message.get() + 256, '\0'); // Clear message
         writeGRUOutput_fortran(job_index_, timestep_, output_step_,
-                               gru_data_.get(), err, &message);
+                               gru_data_.get(), err, &message,y, m, d, h);
         if (err != 0) {
           handleErr(err, message);
           return;
+        }
+
+        if (timestep_ == 1) {
+          start_time.y = y;
+          start_time.m = m;
+          start_time.d = d;
+          start_time.h = h;
         }
 
         timestep_++;
@@ -118,6 +127,15 @@ behavior GruActor::async_mode() {
         if (timestep_ > num_steps_) {
           self_->mail(done_hru_v).send(self_);
           break;
+        }
+        current_time.y = y;
+        current_time.m = m;
+        current_time.d = d;
+        current_time.h = h;
+        if (isCheckpoint()) {
+          self_->mail(write_restart_v, job_index_, timestep_, output_step_, current_time.y, current_time.m, current_time.d, current_time.h)
+            .send(file_access_actor_);
+
         }
       }
       // Our output structure is full
@@ -165,13 +183,64 @@ behavior GruActor::data_assimilation_mode() {
       }
       std::fill(message.get(), message.get() + 256, '\0'); // Clear message
       writeGRUOutput_fortran(job_index_, time_step, output_step, 
-                             gru_data_.get(), err, &message);
+                             gru_data_.get(), err, &message, current_time.y, current_time.m, current_time.d, current_time.h);
+                             if (start_time.y == -1 && start_time.m == -1 && start_time.d == -1 && start_time.h == -1) {
+                              start_time.y = current_time.y;
+                              start_time.m = current_time.m;
+                              start_time.d = current_time.d;
+                              start_time.h = current_time.h;
+                            }
+                    
+                            if (isCheckpoint()) {
+                              self_->mail(write_restart_da_v, job_index_, timestep_, output_step_, current_time.y, current_time.m, current_time.d, current_time.h)
+                                .send(file_access_actor_);
+                    
+                            }
+                    
       self_->mail(done_update_v).send(parent_);
     }
   };
 }
 
 
+bool GruActor::isCheckpoint() {
+  
+  switch(restart_){
+    case RESTART_NEVER: // restart not enabled
+      break;
+    case RESTART_EVERY: // every timestep
+      return true;
+    case RESTART_DAILY: // daily
+      if (start_time.h == current_time.h){
+          return true;
+      }
+      break;
+    case RESTART_MONTHLY: // monthly
+      if (start_time.d == current_time.d &&
+          start_time.h == current_time.h){
+        return true;
+      }    
+      break;   
+    case RESTART_YEARLY: // yearly
+      if (start_time.m == current_time.m &&
+          start_time.d == current_time.d &&
+          start_time.h == current_time.h){
+        return true;
+      }
+      break;
+  }
+  return false;
+}
+
+int GruActor::parse_restart(std::string restart) {
+  if (restart == "never") return RESTART_NEVER;
+  if (restart == "e") return RESTART_EVERY;
+  if (restart == "d") return RESTART_DAILY;
+  if (restart == "m") return RESTART_MONTHLY;
+  if (restart == "y") return RESTART_YEARLY;
+  // self_->println("Unknown restart value {}, assuming never", restart);
+  return RESTART_NEVER;
+}
 
 // Utility Functions
 

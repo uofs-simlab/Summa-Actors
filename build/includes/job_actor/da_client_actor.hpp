@@ -22,6 +22,7 @@ class DAClientActor {
     caf::event_based_actor* self_;
     std::string host_;
     Settings settings_;
+    std::string restart_;
 
     // member variables
     caf::actor server_;
@@ -42,9 +43,9 @@ class DAClientActor {
 
   public:
     DAClientActor(caf::event_based_actor* self, std::string host, 
-                  Settings settings, caf::actor server = nullptr) 
+                  Settings settings, caf::actor server = nullptr, std::string restart="never") 
                   : self_(self), host_(host), settings_(settings),
-                    server_(server) {};
+                    server_(server), restart_(restart) {};
     caf::behavior make_behavior();
 
     // methods

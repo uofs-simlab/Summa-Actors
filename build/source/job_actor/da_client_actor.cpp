@@ -216,7 +216,7 @@ void DAClientActor::spawnGruBatches() {
         actor_from_state<GruBatchActor>, start_hru_global, start_hru_local,  
         current_batch_size, num_steps_, settings_.hru_actor_settings_,
         settings_.fa_actor_settings_.num_timesteps_in_output_buffer_, 
-        file_access_actor_, self_);
+        file_access_actor_, self_, restart_);
     std::unique_ptr<GRU> gru_obj = std::make_unique<GRU>(
         start_hru_global, start_hru_local, gru_batch, 1, 1, 1.0e-10, 1.0e-10, 1.0e-10,
         settings_.job_actor_settings_.max_run_attempts_);

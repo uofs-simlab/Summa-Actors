@@ -33,12 +33,13 @@ class SummaActor {
   std::unique_ptr<SummaGlobalData> global_fortran_state_;
 
   Settings settings_;
+  std::string restart_;
 
   public:
     SummaActor(caf::event_based_actor* self, int start_gru, int num_gru, 
-               Settings settings, caf::actor parent) 
+               Settings settings, caf::actor parent, std::string restart) 
                : self_(self), start_gru_(start_gru), num_gru_(num_gru), 
-               settings_(settings), parent_(parent) {};
+               settings_(settings), parent_(parent), restart_(restart) {};
   
     caf::behavior make_behavior();
 

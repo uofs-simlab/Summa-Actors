@@ -126,7 +126,7 @@ int SummaActor::spawnJob() {
                               settings_.summa_actor_settings_.enable_logging_,
                               settings_.job_actor_settings_, 
                               settings_.fa_actor_settings_,
-                              settings_.hru_actor_settings_, self_);
+                              settings_.hru_actor_settings_, self_, restart_);
   return 0;
 }
 

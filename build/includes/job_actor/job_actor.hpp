@@ -67,15 +67,16 @@ class JobActor {
   int output_step_ = 1; // Index in the output structure
   int num_write_msgs_ = 0;
   bool da_paused_ = false;
+  std::string restart_;
   
   public:
     JobActor(caf::event_based_actor* self, Batch batch, bool enable_logging,
              JobActorSettings job_settings, FileAccessActorSettings fa_settings,
-             HRUActorSettings hru_settings, caf::actor parent) 
+             HRUActorSettings hru_settings, caf::actor parent, std::string restart) 
              : self_(self), batch_(batch), enable_logging_(enable_logging),
                job_actor_settings_(job_settings), 
                fa_actor_settings_(fa_settings), 
-               hru_actor_settings_(hru_settings), parent_(parent) {};
+               hru_actor_settings_(hru_settings), parent_(parent), restart_(restart) {};
     
     caf::behavior make_behavior(); // Initial Behavior
     caf::behavior data_assimilation_mode();

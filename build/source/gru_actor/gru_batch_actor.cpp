@@ -9,7 +9,7 @@ behavior GruBatchActor::make_behavior() {
     gru_actors_.push_back(self_->spawn(actor_from_state<GruActor>, 
         netcdf_start_index_ + i, job_start_index_ + i, 
         num_steps_, hru_actor_settings_, data_assimilation_mode, 
-        num_steps_output_buffer_, file_access_actor_, self_));  
+        num_steps_output_buffer_, file_access_actor_, self_, restart_));  
   }
   return {
     [this](update_timeZoneOffset, int iFile) {

@@ -685,9 +685,11 @@ subroutine runGRU_fortran(indx_gru, modelTimeStep, handle_gru_data, &
 end subroutine runGRU_fortran
 
 subroutine writeGRUOutput_fortran(indx_gru, timestep, outputstep, &
-    handle_gru_data, err, message_r) bind(C, name="writeGRUOutput_fortran")
+    handle_gru_data, err, message_r, year, month, day, hour) bind(C, name="writeGRUOutput_fortran")
   USE actor_data_types,only:gru_type
-  USE HRUwriteoOutput_module,only:writeHRUOutput
+  USE HRUwriteoOutput_module,only:writeHRUOutput, hru_writeRestart
+  USE var_lookup,only:iLookTIME                 ! named variables for time data structure
+
   USE C_interface_module,only:f_c_string_ptr  ! convert fortran string to c string
   implicit none
   ! Dummy Variables
@@ -697,6 +699,7 @@ subroutine writeGRUOutput_fortran(indx_gru, timestep, outputstep, &
   type(c_ptr),    intent(in),value :: handle_gru_data
   integer(c_int), intent(out)      :: err
   type(c_ptr),    intent(out)      :: message_r
+  integer(c_int), intent(out) :: year, month, day, hour
   ! Local Variables
   integer(i4b)                     :: iHRU
   type(gru_type),pointer           :: gru_data
@@ -704,10 +707,16 @@ subroutine writeGRUOutput_fortran(indx_gru, timestep, outputstep, &
 
   call f_c_string_ptr(trim(message), message_r)
   call c_f_pointer(handle_gru_data, gru_data)
+  year = gru_data%hru(1)%timeStruct%var(iLookTIME%iyyy)
+  month = gru_data%hru(1)%timeStruct%var(iLookTIME%im)
+  day = gru_data%hru(1)%timeStruct%var(iLookTIME%id)
+  hour = gru_data%hru(1)%timeStruct%var(iLookTIME%ih)
 
   do iHRU = 1, size(gru_data%hru)
     call writeHRUOutput(indx_gru, iHRU, timestep, outputstep, gru_data%hru(iHRU), & 
                         err, message)
+    call hru_writeRestart(indx_gru, iHRU, timestep, outputstep, gru_data%hru(iHRU), &
+                         err)
     if(err /= 0) then; call f_c_string_ptr(trim(message), message_r);return; end if
   end do
 
