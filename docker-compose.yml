@@ -1,0 +1,34 @@
+version: '3.8'
+services:
+  summa_client:
+    build: ./
+    tty: true
+    container_name: summa_server
+    volumes:
+      - ./:/code:Z
+    ports:
+      - 4444:4444
+  summa_client2:
+    build: ./
+    tty: true
+    container_name: summa_client
+    volumes:
+      - ./:/code:Z
+    ports:
+      - 4445:4445
+  # summa_client3:
+  #   build: ./
+  #   tty: true
+  #   container_name: summa_client3
+  #   volumes:
+  #     - ./:/code:Z
+  #   ports:
+  #     - 4446:4446
+  # summa_client4:
+  #   build: ./
+  #   tty: true
+  #   container_name: summa_client4
+  #   volumes:
+  #     - ./:/code:Z
+  #   ports:
+  #     - 4447:4447
