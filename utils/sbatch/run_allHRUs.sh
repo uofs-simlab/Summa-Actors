@@ -27,4 +27,4 @@ then
     gruCount=$(( gruMax-gruStart+1 ))
 fi
 
-/globalhome/kck540/HPC/SummaActors/bin/summaMain -g ${gruStart} -c ${gruCount} -m /project/gwf/gwf_cmt/kck540/domain_NorthAmerica/settings/SUMMA/fileManager.txt
+/globalhome/kck540/HPC/SummaActors/bin/summaMain -g ${gruStart} -c ${gruCount} -m /project/gwf/gwf_cmt/kck540/domain_NorthAmerica/settings/SUMMA/fileManager.txt --config-file=/globalhome/kck540/HPC/SummaActors/3_SummaActors_Run/copernicus/caf-application.conf
