@@ -15,6 +15,7 @@
 #include <iostream>
 #include <fstream>
 #include <sys/stat.h>
+#include "json.hpp"
 
 struct job_state {
     // Actor References
@@ -24,6 +25,8 @@ struct job_state {
     // Job Parameters
     int startGRU;                 // Starting GRU for this job
     int numGRU;                   // Number of GRUs for this job
+    std::string configPath;
+
     std::string fileManager;      // Path of the fileManager.txt file
 
     // Variables for GRU monitoring
@@ -42,12 +45,16 @@ struct job_state {
     double duration;
     
     // Output File Names for Timings
-    std::string successOutputFile = "/scratch/gwf/gwf_cmt/kck540/summaActors/csvFiles/SuccessHRU";
+    bool outputCSV;
     std::string csvOut;
+    std::string csvPath;
+    std::string successOutputFile = "SuccessHRU";
     std::string failedOutputFile = "failedHRU";
     std::string fileAccessActorStats = "fileAccessActor.csv";
 
 };
+
+int parseSettings(stateful_actor<job_state>* self, std::string configPath);
 
 void initJob(stateful_actor<job_state>* self);
 

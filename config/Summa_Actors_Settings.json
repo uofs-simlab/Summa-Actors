@@ -1,0 +1,12 @@
+{
+    "SummaActor": {
+        "OuputStrucureSize": 250,
+        "maxGRUPerJob": 500
+    },
+    
+    "JobActor": {
+        "FileManagerPath": "/project/gwf/gwf_cmt/kck540/domain_NorthAmerica/settings/SUMMA/fileManager.txt",
+        "outputCSV": false,
+        "csvPath": ""
+    }
+}

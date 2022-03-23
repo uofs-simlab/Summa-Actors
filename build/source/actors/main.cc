@@ -15,15 +15,13 @@ class config : public actor_system_config {
     public:
         int startGRU = -1;
         int countGRU = -1;
-        std::string fileManager = ""; // master file 
-        std::string csvOut = "";
+        std::string configPath = ""; // master file 
     
     config() {
         opt_group{custom_options_, "global"}
             .add(startGRU, "gru,g", "Starting GRU Index")
-            .add(countGRU, "countGRU,c", "Total Number of GRUs")
-            .add(fileManager, "master,m", "Path name of master file")
-            .add(csvOut, "csv,v", "nameOfCSV");
+            .add(countGRU, "numGRU,n", "Total Number of GRUs")
+            .add(configPath, "config,c", "Path name of the config directory");
     }
 };
 
@@ -32,23 +30,23 @@ void caf_main(actor_system& sys, const config& cfg) {
     if (cfg.startGRU == -1) {
         aout(self) << "Starting GRU was not defined!! " << 
             "startGRU is set with the \"-g\" option\n";
-        aout(self) << "EXAMPLE: ./summaMain -g 1 -c 10 -m file/manager/location \n";
+        aout(self) << "EXAMPLE: ./summaMain -g 1 -n 10 -c location/of/config \n";
         return;
     }
     if (cfg.countGRU == -1) {
         aout(self) << "Number of GRUs was not defined!! " <<
-            "countGRU is set with the \"-c\" option\n";
-        aout(self) << "EXAMPLE: ./summaMain -g 1 -c 10 -m file/manager/location \n";
+            "countGRU is set with the \"-n\" option\n";
+        aout(self) << "EXAMPLE: ./summaMain -g 1 -n 10 -c location/of/config \n";
         return;
     }
-    if (cfg.fileManager == "") {
+    if (cfg.configPath == "") {
         aout(self) << "File Manager was not defined!! " << 
-            "fileManger is set with the \"-m\" option\n";
-        aout(self) << "EXAMPLE: ./summaMain -g 1 -c 10 -m file/manager/location \n";
+            "fileManger is set with the \"-c\" option\n";
+        aout(self) << "EXAMPLE: ./summaMain -g 1 -n 10 -c location/of/config \n";
         return;
     }
     // start SUMMA
-    auto summa = sys.spawn(summa_actor, cfg.startGRU, cfg.countGRU, cfg.fileManager, cfg.csvOut);
+    auto summa = sys.spawn(summa_actor, cfg.startGRU, cfg.countGRU, cfg.configPath);
 }
 
 CAF_MAIN(id_block::summa)

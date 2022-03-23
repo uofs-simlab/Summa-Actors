@@ -4,7 +4,7 @@
 #include "Job.h"
 
 using namespace caf;
-
+using json = nlohmann::json;
 
 /**
  * @brief First Actor that is spawned that is not the Coordinator Actor.
@@ -13,15 +13,26 @@ using namespace caf;
  * @return behavior 
  */
 behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU, 
-    std::string fileManager, int outputStrucSize, std::string csvOut, caf::actor parent) {
+    std::string configPath, int outputStrucSize, caf::actor parent) {
     self->state.start = std::chrono::high_resolution_clock::now();
     // Set Job Variables
     self->state.startGRU = startGRU;
     self->state.numGRU = numGRU;
-    self->state.fileManager = fileManager;
+    self->state.configPath = configPath;
     self->state.parent = parent;
     self->state.outputStrucSize = outputStrucSize;
-    self->state.csvOut = csvOut;
+
+    if (parseSettings(self, configPath) == -1) {
+        aout(self) << "ERROR WITH JSON SETTINGS FILE!!!\n";
+        self->quit();
+    } else {
+        aout(self) << "SETTINGS FOR JOB_ACTOR\n" << 
+        "File Manager Path = " << self->state.fileManager << "\n" <<
+        "outputCSV = " << self->state.outputCSV << "\n";
+        if (self->state.outputCSV) {
+            aout(self) << "csvPath = " << self->state.csvPath << "\n";
+        }
+    }
 
     // Initalize global variables
     initJob(self);
@@ -67,7 +78,11 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
             aout(self) << "GRU " << indxGRU << " Done\n";
             self->state.GRUList[indxGRU - 1]->doneRun(totalDuration, initDuration, forcingDuration,
                 runPhysicsDuration, writeOutputDuration);
-            self->state.GRUList[indxGRU - 1]->writeSuccess(self->state.successOutputFile);            
+            
+            if (self->state.outputCSV) {
+                self->state.GRUList[indxGRU - 1]->writeSuccess(self->state.successOutputFile);            
+            }
+            
             self->state.numGRUDone++;
 
             // Check if we are done
@@ -119,14 +134,61 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
     };
 }
 
+
+int parseSettings(stateful_actor<job_state>* self, std::string configPath) {
+    json settings;
+    std::string SummaActorsSettigs = "/Summa_Actors_Settings.json";
+	std::ifstream settings_file(configPath + SummaActorsSettigs);
+	settings_file >> settings;
+	settings_file.close();
+    
+    if (settings.find("JobActor") != settings.end()) {
+        json JobActorConfig = settings["JobActor"];
+        // Find the File Manager Path
+        if (JobActorConfig.find("FileManagerPath") !=  JobActorConfig.end()) {
+            self->state.fileManager = JobActorConfig["FileManagerPath"];
+        } else {
+            aout(self) << "Error Finding FileManagerPath - Exiting as this is needed\n";
+            return -1;
+        }
+
+        // Find if we want to outputCSV
+        if (JobActorConfig.find("outputCSV") !=  JobActorConfig.end()) {
+            self->state.outputCSV = JobActorConfig["outputCSV"];
+        } else {
+            aout(self) << "Error Finding outputCSV in JSON file - Reverting to Default Value\n";
+            self->state.outputCSV = false;
+        }
+
+        // Output Path of CSV
+        if (self->state.outputCSV) {
+            if (JobActorConfig.find("csvPath") !=  JobActorConfig.end()) {
+                self->state.csvPath = JobActorConfig["csvPath"];
+            } else {
+                aout(self) << "Error Finding csvPath in JSON file = Reverting to Default Value \n";
+                self->state.outputCSV = false; // we just choose not to output a csv
+            }
+        }
+
+        return 0;
+    } else {
+        aout(self) << "Error Finding JobActor in JSON file - Exiting as there is no path for the fileManger\n";
+        return -1;
+    }
+}
+
 void initJob(stateful_actor<job_state>* self) {
-    std::ofstream file;
-    self->state.successOutputFile += std::to_string(self->state.startGRU) += self->state.csvOut +=".csv";
-    file.open(self->state.successOutputFile, std::ios_base::out);
-    file << "GRU" << "," << "totalDuration" << "," << "initDuration" << "," << 
-                "forcingDuration" << "," << "runPhysicsDuration" << "," << "writeOutputDuration" << 
-                "," << "dt_init" << "," << "numAttemtps" << "\n";
-    file.close();
+
+    if (self->state.outputCSV) {
+        std::ofstream file;
+        self->state.successOutputFile += std::to_string(self->state.startGRU) += ".csv";
+        file.open(self->state.successOutputFile, std::ios_base::out);
+        file << "GRU" << "," << "totalDuration" << "," << "initDuration" << "," << 
+                    "forcingDuration" << "," << "runPhysicsDuration" << "," << "writeOutputDuration" << 
+                    "," << "dt_init" << "," << "numAttemtps" << "\n";
+        file.close();
+    }
+
 
     int totalGRUs           = 0;
     int totalHRUs           = 0;

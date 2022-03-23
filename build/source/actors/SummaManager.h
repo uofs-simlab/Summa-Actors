@@ -7,6 +7,8 @@
 #include <iostream>
 #include <chrono>
 #include <string>
+#include "json.hpp"
+#include <fstream>
 
 
 
@@ -18,13 +20,13 @@ struct summa_manager {
   // Program Parameters
   int startGRU;           // starting GRU for the simulation
   int numGRU;             // number of GRUs to compute
-  std::string fileManager;// path to the fileManager.txt file
+  std::string configPath;// path to the fileManager.txt file
   // Information about the jobs
-  int maxGRUPerJob = 500; // maximum number of GRUs a job can compute at once
   int numFailed = 0;      // Number of jobs that have failed
-  int outputStrucSize = 500; 
 
-  std::string csvOut;
+  // Values Set By Summa_Actors_Settings.json
+  int maxGRUPerJob; // maximum number of GRUs a job can compute at once
+  int outputStrucSize; 
 
   caf::actor currentJob;  // Reference to the current job actor
 
@@ -34,4 +36,6 @@ struct summa_manager {
  * @brief Function to spawn a job actor
  */
 void spawnJob(stateful_actor<summa_manager>* self);
+
+void parseSettings(stateful_actor<summa_manager>* self, std::string configPath);
 #endif

@@ -55,13 +55,6 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
                 (self->state.end - self->state.start).count();
         },
 
-        // [=](file_information, int outputStrucSize, int stepsInCurrentFFile) {
-        //     self->state.outputStrucSize = outputStrucSize;
-        //     self->state.stepsInCurrentFFile = stepsInCurrentFFile;
-        //     self->state.outputStep = 1;
-        //     self->send(self, run_hru_v, self->state.stepsInCurrentFFile);
-        // },
-
         [=](done_write) {
             self->state.start = std::chrono::high_resolution_clock::now();
 
