@@ -113,10 +113,12 @@ struct hru_state {
  * @param configPath Path to the directory that contains the settings file
  */
 void parseSettings(stateful_actor<hru_state>* self, std::string configPath);
+
 /**
  Function to initalize the HRU for running
  */
 void Initialize_HRU(stateful_actor<hru_state>* self);
+
 /**
  Function runs all of the hru time_steps
  */
@@ -127,4 +129,6 @@ void initalizeTimeVars(stateful_actor<hru_state>* self);
 void finalizeTimeVars(stateful_actor<hru_state>* self);
 
 void deallocateHRUStructures(stateful_actor<hru_state>* self);
+
+void printOutput(stateful_actor<hru_state>* self);
 #endif

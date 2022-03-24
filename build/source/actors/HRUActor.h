@@ -38,6 +38,15 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
     self->state.timestep   = 1;
     self->state.outputStep = 1;
 
+    // Get the settings for the HRU
+    parseSettings(self, configPath);
+    // We only want to print this once
+    if (indxGRU == 1) {
+        aout(self) << "\nSETTINGS FOR HRU_ACTOR\n";
+        aout(self) << "Print Output = " << self->state.printOutput << "\n";
+        aout(self) << "Print Output every " << self->state.outputFrequency << " timesteps\n\n";
+    }
+
 
     Initialize_HRU(self);
 
@@ -176,7 +185,7 @@ void parseSettings(stateful_actor<hru_state>* self, std::string configPath) {
 
         if (self->state.printOutput) {
             // get the frequency in number of timesteps we want to print the output
-            if(HRUActorConfig.find("outputFrequency") != settings.end()) {
+            if(HRUActorConfig.find("outputFrequency") != HRUActorConfig.end()) {
                 self->state.outputFrequency = HRUActorConfig["outputFrequency"];
             } else {
                 aout(self) << "Error finding outputFrequency in JSON File - Reverting to default value\n";
@@ -273,9 +282,6 @@ void Initialize_HRU(stateful_actor<hru_state>* self) {
         (self->state.initEnd - self->state.initStart).count();
 }
 
-/*
-** RETURNS 0 on success and -1 on failure 
-*/
 int Run_HRU(stateful_actor<hru_state>* self) {
     // Housekeeping of the timing variables
     if(self->state.timestep == 1) {
@@ -305,15 +311,12 @@ int Run_HRU(stateful_actor<hru_state>* self) {
     self->state.forcingEnd = std::chrono::high_resolution_clock::now();
     self->state.forcingDuration += self->state.forcingEnd - self->state.forcingStart;
 
-    if (self->state.timestep % 50000 == 0) {
-        aout(self) << self->state.refGRU << ":Accumulated Forcing Time = " << 
-            self->state.forcingDuration << std::endl;
-        aout(self) << self->state.refGRU << " - Running Timestep = " << self->state.timestep << std::endl;
-        aout(self) << self->state.refGRU << ":Accumulated Run Physics Time = " << 
-        self->state.runPhysicsDuration << std::endl;
-        aout(self) << self->state.refGRU << ":Accumulated WriteOutput = " 
-        << self->state.writeOutputDuration << std::endl;
+
+    if (self->state.printOutput && 
+        self->state.timestep % self->state.outputFrequency == 0) {
+        printOutput(self);
     }
+    
 
     /**********************************************************************
     ** RUN_PHYSICS    
@@ -408,7 +411,6 @@ void initalizeTimeVars(stateful_actor<hru_state>* self) {
     self->state.writeOutputDuration = self->state.writeOutputEnd - self->state.writeOutputStart;
 }
 
-
 void finalizeTimeVars(stateful_actor<hru_state>* self) {
     
     self->state.end = std::chrono::high_resolution_clock::now();
@@ -449,5 +451,9 @@ void deallocateHRUStructures(stateful_actor<hru_state>* self) {
         &self->state.err);
 }
 
-
+void printOutput(stateful_actor<hru_state>* self) {
+        aout(self) << self->state.refGRU << " - Timestep = " << self->state.timestep << std::endl;
+        aout(self) << self->state.refGRU << ":Accumulated Run Physics Time = " << 
+        self->state.runPhysicsDuration << std::endl;
+}
 #endif

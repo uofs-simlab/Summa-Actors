@@ -48,7 +48,7 @@ struct job_state {
     bool outputCSV;
     std::string csvOut;
     std::string csvPath;
-    std::string successOutputFile = "SuccessHRU";
+    std::string successOutputFile;
     std::string failedOutputFile = "failedHRU";
     std::string fileAccessActorStats = "fileAccessActor.csv";
 

@@ -5,13 +5,13 @@
     },
     
     "JobActor": {
-        "FileManagerPath": "/project/gwf/gwf_cmt/kck540/domain_NorthAmerica/settings/SUMMA/fileManager.txt",
+        "FileManagerPath": ,
         "outputCSV": false,
-        "csvPath": ""
+        "csvPath": 
     },
 
     "HRUActor": {
         "printOutput": true,
-        "outputFrequency": 25000
+        "outputFrequency": 1000
     }
 }

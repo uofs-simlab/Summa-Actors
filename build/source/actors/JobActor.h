@@ -26,7 +26,7 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
         aout(self) << "ERROR WITH JSON SETTINGS FILE!!!\n";
         self->quit();
     } else {
-        aout(self) << "SETTINGS FOR JOB_ACTOR\n" << 
+        aout(self) << "\nSETTINGS FOR JOB_ACTOR\n" << 
         "File Manager Path = " << self->state.fileManager << "\n" <<
         "outputCSV = " << self->state.outputCSV << "\n";
         if (self->state.outputCSV) {
@@ -178,10 +178,11 @@ int parseSettings(stateful_actor<job_state>* self, std::string configPath) {
 }
 
 void initJob(stateful_actor<job_state>* self) {
-
+    std::string success = "Success"; // allows us to build the string
     if (self->state.outputCSV) {
         std::ofstream file;
-        self->state.successOutputFile += std::to_string(self->state.startGRU) += ".csv";
+        self->state.successOutputFile = self->state.csvPath += success += 
+            std::to_string(self->state.startGRU) += ".csv";
         file.open(self->state.successOutputFile, std::ios_base::out);
         file << "GRU" << "," << "totalDuration" << "," << "initDuration" << "," << 
                     "forcingDuration" << "," << "runPhysicsDuration" << "," << "writeOutputDuration" << 
