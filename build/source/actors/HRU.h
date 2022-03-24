@@ -12,6 +12,8 @@
 #include <sys/resource.h>
 #include <chrono>
 #include <iostream>
+#include "json.hpp"
+
 using namespace caf;
 
 struct hru_state {
@@ -76,6 +78,9 @@ struct hru_state {
     int         forcingStep = 1;    // index of current time step in current forcing file
     int         iFile = 1;          // index of current forcing file from forcing file list
     int         dt_init_factor = 1; // factor of dt_init (coupled_em)
+    bool        printOutput;
+    int         outputFrequency;
+
 
     // Julian Day variables
     double      fracJulDay;
@@ -101,6 +106,13 @@ struct hru_state {
 
 };
 
+/**
+ * @brief Get the settings from the settings JSON file
+ * 
+ * @param self Actor State
+ * @param configPath Path to the directory that contains the settings file
+ */
+void parseSettings(stateful_actor<hru_state>* self, std::string configPath);
 /**
  Function to initalize the HRU for running
  */

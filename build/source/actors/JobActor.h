@@ -212,7 +212,8 @@ void initJob(stateful_actor<job_state>* self) {
 void initalizeGRU(stateful_actor<job_state>* self) {
     int startGRU = self->state.GRUList.size() + self->state.startGRU;
     int indexGRU = self->state.GRUList.size() + 1; // Fortran reference starts at 1
-    auto gru = self->spawn(hru_actor, startGRU, indexGRU, self->state.file_access_actor, 
+    auto gru = self->spawn(hru_actor, startGRU, indexGRU, 
+        self->state.configPath, self->state.file_access_actor, 
         self->state.outputStrucSize, self);
     self->state.GRUList.push_back(new GRUinfo(startGRU, indexGRU, gru, 
         self->state.dt_init_start_factor, self->state.maxRunAttempts));
@@ -235,7 +236,8 @@ void restartFailures(stateful_actor<job_state>* self) {
             gru->updateFailed();
             self->send(self->state.file_access_actor, reset_outputCounter_v, gru->getIndxGRU());
             gru->updateDt_init();
-            auto newGRU = self->spawn(hru_actor, gru->getRefGRU(), gru->getIndxGRU(), self->state.file_access_actor, 
+            auto newGRU = self->spawn(hru_actor, gru->getRefGRU(), gru->getIndxGRU(), 
+                self->state.configPath,self->state.file_access_actor, 
                 self->state.outputStrucSize, self);
             gru->updateGRU(newGRU);
             gru->updateCurrentAttempt();

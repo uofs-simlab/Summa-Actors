@@ -8,5 +8,10 @@
         "FileManagerPath": "/project/gwf/gwf_cmt/kck540/domain_NorthAmerica/settings/SUMMA/fileManager.txt",
         "outputCSV": false,
         "csvPath": ""
+    },
+
+    "HRUActor": {
+        "printOutput": true,
+        "outputFrequency": 25000
     }
 }

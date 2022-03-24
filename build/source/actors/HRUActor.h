@@ -2,6 +2,8 @@
 #define HRUActor_H_
 
 #include "HRU.h"
+using json = nlohmann::json;
+
 
 /**
  * @brief HRU Actor is reponsible for carrying out the computation component of SUMMA
@@ -12,7 +14,8 @@
  * @param parent 
  * @return behavior 
  */
-behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU, 
+behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
+    std::string configPath,
     caf::actor file_access_actor, int outputStrucSize, caf::actor parent) {
     // Timing Information
     self->state.start = std::chrono::high_resolution_clock::now();
@@ -31,7 +34,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
     // OutputStructure Size (how many timesteps we can compute before we need to write)
     self->state.outputStrucSize = outputStrucSize;
 
-    // init counters 
+    // initialize counters 
     self->state.timestep   = 1;
     self->state.outputStep = 1;
 
@@ -152,6 +155,41 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
     /*********************************************************************************************************
      *********************************** END ACTOR MESSAGE HANDLERS ******************************************
      *********************************************************************************************************/
+}
+
+void parseSettings(stateful_actor<hru_state>* self, std::string configPath) {
+    json settings;
+    std::string SummaActorsSettings = "/Summa_Actors_Settings.json";
+    std::ifstream settings_file(configPath + SummaActorsSettings);
+    settings_file >> settings;
+    settings_file.close();
+
+    if (settings.find("HRUActor") != settings.end()) {
+        json HRUActorConfig = settings["HRUActor"];
+        // find if we want to print output to stdout
+        if (HRUActorConfig.find("printOutput") != HRUActorConfig.end()) {
+            self->state.printOutput = HRUActorConfig["printOutput"];
+        } else {
+            aout(self) << "Error finding printOutput in JSON File - Reverting to default value\n";
+            self->state.printOutput = true;
+        }
+
+        if (self->state.printOutput) {
+            // get the frequency in number of timesteps we want to print the output
+            if(HRUActorConfig.find("outputFrequency") != settings.end()) {
+                self->state.outputFrequency = HRUActorConfig["outputFrequency"];
+            } else {
+                aout(self) << "Error finding outputFrequency in JSON File - Reverting to default value\n";
+                self->state.outputFrequency = 10000;
+            }
+        }
+    } else {
+        aout(self) << "Error finding HRUActor in JSON File - Reverting to default values for HRUs\n";
+        self->state.printOutput = true;
+        self->state.outputFrequency = 10000;
+    }
+
+
 }
 
 void Initialize_HRU(stateful_actor<hru_state>* self) {
@@ -376,13 +414,6 @@ void finalizeTimeVars(stateful_actor<hru_state>* self) {
     self->state.end = std::chrono::high_resolution_clock::now();
     self->state.duration += std::chrono::duration_cast<std::chrono::seconds>
         (self->state.end - self->state.start).count();
-
-    // // Output the timing information
-    // aout(self) << "DONE:" << self->state.refGRU << ":duration = " << self->state.duration << std::endl;
-    // aout(self) << "DONE:" << self->state.refGRU << ":initDuration = " << self->state.initDuration << std::endl;
-    // aout(self) << "DONE:" << self->state.refGRU << ":forcingDuration = " << self->state.forcingDuration.count() << std::endl;
-    // aout(self) << "DONE:" << self->state.refGRU << ":runPhysicsDuration = " << self->state.runPhysicsDuration.count() << std::endl;
-    // aout(self) << "DONE:" << self->state.refGRU << ":writeOutputDuration = " << self->state.writeOutputDuration.count() << std::endl;
 }
 
 void deallocateHRUStructures(stateful_actor<hru_state>* self) {
