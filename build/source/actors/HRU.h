@@ -13,6 +13,7 @@
 #include <chrono>
 #include <iostream>
 #include "json.hpp"
+#include "global.h"
 
 using namespace caf;
 
@@ -90,19 +91,19 @@ struct hru_state {
 
     std::chrono::time_point<std::chrono::system_clock> start;
     std::chrono::time_point<std::chrono::system_clock> end;
-    double duration;
+    double duration = 0.0;
     std::chrono::time_point<std::chrono::system_clock> initStart;
     std::chrono::time_point<std::chrono::system_clock> initEnd;
-    double initDuration;
+    double initDuration = 0.0;
     std::chrono::time_point<std::chrono::system_clock> forcingStart;
     std::chrono::time_point<std::chrono::system_clock> forcingEnd;
-    std::chrono::duration<double> forcingDuration;
+    double forcingDuration = 0.0;
     std::chrono::time_point<std::chrono::system_clock> runPhysicsStart;
     std::chrono::time_point<std::chrono::system_clock> runPhysicsEnd;
-    std::chrono::duration<double> runPhysicsDuration;
+    double runPhysicsDuration = 0.0;
     std::chrono::time_point<std::chrono::system_clock> writeOutputStart;
     std::chrono::time_point<std::chrono::system_clock> writeOutputEnd;
-    std::chrono::duration<double> writeOutputDuration;
+    double writeOutputDuration = 0.0;
 
 };
 

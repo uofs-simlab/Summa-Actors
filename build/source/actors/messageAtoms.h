@@ -16,6 +16,7 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     CAF_ADD_ATOM(summa, done_final_write)
     CAF_ADD_ATOM(summa, run_failure)
     CAF_ADD_ATOM(summa, done_file_access_actor_init)
+    CAF_ADD_ATOM(summa, file_access_actor_done)
     // FileAccess Actor
     CAF_ADD_ATOM(summa, initalize_outputStrucure)
     CAF_ADD_ATOM(summa, access_forcing)

@@ -51,8 +51,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
     Initialize_HRU(self);
 
     self->state.end = std::chrono::high_resolution_clock::now();
-    self->state.duration += std::chrono::duration_cast<std::chrono::seconds>
-        (self->state.end - self->state.start).count();
+    self->state.duration += calculateTime(self->state.start, self->state.end);
 
     self->send(self->state.parent, done_init_hru_v);
 
@@ -63,8 +62,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
 
             self->send(self->state.file_access_actor, access_forcing_v, self->state.iFile, self);
             self->state.end = std::chrono::high_resolution_clock::now();
-            self->state.duration += std::chrono::duration_cast<std::chrono::seconds>
-                (self->state.end - self->state.start).count();
+            self->state.duration += calculateTime(self->state.start, self->state.end);
         },
 
         [=](done_write) {
@@ -73,30 +71,28 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
             // We receive a done_write message so we ensure that
             // stepsInCurrentFFile remains unchanged
             if (self->state.timestep >= self->state.num_steps) {
-                                    
-                finalizeTimeVars(self);
-
-                double forcingDuration = std::chrono::duration_cast<std::chrono::seconds>(self->state.forcingDuration).count();
-                double runPhysicsDuration = std::chrono::duration_cast<std::chrono::seconds>(self->state.runPhysicsDuration).count();
-                double writeOutputDuration = std::chrono::duration_cast<std::chrono::seconds>(self->state.writeOutputDuration).count();
-                // Tell our parent we are done
+                
+                self->state.end = std::chrono::high_resolution_clock::now();
+                self->state.duration += calculateTime(self->state.start, self->state.end);
+                // Tell our parent we are done, convert all timings to seconds
                 self->send(self->state.parent, 
                     done_hru_v,
                     self->state.indxGRU, 
-                    self->state.duration,
-                    self->state.initDuration, 
-                    forcingDuration, 
-                    runPhysicsDuration, 
-                    writeOutputDuration);
+                    self->state.duration / 1000,
+                    self->state.initDuration / 1000, 
+                    self->state.forcingDuration / 1000, 
+                    self->state.runPhysicsDuration / 1000, 
+                    self->state.writeOutputDuration / 1000);
                 
                 deallocateHRUStructures(self);
 
                 self->quit();
                 return;
             }
+
             self->state.end = std::chrono::high_resolution_clock::now();
-            self->state.duration += std::chrono::duration_cast<std::chrono::seconds>
-                (self->state.end - self->state.start).count();
+            self->state.duration += calculateTime(self->state.start, self->state.end);
+            
             self->send(self, run_hru_v, self->state.stepsInCurrentFFile);
         },
 
@@ -125,8 +121,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
                         self->state.indxGRU, self->state.indxHRU, self->state.outputStep, self);
 
                     self->state.end = std::chrono::high_resolution_clock::now();
-                    self->state.duration += std::chrono::duration_cast<std::chrono::seconds>
-                        (self->state.end - self->state.start).count();
+                    self->state.duration += calculateTime(self->state.start, self->state.end);
                     
                     return;
                 }
@@ -149,11 +144,10 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
                 self->state.outputStep += 1; // value to monitor how full the output structure is
 
             }
-            // HRU is done looping over timesteps in the current file
-            // update total timing, don't want to include waiting time
+     
             self->state.end = std::chrono::high_resolution_clock::now();
-            self->state.duration += std::chrono::duration_cast<std::chrono::seconds>
-                (self->state.end - self->state.start).count();
+            self->state.duration += calculateTime(self->state.start, self->state.end);
+
         },
 
         [=](dt_init_factor, int dt_init_factor) {
@@ -278,15 +272,10 @@ void Initialize_HRU(stateful_actor<hru_state>* self) {
             
     // aout(self) << self->state.refGRU << " - Done Init" << std::endl;
     self->state.initEnd = std::chrono::high_resolution_clock::now();
-    self->state.initDuration = std::chrono::duration_cast<std::chrono::seconds>
-        (self->state.initEnd - self->state.initStart).count();
+    self->state.initDuration = calculateTime(self->state.initStart, self->state.initEnd);
 }
 
 int Run_HRU(stateful_actor<hru_state>* self) {
-    // Housekeeping of the timing variables
-    if(self->state.timestep == 1) {
-        initalizeTimeVars(self);
-    }
     /**********************************************************************
     ** READ FORCING
     **********************************************************************/    
@@ -309,7 +298,7 @@ int Run_HRU(stateful_actor<hru_state>* self) {
 
     }
     self->state.forcingEnd = std::chrono::high_resolution_clock::now();
-    self->state.forcingDuration += self->state.forcingEnd - self->state.forcingStart;
+    self->state.forcingDuration += calculateTime(self->state.forcingStart, self->state.forcingEnd);
 
 
     if (self->state.printOutput && 
@@ -349,7 +338,7 @@ int Run_HRU(stateful_actor<hru_state>* self) {
         return 20;
     }
     self->state.runPhysicsEnd = std::chrono::high_resolution_clock::now();
-    self->state.runPhysicsDuration += self->state.runPhysicsEnd - self->state.runPhysicsStart;
+    self->state.runPhysicsDuration += calculateTime(self->state.runPhysicsStart, self->state.runPhysicsEnd);
 
     /**********************************************************************
     ** WRITE_OUTPUT  
@@ -391,31 +380,9 @@ int Run_HRU(stateful_actor<hru_state>* self) {
         return 30;
     }
     self->state.writeOutputEnd = std::chrono::high_resolution_clock::now();
-    self->state.writeOutputDuration += self->state.writeOutputEnd - self->state.writeOutputStart;
+    self->state.writeOutputDuration += calculateTime(self->state.writeOutputStart, self->state.writeOutputEnd);
 
     return 0;      
-}
-
-
-void initalizeTimeVars(stateful_actor<hru_state>* self) {
-    self->state.forcingStart = std::chrono::high_resolution_clock::now();
-    self->state.forcingEnd = std::chrono::high_resolution_clock::now();
-    self->state.forcingDuration = self->state.forcingEnd - self->state.forcingStart;
-    
-    self->state.runPhysicsStart = std::chrono::high_resolution_clock::now();
-    self->state.runPhysicsEnd   = std::chrono::high_resolution_clock::now();
-    self->state.runPhysicsDuration = self->state.runPhysicsEnd - self->state.runPhysicsStart;
-
-    self->state.writeOutputStart = std::chrono::high_resolution_clock::now();
-    self->state.writeOutputEnd = std::chrono::high_resolution_clock::now();
-    self->state.writeOutputDuration = self->state.writeOutputEnd - self->state.writeOutputStart;
-}
-
-void finalizeTimeVars(stateful_actor<hru_state>* self) {
-    
-    self->state.end = std::chrono::high_resolution_clock::now();
-    self->state.duration += std::chrono::duration_cast<std::chrono::seconds>
-        (self->state.end - self->state.start).count();
 }
 
 void deallocateHRUStructures(stateful_actor<hru_state>* self) {

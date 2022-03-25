@@ -36,12 +36,11 @@ behavior summa_actor(stateful_actor<summa_manager>* self, int startGRU, int numG
 			if (self->state.numGRU <= 0) {
 
 				self->state.end = std::chrono::high_resolution_clock::now();
-            		self->state.duration = std::chrono::duration_cast<std::chrono::seconds>
-                (self->state.end - self->state.start).count();
-				aout(self) << "Total Program Duration:";
-                	aout(self) << "     " << self->state.duration << " Seconds\n";
-                	aout(self) << "     " << self->state.duration / 60 << " Minutes\n";
-                	aout(self) << "     " << (self->state.duration / 60) / 60 << " Hours\n";
+            	self->state.duration = calculateTime(self->state.start, self->state.end);
+				aout(self) << "Total Program Duration:\n";
+            	aout(self) << "     " << self->state.duration / 1000  << " Seconds\n";
+            	aout(self) << "     " << (self->state.duration / 1000) / 60  << " Minutes\n";
+            	aout(self) << "     " << ((self->state.duration / 1000) / 60) / 60 << " Hours\n";
 
 				aout(self) << "Program Finished \n";
 

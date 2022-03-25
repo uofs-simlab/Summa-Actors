@@ -9,6 +9,7 @@
 #include <string>
 #include "json.hpp"
 #include <fstream>
+#include "global.h"
 
 
 

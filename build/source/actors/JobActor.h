@@ -54,6 +54,9 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
         },
 
         [=](done_init_hru) {
+            if (debug) {
+                aout(self) << "Done Init\n";
+            }
             // aout(self) << "Done init\n";
             self->state.GRUInit++;
             if (self->state.GRUInit < self->state.numGRU) {
@@ -97,21 +100,34 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
             }
         },
 
-        [=](deallocate_structures) {
-            // Calculate Run-Time
-            self->state.end = std::chrono::high_resolution_clock::now();
-            self->state.duration = std::chrono::duration_cast<std::chrono::seconds>
-                (self->state.end - self->state.start).count();
-            aout(self) << "Total Job Duration:";
-            aout(self) << "     " << self->state.duration             << " Seconds\n";
-            aout(self) << "     " << self->state.duration / 60        << " Minutes\n";
-            aout(self) << "     " << (self->state.duration / 60) / 60 << " Hours\n";
-
+        [=](file_access_actor_done, double readDuration, double writeDuration) {
+            if (debug) {
+                aout(self) << "\n********************************\n";
+                aout(self) << "Outputing Timing Info for HRUs\n";
+                
+                for(auto gru : self->state.GRUList) {
+                    gru->printOutput();
+                }
+                aout(self) << "********************************\n";
+            }
             // Delete GRUs
             for (auto GRU : self->state.GRUList) {
                 delete GRU;
             }
             self->state.GRUList.clear();
+
+
+            self->state.end = std::chrono::high_resolution_clock::now();
+            self->state.duration = calculateTime(self->state.start, self->state.end);
+            aout(self) << "\nTotal Job Duration:\n";
+            aout(self) << "     " << self->state.duration / 1000  << " Seconds\n";
+            aout(self) << "     " << (self->state.duration / 1000) / 60  << " Minutes\n";
+            aout(self) << "     " << ((self->state.duration / 1000) / 60) / 60 << " Hours\n";
+            aout(self) << "\nReading Duration:\n";
+            aout(self) << "     " << readDuration  << " Seconds\n";
+            aout(self) << "\nWriting Duration:\n";
+            aout(self) << "     " << writeDuration << " Seconds\n\n";
+
 
             // Tell Parent we are done
             self->send(self->state.parent, done_job_v, self->state.numGRUFailed);

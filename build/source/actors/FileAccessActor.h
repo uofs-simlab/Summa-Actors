@@ -30,6 +30,8 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
                         self->state.forcFileList[currentFile - 1].getNumSteps());
 
                 } else {
+                    self->state.readStart = std::chrono::high_resolution_clock::now();
+                    
                     // Load the file
                     FileAccessActor_ReadForcing(self->state.handle_forcFileInfo, &currentFile,
                         &self->state.stepsInCurrentFile, &self->state.startGRU, 
@@ -40,6 +42,8 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
                     self->state.filesLoaded += 1;
                     self->state.forcFileList[currentFile - 1].updateNumSteps(self->state.stepsInCurrentFile);
 
+                    self->state.readEnd = std::chrono::high_resolution_clock::now();
+                    self->state.readDuration += calculateTime(self->state.readStart, self->state.readEnd);
                     // Check if we have loaded all forcing files
                     if(self->state.filesLoaded <= self->state.numFiles) {
                         self->send(self, access_forcing_internal_v, currentFile + 1);
@@ -61,6 +65,7 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
                 if (self->state.forcFileList[currentFile - 1].isFileLoaded()) {
                     aout(self) << "File Loaded when shouldn't be \n";
                 }
+                self->state.readStart = std::chrono::high_resolution_clock::now();
                 FileAccessActor_ReadForcing(self->state.handle_forcFileInfo, &currentFile,
                     &self->state.stepsInCurrentFile, &self->state.startGRU, 
                     &self->state.numGRU, &self->state.err);
@@ -69,6 +74,10 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
                 }
                 self->state.filesLoaded += 1;
                 self->state.forcFileList[currentFile - 1].updateNumSteps(self->state.stepsInCurrentFile);
+                
+                self->state.readEnd = std::chrono::high_resolution_clock::now();
+                self->state.readDuration += calculateTime(self->state.readStart, self->state.readEnd);
+                
                 self->send(self, access_forcing_internal_v, currentFile + 1);
             } else {
                 aout(self) << "All Forcing Files Loaded \n";
@@ -81,6 +90,7 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
             caf::actor refToRespondTo) {
             int err = 0;
             bool hruInit = self->state.outputFileInitHRU[indxGRU - 1];
+            self->state.writeStart = std::chrono::high_resolution_clock::now();
             FileAccessActor_WriteOutput(self->state.handle_ncid, &self->state.outputFileExists, 
                 &numStepsToWrite, &self->state.startGRU, &self->state.numGRU, 
                 &hruInit, &indxGRU, &indxHRU, &err);
@@ -88,8 +98,8 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
                 aout(self) << "ERROR: Writing Output" << std::endl;
             }
             self->state.outputFileInitHRU[indxGRU - 1] = true; //
-            
-            
+            self->state.writeEnd = std::chrono::high_resolution_clock::now();
+            self->state.writeDuration += calculateTime(self->state.writeStart, self->state.writeEnd);
             self->send(refToRespondTo, done_write_v);
         },
 
@@ -97,7 +107,12 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
         [=](deallocate_structures) {
             aout(self) << "Deallocating Structure" << std::endl;
             FileAccessActor_DeallocateStructures(self->state.handle_forcFileInfo, self->state.handle_ncid);
-            self->send(self->state.parent, deallocate_structures_v);
+            
+            self->state.readDuration = self->state.readDuration / 1000;
+            self->state.writeDuration = self->state.writeDuration / 1000;
+            
+            self->send(self->state.parent, file_access_actor_done_v, self->state.readDuration, 
+                self->state.writeDuration);
             self->quit();
         },
 

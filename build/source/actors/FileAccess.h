@@ -6,6 +6,8 @@
 #include "caf/all.hpp"
 #include "messageAtoms.h"
 #include <vector>
+#include <chrono>
+#include "global.h"
 
 class forcingFile {
     private:
@@ -56,6 +58,16 @@ struct file_access_state {
 
     std::vector<forcingFile> forcFileList; // list of steps in file
     std::vector<bool> outputFileInitHRU;
+
+    std::chrono::time_point<std::chrono::system_clock> readStart;
+    std::chrono::time_point<std::chrono::system_clock> readEnd;
+    double readDuration = 0.0;
+
+    std::chrono::time_point<std::chrono::system_clock> writeStart;
+    std::chrono::time_point<std::chrono::system_clock> writeEnd;
+    double writeDuration = 0.0;
+
+
 };
 
 

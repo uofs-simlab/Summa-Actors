@@ -16,6 +16,7 @@
 #include <fstream>
 #include <sys/stat.h>
 #include "json.hpp"
+#include "global.h"
 
 struct job_state {
     // Actor References
@@ -53,6 +54,8 @@ struct job_state {
     std::string fileAccessActorStats = "fileAccessActor.csv";
 
 };
+
+
 
 int parseSettings(stateful_actor<job_state>* self, std::string configPath);
 

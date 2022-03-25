@@ -4,6 +4,7 @@
 #include "caf/all.hpp"
 #include <iostream>
 #include <fstream>
+#include "Job.h"
 
 
 class GRUinfo {
@@ -128,6 +129,15 @@ class GRUinfo {
            << this->dt_init << ","
            << this->currentAttempt << "\n";
       file.close();
+    }
+
+    void printOutput() {
+      std::cout << "\nGRU = " << this->refGRU << "\n" <<
+        "RunTime = " << this->runTime << "\n" << 
+        "initDuration = " << this->initDuration << "\n" << 
+        "forcingDuration = " << this->forcingDuration << "\n" <<
+        "runPhysicsDuration = " << this->runPhysicsDuration << "\n" << 
+        "writeOutputDuration = " << this->writeOutputDuration << "\n\n"; 
     }
 
 
