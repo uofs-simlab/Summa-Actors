@@ -15,10 +15,7 @@ USE globalData,only:noNewFiles
 USE globalData,only:newFileEveryOct1
 USE globalData,only:chunkSize               ! size of chunks to write
 USE globalData,only:outputPrecision         ! data structure for output precision
-
 USE globalData,only:integerMissing            ! missing integer
-
-
 ! metadata
 USE globalData,only:time_meta                 ! metadata on the model time
 USE globalData,only:forc_meta                 ! metadata on the model forcing data
@@ -29,9 +26,6 @@ USE globalData,only:indx_meta                 ! metadata on the model index vari
 USE globalData,only:bvar_meta                 ! metadata on basin-average variables
 USE globalData,only:bpar_meta                 ! basin parameter metadata structure
 USE globalData,only:mpar_meta                 ! local parameter metadata structure
-
-
-
 ! child metadata for stats
 USE globalData,only:statForc_meta             ! child metadata for stats
 USE globalData,only:statProg_meta             ! child metadata for stats
@@ -39,7 +33,6 @@ USE globalData,only:statDiag_meta             ! child metadata for stats
 USE globalData,only:statFlux_meta             ! child metadata for stats
 USE globalData,only:statIndx_meta             ! child metadata for stats
 USE globalData,only:statBvar_meta             ! child metadata for stats
-
 ! index of the child data structure
 USE globalData,only:forcChild_map             ! index of the child data structure: stats forc
 USE globalData,only:progChild_map             ! index of the child data structure: stats prog
@@ -47,9 +40,7 @@ USE globalData,only:diagChild_map             ! index of the child data structur
 USE globalData,only:fluxChild_map             ! index of the child data structure: stats flux
 USE globalData,only:indxChild_map             ! index of the child data structure: stats indx
 USE globalData,only:bvarChild_map             ! index of the child data structure: stats bvar
-
 USE globalData,only:outFreq                   ! output frequencies
-
 ! named variables
 USE var_lookup,only:maxvarFreq                ! maximum number of output files
 USE var_lookup,only:iLookTIME                 ! named variables for time data structure
@@ -57,7 +48,6 @@ USE var_lookup,only:iLookDIAG                 ! named variables for local column
 USE var_lookup,only:iLookPROG                 ! named variables for local column model prognostic variables
 USE var_lookup,only:iLookINDEX                ! named variables for local column index variables
 USE var_lookup,only:iLookFreq                 ! named variables for the frequency structure
-
 USE get_ixname_module,only:get_freqName       ! get name of frequency from frequency index
 
 
@@ -162,7 +152,7 @@ subroutine summaActors_writeToOutputStruc(&
   type(flagVec),intent(inout)              :: finalizeStats   ! flags to finalize statistics
   type(var_i),intent(inout)                :: finshTime       ! end time for the model simulation
   type(var_i),intent(inout)                :: oldTime         !
-  integer(i4b),intent(in)               :: outputStep      ! index into the outputStructure
+  integer(i4b),intent(in)                  :: outputStep      ! index into the outputStructure
   integer(i4b),intent(inout)               :: forcingStep     ! index of current time step in current forcing file 
   ! run time variables
   integer(i4b),intent(out)                 :: err

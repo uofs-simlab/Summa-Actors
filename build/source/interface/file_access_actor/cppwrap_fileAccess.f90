@@ -185,14 +185,14 @@ subroutine FileAccessActor_ReadForcing(handle_forcFileInfo, currentFile, stepsIn
 end subroutine FileAccessActor_ReadForcing
 
 subroutine FileAccessActor_WriteOutput(&
-                                handle_ncid,      &
-                                outputFileExists, &
+                                handle_ncid,      & ! ncid of the output file
+                                outputFileExists, & ! flag to check if the output file exsists
                                 nSteps,           & ! number of steps to write
-                                startGRU,         &
-                                numGRU,           &
-                                hruFileInit,      &
-                                indxGRU,          &
-                                indxHRU,          &
+                                startGRU,         & ! startGRU for the entire job (for file creation)
+                                numGRU,           & ! numGRUs for the entire job (for file creation)
+                                hruFileInit,      & ! flag to check if specific hru params have been written
+                                indxGRU,          & ! index of GRU we are currently writing for
+                                indxHRU,          & ! index of HRU we are currently writing for
                                 err) bind(C, name="FileAccessActor_WriteOutput")
   USE globalData,only:fileout
   USE summaActors_FileManager,only:OUTPUT_PATH,OUTPUT_PREFIX         ! define output file
@@ -216,18 +216,19 @@ subroutine FileAccessActor_WriteOutput(&
   USE netcdf
 
   implicit none
-  type(c_ptr),intent(in), value        :: handle_ncid
-  logical(c_bool),intent(inout)        :: outputFileExists
-  integer(c_int),intent(in)            :: nSteps
-  integer(c_int),intent(in)            :: startGRU
-  integer(c_int),intent(in)            :: numGRU
-  logical(c_bool),intent(inout)        :: hruFileInit
-  integer(c_int),intent(in)            :: indxGRU
-  integer(c_int),intent(in)            :: indxHRU
-  integer(c_int),intent(inout)         :: err
+  ! dummy variables
+  type(c_ptr),intent(in), value        :: handle_ncid       ! ncid of the output file
+  logical(c_bool),intent(inout)        :: outputFileExists  ! flag to check if the output file exsists
+  integer(c_int),intent(in)            :: nSteps            ! number of steps to write
+  integer(c_int),intent(in)            :: startGRU          ! startGRU for the entire job (for file creation)
+  integer(c_int),intent(in)            :: numGRU            ! numGRUs for the entire job (for file creation)
+  logical(c_bool),intent(inout)        :: hruFileInit       ! flag to check if specific hru params have been written
+  integer(c_int),intent(in)            :: indxGRU           ! index of GRU we are currently writing for
+  integer(c_int),intent(in)            :: indxHRU           ! index of HRU we are currently writing for
+  integer(c_int),intent(inout)         :: err               ! Error code
+  
+  ! local variables 
   type(var_i),pointer                  :: ncid
-
-  ! local variables
   character(LEN=256)                   :: startGRUString
   character(LEN=256)                   :: numGRUString
   character(LEN=256)                   :: message
@@ -237,8 +238,9 @@ subroutine FileAccessActor_WriteOutput(&
   integer(i4b)                         :: iStep
   integer(i4b)                         :: iFreq
 
-
   call c_f_pointer(handle_ncid, ncid)
+
+
   ! check if we have created the file, if no create it
   if(.not.outputFileExists)then
     ! allocate space for the output file ID array
@@ -262,7 +264,6 @@ subroutine FileAccessActor_WriteOutput(&
     write(unit=numGRUString,fmt=*)  numGRU
     fileout = trim(OUTPUT_PATH)//trim(OUTPUT_PREFIX)//"GRU"&
                 //trim(adjustl(startGRUString))//"-"//trim(adjustl(numGRUString))
-
 
     ! def_output call will need to change to allow for numHRUs in future
     ! NA_Domain numGRU = numHRU, this is why we pass numGRU twice
