@@ -727,6 +727,7 @@ contains
 
    ! compute the total vegetation area index (leaf plus stem)
    VAI        = scalarLAI + scalarSAI  ! vegetation area index
+
    exposedVAI = scalarExposedLAI + scalarExposedSAI  !  exposed vegetation area index
 
    ! compute emissivity of the canopy (-)
@@ -795,12 +796,6 @@ contains
     dCanopyWetFraction_dT   = 0._dp  ! derivative in wetted fraction w.r.t. canopy temperature (K-1)
    end if
    !write(*,'(a,1x,L1,1x,f25.15,1x))') 'computeVegFlux, scalarCanopyWetFraction = ', computeVegFlux, scalarCanopyWetFraction
-   !print*, 'dCanopyWetFraction_dWat = ', dCanopyWetFraction_dWat
-   !print*, 'dCanopyWetFraction_dT   = ', dCanopyWetFraction_dT
-   !print*, 'canopyLiqTrial = ', canopyLiqTrial
-   !print*, 'canopyIceTrial = ', canopyIceTrial
-   !print*, 'scalarCanopyLiqMax = ', scalarCanopyLiqMax
-   !print*, 'scalarCanopyIceMax = ', scalarCanopyIceMax
 
    ! *******************************************************************************************************************************************************************
    ! *******************************************************************************************************************************************************************
@@ -1153,6 +1148,7 @@ contains
 
     ! assign scalar resistances for un-perturbed cases
     else
+
      trialLeafResistance   = scalarLeafResistance
      trialGroundResistance = scalarGroundResistance
      trialCanopyResistance = scalarCanopyResistance
@@ -1278,8 +1274,8 @@ contains
     !write(*,'(a,f25.15)') 'scalarLatHeatCanopyEvap = ', scalarLatHeatCanopyEvap
     !write(*,'(a,f25.15)') 'scalarLatHeatCanopyTrans = ', scalarLatHeatCanopyTrans
 
-    !print*, 'scalarSenHeatGround = ', scalarSenHeatGround
-    !print*, 'scalarLatHeatGround = ', scalarLatHeatGround
+    ! print*, 'scalarSenHeatGround = ', scalarSenHeatGround
+    ! print*, 'scalarLatHeatGround = ', scalarLatHeatGround
 
     !notUsed_scalarCanopyStabilityCorrection  ! stability correction for the canopy (-)
     !notUsed_scalarGroundStabilityCorrection  ! stability correction for the ground surface (-)
@@ -1427,9 +1423,9 @@ contains
     scalarGroundEvaporation = scalarLatHeatGround/LH_vap
     scalarSnowSublimation   = 0._dp  ! no sublimation from snow if no snow layers have formed
    end if
-   !print*, 'scalarSnowSublimation, scalarLatHeatGround = ', scalarSnowSublimation, scalarLatHeatGround
-
-   !print*, 'canopyWetFraction, scalarCanopyEvaporation = ', canopyWetFraction, scalarCanopyEvaporation
+  !  print*, 'nsnow = ', nsnow
+  !  print*, 'scalarSnowSublimation, scalarLatHeatGround = ', scalarSnowSublimation, scalarLatHeatGround
+  !  print*, 'canopyWetFraction, scalarCanopyEvaporation = ', canopyWetFraction, scalarCanopyEvaporation
 
    ! *******************************************************************************************************************************************************************
    ! *******************************************************************************************************************************************************************
@@ -2221,7 +2217,7 @@ contains
   windspdCanopyTop  = windspd*windConvFactor_fv
 
   ! compute the windspeed reduction
-  ! Refs: Norman et al. (Ag. Forest Met., 1995) -- citing Goudriaan (1977 manuscript "crop micrometeorology: a simulation study", Wageningen).
+  ! Refs: Norman et al. (Ag. Forest Met., 1995) -- citing Goudriaan (1977 manuscript "crop micrometeorology: a simulation study", Wageningen).  
   windReductionFactor = windReductionParam * exposedVAI**twoThirds * (heightCanopyTopAboveSnow - heightCanopyBottomAboveSnow)**oneThird / leafDimension**oneThird
 
   ! compute windspeed at the height z0Canopy+zeroPlaneDisplacement (m s-1)
@@ -2246,10 +2242,16 @@ contains
   eddyDiffusCanopyTop = max(vkc*FrictionVelocity*(heightCanopyTopAboveSnow - zeroPlaneDisplacement), mpe)
 
   ! compute the resistance between the surface and canopy air UNDER NEUTRAL CONDITIONS (s m-1)
-
+  ! print*, ""
+  ! print*, "-windReductionFactor = ", -windReductionFactor
+  ! print*, " z0Ground = ", z0Ground
+  ! print*, " heightCanopyTopAboveSnow = ", heightCanopyTopAboveSnow
+  ! print*, " zeroPlaneDisplacement = ", zeroPlaneDisplacement
+  ! print*, " heightCanopyTopAboveSnow = ", heightCanopyTopAboveSnow
+  ! print*, " eddyDiffusCanopyTop = ", eddyDiffusCanopyTop
+  ! print*, ""
   ! case 1: assume exponential profile extends from the snow depth plus surface roughness length to the displacement height plus vegetation roughness
   if(ixWindProfile==exponential .or. heightCanopyBottomAboveSnow<z0Ground+xTolerance)then
-
    ! compute the neutral ground resistance
    tmp1 = exp(-windReductionFactor* z0Ground/heightCanopyTopAboveSnow)
    tmp2 = exp(-windReductionFactor*(z0Canopy+zeroPlaneDisplacement)/heightCanopyTopAboveSnow)
@@ -2257,8 +2259,7 @@ contains
 
   ! case 2: logarithmic profile from snow depth plus roughness height to bottom of the canopy
   ! NOTE: heightCanopyBottomAboveSnow>z0Ground+xTolerance
-  else
-
+  else 
    ! compute the neutral ground resistance
    ! (first, component between heightCanopyBottomAboveSnow and z0Canopy+zeroPlaneDisplacement)
    tmp1  = exp(-windReductionFactor* heightCanopyBottomAboveSnow/heightCanopyTopAboveSnow)
@@ -2266,7 +2267,7 @@ contains
    groundResistanceNeutral = ( heightCanopyTopAboveSnow*exp(windReductionFactor) / (windReductionFactor*eddyDiffusCanopyTop) ) * (tmp1 - tmp2)
    ! (add log-below-canopy component)
    groundResistanceNeutral = groundResistanceNeutral + (1._dp/(max(0.1_dp,windspdCanopyBottom)*vkc**2._dp))*(log(heightCanopyBottomAboveSnow/z0Ground))**2._dp
-
+   
   endif  ! switch between exponential profile and log-below-canopy
 
   ! compute the stability correction for resistance from the ground to the canopy air space (-)
@@ -2797,7 +2798,6 @@ contains
  end if
  groundConductanceLH = 1._dp/(groundResistance + soilResistance)  ! NOTE: soilResistance accounts for fractional snow, and =0 when snow cover is 100%
  totalConductanceLH  = evapConductance + transConductance + groundConductanceLH + canopyConductance
-
  ! check sensible heat conductance
  if(totalConductanceSH < -tinyVal .or. groundConductanceSH < -tinyVal .or. canopyConductance < -tinyVal)then
   message=trim(message)//'negative conductance for sensible heat'
@@ -2899,7 +2899,19 @@ contains
   latHeatGround      = -latHeatSubVapGround*latentHeatConstant*groundConductanceLH*(satVP_GroundTemp*soilRelHumidity - VPair)         ! (positive downwards)
   senHeatTotal       = senHeatGround
  end if
- !write(*,'(a,10(f25.15,1x))') 'latHeatGround = ', latHeatGround
+!  print*, "-volHeatCapacitAir = ", volHeatCapacityAir
+!  print*, "groundConductanceSH = ", groundConductanceSH
+!  print*, "groundTemp = ", groundTemp
+!  print*, "canairTemp = ", canairTemp
+!  print*, "latHeatSubVapGround", -latHeatSubVapGround
+!  print*, "latentHeatConstant", latentHeatConstant
+!  print*, "groundConductanceLH", groundConductanceLH
+!  print*, "satVP_GroundTemp", satVP_GroundTemp
+!  print*, "soilRelHumidity", soilRelHumidity
+!  print*, "VP_CanopyAir", VP_CanopyAir
+
+
+!  write(*,'(a,10(f25.15,1x))') 'latHeatGround = ', latHeatGround
 
  ! compute latent heat flux from the canopy air space to the atmosphere
  ! NOTE: VP_CanopyAir is a diagnostic variable

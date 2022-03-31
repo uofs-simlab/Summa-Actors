@@ -815,7 +815,7 @@ contains
     !write(*,'(a,1x,f20.10)') 'dt = ', dt
     !write(*,'(a,1x,f20.10)') 'soilBalance0      = ', soilBalance0
     !write(*,'(a,1x,f20.10)') 'soilBalance1      = ', soilBalance1
-    !write(*,'(a,1x,f20.10)') 'vertFlux          = ', vertFlux
+    ! write(*,'(a,1x,f20.10)') 'vertFlux          = ', vertFlux
     !write(*,'(a,1x,f20.10)') 'tranSink          = ', tranSink
     !write(*,'(a,1x,f20.10)') 'baseSink          = ', baseSink
     !write(*,'(a,1x,f20.10)') 'compSink          = ', compSink

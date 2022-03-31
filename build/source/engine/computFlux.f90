@@ -521,6 +521,7 @@ contains
 
  endif  ! if computing energy fluxes throughout the snow+soil domain
 
+!  print*, "After ssdNRGFlux call ", flux_data%var(iLookFLUX%iLayerLiqFluxSoil)%dat
 
  ! *****
  ! * CALCULATE THE LIQUID FLUX THROUGH VEGETATION...
@@ -674,6 +675,9 @@ contains
                   ! output: error control
                   err,cmessage)                                ! intent(out): error control
   if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+
+!   print*, "After soil Liq call ", flux_data%var(iLookFLUX%iLayerLiqFluxSoil)%dat
+
 
   ! calculate net liquid water fluxes for each soil layer (s-1)
   do iLayer=1,nSoil

@@ -482,23 +482,23 @@ END MODULE NOAHMP_RAD_PARAMETERS
 ! ==================================================================================================
 
 MODULE NOAHMP_ROUTINES
-    use nrtype
-  USE NOAHMP_GLOBALS
-  IMPLICIT NONE
+     use nrtype
+     USE NOAHMP_GLOBALS
+     IMPLICIT NONE
 
-  public  :: noahmp_options
-  public  :: REDPRM
+     public  :: noahmp_options
+     public  :: REDPRM
 
-  public :: PHENOLOGY
-  public ::  RADIATION
-  private :: ALBEDO
-  private :: SNOW_AGE
-  private :: SNOWALB_BATS
-  private :: SNOWALB_CLASS
-  private :: GROUNDALB
-  public ::  TWOSTREAM
-  public ::  STOMATA
-  public ::  CANRES
+     public :: PHENOLOGY
+     public ::  RADIATION
+     private :: ALBEDO
+     private :: SNOW_AGE
+     private :: SNOWALB_BATS
+     private :: SNOWALB_CLASS
+     private :: GROUNDALB
+     public ::  TWOSTREAM
+     public ::  STOMATA
+     public ::  CANRES
 
 contains
 !
@@ -546,7 +546,6 @@ contains
   REAL(rkind)                                   :: WT1,WT2 !interpolation weights
   REAL(rkind)                                   :: T       !current month (1.00, ..., 12.00)
 ! --------------------------------------------------------------------------------------------------
-
   ! Interpolate monthly SAI and LAI to daily values
   IF ( DVEG == 1 .or. DVEG == 3 .or. DVEG == 4 ) THEN
 
@@ -569,46 +568,77 @@ contains
      LAI = WT1*LAIM(VEGTYP,IT1) + WT2*LAIM(VEGTYP,IT2)
      SAI = WT1*SAIM(VEGTYP,IT1) + WT2*SAIM(VEGTYP,IT2)
   ENDIF
-  
-  ! Realism check: no leaves without stems
-  IF (SAI == 0.0) LAI = 0.0 
+  IF (SAI < 0.05) SAI = 0.0  ! MB: SAI CHECK
+  IF (LAI < 0.05 .OR. SAI == 0.0) LAI = 0.0  ! MB: LAI CHECK
 
-  ! Realism check: warn about no stems for vegetated land classes
-  IF ( (SAI == 0.0) .and. ( VEGTYP /= ISWATER ) .and. ( VEGTYP /= ISBARREN ) .and. ( VEGTYP /= ISSNOW ) .and. ( VEGTYP /= ISURBAN) ) THEN
-    write(*,'(A,I3,A)') ' WARNING: module_sf_noahmplsm/PHENOLOGY: Stem Area Index (SAI) = 0.0 may be unrealistic for vegetation type ',VEGTYP,'. Continuing.'
-  ENDIF
-  
-  ! Realism check: no vegetation should exist on certain land classes
   IF ( ( VEGTYP == ISWATER ) .OR. ( VEGTYP == ISBARREN ) .OR. ( VEGTYP == ISSNOW ) .or. ( VEGTYP == ISURBAN) ) THEN
      LAI  = 0.
      SAI  = 0.
   ENDIF
+  ! Realism check: no leaves without stems
+  ! IF (SAI == 0.0) LAI = 0.0 
+
+  ! ! Realism check: warn about no stems for vegetated land classes
+  ! IF ( (SAI == 0.0) .and. ( VEGTYP /= ISWATER ) .and. ( VEGTYP /= ISBARREN ) .and. ( VEGTYP /= ISSNOW ) .and. ( VEGTYP /= ISURBAN) ) THEN
+  !   write(*,'(A,I3,A)') ' WARNING: module_sf_noahmplsm/PHENOLOGY: Stem Area Index (SAI) = 0.0 may be unrealistic for vegetation type ',VEGTYP,'. Continuing.'
+  ! ENDIF
+  
+  ! ! Realism check: no vegetation should exist on certain land classes
+  ! IF ( ( VEGTYP == ISWATER ) .OR. ( VEGTYP == ISBARREN ) .OR. ( VEGTYP == ISSNOW ) .or. ( VEGTYP == ISURBAN) ) THEN
+  !    LAI  = 0.
+  !    SAI  = 0.
+  ! ENDIF
 
 !buried by snow
+  DB = MIN( MAX(SNOWH - HVB(VEGTYP),0.), HVT(VEGTYP)-HVB(VEGTYP) )
+  FB = DB / MAX(1.E-06,HVT(VEGTYP)-HVB(VEGTYP))
+  !print*, 'HVB(VEGTYP), HVT(VEGTYP), DB, FB = ', HVB(VEGTYP), HVT(VEGTYP), DB, FB
 
-     DB = MIN( MAX(SNOWH - HVB(VEGTYP),0.), HVT(VEGTYP)-HVB(VEGTYP) )
-     FB = DB / MAX(1.E-06,HVT(VEGTYP)-HVB(VEGTYP))
-     !print*, 'HVB(VEGTYP), HVT(VEGTYP), DB, FB = ', HVB(VEGTYP), HVT(VEGTYP), DB, FB
+  IF(HVT(VEGTYP)> 0. .AND. HVT(VEGTYP) <= 0.5) THEN
+    SNOWHC = HVT(VEGTYP)*EXP(-SNOWH/0.1)
+    IF (SNOWH>SNOWHC) THEN
+     FB = 1.
+    ELSE
+     FB = SNOWH/SNOWHC
+    ENDIF
+  ENDIF
 
-     IF(HVT(VEGTYP)> 0. .AND. HVT(VEGTYP) <= 0.5) THEN
-       SNOWHC = HVT(VEGTYP)*EXP(-SNOWH/0.1)
-       IF (SNOWH>SNOWHC) THEN
-        FB = 1.
-       ELSE
-        FB = SNOWH/SNOWHC
-       ENDIF
-     ENDIF
+  ELAI =  LAI*(1.-FB)
+  ESAI =  SAI*(1.-FB)
+  IF (ESAI < 0.05) ESAI = 0.0  ! MB: ESAI CHECK
+  IF (ELAI < 0.05 .OR. ESAI == 0.0) ELAI = 0.0  ! MB: LAI CHECK
 
-     ELAI =  LAI*(1.-FB)
-     ESAI =  SAI*(1.-FB)
+  IF (TV .GT. TMIN(VEGTYP)) THEN
+      IGS = 1.
+  ELSE
+      IGS = 0.
+  ENDIF
 
-     IF (TV .GT. TMIN(VEGTYP)) THEN
-         IGS = 1.
-     ELSE
-         IGS = 0.
-     ENDIF
+  HTOP = HVT(VEGTYP)
 
-     HTOP = HVT(VEGTYP)
+    !  DB = MIN( MAX(SNOWH - HVB(VEGTYP),0.), HVT(VEGTYP)-HVB(VEGTYP) )
+    !  FB = DB / MAX(1.E-06,HVT(VEGTYP)-HVB(VEGTYP))
+    !  !print*, 'HVB(VEGTYP), HVT(VEGTYP), DB, FB = ', HVB(VEGTYP), HVT(VEGTYP), DB, FB
+
+    !  IF(HVT(VEGTYP)> 0. .AND. HVT(VEGTYP) <= 0.5) THEN
+    !    SNOWHC = HVT(VEGTYP)*EXP(-SNOWH/0.1)
+    !    IF (SNOWH>SNOWHC) THEN
+    !     FB = 1.
+    !    ELSE
+    !     FB = SNOWH/SNOWHC
+    !    ENDIF
+    !  ENDIF
+
+    !  ELAI =  LAI*(1.-FB)
+    !  ESAI =  SAI*(1.-FB)
+
+    !  IF (TV .GT. TMIN(VEGTYP)) THEN
+    !      IGS = 1.
+    !  ELSE
+    !      IGS = 0.
+    !  ENDIF
+
+    !  HTOP = HVT(VEGTYP)
 
   END SUBROUTINE PHENOLOGY
 ! ==================================================================================================

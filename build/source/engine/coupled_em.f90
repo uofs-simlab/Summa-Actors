@@ -99,7 +99,7 @@ contains
  ! ************************************************************************************************
  ! public subroutine coupled_em: run the coupled energy-mass model for one timestep
  ! ************************************************************************************************
- subroutine coupled_em(&
+subroutine coupled_em(&
                        ! model control
                        indxHRU,           & ! intent(in):    hruId
                        dt_init,           & ! intent(inout): used to initialize the size of the sub-step
@@ -763,8 +763,6 @@ contains
 
   ! check for all errors (error recovery within opSplittin)
   if(err/=0)then; err=20; message=trim(message)//trim(cmessage); return; end if
-  !print*, 'completed step'
-  !print*, 'PAUSE: '; read(*,*)
   
 
   ! process the flag for too much melt

@@ -798,9 +798,9 @@ contains
         if(err>0) return
        endif  ! (check for errors)
 
-       !print*, trim(message)//'after varSubstep: scalarSnowDrainage = ', flux_data%var(iLookFLUX%scalarSnowDrainage)%dat
-       !print*, trim(message)//'after varSubstep: iLayerLiqFluxSnow  = ', flux_data%var(iLookFLUX%iLayerLiqFluxSnow)%dat
-       !print*, trim(message)//'after varSubstep: iLayerLiqFluxSoil  = ', flux_data%var(iLookFLUX%iLayerLiqFluxSoil)%dat
+    !    print*, trim(message)//'after varSubstep: scalarSnowDrainage = ', flux_data%var(iLookFLUX%scalarSnowDrainage)%dat
+    !    print*, trim(message)//'after varSubstep: iLayerLiqFluxSnow  = ', flux_data%var(iLookFLUX%iLayerLiqFluxSnow)%dat
+    !    print*, trim(message)//'after varSubstep: iLayerLiqFluxSoil  = ', flux_data%var(iLookFLUX%iLayerLiqFluxSoil)%dat
 
        ! check
        !if(ixSolution==scalar)then
