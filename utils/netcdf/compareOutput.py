@@ -3,7 +3,7 @@ from os.path import isfile, join
 from pathlib import Path
 import xarray as xr 
 
-numHRU = 10
+numHRU = 1
 
 time = 'time'
 scalarSWE = 'scalarSWE'
@@ -28,10 +28,9 @@ varList = [time, scalarSWE, scalarCanopyWat, scalarAquiferStorage, scalarTotalSo
     scalarTotalET, scalarTotalRunoff, scalarNetRadiation]
 
 # varList = [time, scalarSWE]
-time = "day"
-filename = "out_{}.txt".format(time)
-originalPath = Path('/scratch/gwf/gwf_cmt/kck540/summaActors/netcdf/SummaActors_G000001-000010_{}.nc'.format(time))
-actorsPath = Path('/scratch/gwf/gwf_cmt/kck540/summaActors/netcdf/SummaActorsGRU1-10_{}.nc'.format(time))
+filename = "out.txt"
+originalPath = Path('/home/k13nk/SummaProject/output/originalBench/SummaOriginal_G000001-000001_timestep.nc')
+actorsPath = Path('/home/k13nk/SummaProject/output/testOutput/SummaActorsTestGRU1-1_timestep.nc')
 
 originalDataset = xr.open_dataset(originalPath)
 actorsDataset = xr.open_dataset(actorsPath)
@@ -69,8 +68,8 @@ for i in range(0, numHRU):
         diff = dataOrig[a] - dataAct[a]
         if diff < -marginOfError or diff > marginOfError:
           file.write("{}: {} = Actor and {} = original is different:   {}\n".format(a, dataAct[a], dataOrig[a], abs(dataAct[a] - dataOrig[a])))
-        else:
-          file.write("{}: {} = Actor and {} = original is the same\n".format(a, dataAct[a], dataOrig[a]))
+        # else:
+          # file.write("{}: {} = Actor and {} = original is the same\n".format(a, dataAct[a], dataOrig[a]))
 
         
 

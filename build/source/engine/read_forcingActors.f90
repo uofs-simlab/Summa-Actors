@@ -188,9 +188,6 @@ subroutine read_forcingActors(&
  ! set timing of current forcing vector (in seconds since reference day)
  ! NOTE: It is a bit silly to have time information for each HRU and GRU
  forcStruct%var(iLookFORCE%time) = (currentJulday-refJulday)*secprday
-  ! if(indxGRU == 3)then
-  !   print*, "time = ", forcStruct%var(iLookFORCE%time), "iStep = ", iStep
-  ! endif
 
  ! compute the number of days in the current year
  yearLength = 365

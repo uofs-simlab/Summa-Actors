@@ -140,6 +140,8 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
         self->quit();
     }
 
+    aout(self) << "\n\nNumber of timesteps for the simulation = " << self->state.num_steps << "\n";
+
     read_pinit_C(&err);
     
     read_vegitationTables(&err);

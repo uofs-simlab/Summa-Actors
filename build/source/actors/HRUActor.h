@@ -127,6 +127,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
                 }
 
                 self->state.timestep += 1;
+                self->state.outputStep += 1; // value to monitor how full the output structure is
                 // check if we need more forcing information
                 if (self->state.forcingStep > self->state.stepsInCurrentFFile) {
                     // aout(self) << "Asking for more forcing data" << std::endl;
@@ -141,8 +142,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
                     self->state.outputStep = 1;
                     break;
                 }
-                self->state.outputStep += 1; // value to monitor how full the output structure is
-
+               
             }
      
             self->state.end = std::chrono::high_resolution_clock::now();
