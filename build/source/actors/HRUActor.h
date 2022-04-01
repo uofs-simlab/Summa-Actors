@@ -105,6 +105,17 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
 
             while( err == 0 ) {
 
+                // Check if we need to write - call is here because when we ask for more forcing we may need to write
+                if (self->state.outputStep >= self->state.outputStrucSize) {
+                    if(debug)
+                        aout(self) << "Sending Write, outputStep = " << self->state.outputStep << std::endl;
+
+                    self->send(self->state.file_access_actor, write_output_v, 
+                        self->state.indxGRU, self->state.indxHRU, self->state.outputStep, self);
+                    self->state.outputStep = 1;
+                    break;
+                }
+
                 err = Run_HRU(self);
                 if (err != 0) {
                     // RUN FAILURE!!! Notify Parent
@@ -131,21 +142,11 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
 
                 // check if we need more forcing information
                 if (self->state.forcingStep > self->state.stepsInCurrentFFile) {
-                    // aout(self) << "Asking for more forcing data" << std::endl;
+                    if (debug)
+                        aout(self) << "Asking for more forcing data, outputStep =" << self->state.outputStep << std::endl;
                     self->send(self->state.file_access_actor, access_forcing_v, self->state.iFile + 1, self);
                     break;
                 }
-                // check if we need to write our output
-                if (self->state.outputStep >= self->state.outputStrucSize) {
-                    if(debug)
-                        aout(self) << "Sending Write, outputStep = " << self->state.outputStep << std::endl;
-
-                    self->send(self->state.file_access_actor, write_output_v, 
-                        self->state.indxGRU, self->state.indxHRU, self->state.outputStep, self);
-                    self->state.outputStep = 1;
-                    break;
-                }
-               
             }
      
             self->state.end = std::chrono::high_resolution_clock::now();
