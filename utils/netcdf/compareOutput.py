@@ -27,10 +27,9 @@ varList = [time, scalarSWE, scalarCanopyWat, scalarAquiferStorage, scalarTotalSo
     scalarSurfaceRunoff, scalarSoilBaseflow, scalarSoilDrainage, scalarAquiferBaseflow, \
     scalarTotalET, scalarTotalRunoff, scalarNetRadiation]
 
-# varList = [time, scalarSWE]
 filename = "out.txt"
-originalPath = Path('/home/k13nk/SummaProject/output/originalBench/SummaOriginal_G000001-000001_timestep.nc')
-actorsPath = Path('/home/k13nk/SummaProject/output/testOutput/SummaActorsTestGRU1-1_timestep.nc')
+originalPath = Path('/u1/kck540/output/SummaOriginal/Apr-1-2022/SummaOriginal_G000001-000001_timestep.nc')
+actorsPath = Path('/u1/kck540/output/SummaActors/Apr-1-2022/SummaActorsGRU1-1_timestep.nc')
 
 originalDataset = xr.open_dataset(originalPath)
 actorsDataset = xr.open_dataset(actorsPath)
@@ -55,7 +54,8 @@ for i in range(0, numHRU):
       dataOrig.append(data)
     for data in allHRUsActors[i][var].values:
       dataAct.append(data)
-
+    print("Original", len(dataOrig))
+    print("Actors", len(dataAct))
     marginOfError = 0
     if var == time:
       for a in range(0, len(dataAct)):

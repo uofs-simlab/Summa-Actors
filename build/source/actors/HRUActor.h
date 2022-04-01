@@ -104,8 +104,8 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
             int err = 0;
 
             while( err == 0 ) {
-                err = Run_HRU(self);
 
+                err = Run_HRU(self);
                 if (err != 0) {
                     // RUN FAILURE!!! Notify Parent
                     self->send(self->state.parent, run_failure_v, self->state.indxGRU, err);
@@ -115,8 +115,8 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
 
                 // Check if HRU is done computing
                 if (self->state.timestep >= self->state.num_steps) {
-                    // write out data
-                    // aout(self) << "Sending Final Write" << std::endl;
+                    if (debug)
+                        aout(self) << "Sending Final Write, outputStep = " << self->state.outputStep << std::endl;
                     self->send(self->state.file_access_actor, write_output_v, 
                         self->state.indxGRU, self->state.indxHRU, self->state.outputStep, self);
 
@@ -125,9 +125,10 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
                     
                     return;
                 }
-
+                // update Timing Variables
                 self->state.timestep += 1;
-                self->state.outputStep += 1; // value to monitor how full the output structure is
+                self->state.outputStep += 1;
+
                 // check if we need more forcing information
                 if (self->state.forcingStep > self->state.stepsInCurrentFFile) {
                     // aout(self) << "Asking for more forcing data" << std::endl;
@@ -136,7 +137,9 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
                 }
                 // check if we need to write our output
                 if (self->state.outputStep >= self->state.outputStrucSize) {
-                    // aout(self) << "Sending Write" << std::endl;
+                    if(debug)
+                        aout(self) << "Sending Write, outputStep = " << self->state.outputStep << std::endl;
+
                     self->send(self->state.file_access_actor, write_output_v, 
                         self->state.indxGRU, self->state.indxHRU, self->state.outputStep, self);
                     self->state.outputStep = 1;
