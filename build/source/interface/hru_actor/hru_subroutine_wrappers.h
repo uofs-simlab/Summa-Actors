@@ -76,7 +76,7 @@ extern "C" {
     void* bparStruct, void* bvarStruct, 
     // local vars
     void* statCounter, void* outputTimeStep, void* resetStats, void* finalizeStats,
-    void* finshTime, void* oldTime, int* outputStep, int* forcingStep, int* err);
+    void* finshTime, void* oldTime, int* outputStep, int* err);
 
   void DeallocateStructures(
         void* handle_forcStat, void* handle_progStat, void* handle_diagStat, void* handle_fluxStat,

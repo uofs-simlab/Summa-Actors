@@ -76,8 +76,8 @@ struct hru_state {
     double      dt_init;            // used to initialize the length of the sub-step for each HRU
     double		upArea;             // area upslope of each HRU
     int         num_steps = 0;      // number of time steps
-    int         forcingStep = 1;    // index of current time step in current forcing file
-    int         iFile = 1;          // index of current forcing file from forcing file list
+    int         forcingStep;    // index of current time step in current forcing file
+    int         iFile;          // index of current forcing file from forcing file list
     int         dt_init_factor = 1; // factor of dt_init (coupled_em)
     bool        printOutput;
     int         outputFrequency;
@@ -124,6 +124,8 @@ void Initialize_HRU(stateful_actor<hru_state>* self);
  Function runs all of the hru time_steps
  */
 int Run_HRU(stateful_actor<hru_state>* self);
+
+bool check_HRU(stateful_actor<hru_state>* self, int err);
 
 void initalizeTimeVars(stateful_actor<hru_state>* self);
 

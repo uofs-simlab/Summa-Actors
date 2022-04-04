@@ -5,6 +5,9 @@
 
 using namespace caf;
 void initalizeFileAccessActor(stateful_actor<file_access_state>* self);
+int writeOutput(stateful_actor<file_access_state>* self, int indxGRU, int indxHRU, int numStepsToWrite);
+int readForcing(stateful_actor<file_access_state>* self, int currentFile);
+
 
 behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU, int numGRU, 
     int outputStrucSize, actor parent) {
@@ -22,61 +25,35 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
         },
 
         [=](access_forcing, int currentFile, caf::actor refToRespondTo) {
-            // aout(self) << "Received Current FIle = " << currentFile << std::endl;
-            if (currentFile <= self->state.numFiles) {
-                if(self->state.forcFileList[currentFile - 1].isFileLoaded()) { // C++ starts at 0 Fortran starts at 1
-                    // aout(self) << "ForcingFile Already Loaded \n";
-                    self->send(refToRespondTo, run_hru_v, 
-                        self->state.forcFileList[currentFile - 1].getNumSteps());
-
-                } else {
-                    self->state.readStart = std::chrono::high_resolution_clock::now();
-                    
-                    // Load the file
-                    FileAccessActor_ReadForcing(self->state.handle_forcFileInfo, &currentFile,
-                        &self->state.stepsInCurrentFile, &self->state.startGRU, 
-                        &self->state.numGRU, &self->state.err);
-                    if (self->state.err != 0) {
-                        aout(self) << "ERROR: Reading Forcing" << std::endl;
-                    }
-                    self->state.filesLoaded += 1;
-                    self->state.forcFileList[currentFile - 1].updateNumSteps(self->state.stepsInCurrentFile);
-
-                    self->state.readEnd = std::chrono::high_resolution_clock::now();
-                    self->state.readDuration += calculateTime(self->state.readStart, self->state.readEnd);
-                    // Check if we have loaded all forcing files
-                    if(self->state.filesLoaded <= self->state.numFiles) {
-                        self->send(self, access_forcing_internal_v, currentFile + 1);
-                    }
-
-                    self->send(refToRespondTo, run_hru_v, 
-                        self->state.forcFileList[currentFile - 1].getNumSteps());
-                }
+            int err;
+            // Check if this file is greater than what we expect
+            if (currentFile > self->state.numFiles) {
+                aout(self) << "\nERROR: FILE_ACCESS_ACTOR - Current File is Larger than the Number of Files\n";
             } else {
-                aout(self) << currentFile << "is larger than expected" << std::endl;
+
+                err = readForcing(self, currentFile);
+                if (err != 0) 
+                    aout(self) << "\nERROR: FILE_ACCESS_ACTOR - READING_FORCING FAILED\n";
+                
             }
-            
+
+            // Check if we have loaded all forcing files, if no read more data
+            if(self->state.filesLoaded <= self->state.numFiles) {
+                self->send(self, access_forcing_internal_v, currentFile + 1);
+            }
+
+            // Respond to HRU
+            self->send(refToRespondTo, run_hru_v, 
+                self->state.forcFileList[currentFile - 1].getNumSteps());
+
         },
 
         [=](access_forcing_internal, int currentFile) {
+
             if (self->state.filesLoaded <= self->state.numFiles &&
                 currentFile <= self->state.numFiles) {
-                // aout(self) << "Loading in background, File:" << currentFile << "\n";
-                if (self->state.forcFileList[currentFile - 1].isFileLoaded()) {
-                    aout(self) << "File Loaded when shouldn't be \n";
-                }
-                self->state.readStart = std::chrono::high_resolution_clock::now();
-                FileAccessActor_ReadForcing(self->state.handle_forcFileInfo, &currentFile,
-                    &self->state.stepsInCurrentFile, &self->state.startGRU, 
-                    &self->state.numGRU, &self->state.err);
-                if (self->state.err != 0) {
-                    aout(self) << "ERROR: Reading Forcing" << std::endl;
-                }
-                self->state.filesLoaded += 1;
-                self->state.forcFileList[currentFile - 1].updateNumSteps(self->state.stepsInCurrentFile);
                 
-                self->state.readEnd = std::chrono::high_resolution_clock::now();
-                self->state.readDuration += calculateTime(self->state.readStart, self->state.readEnd);
+                readForcing(self, currentFile);
                 
                 self->send(self, access_forcing_internal_v, currentFile + 1);
             } else {
@@ -88,19 +65,33 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
 
         [=](write_output, int indxGRU, int indxHRU, int numStepsToWrite,
             caf::actor refToRespondTo) {
-            int err = 0;
-            bool hruInit = self->state.outputFileInitHRU[indxGRU - 1];
-            self->state.writeStart = std::chrono::high_resolution_clock::now();
-            FileAccessActor_WriteOutput(self->state.handle_ncid, &self->state.outputFileExists, 
-                &numStepsToWrite, &self->state.startGRU, &self->state.numGRU, 
-                &hruInit, &indxGRU, &indxHRU, &err);
+            int err;
+            
+            err = writeOutput(self, indxGRU, indxHRU, numStepsToWrite);
             if (err != 0) {
-                aout(self) << "ERROR: Writing Output" << std::endl;
+                aout(self) << "FILE_ACCESS_ACTOR - ERROR Writing Output \n";
+            } else {
+                self->send(refToRespondTo, done_write_v);
             }
-            self->state.outputFileInitHRU[indxGRU - 1] = true; //
-            self->state.writeEnd = std::chrono::high_resolution_clock::now();
-            self->state.writeDuration += calculateTime(self->state.writeStart, self->state.writeEnd);
-            self->send(refToRespondTo, done_write_v);
+
+
+        },
+
+        [=](read_and_write, int indxGRU, int indxHRU, int numStepsToWrite, int currentFile, 
+            caf::actor refToRespondTo) {
+            int err;
+
+            err = writeOutput(self, indxGRU, indxHRU, numStepsToWrite);
+            if (err != 0)
+                aout(self) << "FILE_ACCESS_ACTOR - ERROR Writing Output \n";
+
+            err = readForcing(self, currentFile);
+            if (err != 0)
+                aout(self) << "\nERROR: FILE_ACCESS_ACTOR - READING_FORCING FAILED\n";
+
+            // Respond to HRU
+            self->send(refToRespondTo, run_hru_v, 
+                self->state.forcFileList[currentFile - 1].getNumSteps());
         },
 
 
@@ -160,6 +151,55 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
     }
 }
 
+int writeOutput(stateful_actor<file_access_state>* self, int indxGRU, int indxHRU, 
+    int numStepsToWrite) {
 
+    int err = 0;
+    bool hruInit = self->state.outputFileInitHRU[indxGRU - 1];
+    self->state.writeStart = std::chrono::high_resolution_clock::now();
+    FileAccessActor_WriteOutput(self->state.handle_ncid, &self->state.outputFileExists, 
+        &numStepsToWrite, &self->state.startGRU, &self->state.numGRU, 
+        &hruInit, &indxGRU, &indxHRU, &err);
+    self->state.outputFileInitHRU[indxGRU - 1] = true;
+    self->state.writeEnd = std::chrono::high_resolution_clock::now();
+    self->state.writeDuration += calculateTime(self->state.writeStart, self->state.writeEnd);
 
+    return err;
+
+}
+
+int readForcing(stateful_actor<file_access_state>* self, int currentFile) {
+    // Check if we have already loaded this file
+    if(self->state.forcFileList[currentFile -1].isFileLoaded()) {
+        if (debug)
+            aout(self) << "ForcingFile Already Loaded \n";
+        return 0;
+    
+    } else {
+        
+        // File Needs to be loaded
+        self->state.readStart = std::chrono::high_resolution_clock::now();
+                    
+        // Load the file
+        FileAccessActor_ReadForcing(self->state.handle_forcFileInfo, &currentFile,
+            &self->state.stepsInCurrentFile, &self->state.startGRU, 
+            &self->state.numGRU, &self->state.err);
+        
+        if (self->state.err != 0) {
+            if (debug)
+                aout(self) << "ERROR: FileAccessActor_ReadForcing\n" << 
+                "currentFile = " << currentFile << "\n" << "number of steps = " 
+                << self->state.stepsInCurrentFile << "\n";
+            return -1;
+        } else {
+            self->state.filesLoaded += 1;
+            self->state.forcFileList[currentFile - 1].updateNumSteps(self->state.stepsInCurrentFile);
+
+            self->state.readEnd = std::chrono::high_resolution_clock::now();
+            self->state.readDuration += calculateTime(self->state.readStart, self->state.readEnd);
+            return 0;
+        }
+    }
+
+}
 #endif

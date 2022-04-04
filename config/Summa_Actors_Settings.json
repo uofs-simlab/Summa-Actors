@@ -5,13 +5,13 @@
     },
     
     "JobActor": {
-        "FileManagerPath": ,
+        "FileManagerPath": "",
         "outputCSV": false,
-        "csvPath": 
+        "csvPath": ""
     },
 
     "HRUActor": {
         "printOutput": true,
-        "outputFrequency": 1000
+        "outputFrequency": 100000
     }
 }

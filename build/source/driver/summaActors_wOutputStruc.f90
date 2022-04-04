@@ -89,7 +89,6 @@ subroutine summaActors_writeToOutputStruc(&
                             finshTime,          & ! x%var(:)    -- end time for the model simulation
                             oldTime,            & ! x%var(:)    -- time for the previous model time step
                             outputStep,         & ! index into the output Struc
-                            forcingStep,        & ! index of current time step in current forcing file
                             ! run time variables
                             err, message)
   USE nrtype
@@ -153,7 +152,6 @@ subroutine summaActors_writeToOutputStruc(&
   type(var_i),intent(inout)                :: finshTime       ! end time for the model simulation
   type(var_i),intent(inout)                :: oldTime         !
   integer(i4b),intent(in)                  :: outputStep      ! index into the outputStructure
-  integer(i4b),intent(inout)               :: forcingStep     ! index of current time step in current forcing file 
   ! run time variables
   integer(i4b),intent(out)                 :: err
   character(*),intent(out)                 :: message 
@@ -177,7 +175,8 @@ subroutine summaActors_writeToOutputStruc(&
   err=0; message='summa_manageOutputFiles/'
   ! identify the start of the writing
   call date_and_time(values=startWrite)
-
+  ! print*, "HRU WRite timestep = ", modelTimeStep
+  ! print*, "OutputStep = ", outputStep
   ! ! initialize the statistics flags
   if(modelTimeStep==1)then
 
@@ -316,9 +315,6 @@ subroutine summaActors_writeToOutputStruc(&
   statCounter%var(iFreq) = statCounter%var(iFreq)+1
   if(finalizeStats%dat(iFreq)) outputTimeStep%var(iFreq) = outputTimeStep%var(iFreq) + 1
  end do
-
- ! increment forcingStep
- forcingStep=forcingStep+1
 
  ! if finalized stats, then reset stats on the next time step
  resetStats%dat(:) = finalizeStats%dat(:)

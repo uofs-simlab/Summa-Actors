@@ -570,7 +570,6 @@ subroutine WriteOutput(&
   handle_finshTime,       & ! end time for the model simulation
   handle_oldTime,         & ! time for the previous model time step
   outputStep,             &
-  forcingStep,            & 
   ! run time variables
   err) bind(C, name='WriteOutput')
 
@@ -610,7 +609,6 @@ subroutine WriteOutput(&
   type(c_ptr), intent(in), value    :: handle_finshTime    ! end time for the model simulation
   type(c_ptr), intent(in), value    :: handle_oldTime      ! time for the previous model time step
   integer(c_int), intent(in)        :: outputStep
-  integer(c_int), intent(inout)     :: forcingStep         ! index of current time step in current forcing file
   ! run time variables
   integer(c_int)                    :: err
 
@@ -701,7 +699,6 @@ subroutine WriteOutput(&
     finshTime,          & ! x%var(:)     -- end time for the model simulation 
     oldTime,            & ! x%var(:)     -- time for the previous model time step
     outputStep,         &
-    forcingStep,        & ! index of current time step in current forcing file
     ! run time variables
     err, message)
 
