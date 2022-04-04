@@ -38,7 +38,7 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
             }
 
             // Check if we have loaded all forcing files, if no read more data
-            if(self->state.filesLoaded <= self->state.numFiles) {
+            if(self->state.filesLoaded != self->state.numFiles) {
                 self->send(self, access_forcing_internal_v, currentFile + 1);
             }
 
@@ -57,7 +57,8 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
                 
                 self->send(self, access_forcing_internal_v, currentFile + 1);
             } else {
-                aout(self) << "All Forcing Files Loaded \n";
+                if (debug) 
+                    aout(self) << "All Forcing Files Loaded \n";
             }
 
             
