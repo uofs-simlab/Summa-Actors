@@ -151,12 +151,12 @@ contains
     message="writeParm/"
   end do  ! looping through local column model parameters
 
-  end subroutine writeParm
+end subroutine writeParm
 
   ! **************************************************************************************
   ! public subroutine writeData: write model time-dependent data
   ! **************************************************************************************
-  subroutine writeData(indxGRU,indxHRU,iStep,structName,finalizeStats, &
+subroutine writeData(indxGRU,indxHRU,iStep,structName,finalizeStats, &
                       maxLayers,meta,stat,dat,map,indx,err,message)
   USE data_types,only:var_info                       ! metadata type
   USE var_lookup,only:maxVarStat                     ! index into stats structure
@@ -307,12 +307,12 @@ contains
 
     end do ! iVar
   end do ! iFreq
- end subroutine writeData
+end subroutine writeData
 
- ! **************************************************************************************
- ! public subroutine writeBasin: write basin-average variables
- ! **************************************************************************************
- subroutine writeBasin(indxGRU,indxHRU,iStep,finalizeStats,&
+! **************************************************************************************
+! public subroutine writeBasin: write basin-average variables
+! **************************************************************************************
+subroutine writeBasin(indxGRU,indxHRU,iStep,finalizeStats,&
                       outputTimestep,meta,stat,dat,map,err,message)
  USE data_types,only:var_info                       ! metadata type
  USE var_lookup,only:maxVarStat                     ! index into stats structure
@@ -381,12 +381,12 @@ contains
   end do ! iVar
  end do ! iFreq
 
- end subroutine writeBasin
+end subroutine writeBasin
 
  ! **************************************************************************************
  ! public subroutine writeTime: write current time to all files
  ! **************************************************************************************
- subroutine writeTime(indxGRU,indxHRU,iStep,finalizeStats,meta,dat,err,message)
+subroutine writeTime(indxGRU,indxHRU,iStep,finalizeStats,meta,dat,err,message)
  USE data_types,only:var_info                       ! metadata type
  USE var_lookup,only:iLookStat                      ! index into stat structure
  implicit none
@@ -426,12 +426,12 @@ contains
   end do ! iVar
  end do ! iFreq
 
- end subroutine writeTime
+end subroutine writeTime
 
- ! *********************************************************************************************************
- ! public subroutine printRestartFile: print a re-start file
- ! *********************************************************************************************************
- subroutine writeRestart(filename,         & ! intent(in): name of restart file
+! *********************************************************************************************************
+! public subroutine printRestartFile: print a re-start file
+! *********************************************************************************************************
+subroutine writeRestart(filename,         & ! intent(in): name of restart file
                          nGRU,             & ! intent(in): number of GRUs
                          nHRU,             & ! intent(in): number of HRUs
                          prog_meta,        & ! intent(in): prognostics metadata
@@ -699,6 +699,6 @@ contains
  ! cleanup
  deallocate(ncVarID)
 
- end subroutine writeRestart
+end subroutine writeRestart
 
 end module outputStrucWrite_module

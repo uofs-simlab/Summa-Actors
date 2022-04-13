@@ -12,6 +12,7 @@ public::Restart
 public::Forcing
 public::RunPhysics
 public::DeallocateStructures
+public::Write_Param_C
 
 contains
 
@@ -190,7 +191,6 @@ subroutine Initialize(&
   endif
 
 end subroutine Initialize  
-
 
 ! **********************************************************************************************************
 ! public subroutine SetupParam: initializes parameter data structures (e.g. vegetation and soil parameters).
@@ -975,5 +975,68 @@ subroutine DeallocateData(metaStruct, dataStruct, err)
 
 end subroutine DeallocateData
 
+! **********************************************************************************************************
+! public Subroutine write_param_c: called from C to call the fortran subroutine
+! **********************************************************************************************************
+subroutine Write_Param_C(&
+      indxGRU,           &
+      indxHRU,           &
+      handle_attrStruct, &
+      handle_typeStruct, &
+      handle_mparStruct, &
+      handle_bparStruct, &
+      err) bind(C, name="Write_Param_C")
+
+  USE outputStrucWrite_module,only:writeParm ! module to write model parameters
+  USE globalData,only:attr_meta,type_meta,mpar_meta,bpar_meta ! meta structures needed for writeParam Call
+  USE globalData,only:structInfo
+  USE globalData,only:gru_struc
+  implicit none
+
+  ! Dummy Variables
+  integer(c_int), intent(in)      :: indxGRU
+  integer(c_int), intent(in)      :: indxHRU
+  type(c_ptr), intent(in), value  :: handle_attrStruct
+  type(c_ptr), intent(in), value  :: handle_typeStruct
+  type(c_ptr), intent(in), value  :: handle_mparStruct
+  type(c_ptr), intent(in), value  :: handle_bparStruct
+  integer(c_int)                  :: err
+
+  ! local variables
+  type(var_d),      pointer       :: attrStruct
+  type(var_i),      pointer       :: typeStruct
+  type(var_dlength),pointer       :: mparStruct
+  type(var_d),      pointer       :: bparStruct
+
+  integer(i4b)                    :: iStruct
+  character(len=256)              :: message
+  character(len=256)              :: cmessage
+
+  call c_f_pointer(handle_attrStruct, attrStruct)
+  call c_f_pointer(handle_typeStruct, typeStruct)
+  call c_f_pointer(handle_mparStruct, mparStruct)
+  call c_f_pointer(handle_bparStruct, bparStruct)
+
+  ! Error Control
+  err=0; message="cppwrap_Write_Param_C"
+  do iStruct=1,size(structInfo)
+    select case(trim(structInfo(iStruct)%structName))
+      case('attr'); call writeParm(indxGRU,indxHRU,gru_struc(indxGRU)%hruInfo(indxHRU)%hru_ix, &
+                                  attrStruct,attr_meta,'attr',err,cmessage)
+      case('type'); call writeParm(indxGRU,indxHRU,gru_struc(indxGRU)%hruInfo(indxHRU)%hru_ix, &
+                                  typeStruct,type_meta,'type',err,cmessage)
+      case('mpar'); call writeParm(indxGRU,indxHRU,gru_struc(indxGRU)%hruInfo(indxHRU)%hru_ix, &
+                                  mparStruct,mpar_meta,'mpar',err,cmessage)
+    end select
+    if(err/=0)then; message=trim(message)//trim(cmessage)//'['//trim(structInfo(iStruct)%structName)//']'; return; endif
+  end do  ! (looping through structures)
+
+  ! write GRU parameters
+  call writeParm(indxGRU,indxHRU,integerMissing,bparStruct,bpar_meta,'bpar',err,cmessage)
+  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif 
+
+  
+
+end subroutine
 
 end module cppwrap_hru

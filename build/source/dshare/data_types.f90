@@ -440,9 +440,6 @@ type(gru_hru_time_doubleVec),allocatable          :: fluxStruct(:)              
 type(gru_double),allocatable                      :: bparStruct(:)                 ! x%gru(:)%var(:)                   -- basin-average parameters, DOES NOT CHANGE OVER TIMESTEPS
 type(gru_hru_time_doubleVec),allocatable          :: bvarStruct(:)                 ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- basin-average variables
 
-! define the ancillary data structures
-type(gru_hru_time_double),allocatable             :: dparStruct(:)                 ! x%gru(:)%hru(:)%var(:)%tim(:)     -- default model parameters
-
 ! finalize stats structure
 type(gru_hru_time_flagVec),allocatable            :: finalizeStats(:)              ! x%gru(:)%hru(:)%tim(:)%dat -- flags on when to write to file
 

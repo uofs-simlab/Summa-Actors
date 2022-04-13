@@ -95,9 +95,6 @@ subroutine initalizeOutput(forcFileInfo, maxSteps, nGRU, err)
   allocate(outputStructure(1)%bvarStruct(1))
   allocate(outputStructure(1)%bparStruct(1)%gru(nGRU))
   allocate(outputStructure(1)%bvarStruct(1)%gru(nGRU))
-  ! Ancillary Data Structures
-  allocate(outputStructure(1)%dparStruct(1))
-  allocate(outputStructure(1)%dparStruct(1)%gru(nGRU)) 
   ! Finalize Stats for writing
   allocate(outputStructure(1)%finalizeStats(1))
   allocate(outputStructure(1)%finalizeStats(1)%gru(nGRU))
@@ -170,16 +167,6 @@ subroutine initalizeOutput(forcFileInfo, maxSteps, nGRU, err)
         return
       endif
     end do  ! looping through data structures
-
-    ! allocate space for default model parameters
-    ! NOTE: This is done here, rather than in the loop above, because dpar is not one of the "standard" data structures
-    allocate(outputStructure(1)%dparStruct(1)%gru(iGRU)%hru(1))
-    call alloc_outputStruc(mpar_meta,outputStructure(1)%dparStruct(1)%gru(iGRU)%hru(1), &
-                    maxSteps,nSnow,nSoil,err,message);    ! default model parameters
-    if(err/=0)then
-      message=trim(message)//' [problem allocating dparStruct]'
-      return
-    endif
 
     do iStruct=1,size(structInfo)
 

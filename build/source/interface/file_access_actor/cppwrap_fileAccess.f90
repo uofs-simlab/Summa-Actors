@@ -14,6 +14,7 @@ module cppwrap_fileAccess
   public::mDecisions_C
   public::Init_OutputStruct
   public::FileAccessActor_ReadForcing
+  public::Create_Output_File
   public::FileAccessActor_WriteOutput
   
   contains
@@ -184,13 +185,118 @@ subroutine FileAccessActor_ReadForcing(handle_forcFileInfo, currentFile, stepsIn
 
 end subroutine FileAccessActor_ReadForcing
 
+subroutine Create_Output_File(&
+            handle_ncid,      & ! ncid of the output file
+            numGRU,           & ! number of GRUs assigned to this job
+            startGRU,         & ! Starting GRU indx for the job
+            err) bind(C, name="Create_Output_File")
+  USE globalData,only:fileout
+  USE summaActors_FileManager,only:OUTPUT_PATH,OUTPUT_PREFIX ! define output file
+  USE def_output_module,only:def_output                      ! module to define model output
+  USE globalData,only:gru_struc
+  USE var_lookup,only:maxVarFreq                             ! number of available output frequencies
+  USE globalData,only:outputTimeStep
+  USE globalData,only:finalizeStats
+  USE var_lookup,only:iLookFreq                              ! named variables for the frequency structure
+
+  
+  implicit none
+  type(c_ptr),intent(in), value        :: handle_ncid       ! ncid of the output file
+  integer(c_int),intent(in)            :: numGRU            ! numGRUs for the entire job (for file creation)
+  integer(c_int),intent(in)            :: startGRU          ! startGRU for the entire job (for file creation)
+  integer(c_int),intent(inout)         :: err               ! Error code
+
+  ! local variables
+  type(var_i),pointer                  :: ncid              ! ncid of the output file
+  character(LEN=256)                   :: startGRUString    ! String Variable to convert startGRU
+  character(LEN=256)                   :: numGRUString      ! String Varaible to convert numGRU
+  character(LEN=256)                   :: message
+  character(LEN=256)                   :: cmessage
+  integer(i4b)                         :: iGRU
+  integer(i4b)                         :: iStruct
+  integer(i4b)                         :: iStep
+  integer(i4b)                         :: iFreq
+
+  call c_f_pointer(handle_ncid, ncid)
+
+  ! allocate space for the output file ID array
+  allocate(ncid%var(maxVarFreq))
+  ncid%var(:) = integerMissing
+
+  ! initialize finalizeStats for testing purposes
+  allocate(outputTimeStep(numGRU))
+  do iGRU = 1, numGRU
+    allocate(outputTimeStep(iGRU)%dat(maxVarFreq))
+    outputTimeStep(iGRU)%dat(:) = 1
+  end do 
+
+  finalizeStats(:) = .false.
+  finalizeStats(iLookFreq%timestep) = .true.
+  ! initialize number of hru and gru in global data
+  nGRUrun = numGRU
+  nHRUrun = numGRU
+
+  write(unit=startGRUString,fmt=*)startGRU
+  write(unit=numGRUString,fmt=*)  numGRU
+  fileout = trim(OUTPUT_PATH)//trim(OUTPUT_PREFIX)//"GRU"&
+              //trim(adjustl(startGRUString))//"-"//trim(adjustl(numGRUString))
+
+  ! def_output call will need to change to allow for numHRUs in future
+  ! NA_Domain numGRU = numHRU, this is why we pass numGRU twice
+  call def_output("summaVersion","buildTime","gitBranch","gitHash",numGRU,numGRU,&
+    gru_struc(1)%hruInfo(1)%nSoil,fileout,ncid,err,cmessage)
+    print*, "Creating Output File "//trim(fileout)
+end subroutine Create_Output_File
+
+subroutine Write_HRU_Param(&
+        handle_ncid,       &
+        indxGRU,           &
+        indxHRU,           &
+        err) bind(C, name="Write_HRU_Param")
+  
+  USE globalData,only:attr_meta,type_meta,mpar_meta,bpar_meta ! meta structures
+  USE globalData,only:gru_struc
+  USE globalData,only:outputStructure
+  USE writeOutput_module,only:writeParm                              
+
+  implicit none
+  ! dummy variables
+  type(c_ptr),   intent(in), value  :: handle_ncid ! ncid of the output file
+  integer(c_int),intent(in)         :: indxGRU     ! index of GRU in outputStructure
+  integer(c_int),intent(in)         :: indxHRU     ! index of HRU in outputStructure
+  integer(c_int),intent(inout)      :: err         ! err value for error control
+
+  ! local variables
+  type(var_i),pointer               :: ncid
+  integer(i4b)                      :: iStruct
+  character(LEN=256)                :: cmessage
+  character(LEN=256)                :: message
+
+  call c_f_pointer(handle_ncid, ncid)
+  
+  do iStruct=1,size(structInfo)
+    select case(trim(structInfo(iStruct)%structName))
+      case('attr'); call writeParm(ncid,gru_struc(indxGRU)%hruInfo(indxHRU)%hru_ix, &
+        outputStructure(1)%attrStruct(1)%gru(indxGRU)%hru(indxHRU),attr_meta,err,cmessage)
+      case('type'); call writeParm(ncid,gru_struc(indxGRU)%hruInfo(indxHRU)%hru_ix, &
+        outputStructure(1)%typeStruct(1)%gru(indxGRU)%hru(indxHRU),type_meta,err,cmessage)
+      case('mpar'); call writeParm(ncid,gru_struc(indxGRU)%hruInfo(indxHRU)%hru_ix, &
+        outputStructure(1)%mparStruct(1)%gru(indxGRU)%hru(indxHRU),mpar_meta,err,cmessage)
+    end select
+    if(err/=0)then; message=trim(message)//trim(cmessage)//'['//trim(structInfo(iStruct)%structName)//']'; return; endif
+  end do
+
+  ! write GRU parameters
+  call writeParm(ncid,indxGRU,outputStructure(1)%bparStruct(1)%gru(indxGRU),bpar_meta,err,cmessage)
+  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+
+  ! set the outputTimestep variable so it is not reset every time we need to write to a file
+  outputTimeStep(indxGRU)%dat(:) = 1
+end subroutine
+
 subroutine FileAccessActor_WriteOutput(&
                                 handle_ncid,      & ! ncid of the output file
-                                outputFileExists, & ! flag to check if the output file exsists
                                 nSteps,           & ! number of steps to write
-                                startGRU,         & ! startGRU for the entire job (for file creation)
-                                numGRU,           & ! numGRUs for the entire job (for file creation)
-                                hruFileInit,      & ! flag to check if specific hru params have been written
                                 indxGRU,          & ! index of GRU we are currently writing for
                                 indxHRU,          & ! index of HRU we are currently writing for
                                 err) bind(C, name="FileAccessActor_WriteOutput")
@@ -218,11 +324,7 @@ subroutine FileAccessActor_WriteOutput(&
   implicit none
   ! dummy variables
   type(c_ptr),intent(in), value        :: handle_ncid       ! ncid of the output file
-  logical(c_bool),intent(inout)        :: outputFileExists  ! flag to check if the output file exsists
   integer(c_int),intent(in)            :: nSteps            ! number of steps to write
-  integer(c_int),intent(in)            :: startGRU          ! startGRU for the entire job (for file creation)
-  integer(c_int),intent(in)            :: numGRU            ! numGRUs for the entire job (for file creation)
-  logical(c_bool),intent(inout)        :: hruFileInit       ! flag to check if specific hru params have been written
   integer(c_int),intent(in)            :: indxGRU           ! index of GRU we are currently writing for
   integer(c_int),intent(in)            :: indxHRU           ! index of HRU we are currently writing for
   integer(c_int),intent(inout)         :: err               ! Error code
@@ -239,63 +341,6 @@ subroutine FileAccessActor_WriteOutput(&
   integer(i4b)                         :: iFreq
 
   call c_f_pointer(handle_ncid, ncid)
-
-
-  ! check if we have created the file, if no create it
-  if(.not.outputFileExists)then
-    ! allocate space for the output file ID array
-    allocate(ncid%var(maxVarFreq))
-    ncid%var(:) = integerMissing
-
-    ! initialize finalizeStats for testing purposes
-    allocate(outputTimeStep(numGRU))
-    do iGRU = 1, numGRU
-      allocate(outputTimeStep(iGRU)%dat(maxVarFreq))
-      outputTimeStep(iGRU)%dat(:) = 1
-    end do 
-    ! outputTimeStep(1:maxvarFreq) = 1    
-    finalizeStats(:) = .false.
-    finalizeStats(iLookFreq%timestep) = .true.
-    ! initialize number of hru and gru in global data
-    nGRUrun = numGRU
-    nHRUrun = numGRU
-
-    write(unit=startGRUString,fmt=*)startGRU
-    write(unit=numGRUString,fmt=*)  numGRU
-    fileout = trim(OUTPUT_PATH)//trim(OUTPUT_PREFIX)//"GRU"&
-                //trim(adjustl(startGRUString))//"-"//trim(adjustl(numGRUString))
-
-    ! def_output call will need to change to allow for numHRUs in future
-    ! NA_Domain numGRU = numHRU, this is why we pass numGRU twice
-    call def_output("summaVersion","buildTime","gitBranch","gitHash",numGRU,numGRU,&
-      gru_struc(1)%hruInfo(1)%nSoil,fileout,ncid,err,cmessage)
-      print*, "Creating Output File "//trim(fileout)
-    outputFileExists = .true.
-  endif
-
-      ! Write Parameters for each HRU
-  if (.not.hruFileInit)then
-    do iStruct=1,size(structInfo)
-      select case(trim(structInfo(iStruct)%structName))
-        case('attr'); call writeParm(ncid,gru_struc(indxGRU)%hruInfo(indxHRU)%hru_ix, &
-          outputStructure(1)%attrStruct(1)%gru(indxGRU)%hru(indxHRU),attr_meta,err,cmessage)
-        case('type'); call writeParm(ncid,gru_struc(indxGRU)%hruInfo(indxHRU)%hru_ix, &
-          outputStructure(1)%typeStruct(1)%gru(indxGRU)%hru(indxHRU),type_meta,err,cmessage)
-        case('mpar'); call writeParm(ncid,gru_struc(indxGRU)%hruInfo(indxHRU)%hru_ix, &
-          outputStructure(1)%mparStruct(1)%gru(indxGRU)%hru(indxHRU),mpar_meta,err,cmessage)
-      end select
-      if(err/=0)then; message=trim(message)//trim(cmessage)//'['//trim(structInfo(iStruct)%structName)//']'; return; endif
-    end do
-    hruFileInit = .true.
-  
-    ! write GRU parameters
-    call writeParm(ncid,iGRU,outputStructure(1)%bparStruct(1)%gru(indxGRU),bpar_meta,err,cmessage)
-    if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
-
-    ! set the outputTimestep variable so it is not reset every time we need to write to a file
-      outputTimeStep(indxGRU)%dat(:) = 1
-  endif
-
   ! ****************************************************************************
   ! *** write data
   ! ****************************************************************************

@@ -40,8 +40,6 @@ subroutine deallocateOutputStruc(err)
   call deallocateData_output(outputStructure(1)%mparStruct(1));     deallocate(outputStructure(1)%mparStruct)
   ! bpar
   call deallocateData_output(outputStructure(1)%bparStruct(1));     deallocate(outputStructure(1)%bparStruct)
-  ! dpar
-  call deallocateData_output(outputStructure(1)%dparStruct(1));     deallocate(outputStructure(1)%dparStruct)
   ! finalize stats
   call deallocateData_output(outputStructure(1)%finalizeStats(1));  deallocate(outputStructure(1)%finalizeStats)
 

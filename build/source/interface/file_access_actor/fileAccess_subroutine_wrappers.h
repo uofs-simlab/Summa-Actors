@@ -19,12 +19,14 @@ extern "C" {
   void FileAccessActor_ReadForcing(void* forcFileInfo, int* currentFile, int* stepsInFile,
          int* startGRU, int* numGRU, int* err);
 
-  void FileAccessActor_WriteOutput(void* handle_ncid, bool* fileExists,
-        int* stepsInCurrentFile, int* startGru, int* numGRUs, 
-        bool* outputFileInitHRU, int*indxGRU, int*indxHRU, int* err);
+  void FileAccessActor_WriteOutput(void* handle_ncid,
+        int* stepsInCurrentFile, int*indxGRU, int*indxHRU, int* err);
 
   void FileAccessActor_DeallocateStructures(void* handle_forcFileInfo, void* handle_ncid);
   
+  void Create_Output_File(void* handle_ncid, int* numGRU, int* startGRU, int* err);
+
+  void Write_HRU_Param(void* handle_ncid, int* indxGRU, int* indxHRU, int* err);
 }
 
 

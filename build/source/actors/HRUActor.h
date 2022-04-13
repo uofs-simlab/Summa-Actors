@@ -61,7 +61,20 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
         // Starts the HRU and tells it to ask for data from the file_access_actor
         [=](start_hru) {
             self->state.start = std::chrono::high_resolution_clock::now();
+            
+            int err;
+            
+            err = 0;
+            // Write Paramaters to OutputStruc
+            Write_Param_C(&self->state.indxGRU, &self->state.indxHRU, 
+                self->state.handle_attrStruct, self->state.handle_typeStruct,
+                self->state.handle_mparStruct, self->state.handle_bparStruct, 
+                &err);
 
+            // ask file_access_actor to write paramaters
+            self->send(self->state.file_access_actor, write_param_v, self->state.indxGRU, self->state.indxHRU);
+            
+            
             self->send(self->state.file_access_actor, access_forcing_v, self->state.iFile, self);
             self->state.end = std::chrono::high_resolution_clock::now();
             self->state.duration += calculateTime(self->state.start, self->state.end);
@@ -113,7 +126,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
                 self->state.outputStep += 1;
                 self->state.forcingStep += 1;
 
-                keepRunning = check_HRU(self, err);
+                keepRunning = check_HRU(self, err); // check if we are done, need to write
 
             }
      
@@ -205,7 +218,6 @@ void Initialize_HRU(stateful_actor<hru_state>* self) {
         return;
     }
 
-    // aout(self) << "Setup Param" << std::endl;
     SetupParam(&self->state.indxGRU,
             &self->state.indxHRU, 
             self->state.handle_attrStruct, 

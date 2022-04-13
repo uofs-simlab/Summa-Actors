@@ -92,6 +92,11 @@ extern "C" {
         void* handle_resetStats,
         void* handle_finalizeStats,
         int* err);
+  
+  void Write_Param_C(
+        int* indxGRU, int* indxHRU,
+        void* handle_attrStruct, void* handle_typeStruct, void* handle_mparStruct, void* handle_bparStruct,
+        int* err);
 }
 
 

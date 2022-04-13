@@ -3,7 +3,7 @@ from os.path import isfile, join
 from pathlib import Path
 import xarray as xr 
 
-numHRU = 1
+numHRU = 10
 
 time = 'time'
 scalarSWE = 'scalarSWE'
@@ -28,8 +28,8 @@ varList = [time, scalarSWE, scalarCanopyWat, scalarAquiferStorage, scalarTotalSo
     scalarTotalET, scalarTotalRunoff, scalarNetRadiation]
 
 filename = "out.txt"
-originalPath = Path('/u1/kck540/output/SummaOriginal/Apr-1-2022/SummaOriginal_G000001-000001_timestep.nc')
-actorsPath = Path('/u1/kck540/output/SummaActors/Apr-1-2022/SummaActorsGRU1-1_timestep.nc')
+originalPath = Path('/u1/kck540/output/SummaOriginal/Apr-13-2022/SummaOriginal_G000001-000010_timestep.nc')
+actorsPath = Path('/u1/kck540/output/SummaActors/Apr-13-2022/SummaActorsGRU1-10_timestep.nc')
 
 originalDataset = xr.open_dataset(originalPath)
 actorsDataset = xr.open_dataset(actorsPath)
