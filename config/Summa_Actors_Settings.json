@@ -12,6 +12,6 @@
 
     "HRUActor": {
         "printOutput": true,
-        "outputFrequency": 10
+        "outputFrequency": 1000
     }
 }
