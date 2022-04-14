@@ -44,11 +44,11 @@ subroutine ffile_info_C(indxGRU, handle_forcFileInfo, numFiles, err) bind(C, nam
 
 end subroutine ffile_info_C
 
+! THis subroutine needs to be called after the ffile_info_C subroutine
+! It might make more sense to have this in the global data inialization 
+! subroutine. But here it sits
 subroutine mDecisions_C(num_steps,err) bind(C, name='mDecisions_C')
   USE mDecisions_module,only:mDecisions ! module to read model decisions
-  USE allocspace4chm_module,only:allocLocal
-  USE globalData,only:startTime,finshTime,refTime,oldTime
-  USE globalData,only:time_meta
 
   implicit none
   ! dummy variables
@@ -58,17 +58,6 @@ subroutine mDecisions_C(num_steps,err) bind(C, name='mDecisions_C')
   integer(i4b)                        :: iStruct
   character(len=256)                  :: message            ! error message 
   character(LEN=256)                  :: cmessage           ! error message of downwind routine
-  ! We need to initalize these time variables for the global variables that the hrus will copy
-  ! allocate time structures
-  do iStruct=1,4
-    select case(iStruct)
-    case(1); call allocLocal(time_meta, startTime, err=err, message=cmessage)  ! start time for the model simulation
-    case(2); call allocLocal(time_meta, finshTime, err=err, message=cmessage)  ! end time for the model simulation
-    case(3); call allocLocal(time_meta, refTime,   err=err, message=cmessage)  ! reference time for the model simulation
-    case(4); call allocLocal(time_meta, oldTime,   err=err, message=cmessage)  ! time from the previous step
-    end select
-    if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
-  end do  ! looping through time structures
 
   call mDecisions(num_steps,err,cmessage)
     if(err/=0)then 
@@ -449,29 +438,10 @@ subroutine FileAccessActor_DeallocateStructures(handle_forcFileInfo, handle_ncid
   deallocate(forcingDataStruct)
 
   deallocate(forcFileInfo)
+  deallocate(outputStructure)
   deallocate(outputTimeStep)
   deallocate(ncid)
-  deallocate(startTime%var);
-  deallocate(finshTime%var);
-  deallocate(refTime%var);
-  deallocate(oldTime%var);
   if(allocated(vecTime)) then; deallocate(vecTime); endif
-  if(allocated(averageFlux_meta)) then; deallocate(averageFlux_meta); endif
-  if(allocated(statForc_meta)) then; deallocate(statForc_meta); endif
-  if(allocated(statProg_meta)) then; deallocate(statProg_meta); endif
-  if(allocated(statDiag_meta)) then; deallocate(statDiag_meta); endif
-  if(allocated(statFlux_meta)) then; deallocate(statFlux_meta); endif
-  if(allocated(statIndx_meta)) then; deallocate(statIndx_meta); endif
-  if(allocated(statBvar_meta)) then; deallocate(statBvar_meta); endif
-  if(allocated(forcChild_map)) then; deallocate(forcChild_map); endif
-  if(allocated(progChild_map)) then; deallocate(progChild_map); endif
-  if(allocated(diagChild_map)) then; deallocate(diagChild_map); endif
-  if(allocated(fluxChild_map)) then; deallocate(fluxChild_map); endif
-  if(allocated(indxChild_map)) then; deallocate(indxChild_map); endif
-  if(allocated(bvarChild_map)) then; deallocate(bvarChild_map); endif
-  if(allocated(childFLUX_MEAN))then; deallocate(childFLUX_MEAN);endif
-  if(allocated(gru_struc))then; deallocate(gru_struc);endif
-  if(allocated(index_map))then; deallocate(index_map);endif
 
 end subroutine FileAccessActor_DeallocateStructures
 

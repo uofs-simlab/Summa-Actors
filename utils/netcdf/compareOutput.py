@@ -28,8 +28,8 @@ varList = [time, scalarSWE, scalarCanopyWat, scalarAquiferStorage, scalarTotalSo
     scalarTotalET, scalarTotalRunoff, scalarNetRadiation]
 
 filename = "out.txt"
-originalPath = Path('/u1/kck540/output/SummaOriginal/Apr-13-2022/SummaOriginal_G000001-000010_timestep.nc')
-actorsPath = Path('/u1/kck540/output/SummaActors/Apr-13-2022/SummaActorsGRU1-10_timestep.nc')
+originalPath = Path('/home/k13nk/SummaProject/output/originalBench/SummaOriginal_G000001-000010_timestep.nc')
+actorsPath = Path('/home/k13nk/SummaProject/output/testOutput/SummaActorsTestGRU1-10_timestep.nc')
 
 originalDataset = xr.open_dataset(originalPath)
 actorsDataset = xr.open_dataset(actorsPath)

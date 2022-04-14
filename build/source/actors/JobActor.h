@@ -101,6 +101,7 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
         },
 
         [=](file_access_actor_done, double readDuration, double writeDuration) {
+            int err = 0;
             if (debug) {
                 aout(self) << "\n********************************\n";
                 aout(self) << "Outputing Timing Info for HRUs\n";
@@ -128,7 +129,7 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
             aout(self) << "\nWriting Duration:\n";
             aout(self) << "     " << writeDuration << " Seconds\n\n";
 
-
+            cleanUpJobActor(&err);
             // Tell Parent we are done
             self->send(self->state.parent, done_job_v, self->state.numGRUFailed);
             self->quit();

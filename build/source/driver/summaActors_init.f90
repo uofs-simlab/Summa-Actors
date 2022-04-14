@@ -163,7 +163,7 @@ contains
   if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
   end do  ! looping through time structures
 
-  ! copy the time variables set up by the file_access_actor
+  ! copy the time variables set up by the job_actor
   startTime_hru%var(:) = startTime%var(:)
   finishTime_hru%var(:) = finshTime%var(:)
   refTime_hru%var(:) = refTime%var(:)
@@ -212,36 +212,29 @@ contains
   ! *****************************************************************************
   ! *** allocate space for output statistics data structures
   ! *****************************************************************************
-
   ! loop through data structures
   do iStruct=1,size(structInfo)
-
-  ! allocate space
-  select case(trim(structInfo(iStruct)%structName))
-    case('forc'); call allocLocal(statForc_meta(:)%var_info,forcStat,nSnow,nSoil,err,cmessage);    ! model forcing data
-    case('prog'); call allocLocal(statProg_meta(:)%var_info,progStat,nSnow,nSoil,err,cmessage);    ! model prognostic 
-    case('diag'); call allocLocal(statDiag_meta(:)%var_info,diagStat,nSnow,nSoil,err,cmessage);    ! model diagnostic
-    case('flux'); call allocLocal(statFlux_meta(:)%var_info,fluxStat,nSnow,nSoil,err,cmessage);    ! model fluxes
-    case('indx'); call allocLocal(statIndx_meta(:)%var_info,indxStat,nSnow,nSoil,err,cmessage);    ! index vars
-    case('bvar'); call allocLocal(statBvar_meta(:)%var_info,bvarStat,nSnow=0,nSoil=0,err=err,message=cmessage);  ! basin-average variables
-    case default; cycle
-  end select
-
-  ! check errors
-  if(err/=0)then
-    message=trim(message)//trim(cmessage)//'[statistics for =  '//trim(structInfo(iStruct)%structName)//']'
-    return
-  endif
-
+    ! allocate space
+    select case(trim(structInfo(iStruct)%structName))
+      case('forc'); call allocLocal(statForc_meta(:)%var_info,forcStat,nSnow,nSoil,err,cmessage);    ! model forcing data
+      case('prog'); call allocLocal(statProg_meta(:)%var_info,progStat,nSnow,nSoil,err,cmessage);    ! model prognostic 
+      case('diag'); call allocLocal(statDiag_meta(:)%var_info,diagStat,nSnow,nSoil,err,cmessage);    ! model diagnostic
+      case('flux'); call allocLocal(statFlux_meta(:)%var_info,fluxStat,nSnow,nSoil,err,cmessage);    ! model fluxes
+      case('indx'); call allocLocal(statIndx_meta(:)%var_info,indxStat,nSnow,nSoil,err,cmessage);    ! index vars
+      case('bvar'); call allocLocal(statBvar_meta(:)%var_info,bvarStat,nSnow=0,nSoil=0,err=err,message=cmessage);  ! basin-average variables
+      case default; cycle
+    end select
+    ! check errors
+    if(err/=0)then
+      message=trim(message)//trim(cmessage)//'[statistics for =  '//trim(structInfo(iStruct)%structName)//']'
+      return
+    endif
   end do ! iStruct
 
   ! identify the end of the initialization
   call date_and_time(values=endInit)
 
-  ! aggregate the elapsed time for the initialization
-  !  elapsedInit = elapsedSec(startInit, endInit)
-
-    ! end association to info in data structures
+  ! end association to info in data structures
   end associate
 
  end subroutine summa4chm_initialize

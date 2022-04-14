@@ -1,47 +1,22 @@
-#### parent directory of the 'build' directory ####
-# F_MASTER =
+F_MASTER = /home/k13nk/SummaProject/Summa-Actors
 
-#### fortran compiler ####
-# FC = 
+FC = gfortran
+CC = g++
 
-#### C++ compiler ####
-# CC=g++
+INCLUDES = -I/usr/include
+LIBRARIES = -lnetcdff -lnetcdf -lopenblas
 
-#### Includes AND Libraries ####
-# INCLUDES = 
-# LIBRARIES =
-
-# ACTORS_INCLUDES =
-# ACTORS_LIBRARIES =
-
-# gfortran compiler flags
-ifeq "$(FC)" "gfortran"
-# Production runs
-# FLAGS_NOAH = -O3 -ffree-form -ffree-line-length-none -fmax-errors=0 -fPIC
-# FLAGS_COMM = -O3 -ffree-line-length-none -fmax-errors=0 -fPIC
-# FLAGS_SUMMA = -O3 -ffree-line-length-none -fmax-errors=0 -fPIC
-# FLAGS_ACTORS = -O3
+ACTORS_INCLUDES = -I/home/k13nk/actorLib/include
+ACTORS_LIBRARIES = -L/home/k13nk/actorLib/lib \
+-L/home/k13nk/SummaProject/Summa-Actors/build/source/testing/Test/ \
+-lcaf_core -lcaf_io -lsumma -lnetcdff -lopenblas
 
 # # Debug runs
 FLAGS_NOAH = -p -g -O0 -ffree-form -ffree-line-length-none -fmax-errors=0 -fbacktrace -Wno-unused -Wno-unused-dummy-argument -fPIC
 FLAGS_COMM = -p -g -O0 -Wall -ffree-line-length-none -fmax-errors=0 -fbacktrace -fcheck=bounds -fPIC
 FLAGS_SUMMA = -p -g -O0 -Wall -ffree-line-length-none -fmax-errors=0 -fbacktrace -fcheck=bounds -fPIC
 FLAGS_ACTORS = -g -O0 -Wall
-endif
 
-# ifort compiler flags
-ifeq "$(FC)" "ifort"
-
-# define compiler flags
-# FLAGS_NOAH = -O3 -autodouble -warn nounused -noerror_limit -FR -auto -fltconsistency -fPIC
-# FLAGS_COMM = -O3 -FR -auto -warn nounused -fltconsistency -fpe0 -fPIC
-# FLAGS_SUMMA = -O3 -FR -auto -warn nounused -fltconsistency -fpe0 -fPIC
-
-# debug runs
-FLAGS_NOAH = -O3 -g -autodouble -warn nounused -noerror_limit -FR -auto -fltconsistency -fPIC
-FLAGS_COMM = -O3 -g -FR -auto -warn nounused -fltconsistency -fpe0 -fPIC
-FLAGS_SUMMA = -O3 -g -FR -auto -warn nounused -fltconsistency -fpe0 -fPIC
-endif
 #========================================================================
 # PART 1: Define directory paths
 #========================================================================
@@ -54,10 +29,6 @@ MOD_PATH = $(F_MASTER)/build
 
 # Define the directory for the executables
 EXE_PATH = $(F_MASTER)/bin
-
-#========================================================================
-# PART 2: Assemble all of the SUMMA sub-routines
-#========================================================================
 
 # Define directories
 DRIVER_DIR = $(F_KORE_DIR)/driver
@@ -249,7 +220,7 @@ SUMMA_DRIVER= \
 		
 DRIVER = $(patsubst %, $(DRIVER_DIR)/%, $(SUMMA_DRIVER))
 
-ACTORC = $(F_KORE_DIR)/actors/main.cc
+ACTORC = $(F_KORE_DIR)/testing/Test/testing_main.cc
 
 ACTOR_TEST = $(F_KORE_DIR)/testing/testing_main.cc
 

@@ -1,17 +1,17 @@
 {
     "SummaActor": {
         "OuputStrucureSize": 250,
-        "maxGRUPerJob": 500
+        "maxGRUPerJob": 1
     },
     
     "JobActor": {
-        "FileManagerPath": "",
+        "FileManagerPath": "/home/k13nk/SummaProject/SummaActorsSettings/fileManager.txt",
         "outputCSV": false,
         "csvPath": ""
     },
 
     "HRUActor": {
         "printOutput": true,
-        "outputFrequency": 100000
+        "outputFrequency": 10
     }
 }

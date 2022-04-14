@@ -22,7 +22,7 @@ bool calcTimeTest(int sleepTime) {
     end = std::chrono::high_resolution_clock::now();
     duration = calculateTime(start, end);
     if (duration != sleepTime) {
-        std::cout << "Error: calculatTime, value is " << duration << std::endl; 
+        std::cout << "Error: calculateTime, value is " << duration << std::endl; 
         return false;
     } else {
         return true;
