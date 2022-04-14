@@ -175,9 +175,8 @@ subroutine summaActors_writeToOutputStruc(&
   err=0; message='summa_manageOutputFiles/'
   ! identify the start of the writing
   call date_and_time(values=startWrite)
-  ! print*, "HRU WRite timestep = ", modelTimeStep
-  ! print*, "OutputStep = ", outputStep
-  ! ! initialize the statistics flags
+
+  ! initialize the statistics flags
   if(modelTimeStep==1)then
 
     ! initialize time step index
@@ -226,7 +225,7 @@ subroutine summaActors_writeToOutputStruc(&
       if(err/=0)then; message=trim(message)//trim(cmessage)//'['//trim(structInfo(iStruct)%structName)//']'; return; endif
     end do  ! (looping through structures)
 
-    !   ! write GRU parameters
+    ! write GRU parameters
     call writeParm(indxGRU,indxHRU,integerMissing,bparStruct,bpar_meta,'bpar',err,cmessage)
     if(err/=0)then; message=trim(message)//trim(cmessage); return; endif 
     
@@ -266,7 +265,7 @@ subroutine summaActors_writeToOutputStruc(&
   call writeTime(indxGRU,indxHRU,outputStep,finalizeStats%dat, &
                 time_meta,timeStruct%var,err,message)
 
-  ! write the model output to the NetCDF file
+  ! write the model output to the OutputStructure
   ! Passes the full metadata structure rather than the stats metadata structure because
   ! we have the option to write out data of types other than statistics.
   ! Thus, we must also pass the stats parent->child maps from childStruct.

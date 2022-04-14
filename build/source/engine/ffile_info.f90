@@ -41,7 +41,6 @@ subroutine ffile_info(indxGRU,forcFileInfo,numFiles,err,message)
   USE summaActors_FileManager,only:SETTINGS_PATH            ! path for metadata files
   USE summaActors_FileManager,only:FORCING_PATH             ! path for forcing files
   USE summaActors_FileManager,only:FORCING_FILELIST         ! list of model forcing files
-  USE summaActors_FileManager,only:FORCING_FREQ
   USE summaActors_FileManager,only:FORCING_START
   USE globalData,only:data_step
   USE globalData,only:forc_meta                      ! forcing metadata

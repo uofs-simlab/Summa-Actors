@@ -55,7 +55,6 @@ subroutine mDecisions_C(num_steps,err) bind(C, name='mDecisions_C')
   integer(c_int),intent(inout)        :: num_steps
   integer(c_int),intent(inout)        :: err                ! Error Code
   ! local variables
-  integer(i4b)                        :: iStruct
   character(len=256)                  :: message            ! error message 
   character(LEN=256)                  :: cmessage           ! error message of downwind routine
 
@@ -199,12 +198,8 @@ subroutine Create_Output_File(&
   type(var_i),pointer                  :: ncid              ! ncid of the output file
   character(LEN=256)                   :: startGRUString    ! String Variable to convert startGRU
   character(LEN=256)                   :: numGRUString      ! String Varaible to convert numGRU
-  character(LEN=256)                   :: message
   character(LEN=256)                   :: cmessage
   integer(i4b)                         :: iGRU
-  integer(i4b)                         :: iStruct
-  integer(i4b)                         :: iStep
-  integer(i4b)                         :: iFreq
 
   call c_f_pointer(handle_ncid, ncid)
 
@@ -289,25 +284,17 @@ subroutine FileAccessActor_WriteOutput(&
                                 indxGRU,          & ! index of GRU we are currently writing for
                                 indxHRU,          & ! index of HRU we are currently writing for
                                 err) bind(C, name="FileAccessActor_WriteOutput")
-  USE globalData,only:fileout
-  USE summaActors_FileManager,only:OUTPUT_PATH,OUTPUT_PREFIX         ! define output file
-  USE def_output_module,only:def_output                       ! module to define model output
   USE globalData,only:gru_struc
   USE var_lookup,only:maxVarFreq                               ! # of available output frequencies
-  USE writeOutput_module,only:writeParm,writeBasin,writeTime,writeData
+  USE writeOutput_module,only:writeBasin,writeTime,writeData
   USE globalData,only:structInfo
   USE globalData,only:outputStructure
-  USE globalData,only:attr_meta                 ! attributes metadata structure
-  USE globalData,only:type_meta                 ! veg/soil type metadata structure
-  USE globalData,only:mpar_meta                 ! local parameter metadata structure
-  USE globalData,only:bpar_meta                 ! basin parameter metadata structure
   USE var_lookup,only:iLookFreq                 ! named variables for the frequency structure
   USE globalData,only:bvarChild_map             ! index of the child data structure: stats bvar
   USE netcdf_util_module,only:nc_file_close 
   USE netcdf_util_module,only:nc_file_open 
 
   USE globalData,only:outputTimeStep
-  USE globalData,only:finalizeStats
   USE netcdf
 
   implicit none
@@ -320,11 +307,8 @@ subroutine FileAccessActor_WriteOutput(&
   
   ! local variables 
   type(var_i),pointer                  :: ncid
-  character(LEN=256)                   :: startGRUString
-  character(LEN=256)                   :: numGRUString
   character(LEN=256)                   :: message
   character(LEN=256)                   :: cmessage
-  integer(i4b)                         :: iGRU
   integer(i4b)                         :: iStruct
   integer(i4b)                         :: iStep
   integer(i4b)                         :: iFreq
@@ -345,62 +329,46 @@ subroutine FileAccessActor_WriteOutput(&
     ! write time information
     call writeTime(ncid,outputTimeStep(indxGRU)%dat(:),iStep,time_meta, &
               outputStructure(1)%timeStruct(1)%gru(indxGRU)%hru(indxHRU)%var,err,cmessage)
-    
-    do iStruct=1,size(structInfo)
-      select case(trim(structInfo(iStruct)%structName))
-        case('forc')
-          call writeData(ncid,outputTimeStep(indxGRU)%dat(:),nHRUrun,maxLayers,indxGRU,iStep,forc_meta, &
-                        outputStructure(1)%forcStat(1),outputStructure(1)%forcStruct(1),'forc', &
-                        forcChild_map,outputStructure(1)%indxStruct(1),err,cmessage)
-        case('prog')
-          call writeData(ncid,outputTimeStep(indxGRU)%dat(:),nHRUrun,maxLayers,indxGRU,iStep,prog_meta, & 
-                        outputStructure(1)%progStat(1),outputStructure(1)%progStruct(1),'prog', &
-                        progChild_map,outputStructure(1)%indxStruct(1),err,cmessage)
-        case('diag')
-          call writeData(ncid,outputTimeStep(indxGRU)%dat(:),nHRUrun,maxLayers,indxGRU,iStep,diag_meta, &
-                        outputStructure(1)%diagStat(1),outputStructure(1)%diagStruct(1),'diag', &
-                        diagChild_map,outputStructure(1)%indxStruct(1),err,cmessage)
-        case('flux')
-          call writeData(ncid,outputTimeStep(indxGRU)%dat(:),nHRUrun,maxLayers,indxGRU,iStep,flux_meta, &
-                        outputStructure(1)%fluxStat(1),outputStructure(1)%fluxStruct(1),'flux', &
-                        fluxChild_map,outputStructure(1)%indxStruct(1),err,cmessage)
-        case('indx')
-          call writeData(ncid,outputTimeStep(indxGRU)%dat(:),nHRUrun,maxLayers,indxGRU,iStep,indx_meta, &
-                        outputStructure(1)%indxStat(1),outputStructure(1)%indxStruct(1),'indx', &
-                        indxChild_map,outputStructure(1)%indxStruct(1),err,cmessage)
-      end select
-      if(err/=0)then; message=trim(message)//trim(cmessage)//'['//trim(structInfo(iStruct)%structName)//']'; return; endif
-    end do  ! (looping through structures)
-    do iFreq = 1,maxvarFreq
-      if(outputStructure(1)%finalizeStats(1)%gru(indxGRU)%hru(1)%tim(iStep)%dat(iFreq)) outputTimeStep(indxGRU)%dat(iFreq) = outputTimeStep(indxGRU)%dat(iFreq) + 1
-    end do ! ifreq
   end do ! istep
+  
+  do iStruct=1,size(structInfo)
+    select case(trim(structInfo(iStruct)%structName))
+      case('forc')
+        call writeData(ncid,outputTimeStep(indxGRU)%dat(:),nHRUrun,maxLayers,indxGRU,nSteps,forc_meta, &
+                      outputStructure(1)%forcStat(1),outputStructure(1)%forcStruct(1),'forc', &
+                      forcChild_map,outputStructure(1)%indxStruct(1),err,cmessage)
+      case('prog')
+        call writeData(ncid,outputTimeStep(indxGRU)%dat(:),nHRUrun,maxLayers,indxGRU,nSteps,prog_meta, & 
+                      outputStructure(1)%progStat(1),outputStructure(1)%progStruct(1),'prog', &
+                      progChild_map,outputStructure(1)%indxStruct(1),err,cmessage)
+      case('diag')
+        call writeData(ncid,outputTimeStep(indxGRU)%dat(:),nHRUrun,maxLayers,indxGRU,nSteps,diag_meta, &
+                      outputStructure(1)%diagStat(1),outputStructure(1)%diagStruct(1),'diag', &
+                      diagChild_map,outputStructure(1)%indxStruct(1),err,cmessage)
+      case('flux')
+        call writeData(ncid,outputTimeStep(indxGRU)%dat(:),nHRUrun,maxLayers,indxGRU,nSteps,flux_meta, &
+                      outputStructure(1)%fluxStat(1),outputStructure(1)%fluxStruct(1),'flux', &
+                      fluxChild_map,outputStructure(1)%indxStruct(1),err,cmessage)
+      case('indx')
+        call writeData(ncid,outputTimeStep(indxGRU)%dat(:),nHRUrun,maxLayers,indxGRU,nSteps,indx_meta, &
+                      outputStructure(1)%indxStat(1),outputStructure(1)%indxStruct(1),'indx', &
+                      indxChild_map,outputStructure(1)%indxStruct(1),err,cmessage)
+    end select
+    if(err/=0)then; message=trim(message)//trim(cmessage)//'['//trim(structInfo(iStruct)%structName)//']'; return; endif
+  end do  ! (looping through structures)
+  ! do iFreq = 1,maxvarFreq
+  !   if(outputStructure(1)%finalizeStats(1)%gru(indxGRU)%hru(1)%tim(iStep)%dat(iFreq)) outputTimeStep(indxGRU)%dat(iFreq) = outputTimeStep(indxGRU)%dat(iFreq) + 1
+  ! end do ! ifreq
+
 end subroutine
 
 subroutine FileAccessActor_DeallocateStructures(handle_forcFileInfo, handle_ncid) bind(C,name="FileAccessActor_DeallocateStructures")
-  USE globalData,only:forcingDataStruct     
   USE netcdf_util_module,only:nc_file_close 
+  USE globalData,only:forcingDataStruct     
   USE globalData,only:structInfo                              ! information on the data structures
   USE globalData,only:vecTime
-  USE globalData,only:statForc_meta                           ! child metadata for stats
-  USE globalData,only:statProg_meta                           ! child metadata for stats
-  USE globalData,only:statDiag_meta                           ! child metadata for stats
-  USE globalData,only:statFlux_meta                           ! child metadata for stats
-  USE globalData,only:statIndx_meta                           ! child metadata for stats
-  USE globalData,only:statBvar_meta                           ! child metadata for stats
-  USE globalData,only:averageFlux_meta                        ! metadata for time-step average fluxes
-  USE globalData,only:forcChild_map                           ! index of the child data structure: stats forc
-  USE globalData,only:progChild_map                           ! index of the child data structure: stats prog
-  USE globalData,only:diagChild_map                           ! index of the child data structure: stats diag
-  USE globalData,only:fluxChild_map                           ! index of the child data structure: stats flux
-  USE globalData,only:indxChild_map                           ! index of the child data structure: stats indx
-  USE globalData,only:bvarChild_map                           ! index of the child data structure: stats bvar
-  USE var_lookup,only:childFLUX_MEAN                          ! look-up values for timestep-average model fluxes
-  USE globalData,only:gru_struc                               ! gru->hru mapping structure
-  USE globalData,only:index_map  
   USE globalData,only:outputTimeStep
   USE summaActors_deallocateOuptutStruct,only:deallocateOutputStruc
-  USE globalData,only:startTime,finshTime,refTime,oldTime
   implicit none
   type(c_ptr),intent(in), value        :: handle_forcFileInfo
   type(c_ptr),intent(in), value        :: handle_ncid

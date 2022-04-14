@@ -65,7 +65,7 @@ USE var_lookup,only:maxvarFreq             ! allocation dimension (output freque
 ! privacy
 implicit none
 private
-public::allocGlobal4chm
+public::allocGlobal
 public::allocLocal
 public::resizeData
 
@@ -75,7 +75,7 @@ contains
  ! ************************************************************************************************
  ! public subroutine allocGlobal4chm: allocate space for global data structures
  ! ************************************************************************************************
- subroutine allocGlobal4chm(metaStruct,dataStruct,err,message)
+ subroutine allocGlobal(metaStruct,dataStruct,err,message)
  ! NOTE: safety -- ensure only used in allocGlobal4chm
  USE globalData,only: gru_struc     ! gru-hru mapping structures
  implicit none
@@ -113,7 +113,7 @@ contains
   ! end association to info in data structures
   end associate
 
- end subroutine allocGlobal4chm
+ end subroutine allocGlobal
 
  ! ************************************************************************************************
  ! public subroutine allocLocal: allocate space for local data structures

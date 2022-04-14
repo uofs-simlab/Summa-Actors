@@ -1,7 +1,7 @@
 {
     "SummaActor": {
         "OuputStrucureSize": 250,
-        "maxGRUPerJob": 1
+        "maxGRUPerJob": 500
     },
     
     "JobActor": {
