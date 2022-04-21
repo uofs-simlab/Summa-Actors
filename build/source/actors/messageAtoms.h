@@ -18,7 +18,7 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     CAF_ADD_ATOM(summa, done_file_access_actor_init)
     CAF_ADD_ATOM(summa, file_access_actor_done)
     // FileAccess Actor
-    CAF_ADD_ATOM(summa, initalize_outputStrucure)
+    CAF_ADD_ATOM(summa, initalize_outputStructure)
     CAF_ADD_ATOM(summa, access_forcing)
     CAF_ADD_ATOM(summa, access_first_forcing_file)
     CAF_ADD_ATOM(summa, access_forcing_internal)

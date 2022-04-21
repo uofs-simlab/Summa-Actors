@@ -15,10 +15,13 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
     self->state.numGRU = numGRU;
     self->state.startGRU = startGRU;
     self->state.outputStrucSize = outputStrucSize;
+
+    aout(self) << "\nFile Access Actor Started\n";
     initalizeFileAccessActor(self);
 
     return {
-        [=](initalize_outputStrucure) {
+        [=](initalize_outputStructure) {
+            aout(self) << "Initalizing Output Structure" << std::endl;
             Init_OutputStruct(self->state.handle_forcFileInfo, &self->state.outputStrucSize, 
                 &self->state.numGRU, &self->state.err);
         },

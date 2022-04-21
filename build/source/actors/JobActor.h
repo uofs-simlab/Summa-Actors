@@ -45,7 +45,7 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
     return {
         [=](done_file_access_actor_init) {
             // Init GRU Actors and the Output Structure
-            self->send(self->state.file_access_actor, initalize_outputStrucure_v);
+            self->send(self->state.file_access_actor, initalize_outputStructure_v);
             self->send(self, init_hru_v);
         },
 
@@ -78,7 +78,9 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
 
         [=](done_hru, int indxGRU, double totalDuration, double initDuration, 
             double forcingDuration, double runPhysicsDuration, double writeOutputDuration) {
-            aout(self) << "GRU " << indxGRU << " Done\n";
+            aout(self) << "GRU:" << self->state.GRUList[indxGRU - 1]->getRefGRU()
+                << "indxGRU = " << indxGRU << "Done \n";
+
             self->state.GRUList[indxGRU - 1]->doneRun(totalDuration, initDuration, forcingDuration,
                 runPhysicsDuration, writeOutputDuration);
             
@@ -136,8 +138,10 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
         },
 
         [=](run_failure, int indxGRU, int err) {
-            aout(self) << "GRU:" << indxGRU << "Failed \n" <<
-                "Will have to wait until all GRUs are done before it can be re-tried\n";
+            aout(self) << "GRU:" << self->state.GRUList[indxGRU - 1]->getRefGRU()
+                << "indxGRU = " << indxGRU << "Failed \n"
+                << "Will have to wait until all GRUs are done before it can be re-tried\n";
+            
             self->state.numGRUFailed++;
             self->state.numGRUDone++;
             self->state.GRUList[indxGRU - 1]->updateFailed();
@@ -260,8 +264,6 @@ void restartFailures(stateful_actor<job_state>* self) {
             gru->updateGRU(newGRU);
             gru->updateCurrentAttempt();
             self->send(gru->getActor(), dt_init_factor_v, gru->getDt_init());
-        } else {
-            aout(self) << "We are done \n";
         }
     }
 }

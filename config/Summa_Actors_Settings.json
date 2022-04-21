@@ -1,17 +1,53 @@
 {
+    "JobSubmissionParams": {
+        "cpus-per-task": 8,
+        "memory": "32G",
+        "job-name": "SummaActors",
+        "account": "rpp-kshook",
+        "numHRUs": 517315,
+        "maxNumberOfJobs": 1000,
+        "maxGRUsPerSubmission": 1000,
+        "executablePath": "/home/kklenk/SummaProjects/Summa-Actors/bin/summaMain"
+    },
+
+    "Configuration": {
+        "controlVersion": "SUMMA_FILE_MANAGER_V3.0.0",
+        "simStartTime": "1979-01-01 00:00",
+        "simEndTime": "2019-12-31 23:00",
+        "tmZoneInfo": "utcTime",
+        "settingsPath": "/project/6008034/kklenk/settings/SummaActorsSettings/",
+        "forcingPath": "/project/6008034/kklenk/forcingChunked/",
+        "outputPath": "/home/kklenk/projects/rpp-kshook/kklenk/SummaActorsOutput/",
+        "forcingFreq": "month",
+        "forcingStart": "1979-01-01",
+        "decisionsFile": "modelDecisions.txt",
+        "outputControlFile": "outputControl.txt",
+        "globalHruParamFile": "localParamInfo.txt",
+        "globalGruParamFile": "basinParamInfo.txt",
+        "attributeFile": "attributes.nc",
+        "trialParamFile": "trialParams.nc",
+        "forcingListFile": "forcingFileList.txt",
+        "initConditionFile": "coldState.nc",
+        "outFilePrefix": "SummaActors",
+        "vegTableFile": "TBL_VEGPARM.TBL",
+        "soilTableFile": "TBL_SOILPARM.TBL",
+        "generalTableFile": "TBL_GENPARM.TBL",
+        "noahmpTableFile": "TBL_MPTABLE.TBL"
+    },
+
     "SummaActor": {
-        "OuputStrucureSize": 250,
-        "maxGRUPerJob": 1
+        "OuputStructureSize": 250,
+        "maxGRUPerJob": 250
     },
     
     "JobActor": {
-        "FileManagerPath": "/home/k13nk/SummaProject/SummaActorsSettings/fileManager.txt",
+        "FileManagerPath": "/home/kklenk/projects/rpp-kshook/kklenk/settings/SummaActorsSettings/fileManager.txt",
         "outputCSV": false,
         "csvPath": ""
     },
 
     "HRUActor": {
         "printOutput": true,
-        "outputFrequency": 1000
+        "outputFrequency": 500
     }
 }

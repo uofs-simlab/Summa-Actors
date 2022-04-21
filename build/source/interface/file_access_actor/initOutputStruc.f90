@@ -23,9 +23,6 @@ subroutine initalizeOutput(forcFileInfo, maxSteps, nGRU, err)
   USE multiconst,only:secprday               ! number of seconds in a day
   USE data_types,only:file_info_array
   USE var_lookup,only:maxvarFreq                ! maximum number of output files
-
-
-
   
   implicit none
   type(file_info_array), pointer        :: forcFileInfo

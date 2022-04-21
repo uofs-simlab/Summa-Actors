@@ -258,7 +258,6 @@ contains
 
  ! ensure wind speed is above a prescribed minimum value
  if(windspd < minwind) windspd=minwind
-
  ! compute relative humidity (-)
  relhum   = SPHM2RELHM(spechum, airpres, airtemp)
  ! if relative humidity exceeds saturation, then set relative and specific humidity to saturation
