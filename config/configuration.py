@@ -12,9 +12,61 @@ def actor_setting(actor_id, setting_name, setting_value):
 Function to create the inital summa_actors_settings file
 """
 def create_init_config():
-    Summa_Actor_Settings = ["OutputStructureSize", "maxGRUPerJob"]
-    Job_Actor_Settings = ["FileManagerPath", "outputCSV", "csvPath"]
-    HRU_Actor_Settings = ["printOutput", "outputFrequency"]
+    Settings_file = { 
+        "JobSubmissionParams": {
+            "cpus-per-task": 1,
+            "memory": "",
+            "job-name": "",
+            "account": "",
+            "numHRUs": 1,
+            "maxNumberOfJobs": 1,
+            "maxGRUPerSubmission": 1,
+            "executablePath": ""
+            },
+
+        "Configuration": {
+            "controlVersion": "",
+            "simStartTime": "",
+            "simEndTime": "",
+            "tmZoneInfo": "",
+            "settingsPath": "",
+            "forcingPath": "",
+            "outputPath": "",
+            "forcingFreq": "",
+            "forcingStart": "",
+            "decisionsFile": "",
+            "outputControlFile": "",
+            "globalHruParamFile": "",
+            "globalGruParamFile": "",
+            "attributeFile": "",
+            "trialParamFile": "",
+            "forcingListFile": "",
+            "initConditionFile": "",
+            "outFilePrefix": "",
+            "vegTableFile": "",
+            "soilTableFile": "",
+            "generalTableFile": "",
+            "noahmpTableFile": ""
+        },
+
+        "SummaActor": {
+            "OuputStructureSize": 1,
+            "maxGRUPerJob": 1
+        },
+    
+        "JobActor": {
+            "FileManagerPath": "",
+            "outputCSV": "",
+            "csvPath": ""
+        },
+
+        "HRUActor": {
+            "printOutput": "",
+            "outputFrequency": 1
+        }
+    }
+    with open('Summa_Actors_Settings.json', 'w') as outfile:
+        json.dump(Settings_file, outfile, indent=2)
 
 """
 Function that creates the paths for the slurm output and the netCDF data
