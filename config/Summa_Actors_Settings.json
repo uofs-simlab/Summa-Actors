@@ -5,7 +5,7 @@
         "job-name": "SummaActors",
         "account": "rpp-kshook",
         "numHRUs": 517315,
-        "maxNumberOfJobs": 1000,
+        "maxNumberOfJobs": 500,
         "maxGRUsPerSubmission": 1000,
         "executablePath": "/home/kklenk/SummaProjects/Summa-Actors/bin/summaMain"
     },
@@ -37,7 +37,7 @@
 
     "SummaActor": {
         "OuputStructureSize": 250,
-        "maxGRUPerJob": 250
+        "maxGRUPerJob": 500
     },
     
     "JobActor": {

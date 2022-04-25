@@ -43,16 +43,20 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
     aout(self) << "Job Actor Initalized \n";
 
     return {
-        [=](done_file_access_actor_init) {
-            // Init GRU Actors and the Output Structure
-            self->send(self->state.file_access_actor, initalize_outputStructure_v);
-            self->send(self, init_hru_v);
-        },
-
+    // *******************************************************************************************
+    // *********************************** INTERFACE WITH HRU ************************************
+    // *******************************************************************************************
+        
+        /**
+         * 
+         */
         [=](init_hru) {
             initalizeGRU(self);
         },
 
+        /**
+         * 
+         */
         [=](done_init_hru) {
             if (debug) {
                 aout(self) << "Done Init\n";
@@ -68,13 +72,6 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
             }
         },
 
-        /**
-         * Message from HRUActor, HRU is done the current forcing file but is not
-         * done its simulation and needs the next file
-         * indxGRU - Index into the actor array so we know which HRU this is.
-         * NOTE: Naming of GRU and HRU is confusing as the plan is to further seperate
-         * NOTE: For NA_Domain GRU is used as that is how we index the forcing file
-         */ 
 
         [=](done_hru, int indxGRU, double totalDuration, double initDuration, 
             double forcingDuration, double runPhysicsDuration, double writeOutputDuration) {
@@ -100,6 +97,38 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
                     restartFailures(self);
                 }
             }
+        },
+
+
+        [=](run_failure, int indxGRU, int err) {
+            aout(self) << "GRU:" << self->state.GRUList[indxGRU - 1]->getRefGRU()
+                << "indxGRU = " << indxGRU << "Failed \n"
+                << "Will have to wait until all GRUs are done before it can be re-tried\n";
+            
+            self->state.numGRUFailed++;
+            self->state.numGRUDone++;
+            self->state.GRUList[indxGRU - 1]->updateFailed();
+
+            // check if we are the last hru to complete
+            if (self->state.numGRUDone >= self->state.numGRU) {
+                restartFailures(self);
+            }
+        },
+
+    // *******************************************************************************************
+    // ******************************* END INTERFACE WITH HRU ************************************
+    // *******************************************************************************************
+
+    // *******************************************************************************************
+    // ****************************** INTERFACE WITH FileAccessActor *****************************
+    // *******************************************************************************************
+        /**
+         * 
+         */
+        [=](done_file_access_actor_init) {
+            // Init GRU Actors and the Output Structure
+            self->send(self->state.file_access_actor, initalize_outputStructure_v);
+            self->send(self, init_hru_v);
         },
 
         [=](file_access_actor_done, double readDuration, double writeDuration) {
@@ -136,21 +165,9 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
             self->send(self->state.parent, done_job_v, self->state.numGRUFailed);
             self->quit();
         },
-
-        [=](run_failure, int indxGRU, int err) {
-            aout(self) << "GRU:" << self->state.GRUList[indxGRU - 1]->getRefGRU()
-                << "indxGRU = " << indxGRU << "Failed \n"
-                << "Will have to wait until all GRUs are done before it can be re-tried\n";
-            
-            self->state.numGRUFailed++;
-            self->state.numGRUDone++;
-            self->state.GRUList[indxGRU - 1]->updateFailed();
-
-            // check if we are the last hru to complete
-            if (self->state.numGRUDone >= self->state.numGRU) {
-                restartFailures(self);
-            }
-        },
+    // *******************************************************************************************
+    // ************************** END INTERFACE WITH FileAccessActor *****************************
+    // *******************************************************************************************
 
     };
 }
