@@ -155,30 +155,47 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
     // aout(self) << "Set Up the forcing file" << std::endl;
     ffile_info_C(&indx, self->state.handle_forcFileInfo, &self->state.numFiles, &err);
     if (err != 0) {
-        aout(self) << "Error: ffile_info_C - HRU = " << indx <<
-        " - indxGRU = " << indx << " - refGRU = " << std::endl;
+        aout(self) << "Error: ffile_info_C - File_Access_Actor \n";
+        std::string function = "ffile_info_C";
+        self->send(self->state.parent, file_access_actor_err_v, function);
         self->quit();
+        return;
     }
 
     mDecisions_C(&self->state.num_steps, &err);
     if (err != 0) {
-        aout(self) << "Error: mDecisions - FileAccess Actor " << std::endl;
+        aout(self) << "Error: mDecisions - FileAccess Actor \n";
+        std::string function = "mDecisions_C";
+        self->send(self->state.parent, file_access_actor_err_v, function);
         self->quit();
+        return;
     }
 
     read_pinit_C(&err);
     if (err != 0) {
         aout(self) << "ERROR: read_pinit_C\n";
+        std::string function = "read_pinit_C";
+        self->send(self->state.parent, file_access_actor_err_v, function);
+        self->quit();
+        return;
     }
     
     read_vegitationTables(&err);
     if (err != 0) {
         aout(self) << "ERROR: read_vegitationTables\n";
+        std::string function = "read_vegitationTables";
+        self->send(self->state.parent, file_access_actor_err_v, function);
+        self->quit();
+        return;
     }
 
     Create_Output_File(self->state.handle_ncid, &self->state.numGRU, &self->state.startGRU, &err);
     if (err != 0) {
         aout(self) << "ERROR: Create_OutputFile\n";
+        std::string function = "Create_Output_File";
+        self->send(self->state.parent, file_access_actor_err_v, function);
+        self->quit();
+        return;
     }
     
     

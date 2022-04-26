@@ -49,6 +49,11 @@ behavior summa_actor(stateful_actor<summa_manager>* self, int startGRU, int numG
 				spawnJob(self);
 			}
 		},
+
+		[=](err) {
+			aout(self) << "Unrecoverable Error: Attempting To Fail Gracefully\n";
+			self->quit();
+		}
 	};
 }
 

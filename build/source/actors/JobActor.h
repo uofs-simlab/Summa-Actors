@@ -165,6 +165,13 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
             self->send(self->state.parent, done_job_v, self->state.numGRUFailed);
             self->quit();
         },
+
+        [=](file_access_actor_err, std::string function) {
+            aout(self) << "Failure in File Access Actor in function" << function << "\n";
+            aout(self) << "Letting Parent Know we are quitting\n";
+            self->send(self->state.parent, err_v);
+            self->quit();
+        }
     // *******************************************************************************************
     // ************************** END INTERFACE WITH FileAccessActor *****************************
     // *******************************************************************************************
