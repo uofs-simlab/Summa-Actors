@@ -1,6 +1,7 @@
 from distutils.command.config import config
 import json
 import os
+import math
 from os.path import exists
 from datetime import date
 
@@ -20,7 +21,7 @@ def create_init_config():
             "account": "",
             "numHRUs": 1,
             "maxNumberOfJobs": 1,
-            "maxGRUPerSubmission": 1,
+            "maxGRUsPerSubmission": 1,
             "executablePath": ""
             },
 
@@ -86,6 +87,10 @@ def create_output_path(outputPath):
     if not exists(outputSlurm):
         os.mkdir(outputSlurm)
     
+    # need to add the file name to outputSlurm
+    # The job will not be submitted without a file name
+    outputSlurm += "slurm-%A_%a.out"
+    
     return outputNetCDF, outputSlurm
 
 
@@ -107,17 +112,34 @@ def create_file_manager():
     for key,value in fileManagerSettings["Configuration"].items():
         fileManager.write(key + "    \'{}\'\n".format(value))
     fileManager.close()
+
+    with open("Summa_Actors_Settings.json") as settings_file:
+        data = json.load(settings_file)
+        data["JobActor"]["FileManagerPath"] = os.getcwd() + "/" + "fileManager.txt"
+
+    with open("Summa_Actors_Settings.json", "w") as updated_settings:
+        json.dump(data, updated_settings, indent=2) 
+
+
     print("File Manager for this job has been created")
     return outputSlurm
 
 
-def create_caf_config(numCPUs):
+def create_caf_config():
+    json_file = open("Summa_Actors_Settings.json")
+    SummaSettings = json.load(json_file)
+    json_file.close()
+
+    numCPUs = SummaSettings["JobSubmissionParams"]["cpus-per-task"]
+
+
     caf_config_name = "caf-application.conf"
     caf_config = open(caf_config_name, "w")
     caf_config.write("caf {{ \n  scheduler {{\n   max-threads = {}\n    }}\n}}".format(numCPUs))
     caf_config.close()
     
     caf_config_path = os.getcwd()
+    caf_config_path += "/"
     caf_config_path += caf_config_name
     return caf_config_path
 
@@ -163,7 +185,7 @@ def create_job_list():
     return jobCount
 
 
-def create_sbatch_file(jobCount, outputSlurm):
+def create_sbatch_file(outputSlurm, configFile):
     json_file = open("Summa_Actors_Settings.json")
     SummaSettings = json.load(json_file)
     json_file.close()
@@ -172,7 +194,13 @@ def create_sbatch_file(jobCount, outputSlurm):
     memory = SummaSettings["JobSubmissionParams"]["memory"]
     jobName = SummaSettings["JobSubmissionParams"]["job-name"]
     account = SummaSettings["JobSubmissionParams"]["account"]
+    numberOfTasks = SummaSettings["JobSubmissionParams"]["numHRUs"]
+    GRUPerJob = SummaSettings["JobSubmissionParams"]["maxGRUsPerSubmission"]
+    executablePath = SummaSettings["JobSubmissionParams"]["executablePath"]
 
+    jobCount = math.ceil(numberOfTasks / GRUPerJob - 1)
+
+    configPath = os.getcwd()
 
     sbatch = open("run_summa.sh", "w")
     sbatch.write("#!/bin/bash\n")
@@ -182,9 +210,17 @@ def create_sbatch_file(jobCount, outputSlurm):
     sbatch.write("#SBATCH --job-name={}\n".format(jobName))
     sbatch.write("#SBATCH --account={}\n".format(account))
     sbatch.write("#SBATCH --output={}\n".format(outputSlurm))
-    sbatch.write("#SBATCH --array0-{}\n\n".format(jobCount))
-    sbatch.write("LINE=$(sed -n \"$SLRUM_ARRAY_TASK_ID\"p{}".format(os.getcwd()+"/job_list.txt"))
-    
+    sbatch.write("#SBATCH --array=0-{}\n\n".format(jobCount))
+    sbatch.write("gruMax={}\n".format(numberOfTasks))
+    sbatch.write("gruCount={}\n".format(GRUPerJob))
+    sbatch.write("offset=$SLURM_ARRAY_TASK_ID\n")
+    sbatch.write("gruStart=$(( 1 + gruCount*offset ))\n")
+    sbatch.write("check=$(( $gruStart + $gruCount ))\n")
+    sbatch.write("if [ $check -gt $gruMax ]\n")
+    sbatch.write("then\n")
+    sbatch.write("    gruCount=$(( gruMax-gruStart+1 ))\n")
+    sbatch.write("fi\n\n")
+    sbatch.write("{} -g ${{gruStart}} -n ${{gruCount}} -c {} --config-file={}".format(executablePath, configPath, configFile))
 
 
 
@@ -200,8 +236,10 @@ def init_run():
     if exists('./Summa_Actors_Settings.json'):
         print("File Exists, What do we do next")
         outputSlurm = create_file_manager()
-        jobCount = create_job_list()
-        create_sbatch_file(jobCount, outputSlurm)
+        # jobCount = create_job_list()
+        configFile = create_caf_config()
+        create_sbatch_file(outputSlurm, configFile)
+        
 
     else:
         print("File Does not Exist and we need to create it")
