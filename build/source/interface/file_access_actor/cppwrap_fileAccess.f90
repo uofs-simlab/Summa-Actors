@@ -313,6 +313,7 @@ subroutine FileAccessActor_WriteOutput(&
   integer(i4b)                         :: iStruct
   integer(i4b)                         :: iStep
   integer(i4b)                         :: iFreq
+  integer(i4b), dimension(maxVarFreq)  :: outputTimestepUpdate
 
   call c_f_pointer(handle_ncid, ncid)
   ! ****************************************************************************
@@ -326,7 +327,7 @@ subroutine FileAccessActor_WriteOutput(&
 
     ! reset outputTimeStep
     ! get the number of HRUs in the run domain
-    nHRUrun = sum(gru_struc%hruCount)
+    ! nHRUrun = sum(gru_struc%hruCount)
     ! write time information
     call writeTime(ncid,outputTimeStep(indxGRU)%dat(:),iStep,time_meta, &
               outputStructure(1)%timeStruct(1)%gru(indxGRU)%hru(indxHRU)%var,err,cmessage)
@@ -335,31 +336,32 @@ subroutine FileAccessActor_WriteOutput(&
   do iStruct=1,size(structInfo)
     select case(trim(structInfo(iStruct)%structName))
       case('forc')
-        call writeData(ncid,outputTimeStep(indxGRU)%dat(:),nHRUrun,maxLayers,indxGRU,nSteps,forc_meta, &
+        call writeData(ncid,outputTimeStep(indxGRU)%dat(:),outputTimestepUpdate,maxLayers,indxGRU,nSteps,forc_meta, &
                       outputStructure(1)%forcStat(1),outputStructure(1)%forcStruct(1),'forc', &
                       forcChild_map,outputStructure(1)%indxStruct(1),err,cmessage)
       case('prog')
-        call writeData(ncid,outputTimeStep(indxGRU)%dat(:),nHRUrun,maxLayers,indxGRU,nSteps,prog_meta, & 
+        call writeData(ncid,outputTimeStep(indxGRU)%dat(:),outputTimestepUpdate,maxLayers,indxGRU,nSteps,prog_meta, & 
                       outputStructure(1)%progStat(1),outputStructure(1)%progStruct(1),'prog', &
                       progChild_map,outputStructure(1)%indxStruct(1),err,cmessage)
       case('diag')
-        call writeData(ncid,outputTimeStep(indxGRU)%dat(:),nHRUrun,maxLayers,indxGRU,nSteps,diag_meta, &
+        call writeData(ncid,outputTimeStep(indxGRU)%dat(:),outputTimestepUpdate,maxLayers,indxGRU,nSteps,diag_meta, &
                       outputStructure(1)%diagStat(1),outputStructure(1)%diagStruct(1),'diag', &
                       diagChild_map,outputStructure(1)%indxStruct(1),err,cmessage)
       case('flux')
-        call writeData(ncid,outputTimeStep(indxGRU)%dat(:),nHRUrun,maxLayers,indxGRU,nSteps,flux_meta, &
+        call writeData(ncid,outputTimeStep(indxGRU)%dat(:),outputTimestepUpdate,maxLayers,indxGRU,nSteps,flux_meta, &
                       outputStructure(1)%fluxStat(1),outputStructure(1)%fluxStruct(1),'flux', &
                       fluxChild_map,outputStructure(1)%indxStruct(1),err,cmessage)
       case('indx')
-        call writeData(ncid,outputTimeStep(indxGRU)%dat(:),nHRUrun,maxLayers,indxGRU,nSteps,indx_meta, &
+        call writeData(ncid,outputTimeStep(indxGRU)%dat(:),outputTimestepUpdate,maxLayers,indxGRU,nSteps,indx_meta, &
                       outputStructure(1)%indxStat(1),outputStructure(1)%indxStruct(1),'indx', &
                       indxChild_map,outputStructure(1)%indxStruct(1),err,cmessage)
     end select
     if(err/=0)then; message=trim(message)//trim(cmessage)//'['//trim(structInfo(iStruct)%structName)//']'; return; endif
   end do  ! (looping through structures)
-  ! do iFreq = 1,maxvarFreq
-  !   if(outputStructure(1)%finalizeStats(1)%gru(indxGRU)%hru(1)%tim(iStep)%dat(iFreq)) outputTimeStep(indxGRU)%dat(iFreq) = outputTimeStep(indxGRU)%dat(iFreq) + 1
-  ! end do ! ifreq
+  
+  do iFreq = 1,maxvarFreq
+    outputTimeStep(indxGRU)%dat(iFreq) = outputTimeStep(indxGRU)%dat(iFreq) + outputTimeStepUpdate(iFreq) 
+  end do ! ifreq
 
 end subroutine
 
