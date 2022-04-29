@@ -341,8 +341,7 @@ do iter=1,maxiter
  ! check if achieved tolerance
  if(abs(f0) < Xtol) exit
  ! check convergence
- ! TODO: Changed the below to continue the hru computation
- ! if(iter==maxiter)stop 'failed to converge in WETBULBTMP'
+!  if(iter==maxiter)stop 'failed to converge in WETBULBTMP'
  if(iter==maxiter)print*, 'failed to converge in WETBULBTMP'
 end do  ! (iterating)
 

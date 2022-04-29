@@ -49,6 +49,11 @@ behavior summa_actor(stateful_actor<summa_manager>* self, int startGRU, int numG
 				spawnJob(self);
 			}
 		},
+
+		[=](err) {
+			aout(self) << "Unrecoverable Error: Attempting To Fail Gracefully\n";
+			self->quit();
+		}
 	};
 }
 
@@ -57,6 +62,7 @@ void spawnJob(stateful_actor<summa_manager>* self) {
 	// Ensure we do not start a job with too many GRUs
 	if (self->state.numGRU > self->state.maxGRUPerJob) {
 		// spawn the job actor
+		aout(self) << "\n Starting Job with startGRU = " << self->state.startGRU << "\n";
 		self->state.currentJob = self->spawn(job_actor, self->state.startGRU, self->state.maxGRUPerJob, 
 			self->state.configPath, self->state.outputStrucSize, self);
 		
@@ -83,8 +89,8 @@ void parseSettings(stateful_actor<summa_manager>* self, std::string configPath) 
 		json SummaActorConfig = settings["SummaActor"];
 		
 		// Find the desired OutputStrucSize
-		if (SummaActorConfig.find("OuputStrucureSize") != SummaActorConfig.end()) {
-			self->state.outputStrucSize = SummaActorConfig["OuputStrucureSize"];
+		if (SummaActorConfig.find("OuputStructureSize") != SummaActorConfig.end()) {
+			self->state.outputStrucSize = SummaActorConfig["OuputStructureSize"];
 		} else {
 			aout(self) << "Error Finding OutputStructureSize in JOSN - Reverting to default value\n";
 			self->state.outputStrucSize = 250;

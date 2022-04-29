@@ -154,7 +154,7 @@ subroutine cleanUpJobActor(err) bind(C, name='cleanUpJobActor')
 
   implicit none
   integer(c_int), intent(inout)     :: err
-  err = 0
+  err=0
 
   ! Deallocate Time Varaibles
   deallocate(startTime%var);

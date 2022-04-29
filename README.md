@@ -5,6 +5,9 @@ found [here](https://github.com/CH-Earth/summa#readme). SUMMA-Actors is a modifi
 of SUMMA that uses the Actor Model to increase scalability and fault-tolerance. The actor which is known as the basic unit of concurrent computation is at the heart of this 
 software. SUMMA-Actors is built using the [C++ Actor Framework](https://github.com/actor-framework/actor-framework). 
 
+## Documentation
+A more in-depth documentation can be found [here](https://summa-actors.readthedocs.io/en/latest/)
+
 ## Compiling Summa-Actors
 SUMMA-Actors is written in C++ and FORTRAN and can be compiled with a C++ and FORTRAN 
 compiler from the GNU Compiler Collection. We have compiled SUMMA-Actors with the 

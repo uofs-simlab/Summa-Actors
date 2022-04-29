@@ -284,6 +284,7 @@ subroutine FileAccessActor_WriteOutput(&
                                 indxGRU,          & ! index of GRU we are currently writing for
                                 indxHRU,          & ! index of HRU we are currently writing for
                                 err) bind(C, name="FileAccessActor_WriteOutput")
+  USE def_output_module,only:def_output                       ! module to define model output
   USE globalData,only:gru_struc
   USE var_lookup,only:maxVarFreq                               ! # of available output frequencies
   USE writeOutput_module,only:writeBasin,writeTime,writeData
