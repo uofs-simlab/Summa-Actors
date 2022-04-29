@@ -13,6 +13,7 @@ def seffCommand(jobId, numJobs):
     startHRU = 1
     numHRU = 1000
     for i in range(0, int(numJobs)):
+        print("Job", i)
         rowData = []
         rowData = [numHRU * i + 1, numHRU]
         cmdString = "seff {}_{}".format(jobId, i)
