@@ -134,8 +134,11 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
             aout(self) << "Deallocating Structure" << std::endl;
             FileAccessActor_DeallocateStructures(self->state.handle_forcFileInfo, self->state.handle_ncid);
             
-            self->state.readDuration = self->state.readDuration / 1000;
-            self->state.writeDuration = self->state.writeDuration / 1000;
+            self->state.readDuration = self->state.readDuration / 1000; // Convert to milliseconds
+            self->state.readDuration = self->state.readDuration / 1000; // Convert to seconds
+
+            self->state.writeDuration = self->state.writeDuration / 1000; // Convert to milliseconds
+            self->state.writeDuration = self->state.writeDuration / 1000; // Convert to milliseconds
             
             self->send(self->state.parent, file_access_actor_done_v, self->state.readDuration, 
                 self->state.writeDuration);
@@ -197,12 +200,12 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
         self->quit();
         return;
     }
+
+    // Initalize the output Structure
+    aout(self) << "Initalizing Output Structure" << std::endl;
+    Init_OutputStruct(self->state.handle_forcFileInfo, &self->state.outputStrucSize, 
+        &self->state.numGRU, &self->state.err);
     
-    
-    // initalize vector for knowing if HRU output has init'd
-    for(int i = 0; i < self->state.numGRU; i++) {
-        self->state.outputFileInitHRU.push_back(false);
-    }
 
     self->send(self->state.parent, done_file_access_actor_init_v);
     // initalize the forcingFile array

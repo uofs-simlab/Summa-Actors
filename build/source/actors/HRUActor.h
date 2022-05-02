@@ -90,6 +90,13 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
                 self->state.end = std::chrono::high_resolution_clock::now();
                 self->state.duration += calculateTime(self->state.start, self->state.end);
                 // Tell our parent we are done, convert all timings to seconds
+
+                self->state.duration = self->state.duration / 1000; // Convert to milliseconds
+                self->state.initDuration = self->state.initDuration / 1000; // Convert to milliseconds
+                self->state.forcingDuration = self->state.forcingDuration / 1000; // Convert to milliseconds
+                self->state.runPhysicsDuration = self->state.runPhysicsDuration / 1000; // Convert to milliseconds
+                self->state.writeOutputDuration = self->state.writeOutputDuration / 1000; // Convert to milliseconds
+
                 self->send(self->state.parent, 
                     done_hru_v,
                     self->state.indxGRU, 

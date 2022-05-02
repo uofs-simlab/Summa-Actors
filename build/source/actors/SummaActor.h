@@ -37,6 +37,10 @@ behavior summa_actor(stateful_actor<summa_manager>* self, int startGRU, int numG
 
 				self->state.end = std::chrono::high_resolution_clock::now();
             	self->state.duration = calculateTime(self->state.start, self->state.end);
+				
+            	self->state.duration = self->state.duration / 1000; // Convert to milliseconds
+
+				
 				aout(self) << "Total Program Duration:\n";
             	aout(self) << "     " << self->state.duration / 1000  << " Seconds\n";
             	aout(self) << "     " << (self->state.duration / 1000) / 60  << " Minutes\n";

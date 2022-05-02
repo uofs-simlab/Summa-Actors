@@ -127,9 +127,11 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
          */
         [=](done_file_access_actor_init) {
             // Init GRU Actors and the Output Structure
-            self->send(self->state.file_access_actor, initalize_outputStructure_v);
+            // self->send(self->state.file_access_actor, initalize_outputStructure_v);
             self->send(self, init_hru_v);
         },
+
+
 
         [=](file_access_actor_done, double readDuration, double writeDuration) {
             int err = 0;
@@ -151,6 +153,9 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
 
             self->state.end = std::chrono::high_resolution_clock::now();
             self->state.duration = calculateTime(self->state.start, self->state.end);
+
+            self->state.duration = self->state.duration / 1000; // Convert to milliseconds
+
             aout(self) << "\nTotal Job Duration:\n";
             aout(self) << "     " << self->state.duration / 1000  << " Seconds\n";
             aout(self) << "     " << (self->state.duration / 1000) / 60  << " Minutes\n";
