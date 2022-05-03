@@ -9,7 +9,6 @@
 
 using namespace caf;
 behavior test_coordinator(stateful_actor<test_state>* self) {
-    aout(self) << "Starting Test Actor\n";
     return {
     };
 }
@@ -94,7 +93,7 @@ void test_calculateTime() {
 }
 
 
-void testOutputManager(caf::actor_system& sys) {
+void testActorRefList(caf::actor_system& sys) {
     auto a1 = sys.spawn(test_coordinator);
     auto a2 = sys.spawn(test_coordinator);
     auto a3 = sys.spawn(test_coordinator);
@@ -144,14 +143,114 @@ void testOutputManager(caf::actor_system& sys) {
         std::cerr << msg << std::endl;
         IS_TRUE(om->getCurrentSize() == 0)
     }
-
-
-
-
-
-
 }
 
+void testOutputManager(caf::actor_system& sys) {
+    auto a1 = sys.spawn(test_coordinator);
+    auto a2 = sys.spawn(test_coordinator);
+    auto a3 = sys.spawn(test_coordinator);
+    auto a4 = sys.spawn(test_coordinator);
+    auto a5 = sys.spawn(test_coordinator);
+    auto a6 = sys.spawn(test_coordinator);
+    auto a7 = sys.spawn(test_coordinator);
+    auto a8 = sys.spawn(test_coordinator);
+    auto a9 = sys.spawn(test_coordinator);
+    auto a10 = sys.spawn(test_coordinator);
+
+    auto OM = new OutputManager(5, 10);
+
+    for (int i = 0; i < 5; i++) {
+        IS_TRUE(OM->getSize(i) == 0)
+    }
+    try {
+        OM->getSize(8);
+    } catch (const char* msg) {
+        std::cerr << msg << std::endl;
+    }
+
+    OM->addActor(a1, 1);
+    IS_TRUE(OM->getSize(0) == 1);
+    IS_TRUE(OM->getSize(1) == 0);
+    IS_TRUE(OM->getSize(2) == 0);
+    IS_TRUE(OM->getSize(3) == 0);
+    IS_TRUE(OM->getSize(4) == 0);
+    OM->addActor(a2, 2);
+    IS_TRUE(OM->getSize(0) == 2);
+    IS_TRUE(OM->getSize(1) == 0);
+    IS_TRUE(OM->getSize(2) == 0);
+    IS_TRUE(OM->getSize(3) == 0);
+    IS_TRUE(OM->getSize(4) == 0);
+    OM->addActor(a3, 3);
+    IS_TRUE(OM->getSize(0) == 2);
+    IS_TRUE(OM->getSize(1) == 1);
+    IS_TRUE(OM->getSize(2) == 0);
+    IS_TRUE(OM->getSize(3) == 0);
+    IS_TRUE(OM->getSize(4) == 0);    
+    OM->addActor(a4, 4);
+    IS_TRUE(OM->getSize(0) == 2);
+    IS_TRUE(OM->getSize(1) == 2);
+    IS_TRUE(OM->getSize(2) == 0);
+    IS_TRUE(OM->getSize(3) == 0);
+    IS_TRUE(OM->getSize(4) == 0);
+    OM->addActor(a5, 5);
+    IS_TRUE(OM->getSize(0) == 2);
+    IS_TRUE(OM->getSize(1) == 2);
+    IS_TRUE(OM->getSize(2) == 1);
+    IS_TRUE(OM->getSize(3) == 0);
+    IS_TRUE(OM->getSize(4) == 0);
+    OM->addActor(a6, 6);
+    IS_TRUE(OM->getSize(0) == 2);
+    IS_TRUE(OM->getSize(1) == 2);
+    IS_TRUE(OM->getSize(2) == 2);
+    IS_TRUE(OM->getSize(3) == 0);
+    IS_TRUE(OM->getSize(4) == 0);
+    OM->addActor(a7, 7);
+    IS_TRUE(OM->getSize(0) == 2);
+    IS_TRUE(OM->getSize(1) == 2);
+    IS_TRUE(OM->getSize(2) == 2);
+    IS_TRUE(OM->getSize(3) == 1);
+    IS_TRUE(OM->getSize(4) == 0);
+    OM->addActor(a8, 8);
+    IS_TRUE(OM->getSize(0) == 2);
+    IS_TRUE(OM->getSize(1) == 2);
+    IS_TRUE(OM->getSize(2) == 2);
+    IS_TRUE(OM->getSize(3) == 2);
+    IS_TRUE(OM->getSize(4) == 0);
+    OM->addActor(a9, 9);
+    IS_TRUE(OM->getSize(0) == 2);
+    IS_TRUE(OM->getSize(1) == 2);
+    IS_TRUE(OM->getSize(2) == 2);
+    IS_TRUE(OM->getSize(3) == 2);
+    IS_TRUE(OM->getSize(4) == 1);
+    IS_TRUE(!OM->isFull(4))
+
+    OM->addActor(a10, 10);
+    IS_TRUE(OM->getSize(0) == 2);
+    IS_TRUE(OM->getSize(1) == 2);
+    IS_TRUE(OM->getSize(2) == 2);
+    IS_TRUE(OM->getSize(3) == 2);
+    IS_TRUE(OM->getSize(4) == 2);
+    IS_TRUE(OM->isFull(0))
+    IS_TRUE(OM->isFull(1))
+    IS_TRUE(OM->isFull(2))
+    IS_TRUE(OM->isFull(3))
+    IS_TRUE(OM->isFull(4))
+
+    auto a11 = OM->popActor(0);
+    IS_TRUE(a11 == a2);
+    auto a14 = OM->popActor(0);
+    IS_TRUE(a14 ==  a1);
+    auto a12 = OM->popActor(1);
+    IS_TRUE(a12 == a4);
+    auto a13 = OM->popActor(4);
+    IS_TRUE(a13 == a10);
+    IS_TRUE(OM->getSize(0) == 0);
+    IS_TRUE(OM->getSize(1) == 1);
+    IS_TRUE(OM->getSize(2) == 2);
+    IS_TRUE(OM->getSize(3) == 2);
+    IS_TRUE(OM->getSize(4) == 1);
+
+}
 
 
 
@@ -159,6 +258,7 @@ void caf_main(caf::actor_system& sys) {
     caf::scoped_actor self{sys};
     aout(self) << "Starting Test \n";
     // test_calculateTime();
+    testActorRefList(sys);
     testOutputManager(sys);
 }
 
