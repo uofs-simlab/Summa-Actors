@@ -1,6 +1,8 @@
 #include "testCoordinator.h"
-#include "../actors/commonFunctions.h"
+#include "../actors/global.h"
+#include "../actors/OutputManager.h"
 #include <chrono>
+#include <iostream>
 #include <thread>
 
 #define IS_TRUE(x) { if (!(x)) std::cout << __FUNCTION__ << " failed on line " << __LINE__ << std::endl; }
@@ -79,7 +81,6 @@ bool calcTimeAccumulate3Val(int sleepTime1, int sleepTime2, int sleepTime3) {
     }
 }
 
-
 void test_calculateTime() {
     IS_TRUE(calcTimeTest(2));
     IS_TRUE(calcTimeTest(4));
@@ -92,10 +93,73 @@ void test_calculateTime() {
     IS_TRUE(calcTimeAccumulate3Val(5, 2, 3));
 }
 
+
+void testOutputManager(caf::actor_system& sys) {
+    auto a1 = sys.spawn(test_coordinator);
+    auto a2 = sys.spawn(test_coordinator);
+    auto a3 = sys.spawn(test_coordinator);
+    auto a4 = sys.spawn(test_coordinator);
+    auto a5 = sys.spawn(test_coordinator);
+    auto a6 = sys.spawn(test_coordinator);
+
+    auto om = new ActorRefList(5);
+
+    IS_TRUE(om->getCurrentSize() == 0);
+    om->addActor(a1);
+    IS_TRUE(om->getCurrentSize() == 1);
+    om->addActor(a2);
+    IS_TRUE(om->getCurrentSize() == 2);
+    om->addActor(a3);
+    IS_TRUE(om->getCurrentSize() == 3);
+    om->addActor(a4);
+    IS_TRUE(om->getCurrentSize() == 4);
+    om->addActor(a5);
+    IS_TRUE(om->getCurrentSize() == 5);
+    try { 
+        om->addActor(a6);
+    } catch (const char* msg) {
+        std::cerr << msg << std::endl;
+        IS_TRUE(om->getCurrentSize() == 5)
+    }
+
+    IS_TRUE(om->isFull());
+
+    auto a7 = om->popActor();
+    IS_TRUE(a7 == a5);
+    IS_TRUE(om->getCurrentSize() == 4);
+    auto a8 = om->popActor();
+    IS_TRUE(a8 == a4);
+    IS_TRUE(om->getCurrentSize() == 3);
+    auto a9 = om->popActor();
+    IS_TRUE(a9 == a3);
+    IS_TRUE(om->getCurrentSize() == 2);
+    auto a10 = om->popActor();
+    IS_TRUE(a10 == a2);
+    IS_TRUE(om->getCurrentSize() == 1);
+    auto a11 = om->popActor();
+    IS_TRUE(a11 == a1);
+    try {
+        om->popActor();
+    }  catch (const char* msg) {
+        std::cerr << msg << std::endl;
+        IS_TRUE(om->getCurrentSize() == 0)
+    }
+
+
+
+
+
+
+}
+
+
+
+
 void caf_main(caf::actor_system& sys) {
     caf::scoped_actor self{sys};
     aout(self) << "Starting Test \n";
-    test_calculateTime();
+    // test_calculateTime();
+    testOutputManager(sys);
 }
 
 CAF_MAIN()
