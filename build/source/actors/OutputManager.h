@@ -86,8 +86,8 @@ class OutputManager {
         void addActor(caf::actor actor, int index) {
             // Index has to be subtracted by 1 because Fortran array starts at 1
             int listIndex = (index - 1) / this->avgSizeOfActorList;
-            if (listIndex > this->numVectors - 1 || listIndex < 0) {
-                throw "List Index Out Of Range";
+            if (listIndex > this->numVectors - 1) {
+                listIndex =  this->numVectors - 1;
             }
 
             this->list[listIndex]->addActor(actor);

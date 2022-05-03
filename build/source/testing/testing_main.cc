@@ -157,6 +157,7 @@ void testOutputManager(caf::actor_system& sys) {
     auto a9 = sys.spawn(test_coordinator);
     auto a10 = sys.spawn(test_coordinator);
 
+    std::cout << "Creating Output Manager" << std::endl;
     auto OM = new OutputManager(5, 10);
 
     for (int i = 0; i < 5; i++) {
@@ -249,6 +250,112 @@ void testOutputManager(caf::actor_system& sys) {
     IS_TRUE(OM->getSize(2) == 2);
     IS_TRUE(OM->getSize(3) == 2);
     IS_TRUE(OM->getSize(4) == 1);
+
+    OM->popActor(1);
+    OM->popActor(2);
+    OM->popActor(2);
+    OM->popActor(3);
+    OM->popActor(3);
+    OM->popActor(4);
+
+    IS_TRUE(OM->getSize(0) == 0);
+    IS_TRUE(OM->getSize(1) == 0);
+    IS_TRUE(OM->getSize(2) == 0);
+    IS_TRUE(OM->getSize(3) == 0);
+    IS_TRUE(OM->getSize(4) == 0);
+
+    delete OM;
+
+    std::cout << "Creating Output Manager 2 with 3 vectors" << std::endl;
+
+    auto OM2 = new OutputManager(3, 10);
+    try {
+        OM2->addActor(a1, 1);
+    } catch (const char* msg) {
+        std::cerr << msg << std::endl;
+    }
+    IS_TRUE(OM2->getSize(0) == 1);
+    IS_TRUE(OM2->getSize(1) == 0);
+    IS_TRUE(OM2->getSize(2) == 0);
+    try { 
+        OM2->addActor(a2, 2);
+    } catch (const char* msg) {
+        std::cerr << msg << std::endl;
+    }
+    IS_TRUE(OM2->getSize(0) == 2);
+    IS_TRUE(OM2->getSize(1) == 0);
+    IS_TRUE(OM2->getSize(2) == 0);
+    try {
+        OM2->addActor(a3, 3);
+    } catch (const char* msg) {
+        std::cerr << msg << std::endl;
+    }
+    IS_TRUE(OM2->getSize(0) == 3);
+    IS_TRUE(OM2->getSize(1) == 0);
+    IS_TRUE(OM2->getSize(2) == 0);
+    try {
+        OM2->addActor(a4, 4);
+    } catch (const char* msg) {
+        std::cerr << msg << std::endl;
+    }
+    IS_TRUE(OM2->getSize(0) == 3);
+    IS_TRUE(OM2->getSize(1) == 1);
+    IS_TRUE(OM2->getSize(2) == 0);
+    try {
+        OM2->addActor(a5, 5);
+    } catch (const char* msg) {
+        std::cerr << msg << std::endl;
+    }
+    IS_TRUE(OM2->getSize(0) == 3);
+    IS_TRUE(OM2->getSize(1) == 2);
+    IS_TRUE(OM2->getSize(2) == 0);
+    try {
+        OM2->addActor(a6, 6);
+    } catch (const char* msg) {
+        std::cerr << msg << std::endl;
+    }
+    IS_TRUE(OM2->getSize(0) == 3);
+    IS_TRUE(OM2->getSize(1) == 3);
+    IS_TRUE(OM2->getSize(2) == 0);
+    try {
+        OM2->addActor(a7, 7);
+    } catch (const char* msg) {
+        std::cerr << msg << std::endl;
+    }
+    IS_TRUE(OM2->getSize(0) == 3);
+    IS_TRUE(OM2->getSize(1) == 3);
+    IS_TRUE(OM2->getSize(2) == 1);
+    try {
+        OM2->addActor(a8, 8);
+    } catch (const char* msg) {
+        std::cerr << msg << std::endl;
+    }
+    IS_TRUE(OM2->getSize(0) == 3);
+    IS_TRUE(OM2->getSize(1) == 3);
+    IS_TRUE(OM2->getSize(2) == 2);
+    try {
+        OM2->addActor(a9, 9);
+    } catch (const char* msg) {
+        std::cerr << msg << std::endl;
+    }
+    IS_TRUE(OM2->getSize(0) == 3);
+    IS_TRUE(OM2->getSize(1) == 3);
+    IS_TRUE(OM2->getSize(2) == 3);
+    IS_TRUE(OM2->isFull(0));
+    IS_TRUE(OM2->isFull(1));
+    IS_TRUE(!OM2->isFull(2));
+    try {
+        OM2->addActor(a10, 10);
+    } catch (const char* msg) {
+        std::cerr << msg << 10 << std::endl;
+    }
+    IS_TRUE(OM2->getSize(0) == 3);
+    IS_TRUE(OM2->getSize(1) == 3);
+    IS_TRUE(OM2->getSize(2) == 4);
+    IS_TRUE(OM2->isFull(2));
+
+
+
 
 }
 
