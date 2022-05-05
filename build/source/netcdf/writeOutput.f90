@@ -150,7 +150,8 @@ end subroutine writeParm
     ! **************************************************************************************
     ! public subroutine writeData: write model time-dependent data
     ! **************************************************************************************
-subroutine writeData(ncid,outputTimestep,outputTimestepUpdate,maxLayers,iGRU,nSteps, & 
+subroutine writeData(ncid,outputTimestep,outputTimestepUpdate,maxLayers,indxGRU,nSteps, &
+            minGRU, maxGRU, numGRU, & 
             meta,stat,dat,structName,map,indx,err,message)
   USE data_types,only:var_info                       ! metadata type
   USE var_lookup,only:maxVarStat                     ! index into stats structure
@@ -159,6 +160,7 @@ subroutine writeData(ncid,outputTimestep,outputTimestepUpdate,maxLayers,iGRU,nSt
   USE var_lookup,only:iLookStat                      ! index into stat structure
   USE globalData,only:outFreq                        ! output file information
   USE globalData,only:outputStructure
+  USE globalData,only:gru_struc
   USE get_ixName_module,only:get_varTypeName         ! to access type strings for error messages
   USE get_ixName_module,only:get_statName            ! to access type strings for error messages
 
@@ -166,10 +168,13 @@ subroutine writeData(ncid,outputTimestep,outputTimestepUpdate,maxLayers,iGRU,nSt
   ! declare dummy variables
   type(var_i)   ,intent(in)        :: ncid              ! file ids
   integer(i4b)  ,intent(inout)     :: outputTimestep(:) ! output time step
-  integer(i4b)  ,intent(inout)        :: outputTimestepUpdate(:) ! number of HRUs in the run domain
+  integer(i4b)  ,intent(inout)     :: outputTimestepUpdate(:) ! number of HRUs in the run domain
   integer(i4b)  ,intent(in)        :: maxLayers         ! maximum number of layers
-  integer(i4b)  ,intent(in)        :: iGRU
-  integer(i4b)  ,intent(in)        :: nSteps             ! number of timeSteps
+  integer(i4b)  ,intent(in)        :: indxGRU
+  integer(i4b)  ,intent(in)        :: nSteps            ! number of timeSteps
+  integer(i4b)  ,intent(in)        :: minGRU            ! minGRU index to write
+  integer(i4b)  ,intent(in)        :: maxGRU            ! maxGRU index to write - probably not needed
+  integer(i4b)  ,intent(in)        :: numGRU            ! number of GRUs to write 
   type(var_info),intent(in)        :: meta(:)           ! meta data
   class(*)      ,intent(in)        :: stat              ! stats data
   class(*)      ,intent(in)        :: dat               ! timestep data
@@ -191,14 +196,16 @@ subroutine writeData(ncid,outputTimestep,outputTimestepUpdate,maxLayers,iGRU,nSt
   integer(i4b)                     :: datLength         ! length of each data vector
   integer(i4b)                     :: maxLength         ! maximum length of each data vector
   real(rkind)                      :: timeVec(nSteps)   ! timeVal to copy
-  real(rkind)                      :: realVec(nSteps)   ! real vector for all HRUs in the run domain
+  real(rkind)                      :: realVec(numGRU, nSteps)   ! real vector for all HRUs in the run domain
   real(rkind)                      :: realArray(nSteps,maxLayers+1)  ! real array for all HRUs in the run domain
   integer(i4b)                     :: intArray(nSteps,maxLayers+1)   ! integer array for all HRUs in the run domain
   integer(i4b)                     :: dataType          ! type of data
   integer(i4b),parameter           :: ixInteger=1001    ! named variable for integer
   integer(i4b),parameter           :: ixReal=1002       ! named variable for real
   integer(i4b)                     :: stepCounter     ! counter to know how much data we have to write
+  integer(i4b)                     :: gruCounter
   integer(i4b)                     :: iStep
+  integer(i4b)                     :: iGRU
   ! initialize error control
   err=0;message="writeData/"
   ! loop through output frequencies
@@ -216,14 +223,10 @@ subroutine writeData(ncid,outputTimestep,outputTimestepUpdate,maxLayers,iGRU,nSt
         call netcdf_err(err,message); if (err/=0) return
         do iStep = 1, nSteps
           ! check if we want this timestep
-          if(.not.outputStructure(1)%finalizeStats(1)%gru(iGRU)%hru(1)%tim(iStep)%dat(iFreq)) cycle
+          if(.not.outputStructure(1)%finalizeStats(1)%gru(minGRU)%hru(1)%tim(iStep)%dat(iFreq)) cycle
           stepCounter = stepCounter+1
-          timeVec(stepCounter) = outputStructure(1)%forcStruct(1)%gru(iGRU)%hru(1)%var(iVar)%tim(iStep)
+          timeVec(stepCounter) = outputStructure(1)%forcStruct(1)%gru(minGRU)%hru(1)%var(iVar)%tim(iStep)
         end do ! iStep
-        ! Write the values
-        ! print*, "Writing Time, startVal", outputTimeStep(iFreq)
-        ! print*, "Writing Time, stepCounter", stepCounter
-        ! print*, "Writing Time, timeVec", timeVec(1:stepCounter)
         err = nf90_put_var(ncid%var(iFreq),ncVarID,timeVec(1:stepCounter),start=(/outputTimestep(iFreq)/),count=(/stepCounter/))
         call netcdf_err(err,message); if (err/=0)then; print*, "err"; return; endif
         ! save the value of the number of steps to update outputTimestep at the end of the function
@@ -236,21 +239,25 @@ subroutine writeData(ncid,outputTimestep,outputTimestepUpdate,maxLayers,iGRU,nSt
       ! check that the variable is desired
       if (iStat==integerMissing.or.trim(meta(iVar)%varName)=='unknown') cycle
 
-        do iHRU=1,gru_struc(iGRU)%hruCount
+        ! do iHRU=1,gru_struc(iGRU)%hruCount
           ! stats output: only scalar variable type
           if(meta(iVar)%varType==iLookVarType%scalarv) then
             select type(stat)
               class is (gru_hru_time_doubleVec)
-                do iStep = 1, nSteps
-                  if(.not.outputStructure(1)%finalizeStats(1)%gru(iGRU)%hru(1)%tim(iStep)%dat(iFreq)) cycle
-                  stepCounter = stepCounter + 1
-                  realVec(stepCounter) = stat%gru(iGRU)%hru(iHRU)%var(map(iVar))%tim(iStep)%dat(iFreq)
-                end do
-                ! print*, "MetaData ", meta(iVar)%varName
-                ! print*, "Writing Data, startVal", outputTimeStep(iFreq)
-                ! print*, "Writing Data, stepCounter", stepCounter
-                ! print*, "Writing Data, realVec", realVec(1:stepCounter)
-                err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),realVec(1:stepCounter),start=(/iGRU,outputTimestep(iFreq)/),count=(/1,stepCounter/))
+                
+                gruCounter = 0
+                do iGRU = minGRU, maxGRU
+                  stepCounter = 0
+                  gruCounter = gruCounter + 1
+                  do iStep = 1, nSteps
+                    if(.not.outputStructure(1)%finalizeStats(1)%gru(iGRU)%hru(1)%tim(iStep)%dat(iFreq)) cycle
+                    stepCounter = stepCounter + 1
+                    realVec(gruCounter, stepCounter) = stat%gru(iGRU)%hru(1)%var(map(iVar))%tim(iStep)%dat(iFreq)
+                  end do ! iStep
+                  
+                end do ! iGRU
+
+                err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),realVec(1:gruCounter, 1:stepCounter),start=(/minGRU,outputTimestep(iFreq)/),count=(/numGRU,stepCounter/))
                 if (outputTimeStepUpdate(iFreq) /= stepCounter ) then
                   print*, "ERROR Missmatch in Steps"
                   return
@@ -270,9 +277,9 @@ subroutine writeData(ncid,outputTimestep,outputTimestepUpdate,maxLayers,iGRU,nSt
 
 
             ! get the model layers
-            nSoil   = indx%gru(iGRU)%hru(iHRU)%var(iLookIndex%nSoil)%tim(iStep)%dat(1)
-            nSnow   = indx%gru(iGRU)%hru(iHRU)%var(iLookIndex%nSnow)%tim(iStep)%dat(1)
-            nLayers = indx%gru(iGRU)%hru(iHRU)%var(iLookIndex%nLayers)%tim(iStep)%dat(1)
+            nSoil   = indx%gru(iGRU)%hru(1)%var(iLookIndex%nSoil)%tim(iStep)%dat(1)
+            nSnow   = indx%gru(iGRU)%hru(1)%var(iLookIndex%nSnow)%tim(iStep)%dat(1)
+            nLayers = indx%gru(iGRU)%hru(1)%var(iLookIndex%nLayers)%tim(iStep)%dat(1)
 
             ! get the length of each data vector
             select case (meta(iVar)%varType)
@@ -292,14 +299,14 @@ subroutine writeData(ncid,outputTimestep,outputTimestepUpdate,maxLayers,iGRU,nSt
                   do iStep = 1, nSteps
                     if(.not.outputStructure(1)%finalizeStats(1)%gru(iGRU)%hru(1)%tim(iStep)%dat(iFreq)) cycle
                     stepCounter = stepCounter + 1
-                    realArray(stepCounter,1:datLength) = dat%gru(iGRU)%hru(iHRU)%var(iVar)%tim(iStep)%dat(:)
+                    realArray(stepCounter,1:datLength) = dat%gru(iGRU)%hru(1)%var(iVar)%tim(iStep)%dat(:)
                   end do
 
                 class is (gru_hru_time_intVec)
                   do iStep = 1, nSteps
                     if(.not.outputStructure(1)%finalizeStats(1)%gru(iGRU)%hru(1)%tim(iStep)%dat(iFreq)) cycle
                     stepCounter = stepCounter + 1
-                    intArray(stepCounter,1:datLength) = dat%gru(iGRU)%hru(iHRU)%var(iVar)%tim(iStep)%dat(:)
+                    intArray(stepCounter,1:datLength) = dat%gru(iGRU)%hru(1)%var(iVar)%tim(iStep)%dat(:)
                   end do
                 class default; err=20; message=trim(message)//'data must not be scalarv and either of type gru_hru_doubleVec or gru_hru_intVec'; return
             end select
@@ -319,20 +326,14 @@ subroutine writeData(ncid,outputTimestep,outputTimestepUpdate,maxLayers,iGRU,nSt
             ! write the data vectors
             select case(dataType)
               case(ixReal)
-                ! print*, "MetaData ", meta(iVar)%varName
-                ! print*, "Writing Data, startVal", outputTimeStep(iFreq)
-                ! print*, "Writing Data, stepCounter", stepCounter
-                ! print*, "Writing Data, realArray", realArray(1:stepCounter,:)
+
                 err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),realArray(1:stepCounter,:),start=(/iGRU,1,outputTimestep(iFreq)/),count=(/1,maxLength,stepCounter/))
                 if (outputTimeStepUpdate(iFreq) /= stepCounter ) then
                   print*, "ERROR Missmatch in Steps"
                   return
                 endif
               case(ixInteger)
-                ! print*, "MetaData ", meta(iVar)%varName
-                ! print*, "Writing Data, startVal", outputTimeStep(iFreq)
-                ! print*, "Writing Data, stepCounter", stepCounter
-                ! print*, "Writing Data, realArray", realArray(1:stepCounter,:)
+
                 err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),intArray(1:stepCounter,:),start=(/iGRU,1,outputTimestep(iFreq)/),count=(/1,maxLength,stepCounter/))
                 if (outputTimeStepUpdate(iFreq) /= stepCounter ) then
                   print*, "ERROR Missmatch in Steps"
@@ -342,7 +343,7 @@ subroutine writeData(ncid,outputTimestep,outputTimestepUpdate,maxLayers,iGRU,nSt
             end select ! data type
 
           end if ! not scalarv
-        end do ! HRU Loop
+        ! end do ! HRU Loop
 
       ! process error code
       if (err/=0) message=trim(message)//trim(meta(iVar)%varName)//'_'//trim(get_statName(iStat))

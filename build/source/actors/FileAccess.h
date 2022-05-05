@@ -5,6 +5,7 @@
 #include "../interface/file_access_actor/fileAccess_subroutine_wrappers.h"
 #include "caf/all.hpp"
 #include "messageAtoms.h"
+#include "OutputManager.h"
 #include <vector>
 #include <chrono>
 #include "global.h"
@@ -48,7 +49,8 @@ struct file_access_state {
 
     void *handle_forcFileInfo = new_handle_file_info(); // Handle for the forcing file information
     void *handle_ncid = new_handle_var_i();               // output file ids
-    bool outputFileExists = false;
+    OutputManager *output_manager;
+    int num_vectors_in_output_manager = 5;
     int num_steps;
     int outputStrucSize;
     int stepsInCurrentFile;
