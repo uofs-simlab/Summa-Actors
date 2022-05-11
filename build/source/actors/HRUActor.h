@@ -455,8 +455,6 @@ bool check_HRU(stateful_actor<hru_state>* self, int err) {
         return false;
 
     } else {
-        if (debug)
-            aout(self) << "Continuing\n";
         return true;
     }
 }

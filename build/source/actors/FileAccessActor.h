@@ -5,7 +5,7 @@
 
 using namespace caf;
 void initalizeFileAccessActor(stateful_actor<file_access_state>* self);
-int writeOutput(stateful_actor<file_access_state>* self, int indxGRU, int indxHRU, int numStepsToWrite);
+int writeOutput(stateful_actor<file_access_state>* self, int indxGRU, int indxHRU, int numStepsToWrite, int returnMessage, caf::actor actorRef);
 int readForcing(stateful_actor<file_access_state>* self, int currentFile);
 
 behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU, int numGRU, 
@@ -102,13 +102,12 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
         [=](write_output, int indxGRU, int indxHRU, int numStepsToWrite,
             caf::actor refToRespondTo) {
             int err;
+            int returnMessage = 9999;
             
-            err = writeOutput(self, indxGRU, indxHRU, numStepsToWrite);
+            err = writeOutput(self, indxGRU, indxHRU, numStepsToWrite, returnMessage, refToRespondTo);
             if (err != 0) {
                 aout(self) << "FILE_ACCESS_ACTOR - ERROR Writing Output \n";
-            } else {
-                self->send(refToRespondTo, done_write_v);
-            }
+            } 
 
 
         },
@@ -117,17 +116,13 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
             caf::actor refToRespondTo) {
             int err;
 
-            err = writeOutput(self, indxGRU, indxHRU, numStepsToWrite);
-            if (err != 0)
-                aout(self) << "FILE_ACCESS_ACTOR - ERROR Writing Output \n";
-
             err = readForcing(self, currentFile);
             if (err != 0)
                 aout(self) << "\nERROR: FILE_ACCESS_ACTOR - READING_FORCING FAILED\n";
 
-            // Respond to HRU
-            self->send(refToRespondTo, run_hru_v, 
-                self->state.forcFileList[currentFile - 1].getNumSteps());
+            err = writeOutput(self, indxGRU, indxHRU, numStepsToWrite, currentFile, refToRespondTo);
+            if (err != 0)
+                aout(self) << "FILE_ACCESS_ACTOR - ERROR Writing Output \n";
         },
 
         [=](deallocate_structures) {
@@ -205,8 +200,10 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
     aout(self) << "Initalizing Output Structure" << std::endl;
     Init_OutputStruct(self->state.handle_forcFileInfo, &self->state.outputStrucSize, 
         &self->state.numGRU, &self->state.err);
-    
 
+    // Initalize the output manager  
+    self->state.output_manager = new OutputManager(self->state.num_vectors_in_output_manager, self->state.numGRU);
+    
     self->send(self->state.parent, done_file_access_actor_init_v);
     // initalize the forcingFile array
     self->state.filesLoaded = 0;
@@ -216,12 +213,53 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
 }
 
 int writeOutput(stateful_actor<file_access_state>* self, int indxGRU, int indxHRU, 
-    int numStepsToWrite) {
+    int numStepsToWrite, int returnMessage, caf::actor actorRef) {
     self->state.writeStart = std::chrono::high_resolution_clock::now();
-    int err = 0;
+    if (debug) {
+        aout(self) << "Recieved Write Request From GRU: " << indxGRU << "\n";
+    }
+
     
-    FileAccessActor_WriteOutput(self->state.handle_ncid,
-        &numStepsToWrite, &indxGRU, &indxHRU, &err);
+    int err = 0;
+    int listIndex = self->state.output_manager->addActor(actorRef, indxGRU, returnMessage);
+    if (self->state.output_manager->isFull(listIndex)) {
+        if (debug) {
+            aout(self) << "List with Index " << listIndex << " is full and ready to write\n";
+            aout(self) << "Minimum GRU Index = " << self->state.output_manager->getMinIndex(listIndex) << "\n";
+            aout(self) << "Maximum GRU Index = " << self->state.output_manager->getMaxIndex(listIndex) << "\n";
+        }
+
+        int minGRU = self->state.output_manager->getMinIndex(listIndex);
+        int maxGRU = self->state.output_manager->getMaxIndex(listIndex);
+        FileAccessActor_WriteOutput(self->state.handle_ncid,
+            &numStepsToWrite, &minGRU, 
+            &maxGRU, &err);
+        
+        // Pop The actors and send them the correct continue message
+        while(!self->state.output_manager->isEmpty(listIndex)) {
+            std::tuple<caf::actor, int> actor = self->state.output_manager->popActor(listIndex);
+            if (get<1>(actor) == 9999) {
+                
+                self->send(get<0>(actor), done_write_v);
+
+            }  else {
+                self->send(get<0>(actor), run_hru_v, 
+                    self->state.forcFileList[get<1>(actor) - 1].getNumSteps());
+            }
+        }
+        
+
+    } else {
+        if (debug) {
+            aout(self) << "List with Index " << listIndex << " is not full yet waiting to write\n";
+            aout(self) << "Size of list is " << self->state.output_manager->getSize(listIndex) << "\n";
+        }
+    }
+    
+   
+
+
+
     self->state.writeEnd = std::chrono::high_resolution_clock::now();
     self->state.writeDuration += calculateTime(self->state.writeStart, self->state.writeEnd);
 
