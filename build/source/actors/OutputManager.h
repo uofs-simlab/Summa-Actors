@@ -3,6 +3,7 @@
 
 #include "caf/all.hpp"
 #include <vector>
+#include <algorithm>
 /**
  * @brief Basic Container class to hold actor references. This has a size component for checking when it is full.
  * 
@@ -35,6 +36,10 @@ class ActorRefList {
         
         int getCurrentSize() {
             return this->currentSize;
+        }
+
+        int getMaxSize() {
+            return this->maxSize;
         }
         
         bool isFull() {
@@ -82,9 +87,25 @@ class ActorRefList {
             return list.empty();
         }
 
-        
+        /**
+        * Remove the failed HRU from the list
+        *
+        */
+        void removeFailed(caf::actor actorRef) {
+            bool found = false;
+            for(std::vector<std::tuple<caf::actor, int>>::iterator it = this->list.begin(); it != this->list.end(); it++) {
+                if (std::get<0>(*it) == actorRef) {
+                    found = true;
+                    this->list.erase(it);
+                    this->currentSize--; this->maxSize--;
+                    break;
+                }
+            }
 
-
+            if (!found) {
+                throw "Element To Remove Not Found";
+            }
+        }
 };
 
 
@@ -139,6 +160,10 @@ class OutputManager {
             return listIndex;
         }
 
+        /**
+        * Remove tuple from list[index]
+        *
+        */
         std::tuple<caf::actor,int> popActor(int index) {
             if (index > this->numVectors - 1 || index < 0) {
                 throw "List Index Out Of Range";
@@ -147,9 +172,19 @@ class OutputManager {
             }
 
             return this->list[index]->popActor();
+        }
+
+
+        void removeFailed(caf::actor actorRef, int index) {
+            // Find the list this actor is on
+            int listIndex = (index - 1) / this->avgSizeOfActorList;
+            if (listIndex > this->numVectors - 1) {
+                listIndex =  this->numVectors - 1;
+            }
+            
+            this->list[listIndex]->removeFailed(actorRef);
 
         }
-        
 
         bool isFull(int listIndex) {
             if (listIndex > this->numVectors - 1) {

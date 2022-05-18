@@ -151,6 +151,124 @@ void testActorRefList(caf::actor_system& sys) {
     }
 
     IS_TRUE(om->isEmpty())
+
+
+    // Test Remove Failed
+    aout(self) << "Testing Remove Failed" << std::endl;
+    IS_TRUE(om->getCurrentSize() == 0);
+    om->addActor(a1, 1, 9999);
+    IS_TRUE(om->getCurrentSize() == 1);
+    om->addActor(a2, 2, 3);
+    IS_TRUE(om->getCurrentSize() == 2);
+    om->addActor(a3, 3, 7);
+    IS_TRUE(om->getCurrentSize() == 3);
+    om->addActor(a4, 4, 9999);
+    IS_TRUE(om->getCurrentSize() == 4);
+    om->addActor(a5, 5, 8);
+    IS_TRUE(om->getCurrentSize() == 5);
+
+    // Test the removal of a failed actor from middle
+    try {
+        om->removeFailed(a3);
+    } catch (const char* msg) {
+        std::cerr << msg << std::endl;
+    }
+    IS_TRUE(om->getCurrentSize() == 4);
+    IS_TRUE(om->getMaxSize() == 4);
+
+    // Ensure the proper actor was removed
+    a7 = om->popActor();
+    IS_TRUE(get<0>(a7) == a5 && get<1>(a7) == 8);
+    IS_TRUE(om->getCurrentSize() == 3);
+    a8 = om->popActor();
+    IS_TRUE(get<0>(a8) == a4 && get<1>(a8) == 9999);
+    IS_TRUE(om->getCurrentSize() == 2);
+    a10 = om->popActor();
+    IS_TRUE(get<0>(a10) == a2 && get<1>(a10) == 3);
+    IS_TRUE(om->getCurrentSize() == 1);
+    a11 = om->popActor();
+    IS_TRUE(get<0>(a11) == a1 && get<1>(a11) == 9999);
+
+    IS_TRUE(om->isEmpty())
+
+    delete om;
+    om = new ActorRefList(5);
+
+    // Remove Failed Actor from beginning of list
+    IS_TRUE(om->getCurrentSize() == 0);
+    om->addActor(a1, 1, 9999);
+    IS_TRUE(om->getCurrentSize() == 1);
+    om->addActor(a2, 2, 3);
+    IS_TRUE(om->getCurrentSize() == 2);
+    om->addActor(a3, 3, 7);
+    IS_TRUE(om->getCurrentSize() == 3);
+    om->addActor(a4, 4, 9999);
+    IS_TRUE(om->getCurrentSize() == 4);
+    om->addActor(a5, 5, 8);
+    IS_TRUE(om->getCurrentSize() == 5);
+
+    try {
+        om->removeFailed(a1);
+    } catch (const char* msg) {
+        std::cerr << msg << std::endl;
+    }
+    IS_TRUE(om->getCurrentSize() == 4);
+    IS_TRUE(om->getMaxSize() == 4);
+
+    a8 = om->popActor();
+    IS_TRUE(get<0>(a8) == a5 && get<1>(a8) == 8);
+    IS_TRUE(om->getCurrentSize() == 3);
+    a9 = om->popActor();
+    IS_TRUE(get<0>(a9) == a4 && get<1>(a9) == 9999);
+    IS_TRUE(om->getCurrentSize() == 2);
+    a10 = om->popActor();
+    IS_TRUE(get<0>(a10) == a3 && get<1>(a10) == 7);
+    IS_TRUE(om->getCurrentSize() == 1);
+    a11 = om->popActor();
+    IS_TRUE(get<0>(a11) == a2 && get<1>(a11) == 3);
+
+    IS_TRUE(om->isEmpty())
+    delete om;
+    om = new ActorRefList(5);
+
+    // Remove Failed Actor from end of list
+    IS_TRUE(om->getCurrentSize() == 0);
+    om->addActor(a1, 1, 9999);
+    IS_TRUE(om->getCurrentSize() == 1);
+    om->addActor(a2, 2, 3);
+    IS_TRUE(om->getCurrentSize() == 2);
+    om->addActor(a3, 3, 7);
+    IS_TRUE(om->getCurrentSize() == 3);
+    om->addActor(a4, 4, 9999);
+    IS_TRUE(om->getCurrentSize() == 4);
+    om->addActor(a5, 5, 8);
+    IS_TRUE(om->getCurrentSize() == 5);
+
+    try {
+        om->removeFailed(a5);
+    } catch (const char* msg) {
+        std::cerr << msg << std::endl;
+    }
+    IS_TRUE(om->getCurrentSize() == 4);
+    IS_TRUE(om->getMaxSize() == 4);
+
+    a7 = om->popActor();
+    IS_TRUE(get<0>(a7) == a4 && get<1>(a7) == 9999);
+    IS_TRUE(om->getCurrentSize() == 3);
+    a8 = om->popActor();
+    IS_TRUE(get<0>(a8) == a3 && get<1>(a8) == 7);
+    IS_TRUE(om->getCurrentSize() == 2);
+    a9 = om->popActor();
+    IS_TRUE(get<0>(a9) == a2 && get<1>(a9) == 3);
+    IS_TRUE(om->getCurrentSize() == 1);
+    a10 = om->popActor();
+    IS_TRUE(get<0>(a10) == a1 && get<1>(a10) == 9999);
+
+    IS_TRUE(om->isEmpty())
+
+    delete om;
+
+
 }
 
 void testOutputManager(caf::actor_system& sys) {
@@ -364,6 +482,33 @@ void testOutputManager(caf::actor_system& sys) {
     IS_TRUE(OM2->getSize(1) == 3);
     IS_TRUE(OM2->getSize(2) == 4);
     IS_TRUE(OM2->isFull(2));
+
+
+    // Testing Remove Failed
+    aout(self) << "testing Remove Failed from Output Structure \n";
+    OM2->removeFailed(a1, 1);
+    IS_TRUE(OM2->getSize(0) == 2);
+    IS_TRUE(OM2->getSize(1) == 3);
+    IS_TRUE(OM2->getSize(2) == 4);
+    IS_TRUE(OM2->isFull(0));
+    OM2->removeFailed(a5, 5);
+    IS_TRUE(OM2->getSize(0) == 2);
+    IS_TRUE(OM2->getSize(1) == 2);
+    IS_TRUE(OM2->getSize(2) == 4);
+    IS_TRUE(OM2->isFull(1));
+
+    // Pop Actors
+
+    a11 = OM2->popActor(0);
+    IS_TRUE(get<0>(a11) == a3);
+    a12 = OM2->popActor(0);
+    IS_TRUE(get<0>(a12) == a2);
+    IS_TRUE(OM2->isEmpty(0));
+
+    OM2->addActor(a2, 2, 2);
+    OM2->addActor(a3, 3, 3);
+    IS_TRUE(OM2->isFull(0));
+
 
 
 
