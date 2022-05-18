@@ -41,6 +41,13 @@ class ActorRefList {
             return list.size() == this->maxSize;
         }
 
+        /**
+        * Adds An Actor and its return message as a tuple to this->list
+        * actor - the actor ref of the actor being added to this->list
+        * returnMessage - Either 9999 (place holder and specifies to send a done_write_v message) or
+        * this is the current forcingFileList index that allows the file_access actor to know the number 
+        * of steps the HRU actor that needs to compute 
+        */
         void addActor(caf::actor actor, int index, int returnMessage) {
             if (this->isFull()) {
                 throw "List is full, cannot add actor to this list";
@@ -56,6 +63,10 @@ class ActorRefList {
             list.push_back(std::make_tuple(actor, returnMessage));
         }
 
+        /**
+        * Return a tuple of an actor and its returnMessage.
+        * The return message is 9999 or the index of the forcingFile it needs to acces
+        */
         std::tuple<caf::actor,int> popActor() {
             if (list.empty()) {
                 throw "List is empty, nothing to pop";
@@ -114,6 +125,7 @@ class OutputManager {
          * 
          * @param actor Actor reference
          * @param index Actor Index
+         * @param returnMessage Forcing File index or 9999
          * @return int The list index that actor is added to.
          */
         int addActor(caf::actor actor, int index, int returnMessage) {
