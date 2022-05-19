@@ -10,8 +10,9 @@
  */
 class ActorRefList {
     private:
+        int numStepsToWrite; // We can save this value here so that we know how many steps to write
         int currentSize;
-        int maxSize;
+        unsigned int maxSize;
         int minIndex = -1; // minimum index of the actor being stored on this list
         int maxIndex = 0; // maximum index of the actor being stored on this list
         std::vector<std::tuple<caf::actor, int>> list;
@@ -41,6 +42,10 @@ class ActorRefList {
         int getMaxSize() {
             return this->maxSize;
         }
+
+        int getNumStepsToWrite() {
+            return this->numStepsToWrite;
+        }
         
         bool isFull() {
             return list.size() == this->maxSize;
@@ -53,7 +58,7 @@ class ActorRefList {
         * this is the current forcingFileList index that allows the file_access actor to know the number 
         * of steps the HRU actor that needs to compute 
         */
-        void addActor(caf::actor actor, int index, int returnMessage) {
+        void addActor(caf::actor actor, int index, int returnMessage, int numStepsToWrite) {
             if (this->isFull()) {
                 throw "List is full, cannot add actor to this list";
             }
@@ -63,7 +68,7 @@ class ActorRefList {
             if (index < this->minIndex || this->minIndex < 0) {
                 this->minIndex = index;
             }
-
+            this->numStepsToWrite = numStepsToWrite;
             this->currentSize++;
             list.push_back(std::make_tuple(actor, returnMessage));
         }
@@ -85,6 +90,17 @@ class ActorRefList {
 
         bool isEmpty() {
             return list.empty();
+        }
+
+
+        /**
+         * When an actor fails we need to decrement the count
+         * so that this list becomes full when there is a failure
+         * 
+         * indexHRU - index of the HRU causing the error
+         */
+        void decrementMaxSize() {
+            this->maxSize--;
         }
 
         /**
@@ -149,14 +165,14 @@ class OutputManager {
          * @param returnMessage Forcing File index or 9999
          * @return int The list index that actor is added to.
          */
-        int addActor(caf::actor actor, int index, int returnMessage) {
+        int addActor(caf::actor actor, int index, int returnMessage, int numStepsToWrite) {
             // Index has to be subtracted by 1 because Fortran array starts at 1
             int listIndex = (index - 1) / this->avgSizeOfActorList;
             if (listIndex > this->numVectors - 1) {
                 listIndex =  this->numVectors - 1;
             }
 
-            this->list[listIndex]->addActor(actor, index, returnMessage);
+            this->list[listIndex]->addActor(actor, index, returnMessage, numStepsToWrite);
             return listIndex;
         }
 
@@ -175,7 +191,14 @@ class OutputManager {
         }
 
 
-        void removeFailed(caf::actor actorRef, int index) {
+        /** When a failure occurs an actor most likley will not already be on this list
+         * This method may and probably should not be used. Although needing to remove a
+         * specific element from a list may be needed.
+         * Remove the failed actor from the list
+         * Return the index of the list we removed the actor from
+         * This is so we can check if it is full
+         */
+        int removeFailed(caf::actor actorRef, int index) {
             // Find the list this actor is on
             int listIndex = (index - 1) / this->avgSizeOfActorList;
             if (listIndex > this->numVectors - 1) {
@@ -184,6 +207,31 @@ class OutputManager {
             
             this->list[listIndex]->removeFailed(actorRef);
 
+            return listIndex;
+
+        }
+
+        /**
+         *
+         */ 
+
+        int decrementMaxSize(int indexGRU) {
+            // Find the list this actor is on
+            int listIndex = (indexGRU - 1) / this->avgSizeOfActorList;
+            if (listIndex > this->numVectors - 1) {
+                listIndex =  this->numVectors - 1;
+            }
+
+            this->list[listIndex]->decrementMaxSize();
+            return listIndex;
+        }
+
+        /**
+         * Get the number of steps to write from the correct listIndex
+         */
+        int getNumStepsToWrite(int listIndex) {
+
+            return this->list[listIndex]->getNumStepsToWrite();
         }
 
         bool isFull(int listIndex) {

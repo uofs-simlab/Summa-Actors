@@ -16,16 +16,16 @@
 
 
 # Production runs
-# FLAGS_NOAH = -O3 -ffree-form -ffree-line-length-none -fmax-errors=0 -fPIC
-# FLAGS_COMM = -O3 -ffree-line-length-none -fmax-errors=0 -fPIC
-# FLAGS_SUMMA = -O3 -ffree-line-length-none -fmax-errors=0 -fPIC
-# FLAGS_ACTORS = -O3
+FLAGS_NOAH = -O3 -ffree-form -ffree-line-length-none -fmax-errors=0 -fPIC
+FLAGS_COMM = -O3 -ffree-line-length-none -fmax-errors=0 -fPIC
+FLAGS_SUMMA = -O3 -ffree-line-length-none -fmax-errors=0 -fPIC
+FLAGS_ACTORS = -O3
 
 # # Debug runs
-FLAGS_NOAH = -pg -g -O0 -ffree-form -ffree-line-length-none -fmax-errors=0 -fbacktrace -Wno-unused -Wno-unused-dummy-argument -fPIC
-FLAGS_COMM = -pg -g -O0 -Wall -ffree-line-length-none -fmax-errors=0 -fbacktrace -fcheck=bounds -fPIC
-FLAGS_SUMMA = -pg -g -O0 -Wall -ffree-line-length-none -fmax-errors=0 -fbacktrace -fcheck=bounds -fPIC
-FLAGS_ACTORS = -pg -g -O0 -Wall
+# FLAGS_NOAH = -pg -g -O0 -ffree-form -ffree-line-length-none -fmax-errors=0 -fbacktrace -Wno-unused -Wno-unused-dummy-argument -fPIC
+# FLAGS_COMM = -pg -g -O0 -Wall -ffree-line-length-none -fmax-errors=0 -fbacktrace -fcheck=bounds -fPIC
+# FLAGS_SUMMA = -pg -g -O0 -Wall -ffree-line-length-none -fmax-errors=0 -fbacktrace -fcheck=bounds -fPIC
+# FLAGS_ACTORS = -pg -g -O0 -Wall
 
 
 #========================================================================

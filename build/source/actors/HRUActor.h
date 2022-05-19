@@ -133,6 +133,10 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
                 self->state.outputStep += 1;
                 self->state.forcingStep += 1;
 
+                if (self->state.indxGRU == 3 && self->state.timestep < 355) {
+                    err = 20;
+                } 
+
                 keepRunning = check_HRU(self, err); // check if we are done, need to write
 
             }
@@ -380,7 +384,7 @@ bool check_HRU(stateful_actor<hru_state>* self, int err) {
     if (err != 0) { 
         // check for error
         
-        self->send(self->state.parent, run_failure_v, self->state.indxGRU, err);
+        self->send(self->state.parent, run_failure_v, self, self->state.indxGRU, err);
         self->quit();
         return false;
     

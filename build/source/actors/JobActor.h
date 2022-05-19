@@ -100,7 +100,7 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
         },
 
 
-        [=](run_failure, int indxGRU, int err) {
+        [=](run_failure, caf::actor actorRef, int indxGRU, int err) {
             aout(self) << "GRU:" << self->state.GRUList[indxGRU - 1]->getRefGRU()
                 << "indxGRU = " << indxGRU << "Failed \n"
                 << "Will have to wait until all GRUs are done before it can be re-tried\n";
@@ -108,6 +108,9 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
             self->state.numGRUFailed++;
             self->state.numGRUDone++;
             self->state.GRUList[indxGRU - 1]->updateFailed();
+
+            // Let the file_access_actor know this actor failed
+            self->send(self->state.file_access_actor, run_failure_v, indxGRU);
 
             // check if we are the last hru to complete
             if (self->state.numGRUDone >= self->state.numGRU) {

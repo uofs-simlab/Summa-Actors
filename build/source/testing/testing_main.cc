@@ -486,12 +486,15 @@ void testOutputManager(caf::actor_system& sys) {
 
     // Testing Remove Failed
     aout(self) << "testing Remove Failed from Output Structure \n";
-    OM2->removeFailed(a1, 1);
+    int vec;
+    vec = OM2->removeFailed(a1, 1);
+    IS_TRUE(vec == 0);
     IS_TRUE(OM2->getSize(0) == 2);
     IS_TRUE(OM2->getSize(1) == 3);
     IS_TRUE(OM2->getSize(2) == 4);
     IS_TRUE(OM2->isFull(0));
-    OM2->removeFailed(a5, 5);
+    vec = OM2->removeFailed(a5, 5);
+    IS_TRUE(vec == 1);
     IS_TRUE(OM2->getSize(0) == 2);
     IS_TRUE(OM2->getSize(1) == 2);
     IS_TRUE(OM2->getSize(2) == 4);
@@ -508,11 +511,6 @@ void testOutputManager(caf::actor_system& sys) {
     OM2->addActor(a2, 2, 2);
     OM2->addActor(a3, 3, 3);
     IS_TRUE(OM2->isFull(0));
-
-
-
-
-
 }
 
 
