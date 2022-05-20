@@ -133,6 +133,10 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
                 self->state.outputStep += 1;
                 self->state.forcingStep += 1;
 
+                if (self->state.timestep == 450 && self->state.indxGRU == 5) {
+                    err = 20;
+                }
+
                 keepRunning = check_HRU(self, err); // check if we are done, need to write
 
             }

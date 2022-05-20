@@ -279,12 +279,12 @@ MODULE globalData
 
 
  ! define elapsed time
-  real(rkind),save,public                         :: elapsedInit             ! elapsed time for the initialization
-  real(rkind),save,public                         :: elapsedSetup            ! elapsed time for the parameter setup
-  real(rkind),save,public                         :: elapsedRestart          ! elapsed time to read restart data
-  real(rkind),save,public                         :: elapsedRead             ! elapsed time for the data read
-  real(rkind),save,public                         :: elapsedWrite            ! elapsed time for the stats/write
-  real(rkind),save,public                         :: elapsedPhysics          ! elapsed time for the physics
+  real(rkind),save,public                        :: elapsedInit             ! elapsed time for the initialization
+  real(rkind),save,public                        :: elapsedSetup            ! elapsed time for the parameter setup
+  real(rkind),save,public                        :: elapsedRestart          ! elapsed time to read restart data
+  real(rkind),save,public                        :: elapsedRead             ! elapsed time for the data read
+  real(rkind),save,public                        :: elapsedWrite            ! elapsed time for the stats/write
+  real(rkind),save,public                        :: elapsedPhysics          ! elapsed time for the physics
 
   ! define ancillary data structures
   type(var_i),save,public                        :: startTime               ! start time for the model simulation
@@ -305,9 +305,10 @@ MODULE globalData
 
 
   !!!!!!!!!!!!!!!!!!GLOBAL DATA STRUCTURES THAT ARE MANAGED BY FILEACCESSACTOR !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  type(var_forc),allocatable,save,public          :: forcingDataStruct(:)            ! forcingDataStruct(:)%var(:)%dataFromFile(:,:)
+  type(var_forc),allocatable,save,public          :: forcingDataStruct(:)      ! forcingDataStruct(:)%var(:)%dataFromFile(:,:)
   type(dlength),allocatable,save,public           :: vecTime(:)
-  type(summa_output_type),allocatable,save,public :: outputStructure(:)             ! summa_OutputStructure(iFile)%struc%var(:)%dat(nTimeSteps) 
+  type(summa_output_type),allocatable,save,public :: outputStructure(:)        ! summa_OutputStructure(iFile)%struc%var(:)%dat(nTimeSteps) 
+  logical(lgt),allocatable,save,public            :: failedHRUs(:)             ! list of true and false values to indicate if an HRU has failed              
   !!!!!!!!!!!!!!!!!!GLOBAL DATA STRUCTURES THAT ARE MANAGED BY FILEACCESSACTOR !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   ! define fixed dimensions

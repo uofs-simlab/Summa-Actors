@@ -129,6 +129,10 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
         [=](run_failure, int indxGRU) {
             int listIndex;
 
+            // update the list in Fortran
+            updateFailed(&indxGRU);
+
+
             listIndex = self->state.output_manager->decrementMaxSize(indxGRU);
           
             // Check if this list is now full
@@ -198,6 +202,8 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
         self->quit();
         return;
     }
+
+    initFailedHRUTracker(&self->state.numGRU);
 
     Create_Output_File(self->state.handle_ncid, &self->state.numGRU, &self->state.startGRU, &err);
     if (err != 0) {

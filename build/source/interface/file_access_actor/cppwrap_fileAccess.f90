@@ -13,6 +13,7 @@ module cppwrap_fileAccess
   public::ffile_info_C
   public::mDecisions_C
   public::Init_OutputStruct
+  public::initFailedHRUTracker
   public::FileAccessActor_ReadForcing
   public::Create_Output_File
   public::FileAccessActor_WriteOutput
@@ -120,6 +121,27 @@ subroutine read_vegitationTables(err) bind(C, name="read_vegitationTables")
   call read_mp_veg_parameters(trim(SETTINGS_PATH)//trim(MPTABLE),                       & ! filename for Noah-MP table
        trim(model_decisions(iLookDECISIONS%vegeParTbl)%cDecision)) ! classification system used for vegetation
   
+end subroutine
+
+! allocate the failedHRU logical array and intialize it with all false values
+subroutine initFailedHRUTracker(numGRU) bind(C, name="initFailedHRUTracker")
+  USE globalData,only:failedHRUs
+  implicit none
+  integer(c_int), intent(in)        :: numGRU
+
+  allocate(failedHRUs(numGRU))
+
+  failedHRUs(:) = .false.
+
+
+end subroutine
+
+subroutine updateFailed(indxHRU) bind(C, name="updateFailed")
+  USE globalData,only:failedHRUs
+  implicit none
+  integer(c_int), intent(in)        :: indxHRU
+
+  failedHRUs(indxHRU) = .true.
 end subroutine
 
 

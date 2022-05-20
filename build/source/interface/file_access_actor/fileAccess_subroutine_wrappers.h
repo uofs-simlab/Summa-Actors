@@ -8,6 +8,10 @@ extern "C" {
 
   void read_vegitationTables(int* err);
 
+  void initFailedHRUTracker(int* numGRU);
+
+  void updateFailed(int* indxHRU);
+
   void resetOutputCounter(int* indxGRU);
   
   void mDecisions_C(int* numSteps, int* err);

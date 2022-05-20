@@ -1,31 +1,31 @@
 #### parent directory of the 'build' directory ####
-# F_MASTER =
+F_MASTER = /home/kklenk/Summa-Actors
 
 #### fortran compiler ####
-# FC = 
+FC = gfortran 
 
 #### C++ compiler ####
-# CC=g++
+CC=g++
 
 #### Includes AND Libraries ####
-# INCLUDES = 
-# LIBRARIES =
+INCLUDES = -I/usr/include
+LIBRARIES = -L/usr/lib -lnetcdff -lnetcdf -lopenblas
 
-# ACTORS_INCLUDES =
-# ACTORS_LIBRARIES =
+ACTORS_INCLUDES = -I/usr/include -I/usr/local/include
+ACTORS_LIBRARIES = -L/home/linuxbrew.linuxbrew/lib -L/home/kklenk/Summa-Actors/build -lcaf_core -lcaf_io -lsumma -lopenblas -lnetcdff
 
 
-# Production runs
-FLAGS_NOAH = -O3 -ffree-form -ffree-line-length-none -fmax-errors=0 -fPIC
-FLAGS_COMM = -O3 -ffree-line-length-none -fmax-errors=0 -fPIC
-FLAGS_SUMMA = -O3 -ffree-line-length-none -fmax-errors=0 -fPIC
-FLAGS_ACTORS = -O3
+# # Production runs
+# FLAGS_NOAH = -O3 -ffree-form -ffree-line-length-none -fmax-errors=0 -fPIC
+# FLAGS_COMM = -O3 -ffree-line-length-none -fmax-errors=0 -fPIC
+# FLAGS_SUMMA = -O3 -ffree-line-length-none -fmax-errors=0 -fPIC
+# FLAGS_ACTORS = -O3
 
 # # Debug runs
-# FLAGS_NOAH = -pg -g -O0 -ffree-form -ffree-line-length-none -fmax-errors=0 -fbacktrace -Wno-unused -Wno-unused-dummy-argument -fPIC
-# FLAGS_COMM = -pg -g -O0 -Wall -ffree-line-length-none -fmax-errors=0 -fbacktrace -fcheck=bounds -fPIC
-# FLAGS_SUMMA = -pg -g -O0 -Wall -ffree-line-length-none -fmax-errors=0 -fbacktrace -fcheck=bounds -fPIC
-# FLAGS_ACTORS = -pg -g -O0 -Wall
+FLAGS_NOAH = -pg -g -O0 -ffree-form -ffree-line-length-none -fmax-errors=0 -fbacktrace -Wno-unused -Wno-unused-dummy-argument -fPIC
+FLAGS_COMM = -pg -g -O0 -Wall -ffree-line-length-none -fmax-errors=0 -fbacktrace -fcheck=bounds -fPIC
+FLAGS_SUMMA = -pg -g -O0 -Wall -ffree-line-length-none -fmax-errors=0 -fbacktrace -fcheck=bounds -fPIC
+FLAGS_ACTORS = -pg -g -O0 -Wall
 
 
 #========================================================================
@@ -284,9 +284,12 @@ actors_testLink:
 
 actorsClean:
 	rm *.o
+	mv libsumma.so ../bin
+	mv summaMain ../bin
 # Remove object files
 clean:
 	rm -f *.o *.mod soil_veg_gen_parm__genmod.f90
+
 	
 clean_lib:
 	rm *.so
