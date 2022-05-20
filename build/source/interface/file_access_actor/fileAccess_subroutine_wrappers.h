@@ -12,6 +12,8 @@ extern "C" {
 
   void updateFailed(int* indxHRU);
 
+  void resetFailedArray();
+
   void resetOutputCounter(int* indxGRU);
   
   void mDecisions_C(int* numSteps, int* err);

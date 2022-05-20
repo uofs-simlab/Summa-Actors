@@ -282,6 +282,9 @@ void runGRUs(stateful_actor<job_state>* self) {
 }
 
 void restartFailures(stateful_actor<job_state>* self) {
+    // Need to let the file_access_actor know so it can set up the new output Manager
+    self->send(self->state.file_access_actor, restart_failures_v);
+
     self->state.numGRU = self->state.numGRUFailed;
     self->state.numGRUFailed = 0;
     self->state.numGRUDone = 0;

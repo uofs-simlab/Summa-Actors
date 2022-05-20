@@ -134,7 +134,10 @@ class OutputManager {
 
         int numVectors;
         int avgSizeOfActorList;
+        bool runningFailures;
         std::vector<ActorRefList*> list;
+        std::vector<int> failedHRU;
+        std::vector<int> failureReRun; // index used so we can add failedHRUs if they fail a second time
 
 
 
@@ -144,6 +147,7 @@ class OutputManager {
             this->numVectors = numVectors;
             int sizeOfOneVector = totalNumActors / numVectors;
             this->avgSizeOfActorList = sizeOfOneVector;
+            this->runningFailures = false;
             // Create the first n-1 vectors with the same size 
             for (int i = 0; i < numVectors - 1; i++) {
                 auto refList = new ActorRefList(sizeOfOneVector);
@@ -166,13 +170,29 @@ class OutputManager {
          * @return int The list index that actor is added to.
          */
         int addActor(caf::actor actor, int index, int returnMessage, int numStepsToWrite) {
-            // Index has to be subtracted by 1 because Fortran array starts at 1
-            int listIndex = (index - 1) / this->avgSizeOfActorList;
-            if (listIndex > this->numVectors - 1) {
-                listIndex =  this->numVectors - 1;
+            int listIndex;
+            if (this->runningFailures) {
+                // find the index of the structure this HRU is in
+                auto it = find(this->failureReRun.begin(), this->failureReRun.end(), index);
+
+                if (it != this->failureReRun.end()) {
+                    listIndex = it - this->failureReRun.begin();
+                } else {
+                    throw "Element Not Found in failureReRun list";
+                }
+
+                this->list[listIndex]->addActor(actor, index, returnMessage, numStepsToWrite);
+
+            } else {
+                // Index has to be subtracted by 1 because Fortran array starts at 1
+                listIndex = (index - 1) / this->avgSizeOfActorList;
+                if (listIndex > this->numVectors - 1) {
+                    listIndex =  this->numVectors - 1;
+                }
+
+                this->list[listIndex]->addActor(actor, index, returnMessage, numStepsToWrite);
             }
 
-            this->list[listIndex]->addActor(actor, index, returnMessage, numStepsToWrite);
             return listIndex;
         }
 
@@ -208,22 +228,39 @@ class OutputManager {
             this->list[listIndex]->removeFailed(actorRef);
 
             return listIndex;
-
         }
 
         /**
-         *
+         * Decrease the size of the list
+         * Add this GRU to the failed list
          */ 
+        int decrementMaxSize(int indexHRU) {
+            
+            this->failedHRU.push_back(indexHRU);
 
-        int decrementMaxSize(int indexGRU) {
             // Find the list this actor is on
-            int listIndex = (indexGRU - 1) / this->avgSizeOfActorList;
+            int listIndex = (indexHRU - 1) / this->avgSizeOfActorList;
             if (listIndex > this->numVectors - 1) {
                 listIndex =  this->numVectors - 1;
             }
 
             this->list[listIndex]->decrementMaxSize();
             return listIndex;
+        }
+
+        void restartFailures() {
+            this->list.clear();
+            this->numVectors = this->failedHRU.size();
+            for (unsigned int i = 0; i < this->failedHRU.size(); i++) {
+                auto refList = new ActorRefList(1);
+                this->list.push_back(refList);
+            }
+
+            this->failureReRun = this->failedHRU;
+            this->failedHRU.clear();
+
+            this->runningFailures = true;
+
         }
 
         /**
@@ -258,6 +295,10 @@ class OutputManager {
 
         int getMaxIndex(int listIndex) {
             return this->list[listIndex]->getMaxIndex();
+        }
+
+        void addFailed(int indxHRU) {
+            this->failedHRU.push_back(indxHRU);
         }
 
 };

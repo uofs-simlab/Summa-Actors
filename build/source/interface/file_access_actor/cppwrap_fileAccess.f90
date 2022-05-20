@@ -144,6 +144,14 @@ subroutine updateFailed(indxHRU) bind(C, name="updateFailed")
   failedHRUs(indxHRU) = .true.
 end subroutine
 
+subroutine resetFailedArray() bind(C, name="resetFailedArray")
+  USE globalData,only:failedHRUs
+  implicit none
+
+  failedHRUs(:) = .false.
+
+end subroutine
+
 
 subroutine resetOutputCounter(indxGRU) bind(C, name="resetOutputCounter")
   USE globalData,only:outputTimeStep

@@ -32,6 +32,7 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     CAF_ADD_ATOM(summa, reset_outputCounter)
     CAF_ADD_ATOM(summa, read_and_write)
     CAF_ADD_ATOM(summa, write_param)
+    CAF_ADD_ATOM(summa, restart_failures)
     // HRU Actor
     CAF_ADD_ATOM(summa, run_hru)
     CAF_ADD_ATOM(summa, start_hru)

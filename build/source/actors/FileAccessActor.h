@@ -132,13 +132,21 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
             // update the list in Fortran
             updateFailed(&indxGRU);
 
-
             listIndex = self->state.output_manager->decrementMaxSize(indxGRU);
           
             // Check if this list is now full
             if(self->state.output_manager->isFull(listIndex)) {
                 write(self, listIndex);
             }
+        },
+
+        /**
+         * Message from JobActor
+         * OutputManager needs to be adjusted so the failed HRUs can run again
+         */
+        [=](restart_failures) {
+            resetFailedArray();
+            self->state.output_manager->restartFailures();
         },
 
         [=](deallocate_structures) {

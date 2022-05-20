@@ -226,12 +226,16 @@ subroutine writeData(ncid,outputTimestep,outputTimestepUpdate,maxLayers,indxGRU,
         call netcdf_err(err,message); if (err/=0) return
         
         ! make sure the HRU we are using has not failed
-        do iGRU = minGRU, maxGRU
-          if(.not.failedHRUs(iGRU))then
-            verifiedGRUIndex = iGRU
-            exit
-          endif
-        end do
+        if (minGRU == maxGRU)then
+          verifiedGRUIndex = minGRU
+        else 
+          do iGRU = minGRU, maxGRU
+            if(.not.failedHRUs(iGRU))then
+              verifiedGRUIndex = iGRU
+              exit
+            endif
+          end do  
+        endif
 
         do iStep = 1, nSteps
           ! check if we want this timestep
@@ -257,17 +261,26 @@ subroutine writeData(ncid,outputTimestep,outputTimestepUpdate,maxLayers,indxGRU,
           if(meta(iVar)%varType==iLookVarType%scalarv) then
             select type(stat)
               class is (gru_hru_time_doubleVec)
-                gruCounter = 0
-                do iGRU = minGRU, maxGRU
-                  stepCounter = 0
-                  gruCounter = gruCounter + 1
+                if (minGRU == maxGRU)then
+                  gruCounter = 1
                   do iStep = 1, nSteps
                     if(.not.outputStructure(1)%finalizeStats(1)%gru(verifiedGRUIndex)%hru(1)%tim(iStep)%dat(iFreq)) cycle
                     stepCounter = stepCounter + 1
-                    realVec(gruCounter, stepCounter) = stat%gru(iGRU)%hru(1)%var(map(iVar))%tim(iStep)%dat(iFreq)
+                    realVec(gruCounter, stepCounter) = stat%gru(verifiedGRUIndex)%hru(1)%var(map(iVar))%tim(iStep)%dat(iFreq)
                   end do ! iStep
-                end do ! iGRU
-
+                else 
+                  gruCounter = 0
+                  do iGRU = minGRU, maxGRU
+                    stepCounter = 0
+                    gruCounter = gruCounter + 1
+                    do iStep = 1, nSteps
+                      if(.not.outputStructure(1)%finalizeStats(1)%gru(verifiedGRUIndex)%hru(1)%tim(iStep)%dat(iFreq)) cycle
+                      stepCounter = stepCounter + 1
+                      realVec(gruCounter, stepCounter) = stat%gru(iGRU)%hru(1)%var(map(iVar))%tim(iStep)%dat(iFreq)
+                    end do ! iStep
+                  end do ! iGRU  
+                endif
+                
                 err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),realVec(1:gruCounter, 1:stepCounter),start=(/minGRU,outputTimestep(iFreq)/),count=(/numGRU,stepCounter/))
                 if (outputTimeStepUpdate(iFreq) /= stepCounter ) then
                   print*, "ERROR Missmatch in Steps - stat doubleVec"
