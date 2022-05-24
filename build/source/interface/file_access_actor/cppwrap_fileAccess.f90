@@ -411,6 +411,7 @@ subroutine FileAccessActor_DeallocateStructures(handle_forcFileInfo, handle_ncid
   USE globalData,only:structInfo                              ! information on the data structures
   USE globalData,only:vecTime
   USE globalData,only:outputTimeStep
+  USE globalData,only:failedHRUs
   USE summaActors_deallocateOuptutStruct,only:deallocateOutputStruc
   implicit none
   type(c_ptr),intent(in), value        :: handle_forcFileInfo
@@ -452,6 +453,7 @@ subroutine FileAccessActor_DeallocateStructures(handle_forcFileInfo, handle_ncid
   deallocate(outputStructure)
   deallocate(outputTimeStep)
   deallocate(ncid)
+  deallocate(failedHRUs)
   if(allocated(vecTime)) then; deallocate(vecTime); endif
 
 end subroutine FileAccessActor_DeallocateStructures
