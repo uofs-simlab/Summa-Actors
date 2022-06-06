@@ -3,7 +3,7 @@ from os.path import isfile, join
 from pathlib import Path
 import xarray as xr 
 
-numHRU = 1
+numHRU = 25
 
 time = 'time'
 scalarSWE = 'scalarSWE'
@@ -28,8 +28,8 @@ varList = [time, scalarSWE, scalarCanopyWat, scalarAquiferStorage, scalarTotalSo
     scalarTotalET, scalarTotalRunoff, scalarNetRadiation]
 
 filename = "out.txt"
-originalPath = Path('/gladwell/kck540/output/SummaOriginal/failingHRUCheck/SummaOriginal_G079506-079510_day.nc')
-actorsPath = Path('/gladwell/kck540/output/SummaActors/FaillingHRUCheck/SummaActorsGRU79500-10_day.nc')
+originalPath = Path('/home/kklenk/projects/rpp-kshook/kklenk/SummaOriginalOuput/May-13-2022/netcdf/SummaBE_G000001-000125_day.nc')
+actorsPath = Path('/home/kklenk/projects/rpp-kshook/kklenk/SummaActorsOutput/May-26-2022/netcdf/SummaActorsGRU1-500_day.nc')
 
 originalDataset = xr.open_dataset(originalPath)
 actorsDataset = xr.open_dataset(actorsPath)
@@ -37,11 +37,11 @@ actorsDataset = xr.open_dataset(actorsPath)
 allHRUsOriginal = []
 allHRUsActors = []
 
-# for ihru in range(0, numHRU):
-allHRUsOriginal.append(originalDataset.isel(hru=2).copy())
+for ihru in range(0, numHRU):
+  allHRUsOriginal.append(originalDataset.isel(hru=ihru).copy())
 
-# for ihru in range(6, numHRU):
-allHRUsActors.append(actorsDataset.isel(hru=7).copy())
+for ihru in range(0, numHRU):
+  allHRUsActors.append(actorsDataset.isel(hru=ihru).copy())
 
 file = open(filename, "w")
 for i in range(0, numHRU):

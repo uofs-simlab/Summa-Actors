@@ -82,10 +82,13 @@ def create_output_path(outputPath):
     print("Directory Created. Now Creating sub directories for SLURM Data and NetCDF data")
     outputNetCDF = outputPath + "netcdf/"
     outputSlurm = outputPath + "slurm/"
+    outputCSV = outputPath + "csv/"
     if not exists(outputNetCDF):
         os.mkdir(outputNetCDF)
     if not exists(outputSlurm):
         os.mkdir(outputSlurm)
+    if not exists(outputCSV):
+        os.mkdir(outputCSV)
     
     # need to add the file name to outputSlurm
     # The job will not be submitted without a file name

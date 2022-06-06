@@ -50,7 +50,7 @@ struct file_access_state {
     void *handle_forcFileInfo = new_handle_file_info(); // Handle for the forcing file information
     void *handle_ncid = new_handle_var_i();               // output file ids
     OutputManager *output_manager;
-    int num_vectors_in_output_manager = 2;
+    int num_vectors_in_output_manager = 8;
     int num_steps;
     int outputStrucSize;
     int stepsInCurrentFile;

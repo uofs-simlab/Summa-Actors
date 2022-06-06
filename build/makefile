@@ -1,18 +1,18 @@
 #### parent directory of the 'build' directory ####
-F_MASTER = /home/kklenk/Summa-Actors
+# F_MASTER = /home/kklenk/Summa-Actors
 
-#### fortran compiler ####
-FC = gfortran 
+# #### fortran compiler ####
+# FC = gfortran 
 
-#### C++ compiler ####
-CC=g++
+# #### C++ compiler ####
+# CC=g++
 
-#### Includes AND Libraries ####
-INCLUDES = -I/usr/include
-LIBRARIES = -L/usr/lib -lnetcdff -lnetcdf -lopenblas
+# #### Includes AND Libraries ####
+# INCLUDES = -I/usr/include
+# LIBRARIES = -L/usr/lib -lnetcdff -lnetcdf -lopenblas
 
-ACTORS_INCLUDES = -I/usr/include -I/usr/local/include
-ACTORS_LIBRARIES = -L/home/linuxbrew.linuxbrew/lib -L/home/kklenk/Summa-Actors/build -lcaf_core -lcaf_io -lsumma -lopenblas -lnetcdff
+# ACTORS_INCLUDES = -I/usr/include -I/usr/local/include
+# ACTORS_LIBRARIES = -L/home/linuxbrew.linuxbrew/lib -L/home/kklenk/Summa-Actors/build -lcaf_core -lcaf_io -lsumma -lopenblas -lnetcdff
 
 
 # Production runs
@@ -284,8 +284,6 @@ actors_testLink:
 
 actorsClean:
 	rm *.o
-	mv libsumma.so ../bin
-	mv summaMain ../bin
 # Remove object files
 clean:
 	rm -f *.o *.mod soil_veg_gen_parm__genmod.f90
