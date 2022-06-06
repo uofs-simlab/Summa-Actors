@@ -39,7 +39,9 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
 
     // Spawn the file_access_actor. This will return the number of forcing files we are working with
     self->state.file_access_actor = self->spawn(file_access_actor, self->state.startGRU, self->state.numGRU, 
-        self->state.outputStrucSize, self);
+        self->state.outputStrucSize, self->state.configPath, self);
+
+
     aout(self) << "Job Actor Initalized \n";
 
     return {

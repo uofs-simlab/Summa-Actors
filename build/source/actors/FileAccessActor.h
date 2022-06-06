@@ -4,19 +4,25 @@
 #include "FileAccess.h"
 
 using namespace caf;
+using json = nlohmann::json;
+
+
 void initalizeFileAccessActor(stateful_actor<file_access_state>* self);
 int writeOutput(stateful_actor<file_access_state>* self, int indxGRU, int indxHRU, int numStepsToWrite, int returnMessage, caf::actor actorRef);
 int readForcing(stateful_actor<file_access_state>* self, int currentFile);
 int write(stateful_actor<file_access_state>* self, int listIndex);
+int parseSettings(stateful_actor<file_access_state>* self, std::string configPath);
+
+
 
 behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU, int numGRU, 
-    int outputStrucSize, actor parent) {
+    int outputStrucSize, std::string configPath, actor parent) {
     // Set File_Access_Actor variables
     self->state.parent = parent;
     self->state.numGRU = numGRU;
     self->state.startGRU = startGRU;
     self->state.outputStrucSize = outputStrucSize;
-
+    parseSettings(self, configPath);
     aout(self) << "\nFile Access Actor Started\n";
     initalizeFileAccessActor(self);
 
@@ -328,6 +334,30 @@ int readForcing(stateful_actor<file_access_state>* self, int currentFile) {
         }
     }
 
+}
+
+int parseSettings(stateful_actor<file_access_state>* self, std::string configPath) {
+    json settings;
+    std::string SummaActorsSettigs = "/Summa_Actors_Settings.json";
+	std::ifstream settings_file(configPath + SummaActorsSettigs);
+	settings_file >> settings;
+	settings_file.close();
+    
+    if (settings.find("FileAccessActor") != settings.end()) {
+        json FileAccessActorConfig = settings["FileAccessActor"];
+        // Find the File Manager Path
+        if (FileAccessActorConfig.find("num_vectors_in_output_manager") !=  FileAccessActorConfig.end()) {
+            self->state.num_vectors_in_output_manager = FileAccessActorConfig["num_vectors_in_output_manager"];
+        } else {
+            aout(self) << "Error Finding FileManagerPath - Exiting as this is needed\n";
+            return -1;
+        }
+
+        return 0;
+    } else {
+        aout(self) << "Error Finding JobActor in JSON file - Exiting as there is no path for the fileManger\n";
+        return -1;
+    }
 }
 
 

@@ -54,6 +54,10 @@ def create_init_config():
             "OuputStructureSize": 1,
             "maxGRUPerJob": 1
         },
+
+        "FileAccessActor": {
+            "num_vectors_in_output_manager": 1
+        },
     
         "JobActor": {
             "FileManagerPath": "",
