@@ -5,26 +5,11 @@ import math
 from os.path import exists
 from datetime import date
 
-def actor_setting(actor_id, setting_name, setting_value):
-    new_dic = {actor_id: {}}
-
-
 """
 Function to create the inital summa_actors_settings file
 """
 def create_init_config():
     Settings_file = { 
-        "JobSubmissionParams": {
-            "cpus-per-task": 1,
-            "memory": "",
-            "job-name": "",
-            "account": "",
-            "numHRUs": 1,
-            "maxNumberOfJobs": 1,
-            "maxGRUsPerSubmission": 1,
-            "executablePath": ""
-            },
-
         "Configuration": {
             "controlVersion": "",
             "simStartTime": "",
@@ -49,6 +34,17 @@ def create_init_config():
             "generalTableFile": "",
             "noahmpTableFile": ""
         },
+        
+        "JobSubmissionParams": {
+            "cpus-per-task": 1,
+            "memory": "",
+            "job-name": "",
+            "account": "",
+            "numHRUs": 1,
+            "maxNumberOfJobs": 1,
+            "maxGRUsPerSubmission": 1,
+            "executablePath": ""
+            },
 
         "SummaActor": {
             "OuputStructureSize": 1,

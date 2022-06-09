@@ -1,0 +1,52 @@
+{
+  "Configuration": {
+    "controlVersion": "",
+    "simStartTime": "",
+    "simEndTime": "",
+    "tmZoneInfo": "",
+    "settingsPath": "",
+    "forcingPath": "",
+    "outputPath": "",
+    "forcingFreq": "",
+    "forcingStart": "",
+    "decisionsFile": "",
+    "outputControlFile": "",
+    "globalHruParamFile": "",
+    "globalGruParamFile": "",
+    "attributeFile": "",
+    "trialParamFile": "",
+    "forcingListFile": "",
+    "initConditionFile": "",
+    "outFilePrefix": "",
+    "vegTableFile": "",
+    "soilTableFile": "",
+    "generalTableFile": "",
+    "noahmpTableFile": ""
+  },
+  "JobSubmissionParams": {
+    "cpus-per-task": 1,
+    "memory": "",
+    "job-name": "",
+    "account": "",
+    "numHRUs": 1,
+    "maxNumberOfJobs": 1,
+    "maxGRUsPerSubmission": 1,
+    "executablePath": ""
+  },
+  "SummaActor": {
+    "OuputStructureSize": 1,
+    "maxGRUPerJob": 1
+  },
+  "FileAccessActor": {
+    "num_vectors_in_output_manager": 1
+  },
+  "JobActor": {
+    "FileManagerPath": "",
+    "outputCSV": "",
+    "csvPath": ""
+  },
+  "HRUActor": {
+    "printOutput": "",
+    "outputFrequency": 1
+  }
+}
