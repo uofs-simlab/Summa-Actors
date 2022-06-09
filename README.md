@@ -17,51 +17,43 @@ SUMMA-Actors depends on the following Libraries:
  * [C++ Actor Framework](https://github.com/actor-framework/actor-framework) 
 
 Once the following libraries have been installed SUMMA-Actors can be compiled in 
-one of two ways. The first way is to modify the makefile directly and the second 
+one of two ways. The first way is to modify the Makefile directly and the second 
 is to invoke the makefile by shellscript:
 
 ### Method 1: Makefile
-The method is best used for a workstation build that does not have access to a Compute Canada environment where inlcudes and libraires will need to be explicitly specified. 
- 1. Makefile:
-  Changes need to be made to the following variables in the Makefile:
-    - F_MASTER = directory/above/build
-    - FC = gfortran
-    - CC = g++
-    - INCLUDES = Path/to/netcdf/includes
-    - LIBRARIES = Path/to/netcdf/lib & Path/to/openblas
-        -lnetcdff -lopenblas
-    - ACTORS_INCLUDES = $INCLUDES & Path/to/CAF/includes
-    - ACTORS_LIBRARIES = $LIBRARIES & PATH/to/CAF/lib & PATH/to/libsumma.so
+The method is best used for a workstation build that does not have access to a Compute Canada Software Stack where includes and libraries will need to be explicitly specified.
+
+The Makefile is located in the `build` directory and the following variables will need to be uncommented and changed:
+  - F_MASTER = Path/to/Summa-Actors/  # this is the directory above build/
+  - FC = gfortran
+  - CC = g++
+  - INCLUDES = Path/to/netcdf/includes
+  - LIBRARIES = Path/to/netcdf/lib 
+                Path/to/openblas
+                -lnetcdff -lopenblas
+  - ACTORS_INCLUDES = $INCLUDES 
+                      Path/to/CAF/includes
+  - ACTORS_LIBRARIES = $LIBRARIES 
+                       PATH/to/CAF/lib 
+                       $(F_MASTER)/bin
         -lcaf_core -lcaf_io -lsumma -lopenblas -lnetcdff
 
-  After the following SUMMA-Actors can be compiled with `make`.
+After the following SUMMA-Actors can be compiled with `make`.
 
-  Note: SUMMA is compiled as a shared library (libsumma.so) and the main program 
-  will need to know where this library is located in order to properly link it.
-  By compiling both libsumma.so and summaMain in the same directory (build/) should be 
-  enough. However if there are issues, specifing where libsumma.so will be compiled can be done 
-  by adding the path to `ACTORS_LIBRARIES` in the makefile this should rectify the issues.
+Once compiled you will need to set the library path variable with the following command (replace F_Master with the full path to the SUMMA-Actors directory):
+`export LD_LIBRARY_PATH=/F_MASTER/bin`
+
+See section Running SUMMA-Actors for instructions on how to use the program.
   
 ### Method 2: Shell Script
- 2. ShellScript:
-  In the build directory exists a example_compile.sh script that can be modified.
-  This is usually used for HPC computing environments and includes which modules 
-  to load for Compute Canada or the University of Saskatchewan's Copernicus. 
-  example_compile.sh contains instructions on what parts to modify and how to 
-  invoke the makefile from the script.
-  
-  Once the shellscript has been modified running it with `source your_script.sh` will compile 
-  SUMMA-Actors.
+This method is best used for cluster environments that have access to the Compute Canada Software Stack. This method has been tested on the University of Saskatchewan's Copernicus and Compute Canada's Graham. This method will invoke the Makefile and no modifications should be made to the Makefile for this method.
 
+The compilation script is located in the `build` as `compile_summa.sh`. The only variable within the compile script that needs to be changed is the `F_MASTER` path. This is the absolute path to the SUMMA-Actors directory.
 
-After SUMMA-Actors is compiled you should be left with a libsumma.so and a summaMain file 
-in your build directory.
+Once the F_MASTER path has been specified the following command can be used to build SUMMA-Actors from the build directory:
+`source compile_summa.sh`
 
-It is important to set the `LD_LIBRARY_PATH` environment variable before attempting to run 
-summa. This variable needs to point to the location of libsumma.so. If you compiled using the 
-shellscript using the `source` command and following the directions within the example_compile.sh 
-this should already be set for you. 
-
+This script should load all of the required modules from the Compute Canada Software Stack as well as set the environment variable `LD_LIBRARY_PATH` required for running SUMMA-Actors.
 
 ## Running Summa-Actors
 

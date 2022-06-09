@@ -1,18 +1,18 @@
 #### parent directory of the 'build' directory ####
-# F_MASTER = /home/kklenk/Summa-Actors
+# F_MASTER =
 
-# #### fortran compiler ####
-# FC = gfortran 
+#### fortran compiler ####
+# FC = 
 
-# #### C++ compiler ####
-# CC=g++
+#### C++ compiler ####
+# CC =
 
-# #### Includes AND Libraries ####
-# INCLUDES = -I/usr/include
-# LIBRARIES = -L/usr/lib -lnetcdff -lnetcdf -lopenblas
+#### Includes AND Libraries ####
+# INCLUDES =
+# LIBRARIES =
 
-# ACTORS_INCLUDES = -I/usr/include -I/usr/local/include
-# ACTORS_LIBRARIES = -L/home/linuxbrew.linuxbrew/lib -L/home/kklenk/Summa-Actors/build -lcaf_core -lcaf_io -lsumma -lopenblas -lnetcdff
+# ACTORS_INCLUDES =
+# ACTORS_LIBRARIES =
 
 
 # Production runs
@@ -268,6 +268,7 @@ compile_summa:
 # generate library
 link:   
 	$(FC) -shared *.o -o libsumma.so  
+	mv libsumma.so $(F_MASTER)/bin
 
 # compile the c++ portion of SummaActors
 actors:
@@ -275,7 +276,9 @@ actors:
 
 actorsLink:
 	$(CC) -o summaMain *.o $(ACTORS_LIBRARIES)
+	mv summaMain $(F_MASTER)/bin
 
+#### COMPILE TESTING FILES ####
 actors_test:
 	$(CC) $(FLAGS_ACTORS) -c $(ACTOR_TEST) -std=c++17 $(ACTORS_INCLUDES)
 
