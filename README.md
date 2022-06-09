@@ -1,17 +1,13 @@
 # SUMMA-Actors: Structure for Unifying Multiple Modeling Alternatives with Actors
 
 SUMMA-Actors is a modified version of the already existing SUMMA software that can be 
-found [here](https://github.com/CH-Earth/summa#readme). SUMMA-Actors is a modification 
-of SUMMA that uses the Actor Model to increase scalability and fault-tolerance. The actor which is known as the basic unit of concurrent computation is at the heart of this 
-software. SUMMA-Actors is built using the [C++ Actor Framework](https://github.com/actor-framework/actor-framework). 
+found [here](https://github.com/CH-Earth/summa#readme). SUMMA-Actors uses the Actor Model to increase scalability and fault-tolerance. It is built using the [C++ Actor Framework](https://github.com/actor-framework/actor-framework). 
 
 ## Documentation
 A more in-depth documentation can be found [here](https://summa-actors.readthedocs.io/en/latest/)
 
 ## Compiling Summa-Actors
-SUMMA-Actors is written in C++ and FORTRAN and can be compiled with a C++ and FORTRAN 
-compiler from the GNU Compiler Collection. We have compiled SUMMA-Actors with the 
-following compilers:
+SUMMA-Actors is written in C++ and FORTRAN and is currently tested for the following compilers:
  * g++
  * gfortran
 
@@ -23,7 +19,9 @@ SUMMA-Actors depends on the following Libraries:
 Once the following libraries have been installed SUMMA-Actors can be compiled in 
 one of two ways. The first way is to modify the makefile directly and the second 
 is to invoke the makefile by shellscript:
- 
+
+### Method 1: Makefile
+The method is best used for a workstation build that does not have access to a Compute Canada environment where inlcudes and libraires will need to be explicitly specified. 
  1. Makefile:
   Changes need to be made to the following variables in the Makefile:
     - F_MASTER = directory/above/build
@@ -33,11 +31,10 @@ is to invoke the makefile by shellscript:
     - LIBRARIES = Path/to/netcdf/lib & Path/to/openblas
         -lnetcdff -lopenblas
     - ACTORS_INCLUDES = $INCLUDES & Path/to/CAF/includes
-    - ACTORS_LIBRARIES = $LIBRARIES & PATH/to/CAF/lib & PATH/to/summa.so
+    - ACTORS_LIBRARIES = $LIBRARIES & PATH/to/CAF/lib & PATH/to/libsumma.so
         -lcaf_core -lcaf_io -lsumma -lopenblas -lnetcdff
 
-  Once these changes have been made SUMMA-Actors can be called with `make` from
-  the build/ directory.
+  After the following SUMMA-Actors can be compiled with `make`.
 
   Note: SUMMA is compiled as a shared library (libsumma.so) and the main program 
   will need to know where this library is located in order to properly link it.
@@ -45,7 +42,8 @@ is to invoke the makefile by shellscript:
   enough. However if there are issues, specifing where libsumma.so will be compiled can be done 
   by adding the path to `ACTORS_LIBRARIES` in the makefile this should rectify the issues.
   
- 1. ShellScript:
+### Method 2: Shell Script
+ 2. ShellScript:
   In the build directory exists a example_compile.sh script that can be modified.
   This is usually used for HPC computing environments and includes which modules 
   to load for Compute Canada or the University of Saskatchewan's Copernicus. 
