@@ -22,8 +22,15 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
     self->state.numGRU = numGRU;
     self->state.startGRU = startGRU;
     self->state.outputStrucSize = outputStrucSize;
-    parseSettings(self, configPath);
-    aout(self) << "\nFile Access Actor Started\n";
+
+    // Get Settings from configuration file
+    if (parseSettings(self, configPath) == -1) {
+        aout(self) << "Error with JSON Settings File!!!\n";
+        self->quit();
+    } else {
+        aout(self) << "\nSETTINGS FOR FILE_ACCESS_ACTOR\n" <<
+        "Number of Vectors in Output Structure = " << self->state.num_vectors_in_output_manager << "\n";
+    }
     initalizeFileAccessActor(self);
 
     return {

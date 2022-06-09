@@ -98,9 +98,14 @@ def create_output_path(outputPath):
     # The job will not be submitted without a file name
     outputSlurm += "slurm-%A_%a.out"
     
-    return outputNetCDF, outputSlurm
+    return outputNetCDF, outputSlurm, outputCSV
 
 
+"""
+Function to create the file manager for SummaActors,
+THis is a text file that is created from the settings in the Configuration section
+in the JSON file.
+"""
 def create_file_manager():
     json_file = open("Summa_Actors_Settings.json")
     fileManagerSettings = json.load(json_file)
@@ -109,7 +114,7 @@ def create_file_manager():
     # add the date for the run
     outputPath = fileManagerSettings["Configuration"]["outputPath"]
     if exists(outputPath):
-        outputNetCDF, outputSlurm = create_output_path(outputPath)
+        outputNetCDF, outputSlurm, outputCSV = create_output_path(outputPath)
         fileManagerSettings["Configuration"]["outputPath"] = outputNetCDF
     else:
         print("Output path does not exist, Ensure it exists before running this setup")
@@ -123,6 +128,7 @@ def create_file_manager():
     with open("Summa_Actors_Settings.json") as settings_file:
         data = json.load(settings_file)
         data["JobActor"]["FileManagerPath"] = os.getcwd() + "/" + "fileManager.txt"
+        data["JobActor"]["csvPath"] = outputCSV
 
     with open("Summa_Actors_Settings.json", "w") as updated_settings:
         json.dump(data, updated_settings, indent=2) 
@@ -149,47 +155,6 @@ def create_caf_config():
     caf_config_path += "/"
     caf_config_path += caf_config_name
     return caf_config_path
-
-"""
-Function to create the a list of the jobs will run
-This is used for submitting the array job
-"""
-def create_job_list():
-    json_file = open("Summa_Actors_Settings.json")
-    SummaSettings = json.load(json_file)
-    json_file.close()
-
-    numberOfTasks = SummaSettings["JobSubmissionParams"]["numHRUs"]
-    GRUPerJob = SummaSettings["JobSubmissionParams"]["maxGRUsPerSubmission"]
-    numCPUs = SummaSettings["JobSubmissionParams"]["cpus-per-task"]
-    print(numberOfTasks)
-    print(GRUPerJob)
-    print(numCPUs)
-
-    # we need to get the full path of the summa binary
-    os.chdir("../build")
-    summaPath = os.getcwd()
-    summaPath += "/summaMain"
-    os.chdir("../config")
-    config_dir = os.getcwd()
-    caf_config_path = create_caf_config(numCPUs)
-
-
-    # we want to assemble the job list
-    job_list = open("job_list.txt", "w")
-    gruStart = 1
-    jobCount = 0
-    while gruStart < numberOfTasks:
-        if (numberOfTasks - gruStart < GRUPerJob):
-            job_list.write("{} -g {} -n {} -c {} --config-file={}\n".format(summaPath,\
-                gruStart, numberOfTasks - gruStart, config_dir, caf_config_path))
-        else:
-            job_list.write("{} -g {} -n {} -c {} --config-file={}\n".format(summaPath,\
-                gruStart, GRUPerJob, config_dir, caf_config_path))
-        gruStart += GRUPerJob
-        jobCount += 1
-    
-    return jobCount
 
 
 def create_sbatch_file(outputSlurm, configFile):
@@ -243,7 +208,6 @@ def init_run():
     if exists('./Summa_Actors_Settings.json'):
         print("File Exists, What do we do next")
         outputSlurm = create_file_manager()
-        # jobCount = create_job_list()
         configFile = create_caf_config()
         create_sbatch_file(outputSlurm, configFile)
         

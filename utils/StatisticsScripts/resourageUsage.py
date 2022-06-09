@@ -33,7 +33,6 @@ def seffCommand(jobId, numJobs):
 
     writer.writerow(header)
 
-    startHRU = 1
     numHRU = 1000
     for i in range(0, int(numJobs)):
         print("Job", i)
