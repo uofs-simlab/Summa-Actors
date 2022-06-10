@@ -7,7 +7,7 @@ module load openblas
 module load caf
 
 #### Specifiy Master Directory, parent of build directory
-export F_MASTER=
+export F_MASTER=/globalhome/kck540/HPC/SummaProjects/Summa-Actors
 
 #### Specifiy Compilers ####
 export FC=gfortran
