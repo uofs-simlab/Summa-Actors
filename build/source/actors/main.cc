@@ -1,12 +1,13 @@
 #include "caf/all.hpp"
 #include "caf/io/all.hpp"
-#include "SummaActor.h"
+#include "summa_actor/SummaActor.h"
+#include "global/messageAtoms.h"
+#include "global/global.h"
+
 #include <string>
-#include "messageAtoms.h"
 #include <bits/stdc++.h>
 #include <unistd.h>
 #include <iostream>
-#include "global.h"
 
 using namespace caf;
 
