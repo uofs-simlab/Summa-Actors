@@ -1,15 +1,16 @@
 #ifndef FILEACCESS_H_
 #define FILEACCESS_H_
-
-#include "../interface/fortran_dataTypes.h"
-#include "../interface/file_access_actor/fileAccess_subroutine_wrappers.h"
 #include "caf/all.hpp"
-#include "messageAtoms.h"
+
+#include "../global/fortran_dataTypes.h"
+#include "../global/messageAtoms.h"
+#include "../global/global.h"
+#include "../global/json.hpp"
+#include "fileAccess_subroutine_wrappers.h"
 #include "OutputManager.h"
 #include <vector>
 #include <chrono>
-#include "global.h"
-#include "json.hpp"
+
 
 
 class forcingFile {

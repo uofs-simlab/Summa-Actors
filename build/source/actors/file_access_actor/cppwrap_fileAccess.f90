@@ -439,22 +439,22 @@ subroutine FileAccessActor_DeallocateStructures(handle_forcFileInfo, handle_ncid
   end do
   
   ! Deallocate Forcing Structure
-  do iFile = 1, size(forcingDataStruct(:))
-    do iVar = 1, size(forcingDataStruct(iFile)%var(:))
-      if (allocated(forcingDataStruct(iFile)%var(iVar)%dataFromFile))then
-        deallocate(forcingDataStruct(iFile)%var(iVar)%dataFromFile)
-      endif
-    end do
-    deallocate(forcingDataStruct(iFile)%var_ix)
-  end do
-  deallocate(forcingDataStruct)
+  ! do iFile = 1, size(forcingDataStruct(:))
+  !   do iVar = 1, size(forcingDataStruct(iFile)%var(:))
+  !     if (allocated(forcingDataStruct(iFile)%var(iVar)%dataFromFile))then
+  !       deallocate(forcingDataStruct(iFile)%var(iVar)%dataFromFile)
+  !     endif
+  !   end do
+  !   deallocate(forcingDataStruct(iFile)%var_ix)
+  ! end do
+  ! deallocate(forcingDataStruct)
 
   deallocate(forcFileInfo)
-  deallocate(outputStructure)
+  ! deallocate(outputStructure)
   deallocate(outputTimeStep)
   deallocate(ncid)
   deallocate(failedHRUs)
-  if(allocated(vecTime)) then; deallocate(vecTime); endif
+  ! if(allocated(vecTime)) then; deallocate(vecTime); endif
 
 end subroutine FileAccessActor_DeallocateStructures
 

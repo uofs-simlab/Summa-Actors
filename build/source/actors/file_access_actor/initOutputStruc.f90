@@ -6,7 +6,6 @@ module summaActors_initOutputStruct
 
 subroutine initalizeOutput(forcFileInfo, maxSteps, nGRU, err)
   USE globalData,only:outputStructure
-  USE globalData,only:outputStructure
   USE globalData,only:time_meta,forc_meta,attr_meta,type_meta ! metadata structures
   USE globalData,only:prog_meta,diag_meta,flux_meta,id_meta   ! metadata structures
   USE globalData,only:mpar_meta,indx_meta                     ! metadata structures

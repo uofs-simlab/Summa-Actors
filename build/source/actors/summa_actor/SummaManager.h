@@ -3,13 +3,15 @@
 
 #include "caf/all.hpp"
 #include "caf/io/all.hpp"
-#include "JobActor.h"
+#include "../job_actor/JobActor.h"
+#include "../global/json.hpp"
+#include "../global/global.h"
+
+
 #include <iostream>
 #include <chrono>
 #include <string>
-#include "json.hpp"
 #include <fstream>
-#include "global.h"
 
 
 

@@ -53,10 +53,10 @@ DSHARE_DIR = $(F_KORE_DIR)/dshare
 NUMREC_DIR = $(F_KORE_DIR)/numrec
 NOAHMP_DIR = $(F_KORE_DIR)/noah-mp
 ENGINE_DIR = $(F_KORE_DIR)/engine
-INTERFACE_DIR = $(F_KORE_DIR)/interface
-JOB_ACTOR_DIR = $(INTERFACE_DIR)/job_actor
-FILE_ACCESS_DIR = $(INTERFACE_DIR)/file_access_actor
-HRU_ACTOR_DIR = $(INTERFACE_DIR)/hru_actor
+ACTORS_DIR = $(F_KORE_DIR)/actors
+JOB_ACTOR_DIR = $(ACTORS_DIR)/job_actor
+FILE_ACCESS_DIR = $(ACTORS_DIR)/file_access_actor
+HRU_ACTOR_DIR = $(ACTORS_DIR)/hru_actor
 
 #  utilities
 SUMMA_NRUTIL= \
@@ -135,7 +135,7 @@ SUMMA_INTERFACE= \
 		cppwrap_auxiliary.f90 \
 		cppwrap_metadata.f90 \
 
-INTERFACE = $(patsubst %, $(INTERFACE_DIR)/%, $(SUMMA_INTERFACE))
+INTERFACE = $(patsubst %, $(ACTORS_DIR)/global/%, $(SUMMA_INTERFACE))
 
 SUMMA_FILEACCESS_INTERFACE = \
 		initOutputStruc.f90 \

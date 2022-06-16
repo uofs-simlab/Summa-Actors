@@ -3,20 +3,21 @@
 
 #include "caf/all.hpp"
 #include "caf/io/all.hpp"
+#include "../file_access_actor/FileAccessActor.h"
+#include "../hru_actor/HRUActor.h"
+#include "../global/messageAtoms.h"
+#include "../global/json.hpp"
+#include "../global/global.h"
+#include "GRUinfo.h"
+#include "job_subroutine_wrappers.h"
+
 #include "string.h"
 #include <unistd.h>
 #include <vector>
-#include "FileAccessActor.h"
-#include "../interface/job_actor/job_subroutine_wrappers.h"
-#include "HRUActor.h"
 #include <chrono>
-#include "messageAtoms.h"
-#include "GRUinfo.h"
 #include <iostream>
 #include <fstream>
 #include <sys/stat.h>
-#include "json.hpp"
-#include "global.h"
 
 struct job_state {
     // Actor References

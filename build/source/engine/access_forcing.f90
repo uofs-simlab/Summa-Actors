@@ -86,7 +86,9 @@ subroutine access_forcingFile(forcFileInfo, iFile, stepsInFile, startGRU, numGRU
    nTimeSteps = forcFileInfo%ffile_list(iFile)%nTimeSteps
    forcingDataStruct(iFile)%nTimeSteps = nTimeSteps
    stepsInFile = nTimeSteps
-   allocate(vecTime(iFile)%dat(nTimeSteps))
+   if(.not.allocated(vecTime(iFile)%dat))then
+      allocate(vecTime(iFile)%dat(nTimeSteps))
+   end if
 
    ! Get Time Information
    err = nf90_inq_varid(ncid,'time',varId);
@@ -97,8 +99,12 @@ subroutine access_forcingFile(forcFileInfo, iFile, stepsInFile, startGRU, numGRU
    ! Need to loop through vars and add forcing data
    nVars = forcFileInfo%ffile_list(iFile)%nVars
    forcingDataStruct(iFile)%nVars = nVars
-   allocate(forcingDataStruct(iFile)%var(nVars))
-   allocate(forcingDataStruct(iFile)%var_ix(nVars))
+   if (.not.allocated(forcingDataStruct(iFile)%var))then
+      allocate(forcingDataStruct(iFile)%var(nVars))
+   endif
+   if (.not.allocated(forcingDataStruct(iFile)%var_ix))then
+      allocate(forcingDataStruct(iFile)%var_ix(nVars))
+   endif
    forcingDataStruct(iFile)%var_ix(:) = integerMissing
 
    ! initialize flags for forcing data
@@ -114,8 +120,9 @@ subroutine access_forcingFile(forcFileInfo, iFile, stepsInFile, startGRU, numGRU
             
       iVar = forcFileInfo%ffile_list(iFile)%var_ix(iNC)
       checkForce(iVar) = .true.
-
-      allocate(forcingDataStruct(iFile)%var(iVar)%dataFromFile(numGRU,nTimeSteps))
+      if (.not.allocated(forcingDataStruct(iFile)%var(iVar)%dataFromFile))then
+         allocate(forcingDataStruct(iFile)%var(iVar)%dataFromFile(numGRU,nTimeSteps))
+      endif
 
       ! Get Forcing Data
       ! get variable name for error reporting

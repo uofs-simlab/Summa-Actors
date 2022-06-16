@@ -1,9 +1,12 @@
 #ifndef HRU_H_
 #define HRU_H_
 #include "caf/all.hpp"
-#include "../interface/fortran_dataTypes.h"
-#include "../interface/hru_actor/hru_subroutine_wrappers.h"
-#include "messageAtoms.h"
+#include "hru_subroutine_wrappers.h"
+#include "../global/fortran_dataTypes.h"
+#include "../global/messageAtoms.h"
+#include "../global/json.hpp"
+#include "../global/global.h"
+
 #include <fstream>
 #include <string>
 #include <typeinfo>
@@ -12,8 +15,7 @@
 #include <sys/resource.h>
 #include <chrono>
 #include <iostream>
-#include "json.hpp"
-#include "global.h"
+
 
 using namespace caf;
 
