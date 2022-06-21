@@ -1,8 +1,6 @@
-#ifndef fileAccess_SUBROUTINE_WRAPPERS_H_
-#define fileAccess_SUBROUTINE_WRAPPERS_H_
+#pragma once
 
 extern "C" {
-  
   
   void read_pinit_C(int* err);
 
@@ -34,6 +32,3 @@ extern "C" {
 
   void Write_HRU_Param(void* handle_ncid, int* indxGRU, int* indxHRU, int* err);
 }
-
-
-#endif

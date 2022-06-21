@@ -1,10 +1,14 @@
-#ifndef SUMMACLIENTACTOR_H_
-#define SUMMACLIENTACTOR_H_
+#include "job_actor.hpp"
+#include "file_access_actor.hpp"
+#include "json.hpp"
+#include "message_atoms.hpp"
+#include "global.hpp"
+#include "job_actor_subroutine_wrappers.hpp"
+#include "hru_actor.hpp"
 
-#include "Job.h"
-
-using namespace caf;
 using json = nlohmann::json;
+
+namespace caf {
 
 /**
  * @brief First Actor that is spawned that is not the Coordinator Actor.
@@ -305,6 +309,6 @@ void restartFailures(stateful_actor<job_state>* self) {
     }
 }
 
+} // End Namespace caf
 
 
-#endif

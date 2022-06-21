@@ -7,7 +7,7 @@ module load openblas
 module load caf
 
 #### Specifiy Master Directory, parent of build directory
-export F_MASTER=/globalhome/kck540/HPC/SummaProjects/Summa-Actors
+export ROOT_DIR=/globalhome/kck540/HPC/SummaProjects/Summa-Actors
 
 #### Specifiy Compilers ####
 export FC=gfortran
@@ -28,11 +28,11 @@ export ACTORS_LIBRARIES="-L$EBROOTCAF/lib\
     -L$EBROOTCAF/lib64\
     -L$EBROOTNETCDFMINFORTRAN/lib64\
     -L$EBROOTOPENBLAS/lib\
-    -L$F_MASTER/bin\
+    -L$ROOT_DIR/bin\
     -lcaf_core -lcaf_io -lsumma -lopenblas -lnetcdff"
 
 #### Compile with the Makefile ####
-make -f ${F_MASTER}/build/makefile
+make -f ${ROOT_DIR}/build/makefile all
 
 
-export LD_LIBRARY_PATH=${F_MASTER}/bin
+export LD_LIBRARY_PATH=${ROOT_DIR}/bin
