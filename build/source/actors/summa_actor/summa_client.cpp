@@ -1,25 +1,11 @@
-#ifndef SUMMACLIENT_H_
-#define SUMMACLIENT_H_
-
 #include "caf/all.hpp"
 #include "caf/io/all.hpp"
 
-using namespace caf;
-
-struct summa_client_state {
-    strong_actor_ptr current_server;
-
-};
+#include "summa_client.hpp"
 
 
-behavior unconnected(stateful_actor<summa_client_state>*);
-void connecting(stateful_actor<summa_client_state>*, const std::string& host, uint16_t port);
-behavior running(stateful_actor<summa_client_state>*, const actor& say_hello);
+namespace caf {
 
-
-/**
- * @brief Set up the client and its down handler
- */
 behavior summa_client(stateful_actor<summa_client_state>* self) {
     self->set_down_handler([=](const down_msg& dm){
         if(dm.source == self->state.current_server) {
@@ -81,10 +67,4 @@ behavior running(stateful_actor<summa_client_state>* self, const actor& server_a
         }
     };
 }
-
-
-
-
-
-
-#endif
+}

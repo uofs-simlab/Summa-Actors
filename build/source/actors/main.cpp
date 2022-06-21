@@ -1,6 +1,8 @@
 #include "caf/all.hpp"
 #include "caf/io/all.hpp"
 #include "summa_actor.hpp"
+#include "summa_client.hpp"
+#include "summa_server.hpp"
 #include "global.hpp"
 #include "message_atoms.hpp"
 #include <string>
@@ -37,41 +39,41 @@ class config : public actor_system_config {
     }
 };
 
-// void run_client(actor_system& system, const config& cfg) {
-//     scoped_actor self{system};
-//     if (cfg.distributed) {
-//         aout(self) << "Starting SUMMA-Client in Distributed Mode\n";
-//         auto c = system.spawn(summa_client);
-//         if (!cfg.host.empty() && cfg.port > 0) {
-//             anon_send(c, connect_atom_v, cfg.host, cfg.port);
-//         } else {
-//             aout(self) << "No Server Config" << std::endl;
-//         }
+void run_client(actor_system& system, const config& cfg) {
+    scoped_actor self{system};
+    if (cfg.distributed) {
+        aout(self) << "Starting SUMMA-Client in Distributed Mode\n";
+        auto c = system.spawn(summa_client);
+        if (!cfg.host.empty() && cfg.port > 0) {
+            anon_send(c, connect_atom_v, cfg.host, cfg.port);
+        } else {
+            aout(self) << "No Server Config" << std::endl;
+        }
 
-//     } else {
-//         aout(self) << "Starting SUMMA in non-distributed mode \n"; 
-//         auto summa = system.spawn(summa_actor, cfg.startGRU, cfg.countGRU, cfg.configPath);
-//     }
+    } else {
+        aout(self) << "Starting SUMMA in non-distributed mode \n"; 
+        auto summa = system.spawn(summa_actor, cfg.startGRU, cfg.countGRU, cfg.configPath);
+    }
    
-// }
+}
 
 
-// void run_server(actor_system& system, const config& cfg) {
-//     scoped_actor self{system};
-//     auto server = system.spawn(summa_server);
-//     aout(self) << "SEVER" << std::endl;
-//     aout(self) << "Attempting to publish actor" << cfg.port << std::endl;
-//     auto is_port = io::publish(server, cfg.port);
-//     if (!is_port) {
-//         std::cerr << "********PUBLISH FAILED*******" << to_string(is_port.error()) << std::endl;
-//         return;
-//     }
-//     aout(self) << "Successfully Published" << *is_port << std::endl;
-//     std::string dummy;
-//     std::getline(std::cin, dummy);
-//     std::cout << "...cya" << std::endl;
-//     anon_send_exit(server, exit_reason::user_shutdown);
-// }
+void run_server(actor_system& system, const config& cfg) {
+    scoped_actor self{system};
+    auto server = system.spawn(summa_server);
+    aout(self) << "SEVER" << std::endl;
+    aout(self) << "Attempting to publish actor" << cfg.port << std::endl;
+    auto is_port = io::publish(server, cfg.port);
+    if (!is_port) {
+        std::cerr << "********PUBLISH FAILED*******" << to_string(is_port.error()) << std::endl;
+        return;
+    }
+    aout(self) << "Successfully Published" << *is_port << std::endl;
+    std::string dummy;
+    std::getline(std::cin, dummy);
+    std::cout << "...cya" << std::endl;
+    anon_send_exit(server, exit_reason::user_shutdown);
+}
 
 void caf_main(actor_system& sys, const config& cfg) {
     scoped_actor self{sys};
@@ -97,10 +99,18 @@ void caf_main(actor_system& sys, const config& cfg) {
         aout(self) << "Starting SUMMA-Actors in DebugMode\n";
         bool debug = true;
     }
+
+    // Start the Actors
+    if (cfg.distributed) {
+        aout(self) << "Starting SUMMA-Actors in Distributed Mode \n";
+        auto system = cfg.server_mode ? run_server : run_client;
+        system(sys, cfg);
+    } else {
+        auto summa = sys.spawn(summa_actor, cfg.startGRU, cfg.countGRU, cfg.configPath);
+    }
     // start SUMMA
     // auto system = cfg.server_mode ? run_server : run_client;
     // system(sys, cfg);
-    auto summa = sys.spawn(summa_actor, cfg.startGRU, cfg.countGRU, cfg.configPath);
 }
 
 CAF_MAIN(id_block::summa, io::middleman)

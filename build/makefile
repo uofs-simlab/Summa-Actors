@@ -251,6 +251,8 @@ GLOBAL = $(SOURCE_DIR)/global/global.cpp
 
 SUMMA_ACTOR_INCLUDES = -I$(INCLUDE_DIR)/summa_actor
 SUMMA_ACTOR = $(SOURCE_DIR)/summa_actor/summa_actor.cpp
+SUMMA_CLIENT = $(SOURCE_DIR)/summa_actor/summa_client.cpp
+SUMMA_SERVER = $(SOURCE_DIR)/summa_actor/summa_server.cpp
 
 JOB_ACTOR_INCLUDES = -I$(INCLUDE_DIR)/job_actor
 JOB_ACTOR = $(SOURCE_DIR)/job_actor/job_actor.cpp
@@ -280,7 +282,7 @@ all: fortran cpp
 fortran: compile_noah compile_comm compile_summa link clean_fortran
 
 cpp: compile_globals compile_hru_actor compile_file_access_actor compile_job_actor compile_summa_actor \
-	compile_main link_cpp
+	compile_summa_client compile_summa_server compile_main link_cpp clean_cpp
 
 test: actors_test actors_testLink actorsClean
 	
@@ -331,6 +333,12 @@ compile_job_actor:
 compile_summa_actor:
 	$(CC) $(FLAGS_ACTORS) -c $(SUMMA_ACTOR) $(SUMMA_ACTOR_INCLUDES) $(GLOBAL_INCLUDES) $(ACTORS_INCLUDES) \
 	$(JOB_ACTOR_INCLUDES)
+
+compile_summa_client:
+	$(CC) $(FLAGS_ACTORS) -c $(SUMMA_CLIENT) $(SUMMA_ACTOR_INCLUDES)
+
+compile_summa_server:
+	$(CC) $(FLAGS_ACTORS) -c $(SUMMA_SERVER) $(SUMMA_ACTOR_INCLUDES)
 
 compile_main:
 	$(CC) $(FLAGS_ACTORS) -c $(MAIN) $(GLOBAL_INCLUDES) $(SUMMA_ACTOR_INCLUDES) $(JOB_ACTOR_INCLUDES)

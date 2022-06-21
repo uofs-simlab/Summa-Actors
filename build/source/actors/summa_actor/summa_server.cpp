@@ -1,15 +1,9 @@
-#ifndef SUMMASERVER_H_
-#define SUMMASERVER_H_
-
 #include "caf/all.hpp"
 #include "caf/io/all.hpp"
 
-using namespace caf;
+#include "summa_server.hpp"
 
-struct summa_server_state {
-
-};
-
+namespace caf {
 
 behavior summa_server(stateful_actor<summa_server_state>* self) {
     aout(self) << "Summa Server has Started \n"; 
@@ -21,11 +15,5 @@ behavior summa_server(stateful_actor<summa_server_state>* self) {
         }
 
     };
-
 }
-
-
-
-
-
-#endif
+}
