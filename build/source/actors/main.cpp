@@ -31,7 +31,7 @@ class config : public actor_system_config {
             .add(startGRU, "gru,g", "Starting GRU Index")
             .add(countGRU, "numGRU,n", "Total Number of GRUs")
             .add(configPath, "config,c", "Path name of the config directory")
-            .add(debugMode, "debug-mode,debug", "enable debug mode")
+            .add(debugMode, "debug-mode,b", "enable debug mode")
             .add(distributed, "distributed-mode,d", "enable distributed mode")
             .add(port, "port,p", "set port")
             .add(host, "host,h", "set Host (ignored in server mode)")
