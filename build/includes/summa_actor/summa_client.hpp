@@ -3,10 +3,13 @@
 #include "caf/all.hpp"
 #include "caf/io/all.hpp"
 
+#include <string>
+
 namespace caf {
 
 struct summa_client_state {
     strong_actor_ptr current_server;
+    std::string hostname;
 };
 behavior summa_client(stateful_actor<summa_client_state>* self);
 behavior unconnected(stateful_actor<summa_client_state>*);

@@ -2,6 +2,10 @@
 #include "caf/io/all.hpp"
 
 #include "summa_client.hpp"
+#include "message_atoms.hpp"
+
+#include <unistd.h>
+#include <limits.h>
 
 
 namespace caf {
@@ -59,8 +63,12 @@ void connecting(stateful_actor<summa_client_state>* self, const std::string& hos
 }
 
 behavior running(stateful_actor<summa_client_state>* self, const actor& server_actor) {
+    char host[HOST_NAME_MAX];
     aout(self) << "Client Has Started Successfully" << std::endl;
-    self->send(server_actor, 80);
+    gethostname(host, 1024);
+    self->state.hostname = host;
+
+    self->send(server_actor, connect_to_server_v, self, self->state.hostname);
     return {
         [=](std::string test) {
             aout(self) << test << std::endl;

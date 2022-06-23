@@ -254,6 +254,8 @@ SUMMA_ACTOR = $(SOURCE_DIR)/summa_actor/summa_actor.cpp
 SUMMA_CLIENT = $(SOURCE_DIR)/summa_actor/summa_client.cpp
 SUMMA_SERVER = $(SOURCE_DIR)/summa_actor/summa_server.cpp
 
+BATCH_MANGER = $(SOURCE_DIR)/summa_actor/batch_manager.cpp
+
 JOB_ACTOR_INCLUDES = -I$(INCLUDE_DIR)/job_actor
 JOB_ACTOR = $(SOURCE_DIR)/job_actor/job_actor.cpp
 GRUinfo = $(SOURCE_DIR)/job_actor/GRUinfo.cpp
@@ -335,10 +337,10 @@ compile_summa_actor:
 	$(JOB_ACTOR_INCLUDES)
 
 compile_summa_client:
-	$(CC) $(FLAGS_ACTORS) -c $(SUMMA_CLIENT) $(SUMMA_ACTOR_INCLUDES)
+	$(CC) $(FLAGS_ACTORS) -c $(SUMMA_CLIENT) $(SUMMA_ACTOR_INCLUDES) $(GLOBAL_INCLUDES)
 
 compile_summa_server:
-	$(CC) $(FLAGS_ACTORS) -c $(SUMMA_SERVER) $(SUMMA_ACTOR_INCLUDES)
+	$(CC) $(FLAGS_ACTORS) -c $(SUMMA_SERVER) $(BATCH_MANGER) $(SUMMA_ACTOR_INCLUDES) $(GLOBAL_INCLUDES)
 
 compile_main:
 	$(CC) $(FLAGS_ACTORS) -c $(MAIN) $(GLOBAL_INCLUDES) $(SUMMA_ACTOR_INCLUDES) $(JOB_ACTOR_INCLUDES)

@@ -60,15 +60,14 @@ void run_client(actor_system& system, const config& cfg) {
 
 void run_server(actor_system& system, const config& cfg) {
     scoped_actor self{system};
-    auto server = system.spawn(summa_server);
-    aout(self) << "SEVER" << std::endl;
-    aout(self) << "Attempting to publish actor" << cfg.port << std::endl;
+    auto server = system.spawn(summa_server, cfg.configPath);
+    aout(self) << "Attempting to publish summa_server_actor" << cfg.port << std::endl;
     auto is_port = io::publish(server, cfg.port);
     if (!is_port) {
-        std::cerr << "********PUBLISH FAILED*******" << to_string(is_port.error()) << std::endl;
+        std::cerr << "********PUBLISH FAILED*******" << to_string(is_port.error()) << "\n";
         return;
     }
-    aout(self) << "Successfully Published" << *is_port << std::endl;
+    aout(self) << "Successfully Published summa_server_actor on port " << *is_port << "\n";
     std::string dummy;
     std::getline(std::cin, dummy);
     std::cout << "...cya" << std::endl;

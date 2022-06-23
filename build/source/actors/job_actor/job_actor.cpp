@@ -196,8 +196,8 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
 
 int parseSettings(stateful_actor<job_state>* self, std::string configPath) {
     json settings;
-    std::string SummaActorsSettigs = "/Summa_Actors_Settings.json";
-	std::ifstream settings_file(configPath + SummaActorsSettigs);
+    std::string SummaActorsSettings = "/Summa_Actors_Settings.json";
+	std::ifstream settings_file(configPath + SummaActorsSettings);
 	settings_file >> settings;
 	settings_file.close();
     
