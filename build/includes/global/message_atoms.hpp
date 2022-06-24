@@ -39,5 +39,9 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     CAF_ADD_ATOM(summa, dt_init_factor)
     // Client Actor
     CAF_ADD_ATOM(summa, connect_to_server)
+    CAF_ADD_ATOM(summa, batch)
+    // Server Actor
+    CAF_ADD_ATOM(summa, done_batch)
+    CAF_ADD_ATOM(summa, time_to_exit)
 
 CAF_END_TYPE_ID_BLOCK(summa)

@@ -14,12 +14,13 @@ using json = nlohmann::json;
 
 namespace caf {
 
-behavior summa_actor(stateful_actor<summa_actor_state>* self, int startGRU, int numGRU, std::string configPath) {
+behavior summa_actor(stateful_actor<summa_actor_state>* self, int startGRU, int numGRU, std::string configPath, actor parent) {
  	self->state.start = std::chrono::high_resolution_clock::now();
 	// Set Variables
 	self->state.startGRU = startGRU;
 	self->state.numGRU = numGRU;
 	self->state.configPath = configPath;
+	self->state.parent = parent;
 
 	parseSettings(self, configPath);
 	aout(self) << "SETTINGS FOR SUMMA_ACTOR\n";
@@ -45,8 +46,13 @@ behavior summa_actor(stateful_actor<summa_actor_state>* self, int startGRU, int 
             	aout(self) << "     " << self->state.duration / 1000  << " Seconds\n";
             	aout(self) << "     " << (self->state.duration / 1000) / 60  << " Minutes\n";
             	aout(self) << "     " << ((self->state.duration / 1000) / 60) / 60 << " Hours\n";
-
 				aout(self) << "Program Finished \n";
+
+			
+				self->send(self->state.parent, done_batch_v, self->state.duration);
+			
+
+
 
 			} else {
 				// spawn a new job

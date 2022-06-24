@@ -2,6 +2,7 @@
 #include "caf/io/all.hpp"
 
 #include "summa_client.hpp"
+#include "summa_actor.hpp"
 #include "message_atoms.hpp"
 
 #include <unistd.h>
@@ -70,9 +71,22 @@ behavior running(stateful_actor<summa_client_state>* self, const actor& server_a
 
     self->send(server_actor, connect_to_server_v, self, self->state.hostname);
     return {
-        [=](std::string test) {
-            aout(self) << test << std::endl;
+        [=](batch, int batch_id, int start_hru, int num_hru, std::string config_path) {
+            aout(self) << "Received batch to compute" << std::endl;
+            self->state.batch_id = batch_id;
+            self->state.summa_actor_ref = self->spawn(summa_actor, start_hru, num_hru, config_path, self);
+        },
+
+        [=](done_batch, double duration) {
+            aout(self) << "summa_actor has finished, sending message to the server for another batch\n";
+            self->send(server_actor, done_batch_v, self, duration, self->state.batch_id);
+        },
+
+        [=](time_to_exit) {
+            aout(self) << "Client Exiting\n";
+            self->quit();
         }
+        
     };
 }
 }

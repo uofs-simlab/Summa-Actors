@@ -25,10 +25,11 @@ struct summa_actor_state {
     int outputStrucSize; 
 
     caf::actor currentJob;  // Reference to the current job actor
+    caf::actor parent;
 
 };
 
-behavior summa_actor(stateful_actor<summa_actor_state>* self, int startGRU, int numGRU, std::string configPath);
+behavior summa_actor(stateful_actor<summa_actor_state>* self, int startGRU, int numGRU, std::string configPath, actor parent);
 
 void spawnJob(stateful_actor<summa_actor_state>* self);
 

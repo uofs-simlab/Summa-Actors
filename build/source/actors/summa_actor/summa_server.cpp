@@ -14,7 +14,7 @@ namespace caf {
 
 behavior summa_server(stateful_actor<summa_server_state>* self, std::string config_path) {
     aout(self) << "Summa Server has Started \n";
-
+    self->state.config_path = config_path;
     if (parseSettings(self, config_path) == -1) {
         aout(self) << "ERROR WITH JSON SETTINGS FILE!!\n";
         aout(self) << "Summa_Server_Actor Exiting\n";
@@ -40,8 +40,35 @@ behavior summa_server(stateful_actor<summa_server_state>* self, std::string conf
 
     return {
         [=](connect_to_server, actor client, std::string hostname) {
-            aout(self) << "Actor Trying to connect with hostname " << hostname << "\n"; 
+            aout(self) << "Actor trying to connect with hostname " << hostname << "\n";
+            int client_id = self->state.client_list.size(); // So we can lookup the client in O(1) time 
+            self->state.client_list.push_back(new Client(client_id, client, hostname));
+            Batch *batch_to_send = getUnsolvedBatch(self);
+
+            batch_to_send->assignedBatch();
+
+            self->send(client, batch_v, batch_to_send->getBatchID(), batch_to_send->getStartHRU(), 
+                batch_to_send->getNumHRU(), self->state.config_path);
         },
+
+        [=](done_batch, actor client, double duration, int batch_id) {
+            aout(self) << "Client has Solved Batch " << batch_id << "\n";
+            self->state.batch_list[batch_id]->solvedBatch();
+
+            Batch *batch_to_send = getUnsolvedBatch(self);
+
+            if (batch_to_send == NULL) {
+                aout(self) << "We Are Done - Telling Clients to exit \n";
+                for (int i = 0; i < self->state.client_list.size(); i++) {
+                    self->send(self->state.client_list[i]->getActor(), time_to_exit_v);
+                }
+
+            } else {
+                self->send(client, batch_v, batch_to_send->getBatchID(), batch_to_send->getStartHRU(), 
+                    batch_to_send->getNumHRU(), self->state.config_path);
+            }
+
+        }
     };
 }
 
@@ -100,6 +127,19 @@ int assembleBatches(stateful_actor<summa_server_state>* self) {
     }
 
     return 0;
+}
+
+Batch* getUnsolvedBatch(stateful_actor<summa_server_state>* self) {
+
+    // Find the first unassigned batch
+    for (int i = 0; i < self->state.batch_list.size(); i++) {
+        if (self->state.batch_list[i]->getBatchStatus() == unassigned) {
+            return self->state.batch_list[i];
+        }
+    }
+
+    return NULL;
+
 }
 
 } // end namespace

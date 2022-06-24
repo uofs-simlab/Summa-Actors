@@ -3,15 +3,23 @@
 #include <vector>
 
 
+enum batch_status {
+    unassigned,
+    assigned,
+    solved,
+    failed
+};
+
 class Batch {
     private:
         int batch_id;
         int start_hru;
         int num_hru;
-        int run_time;
-        int read_time;
-        int write_time;
+        double run_time;
+        double read_time;
+        double write_time;
         caf::actor assigned_actor;
+        batch_status status;
 
 
     public:
@@ -19,7 +27,24 @@ class Batch {
 
         void printBatchInfo();
 
+        batch_status getBatchStatus();
+
+        int getBatchID();
+
+        int getStartHRU();
+
+        int getNumHRU();
+
+        void solvedBatch();
+
+        void assignedBatch();
+
+        void updateRunTime(double run_time);
+
 };
+
+
+
 
 
 class Batch_Manager {

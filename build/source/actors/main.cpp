@@ -22,7 +22,7 @@ class config : public actor_system_config {
         std::string configPath = "";
         bool debugMode = false;
         uint16_t port = 4444;
-        std::string host = "localhost";
+        std::string host = "cnic-giws-cpu-19001-02";
         bool server_mode = false;
         bool distributed = false;
     
@@ -52,7 +52,7 @@ void run_client(actor_system& system, const config& cfg) {
 
     } else {
         aout(self) << "Starting SUMMA in non-distributed mode \n"; 
-        auto summa = system.spawn(summa_actor, cfg.startGRU, cfg.countGRU, cfg.configPath);
+        auto summa = system.spawn(summa_actor, cfg.startGRU, cfg.countGRU, cfg.configPath, self);
     }
    
 }
@@ -105,7 +105,7 @@ void caf_main(actor_system& sys, const config& cfg) {
         auto system = cfg.server_mode ? run_server : run_client;
         system(sys, cfg);
     } else {
-        auto summa = sys.spawn(summa_actor, cfg.startGRU, cfg.countGRU, cfg.configPath);
+        auto summa = sys.spawn(summa_actor, cfg.startGRU, cfg.countGRU, cfg.configPath, self);
     }
     // start SUMMA
     // auto system = cfg.server_mode ? run_server : run_client;
