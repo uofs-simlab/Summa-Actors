@@ -33,7 +33,7 @@ behavior summa_server(stateful_actor<summa_server_state>* self, std::string conf
     } else {
         aout(self) << "HRU Batches Assembled, Ready For Clients to Connect \n";
 
-        for (int i = 0; i < self->state.batch_list.size(); i++) {
+        for (std::vector<int>::size_type i = 0; i < self->state.batch_list.size(); i++) {
             self->state.batch_list[i]->printBatchInfo();
         }
     }
@@ -59,7 +59,7 @@ behavior summa_server(stateful_actor<summa_server_state>* self, std::string conf
 
             if (batch_to_send == NULL) {
                 aout(self) << "We Are Done - Telling Clients to exit \n";
-                for (int i = 0; i < self->state.client_list.size(); i++) {
+                for (std::vector<int>::size_type i = 0; i < self->state.client_list.size(); i++) {
                     self->send(self->state.client_list[i]->getActor(), time_to_exit_v);
                 }
 
@@ -132,7 +132,7 @@ int assembleBatches(stateful_actor<summa_server_state>* self) {
 Batch* getUnsolvedBatch(stateful_actor<summa_server_state>* self) {
 
     // Find the first unassigned batch
-    for (int i = 0; i < self->state.batch_list.size(); i++) {
+    for (std::vector<int>::size_type i = 0; i < self->state.batch_list.size(); i++) {
         if (self->state.batch_list[i]->getBatchStatus() == unassigned) {
             return self->state.batch_list[i];
         }

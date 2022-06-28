@@ -9,6 +9,8 @@
 #include <bits/stdc++.h>
 #include <unistd.h>
 #include <iostream>
+#include "json.hpp"
+
 
 using namespace caf;
 
@@ -19,50 +21,59 @@ class config : public actor_system_config {
     public:
         int startGRU = -1;
         int countGRU = -1;
-        std::string configPath = "";
+        std::string config_path = "";
         bool debugMode = false;
-        uint16_t port = 4444;
-        std::string host = "cnic-giws-cpu-19001-02";
         bool server_mode = false;
-        bool distributed = false;
     
     config() {
         opt_group{custom_options_, "global"}
             .add(startGRU, "gru,g", "Starting GRU Index")
             .add(countGRU, "numGRU,n", "Total Number of GRUs")
-            .add(configPath, "config,c", "Path name of the config directory")
+            .add(config_path, "config,c", "Path name of the config directory")
             .add(debugMode, "debug-mode,b", "enable debug mode")
-            .add(distributed, "distributed-mode,d", "enable distributed mode")
-            .add(port, "port,p", "set port")
-            .add(host, "host,h", "set Host (ignored in server mode)")
             .add(server_mode, "server-mode,s", "enable server mode");
     }
 };
 
 void run_client(actor_system& system, const config& cfg) {
     scoped_actor self{system};
-    if (cfg.distributed) {
-        aout(self) << "Starting SUMMA-Client in Distributed Mode\n";
-        auto c = system.spawn(summa_client);
-        if (!cfg.host.empty() && cfg.port > 0) {
-            anon_send(c, connect_atom_v, cfg.host, cfg.port);
-        } else {
-            aout(self) << "No Server Config" << std::endl;
-        }
+    std::string key_1 = "DistributedSettings";
+    std::string key_host = "host";
+    std::string key_port = "port";
+    std::string host;
+    int port;
 
+    aout(self) << "Starting SUMMA-Client in Distributed Mode\n";
+    host = getSettings(cfg.config_path, "DistributedSettings", "host", host).value_or("");
+    port = getSettings(cfg.config_path, "DistributedSettings", "port", port).value_or(-1);
+    
+    if (host == "" || port == -1) {
+       aout(self) << "ERROR: run_client() host and port - CHECK SETTINGS FILE\n";
+       return;
+    }
+
+
+    auto c = system.spawn(summa_client);
+    if (!host.empty() && port > 0) {
+        anon_send(c, connect_atom_v, host, port);
     } else {
-        aout(self) << "Starting SUMMA in non-distributed mode \n"; 
-        auto summa = system.spawn(summa_actor, cfg.startGRU, cfg.countGRU, cfg.configPath, self);
+        aout(self) << "No Server Config" << std::endl;
     }
    
 }
 
-
 void run_server(actor_system& system, const config& cfg) {
     scoped_actor self{system};
-    auto server = system.spawn(summa_server, cfg.configPath);
-    aout(self) << "Attempting to publish summa_server_actor" << cfg.port << std::endl;
-    auto is_port = io::publish(server, cfg.port);
+    int port;
+
+    port = getSettings(cfg.config_path, "DistributedSettings", "port", port).value_or(-1);
+    if (port == -1) {
+        aout(self) << "ERROR: run_server() port - CHECK SETTINGS FILE\n";
+        return;
+    }
+    auto server = system.spawn(summa_server, cfg.config_path);
+    aout(self) << "Attempting to publish summa_server_actor on port " << port << std::endl;
+    auto is_port = io::publish(server, port);
     if (!is_port) {
         std::cerr << "********PUBLISH FAILED*******" << to_string(is_port.error()) << "\n";
         return;
@@ -74,42 +85,87 @@ void run_server(actor_system& system, const config& cfg) {
     anon_send_exit(server, exit_reason::user_shutdown);
 }
 
+
+
+
 void caf_main(actor_system& sys, const config& cfg) {
     scoped_actor self{sys};
-    if (cfg.startGRU == -1) {
-        aout(self) << "Starting GRU was not defined!! " << 
-            "startGRU is set with the \"-g\" option\n";
-        aout(self) << "EXAMPLE: ./summaMain -g 1 -n 10 -c location/of/config \n";
-        return;
-    }
-    if (cfg.countGRU == -1) {
-        aout(self) << "Number of GRUs was not defined!! " <<
-            "countGRU is set with the \"-n\" option\n";
-        aout(self) << "EXAMPLE: ./summaMain -g 1 -n 10 -c location/of/config \n";
-        return;
-    }
-    if (cfg.configPath == "") {
-        aout(self) << "File Manager was not defined!! " << 
-            "fileManger is set with the \"-c\" option\n";
-        aout(self) << "EXAMPLE: ./summaMain -g 1 -n 10 -c location/of/config \n";
-        return;
-    }
-    if (cfg.debugMode) {
-        aout(self) << "Starting SUMMA-Actors in DebugMode\n";
-        bool debug = true;
-    }
+    std::string key_1 = "DistributedSettings";
+    std::string key_2 = "distributed-mode";
+    bool distributed_mode = false;
 
-    // Start the Actors
-    if (cfg.distributed) {
-        aout(self) << "Starting SUMMA-Actors in Distributed Mode \n";
+    distributed_mode = getSettings(cfg.config_path, key_1, key_2, distributed_mode).value_or(false);
+    if (distributed_mode) {
+        // only command line arguments needed are config_path and server-mode
         auto system = cfg.server_mode ? run_server : run_client;
         system(sys, cfg);
+
     } else {
-        auto summa = sys.spawn(summa_actor, cfg.startGRU, cfg.countGRU, cfg.configPath, self);
+        // Configure command line arguments
+        if (cfg.startGRU == -1) {
+            aout(self) << "Starting GRU was not defined!! " << 
+                "startGRU is set with the \"-g\" option\n";
+            aout(self) << "EXAMPLE: ./summaMain -g 1 -n 10 -c location/of/config \n";
+            return;
+        }
+        if (cfg.countGRU == -1) {
+            aout(self) << "Number of GRUs was not defined!! " <<
+                "countGRU is set with the \"-n\" option\n";
+            aout(self) << "EXAMPLE: ./summaMain -g 1 -n 10 -c location/of/config \n";
+            return;
+        }
+        if (cfg.config_path == "") {
+            aout(self) << "File Manager was not defined!! " << 
+                "fileManger is set with the \"-c\" option\n";
+            aout(self) << "EXAMPLE: ./summaMain -g 1 -n 10 -c location/of/config \n";
+            return;
+        }
+
+        auto summa = sys.spawn(summa_actor, cfg.startGRU, cfg.countGRU, cfg.config_path, self);
     }
+    
+    // // Start the Actors
+    // if (cfg.distributed) {
+    //     aout(self) << "Starting SUMMA-Actors in Distributed Mode \n";
+    //     auto system = cfg.server_mode ? run_server : run_client;
+    //     system(sys, cfg);
+    // } else {
+    //     auto summa = sys.spawn(summa_actor, cfg.startGRU, cfg.countGRU, cfg.configPath, self);
+    // }
     // start SUMMA
     // auto system = cfg.server_mode ? run_server : run_client;
     // system(sys, cfg);
 }
 
 CAF_MAIN(id_block::summa, io::middleman)
+// void parseSettings(actor_system& sys, std::string config_path, const config& cfg) {
+//     scoped_actor self{sys};
+
+//     json settings;
+//     std::string summa_actors_settings = "/Summa_Actors_Settings.json";
+//     std::ifstream settings_file(config_path + summa_actors_settings);
+//     settings_file >> settings;
+//     settings_file.close();
+
+//     if (settings.find("DistributedSettings") != settings.end()) {
+//         json distributed_settings = settings["DistributedSettings"];
+
+//         if (distributed_settings.find("distributed-mode") != distributed_settings.end()) {
+//             cfg.setDistributed(distributed_settings["distributed-mode"]);
+//         } else {
+//             aout(self) << "ERROR: Cannot find distributed-mode in settings file\n";
+//         }
+//         if (distributed_settings.find("host") != distributed_settings.end()) {
+//             cfg.host = distributed_settings["host"];
+//         } else {
+//             aout(self) << "ERROR: Cannot find host\n";
+//         }
+//         if (distributed_settings.find("port") != distributed_settings.end()) {
+//             cfg.port = distributed_settings["port"];
+//         } else {
+//             aout(self) << "ERROR: Cannot find port\n";
+//         }
+//     } else {
+//         aout(self) << "ERROR: Cannot find Distributed Settings \n";
+//     }
+// }

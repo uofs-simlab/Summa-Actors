@@ -16,16 +16,17 @@ ACTORS_LIBRARIES = -L$(EBROOTCAF)/lib -L$(EBROOTCAF)/lib64 -L$(EBROOTNETCDFMINFO
 
 
 # Production runs
-FLAGS_NOAH = -O3 -ffree-form -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
-FLAGS_COMM = -O3 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
-FLAGS_SUMMA = -O3 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
-FLAGS_ACTORS = -O3 -Wfatal-errors -std=c++17
+# FLAGS_NOAH = -O3 -ffree-form -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
+# FLAGS_COMM = -O3 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
+# FLAGS_SUMMA = -O3 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
+# FLAGS_ACTORS = -O3 -Wfatal-errors -std=c++17
 
 # # Debug runs
-# FLAGS_NOAH = -pg -g -O0 -ffree-form -ffree-line-length-none -fmax-errors=0 -fbacktrace -Wno-unused -Wno-unused-dummy-argument -fPIC
-# FLAGS_COMM = -pg -g -O0 -Wall -ffree-line-length-none -fmax-errors=0 -fbacktrace -fcheck=bounds -fPIC
-# FLAGS_SUMMA = -pg -g -O0 -Wall -ffree-line-length-none -fmax-errors=0 -fbacktrace -fcheck=bounds -fPIC
-# FLAGS_ACTORS = -pg -g -O0 -Wall
+FLAGS_NOAH = -g -O0 -ffree-form -ffree-line-length-none -fmax-errors=0 -fbacktrace -Wno-unused -Wno-unused-dummy-argument -fPIC
+FLAGS_COMM = -g -O0 -Wall -ffree-line-length-none -fmax-errors=0 -fbacktrace -fcheck=bounds -fPIC
+FLAGS_SUMMA = -g -O0 -Wall -ffree-line-length-none -fmax-errors=0 -fbacktrace -fcheck=bounds -fPIC
+FLAGS_ACTORS = -g -O0 -Wall -std=c++17
+
 
 
 #========================================================================
