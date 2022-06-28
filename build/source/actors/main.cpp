@@ -37,11 +37,8 @@ class config : public actor_system_config {
 
 void run_client(actor_system& system, const config& cfg) {
     scoped_actor self{system};
-    std::string key_1 = "DistributedSettings";
-    std::string key_host = "host";
-    std::string key_port = "port";
     std::string host;
-    int port;
+    uint16_t port;
 
     aout(self) << "Starting SUMMA-Client in Distributed Mode\n";
     host = getSettings(cfg.config_path, "DistributedSettings", "host", host).value_or("");
@@ -51,7 +48,6 @@ void run_client(actor_system& system, const config& cfg) {
        aout(self) << "ERROR: run_client() host and port - CHECK SETTINGS FILE\n";
        return;
     }
-
 
     auto c = system.spawn(summa_client);
     if (!host.empty() && port > 0) {
@@ -64,7 +60,7 @@ void run_client(actor_system& system, const config& cfg) {
 
 void run_server(actor_system& system, const config& cfg) {
     scoped_actor self{system};
-    int port;
+    uint16_t port;
 
     port = getSettings(cfg.config_path, "DistributedSettings", "port", port).value_or(-1);
     if (port == -1) {
@@ -124,48 +120,6 @@ void caf_main(actor_system& sys, const config& cfg) {
         auto summa = sys.spawn(summa_actor, cfg.startGRU, cfg.countGRU, cfg.config_path, self);
     }
     
-    // // Start the Actors
-    // if (cfg.distributed) {
-    //     aout(self) << "Starting SUMMA-Actors in Distributed Mode \n";
-    //     auto system = cfg.server_mode ? run_server : run_client;
-    //     system(sys, cfg);
-    // } else {
-    //     auto summa = sys.spawn(summa_actor, cfg.startGRU, cfg.countGRU, cfg.configPath, self);
-    // }
-    // start SUMMA
-    // auto system = cfg.server_mode ? run_server : run_client;
-    // system(sys, cfg);
 }
 
 CAF_MAIN(id_block::summa, io::middleman)
-// void parseSettings(actor_system& sys, std::string config_path, const config& cfg) {
-//     scoped_actor self{sys};
-
-//     json settings;
-//     std::string summa_actors_settings = "/Summa_Actors_Settings.json";
-//     std::ifstream settings_file(config_path + summa_actors_settings);
-//     settings_file >> settings;
-//     settings_file.close();
-
-//     if (settings.find("DistributedSettings") != settings.end()) {
-//         json distributed_settings = settings["DistributedSettings"];
-
-//         if (distributed_settings.find("distributed-mode") != distributed_settings.end()) {
-//             cfg.setDistributed(distributed_settings["distributed-mode"]);
-//         } else {
-//             aout(self) << "ERROR: Cannot find distributed-mode in settings file\n";
-//         }
-//         if (distributed_settings.find("host") != distributed_settings.end()) {
-//             cfg.host = distributed_settings["host"];
-//         } else {
-//             aout(self) << "ERROR: Cannot find host\n";
-//         }
-//         if (distributed_settings.find("port") != distributed_settings.end()) {
-//             cfg.port = distributed_settings["port"];
-//         } else {
-//             aout(self) << "ERROR: Cannot find port\n";
-//         }
-//     } else {
-//         aout(self) << "ERROR: Cannot find Distributed Settings \n";
-//     }
-// }
