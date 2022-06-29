@@ -41,6 +41,5 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self);
 int writeOutput(stateful_actor<file_access_state>* self, int indxGRU, int indxHRU, int numStepsToWrite, int returnMessage, caf::actor actorRef);
 int readForcing(stateful_actor<file_access_state>* self, int currentFile);
 int write(stateful_actor<file_access_state>* self, int listIndex);
-int parseSettings(stateful_actor<file_access_state>* self, std::string configPath);
 
 } // end namespace

@@ -104,14 +104,6 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
     caf::actor file_access_actor, int outputStrucSize, caf::actor parent);
 
 /**
- * @brief Get the settings from the settings JSON file
- * 
- * @param self Actor State
- * @param configPath Path to the directory that contains the settings file
- */
-void parseSettings(stateful_actor<hru_state>* self, std::string configPath);
-
-/**
  Function to initalize the HRU for running
  */
 void Initialize_HRU(stateful_actor<hru_state>* self);

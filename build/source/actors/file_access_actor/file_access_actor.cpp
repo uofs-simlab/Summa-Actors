@@ -27,13 +27,9 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
     self->state.err = 0;
 
     // Get Settings from configuration file
-    if (parseSettings(self, configPath) == -1) {
-        aout(self) << "Error with JSON Settings File!!!\n";
-        self->quit();
-    } else {
-        aout(self) << "\nSETTINGS FOR FILE_ACCESS_ACTOR\n" <<
-        "Number of Vectors in Output Structure = " << self->state.num_vectors_in_output_manager << "\n";
-    }
+    self->state.num_vectors_in_output_manager = getSettings(configPath, "FileAccessActor", "num_vectors_in_output_manager", 
+		self->state.num_vectors_in_output_manager).value_or(1);
+        
     initalizeFileAccessActor(self);
 
     return {
@@ -344,30 +340,6 @@ int readForcing(stateful_actor<file_access_state>* self, int currentFile) {
         }
     }
 
-}
-
-int parseSettings(stateful_actor<file_access_state>* self, std::string configPath) {
-    json settings;
-    std::string SummaActorsSettigs = "/Summa_Actors_Settings.json";
-	std::ifstream settings_file(configPath + SummaActorsSettigs);
-	settings_file >> settings;
-	settings_file.close();
-    
-    if (settings.find("FileAccessActor") != settings.end()) {
-        json FileAccessActorConfig = settings["FileAccessActor"];
-        // Find the File Manager Path
-        if (FileAccessActorConfig.find("num_vectors_in_output_manager") !=  FileAccessActorConfig.end()) {
-            self->state.num_vectors_in_output_manager = FileAccessActorConfig["num_vectors_in_output_manager"];
-        } else {
-            aout(self) << "Error Finding FileManagerPath - Exiting as this is needed\n";
-            return -1;
-        }
-
-        return 0;
-    } else {
-        aout(self) << "Error Finding JobActor in JSON file - Exiting as there is no path for the fileManger\n";
-        return -1;
-    }
 }
 
 } // end namespace

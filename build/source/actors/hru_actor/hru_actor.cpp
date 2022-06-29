@@ -36,7 +36,13 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
     self->state.iFile = 1;
 
     // Get the settings for the HRU
-    parseSettings(self, configPath);
+    // parseSettings(self, configPath);
+
+    self->state.printOutput = getSettings(configPath, "HRUActor", "printOutput", 
+		self->state.printOutput).value_or(true);
+    self->state.outputFrequency = getSettings(configPath, "HRUActor", "outputFrequency", 
+		self->state.outputFrequency).value_or(500);
+    
     // We only want to print this once
     if (indxGRU == 1) {
         aout(self) << "\nSETTINGS FOR HRU_ACTOR\n";
@@ -149,41 +155,6 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
     /*********************************************************************************************************
      *********************************** END ACTOR MESSAGE HANDLERS ******************************************
      *********************************************************************************************************/
-}
-
-void parseSettings(stateful_actor<hru_state>* self, std::string configPath) {
-    json settings;
-    std::string SummaActorsSettings = "/Summa_Actors_Settings.json";
-    std::ifstream settings_file(configPath + SummaActorsSettings);
-    settings_file >> settings;
-    settings_file.close();
-
-    if (settings.find("HRUActor") != settings.end()) {
-        json HRUActorConfig = settings["HRUActor"];
-        // find if we want to print output to stdout
-        if (HRUActorConfig.find("printOutput") != HRUActorConfig.end()) {
-            self->state.printOutput = HRUActorConfig["printOutput"];
-        } else {
-            aout(self) << "Error finding printOutput in JSON File - Reverting to default value\n";
-            self->state.printOutput = true;
-        }
-
-        if (self->state.printOutput) {
-            // get the frequency in number of timesteps we want to print the output
-            if(HRUActorConfig.find("outputFrequency") != HRUActorConfig.end()) {
-                self->state.outputFrequency = HRUActorConfig["outputFrequency"];
-            } else {
-                aout(self) << "Error finding outputFrequency in JSON File - Reverting to default value\n";
-                self->state.outputFrequency = 10000;
-            }
-        }
-    } else {
-        aout(self) << "Error finding HRUActor in JSON File - Reverting to default values for HRUs\n";
-        self->state.printOutput = true;
-        self->state.outputFrequency = 10000;
-    }
-
-
 }
 
 void Initialize_HRU(stateful_actor<hru_state>* self) {
