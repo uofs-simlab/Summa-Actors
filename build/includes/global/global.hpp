@@ -7,9 +7,11 @@
 #include <unistd.h>
 #include "json.hpp"
 
+
 using json = nlohmann::json;
 
 extern bool debug;
+
 
 /**
  * Return the time between to time points

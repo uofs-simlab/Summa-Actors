@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../summa_actor/batch_manager.hpp"
+
 CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     // Summa Actor
     CAF_ADD_ATOM(summa, start_summa)

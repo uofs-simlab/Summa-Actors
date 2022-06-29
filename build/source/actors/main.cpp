@@ -10,7 +10,7 @@
 #include <unistd.h>
 #include <iostream>
 #include "json.hpp"
-
+#include "batch_manager.hpp"
 
 using namespace caf;
 

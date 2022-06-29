@@ -9,6 +9,8 @@ Batch::Batch(int batch_id, int start_hru, int num_hru) {
     this->status = unassigned;
 }
 
+
+
 void Batch::printBatchInfo() {
     std::cout << "batch_id: " << this->batch_id << "\n";
     std::cout << "start_hru: " << this->start_hru << "\n";
@@ -42,3 +44,5 @@ void Batch::assignedBatch() {
 void Batch::updateRunTime(double run_time) {
     this->run_time = run_time;
 }
+
+

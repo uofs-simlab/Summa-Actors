@@ -40,11 +40,7 @@ class Batch {
         void assignedBatch();
 
         void updateRunTime(double run_time);
-
 };
-
-
-
 
 
 class Batch_Manager {

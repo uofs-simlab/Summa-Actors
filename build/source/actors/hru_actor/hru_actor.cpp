@@ -3,9 +3,7 @@
 #include "global.hpp"
 #include "message_atoms.hpp"
 #include "hru_actor_subroutine_wrappers.hpp"
-#include "json.hpp"
 
-using json = nlohmann::json;
 
 namespace caf {
 

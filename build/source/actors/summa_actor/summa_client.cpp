@@ -4,6 +4,7 @@
 #include "summa_client.hpp"
 #include "summa_actor.hpp"
 #include "message_atoms.hpp"
+#include "batch_manager.hpp"
 
 #include <unistd.h>
 #include <limits.h>
