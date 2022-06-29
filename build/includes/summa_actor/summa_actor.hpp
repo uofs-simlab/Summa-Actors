@@ -33,7 +33,6 @@ behavior summa_actor(stateful_actor<summa_actor_state>* self, int startGRU, int 
 
 void spawnJob(stateful_actor<summa_actor_state>* self);
 
-void parseSettings(stateful_actor<summa_actor_state>* self, std::string configPath);
 
 
 
