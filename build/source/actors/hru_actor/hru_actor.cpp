@@ -190,7 +190,7 @@ void Initialize_HRU(stateful_actor<hru_state>* self) {
     self->state.initStart = std::chrono::high_resolution_clock::now();
     // aout(self) << "Initalizing HRU" << std::endl;
     // aout(self) << "Entering Initalize \n"; 
-    Initialize(&self->state.indxGRU,
+    summaActors_initialize(&self->state.indxGRU,
             &self->state.num_steps, 
             self->state.handle_forcStat, 
             self->state.handle_progStat, 
@@ -214,7 +214,9 @@ void Initialize_HRU(stateful_actor<hru_state>* self) {
             self->state.handle_startTime, 
             self->state.handle_finshTime, 
             self->state.handle_refTime,
-            self->state.handle_oldTime, &self->state.err);
+            self->state.handle_oldTime, 
+            &self->state.err);
+
 
     if (self->state.err != 0) {
         aout(self) << "Error: Initialize - HRU = " << self->state.indxHRU << 

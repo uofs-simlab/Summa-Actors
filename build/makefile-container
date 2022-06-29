@@ -1,5 +1,5 @@
 #### parent directory of the 'build' directory ####
-ROOT_DIR = /globalhome/kck540/HPC/SummaProjects/Summa-Actors
+ROOT_DIR = /Summa-Actors
 
 #### Compilers ####
 FC = gfortran # Fortran
@@ -241,8 +241,8 @@ DRIVER = $(patsubst %, $(DRIVER_DIR)/%, $(SUMMA_DRIVER))
 ######################################## Assemble C++ Files ########################################
 ####################################################################################################
 
-INCLUDE_DIR = /globalhome/kck540/HPC/SummaProjects/Summa-Actors/build/includes
-SOURCE_DIR = /globalhome/kck540/HPC/SummaProjects/Summa-Actors/build/source/actors
+INCLUDE_DIR = $(ROOT_DIR)/build/includes
+SOURCE_DIR = $(ROOT_DIR)/build/source/actors
 
 
 GLOBAL_INCLUDES = -I$(INCLUDE_DIR)/global
@@ -296,11 +296,11 @@ compile_noah:
 
 # compile common routines
 compile_comm:
-	$(FC) $(FLAGS_COMM) -c $(COMM_ALL) $(INCLUDES)
+	$(FC) $(FLAGS_COMM) -c $(COMM_ALL) $(INTERFACE) $(INCLUDES)
 
 # compile SUMMA routines
 compile_summa: 
-	$(FC) $(FLAGS_SUMMA) -c $(SUMMA_ALL) $(DRIVER) $(INTERFACE) $(JOB_INTERFACE) $(FILEACCESS_INTERFACE) $(HRU_INTERFACE) $(INCLUDES)
+	$(FC) $(FLAGS_SUMMA) -c $(SUMMA_ALL) $(DRIVER) $(JOB_INTERFACE) $(FILEACCESS_INTERFACE) $(HRU_INTERFACE) $(INCLUDES)
 
 # generate library
 link:   

@@ -160,7 +160,6 @@ subroutine writeData(ncid,outputTimestep,outputTimestepUpdate,maxLayers,indxGRU,
   USE var_lookup,only:iLookStat                      ! index into stat structure
   USE globalData,only:outFreq                        ! output file information
   USE globalData,only:outputStructure
-  USE globalData,only:gru_struc
   USE globalData,only:failedHRUs
   USE get_ixName_module,only:get_varTypeName         ! to access type strings for error messages
   USE get_ixName_module,only:get_statName            ! to access type strings for error messages
@@ -185,7 +184,6 @@ subroutine writeData(ncid,outputTimestep,outputTimestepUpdate,maxLayers,indxGRU,
   integer(i4b)  ,intent(out)       :: err               ! error code
   character(*)  ,intent(out)       :: message           ! error message
   ! local variables
-  integer(i4b)                     :: iHRU
   integer(i4b)                     :: iVar              ! variable index
   integer(i4b)                     :: iStat             ! statistics index
   integer(i4b)                     :: iFreq             ! frequency index
@@ -208,7 +206,6 @@ subroutine writeData(ncid,outputTimestep,outputTimestepUpdate,maxLayers,indxGRU,
   integer(i4b)                     :: iStep
   integer(i4b)                     :: iGRU
   integer(i4b)                     :: verifiedGRUIndex    ! index of HRU verified to not have failed
-  integer(i4b)                     :: verifiedStepCounter ! numStepsForStepCounter from HRU that did not fail
   ! initialize error control
   err=0;message="writeData/"
   ! loop through output frequencies

@@ -2,7 +2,7 @@
 
 extern "C" {
   // Initialize HRU data_structures
-	void Initialize(
+	void summaActors_initialize(
         int* indxGRU, int* num_steps,
         // Statistics Structures
         void* forcStat, void* progStat, void* diagStat, void* fluxStat, void* indxStat, void* bvarStat,
