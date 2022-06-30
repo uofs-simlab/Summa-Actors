@@ -126,15 +126,19 @@ subroutine def_output(handle_ncid,startGRU,nGRU,nHRU,err) bind(C, name='def_outp
   err=0; message="def_output/"
 
   ! allocate space for the output file ID array
-  allocate(ncid%var(maxVarFreq))
-  ncid%var(:) = integerMissing
+  if (.not.allocated(ncid%var))then
+    allocate(ncid%var(maxVarFreq))
+    ncid%var(:) = integerMissing
+  endif
 
   ! initalize outputTimeStep - keeps track of the step the GRU is writing for
-  allocate(outputTimeStep(nGRU))
-  do iGRU = 1, nGRU
-    allocate(outputTimeStep(iGRU)%dat(maxVarFreq))
-    outputTimeStep(iGRU)%dat(:) = 1
-  end do 
+  if (.not.allocated(outputTimeStep))then
+    allocate(outputTimeStep(nGRU))
+    do iGRU = 1, nGRU
+      allocate(outputTimeStep(iGRU)%dat(maxVarFreq))
+      outputTimeStep(iGRU)%dat(:) = 1
+    end do
+  end if
 
   ! Set the global variable for the number of HRU and GRU in run
   nGRUrun = nGRU

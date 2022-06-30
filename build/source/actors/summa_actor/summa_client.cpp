@@ -67,7 +67,7 @@ void connecting(stateful_actor<summa_client_state>* self, const std::string& hos
 behavior running(stateful_actor<summa_client_state>* self, const actor& server_actor) {
     char host[HOST_NAME_MAX];
     aout(self) << "Client Has Started Successfully" << std::endl;
-    gethostname(host, 1024);
+    gethostname(host, HOST_NAME_MAX);
     self->state.hostname = host;
 
     self->send(server_actor, connect_to_server_v, self, self->state.hostname);
