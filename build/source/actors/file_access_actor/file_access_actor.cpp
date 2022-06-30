@@ -225,7 +225,9 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
 
     initFailedHRUTracker(&self->state.numGRU);
 
-    Create_Output_File(self->state.handle_ncid, &self->state.numGRU, &self->state.startGRU, &err);
+    // The CreateOutput Routine Can Fail So we may have to try it multiple times
+    int attempt = 0;
+    def_output(self->state.handle_ncid, &self->state.startGRU, &self->state.numGRU, &self->state.numGRU, &err);
     if (err != 0) {
         aout(self) << "ERROR: Create_OutputFile\n";
         std::string function = "Create_Output_File";

@@ -28,7 +28,7 @@ extern "C" {
 
   void FileAccessActor_DeallocateStructures(void* handle_forcFileInfo, void* handle_ncid);
   
-  void Create_Output_File(void* handle_ncid, int* numGRU, int* startGRU, int* err);
+  void def_output(void* handle_ncid, int* startGRU, int* numGRU, int* numHRU, int* err);
 
   void Write_HRU_Param(void* handle_ncid, int* indxGRU, int* indxHRU, int* err);
 }

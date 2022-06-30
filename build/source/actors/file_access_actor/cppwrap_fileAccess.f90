@@ -15,7 +15,7 @@ module cppwrap_fileAccess
   public::Init_OutputStruct
   public::initFailedHRUTracker
   public::FileAccessActor_ReadForcing
-  public::Create_Output_File
+  ! public::Create_Output_File
   public::FileAccessActor_WriteOutput
   
   contains
@@ -203,64 +203,64 @@ subroutine FileAccessActor_ReadForcing(handle_forcFileInfo, currentFile, stepsIn
 
 end subroutine FileAccessActor_ReadForcing
 
-subroutine Create_Output_File(&
-            handle_ncid,      & ! ncid of the output file
-            numGRU,           & ! number of GRUs assigned to this job
-            startGRU,         & ! Starting GRU indx for the job
-            err) bind(C, name="Create_Output_File")
-  USE globalData,only:fileout
-  USE summaActors_FileManager,only:OUTPUT_PATH,OUTPUT_PREFIX ! define output file
-  USE def_output_module,only:def_output                      ! module to define model output
-  USE globalData,only:gru_struc
-  USE var_lookup,only:maxVarFreq                             ! number of available output frequencies
-  USE globalData,only:outputTimeStep
-  USE globalData,only:finalizeStats
-  USE var_lookup,only:iLookFreq                              ! named variables for the frequency structure
+! subroutine Create_Output_File(&
+!             handle_ncid,      & ! ncid of the output file
+!             numGRU,           & ! number of GRUs assigned to this job
+!             startGRU,         & ! Starting GRU indx for the job
+!             err) bind(C, name="Create_Output_File")
+!   USE globalData,only:fileout
+!   USE summaActors_FileManager,only:OUTPUT_PATH,OUTPUT_PREFIX ! define output file
+!   USE def_output_module,only:def_output                      ! module to define model output
+!   USE globalData,only:gru_struc
+!   USE var_lookup,only:maxVarFreq                             ! number of available output frequencies
+!   USE globalData,only:outputTimeStep
+!   USE globalData,only:finalizeStats
+!   USE var_lookup,only:iLookFreq                              ! named variables for the frequency structure
 
   
-  implicit none
-  type(c_ptr),intent(in), value        :: handle_ncid       ! ncid of the output file
-  integer(c_int),intent(in)            :: numGRU            ! numGRUs for the entire job (for file creation)
-  integer(c_int),intent(in)            :: startGRU          ! startGRU for the entire job (for file creation)
-  integer(c_int),intent(inout)         :: err               ! Error code
+!   implicit none
+!   type(c_ptr),intent(in), value        :: handle_ncid       ! ncid of the output file
+!   integer(c_int),intent(in)            :: numGRU            ! numGRUs for the entire job (for file creation)
+!   integer(c_int),intent(in)            :: startGRU          ! startGRU for the entire job (for file creation)
+!   integer(c_int),intent(inout)         :: err               ! Error code
 
-  ! local variables
-  type(var_i),pointer                  :: ncid              ! ncid of the output file
-  character(LEN=256)                   :: startGRUString    ! String Variable to convert startGRU
-  character(LEN=256)                   :: numGRUString      ! String Varaible to convert numGRU
-  character(LEN=256)                   :: cmessage
-  integer(i4b)                         :: iGRU
+!   ! local variables
+!   type(var_i),pointer                  :: ncid              ! ncid of the output file
+!   character(LEN=256)                   :: startGRUString    ! String Variable to convert startGRU
+!   character(LEN=256)                   :: numGRUString      ! String Varaible to convert numGRU
+!   character(LEN=256)                   :: cmessage
+!   integer(i4b)                         :: iGRU
 
-  call c_f_pointer(handle_ncid, ncid)
+!   call c_f_pointer(handle_ncid, ncid)
 
-  ! allocate space for the output file ID array
-  allocate(ncid%var(maxVarFreq))
-  ncid%var(:) = integerMissing
+!   ! allocate space for the output file ID array
+!   allocate(ncid%var(maxVarFreq))
+!   ncid%var(:) = integerMissing
 
-  ! initialize finalizeStats for testing purposes
-  allocate(outputTimeStep(numGRU))
-  do iGRU = 1, numGRU
-    allocate(outputTimeStep(iGRU)%dat(maxVarFreq))
-    outputTimeStep(iGRU)%dat(:) = 1
-  end do 
+!   ! initialize finalizeStats for testing purposes
+!   allocate(outputTimeStep(numGRU))
+!   do iGRU = 1, numGRU
+!     allocate(outputTimeStep(iGRU)%dat(maxVarFreq))
+!     outputTimeStep(iGRU)%dat(:) = 1
+!   end do 
 
-  finalizeStats(:) = .false.
-  finalizeStats(iLookFreq%timestep) = .true.
-  ! initialize number of hru and gru in global data
-  nGRUrun = numGRU
-  nHRUrun = numGRU
+!   ! finalizeStats(:) = .false.
+!   ! finalizeStats(iLookFreq%timestep) = .true.
+!   ! initialize number of hru and gru in global data
+!   nGRUrun = numGRU
+!   nHRUrun = numGRU
 
-  write(unit=startGRUString,fmt=*)startGRU
-  write(unit=numGRUString,fmt=*)  numGRU
-  fileout = trim(OUTPUT_PATH)//trim(OUTPUT_PREFIX)//"GRU"&
-              //trim(adjustl(startGRUString))//"-"//trim(adjustl(numGRUString))
+!   write(unit=startGRUString,fmt=*)startGRU
+!   write(unit=numGRUString,fmt=*)  numGRU
+!   fileout = trim(OUTPUT_PATH)//trim(OUTPUT_PREFIX)//"GRU"&
+!               //trim(adjustl(startGRUString))//"-"//trim(adjustl(numGRUString))
 
-  ! def_output call will need to change to allow for numHRUs in future
-  ! NA_Domain numGRU = numHRU, this is why we pass numGRU twice
-  call def_output("summaVersion","buildTime","gitBranch","gitHash",numGRU,numGRU,&
-    gru_struc(1)%hruInfo(1)%nSoil,fileout,ncid,err,cmessage)
-    print*, "Creating Output File "//trim(fileout)
-end subroutine Create_Output_File
+!   ! def_output call will need to change to allow for numHRUs in future
+!   ! NA_Domain numGRU = numHRU, this is why we pass numGRU twice
+!   call def_output("summaVersion","buildTime","gitBranch","gitHash",numGRU,numGRU,&
+!     gru_struc(1)%hruInfo(1)%nSoil,fileout,ncid,err,cmessage)
+!     print*, "Creating Output File "//trim(fileout)
+! end subroutine Create_Output_File
 
 subroutine Write_HRU_Param(&
         handle_ncid,       &
