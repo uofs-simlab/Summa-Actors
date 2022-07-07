@@ -203,65 +203,6 @@ subroutine FileAccessActor_ReadForcing(handle_forcFileInfo, currentFile, stepsIn
 
 end subroutine FileAccessActor_ReadForcing
 
-! subroutine Create_Output_File(&
-!             handle_ncid,      & ! ncid of the output file
-!             numGRU,           & ! number of GRUs assigned to this job
-!             startGRU,         & ! Starting GRU indx for the job
-!             err) bind(C, name="Create_Output_File")
-!   USE globalData,only:fileout
-!   USE summaActors_FileManager,only:OUTPUT_PATH,OUTPUT_PREFIX ! define output file
-!   USE def_output_module,only:def_output                      ! module to define model output
-!   USE globalData,only:gru_struc
-!   USE var_lookup,only:maxVarFreq                             ! number of available output frequencies
-!   USE globalData,only:outputTimeStep
-!   USE globalData,only:finalizeStats
-!   USE var_lookup,only:iLookFreq                              ! named variables for the frequency structure
-
-  
-!   implicit none
-!   type(c_ptr),intent(in), value        :: handle_ncid       ! ncid of the output file
-!   integer(c_int),intent(in)            :: numGRU            ! numGRUs for the entire job (for file creation)
-!   integer(c_int),intent(in)            :: startGRU          ! startGRU for the entire job (for file creation)
-!   integer(c_int),intent(inout)         :: err               ! Error code
-
-!   ! local variables
-!   type(var_i),pointer                  :: ncid              ! ncid of the output file
-!   character(LEN=256)                   :: startGRUString    ! String Variable to convert startGRU
-!   character(LEN=256)                   :: numGRUString      ! String Varaible to convert numGRU
-!   character(LEN=256)                   :: cmessage
-!   integer(i4b)                         :: iGRU
-
-!   call c_f_pointer(handle_ncid, ncid)
-
-!   ! allocate space for the output file ID array
-!   allocate(ncid%var(maxVarFreq))
-!   ncid%var(:) = integerMissing
-
-!   ! initialize finalizeStats for testing purposes
-!   allocate(outputTimeStep(numGRU))
-!   do iGRU = 1, numGRU
-!     allocate(outputTimeStep(iGRU)%dat(maxVarFreq))
-!     outputTimeStep(iGRU)%dat(:) = 1
-!   end do 
-
-!   ! finalizeStats(:) = .false.
-!   ! finalizeStats(iLookFreq%timestep) = .true.
-!   ! initialize number of hru and gru in global data
-!   nGRUrun = numGRU
-!   nHRUrun = numGRU
-
-!   write(unit=startGRUString,fmt=*)startGRU
-!   write(unit=numGRUString,fmt=*)  numGRU
-!   fileout = trim(OUTPUT_PATH)//trim(OUTPUT_PREFIX)//"GRU"&
-!               //trim(adjustl(startGRUString))//"-"//trim(adjustl(numGRUString))
-
-!   ! def_output call will need to change to allow for numHRUs in future
-!   ! NA_Domain numGRU = numHRU, this is why we pass numGRU twice
-!   call def_output("summaVersion","buildTime","gitBranch","gitHash",numGRU,numGRU,&
-!     gru_struc(1)%hruInfo(1)%nSoil,fileout,ncid,err,cmessage)
-!     print*, "Creating Output File "//trim(fileout)
-! end subroutine Create_Output_File
-
 subroutine Write_HRU_Param(&
         handle_ncid,       &
         indxGRU,           &
@@ -315,7 +256,6 @@ subroutine FileAccessActor_WriteOutput(&
                                 maxGRU,          & ! index of HRU we are currently writing for
                                 err) bind(C, name="FileAccessActor_WriteOutput")
   USE def_output_module,only:def_output                       ! module to define model output
-  USE globalData,only:gru_struc
   USE var_lookup,only:maxVarFreq                               ! # of available output frequencies
   USE writeOutput_module,only:writeBasin,writeTime,writeData
   USE globalData,only:structInfo
@@ -371,27 +311,27 @@ subroutine FileAccessActor_WriteOutput(&
   do iStruct=1,size(structInfo)
     select case(trim(structInfo(iStruct)%structName))
       case('forc')
-        call writeData(ncid,outputTimeStep(minGRU)%dat(:),outputTimestepUpdate,maxLayers,minGRU,nSteps,&
+        call writeData(ncid,outputTimeStep(minGRU)%dat(:),outputTimestepUpdate,maxLayers,nSteps,&
                       minGRU, maxGRU, numGRU, & 
                       forc_meta,outputStructure(1)%forcStat(1),outputStructure(1)%forcStruct(1),'forc', &
                       forcChild_map,outputStructure(1)%indxStruct(1),err,cmessage)
       case('prog')
-        call writeData(ncid,outputTimeStep(minGRU)%dat(:),outputTimestepUpdate,maxLayers,minGRU,nSteps,&
+        call writeData(ncid,outputTimeStep(minGRU)%dat(:),outputTimestepUpdate,maxLayers,nSteps,&
                       minGRU, maxGRU, numGRU, &
                       prog_meta,outputStructure(1)%progStat(1),outputStructure(1)%progStruct(1),'prog', &
                       progChild_map,outputStructure(1)%indxStruct(1),err,cmessage)
       case('diag')
-        call writeData(ncid,outputTimeStep(minGRU)%dat(:),outputTimestepUpdate,maxLayers,minGRU,nSteps,&
+        call writeData(ncid,outputTimeStep(minGRU)%dat(:),outputTimestepUpdate,maxLayers,nSteps,&
                       minGRU, maxGRU, numGRU, &
                       diag_meta,outputStructure(1)%diagStat(1),outputStructure(1)%diagStruct(1),'diag', &
                       diagChild_map,outputStructure(1)%indxStruct(1),err,cmessage)
       case('flux')
-        call writeData(ncid,outputTimeStep(minGRU)%dat(:),outputTimestepUpdate,maxLayers,minGRU,nSteps,&
+        call writeData(ncid,outputTimeStep(minGRU)%dat(:),outputTimestepUpdate,maxLayers,nSteps,&
                       minGRU, maxGRU, numGRU, &
                       flux_meta,outputStructure(1)%fluxStat(1),outputStructure(1)%fluxStruct(1),'flux', &
                       fluxChild_map,outputStructure(1)%indxStruct(1),err,cmessage)
       case('indx')
-        call writeData(ncid,outputTimeStep(minGRU)%dat(:),outputTimestepUpdate,maxLayers,minGRU,nSteps,&
+        call writeData(ncid,outputTimeStep(minGRU)%dat(:),outputTimestepUpdate,maxLayers,nSteps,&
                       minGRU, maxGRU, numGRU, &
                       indx_meta,outputStructure(1)%indxStat(1),outputStructure(1)%indxStruct(1),'indx', &
                       indxChild_map,outputStructure(1)%indxStruct(1),err,cmessage)
@@ -407,9 +347,7 @@ end subroutine
 
 subroutine FileAccessActor_DeallocateStructures(handle_forcFileInfo, handle_ncid) bind(C,name="FileAccessActor_DeallocateStructures")
   USE netcdf_util_module,only:nc_file_close 
-  USE globalData,only:forcingDataStruct     
   USE globalData,only:structInfo                              ! information on the data structures
-  USE globalData,only:vecTime
   USE globalData,only:outputTimeStep
   USE globalData,only:failedHRUs
   USE summaActors_deallocateOuptutStruct,only:deallocateOutputStruc
@@ -423,8 +361,6 @@ subroutine FileAccessActor_DeallocateStructures(handle_forcFileInfo, handle_ncid
   character(LEN=256)                   :: cmessage
   character(LEN=256)                   :: message
   integer(i4b)                         :: err
-  integer(i4b)                         :: iFile
-  integer(i4b)                         :: iVar
 
   call c_f_pointer(handle_ncid, ncid)
   call c_f_pointer(handle_forcFileInfo, forcFileInfo)
@@ -438,23 +374,10 @@ subroutine FileAccessActor_DeallocateStructures(handle_forcFileInfo, handle_ncid
     endif   
   end do
   
-  ! Deallocate Forcing Structure
-  ! do iFile = 1, size(forcingDataStruct(:))
-  !   do iVar = 1, size(forcingDataStruct(iFile)%var(:))
-  !     if (allocated(forcingDataStruct(iFile)%var(iVar)%dataFromFile))then
-  !       deallocate(forcingDataStruct(iFile)%var(iVar)%dataFromFile)
-  !     endif
-  !   end do
-  !   deallocate(forcingDataStruct(iFile)%var_ix)
-  ! end do
-  ! deallocate(forcingDataStruct)
-
   deallocate(forcFileInfo)
-  ! deallocate(outputStructure)
   deallocate(outputTimeStep)
   deallocate(ncid)
   deallocate(failedHRUs)
-  ! if(allocated(vecTime)) then; deallocate(vecTime); endif
 
 end subroutine FileAccessActor_DeallocateStructures
 

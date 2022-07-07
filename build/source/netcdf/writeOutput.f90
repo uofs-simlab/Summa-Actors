@@ -150,7 +150,7 @@ end subroutine writeParm
     ! **************************************************************************************
     ! public subroutine writeData: write model time-dependent data
     ! **************************************************************************************
-subroutine writeData(ncid,outputTimestep,outputTimestepUpdate,maxLayers,indxGRU,nSteps, &
+subroutine writeData(ncid,outputTimestep,outputTimestepUpdate,maxLayers,nSteps, &
             minGRU, maxGRU, numGRU, & 
             meta,stat,dat,structName,map,indx,err,message)
   USE data_types,only:var_info                       ! metadata type
@@ -170,7 +170,6 @@ subroutine writeData(ncid,outputTimestep,outputTimestepUpdate,maxLayers,indxGRU,
   integer(i4b)  ,intent(inout)     :: outputTimestep(:) ! output time step
   integer(i4b)  ,intent(inout)     :: outputTimestepUpdate(:) ! number of HRUs in the run domain
   integer(i4b)  ,intent(in)        :: maxLayers         ! maximum number of layers
-  integer(i4b)  ,intent(in)        :: indxGRU
   integer(i4b)  ,intent(in)        :: nSteps            ! number of timeSteps
   integer(i4b)  ,intent(in)        :: minGRU            ! minGRU index to write
   integer(i4b)  ,intent(in)        :: maxGRU            ! maxGRU index to write - probably not needed

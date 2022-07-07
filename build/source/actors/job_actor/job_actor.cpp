@@ -26,16 +26,24 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
     self->state.parent = parent;
     self->state.outputStrucSize = outputStrucSize;
 
-    if (parseSettings(self, configPath) == -1) {
-        aout(self) << "ERROR WITH JSON SETTINGS FILE!!!\n";
-        self->quit();
-    } else {
-        aout(self) << "\nSETTINGS FOR JOB_ACTOR\n" << 
-        "File Manager Path = " << self->state.fileManager << "\n" <<
-        "outputCSV = " << self->state.outputCSV << "\n";
-        if (self->state.outputCSV) {
-            aout(self) << "csvPath = " << self->state.csvPath << "\n";
+    self->state.fileManager = getSettings(self->state.configPath, "JobActor", "FileManagerPath", 
+        self->state.fileManager).value_or("");
+    self->state.outputCSV = getSettings(self->state.configPath, "JobActor", "outputCSV",
+        self->state.outputCSV).value_or(false);
+    if (self->state.outputCSV) {
+        self->state.csvPath = getSettings(self->state.configPath, "JobActor", "csvPath",
+        self->state.csvPath).value_or("");
+        if (self->state.csvPath == ""){ // check if we found the value if not set outputCSV to false
+            self->state.outputCSV = false;
         }
+    }
+    
+    // Print Settings
+    aout(self) << "\nSETTINGS FOR JOB_ACTOR\n" << 
+    "File Manager Path = " << self->state.fileManager << "\n" <<
+    "outputCSV = " << self->state.outputCSV << "\n";
+    if (self->state.outputCSV) {
+        aout(self) << "csvPath = " << self->state.csvPath << "\n";
     }
 
     // Initalize global variables
@@ -140,8 +148,6 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
             self->send(self, init_hru_v);
         },
 
-
-
         [=](file_access_actor_done, double readDuration, double writeDuration) {
             int err = 0;
             if (debug) {
@@ -194,48 +200,6 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
 }
 
 
-int parseSettings(stateful_actor<job_state>* self, std::string configPath) {
-    json settings;
-    std::string SummaActorsSettings = "/Summa_Actors_Settings.json";
-	std::ifstream settings_file(configPath + SummaActorsSettings);
-	settings_file >> settings;
-	settings_file.close();
-    
-    if (settings.find("JobActor") != settings.end()) {
-        json JobActorConfig = settings["JobActor"];
-        // Find the File Manager Path
-        if (JobActorConfig.find("FileManagerPath") !=  JobActorConfig.end()) {
-            self->state.fileManager = JobActorConfig["FileManagerPath"];
-        } else {
-            aout(self) << "Error Finding FileManagerPath - Exiting as this is needed\n";
-            return -1;
-        }
-
-        // Find if we want to outputCSV
-        if (JobActorConfig.find("outputCSV") !=  JobActorConfig.end()) {
-            self->state.outputCSV = JobActorConfig["outputCSV"];
-        } else {
-            aout(self) << "Error Finding outputCSV in JSON file - Reverting to Default Value\n";
-            self->state.outputCSV = false;
-        }
-
-        // Output Path of CSV
-        if (self->state.outputCSV) {
-            if (JobActorConfig.find("csvPath") !=  JobActorConfig.end()) {
-                self->state.csvPath = JobActorConfig["csvPath"];
-            } else {
-                aout(self) << "Error Finding csvPath in JSON file = Reverting to Default Value \n";
-                self->state.outputCSV = false; // we just choose not to output a csv
-            }
-        }
-
-        return 0;
-    } else {
-        aout(self) << "Error Finding JobActor in JSON file - Exiting as there is no path for the fileManger\n";
-        return -1;
-    }
-}
-
 void initJob(stateful_actor<job_state>* self) {
     std::string success = "Success"; // allows us to build the string
     if (self->state.outputCSV) {
@@ -248,7 +212,6 @@ void initJob(stateful_actor<job_state>* self) {
                     "," << "dt_init" << "," << "numAttemtps" << "\n";
         file.close();
     }
-
 
     int totalGRUs           = 0;
     int totalHRUs           = 0;
