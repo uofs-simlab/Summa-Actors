@@ -12,16 +12,15 @@ namespace caf {
 
 
 struct job_timing_info {
-    std:
-    std::chrono::time_point<std::chrono::system_clock> start;
-    std::chrono::time_point<std::chrono::system_clock> end;
-    double summa_actor_duration;
-
+    std::vector<double> job_duration;
+    std::vector<double> job_read_duration;
+    std::vector<double> job_write_duration;
 };
 
 struct summa_actor_state {
     // Timing Information For Summa-Actor
     TimingInfo summa_actor_timing;
+    struct job_timing_info timing_info_for_jobs;
 
     // Program Parameters
     int startGRU;           // starting GRU for the simulation
