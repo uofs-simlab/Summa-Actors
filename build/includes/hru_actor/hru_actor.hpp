@@ -2,6 +2,7 @@
 
 #include "caf/all.hpp"
 #include "fortran_data_types.hpp"
+#include "timing_info.hpp"
 
 #include <chrono>
 #include <string>
@@ -96,6 +97,8 @@ struct hru_state {
     std::chrono::time_point<std::chrono::system_clock> writeOutputStart;
     std::chrono::time_point<std::chrono::system_clock> writeOutputEnd;
     double writeOutputDuration = 0.0;
+
+    TimingInfo hru_timing;
 
 };
 
