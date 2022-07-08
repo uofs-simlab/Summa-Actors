@@ -17,8 +17,13 @@ namespace caf {
 
 behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU, int numGRU, 
     int outputStrucSize, std::string configPath, actor parent) {
-    // Set File_Access_Actor variables
     aout(self) << "\n----------File_Access_Actor Started----------\n";
+    // Set Up timing Info we wish to track
+    self->state.file_access_timing = TimingInfo();
+    self->state.file_access_timing.addTimePoint("read_duration");
+    self->state.file_access_timing.addTimePoint("write_duration");
+
+
     self->state.parent = parent;
     self->state.numGRU = numGRU;
     self->state.startGRU = startGRU;
@@ -58,7 +63,7 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
                         self->state.forcing_file_list[currentFile - 1].getNumSteps());
 
                 } else {
-                    self->state.readStart = std::chrono::high_resolution_clock::now();
+                    self->state.file_access_timing.updateStartPoint("read_duration");
                     
                     // Load the file
                     FileAccessActor_ReadForcing(self->state.handle_forcing_file_info, &currentFile,
@@ -70,8 +75,7 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
                     self->state.filesLoaded += 1;
                     self->state.forcing_file_list[currentFile - 1].updateNumSteps(self->state.stepsInCurrentFile);
 
-                    self->state.readEnd = std::chrono::high_resolution_clock::now();
-                    self->state.readDuration += calculateTime(self->state.readStart, self->state.readEnd);
+                    self->state.file_access_timing.updateEndPoint("read_duration");
                     // Check if we have loaded all forcing files
                     if(self->state.filesLoaded <= self->state.numFiles) {
                         self->send(self, access_forcing_internal_v, currentFile + 1);
@@ -93,7 +97,8 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
                 if (self->state.forcing_file_list[currentFile - 1].isFileLoaded()) {
                     aout(self) << "File Loaded when shouldn't be \n";
                 }
-                self->state.readStart = std::chrono::high_resolution_clock::now();
+                self->state.file_access_timing.updateStartPoint("read_duration");
+
                 FileAccessActor_ReadForcing(self->state.handle_forcing_file_info, &currentFile,
                     &self->state.stepsInCurrentFile, &self->state.startGRU, 
                     &self->state.numGRU, &self->state.err);
@@ -103,9 +108,8 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
                 self->state.filesLoaded += 1;
                 self->state.forcing_file_list[currentFile - 1].updateNumSteps(self->state.stepsInCurrentFile);
                 
-                self->state.readEnd = std::chrono::high_resolution_clock::now();
-                self->state.readDuration += calculateTime(self->state.readStart, self->state.readEnd);
-                
+                self->state.file_access_timing.updateEndPoint("read_duration");
+
                 self->send(self, access_forcing_internal_v, currentFile + 1);
             } else {
                 aout(self) << "All Forcing Files Loaded \n";
@@ -165,15 +169,14 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
         [=](deallocate_structures) {
             aout(self) << "Deallocating Structure" << std::endl;
             FileAccessActor_DeallocateStructures(self->state.handle_forcing_file_info, self->state.handle_ncid);
+            aout(self) << "\n________________FILE_ACCESS_ACTOR TIMING INFO RESULTS________________\n";
+            aout(self) << "Total Read Duration = " << self->state.file_access_timing.getDuration("read_duration").value_or(-1.0) << " Seconds\n";
+            aout(self) << "Total Write Duration = " << self->state.file_access_timing.getDuration("write_duration").value_or(-1.0) << " Seconds\n";
             
-            self->state.readDuration = self->state.readDuration / 1000; // Convert to milliseconds
-            self->state.readDuration = self->state.readDuration / 1000; // Convert to seconds
-
-            self->state.writeDuration = self->state.writeDuration / 1000; // Convert to milliseconds
-            self->state.writeDuration = self->state.writeDuration / 1000; // Convert to milliseconds
-            
-            self->send(self->state.parent, file_access_actor_done_v, self->state.readDuration, 
-                self->state.writeDuration);
+            self->send(self->state.parent, 
+                file_access_actor_done_v, 
+                self->state.file_access_timing.getDuration("read_duration").value_or(-1.0), 
+                self->state.file_access_timing.getDuration("write_duration").value_or(-1.0));
             self->quit();
         },
 
@@ -278,7 +281,8 @@ int write(stateful_actor<file_access_state>* self, int listIndex) {
 
 int writeOutput(stateful_actor<file_access_state>* self, int indxGRU, int indxHRU, 
     int numStepsToWrite, int returnMessage, caf::actor actorRef) {
-    self->state.writeStart = std::chrono::high_resolution_clock::now();
+    self->state.file_access_timing.updateStartPoint("write_duration");
+
     if (debug) {
         aout(self) << "Recieved Write Request From GRU: " << indxGRU << "\n";
     }
@@ -299,11 +303,8 @@ int writeOutput(stateful_actor<file_access_state>* self, int indxGRU, int indxHR
             aout(self) << "Size of list is " << self->state.output_manager->getSize(listIndex) << "\n";
         }
     }
-    
    
-    self->state.writeEnd = std::chrono::high_resolution_clock::now();
-    self->state.writeDuration += calculateTime(self->state.writeStart, self->state.writeEnd);
-
+    self->state.file_access_timing.updateEndPoint("write_duration");
     return err;
 
 }
@@ -315,11 +316,10 @@ int readForcing(stateful_actor<file_access_state>* self, int currentFile) {
             aout(self) << "ForcingFile Already Loaded \n";
         return 0;
     
-    } else {
-        
-        // File Needs to be loaded
-        self->state.readStart = std::chrono::high_resolution_clock::now();
-                    
+    } else { // File Needs to be loaded
+
+        self->state.file_access_timing.updateStartPoint("read_duration");
+
         // Load the file
         FileAccessActor_ReadForcing(self->state.handle_forcing_file_info, &currentFile,
             &self->state.stepsInCurrentFile, &self->state.startGRU, 
@@ -334,9 +334,7 @@ int readForcing(stateful_actor<file_access_state>* self, int currentFile) {
         } else {
             self->state.filesLoaded += 1;
             self->state.forcing_file_list[currentFile - 1].updateNumSteps(self->state.stepsInCurrentFile);
-
-            self->state.readEnd = std::chrono::high_resolution_clock::now();
-            self->state.readDuration += calculateTime(self->state.readStart, self->state.readEnd);
+            self->state.file_access_timing.updateEndPoint("read_duration");
             return 0;
         }
     }

@@ -3,6 +3,7 @@
 #include "caf/all.hpp"
 #include "output_manager.hpp"
 #include "forcing_file_info.hpp"
+#include "timing_info.hpp"
 
 namespace caf {
 struct file_access_state {
@@ -26,13 +27,8 @@ struct file_access_state {
     std::vector<Forcing_File_Info> forcing_file_list; // list of steps in file
     std::vector<bool> outputFileInitHRU;
 
-    std::chrono::time_point<std::chrono::system_clock> readStart;
-    std::chrono::time_point<std::chrono::system_clock> readEnd;
-    double readDuration = 0.0;
-
-    std::chrono::time_point<std::chrono::system_clock> writeStart;
-    std::chrono::time_point<std::chrono::system_clock> writeEnd;
-    double writeDuration = 0.0;
+     // Timing Variables
+    TimingInfo file_access_timing;
 };
 
 behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU, int numGRU, 

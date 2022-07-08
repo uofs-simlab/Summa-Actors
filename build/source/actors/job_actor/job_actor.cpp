@@ -87,8 +87,8 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
 
         [=](done_hru, int indx_gru, double total_duration, double init_duration, 
             double forcing_duration, double run_physics_duration, double write_output_duration) {
-            aout(self) << "\nGRU:" << self->state.GRUList[indx_gru - 1]->getRefGRU()
-                << " - IndexInJob = " << indx_gru << " Done\n";
+            aout(self) << "\nDone - GRU:" << self->state.GRUList[indx_gru - 1]->getRefGRU()
+                << " - IndexInJob = " << indx_gru << "\n";
 
             self->state.GRUList[indx_gru - 1]->doneRun(total_duration, init_duration, forcing_duration,
                 run_physics_duration, write_output_duration);
@@ -158,12 +158,6 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
             aout(self) << "Total Duration = " << self->state.job_timing.getDuration("total_duration").value_or(-1.0) << " Seconds\n";
             aout(self) << "Total Duration = " << self->state.job_timing.getDuration("total_duration").value_or(-1.0) / 60 << " Minutes\n";
             aout(self) << "Total Duration = " << (self->state.job_timing.getDuration("total_duration").value_or(-1.0) / 60) / 60 << " Hours\n\n";
-            
-
-            aout(self) << "\nReading Duration:\n";
-            aout(self) << "     " << read_duration  << " Seconds\n";
-            aout(self) << "\nWriting Duration:\n";
-            aout(self) << "     " << write_duration << " Seconds\n\n";
 
             cleanUpJobActor(&err);
             // Tell Parent we are done
