@@ -82,22 +82,6 @@ struct hru_state {
     int         yearLength;
     int         err = 0;			            // error conotrol
 
-    std::chrono::time_point<std::chrono::system_clock> start;
-    std::chrono::time_point<std::chrono::system_clock> end;
-    double duration = 0.0;
-    std::chrono::time_point<std::chrono::system_clock> initStart;
-    std::chrono::time_point<std::chrono::system_clock> initEnd;
-    double initDuration = 0.0;
-    std::chrono::time_point<std::chrono::system_clock> forcingStart;
-    std::chrono::time_point<std::chrono::system_clock> forcingEnd;
-    double forcingDuration = 0.0;
-    std::chrono::time_point<std::chrono::system_clock> runPhysicsStart;
-    std::chrono::time_point<std::chrono::system_clock> runPhysicsEnd;
-    double runPhysicsDuration = 0.0;
-    std::chrono::time_point<std::chrono::system_clock> writeOutputStart;
-    std::chrono::time_point<std::chrono::system_clock> writeOutputEnd;
-    double writeOutputDuration = 0.0;
-
     TimingInfo hru_timing;
 
 };

@@ -2,6 +2,7 @@
 #include "caf/all.hpp"
 #include "caf/io/all.hpp"
 #include "GRUinfo.hpp"
+#include "timing_info.hpp"
 
 namespace caf {
 struct job_state {
@@ -27,9 +28,8 @@ struct job_state {
     int outputStrucSize;
 
     // Timing Variables
-    std::chrono::time_point<std::chrono::system_clock> start;
-    std::chrono::time_point<std::chrono::system_clock> end;
-    double duration;
+    TimingInfo job_timing;
+
     
     // Output File Names for Timings
     bool outputCSV;

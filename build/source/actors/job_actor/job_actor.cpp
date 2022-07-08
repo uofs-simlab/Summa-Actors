@@ -20,7 +20,12 @@ namespace caf {
  */
 behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU, 
     std::string configPath, int outputStrucSize, caf::actor parent) {
-    self->state.start = std::chrono::high_resolution_clock::now();
+    // Timinig Information
+    self->state.job_timing = TimingInfo();
+    self->state.job_timing.addTimePoint("total_duration");
+    self->state.job_timing.updateStartPoint("total_duration");
+
+
     // Set Job Variables
     self->state.startGRU = startGRU;
     self->state.numGRU = numGRU;
@@ -28,6 +33,7 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
     self->state.parent = parent;
     self->state.outputStrucSize = outputStrucSize;
 
+    // Get All Settings
     self->state.fileManager = getSettings(self->state.configPath, "JobActor", "FileManagerPath", 
         self->state.fileManager).value_or("");
     self->state.outputCSV = getSettings(self->state.configPath, "JobActor", "outputCSV",
@@ -79,16 +85,16 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
             }
         },
 
-        [=](done_hru, int indxGRU, double totalDuration, double initDuration, 
-            double forcingDuration, double runPhysicsDuration, double writeOutputDuration) {
-            aout(self) << "GRU:" << self->state.GRUList[indxGRU - 1]->getRefGRU()
-                << "indxGRU = " << indxGRU << "Done \n";
+        [=](done_hru, int indx_gru, double total_duration, double init_duration, 
+            double forcing_duration, double run_physics_duration, double write_output_duration) {
+            aout(self) << "\nGRU:" << self->state.GRUList[indx_gru - 1]->getRefGRU()
+                << " - IndexInJob = " << indx_gru << " Done\n";
 
-            self->state.GRUList[indxGRU - 1]->doneRun(totalDuration, initDuration, forcingDuration,
-                runPhysicsDuration, writeOutputDuration);
+            self->state.GRUList[indx_gru - 1]->doneRun(total_duration, init_duration, forcing_duration,
+                run_physics_duration, write_output_duration);
             
             if (self->state.outputCSV) {
-                self->state.GRUList[indxGRU - 1]->writeSuccess(self->state.successOutputFile);            
+                self->state.GRUList[indx_gru - 1]->writeSuccess(self->state.successOutputFile);            
             }
             
             self->state.numGRUDone++;
@@ -146,15 +152,14 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
             self->state.GRUList.clear();
 
 
-            self->state.end = std::chrono::high_resolution_clock::now();
-            self->state.duration = calculateTime(self->state.start, self->state.end);
+            self->state.job_timing.updateEndPoint("total_duration");
 
-            self->state.duration = self->state.duration / 1000; // Convert to milliseconds
+            aout(self) << "\n________________PRINTING JOB_ACTOR TIMING INFO RESULTS________________\n";
+            aout(self) << "Total Duration = " << self->state.job_timing.getDuration("total_duration").value_or(-1.0) << " Seconds\n";
+            aout(self) << "Total Duration = " << self->state.job_timing.getDuration("total_duration").value_or(-1.0) / 60 << " Minutes\n";
+            aout(self) << "Total Duration = " << (self->state.job_timing.getDuration("total_duration").value_or(-1.0) / 60) / 60 << " Hours\n\n";
+            
 
-            aout(self) << "\nTotal Job Duration:\n";
-            aout(self) << "     " << self->state.duration / 1000  << " Seconds\n";
-            aout(self) << "     " << (self->state.duration / 1000) / 60  << " Minutes\n";
-            aout(self) << "     " << ((self->state.duration / 1000) / 60) / 60 << " Hours\n";
             aout(self) << "\nReading Duration:\n";
             aout(self) << "     " << read_duration  << " Seconds\n";
             aout(self) << "\nWriting Duration:\n";
@@ -162,8 +167,11 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
 
             cleanUpJobActor(&err);
             // Tell Parent we are done
-            self->send(self->state.parent, done_job_v, self->state.numGRUFailed, self->state.duration,
-                read_duration, write_duration);
+            self->send(self->state.parent, 
+                    done_job_v, 
+                    self->state.numGRUFailed, 
+                    self->state.job_timing.getDuration("total_duration").value_or(-1.0),
+                    read_duration, write_duration);
             self->quit();
         },
 
