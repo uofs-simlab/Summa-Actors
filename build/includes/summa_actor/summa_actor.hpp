@@ -2,14 +2,17 @@
 
 #include "caf/all.hpp"
 #include "caf/io/all.hpp"
+#include "timing_info.hpp"
 
 #include <chrono>
 #include <string>
+#include <vector>
 
 namespace caf {
 
 
-struct summa_actor_timing_info {
+struct job_timing_info {
+    std:
     std::chrono::time_point<std::chrono::system_clock> start;
     std::chrono::time_point<std::chrono::system_clock> end;
     double summa_actor_duration;
@@ -18,9 +21,8 @@ struct summa_actor_timing_info {
 
 struct summa_actor_state {
     // Timing Information For Summa-Actor
-    std::chrono::time_point<std::chrono::system_clock> start;
-    std::chrono::time_point<std::chrono::system_clock> end;
-    double duration;
+    TimingInfo summa_actor_timing;
+
     // Program Parameters
     int startGRU;           // starting GRU for the simulation
     int numGRU;             // number of GRUs to compute

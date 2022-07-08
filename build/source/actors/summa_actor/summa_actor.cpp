@@ -15,7 +15,10 @@ using json = nlohmann::json;
 namespace caf {
 
 behavior summa_actor(stateful_actor<summa_actor_state>* self, int startGRU, int numGRU, std::string configPath, actor parent) {
- 	self->state.start = std::chrono::high_resolution_clock::now();
+ 	// Set Timing Variables
+	self->state.summa_actor_timing = TimingInfo();
+	self->state.summa_actor_timing.addTimePoint("total_duration");
+	self->state.summa_actor_timing.updateStartPoint("total_duration");
 	// Set Variables
 	self->state.startGRU = startGRU;
 	self->state.numGRU = numGRU;
@@ -35,24 +38,19 @@ behavior summa_actor(stateful_actor<summa_actor_state>* self, int startGRU, int 
 	spawnJob(self);
 
 	return {
-		[=](done_job, int numFailed, int job_duration, int read_duration, int write_duration) {
+		[=](done_job, int numFailed, double job_duration, double read_duration, double write_duration) {
 			self->state.numFailed += numFailed;
 			aout(self) << "Job Done\n"; 
 			if (self->state.numGRU <= 0) {
-
-				self->state.end = std::chrono::high_resolution_clock::now();
-            	self->state.duration = calculateTime(self->state.start, self->state.end);
+				self->state.summa_actor_timing.updateEndPoint("total_duration");
 				
-            	self->state.duration = self->state.duration / 1000; // Convert to milliseconds
-
-				
-				aout(self) << "Total Program Duration:\n";
-            	aout(self) << "     " << self->state.duration / 1000  << " Seconds\n";
-            	aout(self) << "     " << (self->state.duration / 1000) / 60  << " Minutes\n";
-            	aout(self) << "     " << ((self->state.duration / 1000) / 60) / 60 << " Hours\n";
+				aout(self) << "\n________________SUMMA_ACTOR TIMING INFO________________\n";
+				aout(self) << "Total Duration = " << self->state.summa_actor_timing.getDuration("total_duration").value_or(-1.0) << " Seconds\n";
+				aout(self) << "Total Duration = " << self->state.summa_actor_timing.getDuration("total_duration").value_or(-1.0) / 60 << " Minutes\n";
+				aout(self) << "Total Duration = " << (self->state.summa_actor_timing.getDuration("total_duration").value_or(-1.0) / 60) / 60 << " Hours\n\n";
 				aout(self) << "Program Finished \n";
 
-				self->send(self->state.parent, done_batch_v, self->state.duration);		
+				self->send(self->state.parent, done_batch_v, self->state.summa_actor_timing.getDuration("total duration").value_or(-1.0));		
 
 			} else {
 				// spawn a new job

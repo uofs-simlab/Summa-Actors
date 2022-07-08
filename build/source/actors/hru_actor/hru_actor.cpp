@@ -90,7 +90,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
                 self->state.hru_timing.updateEndPoint("total_duration");
 
                 // Tell our parent we are done, convert all timings to seconds
-                aout(self) << "\n________________PRINTING HRU TIMING INFO RESULTS________________\n";
+                aout(self) << "\n________________HRU TIMING INFO RESULTS________________\n";
                 aout(self) << "Total Duration = " << self->state.hru_timing.getDuration("total_duration").value_or(-1.0) << " Seconds\n";
                 aout(self) << "Init Duration = " << self->state.hru_timing.getDuration("init_duration").value_or(-1.0) << " Seconds\n";
                 aout(self) << "Forcing Duration = " << self->state.hru_timing.getDuration("forcing_duration").value_or(-1.0) << " Seconds\n";
@@ -145,16 +145,13 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
             self->state.dt_init_factor = dt_init_factor;
         },
     };
-    /*********************************************************************************************************
-     *********************************** END ACTOR MESSAGE HANDLERS ******************************************
-     *********************************************************************************************************/
 }
+
+
 
 void Initialize_HRU(stateful_actor<hru_state>* self) {
     self->state.hru_timing.updateStartPoint("init_duration");
     
-    // aout(self) << "Initalizing HRU" << std::endl;
-    // aout(self) << "Entering Initalize \n"; 
     summaActors_initialize(&self->state.indxGRU,
             &self->state.num_steps, 
             self->state.handle_forcStat, 
@@ -209,7 +206,6 @@ void Initialize_HRU(stateful_actor<hru_state>* self) {
         self->quit();
         return;
     }
-    // aout(self) << "Restart" << std::endl;
             
     Restart(&self->state.indxGRU, 
             &self->state.indxHRU, 
@@ -294,9 +290,6 @@ int Run_HRU(stateful_actor<hru_state>* self) {
     }
     self->state.hru_timing.updateEndPoint("run_physics_duration");
 
-    /**********************************************************************
-    ** WRITE_OUTPUT  
-    **********************************************************************/
     self->state.hru_timing.updateStartPoint("write_output_duration");
     WriteOutput(&self->state.indxHRU,
             &self->state.indxGRU,
@@ -349,13 +342,6 @@ bool check_HRU(stateful_actor<hru_state>* self, int err) {
     } else if (self->state.timestep > self->state.num_steps) {
         // check if simulation is finished
         self->state.outputStep -= 1; // prevents segfault
-
-        if (debug)
-            aout(self) << "Sending Final Write" << 
-                "forcingStep = " << self->state.forcingStep << "\n" << 
-                "stepsInCurrentFFile = " << self->state.stepsInCurrentFFile << "\n" <<
-                "timeStep = " << self->state.timestep << "\n" << 
-                "outputStep = " << self->state.outputStep << "\n";
         
         self->send(self->state.file_access_actor, write_output_v, 
             self->state.indxGRU, self->state.indxHRU, self->state.outputStep, self);
@@ -369,14 +355,6 @@ bool check_HRU(stateful_actor<hru_state>* self, int err) {
         // Special case where we need both reading and writing
         self->state.outputStep -= 1; // prevents segfault
 
-        if (debug)
-            aout(self) << "Need to read forcing and write to outputstruc\n" << 
-                "forcingStep = " << self->state.forcingStep << "\n" << 
-                "stepsInCurrentFFile = " << self->state.stepsInCurrentFFile << "\n" <<
-                "timeStep = " << self->state.timestep << "\n" << 
-                "outputStep = " << self->state.outputStep << "\n";
-        
-
         self->send(self->state.file_access_actor, read_and_write_v, self->state.indxGRU, 
             self->state.indxHRU, self->state.outputStep, self->state.iFile + 1, self);
         self->state.outputStep = 1;
@@ -386,14 +364,6 @@ bool check_HRU(stateful_actor<hru_state>* self, int err) {
     } else if (self->state.outputStep > self->state.outputStrucSize) {
         // check if we need to clear the output struc
         self->state.outputStep -= 1;
-
-        if (debug)
-            aout(self) << "Sending Write \n" << 
-                "forcingStep = " << self->state.forcingStep << "\n" << 
-                "stepsInCurrentFFile = " << self->state.stepsInCurrentFFile << "\n" <<
-                "timeStep = " << self->state.timestep << "\n" << 
-                "outputStep = " << self->state.outputStep << "\n";
-        
         
         self->send(self->state.file_access_actor, write_output_v, 
             self->state.indxGRU, self->state.indxHRU, self->state.outputStep, self);
@@ -403,14 +373,6 @@ bool check_HRU(stateful_actor<hru_state>* self, int err) {
 
     } else if (self->state.forcingStep > self->state.stepsInCurrentFFile) {
         // we need more forcing data
-
-        if (debug)
-            aout(self) << "Asking for more forcing data\n" << 
-                "forcingStep = " << self->state.forcingStep << "\n" << 
-                "stepsInCurrentFFile = " << self->state.stepsInCurrentFFile << "\n" <<
-                "timeStep = " << self->state.timestep << "\n" << 
-                "outputStep = " << self->state.outputStep << "\n";
-        
         self->send(self->state.file_access_actor, access_forcing_v, self->state.iFile + 1, self);
 
         return false;

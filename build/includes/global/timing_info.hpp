@@ -4,7 +4,11 @@
 #include <vector>
 
 using chrono_time = std::chrono::time_point<std::chrono::system_clock>;
-
+/**
+ * Class to manage timing information. This allows the user to add an arbitrary amount of timing variables.
+ * The timing variables are accessed through their named string and will keep a running duration of the amount 
+ * of time spent through multiple calls to updateStartPoint and updateEndPoint
+ */
 class TimingInfo {
     private:
         std::vector<std::optional<chrono_time>> start;
