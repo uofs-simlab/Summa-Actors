@@ -8,8 +8,16 @@
 
 namespace caf {
 
+
+struct summa_actor_timing_info {
+    std::chrono::time_point<std::chrono::system_clock> start;
+    std::chrono::time_point<std::chrono::system_clock> end;
+    double summa_actor_duration;
+
+};
+
 struct summa_actor_state {
-    // Timing Information
+    // Timing Information For Summa-Actor
     std::chrono::time_point<std::chrono::system_clock> start;
     std::chrono::time_point<std::chrono::system_clock> end;
     double duration;

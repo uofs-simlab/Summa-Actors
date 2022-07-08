@@ -59,20 +59,11 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
     aout(self) << "Job Actor Initalized \n";
 
     return {
-    // *******************************************************************************************
-    // *********************************** INTERFACE WITH HRU ************************************
-    // *******************************************************************************************
-        
-        /**
-         * 
-         */
+
         [=](init_hru) {
             initalizeGRU(self);
         },
 
-        /**
-         * 
-         */
         [=](done_init_hru) {
             if (debug) {
                 aout(self) << "Done Init\n";
@@ -87,7 +78,6 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
                 runGRUs(self);
             }
         },
-
 
         [=](done_hru, int indxGRU, double totalDuration, double initDuration, 
             double forcingDuration, double runPhysicsDuration, double writeOutputDuration) {
@@ -115,7 +105,6 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
             }
         },
 
-
         [=](run_failure, caf::actor actorRef, int indxGRU, int err) {
             aout(self) << "GRU:" << self->state.GRUList[indxGRU - 1]->getRefGRU()
                 << "indxGRU = " << indxGRU << "Failed \n"
@@ -134,23 +123,12 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
             }
         },
 
-    // *******************************************************************************************
-    // ******************************* END INTERFACE WITH HRU ************************************
-    // *******************************************************************************************
-
-    // *******************************************************************************************
-    // ****************************** INTERFACE WITH FileAccessActor *****************************
-    // *******************************************************************************************
-        /**
-         * 
-         */
         [=](done_file_access_actor_init) {
             // Init GRU Actors and the Output Structure
-            // self->send(self->state.file_access_actor, initalize_outputStructure_v);
             self->send(self, init_hru_v);
         },
 
-        [=](file_access_actor_done, double readDuration, double writeDuration) {
+        [=](file_access_actor_done, double read_duration, double write_duration) {
             int err = 0;
             if (debug) {
                 aout(self) << "\n********************************\n";
@@ -178,13 +156,14 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
             aout(self) << "     " << (self->state.duration / 1000) / 60  << " Minutes\n";
             aout(self) << "     " << ((self->state.duration / 1000) / 60) / 60 << " Hours\n";
             aout(self) << "\nReading Duration:\n";
-            aout(self) << "     " << readDuration  << " Seconds\n";
+            aout(self) << "     " << read_duration  << " Seconds\n";
             aout(self) << "\nWriting Duration:\n";
-            aout(self) << "     " << writeDuration << " Seconds\n\n";
+            aout(self) << "     " << write_duration << " Seconds\n\n";
 
             cleanUpJobActor(&err);
             // Tell Parent we are done
-            self->send(self->state.parent, done_job_v, self->state.numGRUFailed);
+            self->send(self->state.parent, done_job_v, self->state.numGRUFailed, self->state.duration,
+                read_duration, write_duration);
             self->quit();
         },
 

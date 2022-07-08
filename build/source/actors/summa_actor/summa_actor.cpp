@@ -35,7 +35,7 @@ behavior summa_actor(stateful_actor<summa_actor_state>* self, int startGRU, int 
 	spawnJob(self);
 
 	return {
-		[=](done_job, int numFailed) {
+		[=](done_job, int numFailed, int job_duration, int read_duration, int write_duration) {
 			self->state.numFailed += numFailed;
 			aout(self) << "Job Done\n"; 
 			if (self->state.numGRU <= 0) {

@@ -249,6 +249,7 @@ SOURCE_DIR = /globalhome/kck540/HPC/SummaProjects/Summa-Actors/build/source/acto
 
 GLOBAL_INCLUDES = -I$(INCLUDE_DIR)/global
 GLOBAL = $(SOURCE_DIR)/global/global.cpp
+TIMEINFO = $(SOURCE_DIR)/global/timing_info.cpp
 
 SUMMA_ACTOR_INCLUDES = -I$(INCLUDE_DIR)/summa_actor
 SUMMA_ACTOR = $(SOURCE_DIR)/summa_actor/summa_actor.cpp
@@ -321,7 +322,7 @@ clean_fortran:
 ################################################ COMPILE SUMMA-C++ ################################################
 ###################################################################################################################
 compile_globals:
-	$(CC) $(FLAGS_ACTORS) -c $(GLOBAL) $(GLOBAL_INCLUDES)
+	$(CC) $(FLAGS_ACTORS) -c $(GLOBAL) $(TIMEINFO) $(GLOBAL_INCLUDES)
 
 compile_hru_actor:
 	$(CC) $(FLAGS_ACTORS) -c $(HRU_ACTOR) $(HRU_ACTOR_INCLUDES) $(GLOBAL_INCLUDES) $(ACTORS_INCLUDES)
