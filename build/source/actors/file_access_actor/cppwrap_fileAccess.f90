@@ -129,6 +129,7 @@ subroutine initFailedHRUTracker(numGRU) bind(C, name="initFailedHRUTracker")
   implicit none
   integer(c_int), intent(in)        :: numGRU
 
+  if (allocated(failedHRUs))then; deallocate(failedHRUs); endif;
   allocate(failedHRUs(numGRU))
 
   failedHRUs(:) = .false.

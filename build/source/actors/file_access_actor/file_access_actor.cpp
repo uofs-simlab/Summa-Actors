@@ -18,6 +18,7 @@ namespace caf {
 behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU, int numGRU, 
     int outputStrucSize, std::string configPath, actor parent) {
     // Set File_Access_Actor variables
+    aout(self) << "\n----------File_Access_Actor Started----------\n";
     self->state.parent = parent;
     self->state.numGRU = numGRU;
     self->state.startGRU = startGRU;
@@ -186,7 +187,7 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
 void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
     int indx = 1;
     int err = 0;
-    // aout(self) << "Set Up the forcing file" << std::endl;
+
     ffile_info_C(&indx, self->state.handle_forcing_file_info, &self->state.numFiles, &err);
     if (err != 0) {
         aout(self) << "Error: ffile_info_C - File_Access_Actor \n";

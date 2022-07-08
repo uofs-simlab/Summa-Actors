@@ -1,6 +1,8 @@
 #include "job_actor.hpp"
 #include "file_access_actor.hpp"
 #include "json.hpp"
+#include <chrono>
+#include <thread>
 #include "message_atoms.hpp"
 #include "global.hpp"
 #include "job_actor_subroutine_wrappers.hpp"
@@ -188,9 +190,17 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
 
         [=](file_access_actor_err, std::string function) {
             aout(self) << "Failure in File Access Actor in function" << function << "\n";
-            aout(self) << "Letting Parent Know we are quitting\n";
-            self->send(self->state.parent, err_v);
-            self->quit();
+            if (function == "def_output") {
+                aout(self) << "Error with the output file, will try creating it agian\n";
+                self->state.file_access_actor = self->spawn(file_access_actor, self->state.startGRU, self->state.numGRU, 
+                    self->state.outputStrucSize, self->state.configPath, self);
+            } else {
+                aout(self) << "Letting Parent Know we are quitting\n";
+                self->send(self->state.parent, err_v);
+                self->quit();
+            }
+
+
         }
     // *******************************************************************************************
     // ************************** END INTERFACE WITH FileAccessActor *****************************
@@ -198,7 +208,6 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
 
     };
 }
-
 
 void initJob(stateful_actor<job_state>* self) {
     std::string success = "Success"; // allows us to build the string
