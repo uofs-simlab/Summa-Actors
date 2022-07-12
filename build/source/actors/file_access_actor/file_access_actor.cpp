@@ -116,7 +116,6 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
             }
         },
 
-
         [=](write_output, int indxGRU, int indxHRU, int numStepsToWrite,
             caf::actor refToRespondTo) {
             int err;
@@ -126,8 +125,6 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
             if (err != 0) {
                 aout(self) << "FILE_ACCESS_ACTOR - ERROR Writing Output \n";
             } 
-
-
         },
 
         [=](read_and_write, int indxGRU, int indxHRU, int numStepsToWrite, int currentFile, 

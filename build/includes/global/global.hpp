@@ -3,6 +3,7 @@
 #include <chrono>
 #include <optional>
 #include <iostream>
+#include <vector>
 #include <bits/stdc++.h>
 #include <unistd.h>
 #include "json.hpp"
@@ -11,7 +12,14 @@
 using json = nlohmann::json;
 
 extern bool debug;
+template<typename T>
+int getSettingsTest(std::vector<std::string> keys, T return_value) {
+    for (std::vector<int>::size_type i = 0; i < keys.size(); i++) {
+        std::cout<< keys[i] << std::endl;
+    }
 
+    return 0;
+}
 
 /**
  * Return the time between to time points

@@ -1,6 +1,7 @@
 #pragma once
 #include "caf/all.hpp"
 #include <vector>
+#include <string>
 
 
 enum batch_status {
@@ -18,6 +19,7 @@ class Batch {
         double run_time;
         double read_time;
         double write_time;
+        std::string assigned_host;
         caf::actor assigned_actor;
         batch_status status;
 
@@ -35,9 +37,9 @@ class Batch {
 
         int getNumHRU();
 
-        void solvedBatch();
+        void solvedBatch(double run_time, double read_time, double write_time);
 
-        void assignedBatch();
+        void assignedBatch(std::string hostname, caf::actor actor_ref);
 
         void updateRunTime(double run_time);
 };
@@ -46,9 +48,8 @@ class Batch {
 class Batch_Manager {
     private:
         std::vector<Batch> batch_list;
-        
-
-
+        std::vector<Batch> solved_batches;
+        std::vector<Batch> failed_batches;        
     public:
 
 };

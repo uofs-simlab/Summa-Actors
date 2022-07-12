@@ -75,10 +75,6 @@ void run_server(actor_system& system, const config& cfg) {
         return;
     }
     aout(self) << "Successfully Published summa_server_actor on port " << *is_port << "\n";
-    std::string dummy;
-    std::getline(std::cin, dummy);
-    std::cout << "...cya" << std::endl;
-    anon_send_exit(server, exit_reason::user_shutdown);
 }
 
 

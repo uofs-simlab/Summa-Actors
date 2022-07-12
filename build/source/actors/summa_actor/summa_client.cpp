@@ -72,15 +72,17 @@ behavior running(stateful_actor<summa_client_state>* self, const actor& server_a
 
     self->send(server_actor, connect_to_server_v, self, self->state.hostname);
     return {
-        [=](batch, int batch_id, int start_hru, int num_hru, std::string config_path) {
+        [=](batch, int client_id, int batch_id, int start_hru, int num_hru, std::string config_path) {
             aout(self) << "Received batch to compute" << std::endl;
+            self->state.client_id = client_id;
             self->state.batch_id = batch_id;
             self->state.summa_actor_ref = self->spawn(summa_actor, start_hru, num_hru, config_path, self);
         },
 
-        [=](done_batch, double duration) {
+        [=](done_batch, double total_duration, double total_read_duration, double total_write_duration) {
             aout(self) << "summa_actor has finished, sending message to the server for another batch\n";
-            self->send(server_actor, done_batch_v, self, duration, self->state.batch_id);
+            self->send(server_actor, done_batch_v, self, self->state.client_id, self->state.batch_id, 
+                total_duration, total_read_duration, total_write_duration);
         },
 
         [=](time_to_exit) {

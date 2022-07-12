@@ -33,12 +33,17 @@ int Batch::getNumHRU() {
     return this->num_hru;
 }
 
-void Batch::solvedBatch() {
+void Batch::solvedBatch(double run_time, double read_time, double write_time) {
     this->status = solved;
+    this->run_time = run_time;
+    this->read_time = read_time;
+    this->write_time = write_time;
 }
 
-void Batch::assignedBatch() {
+void Batch::assignedBatch(std::string hostname, caf::actor actor_ref) {
     this->status = assigned;
+    this->assigned_host = hostname;
+    this->assigned_actor = actor_ref;
 }
 
 void Batch::updateRunTime(double run_time) {

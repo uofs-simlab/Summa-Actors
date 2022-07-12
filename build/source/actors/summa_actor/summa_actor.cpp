@@ -54,20 +54,27 @@ behavior summa_actor(stateful_actor<summa_actor_state>* self, int startGRU, int 
 					aout(self) << "Job Read Duration = " << self->state.timing_info_for_jobs.job_read_duration[i] << "\n";
 					aout(self) << "Job Write Duration = " << self->state.timing_info_for_jobs.job_write_duration[i] << "\n";
 				}
+
+				// TODO: Output CSV file for finished jobs
 				
 				aout(self) << "\n________________SUMMA_ACTOR TIMING INFO________________\n";
 				aout(self) << "Total Duration = " << self->state.summa_actor_timing.getDuration("total_duration").value_or(-1.0) << " Seconds\n";
 				aout(self) << "Total Duration = " << self->state.summa_actor_timing.getDuration("total_duration").value_or(-1.0) / 60 << " Minutes\n";
 				aout(self) << "Total Duration = " << (self->state.summa_actor_timing.getDuration("total_duration").value_or(-1.0) / 60) / 60 << " Hours\n\n";
-				aout(self) << "Total Read Duration = " << std::accumulate(self->state.timing_info_for_jobs.job_read_duration.begin(),
+				double total_read_duration = std::accumulate(self->state.timing_info_for_jobs.job_read_duration.begin(),
 																		self->state.timing_info_for_jobs.job_read_duration.end(),
-																		0.0) << "Seconds \n";
-				aout(self) << "Total Write Duration = " << std::accumulate(self->state.timing_info_for_jobs.job_write_duration.begin(),
+																		0.0);
+				aout(self) << "Total Read Duration = " << total_read_duration  << "Seconds \n";
+				double total_write_duration = std::accumulate(self->state.timing_info_for_jobs.job_write_duration.begin(),
 																		self->state.timing_info_for_jobs.job_write_duration.end(),
-																		0.0) << "Seconds \n";
+																		0.0);
+				aout(self) << "Total Write Duration = " << total_write_duration << "Seconds \n";
 				aout(self) << "Program Finished \n";
 
-				self->send(self->state.parent, done_batch_v, self->state.summa_actor_timing.getDuration("total duration").value_or(-1.0));		
+				self->send(self->state.parent, done_batch_v, 
+					self->state.summa_actor_timing.getDuration("total_duration").value_or(-1.0), 
+					total_read_duration,
+					total_write_duration);		
 
 			} else {
 				// spawn a new job
