@@ -85,8 +85,8 @@ behavior summa_server(stateful_actor<summa_server_state>* self, std::string conf
             if (batch_to_send.has_value()) {
                 Batch verified_batch = batch_to_send.value();
                 verified_batch.assignedBatch(self->state.client_list[client_id].getHostname(), client);
-                self->send(client, batch_v, client_id, batch_to_send->getBatchID(), batch_to_send->getStartHRU(), 
-                    batch_to_send->getNumHRU(), self->state.config_path);
+                self->send(client, batch_v, client_id, verified_batch.getBatchID(), verified_batch.getStartHRU(), 
+                    verified_batch.getNumHRU(), self->state.config_path);
             } else {
                 aout(self) << "We Are Done - Telling Clients to exit \n";
                 for (std::vector<int>::size_type i = 0; i < self->state.client_list.size(); i++) {
