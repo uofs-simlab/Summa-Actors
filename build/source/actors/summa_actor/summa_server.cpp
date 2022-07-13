@@ -128,11 +128,17 @@ behavior summa_server(stateful_actor<summa_server_state>* self, std::string conf
                     self->state.config_path);
 
             } else {
-                aout(self) << "We Are Done - Telling Clients to exit \n";
-                for (std::vector<int>::size_type i = 0; i < self->state.client_list.size(); i++) {
-                    self->send(self->state.client_list[i].getActor(), time_to_exit_v);
+                // We found no batch this means all batches are assigned
+                if (self->state.batches_remaining == 0) {
+                    aout(self) << "All Batches Solved -- Telling Clients To Exit\n";
+                    for (std::vector<int>::size_type i = 0; i < self->state.client_list.size(); i++) {
+                        self->send(self->state.client_list[i].getActor(), time_to_exit_v);
+                    }
+                    aout(self) << "\nSUMMA_SERVER -- EXITING\n";
+                    self->quit();
+                } else {
+                    aout(self) << "No Batches left to compute -- letting client stay connected in case batch fails\n";
                 }
-                self->quit();
             }
         }
     };
