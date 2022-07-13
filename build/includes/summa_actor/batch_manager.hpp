@@ -42,6 +42,8 @@ class Batch {
         void assignedBatch(std::string hostname, caf::actor actor_ref);
 
         void updateRunTime(double run_time);
+
+        void writeBatchToFile(std::string file_name);
 };
 
 

@@ -170,9 +170,10 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
         },
 
         [=](file_access_actor_err, std::string function) {
-            aout(self) << "Failure in File Access Actor in function" << function << "\n";
+            aout(self) << "Failure in File Access Actor in function: " << function << "\n";
             if (function == "def_output") {
                 aout(self) << "Error with the output file, will try creating it agian\n";
+                std::this_thread::sleep_for(std::chrono::seconds(5));
                 self->state.file_access_actor = self->spawn(file_access_actor, self->state.startGRU, self->state.numGRU, 
                     self->state.outputStrucSize, self->state.configPath, self);
             } else {
@@ -197,9 +198,15 @@ void initJob(stateful_actor<job_state>* self) {
         self->state.successOutputFile = self->state.csvPath += success += 
             std::to_string(self->state.startGRU) += ".csv";
         file.open(self->state.successOutputFile, std::ios_base::out);
-        file << "GRU" << "," << "totalDuration" << "," << "initDuration" << "," << 
-                    "forcingDuration" << "," << "runPhysicsDuration" << "," << "writeOutputDuration" << 
-                    "," << "dt_init" << "," << "numAttemtps" << "\n";
+        file << 
+            "GRU,"                 << 
+            "totalDuration,"       <<
+            "initDuration,"        << 
+            "forcingDuration,"     << 
+            "runPhysicsDuration,"  << 
+            "writeOutputDuration," << 
+            "dt_init,"             << 
+            "numAttemtps\n";
         file.close();
     }
 

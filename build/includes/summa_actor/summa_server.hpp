@@ -21,9 +21,10 @@ struct summa_server_state {
     std::vector<Batch> solved_batches;
     std::vector<Batch> failed_batches;
     std::vector<Client> client_list;
+    std::string csv_output_name;
 };
 
 behavior summa_server(stateful_actor<summa_server_state>* self, std::string config_path);
 int assembleBatches(stateful_actor<summa_server_state>* self);
-std::optional<Batch> getUnsolvedBatch(stateful_actor<summa_server_state>* self);
+std::optional<int> getUnsolvedBatchID(stateful_actor<summa_server_state>* self);
 }

@@ -50,4 +50,19 @@ void Batch::updateRunTime(double run_time) {
     this->run_time = run_time;
 }
 
+void Batch::writeBatchToFile(std::string file_name) {
+    std::ofstream output_file;
+    output_file.open(file_name, std::ios_base::app);
+    output_file <<
+        this->batch_id      << "," <<
+        this->start_hru     << "," << 
+        this->num_hru       << "," << 
+        this->assigned_host << "," <<
+        this->run_time      << "," << 
+        this->read_time     << "," <<
+        this->write_time    << "," <<
+        this->status        << "\n";
+    output_file.close();
+}
+
 
