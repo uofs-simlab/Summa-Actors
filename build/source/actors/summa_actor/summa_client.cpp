@@ -5,14 +5,16 @@
 #include "summa_actor.hpp"
 #include "message_atoms.hpp"
 #include "batch_manager.hpp"
-
+#include <optional>
 #include <unistd.h>
 #include <limits.h>
 
 
 namespace caf {
 
-behavior summa_client(stateful_actor<summa_client_state>* self) {
+behavior summa_client(stateful_actor<summa_client_state>* self, std::optional<std::string> config_path) {
+    self->state.config_path = config_path;
+
     self->set_down_handler([=](const down_msg& dm){
         if(dm.source == self->state.current_server) {
             aout(self) << "*** Lost Connection to Server" << std::endl;
@@ -77,11 +79,19 @@ behavior running(stateful_actor<summa_client_state>* self, const actor& server_a
             aout(self) << "BatchID = " << batch_id << "\n";
             aout(self) << "Start HRU = " << start_hru << "\n";
             aout(self) << "Num HRU = " << num_hru << "\n";
-
-
+            aout(self) << "Config Path = " << config_path << "\n";
             self->state.client_id = client_id;
             self->state.batch_id = batch_id;
-            self->state.summa_actor_ref = self->spawn(summa_actor, start_hru, num_hru, config_path, self);
+
+            
+            self->state.summa_actor_ref = self->spawn(summa_actor, 
+                start_hru, 
+                num_hru, 
+                self->state.config_path.value_or(config_path), 
+                self);
+            
+
+            
         },
 
         [=](done_batch, double total_duration, double total_read_duration, double total_write_duration) {

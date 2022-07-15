@@ -11,6 +11,7 @@
 #include <iostream>
 #include "json.hpp"
 #include "batch_manager.hpp"
+#include <optional>
 
 using namespace caf;
 
@@ -48,8 +49,8 @@ void run_client(actor_system& system, const config& cfg) {
        aout(self) << "ERROR: run_client() host and port - CHECK SETTINGS FILE\n";
        return;
     }
-
-    auto c = system.spawn(summa_client);
+    std::optional<std::string> path = cfg.config_path;
+    auto c = system.spawn(summa_client, path);
     if (!host.empty() && port > 0) {
         anon_send(c, connect_atom_v, host, port);
     } else {
