@@ -4,9 +4,7 @@ simEndTime           '2000-01-03 12:00' !
 tmZoneInfo           'localTime' ! 
 settingsPath         '/Summa-Actors/utils/laugh_tests/celia1990/settings/' !  setting_path
 forcingPath          '/Summa-Actors/utils/laugh_tests/celia1990/forcing_data/' !  input_path
-outputPath           '/Summa-Actors/utils/laugh_tests/celia1990/output/' ! 
-forcingFreq          'month'  ! the frequeny of forcing files (month, year)
-forcingStart         '2000-01-01' 
+outputPath           '/Summa-Actors/utils/laugh_tests/celia1990/verification_data/' ! 
 decisionsFile        'summa_zDecisions_celia1990.txt' !  decision
 outputControlFile    'Model_Output.txt' !  OUTPUT_CONTROL
 globalHruParamFile   'summa_zLocalParamInfo.txt' !  local_par
@@ -15,7 +13,7 @@ attributeFile        'summa_zLocalAttributes.nc' !  local_attr
 trialParamFile       'summa_zParamTrial_celia1990.nc' !  para_trial
 forcingListFile      'summa_zForcingFileList.txt' !  forcing_list
 initConditionFile    'summa_zInitialCond_celia1990.nc' !  initial_cond
-outFilePrefix        'summa-actors_celia1990' !  output_prefix
+outFilePrefix        'summa_celia1990' !  output_prefix
 vegTableFile         'VEGPARM.TBL' ! 
 soilTableFile        'SOILPARM.TBL' ! 
 generalTableFile     'GENPARM.TBL' ! 
