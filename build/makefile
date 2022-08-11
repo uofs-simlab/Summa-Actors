@@ -1,18 +1,16 @@
 #### parent directory of the 'build' directory ####
-ROOT_DIR = /globalhome/kck540/HPC/SummaProjects/Summa-Actors
+ROOT_DIR = /Summa-Actors
 
 #### Compilers ####
 FC = gfortran # Fortran
 CC = g++	  # C++
 
 #### Includes AND Libraries ####
-INCLUDES = -I$(EBROOTNETCDFMINFORTRAN)/include
-LIBRARIES = -L$(EBROOTNETCDFMINFORTRAN)/lib64 \
-	-L$(EBROOTOPENBLAS)/lib -lnetcdff -lopenblas
+INCLUDES = -I/usr/include -I/usr/local/include
+LIBRARIES = -L/usr/lib -L/usr/local/lib -lnetcdff -lopenblas
 
-ACTORS_INCLUDES = -I$(EBROOTCAF)/include -I$(EBROOTNETCDFMINFORTRAN)/include
-ACTORS_LIBRARIES = -L$(EBROOTCAF)/lib -L$(EBROOTCAF)/lib64 -L$(EBROOTNETCDFMINFORTRAN)/lib64 \
-	-L$(EBROOTOPENBLAS)/lib -L$(ROOT_DIR)/bin -lcaf_core -lcaf_io -lsumma -lopenblas -lnetcdff
+ACTORS_INCLUDES = -I/usr/include -I/usr/local/include
+ACTORS_LIBRARIES = -L/usr/lib -L/usr/local/lib -L/Summa-Actors/bin -lcaf_core -lcaf_io -lsumma -lopenblas -lnetcdff
 
 
 # Production runs
@@ -243,8 +241,8 @@ DRIVER = $(patsubst %, $(DRIVER_DIR)/%, $(SUMMA_DRIVER))
 ######################################## Assemble C++ Files ########################################
 ####################################################################################################
 
-INCLUDE_DIR = /globalhome/kck540/HPC/SummaProjects/Summa-Actors/build/includes
-SOURCE_DIR = /globalhome/kck540/HPC/SummaProjects/Summa-Actors/build/source/actors
+INCLUDE_DIR = /Summa-Actors/build/includes
+SOURCE_DIR = /Summa-Actors/build/source/actors
 
 
 GLOBAL_INCLUDES = -I$(INCLUDE_DIR)/global

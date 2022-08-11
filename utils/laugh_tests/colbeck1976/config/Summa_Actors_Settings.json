@@ -1,0 +1,32 @@
+{
+  "DistributedSettings": {
+      "distributed-mode": true,
+      "host": "localhost",
+      "port": 4444
+  },
+
+  "SimulationSettings": {
+      "total_hru_count": 100000,
+      "num_hru_per_batch": 500
+  },
+
+  "SummaActor": {
+      "OuputStructureSize": 250,
+      "maxGRUPerJob": 250
+  },
+
+  "FileAccessActor": {
+      "num_vectors_in_output_manager": 1
+  },
+  
+  "JobActor": {
+      "FileManagerPath": "/gladwell/kck540/SummaActorsSettings/fileManager.txt",
+      "outputCSV": false,
+      "csvPath": "/scratch/kck540/csv/"
+  },
+
+  "HRUActor": {
+      "printOutput": true,
+      "outputFrequency": 500
+  }
+}
