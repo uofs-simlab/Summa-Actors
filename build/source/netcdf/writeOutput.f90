@@ -367,6 +367,7 @@ subroutine writeVector(ncid, outputTimestep, outputTimestepUpdate, maxLayers, nS
 
   ! Loop over GRUs
   gruCounter = 1
+  stepCounter = 0
   do iGRU = minGRU, maxGRU
     do iStep = 1, nSteps
       ! get the model layers
