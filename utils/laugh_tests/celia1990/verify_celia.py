@@ -46,8 +46,8 @@ output_variables = [time, nSnow, nSoil, nLayers, mLayerHeight, iLayerLiqFluxSoil
     scalarSWE, fieldCapacity]
 
 # find the output files
-verified_data_path = Path("/home/local/kck540/SUMMA-Projects/Summa-Actors/utils/laugh_tests/celia1990/verification_data/summa_celia1990_G1-1_timestep.nc")
-data_to_compare_path = Path("/home/local/kck540/SUMMA-Projects/Summa-Actors/utils/laugh_tests/celia1990/output/summa-actors_celia1990GRU1-1_timestep.nc")
+verified_data_path = Path("./verification_data/summa_celia1990_G1-1_timestep.nc")
+data_to_compare_path = Path("./output/summa-actors_celia1990GRU1-1_timestep.nc")
     
 try:
     verified_dataset = xr.open_dataset(verified_data_path)
@@ -101,6 +101,7 @@ for iHRU in range(0, numHRU):
                     print("variable -",var, "has different values at", elem)
                     print("     verified_hru = ", verified_data[elem])
                     print("     hru_to_compare = ", to_verify_data[elem])
+                    break
 
             # if (verified_hru[var].values != hru_to_compare[var].values).all():
             #     print("ERROR: Output data is not the same in",var)
