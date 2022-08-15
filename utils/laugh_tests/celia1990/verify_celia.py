@@ -102,11 +102,7 @@ for iHRU in range(0, numHRU):
                     print("     verified_hru = ", verified_data[elem])
                     print("     hru_to_compare = ", to_verify_data[elem])
                     break
-
-            # if (verified_hru[var].values != hru_to_compare[var].values).all():
-            #     print("ERROR: Output data is not the same in",var)
-            #     print("     verified_hru = ", verified_hru[var].values)
-            #     print("     hru_to_compare = ", hru_to_compare[var].values)
+                    
         except TypeError:
             print("variable - ", var, "Cannot be compared with len")
             print("     verified_hru = ",verified_hru[var].values)

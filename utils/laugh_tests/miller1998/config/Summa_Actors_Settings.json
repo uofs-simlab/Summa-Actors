@@ -1,6 +1,6 @@
 {
   "DistributedSettings": {
-      "distributed-mode": true,
+      "distributed-mode": false,
       "host": "localhost",
       "port": 4444
   },
@@ -27,6 +27,6 @@
 
   "HRUActor": {
       "printOutput": true,
-      "outputFrequency": 500
+      "outputFrequency": 1
   }
 }

@@ -1,0 +1,23 @@
+controlVersion       'SUMMA_FILE_MANAGER_V3.0.0' !
+simStartTime         '1990-01-01 00:01' !
+simEndTime           '1990-01-01 10:00' !
+tmZoneInfo           'localTime' ! Time zone info
+settingsPath         '/Summa-Actors/utils/laugh_tests/colbeck1976/settings/' !  SETNGS_PATH
+forcingPath          '/Summa-Actors/utils/laugh_tests/colbeck1976/forcing_data/' !  INPUT_PATH
+outputPath           '/Summa-Actors/utils/laugh_tests/colbeck1976/output/' !  OUTPUT_PATH
+forcingFreq          'month'  ! the frequeny of forcing files (month, year)
+forcingStart         '1990-01-01'
+decisionsFile        'summa_zDecisions_colbeck1976.txt' !  M_DECISIONS      = definition of model decisions
+outputControlFile    'summa_defineModelOutput.txt' !  OUTPUT_CONTROL
+globalHruParamFile   'summa_zLocalParamInfo.txt' !  LOCALPARAM_INFO  = default values and constraints for local model parameters
+globalGruParamFile   'summa_zBasinParamInfo.txt' !  BASINPARAM_INFO  = default values and constraints for basin-average parameters
+attributeFile        'summa_zLocalAttributes.nc' !  LOCAL_ATTRIBUTES = local attributes
+trialParamFile       'summa_zParamTrial_colbeck1976-exp3.nc' !  PARAMETER_TRIAL  = trial values for model parameters
+forcingListFile      'summa_zForcingFileList.txt' !  FORCING_FILELIST = list of files used in each HRU
+initConditionFile    'summa_zInitialCond_colbeck1976-exp3.nc' !  MODEL_INITCOND   = model initial conditions
+outFilePrefix        'colbeck1976-exp3' !  OUTPUT_PREFIX    = prefix for the output file
+vegTableFile         'VEGPARM.TBL' !
+soilTableFile        'SOILPARM.TBL' !
+generalTableFile     'GENPARM.TBL' !
+noahmpTableFile      'MPTABLE.TBL' !
+! history Mon Jul 20 16:08:17 2020: /pool0/home/andrbenn/data/summa_3/utils/convert_summa_config_v2_v3.py ./syntheticTestCases/colbeck1976/summa_fileManager_colbeck1976-exp3.txt
