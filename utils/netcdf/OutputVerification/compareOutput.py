@@ -3,7 +3,7 @@ from os.path import isfile, join
 from pathlib import Path
 import xarray as xr 
 
-numHRU = 25
+numHRU = 125
 
 time = 'time'
 scalarSWE = 'scalarSWE'
@@ -28,8 +28,8 @@ varList = [time, scalarSWE, scalarCanopyWat, scalarAquiferStorage, scalarTotalSo
     scalarTotalET, scalarTotalRunoff, scalarNetRadiation]
 
 filename = "out.txt"
-originalPath = Path('/home/kklenk/projects/rpp-kshook/kklenk/SummaOriginalOuput/May-13-2022/netcdf/SummaBE_G000001-000125_day.nc')
-actorsPath = Path('/home/kklenk/projects/rpp-kshook/kklenk/SummaActorsOutput/May-26-2022/netcdf/SummaActorsGRU1-500_day.nc')
+originalPath = Path('/home/kklenk/projects/rpp-kshook/kklenk/SummaOriginalOuput/May-30-2022/netcdf/SummaBE_G001001-001125_day.nc')
+actorsPath = Path('/home/kklenk/projects/rpp-kshook/kklenk/SummaActorsOutput/Jun-18-2022/netcdf/SummaActorsGRU1001-1000_day.nc')
 
 originalDataset = xr.open_dataset(originalPath)
 actorsDataset = xr.open_dataset(actorsPath)
@@ -56,6 +56,7 @@ for i in range(0, numHRU):
       dataAct.append(data)
     print("Original", len(dataOrig))
     print("Actors", len(dataAct))
+    print("HRU = ", i)
     marginOfError = 0
     if var == time:
       for a in range(0, len(dataAct)):
