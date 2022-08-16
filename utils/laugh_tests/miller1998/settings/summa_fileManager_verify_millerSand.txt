@@ -1,0 +1,20 @@
+controlVersion       'SUMMA_FILE_MANAGER_V3.0.0' !  fman_ver
+simStartTime         '2000-01-01 00:30' !
+simEndTime           '2000-01-03 12:00' !
+tmZoneInfo           'localTime' ! Time zone info
+settingsPath         '/Summa-Actors/utils/laugh_tests/miller1998/settings/' !  setting_path
+forcingPath          '/Summa-Actors/utils/laugh_tests/miller1998/forcing_data/' !  input_path
+outputPath           '/Summa-Actors/utils/laugh_tests/miller1998/verification_data/' !  output_path
+decisionsFile        'summa_zDecisions_miller1998.txt' !  decision
+outputControlFile    'Model_Output.txt' !  OUTPUT_CONTROL
+globalHruParamFile   'summa_zLocalParamInfo.txt' !  local_par
+globalGruParamFile   'summa_zBasinParamInfo.txt' !  basin_par
+attributeFile        'summa_zLocalAttributes.nc' !  local_attr
+trialParamFile       'summa_zParamTrial_millerSand.nc' !  para_trial
+forcingListFile      'summa_zForcingFileList.txt' !  forcing_list
+initConditionFile    'summa_zInitialCond_millerSand.nc' !  initial_cond
+outFilePrefix        'millerSand' !  output_prefix
+vegTableFile         'VEGPARM.TBL' !
+soilTableFile        'SOILPARM.TBL' !
+generalTableFile     'GENPARM.TBL' !
+noahmpTableFile      'MPTABLE.TBL' !

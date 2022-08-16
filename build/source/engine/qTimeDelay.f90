@@ -40,9 +40,7 @@ contains
  subroutine qOverland(&
                       ! input
                       ixRouting,             &  ! index for routing method
-                      averageSurfaceRunoff,  &  ! surface runoff (m s-1)
-                      averageSoilBaseflow,   &  ! baseflow from the soil profile (m s-1)
-                      averageAquiferBaseflow,&  ! baseflow from the aquifer (m s-1)
+                      averageTotalRunoff,    &  ! total runoff to the channel from all active components (m s-1)
                       fracFuture,            &  ! fraction of runoff in future time steps (m s-1)
                       qFuture,               &  ! runoff in future time steps (m s-1)
                       ! output
@@ -52,9 +50,7 @@ contains
  implicit none
  ! input
  integer(i4b),intent(in)    :: ixRouting              ! index for routing method
- real(dp),intent(in)        :: averageSurfaceRunoff   ! surface runoff (m s-1)
- real(dp),intent(in)        :: averageSoilBaseflow    ! baseflow from the soil profile (m s-1)
- real(dp),intent(in)        :: averageAquiferBaseflow ! baseflow from the aquifer (m s-1)
+ real(dp),intent(in)        :: averageTotalRunoff     ! total runoff to the channel from all active components (m s-1)ß
  real(dp),intent(in)        :: fracFuture(:)          ! fraction of runoff in future time steps (m s-1)
  real(dp),intent(inout)     :: qFuture(:)             ! runoff in future time steps (m s-1)
  ! output
@@ -69,7 +65,7 @@ contains
  err=0; message='qOverland/'
 
  ! compute instantaneous runoff (m s-1)
- averageInstantRunoff = averageSurfaceRunoff + averageAquiferBaseflow + averageSoilBaseflow
+ averageInstantRunoff = averageTotalRunoff
 
  ! compute routed runoff (m s-1)
  select case(ixRouting)  ! (select option for sub-grid routing)

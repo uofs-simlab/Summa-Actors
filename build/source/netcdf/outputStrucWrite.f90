@@ -100,7 +100,7 @@ contains
   integer(i4b)                :: iVar             ! loop through variables
 
   ! initialize error control
-  err=0;message="writeParm/"
+  err=0;message="outputStrucWrite.f90-writeParm/"
 
   ! loop through local column model parameters
   do iVar = 1,size(meta)
@@ -194,7 +194,7 @@ subroutine writeData(indxGRU,indxHRU,iStep,structName,finalizeStats, &
   integer(i4b),parameter           :: ixInteger=1001    ! named variable for integer
   integer(i4b),parameter           :: ixReal=1002       ! named variable for real
   ! initialize error control
-  err=0;message="writeData/"
+  err=0;message="outputStrucWrite.f90-writeData/"
 
   ! loop through output frequencies
   do iFreq=1,maxvarFreq
@@ -240,6 +240,8 @@ subroutine writeData(indxGRU,indxHRU,iStep,structName,finalizeStats, &
               outputStructure(1)%diagStat(1)%gru(indxGRU)%hru(indxHRU)%var(map(iVar))%tim(iStep)%dat(iFreq) = stat%var(map(iVar))%dat(iFreq)
             case('flux')
               outputStructure(1)%fluxStat(1)%gru(indxGRU)%hru(indxHRU)%var(map(iVar))%tim(iStep)%dat(iFreq) = stat%var(map(iVar))%dat(iFreq)
+            case('indx')
+              outputStructure(1)%indxStat(1)%gru(indxGRU)%hru(indxHRU)%var(map(iVar))%tim(iStep)%dat(iFreq) = stat%var(map(iVar))%dat(iFreq)
             case default
               err=21; message=trim(message)//"Stats structure not found"; return
             end select
@@ -339,7 +341,7 @@ subroutine writeBasin(indxGRU,indxHRU,iStep,finalizeStats,&
  integer(i4b)                  :: iStat             ! statistics index
  integer(i4b)                  :: iFreq             ! frequency index
  ! initialize error control
- err=0;message="f-writeBasin/"
+ err=0;message="outputStrucWrite.f90-writeBasin/"
 
  ! loop through output frequencies
  do iFreq=1,maxvarFreq
@@ -404,7 +406,7 @@ subroutine writeTime(indxGRU,indxHRU,iStep,finalizeStats,meta,dat,err,message)
  integer(i4b)                  :: iVar              ! variable index
  integer(i4b)                  :: iFreq             ! frequency index
  ! initialize error control
- err=0;message="f-writeTime/"
+ err=0;message="outputStrucWrite.f90-writeTime/"
 
  ! loop through output frequencies
  do iFreq=1,maxvarFreq

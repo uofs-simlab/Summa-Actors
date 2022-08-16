@@ -288,22 +288,19 @@ subroutine FileAccessActor_WriteOutput(&
   integer(i4b)                         :: iFreq
   integer(i4b)                         :: indxHRU=1
   integer(i4b), dimension(maxVarFreq)  :: outputTimestepUpdate
+  integer(i4b), dimension(maxVarFreq)  :: stepCounter
 
   call c_f_pointer(handle_ncid, ncid)
   ! ****************************************************************************
   ! *** write data
   ! ****************************************************************************
   do iGRU=minGRU, maxGRU
+    stepCounter(:) = outputTimeStep(iGRU)%dat(:) ! We want to avoid updating outputTimeStep
     do iStep=1, nSteps
-      call writeBasin(ncid,iGRU,outputTimeStep(iGRU)%dat(:),iStep,bvar_meta, &
+      call writeBasin(ncid,iGRU,stepCounter(:),iStep,bvar_meta, &
               outputStructure(1)%bvarStat(1)%gru(iGRU)%hru(indxHRU)%var, &
               outputStructure(1)%bvarStruct(1)%gru(iGRU)%hru(indxHRU)%var, bvarChild_map, err, cmessage)
-  
-
-      ! reset outputTimeStep
-      ! get the number of HRUs in the run domain
-      ! nHRUrun = sum(gru_struc%hruCount)
-      ! write time information
+      
       call writeTime(ncid,outputTimeStep(iGRU)%dat(:),iStep,time_meta, &
               outputStructure(1)%timeStruct(1)%gru(iGRU)%hru(indxHRU)%var,err,cmessage)
     end do ! istep

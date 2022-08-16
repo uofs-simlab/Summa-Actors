@@ -1,0 +1,20 @@
+controlVersion       'SUMMA_FILE_MANAGER_V3.0.0' !  fman_ver
+simStartTime         '1990-01-01 00:00' ! 
+simEndTime           '1990-01-01 01:00' ! 
+tmZoneInfo           'localTime' ! 
+settingsPath         '/Summa-Actors/utils/laugh_tests/vanderborght2005/settings/' !  setting_path
+forcingPath          '/Summa-Actors/utils/laugh_tests/vanderborght2005/forcing_data/' !  input_path
+outputPath           '/Summa-Actors/utils/laugh_tests/vanderborght2005/verification_data/' !  output_path
+decisionsFile        'summa_zDecisions_vanderborght2005.txt' !  decision
+outputControlFile    'Model_Output.txt' !  ouput_file
+globalHruParamFile   'summa_zLocalParamInfo.txt' !  local_par
+globalGruParamFile   'summa_zBasinParamInfo.txt' !  basin_par
+attributeFile        'summa_zLocalAttributes.nc' !  local_attr
+trialParamFile       'summa_zParamTrial_vanderborght2005_exp1.nc' !  para_trial
+forcingListFile      'summa_zForcingFileList.txt' !  forcing_list
+initConditionFile    'summa_zInitialCond_vanderborght2005.nc' !  initial_cond
+outFilePrefix        'vanderborght2005_exp1' !  output_prefix
+vegTableFile         'VEGPARM.TBL' ! 
+soilTableFile        'SOILPARM.TBL' ! 
+generalTableFile     'GENPARM.TBL' ! 
+noahmpTableFile      'MPTABLE.TBL' ! 

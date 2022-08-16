@@ -1,0 +1,34 @@
+! ---------
+! model variables
+! ---------
+time                      | 1
+nSnow                     | 1
+nSoil                     | 1
+nLayers                   | 1
+mLayerHeight              | 1
+iLayerLiqFluxSoil         | 1
+mLayerDepth               | 1
+mLayerVolFracIce          | 1
+mLayerVolFracLiq          | 1
+mLayerMatricHead          | 1
+mLayerTranspire           | 1
+mLayerBaseflow            | 1
+mLayerCompress            | 1
+iLayerNrgFlux             | 1
+basin__TotalArea          | 1
+scalarGroundEvaporation   | 1
+scalarSoilBaseflow        | 1
+scalarSoilDrainage        | 1
+scalarInfiltration        | 1
+scalarSnowDrainage        | 1
+scalarSnowSublimation     | 1
+scalarThroughfallRain     | 1
+scalarThroughfallSnow     | 1
+scalarRainfall            | 1
+scalarSnowfall            | 1
+scalarRainPlusMelt        | 1
+fieldCapacity             | 1
+pptrate                   | 1
+averageRoutedRunoff       | 1
+scalarSWE                 | 1
+fieldCapacity             | 1
