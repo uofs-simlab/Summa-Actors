@@ -1,0 +1,35 @@
+Bootstrap: docker
+From: ubuntu:20.04
+
+%post
+    apt-get update
+    # need to install locales and set to en_CA.UTF-8
+    # this causes issues if not done
+    apt-get install locales
+    locale-gen en_CA.UTF-8
+    apt-get upgrade -y && \
+    DEBIAN_FRONTEND="noninteractive" apt-get install -y software-properties-common \
+    libnetcdf-dev \
+    libnetcdff-dev \
+    liblapack-dev \
+    libopenblas-dev \
+    cmake \
+    g++ \
+    git \
+    libssl-dev \
+    make \
+    gfortran \
+    python3-pip \
+    gdb &&\
+    apt-get autoclean
+
+    pip3 install xarray
+    pip3 install netcdf4
+    cd /opt
+    git clone https://github.com/actor-framework/actor-framework.git
+    cd actor-framework
+    ./configure
+    cd build
+    make
+    make test
+    make install
