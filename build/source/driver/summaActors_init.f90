@@ -1,5 +1,6 @@
-module summa4chm_init
+module summaActors_init
 ! used to declare and allocate summa data structures and initialize model state to known values
+USE,intrinsic :: iso_c_binding
 USE nrtype          ! variable types, etc.
 USE data_types,only:&
                     ! no spatial dimension
@@ -33,44 +34,44 @@ USE var_lookup,only:maxVarFreq                               ! # of available ou
 ! safety: set private unless specified otherwise
 implicit none
 private
-public::summa4chm_initialize
+public::summaActors_initialize
 contains
 
  ! used to declare and allocate summa data structures and initialize model state to known values
- subroutine summa4chm_initialize(&
+ subroutine summaActors_initialize(&
                         indxGRU,            & !  Index of HRU's GRU parent
                         num_steps,          &
   						          ! statistics structures
-                        forcStat,           & !  model forcing data
-                        progStat,           & !  model prognostic (state) variables
-                        diagStat,           & !  model diagnostic variables
-                        fluxStat,           & !  model fluxes
-                        indxStat,           & !  model indices
-                        bvarStat,           & !  basin-average variables
+                        handle_forcStat,    & !  model forcing data
+                        handle_progStat,    & !  model prognostic (state) variables
+                        handle_diagStat,    & !  model diagnostic variables
+                        handle_fluxStat,    & !  model fluxes
+                        handle_indxStat,    & !  model indices
+                        handle_bvarStat,    & !  basin-average variables
                         ! primary data structures (scalars)
-                        timeStruct,         & !  model time data
-                        forcStruct,         & !  model forcing data
-                        attrStruct,         & !  local attributes for each HRU
-                        typeStruct,         & !  local classification of soil veg etc. for each HRU
-                        idStruct,           & ! 
+                        handle_timeStruct,  & !  model time data
+                        handle_forcStruct,  & !  model forcing data
+                        handle_attrStruct,  & !  local attributes for each HRU
+                        handle_typeStruct,  & !  local classification of soil veg etc. for each HRU
+                        handle_idStruct,    & ! 
                         ! primary data structures (variable length vectors)
-                        indxStruct,         & !  model indices
-                        mparStruct,         & !  model parameters
-                        progStruct,         & !  model prognostic (state) variables
-                        diagStruct,         & !  model diagnostic variables
-                        fluxStruct,         & !  model fluxes
+                        handle_indxStruct,  & !  model indices
+                        handle_mparStruct,  & !  model parameters
+                        handle_progStruct,  & !  model prognostic (state) variables
+                        handle_diagStruct,  & !  model diagnostic variables
+                        handle_fluxStruct,  & !  model fluxes
                         ! basin-average structures
-                        bparStruct,         & !  basin-average parameters
-                        bvarStruct,         & !  basin-average variables
+                        handle_bparStruct,  & !  basin-average parameters
+                        handle_bvarStruct,  & !  basin-average variables
                         ! ancillary data structures
-                        dparStruct,         & !  default model parameters
+                        handle_dparStruct,  & !  default model parameters
                         ! local HRU data structures
-                        startTime_hru,      & ! start time for the model simulation
-                        finishTime_hru,     & ! end time for the model simulation
-                        refTime_hru,        & ! reference time for the model simulation
-                        oldTime_hru,        & ! time from previous step
+                        handle_startTime,   & ! start time for the model simulation
+                        handle_finshTime,   & ! end time for the model simulation
+                        handle_refTime,     & ! reference time for the model simulation
+                        handle_oldTime,     & ! time for the previous model time step
                         ! miscellaneous variables
-                        err, message)
+                        err) bind(C,name='summaActors_initialize')
   ! ---------------------------------------------------------------------------------------
   ! * desired modules
   ! ---------------------------------------------------------------------------------------
@@ -91,51 +92,111 @@ contains
   USE globalData,only:numtim
   USE var_lookup,only:maxvarFreq                              ! maximum number of output files
   USE globalData,only:startTime,finshTime,refTime,oldTime
-  ! ---------------------------------------------------------------------------------------
-  ! * variables
-  ! ---------------------------------------------------------------------------------------
+  
   implicit none
-  ! dummy variables
-  integer(i4b),intent(in)                  :: indxGRU                    ! indx of the parent GRU
-  integer(i4b),intent(out)                 :: num_steps                  ! number of steps in model, local to the HRU                 
-  ! statistics structures            
-  type(var_dlength),intent(inout)          :: forcStat                   !  model forcing data
-  type(var_dlength),intent(inout)          :: progStat                   !  model prognostic (state) variables
-  type(var_dlength),intent(inout)          :: diagStat                   !  model diagnostic variables
-  type(var_dlength),intent(inout)          :: fluxStat                   !  model fluxes
-  type(var_dlength),intent(inout)          :: indxStat                   !  model indices
-  type(var_dlength),intent(inout)          :: bvarStat                   !  basin-average variabl
+  
+  ! ---------------------------------------------------------------------------------------
+  ! * variables from C++
+  ! ---------------------------------------------------------------------------------------
+  integer(c_int),intent(in)                  :: indxGRU                    ! indx of the parent GRU
+  integer(c_int),intent(out)                 :: num_steps                  ! number of steps in model, local to the HRU                 
+    ! statistics structures
+  type(c_ptr), intent(in), value             :: handle_forcStat !  model forcing data
+  type(c_ptr), intent(in), value             :: handle_progStat !  model prognostic (state) variables
+  type(c_ptr), intent(in), value             :: handle_diagStat !  model diagnostic variables
+  type(c_ptr), intent(in), value             :: handle_fluxStat !  model fluxes
+  type(c_ptr), intent(in), value             :: handle_indxStat !  model indices
+  type(c_ptr), intent(in), value             :: handle_bvarStat !  basin-average variables
   ! primary data structures (scalars)
-  type(var_i),intent(inout)                :: timeStruct                 !  model time data
-  type(var_d),intent(inout)                :: forcStruct                 !  model forcing data
-  type(var_d),intent(inout)                :: attrStruct                 !  local attributes for each HRU
-  type(var_i),intent(inout)                :: typeStruct                 !  local classification of soil veg etc. for each HRU
-  type(var_i8),intent(inout)               :: idStruct                   ! 
+  type(c_ptr), intent(in), value             :: handle_timeStruct !  model time data
+  type(c_ptr), intent(in), value             :: handle_forcStruct !  model forcing data
+  type(c_ptr), intent(in), value             :: handle_attrStruct !  local attributes for each HRU
+  type(c_ptr), intent(in), value             :: handle_typeStruct !  local classification of soil veg etc. for each HRU
+  type(c_ptr), intent(in), value             :: handle_idStruct ! 
   ! primary data structures (variable length vectors)
-  type(var_ilength),intent(inout)          :: indxStruct                 !  model indices
-  type(var_dlength),intent(inout)          :: mparStruct                 !  model parameters
-  type(var_dlength),intent(inout)          :: progStruct                 !  model prognostic (state) variables
-  type(var_dlength),intent(inout)          :: diagStruct                 !  model diagnostic variables
-  type(var_dlength),intent(inout)          :: fluxStruct                 !  model fluxes
+  type(c_ptr), intent(in), value             :: handle_indxStruct !  model indices
+  type(c_ptr), intent(in), value             :: handle_mparStruct !  model parameters
+  type(c_ptr), intent(in), value             :: handle_progStruct !  model prognostic (state) variables
+  type(c_ptr), intent(in), value             :: handle_diagStruct !  model diagnostic variables
+  type(c_ptr), intent(in), value             :: handle_fluxStruct !  model fluxes
   ! basin-average structures
-  type(var_d),intent(inout)                :: bparStruct                 !  basin-average parameters
-  type(var_dlength),intent(inout)          :: bvarStruct                 !  basin-average variables
+  type(c_ptr), intent(in), value             :: handle_bparStruct !  basin-average parameters
+  type(c_ptr), intent(in), value             :: handle_bvarStruct !  basin-average variables
   ! ancillary data structures
-  type(var_d),intent(inout)                :: dparStruct                 !  default model parameters
+  type(c_ptr), intent(in), value             :: handle_dparStruct !  default model parameters
+  ! local hru data structures
+  type(c_ptr), intent(in), value             :: handle_startTime  ! start time for the model simulation
+  type(c_ptr), intent(in), value             :: handle_finshTime ! end time for the model simulation
+  type(c_ptr), intent(in), value             :: handle_refTime    ! reference time for the model simulation
+  type(c_ptr), intent(in), value             :: handle_oldTime    ! time for the previous model time step 
+  integer(c_int),intent(inout)               :: err  
+  ! ---------------------------------------------------------------------------------------
+  ! * Fortran Variables For Conversion
+  ! ---------------------------------------------------------------------------------------
+  type(var_dlength),pointer                  :: forcStat                   !  model forcing data
+  type(var_dlength),pointer                  :: progStat                   !  model prognostic (state) variables
+  type(var_dlength),pointer                  :: diagStat                   !  model diagnostic variables
+  type(var_dlength),pointer                  :: fluxStat                   !  model fluxes
+  type(var_dlength),pointer                  :: indxStat                   !  model indices
+  type(var_dlength),pointer                  :: bvarStat                   !  basin-average variabl
+  ! primary data structures (scalars)
+  type(var_i),pointer                        :: timeStruct                 !  model time data
+  type(var_d),pointer                        :: forcStruct                 !  model forcing data
+  type(var_d),pointer                        :: attrStruct                 !  local attributes for each HRU
+  type(var_i),pointer                        :: typeStruct                 !  local classification of soil veg etc. for each HRU
+  type(var_i8),pointer                       :: idStruct                   ! 
+  ! primary data structures (variable length vectors)
+  type(var_ilength),pointer                  :: indxStruct                 !  model indices
+  type(var_dlength),pointer                  :: mparStruct                 !  model parameters
+  type(var_dlength),pointer                  :: progStruct                 !  model prognostic (state) variables
+  type(var_dlength),pointer                  :: diagStruct                 !  model diagnostic variables
+  type(var_dlength),pointer                  :: fluxStruct                 !  model fluxes
+  ! basin-average structures
+  type(var_d),pointer                        :: bparStruct                 !  basin-average parameters
+  type(var_dlength),pointer                  :: bvarStruct                 !  basin-average variables
+  ! ancillary data structures
+  type(var_d),pointer                        :: dparStruct                 !  default model parameters
   ! local HRU data structures
-  type(var_i),intent(inout)                :: startTime_hru              ! start time for the model simulation
-  type(var_i),intent(inout)                :: finishTime_hru             ! end time for the model simulation
-  type(var_i),intent(inout)                :: refTime_hru                ! reference time for the model simulation
-  type(var_i),intent(inout)                :: oldTime_hru                ! time from previous step
-  ! misc variables
-  integer(i4b),intent(out)                 :: err                        ! error code
-  character(*),intent(out)                 :: message                    ! error message
-  ! local variables
+  type(var_i),pointer                        :: startTime_hru              ! start time for the model simulation
+  type(var_i),pointer                        :: finishTime_hru             ! end time for the model simulation
+  type(var_i),pointer                        :: refTime_hru                ! reference time for the model simulation
+  type(var_i),pointer                        :: oldTime_hru                ! time from previous step
+  ! ---------------------------------------------------------------------------------------
+  ! * Local Subroutine Variables
+  ! ---------------------------------------------------------------------------------------
+  character(LEN=256)                       :: message                    ! error message
   character(LEN=256)                       :: cmessage                   ! error message of downwind routine
   integer(i4b)                             :: iStruct                    ! looping variables
   ! ---------------------------------------------------------------------------------------
+  ! * Convert From C++ to Fortran
+  ! ---------------------------------------------------------------------------------------
+  call c_f_pointer(handle_forcStat,   forcStat)
+  call c_f_pointer(handle_progStat,   progStat)
+  call c_f_pointer(handle_diagStat,   diagStat)
+  call c_f_pointer(handle_fluxStat,   fluxStat)
+  call c_f_pointer(handle_indxStat,   indxStat)
+  call c_f_pointer(handle_bvarStat,   bvarStat)
+  call c_f_pointer(handle_timeStruct, timeStruct)
+  call c_f_pointer(handle_forcStruct, forcStruct)
+  call c_f_pointer(handle_attrStruct, attrStruct)
+  call c_f_pointer(handle_typeStruct, typeStruct)
+  call c_f_pointer(handle_idStruct,   idStruct)
+  call c_f_pointer(handle_indxStruct, indxStruct)
+  call c_f_pointer(handle_mparStruct, mparStruct)
+  call c_f_pointer(handle_progStruct, progStruct)
+  call c_f_pointer(handle_diagStruct, diagStruct)
+  call c_f_pointer(handle_fluxStruct, fluxStruct)
+  call c_f_pointer(handle_bparStruct, bparStruct)
+  call c_f_pointer(handle_bvarStruct, bvarStruct)
+  call c_f_pointer(handle_dparStruct, dparStruct)
+  call c_f_pointer(handle_startTime,  startTime_hru)
+  call c_f_pointer(handle_finshTime,  finishTime_hru)
+  call c_f_pointer(handle_refTime,    refTime_hru)
+  call c_f_pointer(handle_oldTime,    oldTime_hru)
+
+  ! ---------------------------------------------------------------------------------------
   ! initialize error control
-  err=0; message='summa4chm_initialize/'
+  err=0; message='summaActors_initialize/'
 
   ! initialize the start of the initialization
   call date_and_time(values=startInit)
@@ -237,6 +298,6 @@ contains
   ! end association to info in data structures
   end associate
 
- end subroutine summa4chm_initialize
+ end subroutine summaActors_initialize
 
-end module summa4chm_init
+end module summaActors_init

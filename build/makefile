@@ -1,31 +1,30 @@
 #### parent directory of the 'build' directory ####
-# F_MASTER =
+ROOT_DIR = /Summa-Actors
 
-#### fortran compiler ####
-# FC = 
-
-#### C++ compiler ####
-# CC =
+#### Compilers ####
+FC = gfortran # Fortran
+CC = g++	  # C++
 
 #### Includes AND Libraries ####
-# INCLUDES =
-# LIBRARIES =
+INCLUDES = -I/usr/include -I/usr/local/include
+LIBRARIES = -L/usr/lib -L/usr/local/lib -lnetcdff -lopenblas
 
-# ACTORS_INCLUDES =
-# ACTORS_LIBRARIES =
+ACTORS_INCLUDES = -I/usr/include -I/usr/local/include
+ACTORS_LIBRARIES = -L/usr/lib -L/usr/local/lib -L/Summa-Actors/bin -lcaf_core -lcaf_io -lsumma -lopenblas -lnetcdff
 
 
 # Production runs
-FLAGS_NOAH = -O3 -ffree-form -ffree-line-length-none -fmax-errors=0 -fPIC
-FLAGS_COMM = -O3 -ffree-line-length-none -fmax-errors=0 -fPIC
-FLAGS_SUMMA = -O3 -ffree-line-length-none -fmax-errors=0 -fPIC
-FLAGS_ACTORS = -O3
+FLAGS_NOAH = -O3 -ffree-form -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
+FLAGS_COMM = -O3 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
+FLAGS_SUMMA = -O3 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
+FLAGS_ACTORS = -O3 -Wfatal-errors -std=c++17
 
-# # Debug runs
-# FLAGS_NOAH = -pg -g -O0 -ffree-form -ffree-line-length-none -fmax-errors=0 -fbacktrace -Wno-unused -Wno-unused-dummy-argument -fPIC
-# FLAGS_COMM = -pg -g -O0 -Wall -ffree-line-length-none -fmax-errors=0 -fbacktrace -fcheck=bounds -fPIC
-# FLAGS_SUMMA = -pg -g -O0 -Wall -ffree-line-length-none -fmax-errors=0 -fbacktrace -fcheck=bounds -fPIC
-# FLAGS_ACTORS = -pg -g -O0 -Wall
+# Debug runs
+# FLAGS_NOAH = -g -O0 -ffree-form -ffree-line-length-none -fmax-errors=0 -fbacktrace -Wno-unused -Wno-unused-dummy-argument -fPIC
+# FLAGS_COMM = -g -O0 -Wall -ffree-line-length-none -fmax-errors=0 -fbacktrace -fcheck=bounds -fPIC
+# FLAGS_SUMMA = -g -O0 -Wall -ffree-line-length-none -fmax-errors=0 -fbacktrace -fcheck=bounds -fPIC
+# FLAGS_ACTORS = -g -O0 -Wall -std=c++17
+
 
 
 #========================================================================
@@ -33,18 +32,17 @@ FLAGS_ACTORS = -O3
 #========================================================================
 
 # Core directory that contains source code
-F_KORE_DIR = $(F_MASTER)/build/source
+F_KORE_DIR = $(ROOT_DIR)/build/source
 
 # Location of the compiled modules
-MOD_PATH = $(F_MASTER)/build
+MOD_PATH = $(ROOT_DIR)/build
 
 # Define the directory for the executables
-EXE_PATH = $(F_MASTER)/bin
+EXE_PATH = $(ROOT_DIR)/bin
 
-#========================================================================
-# PART 2: Assemble all of the SUMMA sub-routines
-#========================================================================
-
+####################################################################################################
+###################################### Assemble Fortran Files ######################################
+####################################################################################################
 # Define directories
 DRIVER_DIR = $(F_KORE_DIR)/driver
 HOOKUP_DIR = $(F_KORE_DIR)/hookup
@@ -235,25 +233,65 @@ SUMMA_DRIVER= \
 		
 DRIVER = $(patsubst %, $(DRIVER_DIR)/%, $(SUMMA_DRIVER))
 
-ACTORC = $(F_KORE_DIR)/actors/main.cc
+####################################################################################################
+###################################### Assemble Fortran Files ######################################
+####################################################################################################
+
+####################################################################################################
+######################################## Assemble C++ Files ########################################
+####################################################################################################
+
+INCLUDE_DIR = /Summa-Actors/build/includes
+SOURCE_DIR = /Summa-Actors/build/source/actors
+
+
+GLOBAL_INCLUDES = -I$(INCLUDE_DIR)/global
+GLOBAL = $(SOURCE_DIR)/global/global.cpp
+TIMEINFO = $(SOURCE_DIR)/global/timing_info.cpp
+
+SUMMA_ACTOR_INCLUDES = -I$(INCLUDE_DIR)/summa_actor
+SUMMA_ACTOR = $(SOURCE_DIR)/summa_actor/summa_actor.cpp
+SUMMA_CLIENT = $(SOURCE_DIR)/summa_actor/summa_client.cpp
+SUMMA_SERVER = $(SOURCE_DIR)/summa_actor/summa_server.cpp
+
+BATCH_MANGER = $(SOURCE_DIR)/summa_actor/batch_manager.cpp
+CLIENT_MANAGER = $(SOURCE_DIR)/summa_actor/client.cpp
+
+JOB_ACTOR_INCLUDES = -I$(INCLUDE_DIR)/job_actor
+JOB_ACTOR = $(SOURCE_DIR)/job_actor/job_actor.cpp
+GRUinfo = $(SOURCE_DIR)/job_actor/GRUinfo.cpp
+
+FILE_ACCESS_ACTOR_INCLUDES = -I$(INCLUDE_DIR)/file_access_actor
+FILE_ACCESS_ACTOR = $(SOURCE_DIR)/file_access_actor/file_access_actor.cpp
+FORCING_FILE_INFO = $(SOURCE_DIR)/file_access_actor/forcing_file_info.cpp
+OUTPUT_MANAGER = $(SOURCE_DIR)/file_access_actor/output_manager.cpp
+
+HRU_ACTOR_INCLUDES = -I$(INCLUDE_DIR)/hru_actor
+HRU_ACTOR = $(SOURCE_DIR)/hru_actor/hru_actor.cpp
+
+MAIN = $(F_KORE_DIR)/actors/main.cpp
 
 ACTOR_TEST = $(F_KORE_DIR)/testing/testing_main.cc
+####################################################################################################
+######################################## Assemble C++ Files ########################################
+####################################################################################################
 
 
 #========================================================================
 # PART 3: compilation
 #======================================================================
+all: fortran cpp
 
-# Compile
-all: lib main
+fortran: compile_noah compile_comm compile_summa link clean_fortran
 
-lib: compile_noah compile_comm compile_summa link clean
-
-main: actors actorsLink actorsClean
+cpp: compile_globals compile_hru_actor compile_file_access_actor compile_job_actor compile_summa_actor \
+	compile_summa_client compile_summa_server compile_main link_cpp clean_cpp
 
 test: actors_test actors_testLink actorsClean
-
-# compile Noah-MP routines
+	
+###################################################################################################################
+############################################## COMPILE SUMMA-Fortran ##############################################
+###################################################################################################################
 compile_noah:
 	$(FC) $(FLAGS_NOAH) -c $(NRUTIL) $(NOAHMP)
 
@@ -268,30 +306,66 @@ compile_summa:
 # generate library
 link:   
 	$(FC) -shared *.o -o libsumma.so  
-	mv libsumma.so $(F_MASTER)/bin
+	mv libsumma.so $(ROOT_DIR)/bin
 
-# compile the c++ portion of SummaActors
-actors:
-	$(CC) $(FLAGS_ACTORS) -c $(ACTORC) -std=c++17 $(ACTORS_INCLUDES)
+# Remove object files
+clean_fortran:
+	rm -f *.o *.mod soil_veg_gen_parm__genmod.f90
+###################################################################################################################
+############################################## COMPILE SUMMA-Fortran ##############################################
+###################################################################################################################
 
-actorsLink:
-	$(CC) -o summaMain *.o $(ACTORS_LIBRARIES)
-	mv summaMain $(F_MASTER)/bin
 
-#### COMPILE TESTING FILES ####
+###################################################################################################################
+################################################ COMPILE SUMMA-C++ ################################################
+###################################################################################################################
+compile_globals:
+	$(CC) $(FLAGS_ACTORS) -c $(GLOBAL) $(TIMEINFO) $(GLOBAL_INCLUDES)
+
+compile_hru_actor:
+	$(CC) $(FLAGS_ACTORS) -c $(HRU_ACTOR) $(HRU_ACTOR_INCLUDES) $(GLOBAL_INCLUDES) $(ACTORS_INCLUDES)
+
+compile_file_access_actor:
+	$(CC) $(FLAGS_ACTORS) -c $(FILE_ACCESS_ACTOR) $(FORCING_FILE_INFO) $(OUTPUT_MANAGER) \
+	$(FILE_ACCESS_ACTOR_INCLUDES) $(GLOBAL_INCLUDES) $(ACTORS_INCLUDES)
+
+compile_job_actor:
+	$(CC) $(FLAGS_ACTORS) -c $(JOB_ACTOR) $(GRUinfo) $(JOB_ACTOR_INCLUDES) $(GLOBAL_INCLUDES) $(ACTORS_INCLUDES) \
+	$(FILE_ACCESS_ACTOR_INCLUDES) $(HRU_ACTOR_INCLUDES)
+
+compile_summa_actor:
+	$(CC) $(FLAGS_ACTORS) -c $(SUMMA_ACTOR) $(SUMMA_ACTOR_INCLUDES) $(GLOBAL_INCLUDES) $(ACTORS_INCLUDES) \
+	$(JOB_ACTOR_INCLUDES)
+
+compile_summa_client:
+	$(CC) $(FLAGS_ACTORS) -c $(SUMMA_CLIENT) $(SUMMA_ACTOR_INCLUDES) $(GLOBAL_INCLUDES)
+
+compile_summa_server:
+	$(CC) $(FLAGS_ACTORS) -c $(SUMMA_SERVER) $(BATCH_MANGER) $(CLIENT_MANAGER) $(SUMMA_ACTOR_INCLUDES) $(GLOBAL_INCLUDES)
+
+compile_main:
+	$(CC) $(FLAGS_ACTORS) -c $(MAIN) $(GLOBAL_INCLUDES) $(SUMMA_ACTOR_INCLUDES) $(JOB_ACTOR_INCLUDES)
+
+link_cpp:
+	$(CC) $(FLAGS_ACTORS) -o summaMain *.o $(ACTORS_LIBRARIES)
+	mv summaMain $(ROOT_DIR)/bin
+
+clean_cpp:
+	rm *.o
+###################################################################################################################
+################################################ COMPILE SUMMA-C++ ################################################
+###################################################################################################################
+
+
+###################################################################################################################
+################################################## COMPILE TESTS ##################################################
+###################################################################################################################
 actors_test:
 	$(CC) $(FLAGS_ACTORS) -c $(ACTOR_TEST) -std=c++17 $(ACTORS_INCLUDES)
 
 actors_testLink:
 	$(CC) -o summaTest *.o $(ACTORS_LIBRARIES)
 
-actorsClean:
-	rm *.o
-# Remove object files
-clean:
-	rm -f *.o *.mod soil_veg_gen_parm__genmod.f90
-
-	
 clean_lib:
 	rm *.so
 

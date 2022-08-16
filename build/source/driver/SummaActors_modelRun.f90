@@ -213,7 +213,9 @@ contains
  
  ! initialize runoff variables
   bvarStruct%var(iLookBVAR%basin__SurfaceRunoff)%dat(1)    = 0._dp  ! surface runoff (m s-1)
+  bvarStruct%var(iLookBVAR%basin__SoilDrainage)%dat(1)     = 0._dp 
   bvarStruct%var(iLookBVAR%basin__ColumnOutflow)%dat(1)    = 0._dp  ! outflow from all "outlet" HRUs (those with no downstream HRU)
+  bvarStruct%var(iLookBVAR%basin__TotalRunoff)%dat(1)    = 0._dp 
 
  ! initialize baseflow variables
   bvarStruct%var(iLookBVAR%basin__AquiferRecharge)%dat(1)  = 0._dp ! recharge to the aquifer (m s-1)
@@ -343,20 +345,28 @@ contains
            +  fluxStruct%var(iLookFLUX%scalarAquiferBaseflow)%dat(1) * fracHRU
   end if
 
+  ! perform the routing
+  associate(totalArea => bvarStruct%var(iLookBVAR%basin__totalArea)%dat(1) )
+
  ! compute water balance for the basin aquifer
  if(model_decisions(iLookDECISIONS%spatial_gw)%iDecision == singleBasin)then
   message=trim(message)//'multi_driver/bigBucket groundwater code not transferred from old code base yet'
   err=20; return
  end if
 
- ! perform the routing
- associate(totalArea => bvarStruct%var(iLookBVAR%basin__totalArea)%dat(1) )
+ ! calculate total runoff depending on whether aquifer is connected
+ if(model_decisions(iLookDECISIONS%groundwatr)%iDecision == bigBucket) then
+  ! aquifer
+  bvarStruct%var(iLookBVAR%basin__TotalRunoff)%dat(1) = bvarStruct%var(iLookBVAR%basin__SurfaceRunoff)%dat(1) + bvarStruct%var(iLookBVAR%basin__ColumnOutflow)%dat(1)/totalArea + bvarStruct%var(iLookBVAR%basin__AquiferBaseflow)%dat(1)
+ else
+  ! no aquifer
+  bvarStruct%var(iLookBVAR%basin__TotalRunoff)%dat(1) = bvarStruct%var(iLookBVAR%basin__SurfaceRunoff)%dat(1) + bvarStruct%var(iLookBVAR%basin__ColumnOutflow)%dat(1)/totalArea + bvarStruct%var(iLookBVAR%basin__SoilDrainage)%dat(1)
+ endif
+
  call qOverland(&
                 ! input
-                model_decisions(iLookDECISIONS%subRouting)%iDecision,          &  ! intent(in): index for routing method
-                bvarStruct%var(iLookBVAR%basin__SurfaceRunoff)%dat(1),           &  ! intent(in): surface runoff (m s-1)
-                bvarStruct%var(iLookBVAR%basin__ColumnOutflow)%dat(1)/totalArea, &  ! intent(in): outflow from all "outlet" HRUs (those with no downstream HRU)
-                bvarStruct%var(iLookBVAR%basin__AquiferBaseflow)%dat(1),         &  ! intent(in): baseflow from the aquifer (m s-1)
+                model_decisions(iLookDECISIONS%subRouting)%iDecision,            &  ! intent(in): index for routing method
+                bvarStruct%var(iLookBVAR%basin__TotalRunoff)%dat(1),            &  ! intent(in): total runoff to the channel from all active components (m s-1)
                 bvarStruct%var(iLookBVAR%routingFractionFuture)%dat,             &  ! intent(in): fraction of runoff in future time steps (m s-1)
                 bvarStruct%var(iLookBVAR%routingRunoffFuture)%dat,               &  ! intent(in): runoff in future time steps (m s-1)
                 ! output

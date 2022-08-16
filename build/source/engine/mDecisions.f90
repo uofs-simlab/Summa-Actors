@@ -289,7 +289,6 @@ subroutine mDecisions(numSteps,err,message)
   if(dJulianFinsh < dJulianStart)then; err=20; message=trim(message)//'end time of simulation occurs before start time'; return; end if
 
   ! initialize the old time vector (time from the previous time step)
-  ! oldTime%var(:) = startTime%var(:)
 
   ! compute the number of time steps
   numSteps = nint( (dJulianFinsh - dJulianStart)*secprday/data_step ) + 1

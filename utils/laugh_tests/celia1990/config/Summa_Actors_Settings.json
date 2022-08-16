@@ -1,0 +1,32 @@
+{
+  "DistributedSettings": {
+      "distributed-mode": false,
+      "host": "localhost",
+      "port": 4444
+  },
+
+  "SimulationSettings": {
+      "total_hru_count": 100000,
+      "num_hru_per_batch": 500
+  },
+
+  "SummaActor": {
+      "OuputStructureSize": 250,
+      "maxGRUPerJob": 250
+  },
+
+  "FileAccessActor": {
+      "num_vectors_in_output_manager": 1
+  },
+  
+  "JobActor": {
+      "FileManagerPath": "/Summa-Actors/utils/laugh_tests/celia1990/settings/summa_fileManager_celia1990.txt",
+      "outputCSV": false,
+      "csvPath": "/Summa-Actors/utils/laugh_tests/celia1990/output/"
+  },
+
+  "HRUActor": {
+      "printOutput": true,
+      "outputFrequency": 1
+  }
+}

@@ -19,6 +19,8 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 module def_output_module
+
+USE, intrinsic :: iso_c_binding
 USE data_types,only:var_i 
 USE netcdf
 USE netcdf_util_module,only:netcdf_err        ! netcdf error handling function
@@ -70,119 +72,146 @@ contains
  ! **********************************************************************************************************
  ! public subroutine def_output: define model output file
  ! **********************************************************************************************************
- subroutine def_output(summaVersion,buildTime,gitBranch,gitHash,nGRU,nHRU,nSoil,infile,ncid_c,err,message)
- USE globalData,only:structInfo                               ! information on the data structures
- USE globalData,only:forc_meta,attr_meta,type_meta            ! metaData structures
- USE globalData,only:prog_meta,diag_meta,flux_meta,deriv_meta ! metaData structures
- USE globalData,only:mpar_meta,indx_meta                      ! metaData structures
- USE globalData,only:bpar_meta,bvar_meta,time_meta            ! metaData structures
- USE globalData,only:model_decisions                          ! model decisions
- USE globalData,only:outFreq                                  ! output frequencies
- USE globalData,only:fname
- ! USE globalData,only:ncid
- USE var_lookup,only:maxVarFreq                               ! # of available output frequencies
- USE get_ixname_module,only:get_freqName                      ! get name of frequency from frequency index
+subroutine def_output(handle_ncid,startGRU,nGRU,nHRU,err) bind(C, name='def_output')
+  USE globalData,only:structInfo                               ! information on the data structures
+  USE globalData,only:forc_meta,attr_meta,type_meta            ! metaData structures
+  USE globalData,only:prog_meta,diag_meta,flux_meta,deriv_meta ! metaData structures
+  USE globalData,only:mpar_meta,indx_meta                      ! metaData structures
+  USE globalData,only:bpar_meta,bvar_meta,time_meta            ! metaData structures
+  USE globalData,only:model_decisions                          ! model decisions
+  USE globalData,only:outFreq                                  ! output frequencies
+  USE globalData,only:fname
+  ! Some global variabels required in the writing process
+  USE globalData,only:outputTimeStep
+  USE globalData,only:nHRUrun
+  USE globalData,only:nGRUrun
+  USE globalData,only:gru_struc
+  USE globalData,only:fileout
+  ! modules that are not globalData
+  USE var_lookup,only:maxVarFreq                               ! # of available output frequencies
+  USE get_ixname_module,only:get_freqName                      ! get name of frequency from frequency index
+  USE summaActors_FileManager,only:OUTPUT_PATH,OUTPUT_PREFIX ! define output file
 
- ! declare dummy variables
- character(*),intent(in)     :: summaVersion                  ! SUMMA version
- character(*),intent(in)     :: buildTime                     ! build time
- character(*),intent(in)     :: gitBranch                     ! git branch
- character(*),intent(in)     :: gitHash                       ! git hash
- integer(i4b),intent(in)     :: nGRU                          ! number of GRUs
- integer(i4b),intent(in)     :: nHRU                          ! number of HRUs
- integer(i4b),intent(in)     :: nSoil                         ! number of soil layers in the first HRU (used to define fixed length dimensions)
- character(*),intent(in)     :: infile                        ! file suffix
- type(var_i),intent(inout)   :: ncid_c                        ! id of output file
- integer(i4b),intent(out)    :: err                           ! error code
- character(*),intent(out)    :: message                       ! error message
- ! local variables
- integer(i4b)                :: ivar                          ! loop through model decisions
- integer(i4b)                :: iFreq                         ! loop through output frequencies
- integer(i4b)                :: iStruct                       ! loop through structure types
- character(len=32)           :: fstring                       ! string to hold model output freuqnecy
- character(len=256)          :: cmessage                      ! temporary error message
+  ! ---------------------------------------------------------------------------------------
+  ! * variables from C++
+  ! ---------------------------------------------------------------------------------------
+  type(c_ptr),intent(in), value        :: handle_ncid       ! ncid of the output file
+  integer(c_int),intent(in)            :: startGRU          ! startGRU for the entire job (for file creation)
+  integer(c_int),intent(in)            :: nGRU                          ! number of GRUs
+  integer(c_int),intent(in)            :: nHRU                          ! number of HRUs
+  integer(c_int),intent(out)           :: err                           ! error code
+  ! ---------------------------------------------------------------------------------------
+  ! * Fortran Variables For Conversion
+  ! ---------------------------------------------------------------------------------------
+  type(var_i),pointer                  :: ncid                        ! id of output file
+  ! ---------------------------------------------------------------------------------------
+  ! * Local Subroutine Variables
+  ! ---------------------------------------------------------------------------------------
+  character(len=256)                   :: message                       ! error message
+  integer(i4b)                         :: ivar                          ! loop through model decisions
+  integer(i4b)                         :: iFreq                         ! loop through output frequencies
+  integer(i4b)                         :: iStruct                       ! loop through structure types
+  character(len=32)                    :: fstring                       ! string to hold model output freuqnecy
+  character(len=256)                   :: cmessage                      ! temporary error message
+  integer(i4b)                         :: iGRU
+  character(LEN=256)                   :: startGRUString    ! String Variable to convert startGRU
+  character(LEN=256)                   :: numGRUString      ! String Varaible to convert numGRU
+  ! ---------------------------------------------------------------------------------------
+  ! * Convert From C++ to Fortran
+  ! ---------------------------------------------------------------------------------------
+  call c_f_pointer(handle_ncid, ncid)
 
- ! initialize errors
- err=0; message="def_output/"
 
- ! close files if already open
- do iFreq=1,maxvarFreq
-  if (ncid_c%var(iFreq)/=integerMissing) then
-   call nc_file_close(ncid_c%var(iFreq),err,cmessage)
-   if(err/=0)then; message=trim(message)//trim(cmessage); return; end if
+  ! initialize errors
+  err=0; message="def_output/"
+
+  ! allocate space for the output file ID array
+  if (.not.allocated(ncid%var))then
+    allocate(ncid%var(maxVarFreq))
+    ncid%var(:) = integerMissing
   endif
- end do
 
- ! initialize netcdf file id
+  ! initalize outputTimeStep - keeps track of the step the GRU is writing for
+  if (.not.allocated(outputTimeStep))then
+    allocate(outputTimeStep(nGRU))
+    do iGRU = 1, nGRU
+      allocate(outputTimeStep(iGRU)%dat(maxVarFreq))
+      outputTimeStep(iGRU)%dat(:) = 1
+    end do
+  end if
 
- ! ncid(:) = integerMissing
+  ! Set the global variable for the number of HRU and GRU in run
+  nGRUrun = nGRU
+  nHRUrun = nGRU
 
-! create initial file
-! each file will have a master name with a frequency appended at the end:
-! e.g., xxxxxxxxx_timestep.nc  (for output at every model timestep)
-! e.g., xxxxxxxxx_monthly.nc   (for monthly model output)
- do iFreq=1,maxvarFreq
-   ! skip frequencies that are not needed
+  ! create the name of the new files
+  write(unit=startGRUString,fmt=*)startGRU
+  write(unit=numGRUString,fmt=*)  nGRU
+  fileout = trim(OUTPUT_PATH)//trim(OUTPUT_PREFIX)//"GRU"&
+              //trim(adjustl(startGRUString))//"-"//trim(adjustl(numGRUString))
 
-   if(.not.outFreq(iFreq)) cycle
+  ! close files if already open
+  do iFreq=1,maxvarFreq
+    if (ncid%var(iFreq)/=integerMissing) then
+    call nc_file_close(ncid%var(iFreq),err,cmessage)
+    if(err/=0)then; message=trim(message)//trim(cmessage); return; end if
+    endif
+  end do
 
-   ! create file
-   fstring = get_freqName(iFreq)
-   fname   = trim(infile)//'_'//trim(fstring)//'.nc'
-   call ini_create(nGRU,nHRU,nSoil,trim(fname),ncid_c%var(iFreq),err,cmessage)
-   if(err/=0)then; message=trim(message)//trim(cmessage); return; end if
-!  print*,'Created output file: '//trim(fname)
+  ! create initial file
+  ! each file will have a master name with a frequency appended at the end:
+  ! e.g., xxxxxxxxx_timestep.nc  (for output at every model timestep)
+  ! e.g., xxxxxxxxx_monthly.nc   (for monthly model output)
+  do iFreq=1,maxvarFreq
+    ! skip frequencies that are not needed
 
-   ! define SUMMA version
-   do iVar=1,4
-   ! write attributes
-      if(iVar==1) call put_attrib(ncid_c%var(iFreq),'summaVersion', summaVersion, err, cmessage)  ! SUMMA version
-      if(iVar==2) call put_attrib(ncid_c%var(iFreq),'buildTime'   , buildTime   , err, cmessage)  ! build time
-      if(iVar==3) call put_attrib(ncid_c%var(iFreq),'gitBranch'   , gitBranch   , err, cmessage)  ! git branch
-      if(iVar==4) call put_attrib(ncid_c%var(iFreq),'gitHash'     , gitHash     , err, cmessage)  ! git hash
-      ! check errors
-      if(err/=0)then; message=trim(message)//trim(cmessage); return; end if
-   end do
+    if(.not.outFreq(iFreq)) cycle
 
-   ! define model decisions
-   do iVar = 1,size(model_decisions)
-      if(model_decisions(iVar)%iDecision.ne.integerMissing)then
-         call put_attrib(ncid_c%var(iFreq),model_decisions(iVar)%cOption,model_decisions(iVar)%cDecision,err,cmessage)
-         if(err/=0)then; message=trim(message)//trim(cmessage); return; end if
-      end if
-   end do
-   
-   ! define variables
-   do iStruct = 1,size(structInfo)
-      select case (trim(structInfo(iStruct)%structName))
-      case('attr' ); call def_variab(ncid_c%var(iFreq),iFreq,needHRU,  noTime,attr_meta, outputPrecision, err,cmessage)  ! local attributes HRU
-      case('type' ); call def_variab(ncid_c%var(iFreq),iFreq,needHRU,  noTime,type_meta, nf90_int,   err,cmessage)       ! local classification
-      case('mpar' ); call def_variab(ncid_c%var(iFreq),iFreq,needHRU,  noTime,mpar_meta, outputPrecision, err,cmessage)  ! model parameters
-      case('bpar' ); call def_variab(ncid_c%var(iFreq),iFreq,needGRU,  noTime,bpar_meta, outputPrecision, err,cmessage)  ! basin-average param
-      case('indx' ); call def_variab(ncid_c%var(iFreq),iFreq,needHRU,needTime,indx_meta, nf90_int,   err,cmessage)       ! model variables
-      case('deriv'); call def_variab(ncid_c%var(iFreq),iFreq,needHRU,needTime,deriv_meta,outputPrecision, err,cmessage)  ! model derivatives
-      case('time' ); call def_variab(ncid_c%var(iFreq),iFreq,  noHRU,needTime,time_meta, nf90_int,   err,cmessage)       ! model derivatives
-      case('forc' ); call def_variab(ncid_c%var(iFreq),iFreq,needHRU,needTime,forc_meta, outputPrecision, err,cmessage)  ! model forcing data
-      case('prog' ); call def_variab(ncid_c%var(iFreq),iFreq,needHRU,needTime,prog_meta, outputPrecision, err,cmessage)  ! model prognostics
-      case('diag' ); call def_variab(ncid_c%var(iFreq),iFreq,needHRU,needTime,diag_meta, outputPrecision, err,cmessage)  ! model diagnostic variables
-      case('flux' ); call def_variab(ncid_c%var(iFreq),iFreq,needHRU,needTime,flux_meta, outputPrecision, err,cmessage)  ! model fluxes
-      case('bvar' ); call def_variab(ncid_c%var(iFreq),iFreq,needGRU,needTime,bvar_meta, outputPrecision, err,cmessage)  ! basin-average variables
-      case('id'   ); cycle                                                                                         ! ids -- see write_hru_info()
-      case default; err=20; message=trim(message)//'unable to identify lookup structure';
-      end select
-      ! error handling
-      if(err/=0)then;err=20;message=trim(message)//trim(cmessage)//'[structure =  '//trim(structInfo(iStruct)%structName);return;end if
-   end do ! iStruct
-   ! write HRU dimension and ID for each output file
-   call write_hru_info(ncid_c%var(iFreq), err, cmessage); if(err/=0) then; message=trim(message)//trim(cmessage); return; end if
+    ! create file
+    fstring = get_freqName(iFreq)
+    fname   = trim(fileout)//'_'//trim(fstring)//'.nc'
+    call ini_create(nGRU,nHRU,gru_struc(1)%hruInfo(1)%nSoil,trim(fname),ncid%var(iFreq),err,cmessage)
+    if(err/=0)then; message=trim(message)//trim(cmessage); return; end if
 
- end do
+    ! define model decisions
+    do iVar = 1,size(model_decisions)
+        if(model_decisions(iVar)%iDecision.ne.integerMissing)then
+          call put_attrib(ncid%var(iFreq),model_decisions(iVar)%cOption,model_decisions(iVar)%cDecision,err,cmessage)
+          if(err/=0)then; message=trim(message)//trim(cmessage); return; end if
+        end if
+    end do
+    
+    ! define variables
+    do iStruct = 1,size(structInfo)
+        select case (trim(structInfo(iStruct)%structName))
+        case('attr' ); call def_variab(ncid%var(iFreq),iFreq,needHRU,  noTime,attr_meta, outputPrecision, err,cmessage)  ! local attributes HRU
+        case('type' ); call def_variab(ncid%var(iFreq),iFreq,needHRU,  noTime,type_meta, nf90_int,   err,cmessage)       ! local classification
+        case('mpar' ); call def_variab(ncid%var(iFreq),iFreq,needHRU,  noTime,mpar_meta, outputPrecision, err,cmessage)  ! model parameters
+        case('bpar' ); call def_variab(ncid%var(iFreq),iFreq,needGRU,  noTime,bpar_meta, outputPrecision, err,cmessage)  ! basin-average param
+        case('indx' ); call def_variab(ncid%var(iFreq),iFreq,needHRU,needTime,indx_meta, nf90_int,   err,cmessage)       ! model variables
+        case('deriv'); call def_variab(ncid%var(iFreq),iFreq,needHRU,needTime,deriv_meta,outputPrecision, err,cmessage)  ! model derivatives
+        case('time' ); call def_variab(ncid%var(iFreq),iFreq,  noHRU,needTime,time_meta, nf90_int,   err,cmessage)       ! model derivatives
+        case('forc' ); call def_variab(ncid%var(iFreq),iFreq,needHRU,needTime,forc_meta, outputPrecision, err,cmessage)  ! model forcing data
+        case('prog' ); call def_variab(ncid%var(iFreq),iFreq,needHRU,needTime,prog_meta, outputPrecision, err,cmessage)  ! model prognostics
+        case('diag' ); call def_variab(ncid%var(iFreq),iFreq,needHRU,needTime,diag_meta, outputPrecision, err,cmessage)  ! model diagnostic variables
+        case('flux' ); call def_variab(ncid%var(iFreq),iFreq,needHRU,needTime,flux_meta, outputPrecision, err,cmessage)  ! model fluxes
+        case('bvar' ); call def_variab(ncid%var(iFreq),iFreq,needGRU,needTime,bvar_meta, outputPrecision, err,cmessage)  ! basin-average variables
+        case('id'   ); cycle                                                                                         ! ids -- see write_hru_info()
+        case default; err=20; message=trim(message)//'unable to identify lookup structure';
+        end select
+        ! error handling
+        if(err/=0)then;err=20;message=trim(message)//trim(cmessage)//'[structure =  '//trim(structInfo(iStruct)%structName);return;end if
+    end do ! iStruct
+    ! write HRU dimension and ID for each output file
+    call write_hru_info(ncid%var(iFreq), err, cmessage); if(err/=0) then; message=trim(message)//trim(cmessage); return; end if
+
+  end do
 end subroutine def_output
 
- ! **********************************************************************************************************
- ! private subroutine ini_create: initial create
- ! **********************************************************************************************************
- subroutine ini_create(nGRU,nHRU,nSoil,infile,ncid,err,message)
+! **********************************************************************************************************
+! private subroutine ini_create: initial create
+! **********************************************************************************************************
+subroutine ini_create(nGRU,nHRU,nSoil,infile,ncid,err,message)
  ! variables to define number of steps per file (total number of time steps, step length, etc.)
  USE multiconst,only:secprday           ! number of seconds per day
  ! model decisions
