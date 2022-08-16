@@ -20,7 +20,7 @@
     },
     
     "JobActor": {
-        "FileManagerPath": "/gladwell/kck540/SummaActorsSettings/fileManager.txt",
+        "FileManagerPath": "/Summa-Actors/utils/laugh_tests/mizoguchi1990/settings/summa_fileManager_mizoguchi.txt",
         "outputCSV": false,
         "csvPath": "/scratch/kck540/csv/"
     },

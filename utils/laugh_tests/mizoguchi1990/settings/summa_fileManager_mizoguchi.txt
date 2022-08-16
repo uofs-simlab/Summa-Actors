@@ -1,0 +1,22 @@
+controlVersion       'SUMMA_FILE_MANAGER_V3.0.0' !  fman_ver
+simStartTime         '2000-01-01 00:01' ! 
+simEndTime           '2000-01-03 12:00' ! 
+tmZoneInfo           'localTime' ! 
+settingsPath         '/Summa-Actors/utils/laugh_tests/mizoguchi1990/settings/' !  setting_path
+forcingPath          '/Summa-Actors/utils/laugh_tests/mizoguchi1990/forcing_data/' !  input_path
+outputPath           '/Summa-Actors/utils/laugh_tests/mizoguchi1990/output/' !  output_path
+forcingFreq          'month'  ! the frequeny of forcing files (month, year)
+forcingStart         '2000-01-01' 
+decisionsFile        'summa_zDecisions_mizoguchi.txt' !  decision
+outputControlFile    'Model_Output.txt' !  OUTPUT_CONTROL
+globalHruParamFile   'summa_zLocalParamInfo.txt' !  local_par
+globalGruParamFile   'summa_zBasinParamInfo.txt' !  basin_par
+attributeFile        'summa_zLocalAttributes.nc' !  local_attr
+trialParamFile       'summa_zParamTrial_mizoguchi.nc' !  para_trial
+forcingListFile      'summa_zForcingFileList.txt' !  forcing_list
+initConditionFile    'summa_zInitialCond_mizoguchi.nc' !  initial_cond
+outFilePrefix        'mizoguchi1990' !  output_prefix
+vegTableFile         'VEGPARM.TBL' ! 
+soilTableFile        'SOILPARM.TBL' ! 
+generalTableFile     'GENPARM.TBL' ! 
+noahmpTableFile      'MPTABLE.TBL' ! 
