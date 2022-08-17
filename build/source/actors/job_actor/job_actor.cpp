@@ -7,6 +7,7 @@
 #include "global.hpp"
 #include "job_actor_subroutine_wrappers.hpp"
 #include "hru_actor.hpp"
+#include "gru_actor.hpp"
 
 using json = nlohmann::json;
 
@@ -131,7 +132,11 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
 
         [=](done_file_access_actor_init) {
             // Init GRU Actors and the Output Structure
-            self->send(self, init_hru_v);
+            // self->send(self, init_hru_v);s
+            auto gru = self->spawn(gru_actor, 1, 1, 
+                self->state.configPath,
+                self->state.outputStrucSize, self);
+            self->send(gru, init_gru_v);
         },
 
         [=](file_access_actor_done, double read_duration, double write_duration) {

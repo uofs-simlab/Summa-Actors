@@ -55,6 +55,7 @@ ACTORS_DIR = $(F_KORE_DIR)/actors
 JOB_ACTOR_DIR = $(ACTORS_DIR)/job_actor
 FILE_ACCESS_DIR = $(ACTORS_DIR)/file_access_actor
 HRU_ACTOR_DIR = $(ACTORS_DIR)/hru_actor
+GRU_ACTOR_DIR = $(ACTORS_DIR)/gru_actor
 
 #  utilities
 SUMMA_NRUTIL= \
@@ -151,6 +152,11 @@ SUMMA_HRU_INTERFACE = \
 		cppwrap_hru.f90
 
 HRU_INTERFACE = $(patsubst %, $(HRU_ACTOR_DIR)/%, $(SUMMA_HRU_INTERFACE))
+
+SUMMA_GRU_INTERFACE = \
+		gru_actor.f90
+
+GRU_INTERFACE = $(patsubst %, $(GRU_ACTOR_DIR)/%, $(SUMMA_GRU_INTERFACE))
 		
 
 # Define routines for SUMMA preliminaries
@@ -257,6 +263,9 @@ SUMMA_SERVER = $(SOURCE_DIR)/summa_actor/summa_server.cpp
 BATCH_MANGER = $(SOURCE_DIR)/summa_actor/batch_manager.cpp
 CLIENT_MANAGER = $(SOURCE_DIR)/summa_actor/client.cpp
 
+GRU_ACTOR_INCLUDES = -I$(INCLUDE_DIR)/gru_actor
+GRU_ACTOR = $(SOURCE_DIR)/gru_actor/gru_actor.cpp
+
 JOB_ACTOR_INCLUDES = -I$(INCLUDE_DIR)/job_actor
 JOB_ACTOR = $(SOURCE_DIR)/job_actor/job_actor.cpp
 GRUinfo = $(SOURCE_DIR)/job_actor/GRUinfo.cpp
@@ -284,7 +293,7 @@ all: fortran cpp
 
 fortran: compile_noah compile_comm compile_summa link clean_fortran
 
-cpp: compile_globals compile_hru_actor compile_file_access_actor compile_job_actor compile_summa_actor \
+cpp: compile_globals compile_hru_actor compile_gru_actor compile_file_access_actor compile_job_actor compile_summa_actor \
 	compile_summa_client compile_summa_server compile_main link_cpp clean_cpp
 
 test: actors_test actors_testLink actorsClean
@@ -301,7 +310,7 @@ compile_comm:
 
 # compile SUMMA routines
 compile_summa: 
-	$(FC) $(FLAGS_SUMMA) -c $(SUMMA_ALL) $(DRIVER) $(INTERFACE) $(JOB_INTERFACE) $(FILEACCESS_INTERFACE) $(HRU_INTERFACE) $(INCLUDES)
+	$(FC) $(FLAGS_SUMMA) -c $(SUMMA_ALL) $(DRIVER) $(INTERFACE) $(JOB_INTERFACE) $(FILEACCESS_INTERFACE) $(HRU_INTERFACE) $(GRU_INTERFACE) $(INCLUDES)
 
 # generate library
 link:   
@@ -322,6 +331,9 @@ clean_fortran:
 compile_globals:
 	$(CC) $(FLAGS_ACTORS) -c $(GLOBAL) $(TIMEINFO) $(GLOBAL_INCLUDES)
 
+compile_gru_actor:
+	$(CC) $(FLAGS_ACTORS) -c $(GRU_ACTOR) $(GRU_ACTOR_INCLUDES) $(GLOBAL_INCLUDES) $(ACTORS_INCLUDES)
+
 compile_hru_actor:
 	$(CC) $(FLAGS_ACTORS) -c $(HRU_ACTOR) $(HRU_ACTOR_INCLUDES) $(GLOBAL_INCLUDES) $(ACTORS_INCLUDES)
 
@@ -331,7 +343,7 @@ compile_file_access_actor:
 
 compile_job_actor:
 	$(CC) $(FLAGS_ACTORS) -c $(JOB_ACTOR) $(GRUinfo) $(JOB_ACTOR_INCLUDES) $(GLOBAL_INCLUDES) $(ACTORS_INCLUDES) \
-	$(FILE_ACCESS_ACTOR_INCLUDES) $(HRU_ACTOR_INCLUDES)
+	$(FILE_ACCESS_ACTOR_INCLUDES) $(HRU_ACTOR_INCLUDES) $(GRU_ACTOR_INCLUDES)
 
 compile_summa_actor:
 	$(CC) $(FLAGS_ACTORS) -c $(SUMMA_ACTOR) $(SUMMA_ACTOR_INCLUDES) $(GLOBAL_INCLUDES) $(ACTORS_INCLUDES) \
