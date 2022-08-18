@@ -2,28 +2,103 @@
 !!! If lateral flows exits use the code
 module gru_actor
 USE,intrinsic :: iso_c_binding
+USE nrtype
 
 implicit none
 
 ! public::run_gru
 public::getVarSizes
-! public::run_gru_for_timestep()
+public::fillvarTypeLists
 
 contains
 
-subroutine getVarSizes(num_bpar_vars, &
+subroutine getVarSizes(num_var_types, &
+                       num_bpar_vars, &
                        num_bvar_vars) bind(C,name="getVarSizes")
-    USE var_lookup,only:maxvarBpar, maxvarBvar
+    USE var_lookup,only:maxvarBpar, maxvarBvar, maxvarVarType
     implicit none
+    
+    integer(c_int), intent(out)                   :: num_var_types
+    integer(c_int), intent(out)                   :: num_bpar_vars
+    integer(c_int), intent(out)                   :: num_bvar_vars
 
-    integer(c_int), intent(out)     :: num_bpar_vars
-    integer(c_int), intent(out)     :: num_bvar_vars
-
-
+    num_var_types = maxvarVarType
     num_bpar_vars = maxvarBpar
     num_bvar_vars = maxvarBvar
 
 end subroutine getVarSizes
+
+subroutine initVarType(num_var_types, &
+                       i_look_var_type_list) bind(C, name="initVarType")
+    USE var_lookup,only:iLookVarType
+    implicit none
+    integer(c_int), intent(in)                              :: num_var_types
+    integer(c_int), intent(out), dimension(num_var_types)   :: i_look_var_type_list   
+
+    i_look_var_type_list(1) = iLookVarType%scalarv 
+    i_look_var_type_list(2) = iLookVarType%wLength
+    i_look_var_type_list(3) = iLookVarType%midSnow
+    i_look_var_type_list(4) = iLookVarType%midSoil
+    i_look_var_type_list(5) = iLookVarType%midToto
+    i_look_var_type_list(6) = iLookVarType%ifcSnow
+    i_look_var_type_list(7) = iLookVarType%ifcSoil
+    i_look_var_type_list(8) = iLookVarType%ifcToto
+    i_look_var_type_list(9) = iLookVarType%parSoil
+    i_look_var_type_list(10) = iLookVarType%routing
+    i_look_var_type_list(11) = iLookVarType%outstat
+    i_look_var_type_list(12) = iLookVarType%unknown
+
+end subroutine
+subroutine fillVarTypeLists(num_var_types, &
+                            num_bpar_vars, &
+                            num_bvar_vars, &
+                            i_look_var_type_list, &
+                            bpar_struct_var_type_list, &
+                            bvar_struct_var_type_list) bind(C, name="fillVarTypeLists")
+    
+    USE globalData,only:type_meta,bpar_meta,bvar_meta
+    USE var_lookup,only:iLookBVAR,iLookBPAR,iLookVarType
+    implicit none
+    integer(c_int), intent(in)                              :: num_var_types
+    integer(c_int), intent(in)                              :: num_bpar_vars
+    integer(c_int), intent(in)                              :: num_bvar_vars
+    integer(c_int), intent(out), dimension(num_var_types)   :: i_look_var_type_list   
+    integer(c_int), intent(out), dimension(num_bpar_vars)   :: bpar_struct_var_type_list
+    integer(c_int), intent(out), dimension(num_bvar_vars)   :: bvar_struct_var_type_list
+
+    integer(i4b)                                            :: i
+
+    i_look_var_type_list(1) = iLookVarType%scalarv 
+    i_look_var_type_list(2) = iLookVarType%wLength
+    i_look_var_type_list(3) = iLookVarType%midSnow
+    i_look_var_type_list(4) = iLookVarType%midSoil
+    i_look_var_type_list(5) = iLookVarType%midToto
+    i_look_var_type_list(6) = iLookVarType%ifcSnow
+    i_look_var_type_list(7) = iLookVarType%ifcSoil
+    i_look_var_type_list(8) = iLookVarType%ifcToto
+    i_look_var_type_list(9) = iLookVarType%parSoil
+    i_look_var_type_list(10) = iLookVarType%routing
+    i_look_var_type_list(11) = iLookVarType%outstat
+    i_look_var_type_list(12) = iLookVarType%unknown
+
+    do i = 1, num_var_types
+       print*, "iLookVarType = ", i_look_var_type_list(i)
+    end do
+
+    do i = 1, num_bpar_vars
+        bpar_struct_var_type_list(i) = bpar_meta(i)%varType
+    end do
+
+    do i = 1, num_bvar_vars
+        bvar_struct_var_type_list(i) = bvar_meta(i)%varType
+    end do
+
+
+
+
+
+
+end subroutine fillVarTypeLists
 
 
 

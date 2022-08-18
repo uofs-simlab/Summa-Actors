@@ -49,8 +49,8 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
     
     // Print Settings
     aout(self) << "\nSETTINGS FOR JOB_ACTOR\n" << 
-    "File Manager Path = " << self->state.fileManager << "\n" <<
-    "outputCSV = " << self->state.outputCSV << "\n";
+        "File Manager Path = " << self->state.fileManager << "\n" <<
+        "outputCSV = " << self->state.outputCSV << "\n";
     if (self->state.outputCSV) {
         aout(self) << "csvPath = " << self->state.csvPath << "\n";
     }
