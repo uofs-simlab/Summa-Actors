@@ -1,6 +1,8 @@
 !!! Lets try and build this for only the lateral flows case.
 !!! If lateral flows exits use the code
 module gru_actor
+USE,intrinsic :: iso_c_binding
+
 implicit none
 
 ! public::run_gru
@@ -9,9 +11,17 @@ public::getVarSizes
 
 contains
 
-subroutine getVarSizes() bind(C,name="getVarSizes")
-    USE globalData,only:bpar_meta,bvar_meta
+subroutine getVarSizes(num_bpar_vars, &
+                       num_bvar_vars) bind(C,name="getVarSizes")
+    USE var_lookup,only:maxvarBpar, maxvarBvar
     implicit none
+
+    integer(c_int), intent(out)     :: num_bpar_vars
+    integer(c_int), intent(out)     :: num_bvar_vars
+
+
+    num_bpar_vars = maxvarBpar
+    num_bvar_vars = maxvarBvar
 
 end subroutine getVarSizes
 

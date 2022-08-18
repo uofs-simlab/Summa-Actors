@@ -2,6 +2,6 @@
 
 extern "C" {
 
-    void getVarSize();
+    void getVarSizes(int* num_bpar_vars, int* num_bvar_vars);
 
 }

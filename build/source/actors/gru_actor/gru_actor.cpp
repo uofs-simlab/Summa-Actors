@@ -19,6 +19,13 @@ behavior gru_actor(stateful_actor<gru_state>* self, int refGRU, int indxGRU,
         [=](init_gru) {
             // Get the variable data length, we also need the type information
             aout(self) << "init GRU";
+
+            getVarSizes(&self->state.num_bpar_vars,
+                        &self->state.num_bvar_vars);
+
+            aout(self) << "NUM BPAR = " << self->state.num_bpar_vars << "\n";
+            aout(self) << "NUM BVAR = " << self->state.num_bvar_vars << "\n";
+
         }
 
 
