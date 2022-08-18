@@ -66,16 +66,33 @@ behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru,
     setTimesDirsAndFiles(self->state.file_manager.c_str(), &err);
     if (err != 0) {
         aout(self) << "ERROR: Job_Actor - setTimesDirsAndFiles\n";
+        return {}; // Failure
     }
     defineGlobalData(&self->state.start_gru, &err);
     if (err != 0) {
         aout(self) << "ERROR: Job_Actor - defineGlobalData\n";
+        return {}; // Failure
     }
     readDimension(&self->state.num_gru, &self->state.num_hru, &self->state.start_gru, &err);
     if (err != 0) {
         aout(self) << "ERROR: Job_Actor - readDimension\n";
+        return {}; // Failure
     }
-    initJob(self);
+    readIcondNLayers(&self->state.num_gru, &err);
+    if (err != 0) {
+        aout(self) << "ERROR: Job_Actor - readIcondNLayers\n";
+        return {}; // Failure
+    }
+    allocateTimeStructure(&err);
+    if (err != 0) {
+        aout(self) << "ERROR: Job_Actor - allocateTimeStructure\n";
+        return {}; // Failure
+    }
+
+
+
+
+    initCsvOutputFile(self);
 
     // Spawn the file_access_actor. This will return the number of forcing files we are working with
     self->state.file_access_actor = self->spawn(file_access_actor, self->state.start_gru, self->state.num_gru, 
@@ -183,7 +200,7 @@ behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru,
             aout(self) << "Total Duration = " << self->state.job_timing.getDuration("total_duration").value_or(-1.0) / 60 << " Minutes\n";
             aout(self) << "Total Duration = " << (self->state.job_timing.getDuration("total_duration").value_or(-1.0) / 60) / 60 << " Hours\n\n";
 
-            cleanUpJobActor(&err);
+            deallocateJobActor(&err);
             // Tell Parent we are done
             self->send(self->state.parent, 
                     done_job_v, 
@@ -215,7 +232,7 @@ behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru,
     };
 }
 
-void initJob(stateful_actor<job_state>* self) {
+void initCsvOutputFile(stateful_actor<job_state>* self) {
     std::string success = "Success"; // allows us to build the string
     if (self->state.output_csv) {
         std::ofstream file;
@@ -232,24 +249,6 @@ void initJob(stateful_actor<job_state>* self) {
             "dt_init,"             << 
             "numAttemtps\n";
         file.close();
-    }
-
-    int totalGRUs           = 0;
-    int totalHRUs           = 0;
-    int numHRUs             = 0;
-    int err                 = 0;
-
-    // aout(self) << "Initalizing Globals \n";
-    initGlobals(self->state.file_manager.c_str(), 
-        &totalGRUs,    
-        &totalHRUs, 
-        &self->state.num_gru, 
-        &numHRUs,
-        &self->state.start_gru, 
-        &err);
-    if (err != 0) {
-        aout(self) << "Error: initGlobals" << std::endl;
-        self->quit();
     }
 }
 

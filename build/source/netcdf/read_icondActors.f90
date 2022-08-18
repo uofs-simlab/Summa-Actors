@@ -19,6 +19,7 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 module read_icond4chm_module
+USE, intrinsic :: iso_c_binding
 USE nrtype
 USE netcdf
 USE globalData,only: ixHRUfile_min,ixHRUfile_max
@@ -36,104 +37,120 @@ contains
  ! ************************************************************************************************
  ! public subroutine read_icond_nlayers: read model initial conditions file for number of snow/soil layers
  ! ************************************************************************************************
- subroutine read_icond_nlayers(iconFile,nGRU,indx_meta,err,message)
- ! --------------------------------------------------------------------------------------------------------
- ! modules
- USE nrtype
- USE var_lookup,only:iLookIndex                        ! variable lookup structure
- USE globalData,only:gru_struc                         ! gru-hru mapping structures
- USE netcdf_util_module,only:nc_file_close             ! close netcdf file
- USE netcdf_util_module,only:nc_file_open              ! close netcdf file
- USE netcdf_util_module,only:netcdf_err                ! netcdf error handling
- USE data_types,only:gru_hru_intVec                    ! actual data
- USE data_types,only:var_info                          ! metadata
- implicit none
+subroutine read_icond_nlayers(nGRU,err) bind(C, name="readIcondNLayers")
+   ! --------------------------------------------------------------------------------------------------------
+   ! modules
+    USE nrtype
+    USE var_lookup,only:iLookIndex                        ! variable lookup structure
+    USE globalData,only:gru_struc                         ! gru-hru mapping structures
+    USE netcdf_util_module,only:nc_file_close             ! close netcdf file
+    USE netcdf_util_module,only:nc_file_open              ! close netcdf file
+    USE netcdf_util_module,only:netcdf_err                ! netcdf error handling
+    USE data_types,only:gru_hru_intVec                    ! actual data
+    USE data_types,only:var_info                          ! metadata
 
- ! --------------------------------------------------------------------------------------------------------
- ! variable declarations
- ! dummies
- character(*)        ,intent(in)     :: iconFile       ! name of input (restart) file
- integer(i4b)        ,intent(in)     :: nGRU           ! total # of GRUs in run domain
- type(var_info)      ,intent(in)     :: indx_meta(:)   ! metadata
- integer(i4b)        ,intent(out)    :: err            ! error code
- character(*)        ,intent(out)    :: message        ! returned error message
+    USE globalData,only:indx_meta
+    
+    ! file paths
+    USE summaActors_FileManager,only:STATE_PATH                        ! optional path to state/init. condition files (defaults to SETTINGS_PATH)
+    USE summaActors_FileManager,only:SETTINGS_PATH                     ! define path to settings files (e.g., parameters, soil and veg. tables)
+    USE summaActors_FileManager,only:MODEL_INITCOND                    ! name of model initial conditions file
 
- ! locals
- integer(i4b)             :: ncID                       ! netcdf file id
- integer(i4b)             :: dimID                      ! netcdf file dimension id
- integer(i4b)             :: fileHRU                    ! number of HRUs in netcdf file
- integer(i4b)             :: snowID, soilID             ! netcdf variable ids
- integer(i4b)             :: iGRU, iHRU                 ! loop indexes
- integer(i4b)             :: iHRU_global                ! index of HRU in the netcdf file
- integer(i4b),allocatable :: snowData(:)                ! number of snow layers in all HRUs
- integer(i4b),allocatable :: soilData(:)                ! number of soil layers in all HRUs
- character(len=256)       :: cmessage                   ! downstream error message
+    implicit none
 
- ! --------------------------------------------------------------------------------------------------------
- ! initialize error message
- err=0
- message = 'read_icond_nlayers/'
+    ! --------------------------------------------------------------------------------------------------------
+    ! variable declarations
+    ! dummies
+    integer(i4b)        ,intent(in)     :: nGRU           ! total # of GRUs in run domain
+    integer(i4b)        ,intent(out)    :: err            ! error code
 
- ! open netcdf file
- call nc_file_open(iconFile,nf90_nowrite,ncid,err,cmessage);
- if (err/=0) then; message=trim(message)//trim(cmessage); return; end if
- 
+    ! locals
+    integer(i4b)                        :: ncID                       ! netcdf file id
+    integer(i4b)                        :: dimID                      ! netcdf file dimension id
+    integer(i4b)                        :: fileHRU                    ! number of HRUs in netcdf file
+    integer(i4b)                        :: snowID, soilID             ! netcdf variable ids
+    integer(i4b)                        :: iGRU, iHRU                 ! loop indexes
+    integer(i4b)                        :: iHRU_global                ! index of HRU in the netcdf file
+    integer(i4b),allocatable            :: snowData(:)                ! number of snow layers in all HRUs
+    integer(i4b),allocatable            :: soilData(:)                ! number of soil layers in all HRUs
+    
+    character(len=256)                  :: iconFile          ! restart file name
 
- ! get number of HRUs in file (the GRU variable(s), if present, are processed at the end)
- err = nf90_inq_dimid(ncID,"hru",dimId);               if(err/=nf90_noerr)then; message=trim(message)//'problem finding hru dimension/'//trim(nf90_strerror(err)); return; end if
- err = nf90_inquire_dimension(ncID,dimId,len=fileHRU); if(err/=nf90_noerr)then; message=trim(message)//'problem reading hru dimension/'//trim(nf90_strerror(err)); return; end if
+    
+    character(len=256)                  :: message        ! returned error message
+    character(len=256)                  :: cmessage                   ! downstream error message
 
- ! allocate storage for reading from file (allocate entire file size, even when doing subdomain run)
- allocate(snowData(fileHRU))
- allocate(soilData(fileHRU))
- snowData = 0
- soilData = 0
+    ! --------------------------------------------------------------------------------------------------------
+    ! initialize error message
+    err=0
+    message = 'read_icond_nlayers/'
 
- ! get netcdf ids for the variables holding number of snow and soil layers in each hru
- err = nf90_inq_varid(ncid,trim(indx_meta(iLookIndex%nSnow)%varName),snowid); call netcdf_err(err,message)
- err = nf90_inq_varid(ncid,trim(indx_meta(iLookIndex%nSoil)%varName),soilid); call netcdf_err(err,message)
+    if(STATE_PATH == '') then
+        iconFile = trim(SETTINGS_PATH)//trim(MODEL_INITCOND)
+    else
+        iconFile = trim(STATE_PATH)//trim(MODEL_INITCOND)
+    endif
 
- ! get nSnow and nSoil data (reads entire state file)
- err = nf90_get_var(ncid,snowid,snowData); call netcdf_err(err,message)
- err = nf90_get_var(ncid,soilid,soilData); call netcdf_err(err,message)
+    ! open netcdf file
+    call nc_file_open(iconFile,nf90_nowrite,ncid,err,cmessage);
+    if (err/=0) then; message=trim(message)//trim(cmessage); return; end if
+    
 
- ixHRUfile_min=huge(1)
- ixHRUfile_max=0
- ! find the min and max hru indices in the state file
- do iGRU = 1,nGRU
-  do iHRU = 1,gru_struc(iGRU)%hruCount
-   if(gru_struc(iGRU)%hruInfo(iHRU)%hru_nc < ixHRUfile_min) ixHRUfile_min = gru_struc(iGRU)%hruInfo(iHRU)%hru_nc
-   if(gru_struc(iGRU)%hruInfo(iHRU)%hru_nc > ixHRUfile_max) ixHRUfile_max = gru_struc(iGRU)%hruInfo(iHRU)%hru_nc
-  end do
- end do
- 
+    ! get number of HRUs in file (the GRU variable(s), if present, are processed at the end)
+    err = nf90_inq_dimid(ncID,"hru",dimId);               if(err/=nf90_noerr)then; message=trim(message)//'problem finding hru dimension/'//trim(nf90_strerror(err)); return; end if
+    err = nf90_inquire_dimension(ncID,dimId,len=fileHRU); if(err/=nf90_noerr)then; message=trim(message)//'problem reading hru dimension/'//trim(nf90_strerror(err)); return; end if
 
- ! loop over grus in current run to update snow/soil layer information
- do iGRU = 1,nGRU
-  do iHRU = 1,gru_struc(iGRU)%hruCount
-   iHRU_global = gru_struc(iGRU)%hruInfo(iHRU)%hru_nc
+    ! allocate storage for reading from file (allocate entire file size, even when doing subdomain run)
+    allocate(snowData(fileHRU))
+    allocate(soilData(fileHRU))
+    snowData = 0
+    soilData = 0
 
-   ! single HRU (Note: 'restartFileType' is hardwired above to multiHRU)
-   if(restartFileType==singleHRU) then
-    gru_struc(iGRU)%hruInfo(iHRU)%nSnow = snowData(1)
-    gru_struc(iGRU)%hruInfo(iHRU)%nSoil = soilData(1)
+    ! get netcdf ids for the variables holding number of snow and soil layers in each hru
+    err = nf90_inq_varid(ncid,trim(indx_meta(iLookIndex%nSnow)%varName),snowid); call netcdf_err(err,message)
+    err = nf90_inq_varid(ncid,trim(indx_meta(iLookIndex%nSoil)%varName),soilid); call netcdf_err(err,message)
 
-   ! multi HRU
-   else
-    gru_struc(iGRU)%hruInfo(iHRU)%nSnow = snowData(iHRU_global)
-    gru_struc(iGRU)%hruInfo(iHRU)%nSoil = soilData(iHRU_global)
-   endif
+    ! get nSnow and nSoil data (reads entire state file)
+    err = nf90_get_var(ncid,snowid,snowData); call netcdf_err(err,message)
+    err = nf90_get_var(ncid,soilid,soilData); call netcdf_err(err,message)
 
-  end do
- end do
+    ixHRUfile_min=huge(1)
+    ixHRUfile_max=0
+    ! find the min and max hru indices in the state file
+    do iGRU = 1,nGRU
+    do iHRU = 1,gru_struc(iGRU)%hruCount
+    if(gru_struc(iGRU)%hruInfo(iHRU)%hru_nc < ixHRUfile_min) ixHRUfile_min = gru_struc(iGRU)%hruInfo(iHRU)%hru_nc
+    if(gru_struc(iGRU)%hruInfo(iHRU)%hru_nc > ixHRUfile_max) ixHRUfile_max = gru_struc(iGRU)%hruInfo(iHRU)%hru_nc
+    end do
+    end do
+    
+
+    ! loop over grus in current run to update snow/soil layer information
+    do iGRU = 1,nGRU
+    do iHRU = 1,gru_struc(iGRU)%hruCount
+    iHRU_global = gru_struc(iGRU)%hruInfo(iHRU)%hru_nc
+
+    ! single HRU (Note: 'restartFileType' is hardwired above to multiHRU)
+    if(restartFileType==singleHRU) then
+        gru_struc(iGRU)%hruInfo(iHRU)%nSnow = snowData(1)
+        gru_struc(iGRU)%hruInfo(iHRU)%nSoil = soilData(1)
+
+    ! multi HRU
+    else
+        gru_struc(iGRU)%hruInfo(iHRU)%nSnow = snowData(iHRU_global)
+        gru_struc(iGRU)%hruInfo(iHRU)%nSoil = soilData(iHRU_global)
+    endif
+
+    end do
+    end do
 
 
- ! close file
- call nc_file_close(ncid,err,cmessage)
- if(err/=0)then;message=trim(message)//trim(cmessage);return;end if
+    ! close file
+    call nc_file_close(ncid,err,cmessage)
+    if(err/=0)then;message=trim(message)//trim(cmessage);return;end if
 
- ! cleanup
- deallocate(snowData,soilData)
+    ! cleanup
+    deallocate(snowData,soilData)
 
  end subroutine read_icond_nlayers
 

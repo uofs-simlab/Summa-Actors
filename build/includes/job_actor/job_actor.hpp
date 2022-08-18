@@ -45,7 +45,7 @@ struct job_state {
 behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru, 
     std::string config_path, int output_struct_size, actor parent);
 
-void initJob(stateful_actor<job_state>* self);
+void initCsvOutputFile(stateful_actor<job_state>* self);
 
 void initalizeGRU(stateful_actor<job_state>* self);
 
