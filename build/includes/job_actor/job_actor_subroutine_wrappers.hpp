@@ -8,6 +8,8 @@ extern "C" {
 
     void defineGlobalData(int* start_gru_index, int* err);
 
+    void readDimension(int* num_gru, int* num_hru, int* start_gru_index, int* err);
+
     void cleanUpJobActor(int* err);
     
 }

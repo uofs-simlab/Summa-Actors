@@ -19,8 +19,8 @@ namespace caf {
  * @param self 
  * @return behavior 
  */
-behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU, 
-    std::string configPath, int outputStrucSize, caf::actor parent) {
+behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru, 
+    std::string config_path, int output_struct_size, caf::actor parent) {
     // Timinig Information
     self->state.job_timing = TimingInfo();
     self->state.job_timing.addTimePoint("total_duration");
@@ -28,48 +28,58 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
 
 
     // Set Job Variables
-    self->state.startGRU = startGRU;
-    self->state.numGRU = numGRU;
-    self->state.configPath = configPath;
+    self->state.start_gru = start_gru;
+    self->state.num_gru = num_gru;
+    self->state.config_path = config_path;
     self->state.parent = parent;
-    self->state.outputStrucSize = outputStrucSize;
+    self->state.output_struct_size = output_struct_size;
 
     // Get All Settings
-    self->state.fileManager = getSettings(self->state.configPath, "JobActor", "FileManagerPath", 
-        self->state.fileManager).value_or("");
-    self->state.outputCSV = getSettings(self->state.configPath, "JobActor", "outputCSV",
-        self->state.outputCSV).value_or(false);
-    if (self->state.outputCSV) {
-        self->state.csvPath = getSettings(self->state.configPath, "JobActor", "csvPath",
-        self->state.csvPath).value_or("");
-        if (self->state.csvPath == ""){ // check if we found the value if not set outputCSV to false
-            self->state.outputCSV = false;
+    self->state.file_manager = getSettings(self->state.config_path, "JobActor", "FileManagerPath", 
+        self->state.file_manager).value_or("");
+    if(self->state.file_manager == "") {
+        aout(self) << "ERROR: Job_Actor - getSettings() - file_manager_path\n";
+        self->quit();
+        return {}; // Failure
+    }
+
+    self->state.output_csv = getSettings(self->state.config_path, "JobActor", "outputCSV",
+        self->state.output_csv).value_or(false);
+    if (self->state.output_csv) {
+        self->state.csv_path = getSettings(self->state.config_path, "JobActor", "csvPath",
+        self->state.csv_path).value_or("");
+        if (self->state.csv_path == ""){ // check if we found the value if not set output_csv to false
+            self->state.output_csv = false;
         }
     }
     
     // Print Settings
     aout(self) << "\nSETTINGS FOR JOB_ACTOR\n" << 
-        "File Manager Path = " << self->state.fileManager << "\n" <<
-        "outputCSV = " << self->state.outputCSV << "\n";
-    if (self->state.outputCSV) {
-        aout(self) << "csvPath = " << self->state.csvPath << "\n";
+        "File Manager Path = " << self->state.file_manager << "\n" <<
+        "output_csv = " << self->state.output_csv << "\n";
+    if (self->state.output_csv) {
+        aout(self) << "csv_path = " << self->state.csv_path << "\n";
     }
 
     // Initalize global variables
     int err = 0;
-    setTimesDirsAndFiles(self->state.fileManager.c_str(), &err);
+    setTimesDirsAndFiles(self->state.file_manager.c_str(), &err);
     if (err != 0) {
         aout(self) << "ERROR: Job_Actor - setTimesDirsAndFiles\n";
     }
-    defineGlobalData(&self->state.startGRU, &err);
+    defineGlobalData(&self->state.start_gru, &err);
     if (err != 0) {
         aout(self) << "ERROR: Job_Actor - defineGlobalData\n";
+    }
+    readDimension(&self->state.num_gru, &self->state.num_hru, &self->state.start_gru, &err);
+    if (err != 0) {
+        aout(self) << "ERROR: Job_Actor - readDimension\n";
     }
     initJob(self);
 
     // Spawn the file_access_actor. This will return the number of forcing files we are working with
-    self->state.file_access_actor = self->spawn(file_access_actor, self->state.startGRU, self->state.numGRU, 
-        self->state.outputStrucSize, self->state.configPath, self);
+    self->state.file_access_actor = self->spawn(file_access_actor, self->state.start_gru, self->state.num_gru, 
+        self->state.output_struct_size, self->state.config_path, self);
 
 
     aout(self) << "Job Actor Initalized \n";
@@ -85,35 +95,35 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
                 aout(self) << "Done Init\n";
             }
             // aout(self) << "Done init\n";
-            self->state.GRUInit++;
-            if (self->state.GRUInit < self->state.numGRU) {
+            self->state.gru_init++;
+            if (self->state.gru_init < self->state.num_gru) {
                 self->send(self, init_hru_v);
             } else {
                 aout(self) << "All GRUs are initalized\n";
-                self->state.GRUInit = 0; // reset counter in case we have failures
+                self->state.gru_init = 0; // reset counter in case we have failures
                 runGRUs(self);
             }
         },
 
         [=](done_hru, int indx_gru, double total_duration, double init_duration, 
             double forcing_duration, double run_physics_duration, double write_output_duration) {
-            aout(self) << "\nDone - GRU:" << self->state.GRUList[indx_gru - 1]->getRefGRU()
+            aout(self) << "\nDone - GRU:" << self->state.gru_list[indx_gru - 1]->getRefGRU()
                 << " - IndexInJob = " << indx_gru << "\n";
 
-            self->state.GRUList[indx_gru - 1]->doneRun(total_duration, init_duration, forcing_duration,
+            self->state.gru_list[indx_gru - 1]->doneRun(total_duration, init_duration, forcing_duration,
                 run_physics_duration, write_output_duration);
             
-            if (self->state.outputCSV) {
-                self->state.GRUList[indx_gru - 1]->writeSuccess(self->state.successOutputFile);            
+            if (self->state.output_csv) {
+                self->state.gru_list[indx_gru - 1]->writeSuccess(self->state.success_output_file);            
             }
             
-            self->state.numGRUDone++;
+            self->state.num_gru_done++;
 
             // Check if we are done
-            if (self->state.numGRUDone >= self->state.numGRU) {
-                self->state.numGRUDone = 0; // just in case there were failures
+            if (self->state.num_gru_done >= self->state.num_gru) {
+                self->state.num_gru_done = 0; // just in case there were failures
 
-                if (self->state.numGRUFailed == 0) {
+                if (self->state.num_gru_failed == 0) {
                     self->send(self->state.file_access_actor, deallocate_structures_v);
                 } else {
                     restartFailures(self);
@@ -121,20 +131,20 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
             }
         },
 
-        [=](run_failure, caf::actor actorRef, int indxGRU, int err) {
-            aout(self) << "GRU:" << self->state.GRUList[indxGRU - 1]->getRefGRU()
-                << "indxGRU = " << indxGRU << "Failed \n"
+        [=](run_failure, caf::actor actorRef, int indx_gru, int err) {
+            aout(self) << "GRU:" << self->state.gru_list[indx_gru - 1]->getRefGRU()
+                << "indx_gru = " << indx_gru << "Failed \n"
                 << "Will have to wait until all GRUs are done before it can be re-tried\n";
             
-            self->state.numGRUFailed++;
-            self->state.numGRUDone++;
-            self->state.GRUList[indxGRU - 1]->updateFailed();
+            self->state.num_gru_failed++;
+            self->state.num_gru_done++;
+            self->state.gru_list[indx_gru - 1]->updateFailed();
 
             // Let the file_access_actor know this actor failed
-            self->send(self->state.file_access_actor, run_failure_v, indxGRU);
+            self->send(self->state.file_access_actor, run_failure_v, indx_gru);
 
             // check if we are the last hru to complete
-            if (self->state.numGRUDone >= self->state.numGRU) {
+            if (self->state.num_gru_done >= self->state.num_gru) {
                 restartFailures(self);
             }
         },
@@ -143,8 +153,8 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
             // Init GRU Actors and the Output Structure
             self->send(self, init_hru_v);
             // auto gru = self->spawn(gru_actor, 1, 1, 
-            //     self->state.configPath,
-            //     self->state.outputStrucSize, self);
+            //     self->state.config_path,
+            //     self->state.output_struct_size, self);
             // self->send(gru, init_gru_v);
         },
 
@@ -154,16 +164,16 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
                 aout(self) << "\n********************************\n";
                 aout(self) << "Outputing Timing Info for HRUs\n";
                 
-                for(auto gru : self->state.GRUList) {
+                for(auto gru : self->state.gru_list) {
                     gru->printOutput();
                 }
                 aout(self) << "********************************\n";
             }
             // Delete GRUs
-            for (auto GRU : self->state.GRUList) {
+            for (auto GRU : self->state.gru_list) {
                 delete GRU;
             }
-            self->state.GRUList.clear();
+            self->state.gru_list.clear();
 
 
             self->state.job_timing.updateEndPoint("total_duration");
@@ -177,7 +187,7 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
             // Tell Parent we are done
             self->send(self->state.parent, 
                     done_job_v, 
-                    self->state.numGRUFailed, 
+                    self->state.num_gru_failed, 
                     self->state.job_timing.getDuration("total_duration").value_or(-1.0),
                     read_duration, write_duration);
             self->quit();
@@ -188,8 +198,8 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
             if (function == "def_output") {
                 aout(self) << "Error with the output file, will try creating it agian\n";
                 std::this_thread::sleep_for(std::chrono::seconds(5));
-                self->state.file_access_actor = self->spawn(file_access_actor, self->state.startGRU, self->state.numGRU, 
-                    self->state.outputStrucSize, self->state.configPath, self);
+                self->state.file_access_actor = self->spawn(file_access_actor, self->state.start_gru, self->state.num_gru, 
+                    self->state.output_struct_size, self->state.config_path, self);
             } else {
                 aout(self) << "Letting Parent Know we are quitting\n";
                 self->send(self->state.parent, err_v);
@@ -207,11 +217,11 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
 
 void initJob(stateful_actor<job_state>* self) {
     std::string success = "Success"; // allows us to build the string
-    if (self->state.outputCSV) {
+    if (self->state.output_csv) {
         std::ofstream file;
-        self->state.successOutputFile = self->state.csvPath += success += 
-            std::to_string(self->state.startGRU) += ".csv";
-        file.open(self->state.successOutputFile, std::ios_base::out);
+        self->state.success_output_file = self->state.csv_path += success += 
+            std::to_string(self->state.start_gru) += ".csv";
+        file.open(self->state.success_output_file, std::ios_base::out);
         file << 
             "GRU,"                 << 
             "totalDuration,"       <<
@@ -230,12 +240,12 @@ void initJob(stateful_actor<job_state>* self) {
     int err                 = 0;
 
     // aout(self) << "Initalizing Globals \n";
-    initGlobals(self->state.fileManager.c_str(), 
+    initGlobals(self->state.file_manager.c_str(), 
         &totalGRUs,    
         &totalHRUs, 
-        &self->state.numGRU, 
+        &self->state.num_gru, 
         &numHRUs,
-        &self->state.startGRU, 
+        &self->state.start_gru, 
         &err);
     if (err != 0) {
         aout(self) << "Error: initGlobals" << std::endl;
@@ -244,17 +254,17 @@ void initJob(stateful_actor<job_state>* self) {
 }
 
 void initalizeGRU(stateful_actor<job_state>* self) {
-    int startGRU = self->state.GRUList.size() + self->state.startGRU;
-    int indexGRU = self->state.GRUList.size() + 1; // Fortran reference starts at 1
-    auto gru = self->spawn(hru_actor, startGRU, indexGRU, 
-        self->state.configPath, self->state.file_access_actor, 
-        self->state.outputStrucSize, self);
-    self->state.GRUList.push_back(new GRUinfo(startGRU, indexGRU, gru, 
-        self->state.dt_init_start_factor, self->state.maxRunAttempts));
+    int start_gru = self->state.gru_list.size() + self->state.start_gru;
+    int index_gru = self->state.gru_list.size() + 1; // Fortran reference starts at 1
+    auto gru = self->spawn(hru_actor, start_gru, index_gru, 
+        self->state.config_path, self->state.file_access_actor, 
+        self->state.output_struct_size, self);
+    self->state.gru_list.push_back(new GRUinfo(start_gru, index_gru, gru, 
+        self->state.dt_init_start_factor, self->state.max_run_attempts));
 }
 
 void runGRUs(stateful_actor<job_state>* self) {
-    for(auto gru : self->state.GRUList) {
+    for(auto gru : self->state.gru_list) {
         if(!gru->isCompleted() && !gru->isFailed()) {
             self->send(gru->getActor(), start_hru_v);
         }
@@ -265,17 +275,17 @@ void restartFailures(stateful_actor<job_state>* self) {
     // Need to let the file_access_actor know so it can set up the new output Manager
     self->send(self->state.file_access_actor, restart_failures_v);
 
-    self->state.numGRU = self->state.numGRUFailed;
-    self->state.numGRUFailed = 0;
-    self->state.numGRUDone = 0;
-    for(auto gru : self->state.GRUList) {
+    self->state.num_gru = self->state.num_gru_failed;
+    self->state.num_gru_failed = 0;
+    self->state.num_gru_done = 0;
+    for(auto gru : self->state.gru_list) {
         if (gru->isFailed() && !gru->isMaxAttemptsReached()) {
             gru->updateFailed();
             self->send(self->state.file_access_actor, reset_outputCounter_v, gru->getIndxGRU());
             gru->updateDt_init();
             auto newGRU = self->spawn(hru_actor, gru->getRefGRU(), gru->getIndxGRU(), 
-                self->state.configPath,self->state.file_access_actor, 
-                self->state.outputStrucSize, self);
+                self->state.config_path,self->state.file_access_actor, 
+                self->state.output_struct_size, self);
             gru->updateGRU(newGRU);
             gru->updateCurrentAttempt();
             self->send(gru->getActor(), dt_init_factor_v, gru->getDt_init());

@@ -80,15 +80,15 @@ subroutine initGlobals(file_manager, totalGRUs, totalHRUs, numGRUs, numHRUs, sta
   ! *****************************************************************************
   ! *** read the number of GRUs and HRUs
   ! *****************************************************************************
-  attrFile = trim(SETTINGS_PATH)//trim(LOCAL_ATTRIBUTES)
-  call read_dimension(trim(attrFile),fileGRU,fileHRU,numGRUs,numHRUs,startGRUIndex,err,cmessage)
-  if(err/=0)then
-    message=trim(message)//trim(cmessage)
-    print*, cmessage
-  return
-  endif
-  totalGRUs = fileGRU
-  totalHRUs = fileHRU
+  ! attrFile = trim(SETTINGS_PATH)//trim(LOCAL_ATTRIBUTES)
+  ! call read_dimension(trim(attrFile),fileGRU,fileHRU,numGRUs,numHRUs,startGRUIndex,err,cmessage)
+  ! if(err/=0)then
+  !   message=trim(message)//trim(cmessage)
+  !   print*, cmessage
+  ! return
+  ! endif
+  ! totalGRUs = fileGRU
+  ! totalHRUs = fileHRU
 
   ! *****************************************************************************
   ! *** read the number of snow and soil layers
