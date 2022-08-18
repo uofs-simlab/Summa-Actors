@@ -14,16 +14,16 @@ ACTORS_LIBRARIES = -L/usr/lib -L/usr/local/lib -L/Summa-Actors/bin -lcaf_core -l
 
 
 # Production runs
-# FLAGS_NOAH = -O3 -ffree-form -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
-# FLAGS_COMM = -O3 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
-# FLAGS_SUMMA = -O3 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
-# FLAGS_ACTORS = -O3 -Wfatal-errors -std=c++17
+FLAGS_NOAH = -g -O3 -ffree-form -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
+FLAGS_COMM = -g -O3 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
+FLAGS_SUMMA = -g -O3 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
+FLAGS_ACTORS = -g -O3 -Wfatal-errors -std=c++17
 
 # Debug runs
-FLAGS_NOAH = -g -O0 -ffree-form -ffree-line-length-none -fmax-errors=0 -fbacktrace -Wno-unused -Wno-unused-dummy-argument -fPIC
-FLAGS_COMM = -g -O0 -Wall -ffree-line-length-none -fmax-errors=0 -fbacktrace -fcheck=bounds -fPIC
-FLAGS_SUMMA = -g -O0 -Wall -ffree-line-length-none -fmax-errors=0 -fbacktrace -fcheck=bounds -fPIC
-FLAGS_ACTORS = -g -O0 -Wall -std=c++17
+# FLAGS_NOAH = -g -O0 -ffree-form -ffree-line-length-none -fmax-errors=0 -fbacktrace -Wno-unused -Wno-unused-dummy-argument -fPIC
+# FLAGS_COMM = -g -O0 -Wall -ffree-line-length-none -fmax-errors=0 -fbacktrace -fcheck=bounds -fPIC
+# FLAGS_SUMMA = -g -O0 -Wall -ffree-line-length-none -fmax-errors=0 -fbacktrace -fcheck=bounds -fPIC
+# FLAGS_ACTORS = -g -O0 -Wall -std=c++17
 
 
 
@@ -84,10 +84,13 @@ SUMMA_DATAMS= \
 		data_types.f90 \
 		globalData.f90 \
 		flxMapping.f90 \
-		get_ixname.f90 \
+		get_ixname.f90
+DATAMS = $(patsubst %, $(DSHARE_DIR)/%, $(SUMMA_DATAMS))
+
+SUMMA_DEPEND_ON_FILEMANAGER= \
 		popMetadat.f90 \
 		outpt_stat.f90
-DATAMS = $(patsubst %, $(DSHARE_DIR)/%, $(SUMMA_DATAMS))
+DEPEND_ON_FILEMANAGER = $(patsubst %, $(DSHARE_DIR)/%, $(SUMMA_DEPEND_ON_FILEMANAGER))
 
 # utility modules
 SUMMA_UTILMS= \
@@ -136,6 +139,7 @@ SUMMA_INTERFACE= \
 
 INTERFACE = $(patsubst %, $(ACTORS_DIR)/global/%, $(SUMMA_INTERFACE))
 
+
 SUMMA_FILEACCESS_INTERFACE = \
 		initOutputStruc.f90 \
 		deallocateOutputStruc.f90 \
@@ -144,7 +148,8 @@ SUMMA_FILEACCESS_INTERFACE = \
 FILEACCESS_INTERFACE = $(patsubst %, $(FILE_ACCESS_DIR)/%, $(SUMMA_FILEACCESS_INTERFACE))
 
 SUMMA_JOB_INTERFACE = \
-		cppwrap_job.f90
+		cppwrap_job.f90 \
+		job_actor.f90
 
 JOB_INTERFACE =  $(patsubst %, $(JOB_ACTOR_DIR)/%, $(SUMMA_JOB_INTERFACE))
 
@@ -218,7 +223,7 @@ SUMMA_NETCDF = \
 NETCDF = $(patsubst %, $(NETCDF_DIR)/%, $(SUMMA_NETCDF))
 
 # ... stitch together common programs
-COMM_ALL = $(NRUTIL) $(NRPROC) $(HOOKUP) $(DATAMS) $(UTILMS)
+COMM_ALL = $(NRUTIL) $(NRPROC) $(DATAMS) $(INTERFACE) $(HOOKUP) $(DEPEND_ON_FILEMANAGER) $(UTILMS)
 
 # ... stitch together SUMMA programs
 SUMMA_ALL = $(NETCDF) $(PRELIM) $(MODRUN) $(SOLVER) 
@@ -310,7 +315,7 @@ compile_comm:
 
 # compile SUMMA routines
 compile_summa: 
-	$(FC) $(FLAGS_SUMMA) -c $(SUMMA_ALL) $(DRIVER) $(INTERFACE) $(JOB_INTERFACE) $(FILEACCESS_INTERFACE) $(HRU_INTERFACE) $(GRU_INTERFACE) $(INCLUDES)
+	$(FC) $(FLAGS_SUMMA) -c $(SUMMA_ALL) $(DRIVER) $(JOB_INTERFACE) $(FILEACCESS_INTERFACE) $(HRU_INTERFACE) $(GRU_INTERFACE) $(INCLUDES)
 
 # generate library
 link:   

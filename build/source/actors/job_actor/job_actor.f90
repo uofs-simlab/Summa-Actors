@@ -1,5 +1,8 @@
 module job_actor
-implicit none
+    implicit none
+
+
+    contains
 
 
 

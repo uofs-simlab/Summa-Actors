@@ -56,6 +56,11 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
     }
 
     // Initalize global variables
+    int err = 0;
+    setTimesDirsAndFiles(self->state.fileManager.c_str(), &err);
+    if (err != 0) {
+        aout(self) << "ERROR: Job_Actor - setTimesDirsAndFiles\n";
+    }
     initJob(self);
 
     // Spawn the file_access_actor. This will return the number of forcing files we are working with
@@ -132,11 +137,11 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
 
         [=](done_file_access_actor_init) {
             // Init GRU Actors and the Output Structure
-            // self->send(self, init_hru_v);s
-            auto gru = self->spawn(gru_actor, 1, 1, 
-                self->state.configPath,
-                self->state.outputStrucSize, self);
-            self->send(gru, init_gru_v);
+            self->send(self, init_hru_v);
+            // auto gru = self->spawn(gru_actor, 1, 1, 
+            //     self->state.configPath,
+            //     self->state.outputStrucSize, self);
+            // self->send(gru, init_gru_v);
         },
 
         [=](file_access_actor_done, double read_duration, double write_duration) {

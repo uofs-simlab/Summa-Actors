@@ -56,15 +56,15 @@ subroutine initGlobals(file_manager, totalGRUs, totalHRUs, numGRUs, numHRUs, sta
   call c_f_string(file_manager, file_manager_path, 256)
 
   ! Conver the fileManager path to format needed for summa_SetTimesDirsAndFIles
-  summaFileManagerFile = trim(file_manager_path)
+  ! summaFileManagerFile = trim(file_manager_path)
   ! set directories and files -- summaFileManager used as command-line argument
-  call summa_SetTimesDirsAndFiles(summaFileManagerFile,err,cmessage)
-  ! if(err/=0)then; message=trim(message)//trim(cmessage); return; endif;
-  if(err/=0)then
-    message=trim(message)//trim(cmessage)
-    print*, cmessage
-    return
-  endif
+  ! call summa_SetTimesDirsAndFiles(summaFileManagerFile,err,cmessage)
+  ! ! if(err/=0)then; message=trim(message)//trim(cmessage); return; endif;
+  ! if(err/=0)then
+  !   message=trim(message)//trim(cmessage)
+  !   print*, cmessage
+  !   return
+  ! endif
 
   ! define global data (parameters, metadata)
   call summa_defineGlobalData(err, cmessage)
