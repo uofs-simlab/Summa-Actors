@@ -6,6 +6,8 @@ extern "C" {
 
     void setTimesDirsAndFiles(char const* file_manager, int* err);
 
+    void defineGlobalData(int* start_gru_index, int* err);
+
     void cleanUpJobActor(int* err);
     
 }

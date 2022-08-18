@@ -61,6 +61,10 @@ behavior job_actor(stateful_actor<job_state>* self, int startGRU, int numGRU,
     if (err != 0) {
         aout(self) << "ERROR: Job_Actor - setTimesDirsAndFiles\n";
     }
+    defineGlobalData(&self->state.startGRU, &err);
+    if (err != 0) {
+        aout(self) << "ERROR: Job_Actor - defineGlobalData\n";
+    }
     initJob(self);
 
     // Spawn the file_access_actor. This will return the number of forcing files we are working with

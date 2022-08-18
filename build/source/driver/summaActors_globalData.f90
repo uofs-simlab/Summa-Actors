@@ -20,6 +20,7 @@
 
 module summa_globalData
 ! used to declare and allocate global summa data structures
+USE, intrinsic :: iso_c_binding
 
 ! access missing values
 USE globalData,only:integerMissing   ! missing integer
@@ -56,13 +57,14 @@ USE globalData,only:fluxChild_map                           ! index of the child
 USE globalData,only:indxChild_map                           ! index of the child data structure: stats indx
 USE globalData,only:bvarChild_map                           ! index of the child data structure: stats bvar
 
+USE globalData,only:startGRU
 ! safety: set private unless specified otherwise
 implicit none
 private
 public::summa_defineGlobalData
 contains
 
-subroutine summa_defineGlobalData(err, message)
+subroutine summa_defineGlobalData(start_gru_index, err) bind(C, name="defineGlobalData")
   ! ---------------------------------------------------------------------------------------
   ! * desired modules
   ! ---------------------------------------------------------------------------------------
@@ -87,9 +89,10 @@ subroutine summa_defineGlobalData(err, message)
   ! ---------------------------------------------------------------------------------------
   implicit none
   ! dummy variables
-  integer(i4b),intent(out)              :: err                ! error code
-  character(*),intent(out)              :: message            ! error message
+  integer(c_int),intent(in)             :: start_gru_index    ! Index of the starting GRU (-g option from user)
+  integer(c_int),intent(out)            :: err                ! error code
   ! local variables
+  character(len=256)                    :: message            ! error message
   character(LEN=256)                    :: cmessage           ! error message of downwind routine
   logical(lgt), dimension(maxvarFlux)   :: flux_mask          ! mask defining desired flux variables
   logical(lgt), dimension(maxvarForc)   :: statForc_mask      ! mask defining forc stats
@@ -158,6 +161,9 @@ subroutine summa_defineGlobalData(err, message)
   statFlux_meta(:)%vartype = iLookVarType%outstat
   statIndx_meta(:)%vartype = iLookVarType%outstat
   statBvar_meta(:)%vartype = iLookVarType%outstat
+
+  ! Set the startGRU
+  startGRU = start_gru_index
 
 end subroutine summa_defineGlobalData
 

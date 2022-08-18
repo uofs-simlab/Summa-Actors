@@ -53,7 +53,7 @@ subroutine initGlobals(file_manager, totalGRUs, totalHRUs, numGRUs, numHRUs, sta
   integer(i4b)                              :: fileHRU              ! [used for filenames] number of HRUs in the input file
   character(len=256)                        :: summaFileManagerFile ! path/name of file defining directories and files
 
-  call c_f_string(file_manager, file_manager_path, 256)
+  ! call c_f_string(file_manager, file_manager_path, 256)
 
   ! Conver the fileManager path to format needed for summa_SetTimesDirsAndFIles
   ! summaFileManagerFile = trim(file_manager_path)
@@ -67,15 +67,15 @@ subroutine initGlobals(file_manager, totalGRUs, totalHRUs, numGRUs, numHRUs, sta
   ! endif
 
   ! define global data (parameters, metadata)
-  call summa_defineGlobalData(err, cmessage)
-  ! if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
-  if(err/=0)then
-    message=trim(message)//trim(cmessage)
-    print*, cmessage
-    return
-  endif
+  ! call summa_defineGlobalData(err, cmessage)
+  ! ! if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+  ! if(err/=0)then
+  !   message=trim(message)//trim(cmessage)
+  !   print*, cmessage
+  !   return
+  ! endif
   ! Set the index of the start GRU
-  startGRU = startGRUIndex
+  ! startGRU = startGRUIndex
 
   ! *****************************************************************************
   ! *** read the number of GRUs and HRUs
