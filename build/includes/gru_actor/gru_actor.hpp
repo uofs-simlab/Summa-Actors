@@ -8,6 +8,7 @@
 #include <array>
 #include <chrono>
 #include <string>
+#include "var_lookup.hpp"
 
 namespace caf{
 struct gru_state {
@@ -20,7 +21,9 @@ struct gru_state {
     int ref_gru; // The actual ID of the GRU we are
     int num_hrus;
 
+    int nTimeDelay = 2000; // number of hours in the time delay histogram (default: ~1 season = 24*365/4)
 
+    struct iLookVarType var_type_lookup;
     
     int num_bpar_vars;                               // number of variables in the fortran structure for bpar_struct
     std::vector<double> bpar_struct;   

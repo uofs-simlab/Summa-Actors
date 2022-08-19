@@ -262,8 +262,8 @@ TIMEINFO = $(SOURCE_DIR)/global/timing_info.cpp
 SUMMA_ACTOR_INCLUDES = -I$(INCLUDE_DIR)/summa_actor
 SUMMA_ACTOR = $(SOURCE_DIR)/summa_actor/summa_actor.cpp
 SUMMA_CLIENT = $(SOURCE_DIR)/summa_actor/summa_client.cpp
-SUMMA_SERVER = $(SOURCE_DIR)/summa_actor/summa_server.cpp
 
+SUMMA_SERVER = $(SOURCE_DIR)/summa_actor/summa_server.cpp
 BATCH_MANGER = $(SOURCE_DIR)/summa_actor/batch_manager.cpp
 CLIENT_MANAGER = $(SOURCE_DIR)/summa_actor/client.cpp
 

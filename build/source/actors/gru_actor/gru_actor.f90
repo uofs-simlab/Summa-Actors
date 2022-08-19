@@ -28,76 +28,103 @@ subroutine getVarSizes(num_var_types, &
 
 end subroutine getVarSizes
 
-subroutine initVarType(num_var_types, &
-                       i_look_var_type_list) bind(C, name="initVarType")
+subroutine initVarType(var_type_lookup) bind(C, name="initVarType")
     USE var_lookup,only:iLookVarType
-    implicit none
-    integer(c_int), intent(in)                              :: num_var_types
-    integer(c_int), intent(out), dimension(num_var_types)   :: i_look_var_type_list   
+    USE var_lookup,only:iLook_VarType
 
-    i_look_var_type_list(1) = iLookVarType%scalarv 
-    i_look_var_type_list(2) = iLookVarType%wLength
-    i_look_var_type_list(3) = iLookVarType%midSnow
-    i_look_var_type_list(4) = iLookVarType%midSoil
-    i_look_var_type_list(5) = iLookVarType%midToto
-    i_look_var_type_list(6) = iLookVarType%ifcSnow
-    i_look_var_type_list(7) = iLookVarType%ifcSoil
-    i_look_var_type_list(8) = iLookVarType%ifcToto
-    i_look_var_type_list(9) = iLookVarType%parSoil
-    i_look_var_type_list(10) = iLookVarType%routing
-    i_look_var_type_list(11) = iLookVarType%outstat
-    i_look_var_type_list(12) = iLookVarType%unknown
+    implicit none
+    type(iLook_VarType) :: var_type_lookup
+
+    ! Get the indexes to match C++ offset starting at 0
+    var_type_lookup%scalarv = iLookVarType%scalarv - 1
+    var_type_lookup%wLength = iLookVarType%wLength - 1
+    var_type_lookup%midSnow = iLookVarType%midSnow - 1
+    var_type_lookup%midSoil = iLookVarType%midSoil - 1
+    var_type_lookup%midToto = iLookVarType%midToto - 1
+    var_type_lookup%ifcSnow = iLookVarType%ifcSnow - 1
+    var_type_lookup%ifcSoil = iLookVarType%ifcSoil - 1
+    var_type_lookup%ifcToto = iLookVarType%ifcToto - 1
+    var_type_lookup%parSoil = iLookVarType%parSoil - 1
+    var_type_lookup%routing = iLookVarType%routing - 1
+    var_type_lookup%outstat = iLookVarType%outstat - 1
+    var_type_lookup%unknown = iLookVarType%unknown - 1
+
+    ! check the values
+    ! print*, "************FORTRAN************"
+    ! print*, "iLookVarType%scalarv", iLookVarType%scalarv
+    ! print*, "iLookVarType%wLength", iLookVarType%wLength
+    ! print*, "iLookVarType%midSnow", iLookVarType%midSnow
+    ! print*, "iLookVarType%midSoil", iLookVarType%midSoil
+    ! print*, "iLookVarType%midToto", iLookVarType%midToto
+    ! print*, "iLookVarType%ifcSnow", iLookVarType%ifcSnow
+    ! print*, "iLookVarType%ifcSoil", iLookVarType%ifcSoil
+    ! print*, "iLookVarType%ifcToto", iLookVarType%ifcToto
+    ! print*, "iLookVarType%parSoil", iLookVarType%parSoil
+    ! print*, "iLookVarType%routing", iLookVarType%routing
+    ! print*, "iLookVarType%outstat", iLookVarType%outstat
+    ! print*, "iLookVarType%unknown", iLookVarType%unknown
+    ! print*, "************FORTRAN************"
+
 
 end subroutine
-subroutine fillVarTypeLists(num_var_types, &
-                            num_bpar_vars, &
+subroutine fillVarTypeLists(num_bpar_vars, &
                             num_bvar_vars, &
-                            i_look_var_type_list, &
                             bpar_struct_var_type_list, &
-                            bvar_struct_var_type_list) bind(C, name="fillVarTypeLists")
+                            bvar_struct_var_type_list, &
+                            err) bind(C, name="fillVarTypeLists")
     
     USE globalData,only:type_meta,bpar_meta,bvar_meta
     USE var_lookup,only:iLookBVAR,iLookBPAR,iLookVarType
     implicit none
-    integer(c_int), intent(in)                              :: num_var_types
     integer(c_int), intent(in)                              :: num_bpar_vars
     integer(c_int), intent(in)                              :: num_bvar_vars
-    integer(c_int), intent(out), dimension(num_var_types)   :: i_look_var_type_list   
     integer(c_int), intent(out), dimension(num_bpar_vars)   :: bpar_struct_var_type_list
     integer(c_int), intent(out), dimension(num_bvar_vars)   :: bvar_struct_var_type_list
+    integer(c_int), intent(out)                             :: err  
+    integer(i4b)                                            :: iVar
 
-    integer(i4b)                                            :: i
 
-    i_look_var_type_list(1) = iLookVarType%scalarv 
-    i_look_var_type_list(2) = iLookVarType%wLength
-    i_look_var_type_list(3) = iLookVarType%midSnow
-    i_look_var_type_list(4) = iLookVarType%midSoil
-    i_look_var_type_list(5) = iLookVarType%midToto
-    i_look_var_type_list(6) = iLookVarType%ifcSnow
-    i_look_var_type_list(7) = iLookVarType%ifcSoil
-    i_look_var_type_list(8) = iLookVarType%ifcToto
-    i_look_var_type_list(9) = iLookVarType%parSoil
-    i_look_var_type_list(10) = iLookVarType%routing
-    i_look_var_type_list(11) = iLookVarType%outstat
-    i_look_var_type_list(12) = iLookVarType%unknown
-
-    do i = 1, num_var_types
-       print*, "iLookVarType = ", i_look_var_type_list(i)
+    ! Get the types of the variables for bparStruct
+    ! Index in bpar_struct_var_type_list will match bpar_Struct
+    do iVar=1, num_bpar_vars
+        select case(bpar_meta(iVar)%vartype)
+            case(iLookVarType%scalarv); bpar_struct_var_type_list(iVar) = iLookVarType%scalarv - 1
+            case(iLookVarType%wLength); bpar_struct_var_type_list(iVar) = iLookVarType%wLength - 1
+            case(iLookVarType%midSnow); bpar_struct_var_type_list(iVar) = iLookVarType%midSnow - 1
+            case(iLookVarType%midSoil); bpar_struct_var_type_list(iVar) = iLookVarType%midSoil - 1
+            case(iLookVarType%midToto); bpar_struct_var_type_list(iVar) = iLookVarType%midToto - 1
+            case(iLookVarType%ifcSnow); bpar_struct_var_type_list(iVar) = iLookVarType%ifcSnow - 1
+            case(iLookVarType%ifcSoil); bpar_struct_var_type_list(iVar) = iLookVarType%ifcSoil - 1
+            case(iLookVarType%ifcToto); bpar_struct_var_type_list(iVar) = iLookVarType%ifcToto - 1
+            case(iLookVarType%parSoil); bpar_struct_var_type_list(iVar) = iLookVarType%parSoil - 1
+            case(iLookVarType%routing); bpar_struct_var_type_list(iVar) = iLookVarType%routing - 1
+            case(iLookVarType%outstat); bpar_struct_var_type_list(iVar) = iLookVarType%outstat - 1
+            case(iLookVarType%unknown); bpar_struct_var_type_list(iVar) = iLookVarType%unknown - 1
+            case default
+                err = 40;
+                return
+        end select
     end do
 
-    do i = 1, num_bpar_vars
-        bpar_struct_var_type_list(i) = bpar_meta(i)%varType
+    do iVar=1, num_bvar_vars
+        select case(bvar_meta(iVar)%vartype)
+            case(iLookVarType%scalarv); bvar_struct_var_type_list(iVar) = iLookVarType%scalarv - 1
+            case(iLookVarType%wLength); bvar_struct_var_type_list(iVar) = iLookVarType%wLength - 1
+            case(iLookVarType%midSnow); bvar_struct_var_type_list(iVar) = iLookVarType%midSnow - 1
+            case(iLookVarType%midSoil); bvar_struct_var_type_list(iVar) = iLookVarType%midSoil - 1
+            case(iLookVarType%midToto); bvar_struct_var_type_list(iVar) = iLookVarType%midToto - 1
+            case(iLookVarType%ifcSnow); bvar_struct_var_type_list(iVar) = iLookVarType%ifcSnow - 1
+            case(iLookVarType%ifcSoil); bvar_struct_var_type_list(iVar) = iLookVarType%ifcSoil - 1
+            case(iLookVarType%ifcToto); bvar_struct_var_type_list(iVar) = iLookVarType%ifcToto - 1
+            case(iLookVarType%parSoil); bvar_struct_var_type_list(iVar) = iLookVarType%parSoil - 1
+            case(iLookVarType%routing); bvar_struct_var_type_list(iVar) = iLookVarType%routing - 1
+            case(iLookVarType%outstat); bvar_struct_var_type_list(iVar) = iLookVarType%outstat - 1
+            case(iLookVarType%unknown); bvar_struct_var_type_list(iVar) = iLookVarType%unknown - 1
+            case default
+                err = 40;
+                return
+        end select
     end do
-
-    do i = 1, num_bvar_vars
-        bvar_struct_var_type_list(i) = bvar_meta(i)%varType
-    end do
-
-
-
-
-
-
 end subroutine fillVarTypeLists
 
 

@@ -102,7 +102,12 @@ subroutine summa_SetTimesDirsAndFiles(file_manager,err) bind(C, name="setTimesDi
 
   ! open file, read non-comment lines, close file
   call file_open(trim(summaFileManagerIn),unt,err,cmessage)
-  if(err/=0) then; message=trim(message)//trim(cmessage)//"/Failed to open control file [''"//trim(summaFileManagerIn)//"']"; err=-10; return; end if
+  if(err/=0) then 
+    message=trim(message)//trim(cmessage)//"/Failed to open control file [''"//trim(summaFileManagerIn)//"']"
+    print*, message
+    err=-10 
+    return 
+  end if
   call get_vlines(unt,charline,err,cmessage)  ! 'charline' is a list of strings from non-comment lines
   if(err/=0) then; message=trim(message)//trim(cmessage)//"/Control file read issue in get_vlines()"; return; end if
   close(unt)

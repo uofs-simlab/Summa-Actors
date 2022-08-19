@@ -20,6 +20,7 @@
 
 MODULE var_lookup
  ! defines named variables used to index array elements
+ USE, intrinsic :: iso_c_binding
  USE nrtype, integerMissing=>nr_integerMissing
  implicit none
  private
@@ -719,19 +720,19 @@ MODULE var_lookup
  ! (13) structure for looking up the type of a model variable (this is only needed for backward
  ! compatability, and should be removed eventually)
  ! ***********************************************************************************************************
- type, public :: iLook_varType
-  integer(i4b)    :: scalarv   = integerMissing ! scalar variables
-  integer(i4b)    :: wLength   = integerMissing ! # spectral bands
-  integer(i4b)    :: midSnow   = integerMissing ! mid-layer snow variables
-  integer(i4b)    :: midSoil   = integerMissing ! mid-layer soil variables
-  integer(i4b)    :: midToto   = integerMissing ! mid-layer, both snow and soil
-  integer(i4b)    :: ifcSnow   = integerMissing ! interface snow variables
-  integer(i4b)    :: ifcSoil   = integerMissing ! interface soil variables
-  integer(i4b)    :: ifcToto   = integerMissing ! interface, snow and soil
-  integer(i4b)    :: parSoil   = integerMissing ! soil depth
-  integer(i4b)    :: routing   = integerMissing ! routing variables
-  integer(i4b)    :: outstat   = integerMissing ! output statistic
-  integer(i4b)    :: unknown   = integerMissing ! cath-cal alternative type
+ type, public, bind(C) :: iLook_varType
+  integer(c_int)    :: scalarv   = integerMissing ! scalar variables
+  integer(c_int)    :: wLength   = integerMissing ! # spectral bands
+  integer(c_int)    :: midSnow   = integerMissing ! mid-layer snow variables
+  integer(c_int)    :: midSoil   = integerMissing ! mid-layer soil variables
+  integer(c_int)    :: midToto   = integerMissing ! mid-layer, both snow and soil
+  integer(c_int)    :: ifcSnow   = integerMissing ! interface snow variables
+  integer(c_int)    :: ifcSoil   = integerMissing ! interface soil variables
+  integer(c_int)    :: ifcToto   = integerMissing ! interface, snow and soil
+  integer(c_int)    :: parSoil   = integerMissing ! soil depth
+  integer(c_int)    :: routing   = integerMissing ! routing variables
+  integer(c_int)    :: outstat   = integerMissing ! output statistic
+  integer(c_int)    :: unknown   = integerMissing ! cath-cal alternative type
  endtype iLook_varType
 
  ! ***********************************************************************************************************
