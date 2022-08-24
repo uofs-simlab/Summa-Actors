@@ -167,11 +167,11 @@ behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru,
 
         [=](done_file_access_actor_init) {
             // Init GRU Actors and the Output Structure
-            // self->send(self, init_hru_v);
-            auto gru = self->spawn(gru_actor, 1, 1, 
-                self->state.config_path,
-                self->state.output_struct_size, self);
-            self->send(gru, init_gru_v);
+            self->send(self, init_hru_v);
+            // auto gru = self->spawn(gru_actor, 1, 1, 
+            //     self->state.config_path,
+            //     self->state.output_struct_size, self);
+            // self->send(gru, init_gru_v);
         },
 
         [=](done_init_gru) {

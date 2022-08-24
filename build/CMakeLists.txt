@@ -231,15 +231,16 @@ add_library(SUMMA_COMM OBJECT
         SUMMA_NOAHMP)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${EXEC_DIR})
-add_library(SUMMA_OBJ SHARED
+
+add_library(summa SHARED
     ${SUMMA_ALL})
-    target_compile_options(SUMMA_OBJ PRIVATE
+    target_compile_options(summa PRIVATE
         -g -O3 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors)
-    target_include_directories(SUMMA_OBJ PRIVATE
+    target_include_directories(summa PRIVATE
         "/usr/include"
         ${netCDF_INCLUDES}
         ${LAPACK_INCLUDES})
-    target_link_libraries(SUMMA_OBJ PUBLIC
+    target_link_libraries(summa PUBLIC
         ${netCDF_LIBRARIES}
         ${LAPACK_LIBRARIES}
         SUMMA_COMM)
@@ -251,7 +252,6 @@ find_package(netCDF REQUIRED)
 find_package(LAPACK REQUIRED)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${EXEC_DIR})
-
 
 add_executable(${EXEC_NAME}
     ${ACTORS_GLOBAL}
@@ -278,4 +278,7 @@ add_executable(${EXEC_NAME}
        ${CAF_LIBRARIES}
        ${netCDF_LIBRARIES}
        ${LAPACK_LIBRARIES}
-       SUMMA_OBJ)
+       -lcaf_core
+       -lcaf_io
+       summa
+       -lsumma)
