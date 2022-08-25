@@ -8,7 +8,7 @@ USE globalData
 implicit none
 ! public::Initialize ! This is called Directly by the actors code
 ! The above is here just in case I look here again
-public::SetupParam
+! public::SetupParam ! This is now called directly by the actors code as setupHRUParam
 public::Restart
 public::Forcing
 public::RunPhysics
@@ -17,94 +17,7 @@ public::Write_Param_C
 
 contains
 
-! **********************************************************************************************************
-! public subroutine SetupParam: initializes parameter data structures (e.g. vegetation and soil parameters).
-! **********************************************************************************************************
-subroutine SetupParam(&
-  indxGRU,              & ! Index of the parent GRU of the HRU
-  indxHRU,              & ! ID to get the correct HRU data 
-  ! primary data structures (scalars)
-  handle_attrStruct,    & ! local attributes for each HRU
-  handle_typeStruct,    & ! local classification of soil veg etc. for each HRU
-  handle_idStruct,      & ! local classification of soil veg etc. for each HRU
-  ! primary data structures (variable length vectors)
-  handle_mparStruct,    & ! model parameters
-  handle_bparStruct,    & ! basin-average parameters
-  handle_bvarStruct,    & ! basin-average variables
-  handle_dparStruct,    & ! default model parameters
-  ! local HRU data
-  handle_startTime,     & ! start time for the model simulation
-  handle_oldTime,       & ! time for the previous model time step
-  ! miscellaneous variables
-  upArea,               & ! area upslope of each HRU,
-  err)  bind(C,name='SetupParam')
 
-  ! USE SummaActors_setup,only:SummaActors_paramSetup           
-
-  implicit none
-  ! calling variables
-  integer(c_int),intent(in)           :: indxGRU              ! Index of the parent GRU of the HRU
-  integer(c_int),intent(in)           :: indxHRU              ! ID to locate correct HRU from netcdf file  
-  type(c_ptr), intent(in), value      :: handle_attrStruct    ! local attributes for each HRU
-  type(c_ptr), intent(in), value      :: handle_typeStruct    ! local classification of soil veg etc. for each HRU
-  type(c_ptr), intent(in), value      :: handle_idStruct      !  
-  type(c_ptr), intent(in), value      :: handle_mparStruct    ! model parameters
-  type(c_ptr), intent(in), value      :: handle_bparStruct    ! basin-average parameters
-  type(c_ptr), intent(in), value      :: handle_bvarStruct    ! basin-average variables
-  type(c_ptr), intent(in), value      :: handle_dparStruct    ! default model parameters
-  type(c_ptr), intent(in), value      :: handle_startTime     ! start time for the model simulation
-  type(c_ptr), intent(in), value      :: handle_oldTime       ! time for the previous model time step
-  real(c_double),intent(inout)        :: upArea
-  integer(c_int),intent(inout)        :: err
-  !---------------------------------------------------------------------------------------------------  
-  ! local variables
-  type(var_d),pointer                 :: attrStruct           ! local attributes for each HRU
-  type(var_i),pointer                 :: typeStruct           ! local classification of soil veg etc. for each HRU
-  type(var_i8),pointer                :: idStruct             !
-  type(var_dlength),pointer           :: mparStruct           ! model parameters
-  type(var_d),pointer                 :: bparStruct           ! basin-average parameters
-  type(var_dlength),pointer           :: bvarStruct           ! basin-average variables
-  type(var_d),pointer                 :: dparStruct           ! default model parameters
-  type(var_i),pointer                 :: startTime            ! start time for the model simulation
-  type(var_i),pointer                 :: oldTime              ! time for the previous model time step
-  character(len=256)                  :: message
-
-
-  ! getting data
-  call c_f_pointer(handle_attrStruct, attrStruct)
-  call c_f_pointer(handle_typeStruct, typeStruct)
-  call c_f_pointer(handle_idStruct, idStruct)
-  call c_f_pointer(handle_mparStruct, mparStruct)
-  call c_f_pointer(handle_bparStruct, bparStruct)
-  call c_f_pointer(handle_bvarStruct, bvarStruct)
-  call c_f_pointer(handle_dparStruct, dparStruct)
-  call c_f_pointer(handle_startTime, startTime)
-  call c_f_pointer(handle_oldTime, oldTime)
-
-  ! call SummaActors_paramSetup(&
-  !   indxHRU,        &   ! ID of hru to obtain from netcdf file
-  !   indxGRU,        &   ! Index of the parent GRU of the HRU
-  !   ! primary data structures (scalars)
-  !   attrStruct,     &   ! local attributes for each HRU
-  !   typeStruct,     &   ! local classification of soil veg etc. for each HRU
-  !   idStruct,       &   ! local classification of soil veg etc. for each HRU
-  !   ! primary data structures (variable length vectors)
-  !   mparStruct,     &   ! model parameters
-  !   bparStruct,     &   ! basin-average parameters
-  !   bvarStruct,     &   ! basin-average variables
-  !   dparStruct,     &   ! default model parameters
-  !   ! local HRU data
-  !   startTime,      &   ! start time for the model simulation
-  !   oldTime,        &   ! time for the previous model time step
-  !   ! miscellaneous variables
-  !   upArea,         &   ! area upslope of each HRU,
-  !   err, message)
-  ! if(err/=0)then
-  !   message=trim(message)
-  !   print*, message
-  ! endif
-  
-end subroutine SetupParam
 
 ! **********************************************************************************************************
 ! public subroutine Restart: 
