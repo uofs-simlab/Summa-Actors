@@ -247,7 +247,7 @@ subroutine writeData(ncid,outputTimestep,outputTimestepUpdate,maxLayers,nSteps, 
         if(meta(iVar)%varType==iLookVarType%scalarv) then
           call writeScalar(ncid, outputTimeStep, outputTimeStepUpdate, nSteps, minGRU, maxGRU, numGRU, iFreq, iVar, meta, stat, map, err, message)
         else ! non-scalar variables: regular data structures
-          call writeVector(ncid, outputTimeStep, outputTimeStepUpdate, maxLayers, nSteps, minGRU, maxGRU, numGRU, iFreq, iVar, meta, dat, &
+          call writeVector(ncid, outputTimeStep, maxLayers, nSteps, minGRU, maxGRU, numGRU, iFreq, iVar, meta, dat, &
             indx, err, message)
         end if ! not scalarv
 
@@ -317,7 +317,7 @@ subroutine writeScalar(ncid, outputTimestep, outputTimestepUpdate, nSteps, minGR
 
 end subroutine
 
-subroutine writeVector(ncid, outputTimestep, outputTimestepUpdate, maxLayers, nSteps, minGRU, maxGRU, &
+subroutine writeVector(ncid, outputTimestep, maxLayers, nSteps, minGRU, maxGRU, &
   numGRU, iFreq, iVar, meta, dat, indx, err, message)
   USE data_types,only:var_info                       ! metadata type
   USE var_lookup,only:iLookIndex                     ! index into index structure
@@ -326,7 +326,6 @@ subroutine writeVector(ncid, outputTimestep, outputTimestepUpdate, maxLayers, nS
   implicit none
   type(var_i)   ,intent(in)             :: ncid                    ! fileid
   integer(i4b)  ,intent(inout)          :: outputTimestep(:)       ! output time step
-  integer(i4b)  ,intent(inout)          :: outputTimestepUpdate(:) ! number of HRUs in the run domain
   integer(i4b)  ,intent(in)             :: maxLayers         ! maximum number of layers
   integer(i4b)  ,intent(in)             :: nSteps                  ! number of timeSteps
   integer(i4b)  ,intent(in)             :: minGRU                  ! minGRU index to write
@@ -434,12 +433,6 @@ subroutine writeVector(ncid, outputTimestep, outputTimestepUpdate, maxLayers, nS
     end select ! data type
     stepCounter = stepCounter + 1
   end do ! iStep
-  ! if (outputTimeStepUpdate(iFreq) /= stepCounter ) then
-  !   print*, "ERROR Missmatch in Steps: for non scalar case"
-  !   print*, "   outputTimeStepUpdate(iFreq) = ", outputTimeStepUpdate(iFreq)
-  !   print*, "   stepCounter = ", stepCounter
-  !   return
-  ! endif
 end subroutine
 
 ! **************************************************************************************

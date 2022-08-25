@@ -48,10 +48,10 @@ subroutine read_dimension(numGRUs,numHRUs,startGRU,err) bind(C, name="readDimens
 
   ! Dummy Variables
   
-  integer(i4b),intent(in)              :: numGRUs            ! number of GRUs for the run domain
-  integer(i4b),intent(out)             :: numHRUs            ! number of HRUs for the run domain (value filled in this subroutine)
-  integer(i4b),intent(in)              :: startGRU           ! Index of the starting GRU
-  integer(i4b),intent(out)             :: err                ! error code
+  integer(c_int),intent(in)              :: numGRUs            ! number of GRUs for the run domain
+  integer(c_int),intent(out)             :: numHRUs            ! number of HRUs for the run domain (value filled in this subroutine)
+  integer(c_int),intent(in)              :: startGRU           ! Index of the starting GRU
+  integer(c_int),intent(out)             :: err                ! error code
   
   ! Local Variables
   character(len=256)                   :: attrFile           ! name of attributed file
@@ -159,7 +159,7 @@ subroutine read_dimension(numGRUs,numHRUs,startGRU,err) bind(C, name="readDimens
 
 end subroutine read_dimension
 
-subroutine read_attribute(indxHRU, indxGRU, attrFile, attrStruct, typeStruct, idStruct, err, message)
+subroutine read_attribute(indxHRU, indxGRU, attrStruct, typeStruct, idStruct, err, message)
   USE netcdf
   USE netcdf_util_module,only:nc_file_open                   ! open netcdf file
   USE netcdf_util_module,only:nc_file_close                  ! close netcdf file
@@ -169,7 +169,6 @@ subroutine read_attribute(indxHRU, indxGRU, attrFile, attrStruct, typeStruct, id
   USE data_types,only:var_i                            ! x%var(:)     integer(8)
   USE data_types,only:var_i8                           ! x%var(:)     (dp)
   ! provide access to global data
-  USE globalData,only:gru_struc                              ! gru-hru mapping structure
   USE globalData,only:attr_meta,type_meta,id_meta            ! metadata structures
   USE get_ixname_module,only:get_ixAttr,get_ixType,get_ixId  ! access function to find index of elements in structure
   ! get the settings from the output stucture so we do not have to go to file
@@ -179,7 +178,6 @@ subroutine read_attribute(indxHRU, indxGRU, attrFile, attrStruct, typeStruct, id
   integer(i4b),intent(in)              :: indxHRU            ! id of the HRU
   integer(i4b),intent(in)              :: indxGRU            ! id of the parent GRU    
   ! io vars
-  character(*)                         :: attrFile           ! input filename
   type(var_d),intent(inout)            :: attrStruct         ! local attributes for each HRU
   type(var_i),intent(inout)            :: typeStruct         ! local classification of soil veg etc. for each HRU
   type(var_i8),intent(inout)           :: idStruct           ! 
@@ -187,10 +185,7 @@ subroutine read_attribute(indxHRU, indxGRU, attrFile, attrStruct, typeStruct, id
   character(*),intent(out)             :: message            ! error message
 
   ! define local variables
-  character(len=256)                   :: cmessage           ! error message for downwind routine
   integer(i4b)                         :: iVar               ! loop through varibles in the netcdf file
-  integer(i4b)                         :: varType            ! type of variable (categorica, numerical, idrelated)
-  integer(i4b)                         :: varIndx            ! index of variable within its data structure
 
   ! check structures
   integer(i4b)                         :: iCheck             ! index of an attribute name
@@ -199,15 +194,9 @@ subroutine read_attribute(indxHRU, indxGRU, attrFile, attrStruct, typeStruct, id
   logical(lgt),allocatable             :: checkAttr(:)       ! vector to check if we have all desired local attributes
 
   ! netcdf variables
-  integer(i4b)                         :: ncID               ! netcdf file id
-  character(LEN=nf90_max_name)         :: varName            ! character array of netcdf variable name
-  integer(i4b)                         :: nVar               ! number of variables in netcdf local attribute file
   integer(i4b),parameter               :: categorical=101    ! named variable to denote categorical data
   integer(i4b),parameter               :: numerical=102      ! named variable to denote numerical data
   integer(i4b),parameter               :: idrelated=103      ! named variable to denote ID related data
-  integer(i4b)                         :: categorical_var(1) ! temporary categorical variable from local attributes netcdf file
-  real(dp)                             :: numeric_var(1)     ! temporary numeric variable from local attributes netcdf file
-  integer(8)                           :: idrelated_var(1)   ! temporary ID related variable from local attributes netcdf file
 
   ! define mapping variables
 

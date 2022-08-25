@@ -61,8 +61,8 @@ subroutine read_icond_nlayers(nGRU,err) bind(C, name="readIcondNLayers")
     ! --------------------------------------------------------------------------------------------------------
     ! variable declarations
     ! dummies
-    integer(i4b)        ,intent(in)     :: nGRU           ! total # of GRUs in run domain
-    integer(i4b)        ,intent(out)    :: err            ! error code
+    integer(c_int)        ,intent(in)     :: nGRU           ! total # of GRUs in run domain
+    integer(c_int)        ,intent(out)    :: err            ! error code
 
     ! locals
     integer(i4b)                        :: ncID                       ! netcdf file id

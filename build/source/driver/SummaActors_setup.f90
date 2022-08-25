@@ -114,9 +114,6 @@ contains
  ! timing variables
  USE globalData,only:startSetup,endSetup                     ! date/time for the start and end of the parameter setup
  USE globalData,only:elapsedSetup                            ! elapsed time for the parameter setup
- ! file paths
- USE summaActors_FileManager,only:SETTINGS_PATH                     ! define path to settings files (e.g., parameters, soil and veg. tables)
- USE summaActors_FileManager,only:LOCAL_ATTRIBUTES                  ! name of model initial attributes file
  ! Noah-MP parameters
  USE NOAHMP_VEG_PARAMETERS,only:SAIM,LAIM                    ! 2-d tables for stem area index and leaf area index (vegType,month)
  USE NOAHMP_VEG_PARAMETERS,only:HVT,HVB                      ! height at the top and bottom of vegetation (vegType)
@@ -155,7 +152,6 @@ contains
  type(var_i),pointer                      :: oldTime              ! time for the previous model time step
  character(len=256)                       :: message            ! error message
  character(len=256)                       :: cmessage           ! error message of downwind routine
- character(len=256)                       :: attrFile           ! attributes file name
  integer(i4b)                             :: iVar               ! looping variables
  ! ---------------------------------------------------------------------------------------
  ! initialize error control
@@ -174,8 +170,6 @@ contains
  call c_f_pointer(handle_startTime, startTime)
  call c_f_pointer(handle_oldTime, oldTime)
 
-
- 
  ! ffile_info and mDecisions moved to their own seperate subroutine call
  
  !numTimeSteps = numtim
@@ -195,11 +189,9 @@ contains
  ! *** read local attributes for each HRU
  ! *****************************************************************************
 
- ! define the attributes file
- attrFile = trim(SETTINGS_PATH)//trim(LOCAL_ATTRIBUTES)
 
  ! read local attributes for each HRU
- call read_attribute(indxHRU,indxGRU,trim(attrFile),attrStruct,typeStruct,idStruct,err,cmessage)
+ call read_attribute(indxHRU,indxGRU,attrStruct,typeStruct,idStruct,err,cmessage)
  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
 
  ! *****************************************************************************
