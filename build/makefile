@@ -144,7 +144,8 @@ SUMMA_FILEACCESS_INTERFACE = \
 		initOutputStruc.f90 \
 		deallocateOutputStruc.f90 \
 		cppwrap_fileAccess.f90 \
-		read_attribute_all_hru.f90
+		read_attribute_all_hru.f90 \
+		read_param_all_hru.f90
 
 FILEACCESS_INTERFACE = $(patsubst %, $(FILE_ACCESS_DIR)/%, $(SUMMA_FILEACCESS_INTERFACE))
 

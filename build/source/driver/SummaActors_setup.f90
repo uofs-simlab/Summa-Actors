@@ -94,7 +94,7 @@ contains
  USE read_attribute_module,only:read_attribute               ! module to read local attributes
  USE paramCheck_module,only:paramCheck                       ! module to check consistency of model parameters
  USE pOverwrite_module,only:pOverwrite                       ! module to overwrite default parameter values with info from the Noah tables
- USE read_param4chm_module,only:read_param4chm                       ! module to read model parameter sets
+ USE read_param4chm_module,only:read_param                       ! module to read model parameter sets
  USE ConvE2Temp_module,only:E2T_lookup                       ! module to calculate a look-up table for the temperature-enthalpy conversion
  USE var_derive_module,only:fracFuture                       ! module to calculate the fraction of runoff in future time steps (time delay histogram)
  USE module_sf_noahmplsm,only:read_mp_veg_parameters         ! module to read NOAH vegetation tables
@@ -188,20 +188,11 @@ contains
  ! *****************************************************************************
  ! *** read local attributes for each HRU
  ! *****************************************************************************
-
-
- ! read local attributes for each HRU
  call read_attribute(indxHRU,indxGRU,attrStruct,typeStruct,idStruct,err,cmessage)
  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
 
- ! *****************************************************************************
- ! *** read Noah vegetation and soil tables
- ! *****************************************************************************
-
  ! define monthly fraction of green vegetation
  greenVegFrac_monthly = (/0.01_dp, 0.02_dp, 0.03_dp, 0.07_dp, 0.50_dp, 0.90_dp, 0.95_dp, 0.96_dp, 0.65_dp, 0.24_dp, 0.11_dp, 0.02_dp/)
-
-
 
  ! define urban vegetation category
  select case(trim(model_decisions(iLookDECISIONS%vegeParTbl)%cDecision))
@@ -236,7 +227,7 @@ contains
  ! *****************************************************************************
  ! *** read trial model parameter values for each HRU, and populate initial data structures
  ! *****************************************************************************
- call read_param4chm(indxHRU,indxGRU,iRunMode,startGRU, &
+ call read_param(indxHRU,indxGRU,iRunMode,startGRU, &
                      mparStruct,bparStruct,err,cmessage)
  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
  ! *****************************************************************************
