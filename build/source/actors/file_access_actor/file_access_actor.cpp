@@ -240,6 +240,16 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
     Init_OutputStruct(self->state.handle_forcing_file_info, &self->state.outputStrucSize, 
         &self->state.numGRU, &self->state.err);
 
+        // Read In all of the attribres for the number of GRUs in the run Domian
+    readAttributeFileAccessActor(&self->state.numGRU, &err);
+    if (err != 0) {
+        aout(self) << "ERROR: FILE_ACCESS_ACTOR readAttributeFilAccessActor() \n";
+        std::string function = "readAttributeFileAccessActor";
+        self->send(self->state.parent, file_access_actor_err_v, function);
+        self->quit();
+        return;
+    }
+
     // Initalize the output manager  
     self->state.output_manager = new OutputManager(self->state.num_vectors_in_output_manager, self->state.numGRU);
     

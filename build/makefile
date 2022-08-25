@@ -143,7 +143,8 @@ INTERFACE = $(patsubst %, $(ACTORS_DIR)/global/%, $(SUMMA_INTERFACE))
 SUMMA_FILEACCESS_INTERFACE = \
 		initOutputStruc.f90 \
 		deallocateOutputStruc.f90 \
-		cppwrap_fileAccess.f90
+		cppwrap_fileAccess.f90 \
+		read_attribute_all_hru.f90
 
 FILEACCESS_INTERFACE = $(patsubst %, $(FILE_ACCESS_DIR)/%, $(SUMMA_FILEACCESS_INTERFACE))
 
@@ -158,7 +159,7 @@ SUMMA_HRU_INTERFACE = \
 HRU_INTERFACE = $(patsubst %, $(HRU_ACTOR_DIR)/%, $(SUMMA_HRU_INTERFACE))
 
 SUMMA_GRU_INTERFACE = \
-		gru_actor.f90
+		gru_actor.f90 \
 
 GRU_INTERFACE = $(patsubst %, $(GRU_ACTOR_DIR)/%, $(SUMMA_GRU_INTERFACE))
 		

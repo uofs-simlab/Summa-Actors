@@ -427,7 +427,8 @@ type(gru_hru_time_int),allocatable                :: timeStruct(:)              
 type(gru_hru_time_double),allocatable             :: forcStruct(:)                 ! x%gru(:)%hru(:)%var(:)%tim(:)     -- model forcing data
 type(gru_hru_double),allocatable                  :: attrStruct(:)                 ! x%gru(:)%hru(:)%var(:)            -- local attributes for each HRU, DOES NOT CHANGE OVER TIMESTEPS
 type(gru_hru_int),allocatable                     :: typeStruct(:)                 ! x%gru(:)%hru(:)%var(:)%tim(:)     -- local classification of soil veg etc. for each HRU, DOES NOT CHANGE OVER TIMESTEPS
-type(gru_hru_time_int8),allocatable               :: idStruct(:)                   ! x%gru(:)%hru(:)%var(:)%tim(:)     --
+! type(gru_hru_time_int8),allocatable               :: idStruct(:)                   ! x%gru(:)%hru(:)%var(:)%tim(:)     --
+type(gru_hru_int8),allocatable                    :: idStruct(:)                   ! x%gru(:)%hru(:)%var(:)
 
 ! define the primary data structures (variable length vectors)
 type(gru_hru_time_intVec),allocatable             :: indxStruct(:)                 ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model indices

@@ -146,7 +146,7 @@ contains
  integer(i4b)                             :: iVar               ! looping variables
  ! ---------------------------------------------------------------------------------------
  ! initialize error control
- err=0; message='summa4chm_paramSetup/'
+ err=0; message='hru_paramSetup/'
  ! initialize the start of the initialization
  call date_and_time(values=startSetup)
  

@@ -114,22 +114,38 @@ subroutine summa_defineGlobalData(start_gru_index, err) bind(C, name="defineGlob
 
   ! populate metadata for all model variables
   call popMetadat(err,cmessage)
-  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+  if(err/=0)then
+    message=trim(message)//trim(cmessage)
+    print*, message
+    return 
+  endif
 
   ! define mapping between fluxes and states
   call flxMapping(err,cmessage)
-  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+  if(err/=0)then
+    message=trim(message)//trim(cmessage)
+    print*, message
+    return 
+  endif
 
   ! check data structures
   call checkStruc(err,cmessage)
-  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+  if(err/=0)then 
+    message=trim(message)//trim(cmessage) 
+    print*, message
+    return 
+  endif
 
   ! define the mask to identify the subset of variables in the "child" data structure (just scalar variables)
   flux_mask = (flux_meta(:)%vartype==iLookVarType%scalarv)
 
   ! create the averageFlux metadata structure
   call childStruc(flux_meta, flux_mask, averageFlux_meta, childFLUX_MEAN, err, cmessage)
-  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+  if(err/=0)then 
+    message=trim(message)//trim(cmessage)
+    print*, message
+    return
+  endif
 
   ! child metadata structures - so that we do not carry full stats structures around everywhere
   ! only carry stats for variables with output frequency > model time step
@@ -151,7 +167,11 @@ subroutine summa_defineGlobalData(start_gru_index, err) bind(C, name="defineGlob
       case('bvar'); call childStruc(bvar_meta,statBvar_mask,statBvar_meta,bvarChild_map,err,cmessage)
     end select
     ! check errors
-    if(err/=0)then; message=trim(message)//trim(cmessage)//'[statistics for =  '//trim(structInfo(iStruct)%structName)//']'; return; endif
+    if(err/=0)then
+      message=trim(message)//trim(cmessage)//'[statistics for =  '//trim(structInfo(iStruct)%structName)//']' 
+      print*, message 
+      return 
+    endif
   end do ! iStruct
 
   ! set all stats metadata to correct var types
