@@ -18,8 +18,18 @@ extern "C" {
         void* startTime, void* finshTime, void* refTime, void* oldTime, int* err);
 
   // SetupParam for HRU
-  void SetupParam( 
-      int* indxGRU, int* indxHRU,
+  // void SetupParam( 
+  //     int* indxGRU, int* indxHRU,
+  //     // primary data structures (scalars)
+  //     void* attrStruct, void* typeStruct, void* idStruct,
+  //     // primary data structures (variable length vectors)
+  //     void* mparStruct, void* bparStruct, void* bvarStruct, void* dparStruct,
+  //     // local HRU data
+  //     void* startTime, void* oldTime,
+  //     // miscellaneous
+  //     double* upArea, int* err);
+    
+  void setupHRUParam( int* indxGRU, int* indxHRU,
       // primary data structures (scalars)
       void* attrStruct, void* typeStruct, void* idStruct,
       // primary data structures (variable length vectors)

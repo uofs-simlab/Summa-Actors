@@ -188,7 +188,7 @@ void Initialize_HRU(stateful_actor<hru_state>* self) {
         return;
     }
 
-    SetupParam(&self->state.indxGRU,
+    setupHRUParam(&self->state.indxGRU,
             &self->state.indxHRU, 
             self->state.handle_attrStruct, 
             self->state.handle_typeStruct, 

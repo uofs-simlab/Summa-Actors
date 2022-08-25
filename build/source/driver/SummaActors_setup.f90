@@ -19,6 +19,8 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 module SummaActors_setup
+USE,intrinsic :: iso_c_binding
+
 ! initializes parameter data structures (e.g. vegetation and soil parameters).
 
 USE data_types,only:&
@@ -58,29 +60,29 @@ USE mDecisions_module,only:&
 ! safety: set private unless specified otherwise
 implicit none
 private
-public::SummaActors_paramSetup
+public::setupHRUParam
 public::SOIL_VEG_GEN_PARM
 contains
 
  ! initializes parameter data structures (e.g. vegetation and soil parameters).
- subroutine SummaActors_paramSetup(&
+ subroutine setupHRUParam(&
                   indxHRU,                 & ! ID of hru
                   indxGRU,                 & ! Index of the parent GRU of the HRU 
                   ! primary data structures (scalars)
-                  attrStruct,              & ! local attributes for each HRU
-                  typeStruct,              & ! local classification of soil veg etc. for each HRU
-                  idStruct,                & ! local classification of soil veg etc. for each HRU
+                  handle_attrStruct,              & ! local attributes for each HRU
+                  handle_typeStruct,              & ! local classification of soil veg etc. for each HRU
+                  handle_idStruct,                & ! local classification of soil veg etc. for each HRU
                   ! primary data structures (variable length vectors)
-                  mparStruct,              & ! model parameters
-                  bparStruct,              & ! basin-average parameters
-                  bvarStruct,              & ! basin-average variables
-                  dparStruct,              & ! default model parameters
+                  handle_mparStruct,              & ! model parameters
+                  handle_bparStruct,              & ! basin-average parameters
+                  handle_bvarStruct,              & ! basin-average variables
+                  handle_dparStruct,              & ! default model parameters
                    ! local HRU data
-                  startTime,               & ! start time for the model simulation
-                  oldTime,                 & ! time for the previous model time step
+                  handle_startTime,               & ! start time for the model simulation
+                  handle_oldTime,                 & ! time for the previous model time step
                   ! miscellaneous variables
                   upArea,                  & ! area upslope of each HRU,
-                  err, message)
+                  err) bind(C, name='setupHRUParam')
  ! ---------------------------------------------------------------------------------------
  ! * desired modules
  ! ---------------------------------------------------------------------------------------
@@ -126,29 +128,53 @@ contains
  ! ---------------------------------------------------------------------------------------
  implicit none
  ! dummy variables
- integer(i4b),intent(in)                  :: indxHRU            ! ID of HRU
- integer(i4b),intent(in)                  :: indxGRU            ! Index of the parent GRU of the HRU 
- type(var_d),intent(inout)                :: attrStruct         ! local attributes for each HRU
- type(var_i),intent(inout)                :: typeStruct         ! local classification of soil veg etc. for each HRU
- type(var_i8),intent(inout)               :: idStruct           ! 
- type(var_dlength),intent(inout)          :: mparStruct         ! model parameters
- type(var_d),intent(inout)                :: bparStruct         ! basin-average parameters
- type(var_dlength),intent(inout)          :: bvarStruct         ! basin-average variables
- type(var_d),intent(inout)                :: dparStruct         ! default model parameter
- type(var_i),intent(inout)                :: startTime          ! start time for the model simulation
- type(var_i),intent(inout)                :: oldTime            ! time for the previous model time step
- real(dp),intent(inout)                   :: upArea             ! area upslope of each HRU
- integer(i4b),intent(out)                 :: err                ! error code
- character(*),intent(out)                 :: message            ! error message
+  ! calling variables
+ integer(c_int),intent(in)                :: indxGRU              ! Index of the parent GRU of the HRU
+ integer(c_int),intent(in)                :: indxHRU              ! ID to locate correct HRU from netcdf file  
+ type(c_ptr), intent(in), value           :: handle_attrStruct    ! local attributes for each HRU
+ type(c_ptr), intent(in), value           :: handle_typeStruct    ! local classification of soil veg etc. for each HRU
+ type(c_ptr), intent(in), value           :: handle_idStruct      !  
+ type(c_ptr), intent(in), value           :: handle_mparStruct    ! model parameters
+ type(c_ptr), intent(in), value           :: handle_bparStruct    ! basin-average parameters
+ type(c_ptr), intent(in), value           :: handle_bvarStruct    ! basin-average variables
+ type(c_ptr), intent(in), value           :: handle_dparStruct    ! default model parameters
+ type(c_ptr), intent(in), value           :: handle_startTime     ! start time for the model simulation
+ type(c_ptr), intent(in), value           :: handle_oldTime       ! time for the previous model time step
+ real(c_double),intent(inout)             :: upArea
+ integer(c_int),intent(inout)             :: err
+  
  ! local variables
+ type(var_d),pointer                      :: attrStruct           ! local attributes for each HRU
+ type(var_i),pointer                      :: typeStruct           ! local classification of soil veg etc. for each HRU
+ type(var_i8),pointer                     :: idStruct             !
+ type(var_dlength),pointer                :: mparStruct           ! model parameters
+ type(var_d),pointer                      :: bparStruct           ! basin-average parameters
+ type(var_dlength),pointer                :: bvarStruct           ! basin-average variables
+ type(var_d),pointer                      :: dparStruct           ! default model parameters
+ type(var_i),pointer                      :: startTime            ! start time for the model simulation
+ type(var_i),pointer                      :: oldTime              ! time for the previous model time step
+ character(len=256)                       :: message            ! error message
  character(len=256)                       :: cmessage           ! error message of downwind routine
  character(len=256)                       :: attrFile           ! attributes file name
  integer(i4b)                             :: iVar               ! looping variables
  ! ---------------------------------------------------------------------------------------
  ! initialize error control
- err=0; message='hru_paramSetup/'
+ err=0; message='setupHRUParam/'
  ! initialize the start of the initialization
  call date_and_time(values=startSetup)
+
+ ! convert to fortran pointer from C++ pointer
+ call c_f_pointer(handle_attrStruct, attrStruct)
+ call c_f_pointer(handle_typeStruct, typeStruct)
+ call c_f_pointer(handle_idStruct, idStruct)
+ call c_f_pointer(handle_mparStruct, mparStruct)
+ call c_f_pointer(handle_bparStruct, bparStruct)
+ call c_f_pointer(handle_bvarStruct, bvarStruct)
+ call c_f_pointer(handle_dparStruct, dparStruct)
+ call c_f_pointer(handle_startTime, startTime)
+ call c_f_pointer(handle_oldTime, oldTime)
+
+
  
  ! ffile_info and mDecisions moved to their own seperate subroutine call
  
@@ -268,7 +294,7 @@ contains
  ! aggregate the elapsed time for the initialization
  elapsedSetup = elapsedSec(startSetup, endSetup)
 
- end subroutine SummaActors_paramSetup
+ end subroutine setupHRUParam
 
 
  ! =================================================================================================

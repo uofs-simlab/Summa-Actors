@@ -39,7 +39,7 @@ subroutine SetupParam(&
   upArea,               & ! area upslope of each HRU,
   err)  bind(C,name='SetupParam')
 
-  USE SummaActors_setup,only:SummaActors_paramSetup           
+  ! USE SummaActors_setup,only:SummaActors_paramSetup           
 
   implicit none
   ! calling variables
@@ -81,28 +81,28 @@ subroutine SetupParam(&
   call c_f_pointer(handle_startTime, startTime)
   call c_f_pointer(handle_oldTime, oldTime)
 
-  call SummaActors_paramSetup(&
-    indxHRU,        &   ! ID of hru to obtain from netcdf file
-    indxGRU,        &   ! Index of the parent GRU of the HRU
-    ! primary data structures (scalars)
-    attrStruct,     &   ! local attributes for each HRU
-    typeStruct,     &   ! local classification of soil veg etc. for each HRU
-    idStruct,       &   ! local classification of soil veg etc. for each HRU
-    ! primary data structures (variable length vectors)
-    mparStruct,     &   ! model parameters
-    bparStruct,     &   ! basin-average parameters
-    bvarStruct,     &   ! basin-average variables
-    dparStruct,     &   ! default model parameters
-    ! local HRU data
-    startTime,      &   ! start time for the model simulation
-    oldTime,        &   ! time for the previous model time step
-    ! miscellaneous variables
-    upArea,         &   ! area upslope of each HRU,
-    err, message)
-  if(err/=0)then
-    message=trim(message)
-    print*, message
-  endif
+  ! call SummaActors_paramSetup(&
+  !   indxHRU,        &   ! ID of hru to obtain from netcdf file
+  !   indxGRU,        &   ! Index of the parent GRU of the HRU
+  !   ! primary data structures (scalars)
+  !   attrStruct,     &   ! local attributes for each HRU
+  !   typeStruct,     &   ! local classification of soil veg etc. for each HRU
+  !   idStruct,       &   ! local classification of soil veg etc. for each HRU
+  !   ! primary data structures (variable length vectors)
+  !   mparStruct,     &   ! model parameters
+  !   bparStruct,     &   ! basin-average parameters
+  !   bvarStruct,     &   ! basin-average variables
+  !   dparStruct,     &   ! default model parameters
+  !   ! local HRU data
+  !   startTime,      &   ! start time for the model simulation
+  !   oldTime,        &   ! time for the previous model time step
+  !   ! miscellaneous variables
+  !   upArea,         &   ! area upslope of each HRU,
+  !   err, message)
+  ! if(err/=0)then
+  !   message=trim(message)
+  !   print*, message
+  ! endif
   
 end subroutine SetupParam
 
