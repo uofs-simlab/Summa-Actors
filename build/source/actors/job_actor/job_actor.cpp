@@ -90,9 +90,6 @@ behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru,
 
     initCsvOutputFile(self);
 
-
-    
-
     // Spawn the file_access_actor. This will return the number of forcing files we are working with
     self->state.file_access_actor = self->spawn(file_access_actor, self->state.start_gru, self->state.num_gru, 
         self->state.output_struct_size, self->state.config_path, self);
@@ -112,9 +109,7 @@ behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru,
             }
             // aout(self) << "Done init\n";
             self->state.gru_init++;
-            if (self->state.gru_init < self->state.num_gru) {
-                self->send(self, init_hru_v);
-            } else {
+            if (self->state.gru_init >= self->state.num_gru) {
                 aout(self) << "All GRUs are initalized\n";
                 self->state.gru_init = 0; // reset counter in case we have failures
                 runGRUs(self);
@@ -258,13 +253,17 @@ void initCsvOutputFile(stateful_actor<job_state>* self) {
 }
 
 void initalizeGRU(stateful_actor<job_state>* self) {
-    int start_gru = self->state.gru_list.size() + self->state.start_gru;
-    int index_gru = self->state.gru_list.size() + 1; // Fortran reference starts at 1
-    auto gru = self->spawn(hru_actor, start_gru, index_gru, 
-        self->state.config_path, self->state.file_access_actor, 
-        self->state.output_struct_size, self);
-    self->state.gru_list.push_back(new GRUinfo(start_gru, index_gru, gru, 
-        self->state.dt_init_start_factor, self->state.max_run_attempts));
+
+    for(int i = 0; i < self->state.num_gru; i++) {
+        int start_gru = self->state.gru_list.size() + self->state.start_gru;
+        int index_gru = self->state.gru_list.size() + 1; // Fortran reference starts at 1
+        auto gru = self->spawn(hru_actor, start_gru, index_gru, 
+            self->state.config_path, self->state.file_access_actor, 
+            self->state.output_struct_size, self);
+        self->state.gru_list.push_back(new GRUinfo(start_gru, index_gru, gru, 
+            self->state.dt_init_start_factor, self->state.max_run_attempts));
+    }
+    
 }
 
 void runGRUs(stateful_actor<job_state>* self) {

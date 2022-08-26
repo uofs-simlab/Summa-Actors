@@ -214,29 +214,6 @@ subroutine setupHRUParam(&
          return
    end select
 
-   ! set default model parameters
-   ! ! set parmameters to their default value
-   ! dparStruct%var(:) = localParFallback(:)%default_val         ! x%var(:)
-   ! ! overwrite default model parameters with information from the Noah-MP tables
-   ! call pOverwrite(typeStruct%var(iLookTYPE%vegTypeIndex),  &  ! vegetation category
-   !               typeStruct%var(iLookTYPE%soilTypeIndex), &  ! soil category
-   !               dparStruct%var,                          &  ! default model parameters
-   !               err,cmessage)                                                   ! error control
-   ! if(err/=0)then
-   !    message=trim(message)//trim(cmessage)
-   !    print*, message
-   !    return
-   ! endif
- 
-
-   ! ! copy over to the parameter structure
-   ! ! NOTE: constant for the dat(:) dimension (normally depth)
-   ! do ivar=1,size(localParFallback)
-   !    mparStruct%var(ivar)%dat(:) = dparStruct%var(ivar)
-   ! end do  ! looping through variables
-
-   ! set default for basin-average parameters
-   ! bparStruct%var(:) = basinParFallback(:)%default_val ! moved to read_param
  
    ! *****************************************************************************
    ! *** read trial model parameter values for each HRU, and populate initial data structures
