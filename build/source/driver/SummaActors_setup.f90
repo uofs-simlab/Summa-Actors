@@ -64,8 +64,8 @@ public::setupHRUParam
 public::SOIL_VEG_GEN_PARM
 contains
 
- ! initializes parameter data structures (e.g. vegetation and soil parameters).
- subroutine setupHRUParam(&
+! initializes parameter data structures (e.g. vegetation and soil parameters).
+subroutine setupHRUParam(&
                   indxHRU,                 & ! ID of hru
                   indxGRU,                 & ! Index of the parent GRU of the HRU 
                   ! primary data structures (scalars)
@@ -83,201 +83,229 @@ contains
                   ! miscellaneous variables
                   upArea,                  & ! area upslope of each HRU,
                   err) bind(C, name='setupHRUParam')
- ! ---------------------------------------------------------------------------------------
- ! * desired modules
- ! ---------------------------------------------------------------------------------------
- USE nrtype                                                  ! variable types, etc.
- ! subroutines and functions
- use time_utils_module,only:elapsedSec                       ! calculate the elapsed time
- USE mDecisions_module,only:mDecisions                       ! module to read model decisions
- USE ffile_info_module,only:ffile_info                       ! module to read information on forcing datafile
- USE read_attribute_module,only:read_attribute               ! module to read local attributes
- USE paramCheck_module,only:paramCheck                       ! module to check consistency of model parameters
- USE pOverwrite_module,only:pOverwrite                       ! module to overwrite default parameter values with info from the Noah tables
- USE read_param4chm_module,only:read_param                       ! module to read model parameter sets
- USE ConvE2Temp_module,only:E2T_lookup                       ! module to calculate a look-up table for the temperature-enthalpy conversion
- USE var_derive_module,only:fracFuture                       ! module to calculate the fraction of runoff in future time steps (time delay histogram)
- USE module_sf_noahmplsm,only:read_mp_veg_parameters         ! module to read NOAH vegetation tables
- ! global data structures
- USE globalData,only:gru_struc                               ! gru-hru mapping structures
- USE globalData,only:localParFallback                        ! local column default parameters
- USE globalData,only:basinParFallback                        ! basin-average default parameters
- USE globalData,only:model_decisions                         ! model decision structure
- USE globalData,only:greenVegFrac_monthly                    ! fraction of green vegetation in each month (0-1)
- ! USE globalData,only:numtim                                  ! number of time steps in the simulation
- ! run time options
- USE globalData,only:startGRU                                ! index of the starting GRU for parallelization run
- USE globalData,only:iRunMode                                ! define the current running mode
- ! output constraints
- USE globalData,only:maxLayers                               ! maximum number of layers
- USE globalData,only:maxSnowLayers                           ! maximum number of snow layers
- ! timing variables
- USE globalData,only:startSetup,endSetup                     ! date/time for the start and end of the parameter setup
- USE globalData,only:elapsedSetup                            ! elapsed time for the parameter setup
- ! Noah-MP parameters
- USE NOAHMP_VEG_PARAMETERS,only:SAIM,LAIM                    ! 2-d tables for stem area index and leaf area index (vegType,month)
- USE NOAHMP_VEG_PARAMETERS,only:HVT,HVB                      ! height at the top and bottom of vegetation (vegType)
+   ! ---------------------------------------------------------------------------------------
+   ! * desired modules
+   ! ---------------------------------------------------------------------------------------
+   USE nrtype                                                  ! variable types, etc.
+   ! subroutines and functions
+   use time_utils_module,only:elapsedSec                       ! calculate the elapsed time
+   USE mDecisions_module,only:mDecisions                       ! module to read model decisions
+   USE ffile_info_module,only:ffile_info                       ! module to read information on forcing datafile
+   USE read_attribute_module,only:read_attribute               ! module to read local attributes
+   USE paramCheck_module,only:paramCheck                       ! module to check consistency of model parameters
+   USE pOverwrite_module,only:pOverwrite                       ! module to overwrite default parameter values with info from the Noah tables
+   USE read_param4chm_module,only:read_param                       ! module to read model parameter sets
+   USE ConvE2Temp_module,only:E2T_lookup                       ! module to calculate a look-up table for the temperature-enthalpy conversion
+   USE var_derive_module,only:fracFuture                       ! module to calculate the fraction of runoff in future time steps (time delay histogram)
+   USE module_sf_noahmplsm,only:read_mp_veg_parameters         ! module to read NOAH vegetation tables
+   ! global data structures
+   USE globalData,only:gru_struc                               ! gru-hru mapping structures
+   USE globalData,only:localParFallback                        ! local column default parameters
+   USE globalData,only:basinParFallback                        ! basin-average default parameters
+   USE globalData,only:model_decisions                         ! model decision structure
+   USE globalData,only:greenVegFrac_monthly                    ! fraction of green vegetation in each month (0-1)
+   ! USE globalData,only:numtim                                  ! number of time steps in the simulation
+   ! run time options
+   USE globalData,only:startGRU                                ! index of the starting GRU for parallelization run
+   USE globalData,only:iRunMode                                ! define the current running mode
+   ! output constraints
+   USE globalData,only:maxLayers                               ! maximum number of layers
+   USE globalData,only:maxSnowLayers                           ! maximum number of snow layers
+   ! timing variables
+   USE globalData,only:startSetup,endSetup                     ! date/time for the start and end of the parameter setup
+   USE globalData,only:elapsedSetup                            ! elapsed time for the parameter setup
+   ! Noah-MP parameters
+   USE NOAHMP_VEG_PARAMETERS,only:SAIM,LAIM                    ! 2-d tables for stem area index and leaf area index (vegType,month)
+   USE NOAHMP_VEG_PARAMETERS,only:HVT,HVB                      ! height at the top and bottom of vegetation (vegType)
 
- ! USE globalData,only:startTime
+   ! USE globalData,only:startTime
 
- ! ---------------------------------------------------------------------------------------
- ! * variables
- ! ---------------------------------------------------------------------------------------
- implicit none
- ! dummy variables
-  ! calling variables
- integer(c_int),intent(in)                :: indxGRU              ! Index of the parent GRU of the HRU
- integer(c_int),intent(in)                :: indxHRU              ! ID to locate correct HRU from netcdf file  
- type(c_ptr), intent(in), value           :: handle_attrStruct    ! local attributes for each HRU
- type(c_ptr), intent(in), value           :: handle_typeStruct    ! local classification of soil veg etc. for each HRU
- type(c_ptr), intent(in), value           :: handle_idStruct      !  
- type(c_ptr), intent(in), value           :: handle_mparStruct    ! model parameters
- type(c_ptr), intent(in), value           :: handle_bparStruct    ! basin-average parameters
- type(c_ptr), intent(in), value           :: handle_bvarStruct    ! basin-average variables
- type(c_ptr), intent(in), value           :: handle_dparStruct    ! default model parameters
- type(c_ptr), intent(in), value           :: handle_startTime     ! start time for the model simulation
- type(c_ptr), intent(in), value           :: handle_oldTime       ! time for the previous model time step
- real(c_double),intent(inout)             :: upArea
- integer(c_int),intent(inout)             :: err
+   ! ---------------------------------------------------------------------------------------
+   ! * variables
+   ! ---------------------------------------------------------------------------------------
+   implicit none
+   ! dummy variables
+   ! calling variables
+   integer(c_int),intent(in)                :: indxGRU              ! Index of the parent GRU of the HRU
+   integer(c_int),intent(in)                :: indxHRU              ! ID to locate correct HRU from netcdf file  
+   type(c_ptr), intent(in), value           :: handle_attrStruct    ! local attributes for each HRU
+   type(c_ptr), intent(in), value           :: handle_typeStruct    ! local classification of soil veg etc. for each HRU
+   type(c_ptr), intent(in), value           :: handle_idStruct      !  
+   type(c_ptr), intent(in), value           :: handle_mparStruct    ! model parameters
+   type(c_ptr), intent(in), value           :: handle_bparStruct    ! basin-average parameters
+   type(c_ptr), intent(in), value           :: handle_bvarStruct    ! basin-average variables
+   type(c_ptr), intent(in), value           :: handle_dparStruct    ! default model parameters
+   type(c_ptr), intent(in), value           :: handle_startTime     ! start time for the model simulation
+   type(c_ptr), intent(in), value           :: handle_oldTime       ! time for the previous model time step
+   real(c_double),intent(inout)             :: upArea
+   integer(c_int),intent(inout)             :: err
   
- ! local variables
- type(var_d),pointer                      :: attrStruct           ! local attributes for each HRU
- type(var_i),pointer                      :: typeStruct           ! local classification of soil veg etc. for each HRU
- type(var_i8),pointer                     :: idStruct             !
- type(var_dlength),pointer                :: mparStruct           ! model parameters
- type(var_d),pointer                      :: bparStruct           ! basin-average parameters
- type(var_dlength),pointer                :: bvarStruct           ! basin-average variables
- type(var_d),pointer                      :: dparStruct           ! default model parameters
- type(var_i),pointer                      :: startTime            ! start time for the model simulation
- type(var_i),pointer                      :: oldTime              ! time for the previous model time step
- character(len=256)                       :: message            ! error message
- character(len=256)                       :: cmessage           ! error message of downwind routine
- integer(i4b)                             :: iVar               ! looping variables
- ! ---------------------------------------------------------------------------------------
- ! initialize error control
- err=0; message='setupHRUParam/'
- ! initialize the start of the initialization
- call date_and_time(values=startSetup)
+   ! local variables
+   type(var_d),pointer                      :: attrStruct           ! local attributes for each HRU
+   type(var_i),pointer                      :: typeStruct           ! local classification of soil veg etc. for each HRU
+   type(var_i8),pointer                     :: idStruct             !
+   type(var_dlength),pointer                :: mparStruct           ! model parameters
+   type(var_d),pointer                      :: bparStruct           ! basin-average parameters
+   type(var_dlength),pointer                :: bvarStruct           ! basin-average variables
+   type(var_d),pointer                      :: dparStruct           ! default model parameters
+   type(var_i),pointer                      :: startTime            ! start time for the model simulation
+   type(var_i),pointer                      :: oldTime              ! time for the previous model time step
+   character(len=256)                       :: message            ! error message
+   character(len=256)                       :: cmessage           ! error message of downwind routine
+   integer(i4b)                             :: iVar               ! looping variables
+   ! ---------------------------------------------------------------------------------------
+   ! initialize error control
+   err=0; message='setupHRUParam/'
+   ! initialize the start of the initialization
+   call date_and_time(values=startSetup)
 
- ! convert to fortran pointer from C++ pointer
- call c_f_pointer(handle_attrStruct, attrStruct)
- call c_f_pointer(handle_typeStruct, typeStruct)
- call c_f_pointer(handle_idStruct, idStruct)
- call c_f_pointer(handle_mparStruct, mparStruct)
- call c_f_pointer(handle_bparStruct, bparStruct)
- call c_f_pointer(handle_bvarStruct, bvarStruct)
- call c_f_pointer(handle_dparStruct, dparStruct)
- call c_f_pointer(handle_startTime, startTime)
- call c_f_pointer(handle_oldTime, oldTime)
+   ! convert to fortran pointer from C++ pointer
+   call c_f_pointer(handle_attrStruct, attrStruct)
+   call c_f_pointer(handle_typeStruct, typeStruct)
+   call c_f_pointer(handle_idStruct, idStruct)
+   call c_f_pointer(handle_mparStruct, mparStruct)
+   call c_f_pointer(handle_bparStruct, bparStruct)
+   call c_f_pointer(handle_bvarStruct, bvarStruct)
+   call c_f_pointer(handle_dparStruct, dparStruct)
+   call c_f_pointer(handle_startTime, startTime)
+   call c_f_pointer(handle_oldTime, oldTime)
 
- ! ffile_info and mDecisions moved to their own seperate subroutine call
+   ! ffile_info and mDecisions moved to their own seperate subroutine call
+   
+   !numTimeSteps = numtim
+   oldTime%var(:) = startTime%var(:)
+
+   ! get the maximum number of snow layers
+   select case(model_decisions(iLookDECISIONS%snowLayers)%iDecision)
+      case(sameRulesAllLayers);    maxSnowLayers = 100
+      case(rulesDependLayerIndex); maxSnowLayers = 5
+      case default; err=20; 
+         message=trim(message)//'unable to identify option to combine/sub-divide snow layers'
+         print*, message
+         return
+   end select ! (option to combine/sub-divide snow layers)
+
+   ! get the maximum number of layers
+   maxLayers = gru_struc(1)%hruInfo(1)%nSoil + maxSnowLayers
+
+   ! *****************************************************************************
+   ! *** read local attributes for each HRU
+   ! *****************************************************************************
+   call read_attribute(indxHRU,indxGRU,attrStruct,typeStruct,idStruct,err,cmessage)
+   if(err/=0)then
+      message=trim(message)//trim(cmessage)
+      print*, message
+      return
+   endif
+
+   ! define monthly fraction of green vegetation
+   greenVegFrac_monthly = (/0.01_dp, 0.02_dp, 0.03_dp, 0.07_dp, 0.50_dp, 0.90_dp, 0.95_dp, 0.96_dp, 0.65_dp, 0.24_dp, 0.11_dp, 0.02_dp/)
+
+   ! define urban vegetation category
+   select case(trim(model_decisions(iLookDECISIONS%vegeParTbl)%cDecision))
+      case('USGS');                     urbanVegCategory =    1
+      case('MODIFIED_IGBP_MODIS_NOAH'); urbanVegCategory =   13
+      case('plumberCABLE');             urbanVegCategory = -999
+      case('plumberCHTESSEL');          urbanVegCategory = -999
+      case('plumberSUMMA');             urbanVegCategory = -999
+      case default
+         message=trim(message)//'unable to identify vegetation category'
+         print*, message
+         return
+   end select
+
+   ! set default model parameters
+   ! ! set parmameters to their default value
+   ! dparStruct%var(:) = localParFallback(:)%default_val         ! x%var(:)
+   ! ! overwrite default model parameters with information from the Noah-MP tables
+   ! call pOverwrite(typeStruct%var(iLookTYPE%vegTypeIndex),  &  ! vegetation category
+   !               typeStruct%var(iLookTYPE%soilTypeIndex), &  ! soil category
+   !               dparStruct%var,                          &  ! default model parameters
+   !               err,cmessage)                                                   ! error control
+   ! if(err/=0)then
+   !    message=trim(message)//trim(cmessage)
+   !    print*, message
+   !    return
+   ! endif
  
- !numTimeSteps = numtim
- oldTime%var(:) = startTime%var(:)
 
- ! get the maximum number of snow layers
- select case(model_decisions(iLookDECISIONS%snowLayers)%iDecision)
-  case(sameRulesAllLayers);    maxSnowLayers = 100
-  case(rulesDependLayerIndex); maxSnowLayers = 5
-  case default; err=20; message=trim(message)//'unable to identify option to combine/sub-divide snow layers'; return
- end select ! (option to combine/sub-divide snow layers)
+   ! ! copy over to the parameter structure
+   ! ! NOTE: constant for the dat(:) dimension (normally depth)
+   ! do ivar=1,size(localParFallback)
+   !    mparStruct%var(ivar)%dat(:) = dparStruct%var(ivar)
+   ! end do  ! looping through variables
 
- ! get the maximum number of layers
- maxLayers = gru_struc(1)%hruInfo(1)%nSoil + maxSnowLayers
-
- ! *****************************************************************************
- ! *** read local attributes for each HRU
- ! *****************************************************************************
- call read_attribute(indxHRU,indxGRU,attrStruct,typeStruct,idStruct,err,cmessage)
- if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
-
- ! define monthly fraction of green vegetation
- greenVegFrac_monthly = (/0.01_dp, 0.02_dp, 0.03_dp, 0.07_dp, 0.50_dp, 0.90_dp, 0.95_dp, 0.96_dp, 0.65_dp, 0.24_dp, 0.11_dp, 0.02_dp/)
-
- ! define urban vegetation category
- select case(trim(model_decisions(iLookDECISIONS%vegeParTbl)%cDecision))
-  case('USGS');                     urbanVegCategory =    1
-  case('MODIFIED_IGBP_MODIS_NOAH'); urbanVegCategory =   13
-  case('plumberCABLE');             urbanVegCategory = -999
-  case('plumberCHTESSEL');          urbanVegCategory = -999
-  case('plumberSUMMA');             urbanVegCategory = -999
-  case default; message=trim(message)//'unable to identify vegetation category'; return
- end select
-
- ! set default model parameters
- ! set parmameters to their default value
- dparStruct%var(:) = localParFallback(:)%default_val         ! x%var(:)
-   ! overwrite default model parameters with information from the Noah-MP tables
- call pOverwrite(typeStruct%var(iLookTYPE%vegTypeIndex),  &  ! vegetation category
-                 typeStruct%var(iLookTYPE%soilTypeIndex), &  ! soil category
-                 dparStruct%var,                          &  ! default model parameters
-                 err,cmessage)                                                   ! error control
- if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+   ! set default for basin-average parameters
+   ! bparStruct%var(:) = basinParFallback(:)%default_val ! moved to read_param
  
+   ! *****************************************************************************
+   ! *** read trial model parameter values for each HRU, and populate initial data structures
+   ! *****************************************************************************
+   call read_param(indxHRU,indxGRU,mparStruct,bparStruct,dparStruct,err)
+   if(err/=0)then
+      message=trim(message)//trim(cmessage)
+      return
+   endif
+   ! *****************************************************************************
+   ! *** compute derived model variables that are pretty much constant for the basin as a whole
+   ! *****************************************************************************
+   ! calculate the fraction of runoff in future time steps
+   call fracFuture(bparStruct%var,    &  ! vector of basin-average model parameters
+                   bvarStruct,        &  ! data structure of basin-average variables
+                   err,cmessage)                   ! error control
+   if(err/=0)then
+      message=trim(message)//trim(cmessage)
+      print*, message
+      return
+   endif
 
- ! copy over to the parameter structure
- ! NOTE: constant for the dat(:) dimension (normally depth)
- do ivar=1,size(localParFallback)
-  mparStruct%var(ivar)%dat(:) = dparStruct%var(ivar)
- end do  ! looping through variables
+   ! check that the parameters are consistent
+   call paramCheck(mparStruct,err,cmessage)
+   if(err/=0)then
+      message=trim(message)//trim(cmessage)
+      print*, message
+      return
+   endif
 
-  ! set default for basin-average parameters
- bparStruct%var(:) = basinParFallback(:)%default_val
- 
- ! *****************************************************************************
- ! *** read trial model parameter values for each HRU, and populate initial data structures
- ! *****************************************************************************
- call read_param(indxHRU,indxGRU,iRunMode,startGRU, &
-                     mparStruct,bparStruct,err,cmessage)
- if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
- ! *****************************************************************************
- ! *** compute derived model variables that are pretty much constant for the basin as a whole
- ! *****************************************************************************
-  ! calculate the fraction of runoff in future time steps
- call fracFuture(bparStruct%var,    &  ! vector of basin-average model parameters
-                 bvarStruct,        &  ! data structure of basin-average variables
-                 err,cmessage)                   ! error control
- if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+   ! calculate a look-up table for the temperature-enthalpy conversion
+   call E2T_lookup(mparStruct,err,cmessage)
+   if(err/=0)then
+      message=trim(message)//trim(cmessage)
+      print*, message
+      return
+   endif
 
- ! check that the parameters are consistent
- call paramCheck(mparStruct,err,cmessage)
- if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+   ! overwrite the vegetation height
+   HVT(typeStruct%var(iLookTYPE%vegTypeIndex)) = mparStruct%var(iLookPARAM%heightCanopyTop)%dat(1)
+   HVB(typeStruct%var(iLookTYPE%vegTypeIndex)) = mparStruct%var(iLookPARAM%heightCanopyBottom)%dat(1)
 
- ! calculate a look-up table for the temperature-enthalpy conversion
- call E2T_lookup(mparStruct,err,cmessage)
- if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+   ! overwrite the tables for LAI and SAI
+   if(model_decisions(iLookDECISIONS%LAI_method)%iDecision == specified)then
+      SAIM(typeStruct%var(iLookTYPE%vegTypeIndex),:) = mparStruct%var(iLookPARAM%winterSAI)%dat(1)
+      LAIM(typeStruct%var(iLookTYPE%vegTypeIndex),:) = mparStruct%var(iLookPARAM%summerLAI)%dat(1)*greenVegFrac_monthly
+   endif
 
- ! overwrite the vegetation height
- HVT(typeStruct%var(iLookTYPE%vegTypeIndex)) = mparStruct%var(iLookPARAM%heightCanopyTop)%dat(1)
- HVB(typeStruct%var(iLookTYPE%vegTypeIndex)) = mparStruct%var(iLookPARAM%heightCanopyBottom)%dat(1)
-
- ! overwrite the tables for LAI and SAI
- if(model_decisions(iLookDECISIONS%LAI_method)%iDecision == specified)then
-  SAIM(typeStruct%var(iLookTYPE%vegTypeIndex),:) = mparStruct%var(iLookPARAM%winterSAI)%dat(1)
-  LAIM(typeStruct%var(iLookTYPE%vegTypeIndex),:) = mparStruct%var(iLookPARAM%summerLAI)%dat(1)*greenVegFrac_monthly
- endif
-
- ! compute total area of the upstream HRUS that flow into each HRU
- upArea = 0._dp
- ! Check if lateral flows exists within the HRU
- if(typeStruct%var(iLookTYPE%downHRUindex)==typeStruct%var(iLookID%hruId))then
-  upArea = upArea + attrStruct%var(iLookATTR%HRUarea)
- endif
+   ! compute total area of the upstream HRUS that flow into each HRU
+   upArea = 0._dp
+   ! Check if lateral flows exists within the HRU
+   if(typeStruct%var(iLookTYPE%downHRUindex)==typeStruct%var(iLookID%hruId))then
+      upArea = upArea + attrStruct%var(iLookATTR%HRUarea)
+   endif
 
 
-  ! identify the total basin area for a GRU (m2)
- associate(totalArea => bvarStruct%var(iLookBVAR%basin__totalArea)%dat(1) )
-  totalArea = 0._dp
-  totalArea = totalArea + attrStruct%var(iLookATTR%HRUarea)
- end associate
+   ! identify the total basin area for a GRU (m2)
+   associate(totalArea => bvarStruct%var(iLookBVAR%basin__totalArea)%dat(1) )
+      totalArea = 0._dp
+      totalArea = totalArea + attrStruct%var(iLookATTR%HRUarea)
+   end associate
 
- ! identify the end of the initialization
- call date_and_time(values=endSetup)
+   ! identify the end of the initialization
+   call date_and_time(values=endSetup)
 
- ! aggregate the elapsed time for the initialization
- elapsedSetup = elapsedSec(startSetup, endSetup)
+   ! aggregate the elapsed time for the initialization
+   elapsedSetup = elapsedSec(startSetup, endSetup)
 
- end subroutine setupHRUParam
+end subroutine setupHRUParam
 
 
  ! =================================================================================================

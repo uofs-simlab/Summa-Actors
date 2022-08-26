@@ -33,6 +33,8 @@ extern "C" {
   void Write_HRU_Param(void* handle_ncid, int* indxGRU, int* indxHRU, int* err);
 
   void readAttributeFileAccessActor(int* num_gru, int* err);
+
+  void overwriteParam(int* num_gru, int* err);
   
   void readParamFileAccessActor(int* start_gru, int* num_gru, int* err);
 }

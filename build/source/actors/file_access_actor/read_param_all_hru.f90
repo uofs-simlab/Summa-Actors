@@ -4,7 +4,53 @@ module read_param_all_hru
     implicit none
     private
     public::read_param_file_access_actor
+    public::overwriteParam
 contains
+subroutine overwriteParam(num_gru, err) bind(C, name="overwriteParam")
+    USE globalData,only:outputStructure
+    USE pOverwrite_module,only:pOverwrite                       ! module to overwrite default parameter values with info from the Noah tables
+    USE globalData,only:gru_struc
+    USE globalData,only:localParFallback                        ! local column default parameters
+    USE globalData,only:basinParFallback                        ! basin-average default parameter
+    USE var_lookup,only:iLookTYPE                               ! look-up values for classification of veg, soils etc.
+
+    implicit none
+    integer(c_int),intent(in)             :: num_gru          ! number of GRUs in the run_domain
+    integer(c_int),intent(out)            :: err              ! error code
+    
+    ! local
+    integer(i4b)                          :: iGRU
+    integer(i4b)                          :: iHRU
+    integer(i4b)                          :: iVar
+    integer(i4b)                          :: iDat
+    character(len=256)                    :: message
+
+    err=0; message="overwriteParam"
+
+    ! Need to set the basin parameters with the default values for when we copy
+    do iGRU=1,num_gru
+        do iHRU=1,gru_struc(iGRU)%hruCount
+            do iVar=1, size(localParFallback)
+                outputStructure(1)%dparStruct(1)%gru(iGRU)%hru(iHRU)%var(iVar) = localParFallback(iVar)%default_val
+            end do
+            ! overwrite default model parameters with information from the Noah-MP tables
+            call pOverwrite(outputStructure(1)%typeStruct(1)%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex),  &  ! vegetation category
+                            outputStructure(1)%typeStruct(1)%gru(iGRU)%hru(iHRU)%var(iLookTYPE%soilTypeIndex), &  ! soil category
+                            outputStructure(1)%dparStruct(1)%gru(iGRU)%hru(iHRU)%var(:), &                              ! default model parameters
+                            err,message)
+            
+            do iVar=1, size(localParFallback)
+                do iDat=1, size(outputStructure(1)%mparStruct(1)%gru(iGRU)%hru(iHRU)%var(iVar)%dat)
+                    outputStructure(1)%mparStruct(1)%gru(iGRU)%hru(iHRU)%var(iVar)%dat(iDat) = outputStructure(1)%dparStruct(1)%gru(iGRU)%hru(iHRU)%var(iVar)
+                end do
+            end do
+        end do
+        do iVar=1,size(basinParFallback)
+            outputStructure(1)%bparStruct(1)%gru(iGRU)%var(iVar) = basinParFallback(iVar)%default_val
+        end do
+    end do
+
+end subroutine
 subroutine read_param_file_access_actor(startGRU,num_gru,err) bind(C, name="readParamFileAccessActor")
    ! used to read model initial conditions
     USE summaActors_FileManager,only:SETTINGS_PATH             ! path for metadata files
@@ -56,10 +102,9 @@ subroutine read_param_file_access_actor(startGRU,num_gru,err) bind(C, name="read
     integer(i4b)                          :: fHRU             ! index of HRU in input file
     integer(i4b)                          :: iGRU
     integer(i4b)                          :: iHRU
+    integer(i4b)                          :: iVar
 
-    err=0; message="read_param_all_hru.f90/"
-    
-    
+    err=0; message="read_param_all_hru.f90/"    
     ! **********************************************************************************************
     ! * open files, etc.
     ! **********************************************************************************************
@@ -234,7 +279,7 @@ subroutine read_param_file_access_actor(startGRU,num_gru,err) bind(C, name="read
         
         ! get the basin parameters
         else
-                  ! get the parameter index
+            ! get the parameter index
             ixParam = get_ixbpar( trim(parName) )
 
             ! allow extra variables in the file that are not used
@@ -254,7 +299,7 @@ subroutine read_param_file_access_actor(startGRU,num_gru,err) bind(C, name="read
 
             ! populate parameter structures
             do iGRU=1, num_gru
-                outputStructure(1)%bparStruct(1)%gru(1)%var(ixParam) = parVector(iGRU+startGRU-1)
+                outputStructure(1)%bparStruct(1)%gru(iGRU)%var(ixParam) = parVector(iGRU+startGRU-1)
             end do
             
             ! deallocate space for model parameters

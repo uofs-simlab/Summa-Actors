@@ -150,7 +150,7 @@ MODULE globalData
   ! define summary information on all data structures
   integer(i4b),parameter                      :: nStruct=13              ! number of data structures
   type(struct_info),parameter,public,dimension(nStruct) :: structInfo=(/&
-                    struct_info('time',  'TIME' , maxvarTime ), &        ! the time data structure
+                   struct_info('time',  'TIME' , maxvarTime ), &        ! the time data structure
                    struct_info('forc',  'FORCE', maxvarForc ), &        ! the forcing data structure
                    struct_info('attr',  'ATTR' , maxvarAttr ), &        ! the attribute data structure
                    struct_info('type',  'TYPE' , maxvarType ), &        ! the type data structure

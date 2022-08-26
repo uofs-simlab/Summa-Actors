@@ -4,7 +4,7 @@ module summaActors_initOutputStruct
   public::initalizeOutput
   contains
 
-subroutine initalizeOutput(forcFileInfo, maxSteps, nGRU, err)
+subroutine initalizeOutput(forcFileInfo, maxSteps, num_gru, err)
   USE globalData,only:outputStructure
   USE globalData,only:time_meta,forc_meta,attr_meta,type_meta ! metadata structures
   USE globalData,only:prog_meta,diag_meta,flux_meta,id_meta   ! metadata structures
@@ -26,7 +26,7 @@ subroutine initalizeOutput(forcFileInfo, maxSteps, nGRU, err)
   implicit none
   type(file_info_array), pointer        :: forcFileInfo
   integer(i4b), intent(in)              :: maxSteps
-  integer(i4b), intent(in)              :: nGRU
+  integer(i4b), intent(in)              :: num_gru
   integer(i4b), intent(inout)           :: err 
 
   ! local variables
@@ -38,6 +38,7 @@ subroutine initalizeOutput(forcFileInfo, maxSteps, nGRU, err)
   integer(i4b)                          :: nSoil
   integer(i4b)                          :: iStruct
   character(len=256)                    :: message
+  integer(i4b)                          :: num_hru
 
   ! Allocate structure to hold output files
   if (.not.allocated(outputStructure))then
@@ -51,12 +52,12 @@ subroutine initalizeOutput(forcFileInfo, maxSteps, nGRU, err)
   allocate(outputStructure(1)%fluxStat(1))
   allocate(outputStructure(1)%indxStat(1))
   allocate(outputStructure(1)%bvarStat(1))
-  allocate(outputStructure(1)%forcStat(1)%gru(nGRU))
-  allocate(outputStructure(1)%progStat(1)%gru(nGRU))
-  allocate(outputStructure(1)%diagStat(1)%gru(nGRU))
-  allocate(outputStructure(1)%fluxStat(1)%gru(nGRU))
-  allocate(outputStructure(1)%indxStat(1)%gru(nGRU))
-  allocate(outputStructure(1)%bvarStat(1)%gru(nGRU))
+  allocate(outputStructure(1)%forcStat(1)%gru(num_gru))
+  allocate(outputStructure(1)%progStat(1)%gru(num_gru))
+  allocate(outputStructure(1)%diagStat(1)%gru(num_gru))
+  allocate(outputStructure(1)%fluxStat(1)%gru(num_gru))
+  allocate(outputStructure(1)%indxStat(1)%gru(num_gru))
+  allocate(outputStructure(1)%bvarStat(1)%gru(num_gru))
 
   ! Primary Data Structures (scalars)
   allocate(outputStructure(1)%timeStruct(1))
@@ -64,11 +65,11 @@ subroutine initalizeOutput(forcFileInfo, maxSteps, nGRU, err)
   allocate(outputStructure(1)%attrStruct(1))
   allocate(outputStructure(1)%typeStruct(1))
   allocate(outputStructure(1)%idStruct(1))
-  allocate(outputStructure(1)%timeStruct(1)%gru(nGRU))
-  allocate(outputStructure(1)%forcStruct(1)%gru(nGRU))
-  allocate(outputStructure(1)%attrStruct(1)%gru(nGRU))
-  allocate(outputStructure(1)%typeStruct(1)%gru(nGRU))
-  allocate(outputStructure(1)%idStruct(1)%gru(nGRU))
+  allocate(outputStructure(1)%timeStruct(1)%gru(num_gru))
+  allocate(outputStructure(1)%forcStruct(1)%gru(num_gru))
+  allocate(outputStructure(1)%attrStruct(1)%gru(num_gru))
+  allocate(outputStructure(1)%typeStruct(1)%gru(num_gru))
+  allocate(outputStructure(1)%idStruct(1)%gru(num_gru))
   
   ! Primary Data Structures (variable length vectors)
   allocate(outputStructure(1)%indxStruct(1))
@@ -76,55 +77,63 @@ subroutine initalizeOutput(forcFileInfo, maxSteps, nGRU, err)
   allocate(outputStructure(1)%progStruct(1))
   allocate(outputStructure(1)%diagStruct(1))
   allocate(outputStructure(1)%fluxStruct(1))
-  allocate(outputStructure(1)%indxStruct(1)%gru(nGRU))
-  allocate(outputStructure(1)%mparStruct(1)%gru(nGRU))
-  allocate(outputStructure(1)%progStruct(1)%gru(nGRU))
-  allocate(outputStructure(1)%diagStruct(1)%gru(nGRU))
-  allocate(outputStructure(1)%fluxStruct(1)%gru(nGRU))
+  allocate(outputStructure(1)%indxStruct(1)%gru(num_gru))
+  allocate(outputStructure(1)%mparStruct(1)%gru(num_gru))
+  allocate(outputStructure(1)%progStruct(1)%gru(num_gru))
+  allocate(outputStructure(1)%diagStruct(1)%gru(num_gru))
+  allocate(outputStructure(1)%fluxStruct(1)%gru(num_gru))
 
   ! Basin-Average structures
   allocate(outputStructure(1)%bparStruct(1))
   allocate(outputStructure(1)%bvarStruct(1))
-  allocate(outputStructure(1)%bparStruct(1)%gru(nGRU))
-  allocate(outputStructure(1)%bvarStruct(1)%gru(nGRU))
+  allocate(outputStructure(1)%bparStruct(1)%gru(num_gru))
+  allocate(outputStructure(1)%bvarStruct(1)%gru(num_gru))
+
+  ! define the ancillary data structures
+  allocate(outputStructure(1)%dparStruct(1))
+  allocate(outputStructure(1)%dparStruct(1)%gru(num_gru))
 
   ! Finalize Stats for writing
   allocate(outputStructure(1)%finalizeStats(1))
-  allocate(outputStructure(1)%finalizeStats(1)%gru(nGRU))
+  allocate(outputStructure(1)%finalizeStats(1)%gru(num_gru))
   
   
-  do iGRU = 1, nGRU
+  do iGRU = 1, num_gru
+    num_hru = gru_struc(iGRU)%hruCount
     ! Statistics Structures
-    allocate(outputStructure(1)%forcStat(1)%gru(iGRU)%hru(gru_struc(iGRU)%hruCount))
-    allocate(outputStructure(1)%progStat(1)%gru(iGRU)%hru(gru_struc(iGRU)%hruCount))
-    allocate(outputStructure(1)%diagStat(1)%gru(iGRU)%hru(gru_struc(iGRU)%hruCount))
-    allocate(outputStructure(1)%fluxStat(1)%gru(iGRU)%hru(gru_struc(iGRU)%hruCount))
-    allocate(outputStructure(1)%indxStat(1)%gru(iGRU)%hru(gru_struc(iGRU)%hruCount))
-    allocate(outputStructure(1)%bvarStat(1)%gru(iGRU)%hru(gru_struc(iGRU)%hruCount))
+    allocate(outputStructure(1)%forcStat(1)%gru(iGRU)%hru(num_hru))
+    allocate(outputStructure(1)%progStat(1)%gru(iGRU)%hru(num_hru))
+    allocate(outputStructure(1)%diagStat(1)%gru(iGRU)%hru(num_hru))
+    allocate(outputStructure(1)%fluxStat(1)%gru(iGRU)%hru(num_hru))
+    allocate(outputStructure(1)%indxStat(1)%gru(iGRU)%hru(num_hru))
+    allocate(outputStructure(1)%bvarStat(1)%gru(iGRU)%hru(num_hru))
 
     ! Primary Data Structures (scalars)
-    allocate(outputStructure(1)%timeStruct(1)%gru(iGRU)%hru(gru_struc(iGRU)%hruCount))
-    allocate(outputStructure(1)%forcStruct(1)%gru(iGRU)%hru(gru_struc(iGRU)%hruCount))
-    allocate(outputStructure(1)%attrStruct(1)%gru(iGRU)%hru(gru_struc(iGRU)%hruCount))
-    allocate(outputStructure(1)%typeStruct(1)%gru(iGRU)%hru(gru_struc(iGRU)%hruCount))
-    allocate(outputStructure(1)%idStruct(1)%gru(iGRU)%hru(gru_struc(iGRU)%hruCount))
+    allocate(outputStructure(1)%timeStruct(1)%gru(iGRU)%hru(num_hru))
+    allocate(outputStructure(1)%forcStruct(1)%gru(iGRU)%hru(num_hru))
+    allocate(outputStructure(1)%attrStruct(1)%gru(iGRU)%hru(num_hru))
+    allocate(outputStructure(1)%typeStruct(1)%gru(iGRU)%hru(num_hru))
+    allocate(outputStructure(1)%idStruct(1)%gru(iGRU)%hru(num_hru))
   
     ! Primary Data Structures (variable length vectors)
-    allocate(outputStructure(1)%indxStruct(1)%gru(iGRU)%hru(gru_struc(iGRU)%hruCount))
-    allocate(outputStructure(1)%mparStruct(1)%gru(iGRU)%hru(gru_struc(iGRU)%hruCount))
-    allocate(outputStructure(1)%progStruct(1)%gru(iGRU)%hru(gru_struc(iGRU)%hruCount))
-    allocate(outputStructure(1)%diagStruct(1)%gru(iGRU)%hru(gru_struc(iGRU)%hruCount))
-    allocate(outputStructure(1)%fluxStruct(1)%gru(iGRU)%hru(gru_struc(iGRU)%hruCount))
+    allocate(outputStructure(1)%indxStruct(1)%gru(iGRU)%hru(num_hru))
+    allocate(outputStructure(1)%mparStruct(1)%gru(iGRU)%hru(num_hru))
+    allocate(outputStructure(1)%progStruct(1)%gru(iGRU)%hru(num_hru))
+    allocate(outputStructure(1)%diagStruct(1)%gru(iGRU)%hru(num_hru))
+    allocate(outputStructure(1)%fluxStruct(1)%gru(iGRU)%hru(num_hru))
   
     ! Basin-Average structures
-    allocate(outputStructure(1)%bvarStruct(1)%gru(iGRU)%hru(gru_struc(iGRU)%hruCount))
+    allocate(outputStructure(1)%bvarStruct(1)%gru(iGRU)%hru(num_hru))
+
+   ! define the ancillary data structures
+    allocate(outputStructure(1)%dparStruct(1)%gru(iGRU)%hru(num_hru))
 
     ! Finalize Stats for writing
-    allocate(outputStructure(1)%finalizeStats(1)%gru(iGRU)%hru(gru_struc(iGRU)%hruCount))
+    allocate(outputStructure(1)%finalizeStats(1)%gru(iGRU)%hru(num_hru))
 
   end do
 
-  do iGRU=1,nGRU
+  do iGRU=1,num_gru
     do iHRU=1,gru_struc(iGRU)%hruCount
 
       ! Get the maximum number of steps needed to initalize the output structure
@@ -154,9 +163,12 @@ subroutine initalizeOutput(forcFileInfo, maxSteps, nGRU, err)
             case('id'  )
               call alloc_outputStruc(id_meta,outputStructure(1)%idStruct(1)%gru(iGRU)%hru(iHRU), &
                             maxSteps,nSnow,nSoil,err,message);        ! local values of hru gru IDs
-            case('mpar')
+            case('mpar') ! model parameters
               call alloc_outputStruc(mpar_meta,outputStructure(1)%mparStruct(1)%gru(iGRU)%hru(iHRU), &
-                            maxSteps,nSnow,nSoil,err,message);    ! model parameters
+                            maxSteps,nSnow,nSoil,err,message); 
+
+              call alloc_outputStruc(mpar_meta, outputStructure(1)%dparStruct(1)%gru(iGRU)%hru(iHRU), &
+                            maxSteps,err=err,message=message)
             case('indx')
               ! Structure
               call alloc_outputStruc(indx_meta,outputStructure(1)%indxStruct(1)%gru(iGRU)%hru(iHRU), &
