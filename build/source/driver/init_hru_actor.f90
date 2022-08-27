@@ -1,4 +1,4 @@
-module summaActors_init
+module INIT_HRU_ACTOR
 ! used to declare and allocate summa data structures and initialize model state to known values
 USE,intrinsic :: iso_c_binding
 USE nrtype          ! variable types, etc.
@@ -8,7 +8,8 @@ USE data_types,only:&
                     var_i8,              & ! x%var(:)            (i8b)
                     var_d,               & ! x%var(:)            (dp)
                     var_ilength,         & ! x%var(:)%dat        (i4b)
-                    var_dlength            ! x%var(:)%dat        (dp)
+                    var_dlength,         & ! x%var(:)%dat        (dp)
+                    zLookup               ! x%z(:)%var(:)%lookup(:) -- lookup tables
                     
 ! access missing values
 USE globalData,only:integerMissing   ! missing integer
@@ -21,6 +22,8 @@ USE globalData,only:prog_meta,diag_meta,flux_meta,id_meta   ! metadata structure
 USE globalData,only:mpar_meta,indx_meta                     ! metadata structures
 USE globalData,only:bpar_meta,bvar_meta                     ! metadata structures
 USE globalData,only:averageFlux_meta                        ! metadata for time-step average fluxes
+USE globalData,only:lookup_meta 
+
 ! statistics metadata structures
 USE globalData,only:statForc_meta                           ! child metadata for stats
 USE globalData,only:statProg_meta                           ! child metadata for stats
@@ -34,13 +37,14 @@ USE var_lookup,only:maxVarFreq                               ! # of available ou
 ! safety: set private unless specified otherwise
 implicit none
 private
-public::summaActors_initialize
+public::initHRU
 contains
 
  ! used to declare and allocate summa data structures and initialize model state to known values
- subroutine summaActors_initialize(&
+ subroutine initHRU(&
                         indxGRU,            & !  Index of HRU's GRU parent
                         num_steps,          &
+                        handle_lookupStruct,&
   						          ! statistics structures
                         handle_forcStat,    & !  model forcing data
                         handle_progStat,    & !  model prognostic (state) variables
@@ -71,7 +75,7 @@ contains
                         handle_refTime,     & ! reference time for the model simulation
                         handle_oldTime,     & ! time for the previous model time step
                         ! miscellaneous variables
-                        err) bind(C,name='summaActors_initialize')
+                        err) bind(C,name='initHRU')
   ! ---------------------------------------------------------------------------------------
   ! * desired modules
   ! ---------------------------------------------------------------------------------------
@@ -100,7 +104,9 @@ contains
   ! ---------------------------------------------------------------------------------------
   integer(c_int),intent(in)                  :: indxGRU                    ! indx of the parent GRU
   integer(c_int),intent(out)                 :: num_steps                  ! number of steps in model, local to the HRU                 
-    ! statistics structures
+  
+  type(c_ptr), intent(in), value             :: handle_lookupStruct        ! z(:)%var(:)%lookup(:) -- lookup tables
+  ! statistics structures
   type(c_ptr), intent(in), value             :: handle_forcStat !  model forcing data
   type(c_ptr), intent(in), value             :: handle_progStat !  model prognostic (state) variables
   type(c_ptr), intent(in), value             :: handle_diagStat !  model diagnostic variables
@@ -133,6 +139,7 @@ contains
   ! ---------------------------------------------------------------------------------------
   ! * Fortran Variables For Conversion
   ! ---------------------------------------------------------------------------------------
+  type(zLookup),pointer                      :: lookupStruct               !  z(:)%var(:)%lookup(:) -- lookup tables
   type(var_dlength),pointer                  :: forcStat                   !  model forcing data
   type(var_dlength),pointer                  :: progStat                   !  model prognostic (state) variables
   type(var_dlength),pointer                  :: diagStat                   !  model diagnostic variables
@@ -170,6 +177,7 @@ contains
   ! ---------------------------------------------------------------------------------------
   ! * Convert From C++ to Fortran
   ! ---------------------------------------------------------------------------------------
+  call c_f_pointer(handle_lookupStruct, lookupStruct)
   call c_f_pointer(handle_forcStat,   forcStat)
   call c_f_pointer(handle_progStat,   progStat)
   call c_f_pointer(handle_diagStat,   diagStat)
@@ -252,12 +260,14 @@ contains
     case('flux'); call allocLocal(flux_meta,fluxStruct,nSnow,nSoil,err,cmessage);    ! model fluxes
     case('bpar'); call allocLocal(bpar_meta,bparStruct,nSnow=0,nSoil=0,err=err,message=cmessage);  ! basin-average params 
     case('bvar'); call allocLocal(bvar_meta,bvarStruct,nSnow=0,nSoil=0,err=err,message=cmessage);  ! basin-average variables
+    case('lookup'); call allocLocal(lookup_meta,lookupStruct,err=err,message=cmessage)   ! basin-average variables
     case('deriv'); cycle
     case default; err=20; message='unable to find structure name: '//trim(structInfo(iStruct)%structName)
   end select
   ! check errors
   if(err/=0)then
     message=trim(message)//trim(cmessage)//'[structure =  '//trim(structInfo(iStruct)%structName)//']'
+    print*, message
     return
   endif
   end do  ! looping through data structures
@@ -267,6 +277,7 @@ contains
   call allocLocal(mpar_meta,dparStruct,nSnow,nSoil,err,cmessage);    ! default model parameters
     if(err/=0)then
     message=trim(message)//trim(cmessage)//' [problem allocating dparStruct]'
+    print*, message
     return
   endif
 
@@ -288,6 +299,7 @@ contains
     ! check errors
     if(err/=0)then
       message=trim(message)//trim(cmessage)//'[statistics for =  '//trim(structInfo(iStruct)%structName)//']'
+      print*, message
       return
     endif
   end do ! iStruct
@@ -298,6 +310,6 @@ contains
   ! end association to info in data structures
   end associate
 
- end subroutine summaActors_initialize
+ end subroutine initHRU
 
-end module summaActors_init
+end module INIT_HRU_ACTOR

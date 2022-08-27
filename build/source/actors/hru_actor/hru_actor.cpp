@@ -152,8 +152,9 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
 void Initialize_HRU(stateful_actor<hru_state>* self) {
     self->state.hru_timing.updateStartPoint("init_duration");
     
-    summaActors_initialize(&self->state.indxGRU,
+    initHRU(&self->state.indxGRU,
             &self->state.num_steps, 
+            self->state.handle_lookupStruct,
             self->state.handle_forcStat, 
             self->state.handle_progStat, 
             self->state.handle_diagStat, 

@@ -1057,6 +1057,15 @@ subroutine delete_handle_file_info(handle) bind(C, name='delete_handle_file_info
 end subroutine delete_handle_file_info
 ! ***************************** file_info ***************************
     
+
+! ****************************** z_lookup ****************************
+function new_handle_z_lookup() result(handle) bind(C, name="new_handle_z_lookup")
+  type(c_ptr)           :: handle
+  type(zLookup), pointer :: p
+
+  allocate(p)
+  handle = c_loc(p)
+end function
 end module cppwrap_datatypes
 
 

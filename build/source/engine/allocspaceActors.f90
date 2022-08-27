@@ -25,6 +25,7 @@ USE nrtype
 
 ! provide access to the derived types to define the data structures
 USE data_types,only:&
+                    zLookup,             &
                     ! final data vectors
                     dlength,             & ! var%dat
                     ilength,             & ! var%dat
@@ -133,6 +134,7 @@ contains
  logical(lgt)                     :: check          ! .true. if the variables are allocated
  integer(i4b)                     :: nVars          ! number of variables in the metadata structure
  integer(i4b)                     :: nLayers        ! total number of layers
+ logical(lgt)                     :: spatial
  character(len=256)               :: cmessage       ! error message of the downwind routine
  ! initialize error control
  err=0; message='allocLocal/'
@@ -168,6 +170,7 @@ contains
   class is (var_flagVec); if(allocated(dataStruct%var))then; check=.true.; else; allocate(dataStruct%var(nVars),stat=err); end if
   class is (var_ilength); if(allocated(dataStruct%var))then; check=.true.; else; allocate(dataStruct%var(nVars),stat=err); end if
   class is (var_dlength); if(allocated(dataStruct%var))then; check=.true.; else; allocate(dataStruct%var(nVars),stat=err); end if
+  class is (zLookup);    spatial=.true.
   class default; err=20; message=trim(message)//'unable to identify derived data type for the variable dimension'; return
  end select
  ! check errors
@@ -179,6 +182,7 @@ contains
   class is (var_flagVec); call allocateDat_flag(metaStruct,nSnow,nSoil,nLayers,dataStruct,err,cmessage)
   class is (var_ilength); call allocateDat_int( metaStruct,nSnow,nSoil,nLayers,dataStruct,err,cmessage)
   class is (var_dlength); call allocateDat_dp(  metaStruct,nSnow,nSoil,nLayers,dataStruct,err,cmessage)
+  class is (zLookup);     spatial=.true.
   class default; err=20; message=trim(message)//'unable to identify derived data type for the data dimension'; return
  end select
 

@@ -239,7 +239,7 @@ SUMMA_DRIVER= \
 		summaActors_type.f90 \
 		summaActors_util.f90 \
 		summaActors_globalData.f90 \
-		summaActors_init.f90 \
+		init_hru_actor.f90 \
 		SummaActors_setup.f90 \
 		summaActors_restart.f90 \
 		summaActors_forcing.f90 \

@@ -2,8 +2,8 @@
 
 extern "C" {
   // Initialize HRU data_structures
-	void summaActors_initialize(
-        int* indxGRU, int* num_steps,
+	void initHRU(
+        int* indxGRU, int* num_steps, void* lookupStruct,
         // Statistics Structures
         void* forcStat, void* progStat, void* diagStat, void* fluxStat, void* indxStat, void* bvarStat,
         // Primary Data Structures (scalars) 
@@ -16,18 +16,6 @@ extern "C" {
         void* dparStruct,
         // local HRU data 
         void* startTime, void* finshTime, void* refTime, void* oldTime, int* err);
-
-  // SetupParam for HRU
-  // void SetupParam( 
-  //     int* indxGRU, int* indxHRU,
-  //     // primary data structures (scalars)
-  //     void* attrStruct, void* typeStruct, void* idStruct,
-  //     // primary data structures (variable length vectors)
-  //     void* mparStruct, void* bparStruct, void* bvarStruct, void* dparStruct,
-  //     // local HRU data
-  //     void* startTime, void* oldTime,
-  //     // miscellaneous
-  //     double* upArea, int* err);
     
   void setupHRUParam( int* indxGRU, int* indxHRU,
       // primary data structures (scalars)

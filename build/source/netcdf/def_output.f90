@@ -154,7 +154,11 @@ subroutine def_output(handle_ncid,startGRU,nGRU,nHRU,err) bind(C, name='def_outp
   do iFreq=1,maxvarFreq
     if (ncid%var(iFreq)/=integerMissing) then
     call nc_file_close(ncid%var(iFreq),err,cmessage)
-    if(err/=0)then; message=trim(message)//trim(cmessage); return; end if
+    if(err/=0)then
+      message=trim(message)//trim(cmessage)
+      print*, message
+      return
+    end if
     endif
   end do
 
@@ -171,39 +175,58 @@ subroutine def_output(handle_ncid,startGRU,nGRU,nHRU,err) bind(C, name='def_outp
     fstring = get_freqName(iFreq)
     fname   = trim(fileout)//'_'//trim(fstring)//'.nc'
     call ini_create(nGRU,nHRU,gru_struc(1)%hruInfo(1)%nSoil,trim(fname),ncid%var(iFreq),err,cmessage)
-    if(err/=0)then; message=trim(message)//trim(cmessage); return; end if
+    if(err/=0)then
+      message=trim(message)//trim(cmessage)
+      print*, message
+      return
+    end if
 
     ! define model decisions
     do iVar = 1,size(model_decisions)
         if(model_decisions(iVar)%iDecision.ne.integerMissing)then
           call put_attrib(ncid%var(iFreq),model_decisions(iVar)%cOption,model_decisions(iVar)%cDecision,err,cmessage)
-          if(err/=0)then; message=trim(message)//trim(cmessage); return; end if
+          if(err/=0)then
+            message=trim(message)//trim(cmessage)
+            print*, message
+            return
+          end if
         end if
     end do
     
     ! define variables
     do iStruct = 1,size(structInfo)
         select case (trim(structInfo(iStruct)%structName))
-        case('attr' ); call def_variab(ncid%var(iFreq),iFreq,needHRU,  noTime,attr_meta, outputPrecision, err,cmessage)  ! local attributes HRU
-        case('type' ); call def_variab(ncid%var(iFreq),iFreq,needHRU,  noTime,type_meta, nf90_int,   err,cmessage)       ! local classification
-        case('mpar' ); call def_variab(ncid%var(iFreq),iFreq,needHRU,  noTime,mpar_meta, outputPrecision, err,cmessage)  ! model parameters
-        case('bpar' ); call def_variab(ncid%var(iFreq),iFreq,needGRU,  noTime,bpar_meta, outputPrecision, err,cmessage)  ! basin-average param
-        case('indx' ); call def_variab(ncid%var(iFreq),iFreq,needHRU,needTime,indx_meta, nf90_int,   err,cmessage)       ! model variables
-        case('deriv'); call def_variab(ncid%var(iFreq),iFreq,needHRU,needTime,deriv_meta,outputPrecision, err,cmessage)  ! model derivatives
-        case('time' ); call def_variab(ncid%var(iFreq),iFreq,  noHRU,needTime,time_meta, nf90_int,   err,cmessage)       ! model derivatives
-        case('forc' ); call def_variab(ncid%var(iFreq),iFreq,needHRU,needTime,forc_meta, outputPrecision, err,cmessage)  ! model forcing data
-        case('prog' ); call def_variab(ncid%var(iFreq),iFreq,needHRU,needTime,prog_meta, outputPrecision, err,cmessage)  ! model prognostics
-        case('diag' ); call def_variab(ncid%var(iFreq),iFreq,needHRU,needTime,diag_meta, outputPrecision, err,cmessage)  ! model diagnostic variables
-        case('flux' ); call def_variab(ncid%var(iFreq),iFreq,needHRU,needTime,flux_meta, outputPrecision, err,cmessage)  ! model fluxes
-        case('bvar' ); call def_variab(ncid%var(iFreq),iFreq,needGRU,needTime,bvar_meta, outputPrecision, err,cmessage)  ! basin-average variables
-        case('id'   ); cycle                                                                                         ! ids -- see write_hru_info()
+        case('attr'  ); call def_variab(ncid%var(iFreq),iFreq,needHRU,  noTime,attr_meta, outputPrecision, err,cmessage)  ! local attributes HRU
+        case('type'  ); call def_variab(ncid%var(iFreq),iFreq,needHRU,  noTime,type_meta, nf90_int,   err,cmessage)       ! local classification
+        case('mpar'  ); call def_variab(ncid%var(iFreq),iFreq,needHRU,  noTime,mpar_meta, outputPrecision, err,cmessage)  ! model parameters
+        case('bpar'  ); call def_variab(ncid%var(iFreq),iFreq,needGRU,  noTime,bpar_meta, outputPrecision, err,cmessage)  ! basin-average param
+        case('indx'  ); call def_variab(ncid%var(iFreq),iFreq,needHRU,needTime,indx_meta, nf90_int,   err,cmessage)       ! model variables
+        case('deriv' ); call def_variab(ncid%var(iFreq),iFreq,needHRU,needTime,deriv_meta,outputPrecision, err,cmessage)  ! model derivatives
+        case('time'  ); call def_variab(ncid%var(iFreq),iFreq,  noHRU,needTime,time_meta, nf90_int,   err,cmessage)       ! model derivatives
+        case('forc'  ); call def_variab(ncid%var(iFreq),iFreq,needHRU,needTime,forc_meta, outputPrecision, err,cmessage)  ! model forcing data
+        case('prog'  ); call def_variab(ncid%var(iFreq),iFreq,needHRU,needTime,prog_meta, outputPrecision, err,cmessage)  ! model prognostics
+        case('diag'  ); call def_variab(ncid%var(iFreq),iFreq,needHRU,needTime,diag_meta, outputPrecision, err,cmessage)  ! model diagnostic variables
+        case('flux'  ); call def_variab(ncid%var(iFreq),iFreq,needHRU,needTime,flux_meta, outputPrecision, err,cmessage)  ! model fluxes
+        case('bvar'  ); call def_variab(ncid%var(iFreq),iFreq,needGRU,needTime,bvar_meta, outputPrecision, err,cmessage)  ! basin-average variables
+        case('id'    ); cycle
+        case('lookup'); cycle                                                                                         ! ids -- see write_hru_info()
         case default; err=20; message=trim(message)//'unable to identify lookup structure';
         end select
         ! error handling
-        if(err/=0)then;err=20;message=trim(message)//trim(cmessage)//'[structure =  '//trim(structInfo(iStruct)%structName);return;end if
+        if(err/=0)then
+          err=20
+          message=trim(message)//trim(cmessage)//'[structure =  '//trim(structInfo(iStruct)%structName)
+          print*, message
+          return
+        end if
     end do ! iStruct
     ! write HRU dimension and ID for each output file
-    call write_hru_info(ncid%var(iFreq), err, cmessage); if(err/=0) then; message=trim(message)//trim(cmessage); return; end if
+    call write_hru_info(ncid%var(iFreq), err, cmessage) 
+    if(err/=0) then 
+      message=trim(message)//trim(cmessage)
+      print*, message
+      return
+    end if
 
   end do
 end subroutine def_output
