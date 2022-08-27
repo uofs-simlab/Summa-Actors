@@ -12,19 +12,24 @@
 
 namespace caf{
 struct gru_state {
+    // GRU Initalization
+    int ref_gru;
+    int indx_gru;
+    std::string config_path;
     caf::actor file_access_actor;
+    int output_struc_size;
     caf::actor parent;
         
+    // HRU information
     std::vector<caf::actor> hru_list;
-
-    int indx_gru; // index for gru part of derived types in FORTRAN
-    int ref_gru; // The actual ID of the GRU we are
     int num_hrus;
+    int hrus_complete = 0;
 
+    // Global Data
     int nTimeDelay = 2000; // number of hours in the time delay histogram (default: ~1 season = 24*365/4)
-
     struct iLookVarType var_type_lookup;
     
+    // Data Structure local to the GRU
     int num_bpar_vars;                               // number of variables in the fortran structure for bpar_struct
     std::vector<double> bpar_struct;   
     std::vector<int> bpar_struct_var_type_list;  // The types to the variable at each element in bpar_struct
@@ -37,7 +42,11 @@ struct gru_state {
     std::vector<int> i_look_var_type_list; // The types to the variable at each element in bvar_struct
 };
 
-behavior gru_actor(stateful_actor<gru_state>* self, int refGRU, int indxGRU,
-    std::string configPath,
-    int outputStrucSize, caf::actor parent);
+behavior gru_actor(stateful_actor<gru_state>* self, 
+    int ref_gru, 
+    int indx_gru, 
+    std::string config_path, 
+    caf::actor file_access_actor, 
+    int output_struc_size, 
+    caf::actor parent);
 }

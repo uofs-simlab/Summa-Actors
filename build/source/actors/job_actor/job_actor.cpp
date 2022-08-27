@@ -257,9 +257,13 @@ void initalizeGRU(stateful_actor<job_state>* self) {
     for(int i = 0; i < self->state.num_gru; i++) {
         int start_gru = self->state.gru_list.size() + self->state.start_gru;
         int index_gru = self->state.gru_list.size() + 1; // Fortran reference starts at 1
-        auto gru = self->spawn(hru_actor, start_gru, index_gru, 
-            self->state.config_path, self->state.file_access_actor, 
-            self->state.output_struct_size, self);
+        auto gru = self->spawn(gru_actor, 
+                               start_gru, 
+                               index_gru, 
+                               self->state.config_path, 
+                               self->state.file_access_actor, 
+                               self->state.output_struct_size, 
+                               self);
         self->state.gru_list.push_back(new GRUinfo(start_gru, index_gru, gru, 
             self->state.dt_init_start_factor, self->state.max_run_attempts));
     }

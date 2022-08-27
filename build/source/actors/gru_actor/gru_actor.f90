@@ -9,6 +9,7 @@ implicit none
 ! public::run_gru
 public::getVarSizes
 public::fillvarTypeLists
+public::getNumHRU
 
 contains
 
@@ -196,7 +197,17 @@ end subroutine fillVarTypeLists
 
 ! end subroutine
 
+integer function getNumHRU(indx_gru) bind(C, name="getNumHRU")
+    USE globalData,only:gru_struc
+    implicit none
+    integer(c_int), intent(in)        :: indx_gru
+    integer(c_int)                    :: num_hru
 
+    num_hru = gru_struc(indx_gru)%hruCount
+
+    getNumHRU = num_hru
+
+end function
 
 
 end module gru_actor

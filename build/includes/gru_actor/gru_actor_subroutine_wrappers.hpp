@@ -9,4 +9,6 @@ extern "C" {
     void fillVarTypeLists( int* num_bpar_vars, int* num_bvar_vars,
         void* bpar_struct_var_type_list, void* bvar_struct_var_type_list, int* err);
 
+    int getNumHRU(int* indx_gru);
+
 }

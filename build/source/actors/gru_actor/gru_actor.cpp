@@ -1,19 +1,63 @@
 #include "caf/all.hpp"
 #include "gru_actor.hpp"
 #include "global.hpp"
+#include "hru_actor.hpp"
 #include "message_atoms.hpp"
 #include <vector>
 #include "gru_actor_subroutine_wrappers.hpp"
 
 namespace caf {
 
-behavior gru_actor(stateful_actor<gru_state>* self, int refGRU, int indxGRU, 
-    std::string configPath, int outputStrucSize, caf::actor parent) {
+behavior gru_actor(stateful_actor<gru_state>* self, 
+    int ref_gru, int indx_gru, 
+    std::string config_path, caf::actor file_access_actor, int output_struc_size, 
+    caf::actor parent) {
 
     aout(self) << "GRU Actor Has Started\n";
     self->state.parent = parent;
+    self->state.ref_gru = ref_gru;
+    self->state.indx_gru = indx_gru;
+    self->state.config_path = config_path;
+    self->state.file_access_actor = file_access_actor;
+    self->state.output_struc_size = output_struc_size;
+    self->state.parent = parent;
+
+    self->state.num_hrus = getNumHRU(&self->state.indx_gru);
+
+    self->send(self, init_hru_v);
 
     return {
+
+        [=](init_hru) {
+            for (int i = 0; i < self->state.num_hrus; i++) {
+                auto hru = self->spawn(hru_actor,
+                        self->state.ref_gru, self->state.indx_gru, 
+                        self->state.config_path, self->state.file_access_actor,
+                        self->state.output_struc_size,
+                        self);
+                self->state.hru_list.push_back(hru);
+            }
+        },
+
+        [=](done_hru, int indx_gru, double total_duration, double init_duration, 
+            double forcing_duration, double run_physics_duration, double write_output_duration) {
+            aout(self) << "GRU Received HRU is Done\n";
+
+            self->state.hrus_complete++;
+            if (self->state.hrus_complete >= self->state.num_hrus) {
+                aout(self) << "All HRUs have finished";
+
+                self->send(self->state.parent,
+                    done_hru_v,
+                    indx_gru, 
+                    total_duration,
+                    init_duration, 
+                    forcing_duration,
+                    run_physics_duration,
+                    write_output_duration);
+            }
+        
+        },
 
         // What does a GRU need to assemble its data structure?
         [=](init_gru) {
