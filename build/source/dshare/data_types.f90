@@ -412,6 +412,18 @@ endtype var_time_ilength
   type(hru_time_intVec),allocatable    :: gru(:)
  endtype gru_hru_time_intVec
 
+ ! Sundials lookup table type
+ type, public :: dLookup
+ real(rkind),allocatable                :: lookup(:)   ! lookup(:)
+ endtype dLookup
+ ! ** double precision type for a variable number of soil layers; variable length
+ type, public :: vLookup
+  type(dLookup),allocatable           :: var(:)      ! var(:)%lookup(:)
+ endtype vLookup
+ type, public :: zLookup
+  type(vLookup),allocatable           :: z(:)        ! z(:)%var(:)%lookup(:)
+ endtype zLookup
+
 type, public :: summa_output_type
 
   ! define the statistics structures
