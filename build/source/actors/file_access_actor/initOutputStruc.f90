@@ -207,18 +207,21 @@ subroutine initalizeOutput(forcFileInfo, maxSteps, num_gru, err)
               ! Statistics
               call alloc_outputStruc(statBvar_meta(:)%var_info,outputStructure(1)%bvarStat(1)%gru(iGRU)%hru(iHRU), &
                           maxSteps,nSnow=0,nSoil=0,err=err,message=message);  ! basin-average variables
-            case('deriv'); cycle
+            case('deriv');  cycle
+            case('lookup'); cycle
             case default; err=20; message='unable to find structure name: '//trim(structInfo(iStruct)%structName)
         end select
 
         ! check errors
         if(err/=0)then
           message=trim(message)//'initOutputStruc.f90 - [structure =  '//trim(structInfo(iStruct)%structName)//']'
+          print*, "message"
           return
         endif
       end do  ! looping through data structures
     
       ! Finalize stats structure for writing to output file
+      print*, "HERE"
       allocate(outputStructure(1)%finalizeStats(1)%gru(iGRU)%hru(iHRU)%tim(maxSteps))
       do iStep = 1, maxSteps
         allocate(outputStructure(1)%finalizeStats(1)%gru(iGRU)%hru(iHRU)%tim(iStep)%dat(1:maxVarFreq))

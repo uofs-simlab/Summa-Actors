@@ -43,6 +43,13 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
             aout(self) << "Initalizing Output Structure" << std::endl;
             Init_OutputStruct(self->state.handle_forcing_file_info, &self->state.outputStrucSize, 
                 &self->state.numGRU, &self->state.err);
+            if (self->state.err != 0) {
+                aout(self) << "ERROR: FILE_ACCESS_ACTOR init_OutputStruct \n";
+                std::string function = "init_OutputStruc";
+                self->send(self->state.parent, file_access_actor_err_v, function);
+                self->quit();
+                return;
+            }
         },
 
         [=](write_param, int indxGRU, int indxHRU) {

@@ -234,10 +234,8 @@ subroutine summaActors_writeToOutputStruc(&
     outputTimeStep%var(:)=1
   end if  ! if defining a new file
 
-  ! If we do not do this looping we segfault - I am not sure why
-  do iDat=1,size(outputStructure(1)%finalizeStats(1)%gru(indxGRU)%hru(indxHRU)%tim(outputStep)%dat)
-    outputStructure(1)%finalizeStats(1)%gru(indxGRU)%hru(indxHRU)%tim(outputStep)%dat(iDat) = finalizeStats%dat(iDat)
-  end do
+ ! If we do not do this looping we segfault - I am not sure why
+  outputStructure(1)%finalizeStats(1)%gru(indxGRU)%hru(indxHRU)%tim(outputStep)%dat(:) = finalizeStats%dat(:)
  ! ****************************************************************************
  ! *** calculate output statistics
  ! ****************************************************************************
