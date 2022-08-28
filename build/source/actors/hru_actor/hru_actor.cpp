@@ -198,6 +198,7 @@ void Initialize_HRU(stateful_actor<hru_state>* self) {
             self->state.handle_bparStruct, 
             self->state.handle_bvarStruct,
             self->state.handle_dparStruct, 
+            self->state.handle_lookupStruct,
             self->state.handle_startTime, 
             self->state.handle_oldTime,
             &self->state.upArea, &self->state.err);

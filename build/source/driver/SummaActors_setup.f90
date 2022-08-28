@@ -29,7 +29,8 @@ USE data_types,only:&
                     var_i8,              & ! x%var(:)            (i8b)
                     var_d,               & ! x%var(:)            (dp)
                     var_ilength,         & ! x%var(:)%dat        (i4b)
-                    var_dlength            ! x%var(:)%dat        (dp)
+                    var_dlength,         & ! x%var(:)%dat        (dp)
+                    zLookup
 
 ! access missing values
 USE globalData,only:integerMissing   ! missing integer
@@ -77,7 +78,8 @@ subroutine setupHRUParam(&
                   handle_bparStruct,              & ! basin-average parameters
                   handle_bvarStruct,              & ! basin-average variables
                   handle_dparStruct,              & ! default model parameters
-                   ! local HRU data
+                  handle_lookupStruct,            & ! lookup tables
+                  ! local HRU data
                   handle_startTime,               & ! start time for the model simulation
                   handle_oldTime,                 & ! time for the previous model time step
                   ! miscellaneous variables
@@ -96,6 +98,7 @@ subroutine setupHRUParam(&
    USE pOverwrite_module,only:pOverwrite                       ! module to overwrite default parameter values with info from the Noah tables
    USE read_param4chm_module,only:read_param                       ! module to read model parameter sets
    USE ConvE2Temp_module,only:E2T_lookup                       ! module to calculate a look-up table for the temperature-enthalpy conversion
+   USE t2enthalpy_module,only:T2E_lookup                       ! module to calculate a look-up table for the temperature-enthalpy conversion
    USE var_derive_module,only:fracFuture                       ! module to calculate the fraction of runoff in future time steps (time delay histogram)
    USE module_sf_noahmplsm,only:read_mp_veg_parameters         ! module to read NOAH vegetation tables
    ! global data structures
@@ -135,6 +138,7 @@ subroutine setupHRUParam(&
    type(c_ptr), intent(in), value           :: handle_bparStruct    ! basin-average parameters
    type(c_ptr), intent(in), value           :: handle_bvarStruct    ! basin-average variables
    type(c_ptr), intent(in), value           :: handle_dparStruct    ! default model parameters
+   type(c_ptr), intent(in), value           :: handle_lookupStruct     ! start time for the model simulation
    type(c_ptr), intent(in), value           :: handle_startTime     ! start time for the model simulation
    type(c_ptr), intent(in), value           :: handle_oldTime       ! time for the previous model time step
    real(c_double),intent(inout)             :: upArea
@@ -148,6 +152,7 @@ subroutine setupHRUParam(&
    type(var_d),pointer                      :: bparStruct           ! basin-average parameters
    type(var_dlength),pointer                :: bvarStruct           ! basin-average variables
    type(var_d),pointer                      :: dparStruct           ! default model parameters
+   type(zLookup),pointer                    :: lookupStruct         ! default model parameters
    type(var_i),pointer                      :: startTime            ! start time for the model simulation
    type(var_i),pointer                      :: oldTime              ! time for the previous model time step
    character(len=256)                       :: message            ! error message
@@ -167,6 +172,7 @@ subroutine setupHRUParam(&
    call c_f_pointer(handle_bparStruct, bparStruct)
    call c_f_pointer(handle_bvarStruct, bvarStruct)
    call c_f_pointer(handle_dparStruct, dparStruct)
+   call c_f_pointer(handle_lookupStruct, lookupStruct)
    call c_f_pointer(handle_startTime, startTime)
    call c_f_pointer(handle_oldTime, oldTime)
 
@@ -251,6 +257,13 @@ subroutine setupHRUParam(&
       print*, message
       return
    endif
+
+   ! calculate a lookup table to compute enthalpy from temperature
+   call T2E_lookup(gru_struc(indxGRU)%hruInfo(indxHRU)%nSoil,   &   ! intent(in):    number of soil layers
+                   mparStruct,        &   ! intent(in):    parameter data structure
+                   lookupStruct,      &   ! intent(inout): lookup table data structure
+                   err,cmessage)                              ! intent(out):   error control
+   if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
 
    ! overwrite the vegetation height
    HVT(typeStruct%var(iLookTYPE%vegTypeIndex)) = mparStruct%var(iLookPARAM%heightCanopyTop)%dat(1)

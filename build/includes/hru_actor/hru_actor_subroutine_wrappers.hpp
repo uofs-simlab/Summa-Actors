@@ -22,6 +22,8 @@ extern "C" {
       void* attrStruct, void* typeStruct, void* idStruct,
       // primary data structures (variable length vectors)
       void* mparStruct, void* bparStruct, void* bvarStruct, void* dparStruct,
+      // lookup tables
+      void* lookupStruct,
       // local HRU data
       void* startTime, void* oldTime,
       // miscellaneous
