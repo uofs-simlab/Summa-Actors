@@ -58,6 +58,8 @@ integer(i4b),parameter,public :: minFunc              =  62    ! do not enable c
 integer(i4b),parameter,public :: constantScaling      =  71    ! constant scaling factor
 integer(i4b),parameter,public :: laiScaling           =  72    ! exponential function of LAI (Leuning, Plant Cell Env 1995: "Scaling from..." [eq 9])
 ! look-up values for the choice of numerical method
+integer(i4b),parameter,public :: bEuler               =  81    ! home-grown backward Euler solution with long time steps
+integer(i4b),parameter,public :: sundials             =  82    ! SUNDIALS/IDA solution
 integer(i4b),parameter,public :: iterative            =  81    ! iterative
 integer(i4b),parameter,public :: nonIterative         =  82    ! non-iterative
 integer(i4b),parameter,public :: iterSurfEnergyBal    =  83    ! iterate only on the surface energy balance
@@ -148,6 +150,12 @@ integer(i4b),parameter,public :: pahaut_76            = 314    ! Pahaut 1976, wi
 ! look-up values for the choice of snow unloading from the canopy
 integer(i4b),parameter,public :: meltDripUnload       = 321    ! Hedstrom and Pomeroy (1998), Storck et al 2002 (snowUnloadingCoeff & ratioDrip2Unloading)
 integer(i4b),parameter,public :: windUnload           = 322    ! Roesch et al 2001, formulate unloading based on wind and temperature
+! look-up values for the choice of energy equation
+integer(i4b),parameter,public :: enthalpyFD           =  323    ! enthalpyFD
+integer(i4b),parameter,public :: closedForm           =  324    ! closedForm
+! look-up values for the choice of DAE solver
+integer(i4b),parameter,public :: sundialIDA           =  325    ! IDA solver form Sundials package
+integer(i4b),parameter,public :: backwEuler           =  326    ! backward Euler method implemented by Martyn
 ! -----------------------------------------------------------------------------------------------------------
 
 contains
@@ -399,14 +407,48 @@ subroutine mDecisions(numSteps,err,message)
     end select
   end if
 
+  ! ************************************
+  ! ************************************
+  ! ************************************
+  ! ************************************
+  ! SUNDIALS ADDITIONS
+
   ! identify the numerical method
   select case(trim(model_decisions(iLookDECISIONS%num_method)%cDecision))
+    case('bEuler');   model_decisions(iLookDECISIONS%num_method)%iDecision = bEuler 
+    case('sundials'); model_decisions(iLookDECISIONS%num_method)%iDecision = sundials
     case('itertive'); model_decisions(iLookDECISIONS%num_method)%iDecision = iterative           ! iterative
     case('non_iter'); model_decisions(iLookDECISIONS%num_method)%iDecision = nonIterative        ! non-iterative
     case('itersurf'); model_decisions(iLookDECISIONS%num_method)%iDecision = iterSurfEnergyBal   ! iterate only on the surface energy balance
     case default
     err=10; message=trim(message)//"unknown numerical method [option="//trim(model_decisions(iLookDECISIONS%num_method)%cDecision)//"]"; return
   end select
+
+    ! how to compute heat capacity in energy equation
+  select case(trim(model_decisions(iLookDECISIONS%howHeatCap)%cDecision))
+    case('enthalpyFD'); model_decisions(iLookDECISIONS%howHeatCap)%iDecision = enthalpyFD        ! enthalpyFD
+    case('closedForm'); model_decisions(iLookDECISIONS%howHeatCap)%iDecision = closedForm        ! closedForm
+    case default
+      ! TODO: after adding howHeatCap decision in corresponding file we should delete the next line
+      model_decisions(iLookDECISIONS%howHeatCap)%iDecision = closedForm
+      ! err=10; message=trim(message)//"unknown Cp computation [option="//trim(model_decisions(iLookDECISIONS%howHeatCap)%cDecision)//"]"; return
+  end select
+
+    ! how to solve the system of differential equations
+  select case(trim(model_decisions(iLookDECISIONS%diffEqSolv)%cDecision))
+    case('sundialIDA'); model_decisions(iLookDECISIONS%diffEqSolv)%iDecision = sundialIDA        ! enthalpyFD
+    case('backwEuler'); model_decisions(iLookDECISIONS%diffEqSolv)%iDecision = backwEuler        ! closedForm
+    case default
+      ! TODO: after adding diffEqSolv decision in corresponding file we should delete the next line
+      model_decisions(iLookDECISIONS%diffEqSolv)%iDecision = sundialIDA
+      ! err=10; message=trim(message)//"unknown DAE solver [option="//trim(model_decisions(iLookDECISIONS%diffEqSolv)%cDecision)//"]"; return
+  end select
+
+  ! ************************************
+  ! ************************************
+  ! ************************************
+  ! ************************************
+  ! END SUNDIALS ADDITTION
 
   ! identify the method used to calculate flux derivatives
   select case(trim(model_decisions(iLookDECISIONS%fDerivMeth)%cDecision))
@@ -634,31 +676,6 @@ subroutine mDecisions(numSteps,err,message)
   end select
 
 
-  ! -----------------------------------------------------------------------------------------------------------------------------------------------
-  ! check for consistency among options
-  ! -----------------------------------------------------------------------------------------------------------------------------------------------
-
-  ! check there is prescribedHead for soil hydrology when zeroFlux or prescribedTemp for thermodynamics
-  !select case(model_decisions(iLookDECISIONS%bcUpprTdyn)%iDecision)
-  ! case(prescribedTemp,zeroFlux)
-  !  if(model_decisions(iLookDECISIONS%bcUpprSoiH)%iDecision /= prescribedHead)then
-  !   message=trim(message)//'upper boundary condition for soil hydology must be presHead with presTemp and zeroFlux options for thermodynamics'
-  !   err=20; return
-  !  end if
-  !end select
-
-  ! check there is prescribedTemp or zeroFlux for thermodynamics when using prescribedHead for soil hydrology
-  !select case(model_decisions(iLookDECISIONS%bcUpprSoiH)%iDecision)
-  ! case(prescribedHead)
-  !  ! check that upper boundary condition for thermodynamics is presTemp or zeroFlux
-  !  select case(model_decisions(iLookDECISIONS%bcUpprTdyn)%iDecision)
-  !   case(prescribedTemp,zeroFlux) ! do nothing: this is OK
-  !   case default
-  !    message=trim(message)//'upper boundary condition for thermodynamics must be presTemp or zeroFlux with presHead option for soil hydology'
-  !    err=20; return
-  !  end select
-  !end select
-
   ! check zero flux lower boundary for topmodel baseflow option
   select case(model_decisions(iLookDECISIONS%groundwatr)%iDecision)
     case(qbaseTopmodel)
@@ -684,13 +701,6 @@ subroutine mDecisions(numSteps,err,message)
     err=20; return
     end if
   end if
-
-  ! ensure that the LAI seaonality option is switched off (this was a silly idea, in retrospect)
-  !if(model_decisions(iLookDECISIONS%LAI_method)%iDecision == specified)then
-  ! message=trim(message)//'parameterization of LAI in terms of seasonal cycle of green veg fraction was a silly idea '&
-  !                      //' -- the LAI_method option ["specified"] is no longer supported'
-  ! err=20; return
-  !end if
 
 end subroutine mDecisions
 

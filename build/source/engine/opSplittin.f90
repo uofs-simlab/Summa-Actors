@@ -112,7 +112,9 @@ USE mDecisions_module,only:       &
 USE mDecisions_module,only:      &
  qbaseTopmodel,                  & ! TOPMODEL-ish baseflow parameterization
  bigBucket,                      & ! a big bucket (lumped aquifer model)
- noExplicit                        ! no explicit groundwater parameterization
+ noExplicit,                     & ! no explicit groundwater parameterization
+ sundialIDA,                     & ! IDA solver from Sundials package
+ backwEuler                        ! backward Euler method
 
 ! safety: set private unless specified otherwise
 implicit none
@@ -122,7 +124,6 @@ public::opSplittin
 ! named variables for the coupling method
 integer(i4b),parameter  :: fullyCoupled=1             ! 1st try: fully coupled solution
 integer(i4b),parameter  :: stateTypeSplit=2           ! 2nd try: separate solutions for each state type
-integer(i4b),parameter  :: nCoupling=2                ! number of possible solutions
 
 ! named variables for the state variable split
 integer(i4b),parameter  :: nrgSplit=1                 ! order in sequence for the energy operation
@@ -156,16 +157,16 @@ real(dp),parameter      :: dx = 1.e-8_dp              ! finite difference increm
 contains
 
 
- ! **********************************************************************************************************
- ! public subroutine opSplittin: run the coupled energy-mass model for one timestep
- !
- ! The logic of the solver is as follows:
- ! (1) Attempt different solutions in the following order: (a) fully coupled; (b) split by state type and by
- !      domain type for a given energy and mass split (vegetation, snow, and soil); and (c) scalar solution
- !      for a given state type and domain subset.
- ! (2) For a given split, compute a variable number of substeps (in varSubstep).
- ! **********************************************************************************************************
- subroutine opSplittin(&
+! **********************************************************************************************************
+! public subroutine opSplittin: run the coupled energy-mass model for one timestep
+!
+! The logic of the solver is as follows:
+! (1) Attempt different solutions in the following order: (a) fully coupled; (b) split by state type and by
+!      domain type for a given energy and mass split (vegetation, snow, and soil); and (c) scalar solution
+!      for a given state type and domain subset.
+! (2) For a given split, compute a variable number of substeps (in varSubstep).
+! **********************************************************************************************************
+subroutine opSplittin(&
                        ! input: model control
                        nSnow,          & ! intent(in):    number of snow layers
                        nSoil,          & ! intent(in):    number of soil layers
@@ -192,173 +193,188 @@ contains
                        stepFailure,    & ! intent(out):   flag to denote step failure
                        ixCoupling,     & ! intent(out):   coupling method used in this iteration
                        err,message)      ! intent(out):   error code and error message
- ! ---------------------------------------------------------------------------------------
- ! structure allocations
- USE allocspace4chm_module,only:allocLocal                ! allocate local data structures
- ! simulation of fluxes and residuals given a trial state vector
- USE soil_utils_module,only:matricHead                ! compute the matric head based on volumetric water content
- USE soil_utils_module,only:liquidHead                ! compute the liquid water matric potential
- ! population/extraction of state vectors
- USE indexState_module,only:indexSplit                ! get state indices
- USE varSubstep_module,only:varSubstep                ! complete substeps for a given split
- ! identify name of variable type (for error message)
- USE get_ixName_module,only:get_varTypeName           ! to access type strings for error messages
- implicit none
- ! ---------------------------------------------------------------------------------------
- ! * dummy variables
- ! ---------------------------------------------------------------------------------------
- ! input: model control
- integer(i4b),intent(in)         :: nSnow                          ! number of snow layers
- integer(i4b),intent(in)         :: nSoil                          ! number of soil layers
- integer(i4b),intent(in)         :: nLayers                        ! total number of layers
- integer(i4b),intent(in)         :: nState                         ! total number of state variables
- real(dp),intent(inout)          :: dt                             ! time step (seconds)
- logical(lgt),intent(in)         :: firstSubStep                   ! flag to indicate if we are processing the first sub-step
- logical(lgt),intent(in)         :: computeVegFlux                 ! flag to indicate if we are computing fluxes over vegetation (.false. means veg is buried with snow)
- ! input/output: data structures
- type(var_i),intent(in)          :: type_data                      ! type of vegetation and soil
- type(var_d),intent(in)          :: attr_data                      ! spatial attributes
- type(var_d),intent(in)          :: forc_data                      ! model forcing data
- type(var_dlength),intent(in)    :: mpar_data                      ! model parameters
- type(var_ilength),intent(inout) :: indx_data                      ! indices for a local HRU
- type(var_dlength),intent(inout) :: prog_data                      ! prognostic variables for a local HRU
- type(var_dlength),intent(inout) :: diag_data                      ! diagnostic variables for a local HRU
- type(var_dlength),intent(inout) :: flux_data                      ! model fluxes for a local HRU
- type(var_dlength),intent(in)    :: bvar_data                      ! model variables for the local basin
- type(zLookup),intent(in)        :: lookup_data                    ! lookup tables
- type(model_options),intent(in)  :: model_decisions(:)             ! model decisions
- ! output: model control
- real(dp),intent(out)            :: dtMultiplier                   ! substep multiplier (-)
- logical(lgt),intent(out)        :: tooMuchMelt                    ! flag to denote that ice is insufficient to support melt
- logical(lgt),intent(out)        :: stepFailure                    ! flag to denote step failure
- integer(i4b),intent(out)        :: err                            ! error code
- character(*),intent(out)        :: message                        ! error message
- ! *********************************************************************************************************************************************************
- ! *********************************************************************************************************************************************************
- ! ---------------------------------------------------------------------------------------
- ! * general local variables
- ! ---------------------------------------------------------------------------------------
- character(LEN=256)              :: cmessage                       ! error message of downwind routine
- integer(i4b)                    :: minLayer                       ! the minimum layer used in assigning flags for flux aggregations
- integer(i4b)                    :: iOffset                        ! offset to account for different indices in the soil domain
- integer(i4b)                    :: iMin(1),iMax(1)                ! bounds of a given vector
- integer(i4b)                    :: iLayer,jLayer                  ! index of model layer
- integer(i4b)                    :: iSoil                          ! index of soil layer
- integer(i4b)                    :: iVar                           ! index of variables in data structures
- logical(lgt)                    :: firstSuccess                   ! flag to define the first success
- logical(lgt)                    :: firstFluxCall                  ! flag to define the first flux call
- logical(lgt)                    :: reduceCoupledStep              ! flag to define the need to reduce the length of the coupled step
- type(var_dlength)               :: prog_temp                      ! temporary model prognostic variables
- type(var_dlength)               :: diag_temp                      ! temporary model diagnostic variables
- type(var_dlength)               :: flux_temp                      ! temporary model fluxes
- type(var_dlength)               :: deriv_data                     ! derivatives in model fluxes w.r.t. relevant state variables
- real(dp),dimension(nLayers)     :: mLayerVolFracIceInit           ! initial vector for volumetric fraction of ice (-)
- ! ------------------------------------------------------------------------------------------------------
- ! * operator splitting
- ! ------------------------------------------------------------------------------------------------------
- ! minimum timestep
- real(dp),parameter              :: dtmin_coupled=1800._dp         ! minimum time step for the fully coupled solution (seconds)
- real(dp),parameter              :: dtmin_split=60._dp             ! minimum time step for the fully split solution (seconds)
- real(dp),parameter              :: dtmin_scalar=10._dp            ! minimum time step for the scalar solution (seconds)
- real(dp)                        :: dt_min                         ! minimum time step (seconds)
- real(dp)                        :: dtInit                         ! initial time step (seconds)
- ! explicit error tolerance (depends on state type split, so defined here)
- real(dp),parameter              :: errorTolLiqFlux=0.01_dp        ! error tolerance in the explicit solution (liquid flux)
- real(dp),parameter              :: errorTolNrgFlux=10._dp         ! error tolerance in the explicit solution (energy flux)
- ! number of substeps taken for a given split
- integer(i4b)                    :: nSubsteps                      ! number of substeps taken for a given split
- ! named variables defining the coupling and solution method
- integer(i4b)                    :: ixCoupling                     ! index of coupling method (1,2)
- integer(i4b)                    :: ixSolution                     ! index of solution method (1,2)
- integer(i4b)                    :: ixStateThenDomain              ! switch between the state and domain (1,2)
- integer(i4b)                    :: tryDomainSplit                 ! (0,1) - flag to try the domain split
- ! actual number of splits
- integer(i4b)                    :: nStateTypeSplit                ! number of splits for the state type
- integer(i4b)                    :: nDomainSplit                   ! number of splits for the domain
- integer(i4b)                    :: nStateSplit                    ! number of splits for the states within a given domain
- ! indices for the state type and the domain split
- integer(i4b)                    :: iStateTypeSplit                ! index of the state type split
- integer(i4b)                    :: iDomainSplit                   ! index of the domain split
- integer(i4b)                    :: iStateSplit                    ! index of the state split
- ! flux masks
- logical(lgt)                    :: neededFlux(nFlux)              ! .true. if flux is needed at all
- logical(lgt)                    :: desiredFlux                    ! .true. if flux is desired for a given split
- type(var_ilength)               :: fluxCount                      ! number of times each flux is updated (should equal nSubsteps)
- type(var_flagVec)               :: fluxMask                       ! mask defining model fluxes
- ! state masks
- integer(i4b),dimension(nState)  :: stateCheck                     ! number of times each state variable is updated (should equal 1)
- logical(lgt),dimension(nState)  :: stateMask                      ! mask defining desired state variables
- integer(i4b)                    :: nSubset                        ! number of selected state variables for a given split
- ! flags
- logical(lgt)                    :: failure                        ! flag to denote failure of substepping
- logical(lgt)                    :: doAdjustTemp                   ! flag to adjust temperature after the mass split
- logical(lgt)                    :: failedMinimumStep              ! flag to denote failure of substepping for a given split
- integer(i4b)                    :: ixSaturation                   ! index of the lowest saturated layer (NOTE: only computed on the first iteration)
- ! ---------------------------------------------------------------------------------------
- ! point to variables in the data structures
- ! ---------------------------------------------------------------------------------------
- globalVars: associate(&
- ! model decisions
- ixGroundwater           => model_decisions(iLookDECISIONS%groundwatr)%iDecision   ,& ! intent(in):    [i4b]    groundwater parameterization
- ixSpatialGroundwater    => model_decisions(iLookDECISIONS%spatial_gw)%iDecision   ,& ! intent(in):    [i4b]    spatial representation of groundwater (local-column or single-basin)
- ! domain boundary conditions
- airtemp                 => forc_data%var(iLookFORCE%airtemp)                      ,& ! intent(in):    [dp]     temperature of the upper boundary of the snow and soil domains (K)
- ! vector of energy and hydrology indices for the snow and soil domains
- ixSnowSoilNrg           => indx_data%var(iLookINDEX%ixSnowSoilNrg)%dat            ,& ! intent(in):    [i4b(:)] index in the state subset for energy state variables in the snow+soil domain
- ixSnowSoilHyd           => indx_data%var(iLookINDEX%ixSnowSoilHyd)%dat            ,& ! intent(in):    [i4b(:)] index in the state subset for hydrology state variables in the snow+soil domain
- nSnowSoilNrg            => indx_data%var(iLookINDEX%nSnowSoilNrg )%dat(1)         ,& ! intent(in):    [i4b]    number of energy state variables in the snow+soil domain
- nSnowSoilHyd            => indx_data%var(iLookINDEX%nSnowSoilHyd )%dat(1)         ,& ! intent(in):    [i4b]    number of hydrology state variables in the snow+soil domain
- ! indices of model state variables
- ixMapSubset2Full        => indx_data%var(iLookINDEX%ixMapSubset2Full)%dat         ,& ! intent(in):    [i4b(:)] list of indices in the state subset (missing for values not in the subset)
- ixStateType             => indx_data%var(iLookINDEX%ixStateType)%dat              ,& ! intent(in):    [i4b(:)] indices defining the type of the state (ixNrgState...)
- ixNrgCanair             => indx_data%var(iLookINDEX%ixNrgCanair)%dat              ,& ! intent(in):    [i4b(:)] indices IN THE FULL VECTOR for energy states in canopy air space domain
- ixNrgCanopy             => indx_data%var(iLookINDEX%ixNrgCanopy)%dat              ,& ! intent(in):    [i4b(:)] indices IN THE FULL VECTOR for energy states in the canopy domain
- ixHydCanopy             => indx_data%var(iLookINDEX%ixHydCanopy)%dat              ,& ! intent(in):    [i4b(:)] indices IN THE FULL VECTOR for hydrology states in the canopy domain
- ixNrgLayer              => indx_data%var(iLookINDEX%ixNrgLayer)%dat               ,& ! intent(in):    [i4b(:)] indices IN THE FULL VECTOR for energy states in the snow+soil domain
- ixHydLayer              => indx_data%var(iLookINDEX%ixHydLayer)%dat               ,& ! intent(in):    [i4b(:)] indices IN THE FULL VECTOR for hydrology states in the snow+soil domain
- ixCasNrg                => indx_data%var(iLookINDEX%ixCasNrg)%dat(1)              ,& ! intent(in):    [i4b]    index of canopy air space energy state variable
- ixVegNrg                => indx_data%var(iLookINDEX%ixVegNrg)%dat(1)              ,& ! intent(in):    [i4b]    index of canopy energy state variable
- ixVegHyd                => indx_data%var(iLookINDEX%ixVegHyd)%dat(1)              ,& ! intent(in):    [i4b]    index of canopy hydrology state variable (mass)
- ! numerix tracking
- numberStateSplit        => indx_data%var(iLookINDEX%numberStateSplit     )%dat(1) ,& ! intent(inout): [i4b]    number of state splitting solutions             (-)
- numberDomainSplitNrg    => indx_data%var(iLookINDEX%numberDomainSplitNrg )%dat(1) ,& ! intent(inout): [i4b]    number of domain splitting solutions for energy (-)
- numberDomainSplitMass   => indx_data%var(iLookINDEX%numberDomainSplitMass)%dat(1) ,& ! intent(inout): [i4b]    number of domain splitting solutions for mass   (-)
- numberScalarSolutions   => indx_data%var(iLookINDEX%numberScalarSolutions)%dat(1) ,& ! intent(inout): [i4b]    number of scalar solutions                      (-)
- ! domain configuration
- canopyDepth             => diag_data%var(iLookDIAG%scalarCanopyDepth)%dat(1)      ,& ! intent(in):    [dp]     canopy depth (m)
- mLayerDepth             => prog_data%var(iLookPROG%mLayerDepth)%dat               ,& ! intent(in):    [dp(:)]  depth of each layer in the snow-soil sub-domain (m)
- ! snow parameters
- snowfrz_scale           => mpar_data%var(iLookPARAM%snowfrz_scale)%dat(1)         ,& ! intent(in):    [dp]     scaling parameter for the snow freezing curve (K-1)
- ! depth-varying soil parameters
- vGn_m                   => diag_data%var(iLookDIAG%scalarVGn_m)%dat               ,& ! intent(in):    [dp(:)]  van Genutchen "m" parameter (-)
- vGn_n                   => mpar_data%var(iLookPARAM%vGn_n)%dat                    ,& ! intent(in):    [dp(:)]  van Genutchen "n" parameter (-)
- vGn_alpha               => mpar_data%var(iLookPARAM%vGn_alpha)%dat                ,& ! intent(in):    [dp(:)]  van Genutchen "alpha" parameter (m-1)
- theta_sat               => mpar_data%var(iLookPARAM%theta_sat)%dat                ,& ! intent(in):    [dp(:)]  soil porosity (-)
- theta_res               => mpar_data%var(iLookPARAM%theta_res)%dat                ,& ! intent(in):    [dp(:)]  soil residual volumetric water content (-)
- ! soil parameters
- specificStorage         => mpar_data%var(iLookPARAM%specificStorage)%dat(1)       ,& ! intent(in):    [dp]     specific storage coefficient (m-1)
- ! model diagnostic variables (fraction of liquid water)
- scalarFracLiqVeg        => diag_data%var(iLookDIAG%scalarFracLiqVeg)%dat(1)       ,& ! intent(out):   [dp]     fraction of liquid water on vegetation (-)
- mLayerFracLiqSnow       => diag_data%var(iLookDIAG%mLayerFracLiqSnow)%dat         ,& ! intent(out):   [dp(:)]  fraction of liquid water in each snow layer (-)
- mLayerMeltFreeze        => diag_data%var(iLookDIAG%mLayerMeltFreeze)%dat          ,& ! intent(out):   [dp(:)]  melt-freeze in each snow and soil layer (kg m-3)
- ! model state variables (vegetation canopy)
- scalarCanairTemp        => prog_data%var(iLookPROG%scalarCanairTemp)%dat(1)       ,& ! intent(out):   [dp]     temperature of the canopy air space (K)
- scalarCanopyTemp        => prog_data%var(iLookPROG%scalarCanopyTemp)%dat(1)       ,& ! intent(out):   [dp]     temperature of the vegetation canopy (K)
- scalarCanopyIce         => prog_data%var(iLookPROG%scalarCanopyIce)%dat(1)        ,& ! intent(out):   [dp]     mass of ice on the vegetation canopy (kg m-2)
- scalarCanopyLiq         => prog_data%var(iLookPROG%scalarCanopyLiq)%dat(1)        ,& ! intent(out):   [dp]     mass of liquid water on the vegetation canopy (kg m-2)
- scalarCanopyWat         => prog_data%var(iLookPROG%scalarCanopyWat)%dat(1)        ,& ! intent(out):   [dp]     mass of total water on the vegetation canopy (kg m-2)
- ! model state variables (snow and soil domains)
- mLayerTemp              => prog_data%var(iLookPROG%mLayerTemp)%dat                ,& ! intent(out):   [dp(:)]  temperature of each snow/soil layer (K)
- mLayerVolFracIce        => prog_data%var(iLookPROG%mLayerVolFracIce)%dat          ,& ! intent(out):   [dp(:)]  volumetric fraction of ice (-)
- mLayerVolFracLiq        => prog_data%var(iLookPROG%mLayerVolFracLiq)%dat          ,& ! intent(out):   [dp(:)]  volumetric fraction of liquid water (-)
- mLayerVolFracWat        => prog_data%var(iLookPROG%mLayerVolFracWat)%dat          ,& ! intent(out):   [dp(:)]  volumetric fraction of total water (-)
- mLayerMatricHead        => prog_data%var(iLookPROG%mLayerMatricHead)%dat          ,& ! intent(out):   [dp(:)]  matric head (m)
- mLayerMatricHeadLiq     => diag_data%var(iLookDIAG%mLayerMatricHeadLiq)%dat        & ! intent(out):   [dp(:)]  matric potential of liquid water (m)
- )
- ! ---------------------------------------------------------------------------------------
- ! initialize error control
- err=0; message="opSplittin/"
+   ! ---------------------------------------------------------------------------------------
+   ! structure allocations
+   USE allocspace4chm_module,only:allocLocal                ! allocate local data structures
+   ! simulation of fluxes and residuals given a trial state vector
+   USE soil_utils_module,only:matricHead                ! compute the matric head based on volumetric water content
+   USE soil_utils_module,only:liquidHead                ! compute the liquid water matric potential
+   ! population/extraction of state vectors
+   USE indexState_module,only:indexSplit                ! get state indices
+   USE varSubstep_module,only:varSubstep                ! complete substeps for a given split
+   ! identify name of variable type (for error message)
+   USE get_ixName_module,only:get_varTypeName           ! to access type strings for error messages
+   implicit none
+   ! ---------------------------------------------------------------------------------------
+   ! * dummy variables
+   ! ---------------------------------------------------------------------------------------
+   ! input: model control
+   integer(i4b),intent(in)         :: nSnow                          ! number of snow layers
+   integer(i4b),intent(in)         :: nSoil                          ! number of soil layers
+   integer(i4b),intent(in)         :: nLayers                        ! total number of layers
+   integer(i4b),intent(in)         :: nState                         ! total number of state variables
+   real(dp),intent(inout)          :: dt                             ! time step (seconds)
+   logical(lgt),intent(in)         :: firstSubStep                   ! flag to indicate if we are processing the first sub-step
+   logical(lgt),intent(in)         :: computeVegFlux                 ! flag to indicate if we are computing fluxes over vegetation (.false. means veg is buried with snow)
+   ! input/output: data structures
+   type(var_i),intent(in)          :: type_data                      ! type of vegetation and soil
+   type(var_d),intent(in)          :: attr_data                      ! spatial attributes
+   type(var_d),intent(in)          :: forc_data                      ! model forcing data
+   type(var_dlength),intent(in)    :: mpar_data                      ! model parameters
+   type(var_ilength),intent(inout) :: indx_data                      ! indices for a local HRU
+   type(var_dlength),intent(inout) :: prog_data                      ! prognostic variables for a local HRU
+   type(var_dlength),intent(inout) :: diag_data                      ! diagnostic variables for a local HRU
+   type(var_dlength),intent(inout) :: flux_data                      ! model fluxes for a local HRU
+   type(var_dlength),intent(in)    :: bvar_data                      ! model variables for the local basin
+   type(zLookup),intent(in)        :: lookup_data                    ! lookup tables
+   type(model_options),intent(in)  :: model_decisions(:)             ! model decisions
+   ! output: model control
+   real(dp),intent(out)            :: dtMultiplier                   ! substep multiplier (-)
+   logical(lgt),intent(out)        :: tooMuchMelt                    ! flag to denote that ice is insufficient to support melt
+   logical(lgt),intent(out)        :: stepFailure                    ! flag to denote step failure
+   integer(i4b),intent(out)        :: err                            ! error code
+   character(*),intent(out)        :: message                        ! error message
+   ! *********************************************************************************************************************************************************
+   ! *********************************************************************************************************************************************************
+   ! ---------------------------------------------------------------------------------------
+   ! * general local variables
+   ! ---------------------------------------------------------------------------------------
+   character(LEN=256)              :: cmessage                       ! error message of downwind routine
+   integer(i4b)                    :: minLayer                       ! the minimum layer used in assigning flags for flux aggregations
+   integer(i4b)                    :: iOffset                        ! offset to account for different indices in the soil domain
+   integer(i4b)                    :: iMin(1),iMax(1)                ! bounds of a given vector
+   integer(i4b)                    :: iLayer,jLayer                  ! index of model layer
+   integer(i4b)                    :: iSoil                          ! index of soil layer
+   integer(i4b)                    :: iVar                           ! index of variables in data structures
+   logical(lgt)                    :: firstSuccess                   ! flag to define the first success
+   logical(lgt)                    :: firstFluxCall                  ! flag to define the first flux call
+   logical(lgt)                    :: reduceCoupledStep              ! flag to define the need to reduce the length of the coupled step
+   type(var_dlength)               :: prog_temp                      ! temporary model prognostic variables
+   type(var_dlength)               :: diag_temp                      ! temporary model diagnostic variables
+   type(var_dlength)               :: flux_temp                      ! temporary model fluxes
+   type(var_dlength)               :: deriv_data                     ! derivatives in model fluxes w.r.t. relevant state variables
+   real(dp),dimension(nLayers)     :: mLayerVolFracIceInit           ! initial vector for volumetric fraction of ice (-)
+   ! ------------------------------------------------------------------------------------------------------
+   ! * operator splitting
+   ! ------------------------------------------------------------------------------------------------------
+   ! minimum timestep
+   real(dp),parameter              :: dtmin_coupled=1800._dp         ! minimum time step for the fully coupled solution (seconds)
+   real(dp),parameter              :: dtmin_split=60._dp             ! minimum time step for the fully split solution (seconds)
+   real(dp),parameter              :: dtmin_scalar=10._dp            ! minimum time step for the scalar solution (seconds)
+   real(dp)                        :: dt_min                         ! minimum time step (seconds)
+   real(dp)                        :: dtInit                         ! initial time step (seconds)
+   ! explicit error tolerance (depends on state type split, so defined here)
+   real(dp),parameter              :: errorTolLiqFlux=0.01_dp        ! error tolerance in the explicit solution (liquid flux)
+   real(dp),parameter              :: errorTolNrgFlux=10._dp         ! error tolerance in the explicit solution (energy flux)
+   ! number of substeps taken for a given split
+   integer(i4b)                    :: nSubsteps                      ! number of substeps taken for a given split
+   ! named variables defining the coupling and solution method
+   integer(i4b)                    :: ixCoupling                     ! index of coupling method (1,2)
+   integer(i4b)                    :: ixSolution                     ! index of solution method (1,2)
+   integer(i4b)                    :: ixStateThenDomain              ! switch between the state and domain (1,2)
+   integer(i4b)                    :: tryDomainSplit                 ! (0,1) - flag to try the domain split
+   ! actual number of splits
+   integer(i4b)                    :: nStateTypeSplit                ! number of splits for the state type
+   integer(i4b)                    :: nDomainSplit                   ! number of splits for the domain
+   integer(i4b)                    :: nStateSplit                    ! number of splits for the states within a given domain
+   ! indices for the state type and the domain split
+   integer(i4b)                    :: iStateTypeSplit                ! index of the state type split
+   integer(i4b)                    :: iDomainSplit                   ! index of the domain split
+   integer(i4b)                    :: iStateSplit                    ! index of the state split
+   ! flux masks
+   logical(lgt)                    :: neededFlux(nFlux)              ! .true. if flux is needed at all
+   logical(lgt)                    :: desiredFlux                    ! .true. if flux is desired for a given split
+   type(var_ilength)               :: fluxCount                      ! number of times each flux is updated (should equal nSubsteps)
+   type(var_flagVec)               :: fluxMask                       ! mask defining model fluxes
+   ! state masks
+   integer(i4b),dimension(nState)  :: stateCheck                     ! number of times each state variable is updated (should equal 1)
+   logical(lgt),dimension(nState)  :: stateMask                      ! mask defining desired state variables
+   integer(i4b)                    :: nSubset                        ! number of selected state variables for a given split
+   ! flags
+   logical(lgt)                    :: failure                        ! flag to denote failure of substepping
+   logical(lgt)                    :: doAdjustTemp                   ! flag to adjust temperature after the mass split
+   logical(lgt)                    :: failedMinimumStep              ! flag to denote failure of substepping for a given split
+   integer(i4b)                    :: ixSaturation                   ! index of the lowest saturated layer (NOTE: only computed on the first iteration)
+   integer(i4b)                    :: nCoupling                      ! number of possible solutions
+   
+   ! ---------------------------------------------------------------------------------------
+   ! point to variables in the data structures
+   ! ---------------------------------------------------------------------------------------
+   globalVars: associate(&
+   ! model decisions
+   ixGroundwater           => model_decisions(iLookDECISIONS%groundwatr)%iDecision   ,& ! intent(in):    [i4b]    groundwater parameterization
+   ixSpatialGroundwater    => model_decisions(iLookDECISIONS%spatial_gw)%iDecision   ,& ! intent(in):    [i4b]    spatial representation of groundwater (local-column or single-basin)
+   ! domain boundary conditions
+   airtemp                 => forc_data%var(iLookFORCE%airtemp)                      ,& ! intent(in):    [dp]     temperature of the upper boundary of the snow and soil domains (K)
+   ! vector of energy and hydrology indices for the snow and soil domains
+   ixSnowSoilNrg           => indx_data%var(iLookINDEX%ixSnowSoilNrg)%dat            ,& ! intent(in):    [i4b(:)] index in the state subset for energy state variables in the snow+soil domain
+   ixSnowSoilHyd           => indx_data%var(iLookINDEX%ixSnowSoilHyd)%dat            ,& ! intent(in):    [i4b(:)] index in the state subset for hydrology state variables in the snow+soil domain
+   nSnowSoilNrg            => indx_data%var(iLookINDEX%nSnowSoilNrg )%dat(1)         ,& ! intent(in):    [i4b]    number of energy state variables in the snow+soil domain
+   nSnowSoilHyd            => indx_data%var(iLookINDEX%nSnowSoilHyd )%dat(1)         ,& ! intent(in):    [i4b]    number of hydrology state variables in the snow+soil domain
+   ! indices of model state variables
+   ixMapSubset2Full        => indx_data%var(iLookINDEX%ixMapSubset2Full)%dat         ,& ! intent(in):    [i4b(:)] list of indices in the state subset (missing for values not in the subset)
+   ixStateType             => indx_data%var(iLookINDEX%ixStateType)%dat              ,& ! intent(in):    [i4b(:)] indices defining the type of the state (ixNrgState...)
+   ixNrgCanair             => indx_data%var(iLookINDEX%ixNrgCanair)%dat              ,& ! intent(in):    [i4b(:)] indices IN THE FULL VECTOR for energy states in canopy air space domain
+   ixNrgCanopy             => indx_data%var(iLookINDEX%ixNrgCanopy)%dat              ,& ! intent(in):    [i4b(:)] indices IN THE FULL VECTOR for energy states in the canopy domain
+   ixHydCanopy             => indx_data%var(iLookINDEX%ixHydCanopy)%dat              ,& ! intent(in):    [i4b(:)] indices IN THE FULL VECTOR for hydrology states in the canopy domain
+   ixNrgLayer              => indx_data%var(iLookINDEX%ixNrgLayer)%dat               ,& ! intent(in):    [i4b(:)] indices IN THE FULL VECTOR for energy states in the snow+soil domain
+   ixHydLayer              => indx_data%var(iLookINDEX%ixHydLayer)%dat               ,& ! intent(in):    [i4b(:)] indices IN THE FULL VECTOR for hydrology states in the snow+soil domain
+   ixCasNrg                => indx_data%var(iLookINDEX%ixCasNrg)%dat(1)              ,& ! intent(in):    [i4b]    index of canopy air space energy state variable
+   ixVegNrg                => indx_data%var(iLookINDEX%ixVegNrg)%dat(1)              ,& ! intent(in):    [i4b]    index of canopy energy state variable
+   ixVegHyd                => indx_data%var(iLookINDEX%ixVegHyd)%dat(1)              ,& ! intent(in):    [i4b]    index of canopy hydrology state variable (mass)
+   ! numerix tracking
+   numberStateSplit        => indx_data%var(iLookINDEX%numberStateSplit     )%dat(1) ,& ! intent(inout): [i4b]    number of state splitting solutions             (-)
+   numberDomainSplitNrg    => indx_data%var(iLookINDEX%numberDomainSplitNrg )%dat(1) ,& ! intent(inout): [i4b]    number of domain splitting solutions for energy (-)
+   numberDomainSplitMass   => indx_data%var(iLookINDEX%numberDomainSplitMass)%dat(1) ,& ! intent(inout): [i4b]    number of domain splitting solutions for mass   (-)
+   numberScalarSolutions   => indx_data%var(iLookINDEX%numberScalarSolutions)%dat(1) ,& ! intent(inout): [i4b]    number of scalar solutions                      (-)
+   ! domain configuration
+   canopyDepth             => diag_data%var(iLookDIAG%scalarCanopyDepth)%dat(1)      ,& ! intent(in):    [dp]     canopy depth (m)
+   mLayerDepth             => prog_data%var(iLookPROG%mLayerDepth)%dat               ,& ! intent(in):    [dp(:)]  depth of each layer in the snow-soil sub-domain (m)
+   ! snow parameters
+   snowfrz_scale           => mpar_data%var(iLookPARAM%snowfrz_scale)%dat(1)         ,& ! intent(in):    [dp]     scaling parameter for the snow freezing curve (K-1)
+   ! depth-varying soil parameters
+   vGn_m                   => diag_data%var(iLookDIAG%scalarVGn_m)%dat               ,& ! intent(in):    [dp(:)]  van Genutchen "m" parameter (-)
+   vGn_n                   => mpar_data%var(iLookPARAM%vGn_n)%dat                    ,& ! intent(in):    [dp(:)]  van Genutchen "n" parameter (-)
+   vGn_alpha               => mpar_data%var(iLookPARAM%vGn_alpha)%dat                ,& ! intent(in):    [dp(:)]  van Genutchen "alpha" parameter (m-1)
+   theta_sat               => mpar_data%var(iLookPARAM%theta_sat)%dat                ,& ! intent(in):    [dp(:)]  soil porosity (-)
+   theta_res               => mpar_data%var(iLookPARAM%theta_res)%dat                ,& ! intent(in):    [dp(:)]  soil residual volumetric water content (-)
+   ! soil parameters
+   specificStorage         => mpar_data%var(iLookPARAM%specificStorage)%dat(1)       ,& ! intent(in):    [dp]     specific storage coefficient (m-1)
+   ! model diagnostic variables (fraction of liquid water)
+   scalarFracLiqVeg        => diag_data%var(iLookDIAG%scalarFracLiqVeg)%dat(1)       ,& ! intent(out):   [dp]     fraction of liquid water on vegetation (-)
+   mLayerFracLiqSnow       => diag_data%var(iLookDIAG%mLayerFracLiqSnow)%dat         ,& ! intent(out):   [dp(:)]  fraction of liquid water in each snow layer (-)
+   mLayerMeltFreeze        => diag_data%var(iLookDIAG%mLayerMeltFreeze)%dat          ,& ! intent(out):   [dp(:)]  melt-freeze in each snow and soil layer (kg m-3)
+   ! model state variables (vegetation canopy)
+   scalarCanairTemp        => prog_data%var(iLookPROG%scalarCanairTemp)%dat(1)       ,& ! intent(out):   [dp]     temperature of the canopy air space (K)
+   scalarCanopyTemp        => prog_data%var(iLookPROG%scalarCanopyTemp)%dat(1)       ,& ! intent(out):   [dp]     temperature of the vegetation canopy (K)
+   scalarCanopyIce         => prog_data%var(iLookPROG%scalarCanopyIce)%dat(1)        ,& ! intent(out):   [dp]     mass of ice on the vegetation canopy (kg m-2)
+   scalarCanopyLiq         => prog_data%var(iLookPROG%scalarCanopyLiq)%dat(1)        ,& ! intent(out):   [dp]     mass of liquid water on the vegetation canopy (kg m-2)
+   scalarCanopyWat         => prog_data%var(iLookPROG%scalarCanopyWat)%dat(1)        ,& ! intent(out):   [dp]     mass of total water on the vegetation canopy (kg m-2)
+   ! model state variables (snow and soil domains)
+   mLayerTemp              => prog_data%var(iLookPROG%mLayerTemp)%dat                ,& ! intent(out):   [dp(:)]  temperature of each snow/soil layer (K)
+   mLayerVolFracIce        => prog_data%var(iLookPROG%mLayerVolFracIce)%dat          ,& ! intent(out):   [dp(:)]  volumetric fraction of ice (-)
+   mLayerVolFracLiq        => prog_data%var(iLookPROG%mLayerVolFracLiq)%dat          ,& ! intent(out):   [dp(:)]  volumetric fraction of liquid water (-)
+   mLayerVolFracWat        => prog_data%var(iLookPROG%mLayerVolFracWat)%dat          ,& ! intent(out):   [dp(:)]  volumetric fraction of total water (-)
+   mLayerMatricHead        => prog_data%var(iLookPROG%mLayerMatricHead)%dat          ,& ! intent(out):   [dp(:)]  matric head (m)
+   mLayerMatricHeadLiq     => diag_data%var(iLookDIAG%mLayerMatricHeadLiq)%dat        & ! intent(out):   [dp(:)]  matric potential of liquid water (m)
+   )
+   ! ---------------------------------------------------------------------------------------
+   ! initialize error control
+   err=0; message="opSplittin/"
+   
+   ! we just solve the fully coupled problem by ida
+   select case(model_decisions(iLookDECISIONS%diffEqSolv)%iDecision)
+      case(sundialIDA); nCoupling = 1
+      case(backwEuler); nCoupling = 2
+      case default
+         err=20
+         message=trim(message)//'expect case to be sundialIDA or backwEuler'
+         print*, message
+         return
+   end select
 
+
+   print*, "nCoupling", nCoupling
  ! *****
  ! (0) PRELIMINARIES...
  ! ********************
