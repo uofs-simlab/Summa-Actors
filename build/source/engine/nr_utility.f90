@@ -12,23 +12,6 @@ public::arth
 public::indexx
 contains
 
- ! *************************************************************************************************
- ! * the arth function, used to build a vector of regularly spaced numbers
- ! *************************************************************************************************
-!  FUNCTION arth_r(first,increment,n)
-!  implicit none
-!  REAL(SP), INTENT(IN) :: first,increment
-!  INTEGER(I4B), INTENT(IN) :: n
-!  REAL(SP), DIMENSION(n) :: arth_r
-!  INTEGER(I4B) :: k
-!  arth_r(1)=first
-!  if(n>1)then
-!   do k=2,n
-!    arth_r(k) = arth_r(k-1) + increment
-!   end do
-!  end if
-!  END FUNCTION arth_r
- ! ------------------------------------------------------------------------------------------------
  FUNCTION arth_d(first,increment,n)
  implicit none
  REAL(rkind), INTENT(IN) :: first,increment

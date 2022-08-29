@@ -187,7 +187,11 @@ contains
                     fracJulDay,                     &
                     yearLength,                     &
                     err,cmessage)                     ! intent(out): error control
-    if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+    if(err/=0)then
+      message=trim(message)//trim(cmessage)
+      print*, message
+      return
+    endif
   
     ! save the flag for computing the vegetation fluxes
     if(computeVegFluxFlag)      computeVegFlux = yes
@@ -215,7 +219,7 @@ contains
   bvarStruct%var(iLookBVAR%basin__SurfaceRunoff)%dat(1)    = 0._dp  ! surface runoff (m s-1)
   bvarStruct%var(iLookBVAR%basin__SoilDrainage)%dat(1)     = 0._dp 
   bvarStruct%var(iLookBVAR%basin__ColumnOutflow)%dat(1)    = 0._dp  ! outflow from all "outlet" HRUs (those with no downstream HRU)
-  bvarStruct%var(iLookBVAR%basin__TotalRunoff)%dat(1)    = 0._dp 
+  bvarStruct%var(iLookBVAR%basin__TotalRunoff)%dat(1)      = 0._dp 
 
  ! initialize baseflow variables
   bvarStruct%var(iLookBVAR%basin__AquiferRecharge)%dat(1)  = 0._dp ! recharge to the aquifer (m s-1)
@@ -244,6 +248,7 @@ contains
  allocate(zSoilReverseSign(nSoil),stat=err)
  if(err/=0)then
   message=trim(message)//'problem allocating space for zSoilReverseSign'
+  print*, message
   err=20; return
  endif
  zSoilReverseSign(:) = -progStruct%var(iLookPROG%iLayerHeight)%dat(nSnow+1:nLayers)
@@ -262,6 +267,7 @@ contains
  deallocate(zSoilReverseSign,stat=err)
  if(err/=0)then
   message=trim(message)//'problem deallocating space for zSoilReverseSign'
+  print*, message
   err=20; return
  endif
  
@@ -290,7 +296,12 @@ contains
       fluxStruct,         & ! data structure of model fluxes
       tmZoneOffsetFracDay,& 
       err,cmessage)       ! error control
- if(err/=0)then; err=20; message=trim(message)//trim(cmessage); return; endif
+ if(err/=0)then
+  err=20
+  message=trim(message)//trim(cmessage)
+  print*, message
+  return 
+endif
  
  ! initialize the number of flux calls
  diagStruct%var(iLookDIAG%numFluxCalls)%dat(1) = 0._dp
