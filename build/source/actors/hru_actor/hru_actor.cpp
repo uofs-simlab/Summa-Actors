@@ -277,6 +277,7 @@ int Run_HRU(stateful_actor<hru_state>* self) {
         self->state.handle_diagStruct,
         self->state.handle_fluxStruct,
         self->state.handle_bvarStruct,
+        self->state.handle_lookupStruct,
         &self->state.fracJulDay,
         &self->state.tmZoneOffsetFracDay,
         &self->state.yearLength,

@@ -176,6 +176,7 @@ subroutine RunPhysics(&
   handle_fluxStruct,      & ! x%var(:)%dat -- model fluxes
   ! basin-average structures
   handle_bvarStruct,      & ! x%var(:)%dat        -- basin-average variables
+  handle_lookupStruct,    & 
   fracJulDay,             &
   tmZoneOffsetFracDay,    &
   yearLength,             &
@@ -205,6 +206,7 @@ subroutine RunPhysics(&
   type(c_ptr), intent(in), value    :: handle_fluxStruct ! model fluxes
   ! basin-average structures
   type(c_ptr), intent(in), value    :: handle_bvarStruct ! basin-average variables
+  type(c_ptr), intent(in), value    :: handle_lookupStruct ! lookup tables
   real(c_double),intent(inout)      :: fracJulDay
   real(c_double),intent(inout)      :: tmZoneOffsetFracDay 
   integer(c_int),intent(inout)      :: yearLength
@@ -227,6 +229,7 @@ subroutine RunPhysics(&
   type(var_dlength),pointer          :: fluxStruct                 !  model fluxes
   ! basin-average structures
   type(var_dlength),pointer          :: bvarStruct                 !  basin-average variables 
+  type(zLookup), pointer             :: lookupStruct               ! lookup tables
   character(len=256)                 :: message
 
   call c_f_pointer(handle_timeStruct, timeStruct)
@@ -239,6 +242,7 @@ subroutine RunPhysics(&
   call c_f_pointer(handle_diagStruct, diagStruct)
   call c_f_pointer(handle_fluxStruct, fluxStruct)
   call c_f_pointer(handle_bvarStruct, bvarStruct)
+  call c_f_pointer(handle_lookupStruct, lookupStruct)
 
 
   call SummaActors_runPhysics(&
@@ -257,6 +261,7 @@ subroutine RunPhysics(&
     fluxStruct,             & ! x%var(:)%dat -- model fluxes
     ! basin-average structures
     bvarStruct,             & ! x%var(:)%dat        -- basin-average variables
+    lookupStruct,           &
     fracJulDay,             &
     tmZoneOffsetFracDay,    &
     yearLength,             &

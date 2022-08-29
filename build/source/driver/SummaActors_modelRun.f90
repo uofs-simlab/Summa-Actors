@@ -28,7 +28,8 @@ USE data_types,only:&
                     var_d,               & ! x%var(:)            (dp)
                     var_ilength,         & ! x%var(:)%dat        (i4b)
                     var_dlength,         & ! x%var(:)%dat        (dp)
-                    var_dlength_array      ! x%struc(:)%dat       (dp)
+                    var_dlength_array,   & ! x%struc(:)%dat       (dp)
+                    zLookup
 ! access missing values
 USE globalData,only:integerMissing         ! missing integer
 USE globalData,only:realMissing            ! missing double precision number
@@ -94,6 +95,7 @@ contains
                 fluxStruct,         & ! x%var(:)%dat -- model fluxes
                 ! basin-average structures
                 bvarStruct,         & ! x%var(:)%dat        -- basin-average variables
+                lookupStruct,       &
                 fracJulDay,         &
                 tmZoneOffsetFracDay,& 
                 yearLength,         &
@@ -140,6 +142,7 @@ contains
  type(var_dlength),intent(inout)          :: fluxStruct             ! model fluxes
  ! basin-average structures
  type(var_dlength),intent(inout)          :: bvarStruct             ! basin-average variables
+ type(zLookup),intent(inout)              :: lookupStruct
  real(dp),intent(inout)                   :: fracJulDay
  real(dp),intent(inout)                   :: tmZoneOffsetFracDay 
  integer(i4b),intent(inout)               :: yearLength
@@ -319,6 +322,7 @@ endif
                  forcStruct,         & ! intent(in):    model forcing data
                  mparStruct,         & ! intent(in):    model parameters
                  bvarStruct,         & ! intent(in):    basin-average model variables
+                 lookupStruct,       &
                  ! data structures (input-output)
                  indxStruct,         & ! intent(inout): model indices
                  progStruct,         & ! intent(inout): model prognostic variables for a local HRU

@@ -57,6 +57,7 @@ extern "C" {
       void* indxStruct, void* mparStruct, void* progStruct, void* diagStruct, void* fluxStruct,
       // basin-average structures 
       void* bvarStruct,
+      void* lookupStruct,
       double* fracJulDay, double* tmZoneOffsetFracDay, int* yearLength,
       // misc
       int* flag, double* dt, int* dt_int_factor, int* err);
