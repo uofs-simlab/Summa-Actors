@@ -97,6 +97,7 @@ implicit none
 private
 public::computFlux
 public::soilCmpres
+public::soilCmpresSundials
 contains
 
  ! *********************************************************************************************************
@@ -112,12 +113,14 @@ contains
                        firstSplitOper,           & ! intent(in):    flag to indicate if we are processing the first flux call in a splitting operation
                        computeVegFlux,           & ! intent(in):    flag to indicate if we need to compute fluxes over vegetation
                        scalarSolution,           & ! intent(in):    flag to indicate the scalar solution
+                       requireLWBal,             & ! intent(in):    flag to indicate if we need longwave to be balanced
                        drainageMeltPond,         & ! intent(in):    drainage from the surface melt pond (kg m-2 s-1)
                        ! input: state variables
                        scalarCanairTempTrial,    & ! intent(in):    trial value for the temperature of the canopy air space (K)
                        scalarCanopyTempTrial,    & ! intent(in):    trial value for the temperature of the vegetation canopy (K)
                        mLayerTempTrial,          & ! intent(in):    trial value for the temperature of each snow and soil layer (K)
                        mLayerMatricHeadLiqTrial, & ! intent(in):    trial value for the liquid water matric potential in each soil layer (m)
+                       mLayerMatricHeadTrial,    & ! intent(in)     trial vector of total water matric potential (m)
                        scalarAquiferStorageTrial,& ! intent(in):    trial value of storage of water in the aquifer (m)
                        ! input: diagnostic variables defining the liquid water and ice content
                        scalarCanopyLiqTrial,     & ! intent(in):    trial value for the liquid water on the vegetation canopy (kg m-2)
@@ -164,12 +167,14 @@ contains
  logical(lgt),intent(in)         :: firstSplitOper              ! flag to indicate if we are processing the first flux call in a splitting operation
  logical(lgt),intent(in)         :: computeVegFlux              ! flag to indicate if computing fluxes over vegetation
  logical(lgt),intent(in)         :: scalarSolution              ! flag to denote if implementing the scalar solution
+ logical(lgt),intent(in)         :: requireLWBal                    ! flag to indicate if we need longwave to be balanced
  real(dp),intent(in)             :: drainageMeltPond            ! drainage from the surface melt pond (kg m-2 s-1)
  ! input: state variables
  real(dp),intent(in)             :: scalarCanairTempTrial       ! trial value for temperature of the canopy air space (K)
  real(dp),intent(in)             :: scalarCanopyTempTrial       ! trial value for temperature of the vegetation canopy (K)
  real(dp),intent(in)             :: mLayerTempTrial(:)          ! trial value for temperature of each snow/soil layer (K)
  real(dp),intent(in)             :: mLayerMatricHeadLiqTrial(:) ! trial value for the liquid water matric potential (m)
+ real(dp),intent(in)             :: mLayerMatricHeadTrial(:)    ! trial value for the total water matric potential (m)
  real(dp),intent(in)             :: scalarAquiferStorageTrial   ! trial value of aquifer storage (m)
  ! input: diagnostic variables
  real(dp),intent(in)             :: scalarCanopyLiqTrial        ! trial value for mass of liquid water on the vegetation canopy (kg m-2)
@@ -317,21 +322,21 @@ contains
  dCanopyNetFlux_dCanairTemp   => deriv_data%var(iLookDERIV%dCanopyNetFlux_dCanairTemp  )%dat(1)  ,&  ! intent(out): [dp] derivative in net canopy flux w.r.t. canopy air temperature
  dCanopyNetFlux_dCanopyTemp   => deriv_data%var(iLookDERIV%dCanopyNetFlux_dCanopyTemp  )%dat(1)  ,&  ! intent(out): [dp] derivative in net canopy flux w.r.t. canopy temperature
  dCanopyNetFlux_dGroundTemp   => deriv_data%var(iLookDERIV%dCanopyNetFlux_dGroundTemp  )%dat(1)  ,&  ! intent(out): [dp] derivative in net canopy flux w.r.t. ground temperature
- dCanopyNetFlux_dCanLiq       => deriv_data%var(iLookDERIV%dCanopyNetFlux_dCanLiq      )%dat(1)  ,&  ! intent(out): [dp] derivative in net canopy fluxes w.r.t. canopy liquid water content
+ dCanopyNetFlux_dCanWat       => deriv_data%var(iLookDERIV%dCanopyNetFlux_dCanWat      )%dat(1)  ,&  ! intent(out): [dp] derivative in net canopy fluxes w.r.t. canopy liquid water content
  dGroundNetFlux_dCanairTemp   => deriv_data%var(iLookDERIV%dGroundNetFlux_dCanairTemp  )%dat(1)  ,&  ! intent(out): [dp] derivative in net ground flux w.r.t. canopy air temperature
  dGroundNetFlux_dCanopyTemp   => deriv_data%var(iLookDERIV%dGroundNetFlux_dCanopyTemp  )%dat(1)  ,&  ! intent(out): [dp] derivative in net ground flux w.r.t. canopy temperature
  dGroundNetFlux_dGroundTemp   => deriv_data%var(iLookDERIV%dGroundNetFlux_dGroundTemp  )%dat(1)  ,&  ! intent(out): [dp] derivative in net ground flux w.r.t. ground temperature
- dGroundNetFlux_dCanLiq       => deriv_data%var(iLookDERIV%dGroundNetFlux_dCanLiq      )%dat(1)  ,&  ! intent(out): [dp] derivative in net ground fluxes w.r.t. canopy liquid water content
+ dGroundNetFlux_dCanWat       => deriv_data%var(iLookDERIV%dGroundNetFlux_dCanWat      )%dat(1)  ,&  ! intent(out): [dp] derivative in net ground fluxes w.r.t. canopy liquid water content
 
  ! derivatives in evaporative fluxes w.r.t. relevant state variables
  dCanopyEvaporation_dTCanair  => deriv_data%var(iLookDERIV%dCanopyEvaporation_dTCanair )%dat(1)  ,&  ! intent(out): [dp] derivative in canopy evaporation w.r.t. canopy air temperature
  dCanopyEvaporation_dTCanopy  => deriv_data%var(iLookDERIV%dCanopyEvaporation_dTCanopy )%dat(1)  ,&  ! intent(out): [dp] derivative in canopy evaporation w.r.t. canopy temperature
  dCanopyEvaporation_dTGround  => deriv_data%var(iLookDERIV%dCanopyEvaporation_dTGround )%dat(1)  ,&  ! intent(out): [dp] derivative in canopy evaporation w.r.t. ground temperature
- dCanopyEvaporation_dCanLiq   => deriv_data%var(iLookDERIV%dCanopyEvaporation_dCanLiq  )%dat(1)  ,&  ! intent(out): [dp] derivative in canopy evaporation w.r.t. canopy liquid water content
+ dCanopyEvaporation_dCanWat   => deriv_data%var(iLookDERIV%dCanopyEvaporation_dCanWat  )%dat(1)  ,&  ! intent(out): [dp] derivative in canopy evaporation w.r.t. canopy liquid water content
  dGroundEvaporation_dTCanair  => deriv_data%var(iLookDERIV%dGroundEvaporation_dTCanair )%dat(1)  ,&  ! intent(out): [dp] derivative in ground evaporation w.r.t. canopy air temperature
  dGroundEvaporation_dTCanopy  => deriv_data%var(iLookDERIV%dGroundEvaporation_dTCanopy )%dat(1)  ,&  ! intent(out): [dp] derivative in ground evaporation w.r.t. canopy temperature
  dGroundEvaporation_dTGround  => deriv_data%var(iLookDERIV%dGroundEvaporation_dTGround )%dat(1)  ,&  ! intent(out): [dp] derivative in ground evaporation w.r.t. ground temperature
- dGroundEvaporation_dCanLiq   => deriv_data%var(iLookDERIV%dGroundEvaporation_dCanLiq  )%dat(1)  ,&  ! intent(out): [dp] derivative in ground evaporation w.r.t. canopy liquid water content
+ dGroundEvaporation_dCanWat   => deriv_data%var(iLookDERIV%dGroundEvaporation_dCanWat  )%dat(1)  ,&  ! intent(out): [dp] derivative in ground evaporation w.r.t. canopy liquid water content
 
  ! derivatives in canopy water w.r.t canopy temperature
  dCanLiq_dTcanopy             => deriv_data%var(iLookDERIV%dCanLiq_dTcanopy            )%dat(1)  ,&  ! intent(out): [dp] derivative of canopy liquid storage w.r.t. temperature
@@ -446,18 +451,18 @@ contains
                   dGroundNetFlux_dCanopyTemp,             & ! intent(out): derivative in net ground flux w.r.t. canopy temperature (W m-2 K-1)
                   dGroundNetFlux_dGroundTemp,             & ! intent(out): derivative in net ground flux w.r.t. ground temperature (W m-2 K-1)
                   ! output: liquid water flux derivarives (canopy evap)
-                  dCanopyEvaporation_dCanLiq,             & ! intent(out): derivative in canopy evaporation w.r.t. canopy liquid water content (s-1)
+                  dCanopyEvaporation_dCanWat,             & ! intent(out): derivative in canopy evaporation w.r.t. canopy liquid water content (s-1)
                   dCanopyEvaporation_dTCanair,            & ! intent(out): derivative in canopy evaporation w.r.t. canopy air temperature (kg m-2 s-1 K-1)
                   dCanopyEvaporation_dTCanopy,            & ! intent(out): derivative in canopy evaporation w.r.t. canopy temperature (kg m-2 s-1 K-1)
                   dCanopyEvaporation_dTGround,            & ! intent(out): derivative in canopy evaporation w.r.t. ground temperature (kg m-2 s-1 K-1)
                   ! output: liquid water flux derivarives (ground evap)
-                  dGroundEvaporation_dCanLiq,             & ! intent(out): derivative in ground evaporation w.r.t. canopy liquid water content (s-1)
+                  dGroundEvaporation_dCanWat,             & ! intent(out): derivative in ground evaporation w.r.t. canopy liquid water content (s-1)
                   dGroundEvaporation_dTCanair,            & ! intent(out): derivative in ground evaporation w.r.t. canopy air temperature (kg m-2 s-1 K-1)
                   dGroundEvaporation_dTCanopy,            & ! intent(out): derivative in ground evaporation w.r.t. canopy temperature (kg m-2 s-1 K-1)
                   dGroundEvaporation_dTGround,            & ! intent(out): derivative in ground evaporation w.r.t. ground temperature (kg m-2 s-1 K-1)
                   ! output: cross derivative terms
-                  dCanopyNetFlux_dCanLiq,                 & ! intent(out): derivative in net canopy fluxes w.r.t. canopy liquid water content (J kg-1 s-1)
-                  dGroundNetFlux_dCanLiq,                 & ! intent(out): derivative in net ground fluxes w.r.t. canopy liquid water content (J kg-1 s-1)
+                  dCanopyNetFlux_dCanWat,                 & ! intent(out): derivative in net canopy fluxes w.r.t. canopy liquid water content (J kg-1 s-1)
+                  dGroundNetFlux_dCanWat,                 & ! intent(out): derivative in net ground fluxes w.r.t. canopy liquid water content (J kg-1 s-1)
                   ! output: error control
                   err,cmessage)                             ! intent(out): error control
   if(err/=0)then; message=trim(message)//trim(cmessage); return; endif  ! (check for errors)
@@ -497,6 +502,9 @@ contains
                   iLayerLiqFluxSoil,                         & ! intent(in): liquid flux at the interface of each soil layer (m s-1)
                   ! input: trial value of model state variabes
                   mLayerTempTrial,                           & ! intent(in): trial temperature at the current iteration (K)
+                  mLayerMatricHeadTrial,                     & ! intent(in): trial value for the total water matric potential in each soil layer (m)
+                  mLayerVolFracLiqTrial,                     & ! intent(in): trial volumetric fraction of liquid water at the current iteration(-)
+                  mLayerVolFracIceTrial,                     & ! intent(in): trial volumetric fraction of ice water at the current iteration(-)
                   ! input-output: data structures
                   mpar_data,                                 & ! intent(in):    model parameters
                   indx_data,                                 & ! intent(in):    model indices
@@ -904,5 +912,55 @@ contains
   dCompress_dPsi(:) = 0._dp
  end if
  end subroutine soilCmpres
+   ! **********************************************************************************************************
+ ! public subroutine soilCmpres: compute soil compressibility (-) and its derivative w.r.t matric head (m-1)
+ ! **********************************************************************************************************
+subroutine soilCmpresSundials(&
+  ! input:
+  ixRichards,                         & ! intent(in): choice of option for Richards' equation
+  ixBeg,ixEnd,                        & ! intent(in): start and end indices defining desired layers
+  mLayerMatricHeadPrime,              & ! intent(in): matric head at the start of the time step (m)
+  mLayerVolFracLiqTrial,              & ! intent(in): trial value for the volumetric liquid water content in each soil layer (-)
+  mLayerVolFracIceTrial,              & ! intent(in): trial value for the volumetric ice content in each soil layer (-)
+  specificStorage,                    & ! intent(in): specific storage coefficient (m-1)
+  theta_sat,                          & ! intent(in): soil porosity (-)
+  ! output:
+  compress,                           & ! intent(out): compressibility of the soil matrix (-)
+  dCompress_dPsi,                     & ! intent(out): derivative in compressibility w.r.t. matric head (m-1)
+  err,message)                          ! intent(out): error code and error message
+  implicit none
+  ! input:
+  integer(i4b),intent(in)           :: ixRichards                ! choice of option for Richards' equation
+  integer(i4b),intent(in)           :: ixBeg,ixEnd               ! start and end indices defining desired layers
+  real(rkind),intent(in)            :: mLayerMatricHeadPrime(:)       ! matric head at the start of the time step (m)
+  real(rkind),intent(in)            :: mLayerVolFracLiqTrial(:)  ! trial value for volumetric fraction of liquid water (-)
+  real(rkind),intent(in)            :: mLayerVolFracIceTrial(:)  ! trial value for volumetric fraction of ice (-)
+  real(rkind),intent(in)            :: specificStorage           ! specific storage coefficient (m-1)
+  real(rkind),intent(in)            :: theta_sat(:)              ! soil porosity (-)
+  ! output:
+  real(rkind),intent(inout)         :: compress(:)               ! soil compressibility (-)
+  real(rkind),intent(inout)         :: dCompress_dPsi(:)         ! derivative in soil compressibility w.r.t. matric head (m-1)
+  integer(i4b),intent(out)          :: err                       ! error code
+  character(*),intent(out)          :: message                   ! error message
+  ! local variables
+  integer(i4b)                      :: iLayer                    ! index of soil layer
+  ! --------------------------------------------------------------
+  ! initialize error control
+  err=0; message='soilCmpresSundials/'
+  ! (only compute for the mixed form of Richards' equation)
+  if(ixRichards==mixdform)then
+    do iLayer=1,size(mLayerMatricHeadPrime)
+      if(iLayer>=ixBeg .and. iLayer<=ixEnd)then
+        ! compute the derivative for the compressibility term (m-1)
+        dCompress_dPsi(iLayer) = specificStorage*(mLayerVolFracLiqTrial(iLayer) + mLayerVolFracIceTrial(iLayer))/theta_sat(iLayer)
+        ! compute the compressibility term (-)
+        compress(iLayer)       =   mLayerMatricHeadPrime(iLayer) * dCompress_dPsi(iLayer)
+      endif
+    end do
+  else
+    compress(:)       = 0._rkind
+    dCompress_dPsi(:) = 0._rkind
+  end if
+end subroutine soilCmpresSundials
 
 end module computFlux_module

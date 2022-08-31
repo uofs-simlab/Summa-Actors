@@ -101,6 +101,9 @@ contains
                        iLayerLiqFluxSoil,                  & ! intent(in):    liquid flux at the interface of each soil layer (m s-1)
                        ! input: trial value of model state variabes
                        mLayerTempTrial,                    & ! intent(in):    trial temperature at the current iteration (K)
+                       mLayerMatricHeadTrial,              & ! intent(in):    trial matric head at the current iteration(m)
+                       mLayerVolFracLiqTrial,              & ! intent(in):    trial volumetric fraction of liquid water at the current iteration(-)
+                       mLayerVolFracIceTrial,              & ! intent(in):    trial volumetric fraction of ice water at the current iteration(-)
                        ! input-output: data structures
                        mpar_data,                          & ! intent(in):    model parameters
                        indx_data,                          & ! intent(in):    model indices
@@ -124,6 +127,9 @@ contains
  real(dp),intent(in)             :: iLayerLiqFluxSoil(0:)      ! intent(in): liquid flux at the interface of each soil layer (m s-1)
  ! input: trial value of model state variables
  real(dp),intent(in)             :: mLayerTempTrial(:)         ! trial temperature of each snow/soil layer at the current iteration (K)
+ real(dp),intent(in)             :: mLayerMatricHeadTrial(:)   ! matric head in each layer at the current iteration (m)
+ real(dp),intent(in)             :: mLayerVolFracLiqTrial(:)   ! volumetric fraction of liquid at the current iteration (-)
+ real(dp),intent(in)             :: mLayerVolFracIceTrial(:)   ! volumetric fraction of ice at the current iteration (-)
  ! input-output: data structures
  type(var_dlength),intent(in)    :: mpar_data                  ! model parameters
  type(var_ilength),intent(in)    :: indx_data                  ! state vector geometry

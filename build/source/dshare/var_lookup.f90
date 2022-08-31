@@ -369,6 +369,10 @@ MODULE var_lookup
   integer(i4b)    :: scalarLambda_wetsoil            = integerMissing ! thermal conductivity of wet soil     (W m-1 K-1)
   integer(i4b)    :: mLayerThermalC                  = integerMissing ! thermal conductivity at the mid-point of each layer (W m-1 K-1)
   integer(i4b)    :: iLayerThermalC                  = integerMissing ! thermal conductivity at the interface of each layer (W m-1 K-1)
+    ! enthalpy
+  integer(i4b)    :: scalarCanairEnthalpy            = integerMissing ! enthalpy of the canopy air space (J m-3)
+  integer(i4b)    :: scalarCanopyEnthalpy            = integerMissing ! enthalpy of the vegetation canopy (J m-3)
+  integer(i4b)    :: mLayerEnthalpy                  = integerMissing ! enthalpy of the snow+soil layers (J m-3)
   ! forcing
   integer(i4b)    :: scalarVPair                     = integerMissing ! vapor pressure of the air above the vegetation canopy (Pa)
   integer(i4b)    :: scalarVP_CanopyAir              = integerMissing ! vapor pressure of the canopy air space (Pa)
@@ -440,6 +444,7 @@ MODULE var_lookup
   integer(i4b)    :: scalarVolLatHt_fus              = integerMissing ! volumetric latent heat of fusion     (J m-3)
   ! number of function evaluations
   integer(i4b)    :: numFluxCalls                    = integerMissing ! number of flux calls (-)
+  integer(i4b)    :: wallClockTime                   = integerMissing ! wall clock time (s)
  endtype iLook_diag
 
  ! ***********************************************************************************************************
@@ -559,23 +564,30 @@ MODULE var_lookup
   integer(i4b)    :: dCanopyNetFlux_dCanairTemp      = integerMissing ! derivative in net canopy flux w.r.t. canopy air temperature (W m-2 K-1)
   integer(i4b)    :: dCanopyNetFlux_dCanopyTemp      = integerMissing ! derivative in net canopy flux w.r.t. canopy temperature (W m-2 K-1)
   integer(i4b)    :: dCanopyNetFlux_dGroundTemp      = integerMissing ! derivative in net canopy flux w.r.t. ground temperature (W m-2 K-1)
-  integer(i4b)    :: dCanopyNetFlux_dCanLiq          = integerMissing ! derivative in net canopy fluxes w.r.t. canopy liquid water content (J kg-1 s-1)
+  integer(i4b)    :: dCanopyNetFlux_dCanWat          = integerMissing ! derivative in net canopy fluxes w.r.t. canopy liquid water content (J kg-1 s-1)
   integer(i4b)    :: dGroundNetFlux_dCanairTemp      = integerMissing ! derivative in net ground flux w.r.t. canopy air temperature (W m-2 K-1)
   integer(i4b)    :: dGroundNetFlux_dCanopyTemp      = integerMissing ! derivative in net ground flux w.r.t. canopy temperature (W m-2 K-1)
   integer(i4b)    :: dGroundNetFlux_dGroundTemp      = integerMissing ! derivative in net ground flux w.r.t. ground temperature (W m-2 K-1)
-  integer(i4b)    :: dGroundNetFlux_dCanLiq          = integerMissing ! derivative in net ground fluxes w.r.t. canopy liquid water content (J kg-1 s-1)
+  integer(i4b)    :: dGroundNetFlux_dCanWat          = integerMissing ! derivative in net ground fluxes w.r.t. canopy liquid water content (J kg-1 s-1)
   ! derivatives in evaporative fluxes w.r.t. relevant state variables
   integer(i4b)    :: dCanopyEvaporation_dTCanair     = integerMissing ! derivative in canopy evaporation w.r.t. canopy air temperature (kg m-2 s-1 K-1)
   integer(i4b)    :: dCanopyEvaporation_dTCanopy     = integerMissing ! derivative in canopy evaporation w.r.t. canopy temperature (kg m-2 s-1 K-1)
   integer(i4b)    :: dCanopyEvaporation_dTGround     = integerMissing ! derivative in canopy evaporation w.r.t. ground temperature (kg m-2 s-1 K-1)
-  integer(i4b)    :: dCanopyEvaporation_dCanLiq      = integerMissing ! derivative in canopy evaporation w.r.t. canopy liquid water content (s-1)
+  integer(i4b)    :: dCanopyEvaporation_dCanWat      = integerMissing ! derivative in canopy evaporation w.r.t. canopy liquid water content (s-1)
   integer(i4b)    :: dGroundEvaporation_dTCanair     = integerMissing ! derivative in ground evaporation w.r.t. canopy air temperature (kg m-2 s-1 K-1)
   integer(i4b)    :: dGroundEvaporation_dTCanopy     = integerMissing ! derivative in ground evaporation w.r.t. canopy temperature (kg m-2 s-1 K-1)
   integer(i4b)    :: dGroundEvaporation_dTGround     = integerMissing ! derivative in ground evaporation w.r.t. ground temperature (kg m-2 s-1 K-1)
-  integer(i4b)    :: dGroundEvaporation_dCanLiq      = integerMissing ! derivative in ground evaporation w.r.t. canopy liquid water content (s-1)
-  ! derivatives in canopy water w.r.t canopy temperature
+  integer(i4b)    :: dGroundEvaporation_dCanWat      = integerMissing ! derivative in ground evaporation w.r.t. canopy liquid water content (s-1)
+! derivatives in transpiration
+  integer(i4b)    :: dCanopyTrans_dTCanair           = integerMissing !  derivative in canopy transpiration w.r.t. canopy air temperature (kg m-2 s-1 K-1)
+  integer(i4b)    :: dCanopyTrans_dTCanopy           = integerMissing ! derivative in canopy transpiration w.r.t. canopy temperature (kg m-2 s-1 K-1)
+  integer(i4b)    :: dCanopyTrans_dTGround           = integerMissing ! derivative in canopy transpiration w.r.t. ground temperature (kg m-2 s-1 K-1)
+  integer(i4b)    :: dCanopyTrans_dCanWat            = integerMissing ! derivative in canopy transpiration w.r.t. canopy total water content (s-1)  
+ ! derivatives in canopy water w.r.t canopy temperature
   integer(i4b)    :: dTheta_dTkCanopy                = integerMissing ! derivative of volumetric liquid water content w.r.t. temperature (K-1)
+  integer(i4b)    :: d2Theta_dTkCanopy2              = integerMissing ! second derivative of volumetric liquid water content w.r.t. temperature
   integer(i4b)    :: dCanLiq_dTcanopy                = integerMissing ! derivative of canopy liquid storage w.r.t. temperature (kg m-2 K-1)
+  integer(i4b)    :: dFracLiqVeg_dTkCanopy           = integerMissing !  derivative in fraction of (throughfall + drainage)  w.r.t. temperature
   ! derivatives in canopy liquid fluxes w.r.t. canopy water
   integer(i4b)    :: scalarCanopyLiqDeriv            = integerMissing ! derivative in (throughfall + canopy drainage) w.r.t. canopy liquid water (s-1)
   integer(i4b)    :: scalarThroughfallRainDeriv      = integerMissing ! derivative in throughfall w.r.t. canopy liquid water (s-1)
@@ -583,12 +595,17 @@ MODULE var_lookup
   ! derivatives in energy fluxes at the interface of snow+soil layers w.r.t. temperature in layers above and below
   integer(i4b)    :: dNrgFlux_dTempAbove             = integerMissing ! derivatives in the flux w.r.t. temperature in the layer above (J m-2 s-1 K-1)
   integer(i4b)    :: dNrgFlux_dTempBelow             = integerMissing ! derivatives in the flux w.r.t. temperature in the layer below (J m-2 s-1 K-1)
-  ! derivative in liquid water fluxes at the interface of snow layers w.r.t. volumetric liquid water content in the layer above
+  ! derivatives in energy fluxes at the interface of snow+soil layers w.r.t. water state in layers above and below
+  integer(i4b)    :: dNrgFlux_dWatAbove              = integerMissing ! derivatives in the flux w.r.t. water state in the layer above
+  integer(i4b)    :: dNrgFlux_dWatBelow              = integerMissing ! derivatives in the flux w.r.t. water state in the layer below
+! derivative in liquid water fluxes at the interface of snow layers w.r.t. volumetric liquid water content in the layer above
   integer(i4b)    :: iLayerLiqFluxSnowDeriv          = integerMissing ! derivative in vertical liquid water flux at layer interfaces (m s-1)
   ! derivative in liquid water fluxes for the soil domain w.r.t hydrology state variables
   integer(i4b)    :: dVolTot_dPsi0                   = integerMissing ! derivative in total water content w.r.t. total water matric potential (m-1)
+  integer(i4b)    :: d2VolTot_d2Psi0                 = integerMissing ! second derivative in total water content w.r.t. total water matric potential
   integer(i4b)    :: dq_dHydStateAbove               = integerMissing ! change in the flux in layer interfaces w.r.t. state variables in the layer above
   integer(i4b)    :: dq_dHydStateBelow               = integerMissing ! change in the flux in layer interfaces w.r.t. state variables in the layer below
+  integer(i4b)    :: dq_dHydStateLayerSurfVec        = integerMissing ! change in the flux in soil surface interface w.r.t. state variables in layer above and below
   integer(i4b)    :: mLayerdTheta_dPsi               = integerMissing ! derivative in the soil water characteristic w.r.t. psi (m-1)
   integer(i4b)    :: mLayerdPsi_dTheta               = integerMissing ! derivative in the soil water characteristic w.r.t. theta (m)
   integer(i4b)    :: dCompress_dPsi                  = integerMissing ! derivative in compressibility w.r.t matric head (m-1)
@@ -597,10 +614,30 @@ MODULE var_lookup
   ! derivative in liquid water fluxes for the soil domain w.r.t energy state variables
   integer(i4b)    :: dq_dNrgStateAbove               = integerMissing ! change in the flux in layer interfaces w.r.t. state variables in the layer above
   integer(i4b)    :: dq_dNrgStateBelow               = integerMissing ! change in the flux in layer interfaces w.r.t. state variables in the layer below
-  integer(i4b)    :: mLayerdTheta_dTk                = integerMissing ! derivative of volumetric liquid water content w.r.t. temperature (K-1)
+  integer(i4b)    :: dq_dNrgStateLayerSurfVec        = integerMissing ! change in the flux in soil surface interface w.r.t. state variables in layer above and below
   integer(i4b)    :: dPsiLiq_dTemp                   = integerMissing ! derivative in the liquid water matric potential w.r.t. temperature (m K-1)
   integer(i4b)    :: dPsiLiq_dPsi0                   = integerMissing ! derivative in liquid water matric potential w.r.t. the total water matric potential (-)
- endtype iLook_deriv
+  ! derivatives in soil transpiration w.r.t. canopy state variables
+  integer(i4b)    :: mLayerdTrans_dTCanair           = integerMissing ! derivatives in the soil layer transpiration flux w.r.t. canopy air temperature
+  integer(i4b)    :: mLayerdTrans_dTCanopy           = integerMissing ! derivatives in the soil layer transpiration flux w.r.t. canopy temperature
+  integer(i4b)    :: mLayerdTrans_dTGround           = integerMissing ! derivatives in the soil layer transpiration flux w.r.t. ground temperature
+  integer(i4b)    :: mLayerdTrans_dCanWat            = integerMissing ! derivatives in the soil layer transpiration flux w.r.t. canopy total water
+  ! derivatives in aquifer transpiration w.r.t. canopy state variables
+  integer(i4b)    :: dAquiferTrans_dTCanair          = integerMissing ! derivative in the aquifer transpiration flux w.r.t. canopy air temperature
+  integer(i4b)    :: dAquiferTrans_dTCanopy          = integerMissing ! derivative in the aquifer transpiration flux w.r.t. canopy temperature
+  integer(i4b)    :: dAquiferTrans_dTGround          = integerMissing ! derivative in the aquifer transpiration flux w.r.t. ground temperature
+  integer(i4b)    :: dAquiferTrans_dCanWat           = integerMissing ! derivative in the aquifer transpiration flux w.r.t. canopy total water
+ ! derivative in liquid water fluxes for the soil and snow domain w.r.t temperature
+  integer(i4b)    :: dFracLiqSnow_dTk                = integerMissing ! derivative in fraction of liquid snow w.r.t. temperature
+  integer(i4b)    :: mLayerdTheta_dTk                = integerMissing ! derivative of volumetric liquid water content w.r.t. temperature (K-1)
+  integer(i4b)    :: mLayerd2Theta_dTk2              = integerMissing ! second derivative of volumetric liquid water content w.r.t. temperature
+ ! derivate in bulk heat capacity w.r.t. relevant state variables
+  integer(i4b)    :: dVolHtCapBulk_dPsi0             = integerMissing ! derivative in bulk heat capacity w.r.t. matric potential
+  integer(i4b)    :: dVolHtCapBulk_dTheta            = integerMissing ! derivative in bulk heat capacity w.r.t. volumetric water content
+  integer(i4b)    :: dVolHtCapBulk_dCanWat           = integerMissing ! derivative in bulk heat capacity w.r.t. volumetric water content
+  integer(i4b)    :: dVolHtCapBulk_dTk               = integerMissing ! derivative in bulk heat capacity w.r.t. temperature
+  integer(i4b)    :: dVolHtCapBulk_dTkCanopy         = integerMissing ! derivative in bulk heat capacity w.r.t. temperature
+  endtype iLook_deriv
 
  ! ***********************************************************************************************************
  ! (10) define model indices
@@ -826,7 +863,7 @@ MODULE var_lookup
                                                                          51, 52, 53, 54, 55, 56, 57, 58, 59, 60,&
                                                                          61, 62, 63, 64, 65, 66, 67, 68, 69, 70,&
                                                                          71, 72, 73, 74, 75, 76, 77, 78, 79, 80,&
-                                                                         81, 82, 83)
+                                                                         81, 82, 83, 84, 85, 86, 87)
  ! named variables: model fluxes
  type(iLook_flux),    public,parameter :: iLookFLUX     =iLook_flux    (  1,  2,  3,  4,  5,  6,  7,  8,  9, 10,&
                                                                          11, 12, 13, 14, 15, 16, 17, 18, 19, 20,&
@@ -842,7 +879,10 @@ MODULE var_lookup
  type(iLook_deriv),   public,parameter :: iLookDERIV    =iLook_deriv   (  1,  2,  3,  4,  5,  6,  7,  8,  9, 10,&
                                                                          11, 12, 13, 14, 15, 16, 17, 18, 19, 20,&
                                                                          21, 22, 23, 24, 25, 26, 27, 28, 29, 30,&
-                                                                         31, 32, 33, 34, 35, 36, 37, 38, 39)
+                                                                         31, 32, 33, 34, 35, 36, 37, 38, 39, 40,&
+                                                                         41, 42, 43, 44, 45, 46, 47, 48, 49, 50,&
+                                                                         51, 52, 53, 54, 55, 56, 57, 58, 59, 60,&
+                                                                         61, 62, 63, 64, 65)
 
  ! named variables: model indices
  type(iLook_index),   public,parameter :: iLookINDEX    =ilook_index   (  1,  2,  3,  4,  5,  6,  7,  8,  9, 10,&

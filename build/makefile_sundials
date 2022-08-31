@@ -66,7 +66,8 @@ GRU_ACTOR_DIR = $(ACTORS_DIR)/gru_actor
 SUMMA_NRUTIL= \
 		nrtype.f90 \
 		f2008funcs.f90 \
-		nr_utility.f90
+		nr_utility.f90 \
+
 NRUTIL = $(patsubst %, $(ENGINE_DIR)/%, $(SUMMA_NRUTIL))
 
 # Numerical recipes procedures
@@ -103,7 +104,9 @@ SUMMA_UTILMS= \
 		mDecisions.f90 \
 		snow_utils.f90 \
 		soil_utils.f90 \
+		sundials/soil_utilsSundials.f90 \
 		updatState.f90 \
+		sundials/updatStateSundials.f90 \
 		matrixOper.f90
 UTILMS = $(patsubst %, $(ENGINE_DIR)/%, $(SUMMA_UTILMS))
 
@@ -130,8 +133,23 @@ SUMMA_SOLVER= \
 		eval8summa.f90 \
 		summaSolve.f90 \
 		systemSolv.f90 \
+		sundials/type4IDA.f90 \
+		sundials/tol4IDA.f90 \
+		sundials/computEnthalpy.f90 \
+		sundials/computHeatCap.f90 \
+		sundials/computThermConduct.f90 \
+		sundials/computResidDAE.f90 \
+		sundials/eval8DAE.f90 \
+		sundials/evalDAE4IDA.f90 \
+		sundials/computJacDAE.f90 \
+		sundials/eval8DAE.f90 \
+		sundials/eval8JacDAE.f90 \
+		sundials/evalJac4IDA.f90 \
 		sundials/computSnowDepth.f90 \
+		sundials/solveByIDA.f90 \
+		sundials/systemSolvSundials.f90 \
 		varSubstep.f90 \
+		sundials/varSubstepSundials.f90 \
 		opSplittin.f90 \
 		coupled_em.f90
 		
@@ -203,8 +221,11 @@ NOAHMP = $(patsubst %, $(NOAHMP_DIR)/%, $(SUMMA_NOAHMP))
 SUMMA_MODRUN = \
 		indexState.f90 \
 		getVectorz.f90 \
+		sundials/varExtrSundials.f90 \
 		sundials/t2enthalpy.f90 \
 		updateVars.f90 \
+		sundials/updateVarsSundials.f90 \
+		sundials/updateVars4JacDAE.f90 \
 		var_derive.f90 \
 		read_forcingActors.f90 \
 		access_forcing.f90\
