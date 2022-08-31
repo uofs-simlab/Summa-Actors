@@ -376,9 +376,6 @@ subroutine opSplittin(&
         print*, message
         return
   end select
-
-
-  print*, "nCoupling", nCoupling
   ! *****
   ! (0) PRELIMINARIES...
   ! ********************
