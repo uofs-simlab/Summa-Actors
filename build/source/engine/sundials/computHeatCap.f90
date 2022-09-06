@@ -34,15 +34,15 @@ USE var_lookup,only:iLookPARAM,iLookDIAG,iLookINDEX  ! named variables for struc
 
 ! physical constants
 USE multiconst,only:&
-					Tfreeze, 	 & ! freezing point of water (K)
-                    iden_air,    & ! intrinsic density of air      (kg m-3)
-                    iden_ice,    & ! intrinsic density of ice      (kg m-3)
-                    iden_water,  & ! intrinsic density of water    (kg m-3)
-                    ! specific heat
-                    Cp_air,      & ! specific heat of air          (J kg-1 K-1)
-                    Cp_ice,      & ! specific heat of ice          (J kg-1 K-1)
-                    Cp_soil,     & ! specific heat of soil         (J kg-1 K-1)
-                    Cp_water       ! specific heat of liquid water (J kg-1 K-1)
+                     Tfreeze,     & ! freezing point of water (K)
+                     iden_air,    & ! intrinsic density of air      (kg m-3)
+                     iden_ice,    & ! intrinsic density of ice      (kg m-3)
+                     iden_water,  & ! intrinsic density of water    (kg m-3)
+                     ! specific heat
+                     Cp_air,      & ! specific heat of air          (J kg-1 K-1)
+                     Cp_ice,      & ! specific heat of ice          (J kg-1 K-1)
+                     Cp_soil,     & ! specific heat of soil         (J kg-1 K-1)
+                     Cp_water       ! specific heat of liquid water (J kg-1 K-1)
 ! named variables to describe the state variable type
 USE globalData,only:iname_nrgCanair  ! named variable defining the energy of the canopy air space
 USE globalData,only:iname_nrgCanopy  ! named variable defining the energy of the vegetation canopy
@@ -405,7 +405,7 @@ contains
                        computeVegFlux,          & ! intent(in): flag to denote if computing the vegetation flux
                        ! input: state variables
                        scalarCanopyTemp,        & ! intent(in)
-                       mLayerTemp,       		& ! intent(in): volumetric fraction of liquid water at the start of the sub-step (-)
+                       mLayerTemp,              & ! intent(in): volumetric fraction of liquid water at the start of the sub-step (-)
                        mLayerMatricHead,        & ! intent(in)
                        ! input data structures
                        mpar_data,               & ! intent(in):    model parameters
@@ -484,9 +484,9 @@ snowfrz_scale           => mpar_data%var(iLookPARAM%snowfrz_scale)%dat(1)   & ! 
     g2 = mLayerTemp(iLayer) - Tfreeze
     Tcrit = crit_soilT( mLayerMatricHead(iSoil) )
     if( mLayerTemp(iLayer) < Tcrit)then
-    	mLayerCm(iLayer) = (iden_ice * Cp_ice - iden_air * Cp_air) * g2
+      mLayerCm(iLayer) = (iden_ice * Cp_ice - iden_air * Cp_air) * g2
     else
-    	mLayerCm(iLayer) = (iden_water * Cp_water - iden_air * Cp_air) * g2
+      mLayerCm(iLayer) = (iden_water * Cp_water - iden_air * Cp_air) * g2
     end if
     
    case(iname_snow)

@@ -51,7 +51,6 @@ contains
 subroutine read_param(indxHRU,indxGRU,mparStruct,bparStruct,dparStruct,err)
    USE globalData,only:outputStructure
    USE globalData,only:mpar_meta,bpar_meta
-   USE globalData,only:localParFallback                        ! local column default parameters
 
    implicit none
    ! define input
@@ -70,10 +69,6 @@ subroutine read_param(indxHRU,indxGRU,mparStruct,bparStruct,dparStruct,err)
    err=0; message="read_paramActors.f90/"
    ! do iVar=1, size(mpar_meta)
       dparStruct%var(:) = outputStructure(1)%dparStruct(1)%gru(indxGRU)%hru(indxHRU)%var(:)
-   ! end do
-
-   ! do iVar=1, size(localParFallback)
-   !    mparStruct%var(iVar)%dat(:) = dparStruct%var(iVar)
    ! end do
 
    ! populate parameter structures

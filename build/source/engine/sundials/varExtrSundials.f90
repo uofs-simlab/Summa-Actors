@@ -349,8 +349,6 @@ contains
  subroutine residDiscontinuity(&
                        ! input
                        stateVec,                                  & ! intent(in):    model state vector (mixed units)
-                       diag_data,                                 & ! intent(in):    model diagnostic variables for a local HRU
-                       prog_data,                                 & ! intent(in):    model prognostic variables for a local HRU
                        indx_data,                                 & ! intent(in):    indices defining model states and layers
                        ! output
                        resid,                                     & ! intent(out)
@@ -360,8 +358,6 @@ contains
  implicit none
  ! input
  real(rkind),intent(in)             :: stateVec(:)                     ! model state vector (mixed units)
- type(var_dlength),intent(in)    :: diag_data                       ! diagnostic variables for a local HRU
- type(var_dlength),intent(in)    :: prog_data                       ! prognostic variables for a local HRU
  type(var_ilength),intent(in)    :: indx_data                       ! indices defining model states and layers
  real(qp),intent(out)            :: resid(:)
  ! output: error control
@@ -436,9 +432,6 @@ contains
  ! **********************************************************************************************************
  subroutine countDiscontinuity(&
                        ! input
-                       stateVec,                                  & ! intent(in):    model state vector (mixed units)
-                       diag_data,                                 & ! intent(in):    model diagnostic variables for a local HRU
-                       prog_data,                                 & ! intent(in):    model prognostic variables for a local HRU
                        indx_data,                                 & ! intent(in):    indices defining model states and layers
                        ! output
                        countD,                                     & ! intent(out)
@@ -447,9 +440,6 @@ contains
  ! --------------------------------------------------------------------------------------------------------------------------------
  implicit none
  ! input
- real(rkind),intent(in)             :: stateVec(:)                     ! model state vector (mixed units)
- type(var_dlength),intent(in)    :: diag_data                       ! diagnostic variables for a local HRU
- type(var_dlength),intent(in)    :: prog_data                       ! prognostic variables for a local HRU
  type(var_ilength),intent(in)    :: indx_data                       ! indices defining model states and layers
  integer(i4b),intent(out)        :: countD
  ! output: error control

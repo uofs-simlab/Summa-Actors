@@ -137,7 +137,7 @@ contains
  )
  
  if(computeVegFlux)then
-	scalarCanopyEnthalpyPrime = heatCapVeg * scalarCanopyTempPrime - LH_fus*scalarCanopyIcePrime/canopyDepth
+    scalarCanopyEnthalpyPrime = heatCapVeg * scalarCanopyTempPrime - LH_fus*scalarCanopyIcePrime/canopyDepth
  end if
   ! (loop through non-missing energy state variables in the snow+soil domain)
   do concurrent (iLayer=1:nLayers,ixSnowSoilNrg(iLayer)/=integerMissing)   

@@ -59,7 +59,6 @@ contains
                        vGn_alpha,vGn_n,theta_sat,theta_res,vGn_m,& ! intent(in)    : soil parameters
                        dVolTot_dPsi0                            ,& ! intent(in)    : derivative in the soil water characteristic (m-1)
                        dTheta_dT                                ,& ! intent(in)    : derivative in volumetric total water w.r.t. temperature (K-1)
-                       tempPrime                                ,& ! intent(in)
                        volFracLiqPrime                          ,& ! intent(in)
                        volFracIcePrime                          ,& ! intent(in)
                        ! output
@@ -78,7 +77,6 @@ contains
  real(rkind),intent(in)            :: vGn_alpha,vGn_n,theta_sat,theta_res,vGn_m ! soil parameters
  real(rkind),intent(in)  ,optional :: dVolTot_dPsi0                             ! derivative in the soil water characteristic (m-1)
  real(rkind),intent(in)  ,optional :: dTheta_dT                                 ! derivative in volumetric total water w.r.t. temperature (K-1)
- real(rkind),intent(in)            :: TempPrime
  real(rkind),intent(in)            :: volFracLiqPrime
  real(rkind),intent(in)            :: volFracIcePrime
  ! output
@@ -163,10 +161,7 @@ contains
    ! (compute the derivative in the liquid water matric potential w.r.t. temperature)
    dEffSat_dTemp = -dTheta_dT*xNum/(xDen**2._rkind) + dTheta_dT/xDen
    dPsiLiq_dTemp = dPsiLiq_dEffSat*dEffSat_dTemp
-  ! matricHeadLiqPrime = dPsiLiq_dTemp * tempPrime
-
-
-
+   
   endif  ! if dPsiLiq_dTemp is desired
 
  ! ** unfrozen soil

@@ -232,7 +232,6 @@ contains
  ! *************************************************************************************************************
  subroutine updateSoilSundials2(&
                        ! input
-                       dt_cur                ,& ! intent(in): time step
                        mLayerTemp            ,& ! intent(in): temperature vector (K)
                        mLayerMatricHead      ,& ! intent(in): total water matric potential (m)
                        mLayerTempPrime       ,& ! intent(in): temperature time derivative (K/s)
@@ -256,7 +255,6 @@ contains
  USE soil_utils_module,only:dTheta_dPsi
  implicit none
  ! input variables
- real(rkind),intent(in)           :: dt_cur
  real(rkind),intent(in)           :: mLayerTemp           ! estimate of temperature (K)
  real(rkind),intent(in)           :: mLayerMatricHead     ! matric head (m)
  real(rkind),intent(in)           :: mLayerTempPrime      ! temperature time derivative (K/s)
