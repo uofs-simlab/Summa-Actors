@@ -20,153 +20,153 @@
 
 module t2enthalpy_module
 
-    ! constants
-    USE multiconst, only: gravity, &                          ! gravitational acceleration (m s-1)
-                          Tfreeze, &                          ! freezing point of water (K)
-                          Cp_soil,Cp_water,Cp_ice,Cp_air,&    ! specific heat of soil, water and ice (J kg-1 K-1)
-                          iden_water,iden_ice,iden_air,&      ! intrinsic density of water and ice (kg m-3)
-                          LH_fus                              ! latent heat of fusion (J kg-1)
+! constants
+USE multiconst, only: gravity, &                          ! gravitational acceleration (m s-1)
+                     Tfreeze, &                          ! freezing point of water (K)
+                     Cp_soil,Cp_water,Cp_ice,Cp_air,&    ! specific heat of soil, water and ice (J kg-1 K-1)
+                     iden_water,iden_ice,iden_air,&      ! intrinsic density of water and ice (kg m-3)
+                     LH_fus                              ! latent heat of fusion (J kg-1)
+
+! data types
+USE nrtype
+USE data_types,only:var_iLength                    ! var(:)%dat(:)
+USE data_types,only:var_dLength                    ! var(:)%dat(:)
+USE data_types,only:zLookup                        ! z(:)%var(:)%lookup(:)
+
+! indices within parameter structure
+USE var_lookup,only:iLookPARAM                     ! named variables to define structure element
+USE var_lookup,only:iLookINDEX                     ! named variables to define structure element
+USE var_lookup,only:iLookLOOKUP                    ! named variables to define structure element
+USE var_lookup,only:iLookDIAG       ! named variables for structure elements
+
+! data dimensions
+USE var_lookup,only:maxvarLookup                   ! maximum number of variables in the lookup tables
+
+! domain types
+USE globalData,only:iname_cas                      ! named variables for canopy air space
+USE globalData,only:iname_veg                      ! named variables for vegetation canopy
+USE globalData,only:iname_snow                     ! named variables for snow
+USE globalData,only:iname_soil                     ! named variables for soil
+USE globalData,only:iname_aquifer                  ! named variables for the aquifer
+
+! named variables to describe the state variable type
+USE globalData,only:iname_nrgCanair                ! named variable defining the energy of the canopy air space
+USE globalData,only:iname_nrgCanopy                ! named variable defining the energy of the vegetation canopy
+USE globalData,only:iname_nrgLayer                 ! named variable defining the energy state variable for snow+soil layers
+
+! missing values
+USE globalData,only:integerMissing                 ! missing integer
+USE globalData,only:realMissing                    ! missing real number
+
+! privacy
+implicit none
+private
+public::T2E_lookup
+public::t2enthalpy
+public::t2enthalpy_T
+
+! define the look-up table used to compute temperature based on enthalpy
+contains
+
     
-    ! data types
-    USE nrtype
-    USE data_types,only:var_iLength                    ! var(:)%dat(:)
-    USE data_types,only:var_dLength                    ! var(:)%dat(:)
-    USE data_types,only:zLookup                        ! z(:)%var(:)%lookup(:)
+! ************************************************************************************************************************
+! public subroutine T2E_lookup: define a look-up table to compute enthalpy based on temperature
+! ************************************************************************************************************************
+subroutine T2E_lookup(nSoil,                       &  ! intent(in):    number of soil layers
+                        mpar_data,                   &  ! intent(in):    parameter data structure
+                        lookup_data,                 &  ! intent(inout): lookup table data structure
+                        err,message)
+  USE nr_utility_module,only:arth                       ! use to build vectors with regular increments
+  USE spline_int_module,only:spline,splint              ! use for cubic spline interpolation
+  USE soil_utils_module,only:volFracLiq                 ! use to compute the volumetric fraction of liquid water
+  implicit none
+  ! declare dummy variables
+  integer(i4b),intent(in)       :: nSoil
+  type(var_dlength),intent(in)  :: mpar_data            ! model parameters
+  type(zLookup),intent(inout)   :: lookup_data          ! lookup tables
+  integer(i4b),intent(out)      :: err                  ! error code
+  character(*),intent(out)      :: message              ! error message
+  ! declare local variables
+  character(len=128)            :: cmessage             ! error message in downwind routine
+  logical(lgt),parameter        :: doTest=.false.       ! flag to test
+  integer(i4b),parameter        :: nLook=100            ! number of elements in the lookup table
+  integer(i4b),parameter        :: nIntegr8=10000       ! number of points used in the numerical integration
+  real(rkind),parameter            :: T_lower=260.0_rkind     ! lowest temperature value where all liquid water is assumed frozen (K)
+  real(rkind),dimension(nLook)     :: xTemp                ! temporary vector
+  real(rkind)                      :: xIncr                ! temporary increment
+  real(rkind)                      :: T_incr               ! temperature increment
+  real(rkind),parameter            :: T_test=272.9742_rkind   ! test value for temperature (K)
+  real(rkind)                      :: E_test               ! test value for enthalpy (J m-3)
+  integer(i4b)                  :: iVar                 ! loop through variables
+  integer(i4b)                  :: iSoil                ! loop through soil layers
+  integer(i4b)                  :: iLook                ! loop through lookup table
+  integer(i4b)                  :: jIntegr8             ! index for numerical integration
+  logical(lgt)                  :: check                ! flag to check allocation
+  real(rkind)                      :: vGn_m                ! van Genuchten "m" parameter (-)
+  real(rkind)                      :: vFracLiq             ! volumetric fraction of liquid water (-)
+  real(rkind)                      :: vFracIce             ! volumetric fraction of ice (-)
+  real(rkind)                      :: matricHead           ! matric head (m)
+  ! initialize error control
+  err=0; message="T2E_lookup/"
+
+  ! get the values of temperature for the lookup table
+  xIncr = 1._rkind/real(nLook-1, kind(rkind))
+  xTemp = T_lower + (Tfreeze - T_lower)*arth(0._rkind,xIncr,nLook)**0.25_rkind ! use **0.25 to give more values near freezing
+
+  ! -----
+  ! * allocate space for the lookup table...
+  ! ----------------------------------------
+
+  ! initialize checks
+  check=.false.
+
+  ! allocate space for soil layers
+  if(allocated(lookup_data%z))then; check=.true.; else; allocate(lookup_data%z(nSoil), stat=err); endif
+  if(check) then; err=20; message=trim(message)//'lookup table z dimension was unexpectedly allocated already'; return; end if
+  if(err/=0)then; err=20; message=trim(message)//'problem allocating lookup table z dimension dimension'; return; end if
+
+  ! allocate space for the variables in the lookup table
+  do iSoil=1,nSoil
+    if(allocated(lookup_data%z(iSoil)%var))then; check=.true.; else; allocate(lookup_data%z(iSoil)%var(maxvarLookup), stat=err); endif
+    if(check) then; err=20; message=trim(message)//'lookup table var dimension was unexpectedly allocated already'; return; end if
+    if(err/=0)then; err=20; message=trim(message)//'problem allocating lookup table var dimension dimension'; return; end if
+
+    ! allocate space for the values in the lookup table
+    do iVar=1,maxvarLookup
+      if(allocated(lookup_data%z(iSoil)%var(iVar)%lookup))then; check=.true.; else; allocate(lookup_data%z(iSoil)%var(iVar)%lookup(nLook), stat=err); endif
+      if(check) then; err=20; message=trim(message)//'lookup table value dimension was unexpectedly allocated already'; return; end if
+      if(err/=0)then; err=20; message=trim(message)//'problem allocating lookup table vaule dimension dimension'; return; end if
+
+    end do ! (looping through variables)
+  end do ! (looping through soil layers)
+
+  ! loop through soil layers
+  do iSoil=1,nSoil
     
-    ! indices within parameter structure
-    USE var_lookup,only:iLookPARAM                     ! named variables to define structure element
-    USE var_lookup,only:iLookINDEX                     ! named variables to define structure element
-    USE var_lookup,only:iLookLOOKUP                    ! named variables to define structure element
-    USE var_lookup,only:iLookDIAG       ! named variables for structure elements
-    
-    ! data dimensions
-    USE var_lookup,only:maxvarLookup                   ! maximum number of variables in the lookup tables
-    
-    ! domain types
-    USE globalData,only:iname_cas                      ! named variables for canopy air space
-    USE globalData,only:iname_veg                      ! named variables for vegetation canopy
-    USE globalData,only:iname_snow                     ! named variables for snow
-    USE globalData,only:iname_soil                     ! named variables for soil
-    USE globalData,only:iname_aquifer                  ! named variables for the aquifer
-    
-    ! named variables to describe the state variable type
-    USE globalData,only:iname_nrgCanair                ! named variable defining the energy of the canopy air space
-    USE globalData,only:iname_nrgCanopy                ! named variable defining the energy of the vegetation canopy
-    USE globalData,only:iname_nrgLayer                 ! named variable defining the energy state variable for snow+soil layers
-    
-    ! missing values
-    USE globalData,only:integerMissing                 ! missing integer
-    USE globalData,only:realMissing                    ! missing real number
-    
-    ! privacy
-    implicit none
-    private
-    public::T2E_lookup
-    public::t2enthalpy
-    public::t2enthalpy_T
-    
-    ! define the look-up table used to compute temperature based on enthalpy
-    contains
-    
-    
-     ! ************************************************************************************************************************
-     ! public subroutine T2E_lookup: define a look-up table to compute enthalpy based on temperature
-     ! ************************************************************************************************************************
-     subroutine T2E_lookup(nSoil,                       &  ! intent(in):    number of soil layers
-                           mpar_data,                   &  ! intent(in):    parameter data structure
-                           lookup_data,                 &  ! intent(inout): lookup table data structure
-                           err,message)
-     USE nr_utility_module,only:arth                       ! use to build vectors with regular increments
-     USE spline_int_module,only:spline,splint              ! use for cubic spline interpolation
-     USE soil_utils_module,only:volFracLiq                 ! use to compute the volumetric fraction of liquid water
-     implicit none
-     ! declare dummy variables
-     integer(i4b),intent(in)       :: nSoil
-     type(var_dlength),intent(in)  :: mpar_data            ! model parameters
-     type(zLookup),intent(inout)   :: lookup_data          ! lookup tables
-     integer(i4b),intent(out)      :: err                  ! error code
-     character(*),intent(out)      :: message              ! error message
-     ! declare local variables
-     character(len=128)            :: cmessage             ! error message in downwind routine
-     logical(lgt),parameter        :: doTest=.false.       ! flag to test
-     integer(i4b),parameter        :: nLook=100            ! number of elements in the lookup table
-     integer(i4b),parameter        :: nIntegr8=10000       ! number of points used in the numerical integration
-     real(rkind),parameter            :: T_lower=260.0_rkind     ! lowest temperature value where all liquid water is assumed frozen (K)
-     real(rkind),dimension(nLook)     :: xTemp                ! temporary vector
-     real(rkind)                      :: xIncr                ! temporary increment
-     real(rkind)                      :: T_incr               ! temperature increment
-     real(rkind),parameter            :: T_test=272.9742_rkind   ! test value for temperature (K)
-     real(rkind)                      :: E_test               ! test value for enthalpy (J m-3)
-     integer(i4b)                  :: iVar                 ! loop through variables
-     integer(i4b)                  :: iSoil                ! loop through soil layers
-     integer(i4b)                  :: iLook                ! loop through lookup table
-     integer(i4b)                  :: jIntegr8             ! index for numerical integration
-     logical(lgt)                  :: check                ! flag to check allocation
-     real(rkind)                      :: vGn_m                ! van Genuchten "m" parameter (-)
-     real(rkind)                      :: vFracLiq             ! volumetric fraction of liquid water (-)
-     real(rkind)                      :: vFracIce             ! volumetric fraction of ice (-)
-     real(rkind)                      :: matricHead           ! matric head (m)
-     ! initialize error control
-     err=0; message="T2E_lookup/"
-    
-     ! get the values of temperature for the lookup table
-     xIncr = 1._rkind/real(nLook-1, kind(rkind))
-     xTemp = T_lower + (Tfreeze - T_lower)*arth(0._rkind,xIncr,nLook)**0.25_rkind ! use **0.25 to give more values near freezing
-    
-     ! -----
-     ! * allocate space for the lookup table...
-     ! ----------------------------------------
-    
-     ! initialize checks
-     check=.false.
-    
-     ! allocate space for soil layers
-     if(allocated(lookup_data%z))then; check=.true.; else; allocate(lookup_data%z(nSoil), stat=err); endif
-     if(check) then; err=20; message=trim(message)//'lookup table z dimension was unexpectedly allocated already'; return; end if
-     if(err/=0)then; err=20; message=trim(message)//'problem allocating lookup table z dimension dimension'; return; end if
-    
-     ! allocate space for the variables in the lookup table
-     do iSoil=1,nSoil
-      if(allocated(lookup_data%z(iSoil)%var))then; check=.true.; else; allocate(lookup_data%z(iSoil)%var(maxvarLookup), stat=err); endif
-      if(check) then; err=20; message=trim(message)//'lookup table var dimension was unexpectedly allocated already'; return; end if
-      if(err/=0)then; err=20; message=trim(message)//'problem allocating lookup table var dimension dimension'; return; end if
-    
-      ! allocate space for the values in the lookup table
-      do iVar=1,maxvarLookup
-       if(allocated(lookup_data%z(iSoil)%var(iVar)%lookup))then; check=.true.; else; allocate(lookup_data%z(iSoil)%var(iVar)%lookup(nLook), stat=err); endif
-       if(check) then; err=20; message=trim(message)//'lookup table value dimension was unexpectedly allocated already'; return; end if
-       if(err/=0)then; err=20; message=trim(message)//'problem allocating lookup table vaule dimension dimension'; return; end if
-    
-      end do ! (looping through variables)
-     end do ! (looping through soil layers)
-    
-     ! loop through soil layers
-     do iSoil=1,nSoil
-    
-      ! -----
-      ! * make association to variables in the data structures...
-      ! ---------------------------------------------------------
-    
-      associate(&
-    
-      ! associate model parameters
-      snowfrz_scale  => mpar_data%var(iLookPARAM%snowfrz_scale)%dat(1)           , & ! scaling parameter for freezing     (K-1)
-      soil_dens_intr => mpar_data%var(iLookPARAM%soil_dens_intr)%dat(iSoil)      , & ! intrinsic soil density             (kg m-3)
-      theta_sat      => mpar_data%var(iLookPARAM%theta_sat)%dat(iSoil)           , & ! soil porosity                      (-)
-      theta_res      => mpar_data%var(iLookPARAM%theta_res)%dat(iSoil)           , & ! volumetric residual water content  (-)
-      vGn_alpha      => mpar_data%var(iLookPARAM%vGn_alpha)%dat(iSoil)           , & ! van Genuchten "alpha" parameter    (m-1)
-      vGn_n          => mpar_data%var(iLookPARAM%vGn_n)%dat(iSoil)               , & ! van Genuchten "n" parameter        (-)
-    
-      ! associate values in the lookup table
-      Tk            => lookup_data%z(iSoil)%var(iLookLOOKUP%temperature)%lookup  , & ! temperature (K)
-      Ey            => lookup_data%z(iSoil)%var(iLookLOOKUP%enthalpy)%lookup     , & ! enthalpy (J m-3)
-      E2            => lookup_data%z(iSoil)%var(iLookLOOKUP%deriv2)%lookup         & ! second derivative of the interpolating function
-    
-      ) ! end associate statement
-    
-      ! compute vGn_m
-      vGn_m = 1._rkind - 1._rkind/vGn_n
-    
+    ! -----
+    ! * make association to variables in the data structures...
+    ! ---------------------------------------------------------
+  
+    associate(&
+  
+    ! associate model parameters
+    snowfrz_scale  => mpar_data%var(iLookPARAM%snowfrz_scale)%dat(1)           , & ! scaling parameter for freezing     (K-1)
+    soil_dens_intr => mpar_data%var(iLookPARAM%soil_dens_intr)%dat(iSoil)      , & ! intrinsic soil density             (kg m-3)
+    theta_sat      => mpar_data%var(iLookPARAM%theta_sat)%dat(iSoil)           , & ! soil porosity                      (-)
+    theta_res      => mpar_data%var(iLookPARAM%theta_res)%dat(iSoil)           , & ! volumetric residual water content  (-)
+    vGn_alpha      => mpar_data%var(iLookPARAM%vGn_alpha)%dat(iSoil)           , & ! van Genuchten "alpha" parameter    (m-1)
+    vGn_n          => mpar_data%var(iLookPARAM%vGn_n)%dat(iSoil)               , & ! van Genuchten "n" parameter        (-)
+  
+    ! associate values in the lookup table
+    Tk            => lookup_data%z(iSoil)%var(iLookLOOKUP%temperature)%lookup  , & ! temperature (K)
+    Ey            => lookup_data%z(iSoil)%var(iLookLOOKUP%enthalpy)%lookup     , & ! enthalpy (J m-3)
+    E2            => lookup_data%z(iSoil)%var(iLookLOOKUP%deriv2)%lookup         & ! second derivative of the interpolating function
+  
+    ) ! end associate statement
+  
+    ! compute vGn_m
+    vGn_m = 1._rkind - 1._rkind/vGn_n
+  
       ! -----
       ! * populate the lookup table...
       ! ------------------------------

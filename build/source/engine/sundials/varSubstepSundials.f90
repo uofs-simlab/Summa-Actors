@@ -121,7 +121,7 @@ subroutine varSubstepSundials(&
                        failedMinimumStep, & ! intent(out)   : flag to denote success of substepping for a given split
                        reduceCoupledStep, & ! intent(out)   : flag to denote need to reduce the length of the coupled step
                        tooMuchMelt,       & ! intent(out)   : flag to denote that ice is insufficient to support melt
-                       dt_out,			  & ! intent(out)
+                       dt_out,            & ! intent(out)
                        err,message)         ! intent(out)   : error code and error message
   ! ---------------------------------------------------------------------------------------
   ! structure allocations
@@ -172,7 +172,7 @@ subroutine varSubstepSundials(&
   logical(lgt),intent(out)           :: failedMinimumStep             ! flag to denote success of substepping for a given split
   logical(lgt),intent(out)           :: reduceCoupledStep             ! flag to denote need to reduce the length of the coupled step
   logical(lgt),intent(out)           :: tooMuchMelt                   ! flag to denote that ice is insufficient to support melt
-  real(qp),intent(out)   		        :: dt_out
+  real(qp),intent(out)               :: dt_out
   integer(i4b),intent(out)           :: err                           ! error code
   character(*),intent(out)           :: message                       ! error message
   ! ---------------------------------------------------------------------------------------
@@ -290,19 +290,19 @@ subroutine varSubstepSundials(&
   ! NOTE: continuous do statement with exit clause
   substeps: do
 
-  ! initialize error control
-  err=0; message='varSubstepSundials/'
+    ! initialize error control
+    err=0; message='varSubstepSundials/'
 
-  !write(*,'(a,1x,3(f13.2,1x))') '***** new subStep: dtSubstep, dtSum, dt = ', dtSubstep, dtSum, dt
-  !print*, 'scalarCanopyIce  = ', prog_data%var(iLookPROG%scalarCanopyIce)%dat(1)
-  !print*, 'scalarCanopyTemp = ', prog_data%var(iLookPROG%scalarCanopyTemp)%dat(1)
+    !write(*,'(a,1x,3(f13.2,1x))') '***** new subStep: dtSubstep, dtSum, dt = ', dtSubstep, dtSum, dt
+    !print*, 'scalarCanopyIce  = ', prog_data%var(iLookPROG%scalarCanopyIce)%dat(1)
+    !print*, 'scalarCanopyTemp = ', prog_data%var(iLookPROG%scalarCanopyTemp)%dat(1)
 
-  ! -----
-  ! * populate state vectors...
-  ! ---------------------------
+    ! -----
+    ! * populate state vectors...
+    ! ---------------------------
 
-  ! initialize state vectors
-  call popStateVec(&
+    ! initialize state vectors
+    call popStateVec(&
                    ! input
                    nState,                           & ! intent(in):    number of desired state variables
                    prog_data,                        & ! intent(in):    model prognostic variables for a local HRU
@@ -311,13 +311,17 @@ subroutine varSubstepSundials(&
                    ! output
                    stateVecInit,                     & ! intent(out):   initial model state vector (mixed units)
                    err,cmessage)                       ! intent(out):   error control
-  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif  ! (check for errors)
+    if(err/=0)then
+      message=trim(message)//trim(cmessage)
+      print*, message
+      return
+    endif  ! (check for errors)
 
-  ! -----
-  ! * iterative solution...
-  ! -----------------------
-  ! solve the system of equations for a given state subset
-  call systemSolvSundials(&
+    ! -----
+    ! * iterative solution...
+    ! -----------------------
+    ! solve the system of equations for a given state subset
+    call systemSolvSundials(&
                   ! input: model control
                   dtSubstep,         & ! intent(in):    time step (s)
                   nState,            & ! intent(in):    total number of state variables
@@ -346,208 +350,212 @@ subroutine varSubstepSundials(&
                   stateVecPrime,     & ! intent(out):   updated state vector
                   reduceCoupledStep, & ! intent(out):   flag to reduce the length of the coupled step
                   tooMuchMelt,       & ! intent(out):   flag to denote that ice is insufficient to support melt
-                  dt_out,			       & ! intent(out):   time step (s)
+                  dt_out,            & ! intent(out):   time step (s)
                   err,cmessage)        ! intent(out):   error code and error message
 
-  if(err/=0)then
-   message=trim(message)//trim(cmessage)
-   if(err>0) return
-  endif
+    if(err/=0)then
+      message=trim(message)//trim(cmessage)
+      print*, message
+      if(err>0) return
+    endif
 
-  ! set untapped melt energy to zero
-  untappedMelt(:) = 0._rkind
+    ! set untapped melt energy to zero
+    untappedMelt(:) = 0._rkind
 
-  ! if too much melt or need to reduce length of the coupled step then return
-  ! NOTE: need to go all the way back to coupled_em and merge snow layers, as all splitting operations need to occur with the same layer geometry
-  if(tooMuchMelt .or. reduceCoupledStep) return
+    ! if too much melt or need to reduce length of the coupled step then return
+    ! NOTE: need to go all the way back to coupled_em and merge snow layers, as all splitting operations need to occur with the same layer geometry
+    if(tooMuchMelt .or. reduceCoupledStep) return
 
-  ! identify failure
-  failedSubstep = (err<0)
+      ! identify failure
+      failedSubstep = (err<0)
 
-  ! reduce step based on failure
-  if(failedSubstep)then
-    err=0; message='varSubstepSundials/'  ! recover from failed convergence
-    dtMultiplier  = 0.5_rkind        ! system failure: step halving
-  else
+      ! reduce step based on failure
+      if(failedSubstep)then
+        err=0; message='varSubstepSundials/'  ! recover from failed convergence
+        dtMultiplier  = 0.5_rkind        ! system failure: step halving
+      else
 
-  endif  ! switch between failure and success
+    endif  ! switch between failure and success
 
-  ! check if we failed the substep
-  if(failedSubstep)then
+    ! check if we failed the substep
+    if(failedSubstep)then
 
-   ! check that the substep is greater than the minimum step
-   if(dtSubstep*dtMultiplier<dt_min)then
-    ! --> exit, and either (1) try another solution method; or (2) reduce coupled step
-    failedMinimumStep=.true.
-    exit subSteps
+      ! check that the substep is greater than the minimum step
+      if(dtSubstep*dtMultiplier<dt_min)then
+        ! --> exit, and either (1) try another solution method; or (2) reduce coupled step
+        failedMinimumStep=.true.
+        exit subSteps
 
-   else ! step is still OK
-    dtSubstep = dtSubstep*dtMultiplier
-    cycle subSteps
-   endif  ! if step is less than the minimum
+      else ! step is still OK
+        dtSubstep = dtSubstep*dtMultiplier
+        cycle subSteps
+      endif  ! if step is less than the minimum
 
-  endif  ! if failed the substep
+    endif  ! if failed the substep
 
-  ! -----
-  ! * update model fluxes...
-  ! ------------------------
+    ! -----
+    ! * update model fluxes...
+    ! ------------------------
 
-  ! NOTE: if we get to here then we are accepting the step
+    ! NOTE: if we get to here then we are accepting the step
 
-  ! NOTE: we get to here if iterations are successful
-  if(err/=0)then
-   message=trim(message)//'expect err=0 if updating fluxes'
-   return
-  endif
+    ! NOTE: we get to here if iterations are successful
+    if(err/=0)then
+      message=trim(message)//'expect err=0 if updating fluxes'
+      print*, message
+      return
+    endif
 
-  ! identify the need to check the mass balance
-  checkMassBalance = .true. ! (.not.scalarSolution)
-  checkNrgBalance = .true.
+    ! identify the need to check the mass balance
+    checkMassBalance = .true. ! (.not.scalarSolution)
+    checkNrgBalance = .true.
 
-  ! update prognostic variables
-  call updateProgSundials(dt_out,nSnow,nSoil,nLayers,doAdjustTemp,computeVegFlux,untappedMelt,stateVecTrial,stateVecPrime,checkMassBalance, checkNrgBalance, & ! input: model control
-                  lookup_data,mpar_data,indx_data,flux_temp,prog_data,diag_data,deriv_data,                               & ! input-output: data structures
-                  waterBalanceError,nrgFluxModified,err,cmessage)                                                           ! output: flags and error control
-  if(err/=0)then
-   message=trim(message)//trim(cmessage)
-   if(err>0) return
-  endif
+    ! update prognostic variables
+    call updateProgSundials(dt_out,nSnow,nSoil,nLayers,doAdjustTemp,computeVegFlux,untappedMelt,stateVecTrial,stateVecPrime,checkMassBalance, checkNrgBalance, & ! input: model control
+                   lookup_data,mpar_data,indx_data,flux_temp,prog_data,diag_data,deriv_data,                               & ! input-output: data structures
+                    waterBalanceError,nrgFluxModified,err,cmessage)                                                           ! output: flags and error control
+    if(err/=0)then
+      message=trim(message)//trim(cmessage)
+      print*, message
+      if(err>0) return
+    endif
 
-  ! if water balance error then reduce the length of the coupled step
-  if(waterBalanceError)then
-   message=trim(message)//'water balance error'
-   reduceCoupledStep=.true.
-   err=-20; return
-  endif
+    ! if water balance error then reduce the length of the coupled step
+    if(waterBalanceError)then
+      message=trim(message)//'water balance error'
+      reduceCoupledStep=.true.
+      err=-20; return
+    endif
 
-  if(globalPrintFlag)&
-  print*, trim(cmessage)//': dt = ', dtSubstep
+    if(globalPrintFlag)&
+      print*, trim(cmessage)//': dt = ', dtSubstep
 
-  ! recover from errors in prognostic update
-  if(err<0)then
+    ! recover from errors in prognostic update
+    if(err<0)then
 
-   ! modify step
-   err=0  ! error recovery
-   dtSubstep = dtSubstep/2._rkind
+      ! modify step
+      err=0  ! error recovery
+      dtSubstep = dtSubstep/2._rkind
 
-   ! check minimum: fail minimum step if there is an error in the update
-   if(dtSubstep<dt_min)then
-    failedMinimumStep=.true.
-    exit subSteps
-   ! minimum OK -- try again
-   else
-    cycle substeps
-   endif
-
-  endif  ! if errors in prognostic update
-
-  ! get the total energy fluxes (modified in updateProgSundials)
-  if(nrgFluxModified .or. indx_data%var(iLookINDEX%ixVegNrg)%dat(1)/=integerMissing)then
-   sumCanopyEvaporation = sumCanopyEvaporation + dt_out*flux_temp%var(iLookFLUX%scalarCanopyEvaporation)%dat(1) ! canopy evaporation/condensation (kg m-2 s-1)
-   sumLatHeatCanopyEvap = sumLatHeatCanopyEvap + dt_out*flux_temp%var(iLookFLUX%scalarLatHeatCanopyEvap)%dat(1) ! latent heat flux for evaporation from the canopy to the canopy air space (W m-2)
-   sumSenHeatCanopy     = sumSenHeatCanopy     + dt_out*flux_temp%var(iLookFLUX%scalarSenHeatCanopy)%dat(1)     ! sensible heat flux from the canopy to the canopy air space (W m-2)
-  else
-   sumCanopyEvaporation = sumCanopyEvaporation + dt_out*flux_data%var(iLookFLUX%scalarCanopyEvaporation)%dat(1) ! canopy evaporation/condensation (kg m-2 s-1)
-   sumLatHeatCanopyEvap = sumLatHeatCanopyEvap + dt_out*flux_data%var(iLookFLUX%scalarLatHeatCanopyEvap)%dat(1) ! latent heat flux for evaporation from the canopy to the canopy air space (W m-2)
-   sumSenHeatCanopy     = sumSenHeatCanopy     + dt_out*flux_data%var(iLookFLUX%scalarSenHeatCanopy)%dat(1)     ! sensible heat flux from the canopy to the canopy air space (W m-2)
-  endif  ! if energy fluxes were modified
-
-  ! get the total soil compression
-  if (count(indx_data%var(iLookINDEX%ixSoilOnlyHyd)%dat/=integerMissing)>0) then
-   ! scalar compression
-   if(.not.scalarSolution .or. iStateSplit==nSoil)&
-   sumSoilCompress = sumSoilCompress + diag_data%var(iLookDIAG%scalarSoilCompress)%dat(1) ! total soil compression
-   ! vector compression
-   do iSoil=1,nSoil
-    if(indx_data%var(iLookINDEX%ixSoilOnlyHyd)%dat(iSoil)/=integerMissing)&
-    sumLayerCompress(iSoil) = sumLayerCompress(iSoil) + diag_data%var(iLookDIAG%mLayerCompress)%dat(iSoil) ! soil compression in layers
-   end do
-  endif
-
-  ! print progress
-  if(globalPrintFlag)&
-  write(*,'(a,1x,3(f13.2,1x))') 'updating: dtSubstep, dtSum, dt = ', dtSubstep, dtSum, dt
-
-  ! increment fluxes
-  dt_wght = 1._qp !dt_out/dt ! (define weight applied to each splitting operation)
-  do iVar=1,size(flux_meta)
-   if(count(fluxMask%var(iVar)%dat)>0) then
-
-    !print*, flux_meta(iVar)%varname, fluxMask%var(iVar)%dat
-
-    ! ** no domain splitting
-    if(count(ixLayerActive/=integerMissing)==nLayers)then
-     flux_data%var(iVar)%dat(:) = flux_data%var(iVar)%dat(:) + flux_temp%var(iVar)%dat(:)*dt_wght
-     fluxCount%var(iVar)%dat(:) = fluxCount%var(iVar)%dat(:) + 1
-
-    ! ** domain splitting
-    else
-     ixMin=lbound(flux_data%var(iVar)%dat)
-     ixMax=ubound(flux_data%var(iVar)%dat)
-     do ixLayer=ixMin(1),ixMax(1)
-      if(fluxMask%var(iVar)%dat(ixLayer)) then
-       flux_data%var(iVar)%dat(ixLayer) = flux_data%var(iVar)%dat(ixLayer) + flux_temp%var(iVar)%dat(ixLayer)*dt_wght
-       fluxCount%var(iVar)%dat(ixLayer) = fluxCount%var(iVar)%dat(ixLayer) + 1
+      ! check minimum: fail minimum step if there is an error in the update
+      if(dtSubstep<dt_min)then
+        failedMinimumStep=.true.
+        exit subSteps
+      ! minimum OK -- try again
+      else
+        cycle substeps
       endif
-     end do
-    endif  ! (domain splitting)
 
-   endif   ! (if the flux is desired)
-  end do  ! (loop through fluxes)
+    endif  ! if errors in prognostic update
 
-  ! ------------------------------------------------------
-  ! ------------------------------------------------------
+    ! get the total energy fluxes (modified in updateProgSundials)
+    if(nrgFluxModified .or. indx_data%var(iLookINDEX%ixVegNrg)%dat(1)/=integerMissing)then
+      sumCanopyEvaporation = sumCanopyEvaporation + dt_out*flux_temp%var(iLookFLUX%scalarCanopyEvaporation)%dat(1) ! canopy evaporation/condensation (kg m-2 s-1)
+      sumLatHeatCanopyEvap = sumLatHeatCanopyEvap + dt_out*flux_temp%var(iLookFLUX%scalarLatHeatCanopyEvap)%dat(1) ! latent heat flux for evaporation from the canopy to the canopy air space (W m-2)
+      sumSenHeatCanopy     = sumSenHeatCanopy     + dt_out*flux_temp%var(iLookFLUX%scalarSenHeatCanopy)%dat(1)     ! sensible heat flux from the canopy to the canopy air space (W m-2)
+    else
+      sumCanopyEvaporation = sumCanopyEvaporation + dt_out*flux_data%var(iLookFLUX%scalarCanopyEvaporation)%dat(1) ! canopy evaporation/condensation (kg m-2 s-1)
+      sumLatHeatCanopyEvap = sumLatHeatCanopyEvap + dt_out*flux_data%var(iLookFLUX%scalarLatHeatCanopyEvap)%dat(1) ! latent heat flux for evaporation from the canopy to the canopy air space (W m-2)
+      sumSenHeatCanopy     = sumSenHeatCanopy     + dt_out*flux_data%var(iLookFLUX%scalarSenHeatCanopy)%dat(1)     ! sensible heat flux from the canopy to the canopy air space (W m-2)
+    endif  ! if energy fluxes were modified
 
-  ! increment the number of substeps
-  nSubsteps = nSubsteps+1
+    ! get the total soil compression
+    if (count(indx_data%var(iLookINDEX%ixSoilOnlyHyd)%dat/=integerMissing)>0) then
+      ! scalar compression
+      if(.not.scalarSolution .or. iStateSplit==nSoil)&
+        sumSoilCompress = sumSoilCompress + diag_data%var(iLookDIAG%scalarSoilCompress)%dat(1) ! total soil compression
+      ! vector compression
+      do iSoil=1,nSoil
+        if(indx_data%var(iLookINDEX%ixSoilOnlyHyd)%dat(iSoil)/=integerMissing)&
+          sumLayerCompress(iSoil) = sumLayerCompress(iSoil) + diag_data%var(iLookDIAG%mLayerCompress)%dat(iSoil) ! soil compression in layers
+      end do
+    endif
 
-  ! increment the sub-step legth
-  dtSum = dtSum + dtSubstep
-  !print*, 'dtSum, dtSubstep, dt, nSubsteps = ', dtSum, dtSubstep, dt, nSubsteps
+    ! print progress
+    if(globalPrintFlag)&
+      write(*,'(a,1x,3(f13.2,1x))') 'updating: dtSubstep, dtSum, dt = ', dtSubstep, dtSum, dt
 
-  ! check that we have completed the sub-step
-  if(dtSum >= dt-verySmall)then
-   failedMinimumStep=.false.
-   exit subSteps
+    ! increment fluxes
+    dt_wght = 1._qp !dt_out/dt ! (define weight applied to each splitting operation)
+    do iVar=1,size(flux_meta)
+      if(count(fluxMask%var(iVar)%dat)>0) then
+
+        !print*, flux_meta(iVar)%varname, fluxMask%var(iVar)%dat
+
+        ! ** no domain splitting
+        if(count(ixLayerActive/=integerMissing)==nLayers)then
+          flux_data%var(iVar)%dat(:) = flux_data%var(iVar)%dat(:) + flux_temp%var(iVar)%dat(:)*dt_wght
+          fluxCount%var(iVar)%dat(:) = fluxCount%var(iVar)%dat(:) + 1
+
+          ! ** domain splitting
+        else
+          ixMin=lbound(flux_data%var(iVar)%dat)
+          ixMax=ubound(flux_data%var(iVar)%dat)
+          do ixLayer=ixMin(1),ixMax(1)
+            if(fluxMask%var(iVar)%dat(ixLayer)) then
+              flux_data%var(iVar)%dat(ixLayer) = flux_data%var(iVar)%dat(ixLayer) + flux_temp%var(iVar)%dat(ixLayer)*dt_wght
+              fluxCount%var(iVar)%dat(ixLayer) = fluxCount%var(iVar)%dat(ixLayer) + 1
+            endif
+          end do
+        endif  ! (domain splitting)
+
+      endif   ! (if the flux is desired)
+    end do  ! (loop through fluxes)
+
+    ! ------------------------------------------------------
+    ! ------------------------------------------------------
+
+    ! increment the number of substeps
+    nSubsteps = nSubsteps+1
+
+    ! increment the sub-step legth
+    dtSum = dtSum + dtSubstep
+    !print*, 'dtSum, dtSubstep, dt, nSubsteps = ', dtSum, dtSubstep, dt, nSubsteps
+
+    ! check that we have completed the sub-step
+    if(dtSum >= dt-verySmall)then
+      failedMinimumStep=.false.
+      exit subSteps
+    endif
+
+    ! adjust length of the sub-step (make sure that we don't exceed the step)
+    dtSubstep = min(dt - dtSum, max(dtSubstep*dtMultiplier, dt_min) )
+
+  end do substeps  ! time steps for variable-dependent sub-stepping
+
+  ! save the energy fluxes
+  flux_data%var(iLookFLUX%scalarCanopyEvaporation)%dat(1) = sumCanopyEvaporation /dt_out      ! canopy evaporation/condensation (kg m-2 s-1)
+  flux_data%var(iLookFLUX%scalarLatHeatCanopyEvap)%dat(1) = sumLatHeatCanopyEvap /dt_out      ! latent heat flux for evaporation from the canopy to the canopy air space (W m-2)
+  flux_data%var(iLookFLUX%scalarSenHeatCanopy)%dat(1)     = sumSenHeatCanopy     /dt_out      ! sensible heat flux from the canopy to the canopy air space (W m-2)
+
+  ! save the soil compression diagnostics
+  diag_data%var(iLookDIAG%scalarSoilCompress)%dat(1) = sumSoilCompress
+  do iSoil=1,nSoil
+    if(indx_data%var(iLookINDEX%ixSoilOnlyHyd)%dat(iSoil)/=integerMissing)&
+      diag_data%var(iLookDIAG%mLayerCompress)%dat(iSoil) = sumLayerCompress(iSoil)
+  end do
+  deallocate(sumLayerCompress)
+
+  ! end associate statements
+  end associate globalVars
+
+  ! update error codes
+  if(failedMinimumStep)then
+    err=-20 ! negative = recoverable error
+    message=trim(message)//'failed minimum step'
+    print*, message
   endif
 
-  ! adjust length of the sub-step (make sure that we don't exceed the step)
-  dtSubstep = min(dt - dtSum, max(dtSubstep*dtMultiplier, dt_min) )
 
- end do substeps  ! time steps for variable-dependent sub-stepping
-
- ! save the energy fluxes
- flux_data%var(iLookFLUX%scalarCanopyEvaporation)%dat(1) = sumCanopyEvaporation /dt_out      ! canopy evaporation/condensation (kg m-2 s-1)
- flux_data%var(iLookFLUX%scalarLatHeatCanopyEvap)%dat(1) = sumLatHeatCanopyEvap /dt_out      ! latent heat flux for evaporation from the canopy to the canopy air space (W m-2)
- flux_data%var(iLookFLUX%scalarSenHeatCanopy)%dat(1)     = sumSenHeatCanopy     /dt_out      ! sensible heat flux from the canopy to the canopy air space (W m-2)
-
- ! save the soil compression diagnostics
- diag_data%var(iLookDIAG%scalarSoilCompress)%dat(1) = sumSoilCompress
- do iSoil=1,nSoil
-  if(indx_data%var(iLookINDEX%ixSoilOnlyHyd)%dat(iSoil)/=integerMissing)&
-  diag_data%var(iLookDIAG%mLayerCompress)%dat(iSoil) = sumLayerCompress(iSoil)
- end do
- deallocate(sumLayerCompress)
-
- ! end associate statements
- end associate globalVars
-
- ! update error codes
- if(failedMinimumStep)then
-  err=-20 ! negative = recoverable error
-  message=trim(message)//'failed minimum step'
- endif
-
-
- end subroutine varSubstepSundials
+end subroutine varSubstepSundials
 
 
 ! **********************************************************************************************************
 ! private subroutine updateProgSundials: update prognostic variables
 ! **********************************************************************************************************
 subroutine updateProgSundials(dt,nSnow,nSoil,nLayers,doAdjustTemp,computeVegFlux,untappedMelt,stateVecTrial,stateVecPrime,checkMassBalance, checkNrgBalance, & ! input: model control
-                       lookup_data,mpar_data,indx_data,flux_data,prog_data,diag_data,deriv_data,                                   & ! input-output: data structures
-                       waterBalanceError,nrgFluxModified,err,message)                                                    ! output: flags and error control
+                              lookup_data,mpar_data,indx_data,flux_data,prog_data,diag_data,deriv_data,                                   & ! input-output: data structures
+                              waterBalanceError,nrgFluxModified,err,message)                                                                ! output: flags and error control
   USE getVectorz_module,only:varExtract                             ! extract variables from the state vector
   USE updateVarsSundials_module,only:updateVarsSundials                             ! update prognostic variables
   USE varExtrSundials_module, only:varExtractSundials
@@ -721,30 +729,38 @@ subroutine updateProgSundials(dt,nSnow,nSoil,nLayers,doAdjustTemp,computeVegFlux
                   scalarAquiferStorageTrial,& ! intent(out):   trial value of storage of water in the aquifer (m)
                   ! output: error control
                   err,cmessage)               ! intent(out):   error control
-  if(err/=0)then; message=trim(message)//trim(cmessage); return; end if  ! (check for errors)
+  if(err/=0)then
+    message=trim(message)//trim(cmessage)
+    print*, message
+    return
+  end if  ! (check for errors)
 
-    call varExtractSundials(&
-                  ! input
-                  stateVecPrime,            & ! intent(in):    derivative of model state vector (mixed units)
-                  diag_data,                & ! intent(in):    model diagnostic variables for a local HRU
-                  prog_data,                & ! intent(in):    model prognostic variables for a local HRU
-                  indx_data,                & ! intent(in):    indices defining model states and layers
-                  ! output: variables for the vegetation canopy
-                  scalarCanairTempPrime,    & ! intent(out):   derivative of canopy air temperature (K)
-                  scalarCanopyTempPrime,    & ! intent(out):   derivative of canopy temperature (K)
-                  scalarCanopyWatPrime,     & ! intent(out):   derivative of canopy total water (kg m-2)
-                  scalarCanopyLiqPrime,     & ! intent(out):   derivative of canopy liquid water (kg m-2)
-                  ! output: variables for the snow-soil domain
-                  mLayerTempPrime,          & ! intent(out):   derivative of layer temperature (K)
-                  mLayerVolFracWatPrime,    & ! intent(out):   derivative of volumetric total water content (-)
-                  mLayerVolFracLiqPrime,    & ! intent(out):   derivative of volumetric liquid water content (-)
-                  mLayerMatricHeadPrime,    & ! intent(out):   derivative of total water matric potential (m)
-                  mLayerMatricHeadLiqPrime, & ! intent(out):   derivative of liquid water matric potential (m)
-                  ! output: variables for the aquifer
-                  scalarAquiferStoragePrime,& ! intent(out):   derivative of storage of water in the aquifer (m)
-                  ! output: error control
-                  err,cmessage)               ! intent(out):   error control
-  if(err/=0)then; message=trim(message)//trim(cmessage); return; end if  ! (check for errors)
+  call varExtractSundials(&
+                ! input
+                stateVecPrime,            & ! intent(in):    derivative of model state vector (mixed units)
+                diag_data,                & ! intent(in):    model diagnostic variables for a local HRU
+                prog_data,                & ! intent(in):    model prognostic variables for a local HRU
+                indx_data,                & ! intent(in):    indices defining model states and layers
+                ! output: variables for the vegetation canopy
+                scalarCanairTempPrime,    & ! intent(out):   derivative of canopy air temperature (K)
+                scalarCanopyTempPrime,    & ! intent(out):   derivative of canopy temperature (K)
+                scalarCanopyWatPrime,     & ! intent(out):   derivative of canopy total water (kg m-2)
+                scalarCanopyLiqPrime,     & ! intent(out):   derivative of canopy liquid water (kg m-2)
+                ! output: variables for the snow-soil domain
+                mLayerTempPrime,          & ! intent(out):   derivative of layer temperature (K)
+                mLayerVolFracWatPrime,    & ! intent(out):   derivative of volumetric total water content (-)
+                mLayerVolFracLiqPrime,    & ! intent(out):   derivative of volumetric liquid water content (-)
+                mLayerMatricHeadPrime,    & ! intent(out):   derivative of total water matric potential (m)
+                mLayerMatricHeadLiqPrime, & ! intent(out):   derivative of liquid water matric potential (m)
+                ! output: variables for the aquifer
+                scalarAquiferStoragePrime,& ! intent(out):   derivative of storage of water in the aquifer (m)
+                ! output: error control
+                err,cmessage)               ! intent(out):   error control
+  if(err/=0)then
+    message=trim(message)//trim(cmessage)
+    print*, message
+    return
+  end if  ! (check for errors)
 
 
     ! update diagnostic variables
@@ -783,15 +799,19 @@ subroutine updateProgSundials(dt,nSnow,nSoil,nLayers,doAdjustTemp,computeVegFlux
                   mLayerMatricHeadLiqPrime,                  & ! intent(inout): Prime vector of liquid water matric potential (m)
                   ! output: error control
                   err,cmessage)                                ! intent(out):   error control
-  if(err/=0)then; message=trim(message)//trim(cmessage); return; end if  ! (check for errors)
+  if(err/=0)then
+    message=trim(message)//trim(cmessage)
+    print*, message
+    return
+  end if  ! (check for errors)
 
   ! ----
   ! * check energy balance
   !------------------------
   ! NOTE: for now, we just compute enthalpy
   if(checkNrgBalance)then
-        ! compute enthalpy at t_{n+1}
-        call t2enthalpy(&
+    ! compute enthalpy at t_{n+1}
+    call t2enthalpy(&
                     ! input: data structures
                     diag_data,                   & ! intent(in):  model diagnostic variables for a local HRU
                     mpar_data,                   & ! intent(in):  parameter data structure
@@ -813,7 +833,11 @@ subroutine updateProgSundials(dt,nSnow,nSoil,nLayers,doAdjustTemp,computeVegFlux
                     mLayerEnthalpyTrial,             & ! intent(out):  enthalpy of each snow+soil layer (J m-3)
                     ! output: error control
                     err,cmessage)                  ! intent(out): error control
-        if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+    if(err/=0)then
+      message=trim(message)//trim(cmessage)
+      print*, message
+      return
+    endif
 
   endif
 
@@ -827,86 +851,87 @@ subroutine updateProgSundials(dt,nSnow,nSoil,nLayers,doAdjustTemp,computeVegFlux
     ! check mass balance for the canopy
     if(ixVegHyd/=integerMissing)then
 
-    ! handle cases where fluxes empty the canopy
-    fluxNet = scalarRainfall + scalarCanopyEvaporation - scalarThroughfallRain - scalarCanopyLiqDrainage
-    if(-fluxNet*dt > canopyBalance0)then
+      ! handle cases where fluxes empty the canopy
+      fluxNet = scalarRainfall + scalarCanopyEvaporation - scalarThroughfallRain - scalarCanopyLiqDrainage
+      if(-fluxNet*dt > canopyBalance0)then
 
-      ! --> first add water
-      canopyBalance1 = canopyBalance0 + (scalarRainfall - scalarThroughfallRain)*dt
+        ! --> first add water
+        canopyBalance1 = canopyBalance0 + (scalarRainfall - scalarThroughfallRain)*dt
 
-      ! --> next, remove canopy evaporation -- put the unsatisfied evap into sensible heat
-      canopyBalance1 = canopyBalance1 + scalarCanopyEvaporation*dt
-      if(canopyBalance1 < 0._rkind)then
-      ! * get superfluous water and energy
-      superflousWat = -canopyBalance1/dt     ! kg m-2 s-1
-      superflousNrg = superflousWat*LH_vap   ! W m-2 (J m-2 s-1)
-      ! * update fluxes and states
-      canopyBalance1          = 0._rkind
-      scalarCanopyEvaporation = scalarCanopyEvaporation + superflousWat
-      scalarLatHeatCanopyEvap = scalarLatHeatCanopyEvap + superflousNrg
-      scalarSenHeatCanopy     = scalarSenHeatCanopy - superflousNrg
-      endif
+        ! --> next, remove canopy evaporation -- put the unsatisfied evap into sensible heat
+        canopyBalance1 = canopyBalance1 + scalarCanopyEvaporation*dt
+        if(canopyBalance1 < 0._rkind)then
+          ! * get superfluous water and energy
+          superflousWat = -canopyBalance1/dt     ! kg m-2 s-1
+          superflousNrg = superflousWat*LH_vap   ! W m-2 (J m-2 s-1)
+          ! * update fluxes and states
+          canopyBalance1          = 0._rkind
+          scalarCanopyEvaporation = scalarCanopyEvaporation + superflousWat
+          scalarLatHeatCanopyEvap = scalarLatHeatCanopyEvap + superflousNrg
+          scalarSenHeatCanopy     = scalarSenHeatCanopy - superflousNrg
+        endif
 
-      ! --> next, remove canopy drainage
-      canopyBalance1 = canopyBalance1 - scalarCanopyLiqDrainage*dt
-      if(canopyBalance1 < 0._rkind)then
-      superflousWat            = -canopyBalance1/dt     ! kg m-2 s-1
-      canopyBalance1          = 0._rkind
-      scalarCanopyLiqDrainage = scalarCanopyLiqDrainage + superflousWat
-      endif
+        ! --> next, remove canopy drainage
+        canopyBalance1 = canopyBalance1 - scalarCanopyLiqDrainage*dt
+        if(canopyBalance1 < 0._rkind)then
+          superflousWat            = -canopyBalance1/dt     ! kg m-2 s-1
+          canopyBalance1          = 0._rkind
+          scalarCanopyLiqDrainage = scalarCanopyLiqDrainage + superflousWat
+        endif
 
-      ! update the trial state
-      scalarCanopyWatTrial = canopyBalance1
+        ! update the trial state
+        scalarCanopyWatTrial = canopyBalance1
 
-      ! set the modification flag
-      nrgFluxModified = .true.
+        ! set the modification flag
+        nrgFluxModified = .true.
 
-    else
-      canopyBalance1  = canopyBalance0 + fluxNet*dt
-      nrgFluxModified = .false.
-    endif  ! cases where fluxes empty the canopy
+      else
+        canopyBalance1  = canopyBalance0 + fluxNet*dt
+        nrgFluxModified = .false.
+      endif  ! cases where fluxes empty the canopy
 
-    ! check the mass balance
-    fluxNet  = scalarRainfall + scalarCanopyEvaporation - scalarThroughfallRain - scalarCanopyLiqDrainage
-    liqError = (canopyBalance0 + fluxNet*dt) - scalarCanopyWatTrial
-    if(abs(liqError) > absConvTol_liquid*10._rkind*iden_water)then  ! *10 because of precision issues
-      !write(*,'(a,1x,f20.10)') 'dt = ', dt
-      !write(*,'(a,1x,f20.10)') 'scalarCanopyWatTrial       = ', scalarCanopyWatTrial
-      !write(*,'(a,1x,f20.10)') 'canopyBalance0             = ', canopyBalance0
-      !write(*,'(a,1x,f20.10)') 'canopyBalance1             = ', canopyBalance1
-      !write(*,'(a,1x,f20.10)') 'scalarRainfall*dt          = ', scalarRainfall*dt
-      !write(*,'(a,1x,f20.10)') 'scalarCanopyLiqDrainage*dt = ', scalarCanopyLiqDrainage*dt
-      !write(*,'(a,1x,f20.10)') 'scalarCanopyEvaporation*dt = ', scalarCanopyEvaporation*dt
-      !write(*,'(a,1x,f20.10)') 'scalarThroughfallRain*dt   = ', scalarThroughfallRain*dt
-      !write(*,'(a,1x,f20.10)') 'liqError                   = ', liqError
-      waterBalanceError = .true.
-      return
-    endif  ! if there is a water balance error
+      ! check the mass balance
+      fluxNet  = scalarRainfall + scalarCanopyEvaporation - scalarThroughfallRain - scalarCanopyLiqDrainage
+      liqError = (canopyBalance0 + fluxNet*dt) - scalarCanopyWatTrial
+      if(abs(liqError) > absConvTol_liquid*10._rkind*iden_water)then  ! *10 because of precision issues
+        !write(*,'(a,1x,f20.10)') 'dt = ', dt
+        !write(*,'(a,1x,f20.10)') 'scalarCanopyWatTrial       = ', scalarCanopyWatTrial
+        !write(*,'(a,1x,f20.10)') 'canopyBalance0             = ', canopyBalance0
+        !write(*,'(a,1x,f20.10)') 'canopyBalance1             = ', canopyBalance1
+        !write(*,'(a,1x,f20.10)') 'scalarRainfall*dt          = ', scalarRainfall*dt
+        !write(*,'(a,1x,f20.10)') 'scalarCanopyLiqDrainage*dt = ', scalarCanopyLiqDrainage*dt
+        !write(*,'(a,1x,f20.10)') 'scalarCanopyEvaporation*dt = ', scalarCanopyEvaporation*dt
+        !write(*,'(a,1x,f20.10)') 'scalarThroughfallRain*dt   = ', scalarThroughfallRain*dt
+        !write(*,'(a,1x,f20.10)') 'liqError                   = ', liqError
+        waterBalanceError = .true.
+        return
+      endif  ! if there is a water balance error
     endif  ! if veg canopy
 
     ! check mass balance for soil
     ! NOTE: fatal errors, though possible to recover using negative error codes
-  if(count(ixSoilOnlyHyd/=integerMissing)==nSoil)then
-    soilBalance1 = sum( (mLayerVolFracLiqTrial(nSnow+1:nLayers) + mLayerVolFracIceTrial(nSnow+1:nLayers) )*mLayerDepth(nSnow+1:nLayers) )
-    vertFlux     = -(iLayerLiqFluxSoil(nSoil) - iLayerLiqFluxSoil(0))*dt  ! m s-1 --> m
-    tranSink     = sum(mLayerTranspire)*dt                                ! m s-1 --> m
-    baseSink     = sum(mLayerBaseflow)*dt                                 ! m s-1 --> m
-    compSink     = sum(mLayerCompress(1:nSoil) * mLayerDepth(nSnow+1:nLayers) ) ! dimensionless --> m
-    liqError     = soilBalance1 - (soilBalance0 + vertFlux + tranSink - baseSink - compSink)
-    if(abs(liqError) > absConvTol_liquid*10._rkind)then   ! *10 because of precision issues
-      !write(*,'(a,1x,f20.10)') 'dt = ', dt
-      !write(*,'(a,1x,f20.10)') 'soilBalance0      = ', soilBalance0
-      !write(*,'(a,1x,f20.10)') 'soilBalance1      = ', soilBalance1
-      !write(*,'(a,1x,f20.10)') 'vertFlux          = ', vertFlux
-      !write(*,'(a,1x,f20.10)') 'tranSink          = ', tranSink
-      !write(*,'(a,1x,f20.10)') 'baseSink          = ', baseSink
-      !write(*,'(a,1x,f20.10)') 'compSink          = ', compSink
-      !write(*,'(a,1x,f20.10)') 'liqError          = ', liqError
-      !write(*,'(a,1x,f20.10)') 'absConvTol_liquid = ', absConvTol_liquid
-      waterBalanceError = .true.
-      return
-    endif  ! if there is a water balance error
-  endif  ! if hydrology states exist in the soil domain
+    if(count(ixSoilOnlyHyd/=integerMissing)==nSoil)then
+      soilBalance1 = sum( (mLayerVolFracLiqTrial(nSnow+1:nLayers) + mLayerVolFracIceTrial(nSnow+1:nLayers) )*mLayerDepth(nSnow+1:nLayers) )
+      vertFlux     = -(iLayerLiqFluxSoil(nSoil) - iLayerLiqFluxSoil(0))*dt  ! m s-1 --> m
+      tranSink     = sum(mLayerTranspire)*dt                                ! m s-1 --> m
+      baseSink     = sum(mLayerBaseflow)*dt                                 ! m s-1 --> m
+      compSink     = sum(mLayerCompress(1:nSoil) * mLayerDepth(nSnow+1:nLayers) ) ! dimensionless --> m
+      liqError     = soilBalance1 - (soilBalance0 + vertFlux + tranSink - baseSink - compSink)
+      
+      if(abs(liqError) > absConvTol_liquid*10._rkind)then   ! *10 because of precision issues
+        !write(*,'(a,1x,f20.10)') 'dt = ', dt
+        !write(*,'(a,1x,f20.10)') 'soilBalance0      = ', soilBalance0
+        !write(*,'(a,1x,f20.10)') 'soilBalance1      = ', soilBalance1
+        !write(*,'(a,1x,f20.10)') 'vertFlux          = ', vertFlux
+        !write(*,'(a,1x,f20.10)') 'tranSink          = ', tranSink
+        !write(*,'(a,1x,f20.10)') 'baseSink          = ', baseSink
+        !write(*,'(a,1x,f20.10)') 'compSink          = ', compSink
+        !write(*,'(a,1x,f20.10)') 'liqError          = ', liqError
+        !write(*,'(a,1x,f20.10)') 'absConvTol_liquid = ', absConvTol_liquid
+        waterBalanceError = .true.
+        return
+      endif  ! if there is a water balance error
+    endif  ! if hydrology states exist in the soil domain
 
   endif  ! if checking the mass balance
 
@@ -920,31 +945,31 @@ subroutine updateProgSundials(dt,nSnow,nSoil,nLayers,doAdjustTemp,computeVegFlux
     ! loop through energy state variables
     do iState=1,size(ixNrgOnly)
 
-    ! get index of the control volume within the domain
-    ixSubset       = ixNrgOnly(iState)             ! index within the state subset
-    ixFullVector   = ixMapSubset2Full(ixSubset)    ! index within full state vector
-    ixControlIndex = ixControlVolume(ixFullVector) ! index within a given domain
+      ! get index of the control volume within the domain
+      ixSubset       = ixNrgOnly(iState)             ! index within the state subset
+      ixFullVector   = ixMapSubset2Full(ixSubset)    ! index within full state vector
+      ixControlIndex = ixControlVolume(ixFullVector) ! index within a given domain
 
-    ! compute volumetric melt (kg m-3)
-    volMelt = dt*untappedMelt(ixSubset)/LH_fus  ! (kg m-3)
+      ! compute volumetric melt (kg m-3)
+      volMelt = dt*untappedMelt(ixSubset)/LH_fus  ! (kg m-3)
 
-    ! update ice content
-    select case( ixDomainType(ixFullVector) )
-      case(iname_cas);  cycle ! do nothing, since there is no snow stored in the canopy air space
-      case(iname_veg);  scalarCanopyIceTrial                        = scalarCanopyIceTrial                        - volMelt*canopyDepth  ! (kg m-2)
-      case(iname_snow); mLayerVolFracIceTrial(ixControlIndex)       = mLayerVolFracIceTrial(ixControlIndex)       - volMelt/iden_ice     ! (-)
-      case(iname_soil); mLayerVolFracIceTrial(ixControlIndex+nSnow) = mLayerVolFracIceTrial(ixControlIndex+nSnow) - volMelt/iden_water   ! (-)
-      case default; err=20; message=trim(message)//'unable to identify domain type [remove untapped melt energy]'; return
-    end select
+      ! update ice content
+      select case( ixDomainType(ixFullVector) )
+        case(iname_cas);  cycle ! do nothing, since there is no snow stored in the canopy air space
+        case(iname_veg);  scalarCanopyIceTrial                        = scalarCanopyIceTrial                        - volMelt*canopyDepth  ! (kg m-2)
+        case(iname_snow); mLayerVolFracIceTrial(ixControlIndex)       = mLayerVolFracIceTrial(ixControlIndex)       - volMelt/iden_ice     ! (-)
+        case(iname_soil); mLayerVolFracIceTrial(ixControlIndex+nSnow) = mLayerVolFracIceTrial(ixControlIndex+nSnow) - volMelt/iden_water   ! (-)
+        case default; err=20; message=trim(message)//'unable to identify domain type [remove untapped melt energy]'; print*, message; return
+      end select
 
-    ! update liquid water content
-    select case( ixDomainType(ixFullVector) )
-      case(iname_cas);  cycle ! do nothing, since there is no snow stored in the canopy air space
-      case(iname_veg);  scalarCanopyLiqTrial                        = scalarCanopyLiqTrial                        + volMelt*canopyDepth  ! (kg m-2)
-      case(iname_snow); mLayerVolFracLiqTrial(ixControlIndex)       = mLayerVolFracLiqTrial(ixControlIndex)       + volMelt/iden_water   ! (-)
-      case(iname_soil); mLayerVolFracLiqTrial(ixControlIndex+nSnow) = mLayerVolFracLiqTrial(ixControlIndex+nSnow) + volMelt/iden_water   ! (-)
-      case default; err=20; message=trim(message)//'unable to identify domain type [remove untapped melt energy]'; return
-    end select
+      ! update liquid water content
+      select case( ixDomainType(ixFullVector) )
+        case(iname_cas);  cycle ! do nothing, since there is no snow stored in the canopy air space
+        case(iname_veg);  scalarCanopyLiqTrial                        = scalarCanopyLiqTrial                        + volMelt*canopyDepth  ! (kg m-2)
+        case(iname_snow); mLayerVolFracLiqTrial(ixControlIndex)       = mLayerVolFracLiqTrial(ixControlIndex)       + volMelt/iden_water   ! (-)
+        case(iname_soil); mLayerVolFracLiqTrial(ixControlIndex+nSnow) = mLayerVolFracLiqTrial(ixControlIndex+nSnow) + volMelt/iden_water   ! (-)
+        case default; err=20; message=trim(message)//'unable to identify domain type [remove untapped melt energy]'; print*, message; return
+      end select
 
     end do  ! looping through energy variables
 
@@ -955,49 +980,51 @@ subroutine updateProgSundials(dt,nSnow,nSoil,nLayers,doAdjustTemp,computeVegFlux
     ! --> check if we removed too much water
     if(scalarCanopyIceTrial < 0._rkind  .or. any(mLayerVolFracIceTrial < 0._rkind) )then
 
-    ! **
-    ! canopy within numerical precision
-    if(scalarCanopyIceTrial < 0._rkind)then
+      ! **
+      ! canopy within numerical precision
+      if(scalarCanopyIceTrial < 0._rkind)then
 
-      if(scalarCanopyIceTrial > -verySmall)then
-      scalarCanopyLiqTrial = scalarCanopyLiqTrial - scalarCanopyIceTrial
-      scalarCanopyIceTrial = 0._rkind
+        if(scalarCanopyIceTrial > -verySmall)then
+          scalarCanopyLiqTrial = scalarCanopyLiqTrial - scalarCanopyIceTrial
+          scalarCanopyIceTrial = 0._rkind
 
-      ! encountered an inconsistency: spit the dummy
-      else
-      print*, 'dt = ', dt
-      print*, 'untappedMelt          = ', untappedMelt
-      print*, 'untappedMelt*dt       = ', untappedMelt*dt
-      print*, 'scalarCanopyiceTrial  = ', scalarCanopyIceTrial
-      message=trim(message)//'melted more than the available water'
-      err=20; return
-      endif  ! (inconsistency)
+          ! encountered an inconsistency: spit the dummy
+        else
+          print*, 'dt = ', dt
+          print*, 'untappedMelt          = ', untappedMelt
+          print*, 'untappedMelt*dt       = ', untappedMelt*dt
+          print*, 'scalarCanopyiceTrial  = ', scalarCanopyIceTrial
+          message=trim(message)//'melted more than the available water'
+          print*, message
+          err=20; return
+        endif  ! (inconsistency)
 
-    endif  ! if checking the canopy
-    ! **
-    ! snow+soil within numerical precision
-    do iState=1,size(mLayerVolFracIceTrial)
+      endif  ! if checking the canopy
+      ! **
+      ! snow+soil within numerical precision
+      do iState=1,size(mLayerVolFracIceTrial)
 
-      ! snow layer within numerical precision
-      if(mLayerVolFracIceTrial(iState) < 0._rkind)then
+        ! snow layer within numerical precision
+        if(mLayerVolFracIceTrial(iState) < 0._rkind)then
 
-      if(mLayerVolFracIceTrial(iState) > -verySmall)then
-        mLayerVolFracLiqTrial(iState) = mLayerVolFracLiqTrial(iState) - mLayerVolFracIceTrial(iState)
-        mLayerVolFracIceTrial(iState) = 0._rkind
+          if(mLayerVolFracIceTrial(iState) > -verySmall)then
+            mLayerVolFracLiqTrial(iState) = mLayerVolFracLiqTrial(iState) - mLayerVolFracIceTrial(iState)
+            mLayerVolFracIceTrial(iState) = 0._rkind
 
-      ! encountered an inconsistency: spit the dummy
-      else
-        print*, 'dt = ', dt
-        print*, 'untappedMelt          = ', untappedMelt
-        print*, 'untappedMelt*dt       = ', untappedMelt*dt
-        print*, 'mLayerVolFracIceTrial = ', mLayerVolFracIceTrial
-        message=trim(message)//'melted more than the available water'
-        err=20; return
-      endif  ! (inconsistency)
+            ! encountered an inconsistency: spit the dummy
+          else
+            print*, 'dt = ', dt
+            print*, 'untappedMelt          = ', untappedMelt
+            print*, 'untappedMelt*dt       = ', untappedMelt*dt
+            print*, 'mLayerVolFracIceTrial = ', mLayerVolFracIceTrial
+            message=trim(message)//'melted more than the available water'
+            print*, message
+            err=20; return
+          endif  ! (inconsistency)
 
-      endif  ! if checking a snow layer
+        endif  ! if checking a snow layer
 
-    end do ! (looping through state variables)
+      end do ! (looping through state variables)
 
     endif  ! (if we removed too much water)
 
@@ -1008,51 +1035,52 @@ subroutine updateProgSundials(dt,nSnow,nSoil,nLayers,doAdjustTemp,computeVegFlux
     ! --> check if we removed too much water
     if(scalarCanopyLiqTrial < 0._rkind  .or. any(mLayerVolFracLiqTrial < 0._rkind) )then
 
-    ! **
-    ! canopy within numerical precision
-    if(scalarCanopyLiqTrial < 0._rkind)then
+      ! **
+      ! canopy within numerical precision
+      if(scalarCanopyLiqTrial < 0._rkind)then
 
-      if(scalarCanopyLiqTrial > -verySmall)then
-      scalarCanopyIceTrial = scalarCanopyIceTrial - scalarCanopyLiqTrial
-      scalarCanopyLiqTrial = 0._rkind
+        if(scalarCanopyLiqTrial > -verySmall)then
+          scalarCanopyIceTrial = scalarCanopyIceTrial - scalarCanopyLiqTrial
+          scalarCanopyLiqTrial = 0._rkind
 
 
-      ! encountered an inconsistency: spit the dummy
-      else
-      print*, 'dt = ', dt
-      print*, 'untappedMelt          = ', untappedMelt
-      print*, 'untappedMelt*dt       = ', untappedMelt*dt
-      print*, 'scalarCanopyLiqTrial  = ', scalarCanopyLiqTrial
-      message=trim(message)//'frozen more than the available water'
-      err=20; return
-      endif  ! (inconsistency)
+        ! encountered an inconsistency: spit the dummy
+        else
+          print*, 'dt = ', dt
+          print*, 'untappedMelt          = ', untappedMelt
+          print*, 'untappedMelt*dt       = ', untappedMelt*dt
+          print*, 'scalarCanopyLiqTrial  = ', scalarCanopyLiqTrial
+          message=trim(message)//'frozen more than the available water'
+          print*, message
+          err=20; return
+        endif  ! (inconsistency)
 
-    endif  ! checking the canopy
+      endif  ! checking the canopy
 
-    ! **
-    ! snow+soil within numerical precision
-    do iState=1,size(mLayerVolFracLiqTrial)
+      ! **
+      ! snow+soil within numerical precision
+      do iState=1,size(mLayerVolFracLiqTrial)
 
-      ! snow layer within numerical precision
-      if(mLayerVolFracLiqTrial(iState) < 0._rkind)then
+        ! snow layer within numerical precision
+        if(mLayerVolFracLiqTrial(iState) < 0._rkind)then
 
-      if(mLayerVolFracLiqTrial(iState) > -verySmall)then
-        mLayerVolFracIceTrial(iState) = mLayerVolFracIceTrial(iState) - mLayerVolFracLiqTrial(iState)
-        mLayerVolFracLiqTrial(iState) = 0._rkind
+          if(mLayerVolFracLiqTrial(iState) > -verySmall)then
+            mLayerVolFracIceTrial(iState) = mLayerVolFracIceTrial(iState) - mLayerVolFracLiqTrial(iState)
+            mLayerVolFracLiqTrial(iState) = 0._rkind
 
-      ! encountered an inconsistency: spit the dummy
-      else
-        print*, 'dt = ', dt
-        print*, 'untappedMelt          = ', untappedMelt
-        print*, 'untappedMelt*dt       = ', untappedMelt*dt
-        print*, 'mLayerVolFracLiqTrial = ', mLayerVolFracLiqTrial
-        message=trim(message)//'frozen more than the available water'
-        err=20; return
-      endif  ! (inconsistency)
+            ! encountered an inconsistency: spit the dummy
+          else
+            print*, 'dt = ', dt
+            print*, 'untappedMelt          = ', untappedMelt
+            print*, 'untappedMelt*dt       = ', untappedMelt*dt
+            print*, 'mLayerVolFracLiqTrial = ', mLayerVolFracLiqTrial
+            message=trim(message)//'frozen more than the available water'
+            err=20; return
+          endif  ! (inconsistency)
 
-      endif  ! checking a snow layer
+        endif  ! checking a snow layer
 
-    end do ! (looping through state variables)
+      end do ! (looping through state variables)
 
     endif  ! (if we removed too much water)
 

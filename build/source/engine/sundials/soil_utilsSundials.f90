@@ -94,7 +94,7 @@ contains
  real(rkind)                       :: effSat                                    ! effective saturation (-)
  real(rkind)                       :: dPsiLiq_dEffSat                           ! derivative in liquid water matric potential w.r.t. effective saturation (m)
  real(rkind)                       :: dEffSat_dTemp                             ! derivative in effective saturation w.r.t. temperature (K-1)
- real(rkind)                       :: dEffSat_dFracLiq
+!  real(rkind)                       :: dEffSat_dFracLiq
  real(rkind)                       :: effSatPrime
  ! ------------------------------------------------------------------------------------------------------------------------------
  ! initialize error control

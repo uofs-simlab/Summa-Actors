@@ -298,7 +298,7 @@ subroutine opSplittin(&
   logical(lgt)                    :: failedMinimumStep              ! flag to denote failure of substepping for a given split
   integer(i4b)                    :: ixSaturation                   ! index of the lowest saturated layer (NOTE: only computed on the first iteration)
   integer(i4b)                    :: nCoupling                      ! number of possible solutions
-  real(qp)						            :: dt_out                         !
+  real(qp)                        :: dt_out                         !
 
   
   ! ---------------------------------------------------------------------------------------
@@ -865,7 +865,7 @@ subroutine opSplittin(&
                                 failedMinimumStep,          & ! intent(out)   : flag for failed substeps
                                 reduceCoupledStep,          & ! intent(out)   : flag to reduce the length of the coupled step
                                 tooMuchMelt,                & ! intent(out)   : flag to denote that ice is insufficient to support melt
-                                dt_out,					            & ! intent(out)
+                                dt_out,                     & ! intent(out)
                                 err,cmessage)                 ! intent(out)   : error code and error message
                                 ! solve variable subset for one full time step
                 case(backwEuler)
