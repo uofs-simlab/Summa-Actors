@@ -578,34 +578,34 @@ end subroutine solveByIDA
 ! ----------------------------------------------------------------
 ! SetInitialCondition: routine to initialize u and up vectors.
 ! ----------------------------------------------------------------
- subroutine setInitialCondition(neq, y, sunvec_u, sunvec_up)
+subroutine setInitialCondition(neq, y, sunvec_u, sunvec_up)
 
- !======= Inclusions ===========
- USE, intrinsic :: iso_c_binding
- USE fsundials_nvector_mod
- USE fnvector_serial_mod
+  !======= Inclusions ===========
+  USE, intrinsic :: iso_c_binding
+  USE fsundials_nvector_mod
+  USE fnvector_serial_mod
 
- !======= Declarations =========
- implicit none
+  !======= Declarations =========
+  implicit none
 
- ! calling variables
- type(N_Vector)  :: sunvec_u  ! solution N_Vector
- type(N_Vector)  :: sunvec_up ! derivative N_Vector
- integer(c_long) :: neq
- real(rkind)        :: y(neq)
+  ! calling variables
+  type(N_Vector)  :: sunvec_u  ! solution N_Vector
+  type(N_Vector)  :: sunvec_up ! derivative N_Vector
+  integer(c_long) :: neq
+  real(rkind)        :: y(neq)
 
- ! pointers to data in SUNDIALS vectors
- real(c_double), pointer :: uu(:)
- real(c_double), pointer :: up(:)
+  ! pointers to data in SUNDIALS vectors
+  real(c_double), pointer :: uu(:)
+  real(c_double), pointer :: up(:)
 
- ! get data arrays from SUNDIALS vectors
- uu(1:neq) => FN_VGetArrayPointer(sunvec_u)
- up(1:neq) => FN_VGetArrayPointer(sunvec_up)
+  ! get data arrays from SUNDIALS vectors
+  uu(1:neq) => FN_VGetArrayPointer(sunvec_u)
+  up(1:neq) => FN_VGetArrayPointer(sunvec_up)
 
- uu = y
- up = 0._rkind
+  uu = y
+  up = 0._rkind
 
- end subroutine setInitialCondition
+end subroutine setInitialCondition
 
 ! ----------------------------------------------------------------
 ! setSolverParams: private routine to set parameters in ida solver

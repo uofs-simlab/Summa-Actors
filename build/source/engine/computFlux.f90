@@ -897,83 +897,65 @@ subroutine computFlux(&
         return
       endif
 
-   ! compute fluxes for the big bucket
-  !  call bigAquifer(&
-  !                  ! input: state variables and fluxes
-  !                  scalarAquiferStorageTrial,    & ! intent(in):  trial value of aquifer storage (m)
-  !                  scalarCanopyTranspiration,    & ! intent(in):  canopy transpiration (kg m-2 s-1)
-  !                  scalarSoilDrainage,           & ! intent(in):  soil drainage (m s-1)
-  !                  ! input: diagnostic variables and parameters
-  !                  mpar_data,                    & ! intent(in):  model parameter structure
-  !                  diag_data,                    & ! intent(in):  diagnostic variable structure
-  !                  ! output: fluxes
-  !                  scalarAquiferTranspire,       & ! intent(out): transpiration loss from the aquifer (m s-1)
-  !                  scalarAquiferRecharge,        & ! intent(out): recharge to the aquifer (m s-1)
-  !                  scalarAquiferBaseflow,        & ! intent(out): total baseflow from the aquifer (m s-1)
-  !                  dBaseflow_dAquifer,           & ! intent(out): change in baseflow flux w.r.t. aquifer storage (s-1)
-  !                  ! output: error control
-  !                  err,cmessage)                   ! intent(out): error control
-  !  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+      ! compute total runoff (overwrite previously calculated value before considering aquifer)
+      scalarTotalRunoff  = scalarSurfaceRunoff + scalarAquiferBaseflow
 
-   ! compute total runoff (overwrite previously calculated value before considering aquifer)
-    scalarTotalRunoff  = scalarSurfaceRunoff + scalarAquiferBaseflow
+    ! if no aquifer, then fluxes are zero
+    else
+      scalarAquiferTranspire = 0._dp  ! transpiration loss from the aquifer (m s-1)
+      scalarAquiferRecharge  = 0._dp  ! recharge to the aquifer (m s-1)
+      scalarAquiferBaseflow  = 0._dp  ! total baseflow from the aquifer (m s-1)
+      dBaseflow_dAquifer     = 0._dp  ! change in baseflow flux w.r.t. aquifer storage (s-1)
+    end if ! no aquifer
 
-  ! if no aquifer, then fluxes are zero
-  else
-   scalarAquiferTranspire = 0._dp  ! transpiration loss from the aquifer (m s-1)
-   scalarAquiferRecharge  = 0._dp  ! recharge to the aquifer (m s-1)
-   scalarAquiferBaseflow  = 0._dp  ! total baseflow from the aquifer (m s-1)
-   dBaseflow_dAquifer     = 0._dp  ! change in baseflow flux w.r.t. aquifer storage (s-1)
-  end if ! no aquifer
+  endif  ! if computing aquifer fluxes
 
- endif  ! if computing aquifer fluxes
+  ! *****
+  ! (X) WRAP UP...
+  ! *************
 
- ! *****
- ! (X) WRAP UP...
- ! *************
+  ! define model flux vector for the vegetation sub-domain
+  if(ixCasNrg/=integerMissing) fluxVec(ixCasNrg) = scalarCanairNetNrgFlux/canopyDepth
+  if(ixVegNrg/=integerMissing) fluxVec(ixVegNrg) = scalarCanopyNetNrgFlux/canopyDepth
+  if(ixVegHyd/=integerMissing) fluxVec(ixVegHyd) = scalarCanopyNetLiqFlux   ! NOTE: solid fluxes are handled separately
 
- ! define model flux vector for the vegetation sub-domain
- if(ixCasNrg/=integerMissing) fluxVec(ixCasNrg) = scalarCanairNetNrgFlux/canopyDepth
- if(ixVegNrg/=integerMissing) fluxVec(ixVegNrg) = scalarCanopyNetNrgFlux/canopyDepth
- if(ixVegHyd/=integerMissing) fluxVec(ixVegHyd) = scalarCanopyNetLiqFlux   ! NOTE: solid fluxes are handled separately
+  ! populate the flux vector for energy
+  if(nSnowSoilNrg>0)then
+    do concurrent (iLayer=1:nLayers,ixSnowSoilNrg(iLayer)/=integerMissing)   ! (loop through non-missing energy state variables in the snow+soil domain)
+      fluxVec( ixSnowSoilNrg(iLayer) ) = mLayerNrgFlux(iLayer)
+    end do  ! looping through non-missing energy state variables in the snow+soil domain
+  endif
 
- ! populate the flux vector for energy
- if(nSnowSoilNrg>0)then
-  do concurrent (iLayer=1:nLayers,ixSnowSoilNrg(iLayer)/=integerMissing)   ! (loop through non-missing energy state variables in the snow+soil domain)
-   fluxVec( ixSnowSoilNrg(iLayer) ) = mLayerNrgFlux(iLayer)
-  end do  ! looping through non-missing energy state variables in the snow+soil domain
- endif
+  ! populate the flux vector for hydrology
+  ! NOTE: ixVolFracWat  and ixVolFracLiq can also include states in the soil domain, hence enable primary variable switching
+  if(nSnowSoilHyd>0)then  ! check if any hydrology states exist
+    do iLayer=1,nLayers
+      if(ixSnowSoilHyd(iLayer)/=integerMissing)then   ! check if a given hydrology state exists
+        select case( layerType(iLayer) )
+          case(iname_snow); fluxVec( ixSnowSoilHyd(iLayer) ) = mLayerLiqFluxSnow(iLayer)
+          case(iname_soil); fluxVec( ixSnowSoilHyd(iLayer) ) = mLayerLiqFluxSoil(iLayer-nSnow)
+          case default; err=20; message=trim(message)//'expect layerType to be either iname_snow or iname_soil'; return
+        end select
+      endif  ! if a given hydrology state exists
+    end do ! looping through non-missing energy state variables in the snow+soil domain
+  endif  ! if any hydrology states exist
 
- ! populate the flux vector for hydrology
- ! NOTE: ixVolFracWat  and ixVolFracLiq can also include states in the soil domain, hence enable primary variable switching
- if(nSnowSoilHyd>0)then  ! check if any hydrology states exist
-  do iLayer=1,nLayers
-   if(ixSnowSoilHyd(iLayer)/=integerMissing)then   ! check if a given hydrology state exists
-    select case( layerType(iLayer) )
-     case(iname_snow); fluxVec( ixSnowSoilHyd(iLayer) ) = mLayerLiqFluxSnow(iLayer)
-     case(iname_soil); fluxVec( ixSnowSoilHyd(iLayer) ) = mLayerLiqFluxSoil(iLayer-nSnow)
-     case default; err=20; message=trim(message)//'expect layerType to be either iname_snow or iname_soil'; return
-    end select
-   endif  ! if a given hydrology state exists
-  end do ! looping through non-missing energy state variables in the snow+soil domain
- endif  ! if any hydrology states exist
+  ! compute the flux vector for the aquifer
+  if(ixAqWat/=integerMissing) fluxVec(ixAqWat) = scalarAquiferTranspire + scalarAquiferRecharge - scalarAquiferBaseflow
 
- ! compute the flux vector for the aquifer
- if(ixAqWat/=integerMissing) fluxVec(ixAqWat) = scalarAquiferTranspire + scalarAquiferRecharge - scalarAquiferBaseflow
+  ! set the first flux call to false
+  firstFluxCall=.false.
 
- ! set the first flux call to false
- firstFluxCall=.false.
+  ! end association to variables in the data structures
+  end associate
 
- ! end association to variables in the data structures
- end associate
-
- end subroutine computFlux
+end subroutine computFlux
 
 
- ! **********************************************************************************************************
- ! public subroutine soilCmpres: compute soil compressibility (-) and its derivative w.r.t matric head (m-1)
- ! **********************************************************************************************************
- subroutine soilCmpres(&
+! **********************************************************************************************************
+! public subroutine soilCmpres: compute soil compressibility (-) and its derivative w.r.t matric head (m-1)
+! **********************************************************************************************************
+subroutine soilCmpres(&
                        ! input:
                        ixRichards,                         & ! intent(in): choice of option for Richards' equation
                        ixBeg,ixEnd,                        & ! intent(in): start and end indices defining desired layers
@@ -987,44 +969,44 @@ subroutine computFlux(&
                        compress,                           & ! intent(out): compressibility of the soil matrix (-)
                        dCompress_dPsi,                     & ! intent(out): derivative in compressibility w.r.t. matric head (m-1)
                        err,message)                          ! intent(out): error code and error message
- implicit none
- ! input:
- integer(i4b),intent(in)        :: ixRichards                ! choice of option for Richards' equation
- integer(i4b),intent(in)        :: ixBeg,ixEnd               ! start and end indices defining desired layers
- real(dp),intent(in)            :: mLayerMatricHead(:)       ! matric head at the start of the time step (m)
- real(dp),intent(in)            :: mLayerMatricHeadTrial(:)  ! trial value for matric head (m)
- real(dp),intent(in)            :: mLayerVolFracLiqTrial(:)  ! trial value for volumetric fraction of liquid water (-)
- real(dp),intent(in)            :: mLayerVolFracIceTrial(:)  ! trial value for volumetric fraction of ice (-)
- real(dp),intent(in)            :: specificStorage           ! specific storage coefficient (m-1)
- real(dp),intent(in)            :: theta_sat(:)              ! soil porosity (-)
- ! output:
- real(dp),intent(inout)         :: compress(:)               ! soil compressibility (-)
- real(dp),intent(inout)         :: dCompress_dPsi(:)         ! derivative in soil compressibility w.r.t. matric head (m-1)
- integer(i4b),intent(out)       :: err                       ! error code
- character(*),intent(out)       :: message                   ! error message
- ! local variables
- integer(i4b)                   :: iLayer                    ! index of soil layer
- ! --------------------------------------------------------------
- ! initialize error control
- err=0; message='soilCmpres/'
- ! (only compute for the mixed form of Richards' equation)
- if(ixRichards==mixdform)then
-  do iLayer=1,size(mLayerMatricHead)
-   if(iLayer>=ixBeg .and. iLayer<=ixEnd)then
-    ! compute the derivative for the compressibility term (m-1)
-    dCompress_dPsi(iLayer) = specificStorage*(mLayerVolFracLiqTrial(iLayer) + mLayerVolFracIceTrial(iLayer))/theta_sat(iLayer)
-    ! compute the compressibility term (-)
-    compress(iLayer)       = (mLayerMatricHeadTrial(iLayer) - mLayerMatricHead(iLayer))*dCompress_dPsi(iLayer)
-   endif
-  end do
- else
-  compress(:)       = 0._dp
-  dCompress_dPsi(:) = 0._dp
- end if
- end subroutine soilCmpres
-   ! **********************************************************************************************************
- ! public subroutine soilCmpres: compute soil compressibility (-) and its derivative w.r.t matric head (m-1)
- ! **********************************************************************************************************
+  implicit none
+  ! input:
+  integer(i4b),intent(in)        :: ixRichards                ! choice of option for Richards' equation
+  integer(i4b),intent(in)        :: ixBeg,ixEnd               ! start and end indices defining desired layers
+  real(dp),intent(in)            :: mLayerMatricHead(:)       ! matric head at the start of the time step (m)
+  real(dp),intent(in)            :: mLayerMatricHeadTrial(:)  ! trial value for matric head (m)
+  real(dp),intent(in)            :: mLayerVolFracLiqTrial(:)  ! trial value for volumetric fraction of liquid water (-)
+  real(dp),intent(in)            :: mLayerVolFracIceTrial(:)  ! trial value for volumetric fraction of ice (-)
+  real(dp),intent(in)            :: specificStorage           ! specific storage coefficient (m-1)
+  real(dp),intent(in)            :: theta_sat(:)              ! soil porosity (-)
+  ! output:
+  real(dp),intent(inout)         :: compress(:)               ! soil compressibility (-)
+  real(dp),intent(inout)         :: dCompress_dPsi(:)         ! derivative in soil compressibility w.r.t. matric head (m-1)
+  integer(i4b),intent(out)       :: err                       ! error code
+  character(*),intent(out)       :: message                   ! error message
+  ! local variables
+  integer(i4b)                   :: iLayer                    ! index of soil layer
+  ! --------------------------------------------------------------
+  ! initialize error control
+  err=0; message='soilCmpres/'
+  ! (only compute for the mixed form of Richards' equation)
+  if(ixRichards==mixdform)then
+    do iLayer=1,size(mLayerMatricHead)
+    if(iLayer>=ixBeg .and. iLayer<=ixEnd)then
+      ! compute the derivative for the compressibility term (m-1)
+      dCompress_dPsi(iLayer) = specificStorage*(mLayerVolFracLiqTrial(iLayer) + mLayerVolFracIceTrial(iLayer))/theta_sat(iLayer)
+      ! compute the compressibility term (-)
+      compress(iLayer)       = (mLayerMatricHeadTrial(iLayer) - mLayerMatricHead(iLayer))*dCompress_dPsi(iLayer)
+    endif
+    end do
+  else
+    compress(:)       = 0._dp
+    dCompress_dPsi(:) = 0._dp
+  end if
+end subroutine soilCmpres
+! **********************************************************************************************************
+! public subroutine soilCmpres: compute soil compressibility (-) and its derivative w.r.t matric head (m-1)
+! **********************************************************************************************************
 subroutine soilCmpresSundials(&
   ! input:
   ixRichards,                         & ! intent(in): choice of option for Richards' equation
@@ -1068,8 +1050,8 @@ subroutine soilCmpresSundials(&
       endif
     end do
   else
-    compress(:)       = 0._rkind
-    dCompress_dPsi(:) = 0._rkind
+    compress(:)       = 0._dp
+    dCompress_dPsi(:) = 0._dp
   end if
 end subroutine soilCmpresSundials
 
