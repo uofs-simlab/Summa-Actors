@@ -252,15 +252,6 @@ subroutine coupled_em(&
   ! ----------------------------------------------------------------------------------------------------------------------------------------------
   ! initialize error control
   err=0; message="coupled_em/"
-  print*, "*******"
-  print*, "*******"
-  print*, "*******"
-  print*, "Sundials = ", sundials
-  print*, "*******"
-  print*, "*******"
-  print*, "*******"
- 
- ! This is the start of a data step for a local HRU
 
   ! check that the decision is supported
   if(model_decisions(iLookDECISIONS%groundwatr)%iDecision==bigBucket .and. &

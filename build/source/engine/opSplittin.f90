@@ -1103,9 +1103,7 @@ subroutine opSplittin(&
 
   ! use step halving if unable to complete the fully coupled solution in one substep
   if(ixCoupling/=fullyCoupled .or. nSubsteps>1) dtMultiplier=0.5_dp
-  
-  print*, "size = ", size(mLayerMeltFreeze)
-  print*, "nLayers = ",nLayers  
+   
   ! compute the melt in each snow and soil layer
   if(nSnow>0) mLayerMeltFreeze(      1:nSnow  ) = -(mLayerVolFracIce(      1:nSnow  ) - mLayerVolFracIceInit(      1:nSnow  ))*iden_ice
               mLayerMeltFreeze(nSnow+1:nLayers) = -(mLayerVolFracIce(nSnow+1:nLayers) - mLayerVolFracIceInit(nSnow+1:nLayers))*iden_water
