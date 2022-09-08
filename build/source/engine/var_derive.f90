@@ -433,16 +433,16 @@ contains
   case(timeDelay)
    ! initialize
    pSave   = 0._dp ! cumulative probability at the start of the step
-   aLambda = routingGammaShape / routingGammaScale
-   if(routingGammaShape <= 0._dp .or. aLambda < 0._dp)then
+   if(routingGammaShape <= 0._dp .or. routingGammaScale <= 0._dp)then
     message=trim(message)//'bad arguments for the Gamma distribution'
+    print*, message
     err=20; return
    end if
    ! loop through time steps and compute fraction of runoff in future steps
    do iFuture = 1,nTDH
     ! get weight for a given bin
     tFuture = real(iFuture, kind(dt))*dt                  ! future time (end of step)
-    cumProb = gammp(routingGammaShape,aLambda*tFuture)    ! cumulative probability at the end of the step
+    cumProb = gammp(routingGammaShape,tFuture/routingGammaScale)    ! cumulative probability at the end of the step
     fractionFuture(iFuture) = max(0._dp, cumProb - pSave) ! fraction of runoff in the current step
     pSave   = cumProb                                     ! save the cumulative probability for use in the next step
     !write(*,'(a,1x,i4,1x,3(f20.10,1x))') trim(message), iFuture, tFuture, cumProb, fractionFuture(iFuture)
