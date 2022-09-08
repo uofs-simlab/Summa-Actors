@@ -212,8 +212,6 @@ contains
  call varExtract2(&
                  ! input
                  stateVec,            & ! intent(in):    model state vector (mixed units)
-                 diag_data,                & ! intent(in):    model diagnostic variables for a local HRU
-                 prog_data,                & ! intent(in):    model prognostic variables for a local HRU
                  indx_data,                & ! intent(in):    indices defining model states and layers
                  ! output: variables for the vegetation canopy
                  scalarCanairTempTrial,    & ! intent(out):   trial value of canopy air temperature (K)
@@ -238,8 +236,6 @@ contains
  call varExtractSundials(&
                  ! input
                  stateVecPrime,            & ! intent(in):    derivative of model state vector (mixed units)
-                 diag_data,                & ! intent(in):    model diagnostic variables for a local HRU
-                 prog_data,                & ! intent(in):    model prognostic variables for a local HRU
                  indx_data,                & ! intent(in):    indices defining model states and layers
                  ! output: variables for the vegetation canopy
                  scalarCanairTempPrime,    & ! intent(out):   derivative of canopy air temperature (K)
@@ -263,7 +259,6 @@ contains
 
  call updateVars4JacDAE(&
                  ! input
-                 dt,                                        & ! intent(in):    time step
                  .false.,                                   & ! intent(in):    logical flag to adjust temperature to account for the energy used in melt+freeze
                  mpar_data,                                 & ! intent(in):    model parameters for a local HRU
                  indx_data,                                 & ! intent(in):    indices defining model states and layers

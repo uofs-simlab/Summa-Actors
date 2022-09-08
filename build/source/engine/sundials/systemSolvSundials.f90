@@ -206,8 +206,6 @@ subroutine systemSolvSundials(&
   logical(lgt)                    :: feasible                      ! feasibility flag
   real(rkind)                     :: atol(nState)                  ! absolute telerance
   real(rkind)                     :: rtol(nState)                  ! relative tolerance
-  integer(i4b)                    :: iLayer                        ! index of model layer in the snow+soil domain
-  real(rkind)                     :: xMin,xMax                     ! minimum and maximum values for water content
   real(rkind),parameter           :: canopyTempMax=500._rkind      ! expected maximum value for the canopy temperature (K)
   type(var_dlength)               :: flux_sum                      ! sum of fluxes model fluxes for a local HRU over a data step
   integer(i4b)                    :: tol_iter                      ! iteration index
@@ -480,7 +478,6 @@ subroutine systemSolvSundials(&
                     prog_data,                        & ! intent(in):    model prognostic variables for a local HRU
                     diag_data,                        & ! intent(in):    model diagnostic variables for a local HRU
                     indx_data,                        & ! intent(in):    indices defining model states and layers
-                    mpar_data,                        & ! intent(in):	  model parameters
                     ! output
                     atol,                             & ! intent(out):   absolute tolerances vector (mixed units)
                     rtol,                             & ! intent(out):	  relative tolerances vector (mixed units)

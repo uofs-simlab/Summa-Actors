@@ -177,7 +177,7 @@ subroutine eval8DAE(&
   integer(i4b),intent(in)         :: nSnow                  ! number of snow layers
   integer(i4b),intent(in)         :: nSoil                  ! number of soil layers
   integer(i4b),intent(in)         :: nLayers                ! total number of layers
-  integer,intent(in)              :: nState                 ! total number of state variables
+  integer(kind=8),intent(in)      :: nState                 ! total number of state variables
   logical(lgt),intent(in)         :: checkFeas              ! flag to indicate if we are checking for feasibility
   logical(lgt),intent(in)         :: firstSubStep           ! flag to indicate if we are processing the first sub-step
   logical(lgt),intent(inout)      :: firstFluxCall
@@ -259,7 +259,6 @@ subroutine eval8DAE(&
   real(rkind),dimension(nLayers)     :: mLayerVolFracIcePrime     ! derivative value for volumetric fraction of ice (-)
   ! enthalpy
   real(rkind)                        :: scalarCanairEnthalpy      ! enthalpy of the canopy air space (J m-3)
-  real(rkind),dimension(nLayers)     :: mLayerEnthalpyPrime       ! enthalpy of each snow+soil layer (J m-3)
   ! other local variables
   integer(i4b)                       :: iLayer                    ! index of model layer in the snow+soil domain
   integer(i4b)                       :: jState(1)                 ! index of model state for the scalar solution within the soil domain
@@ -415,8 +414,6 @@ subroutine eval8DAE(&
   call varExtract2(&
                   ! input
                   stateVec,                 & ! intent(in):    model state vector (mixed units)
-                  diag_data,                & ! intent(in):    model diagnostic variables for a local HRU
-                  prog_data,                & ! intent(in):    model prognostic variables for a local HRU
                   indx_data,                & ! intent(in):    indices defining model states and layers
                   ! output: variables for the vegetation canopy
                   scalarCanairTempTrial,    & ! intent(out):   trial value of canopy air temperature (K)
@@ -440,8 +437,6 @@ subroutine eval8DAE(&
   call varExtractSundials(&
                   ! input
                   stateVecPrime,            & ! intent(in):    derivative of model state vector (mixed units)
-                  diag_data,                & ! intent(in):    model diagnostic variables for a local HRU
-                  prog_data,                & ! intent(in):    model prognostic variables for a local HRU
                   indx_data,                & ! intent(in):    indices defining model states and layers
                   ! output: variables for the vegetation canopy
                   scalarCanairTempPrime,    & ! intent(out):   derivative of canopy air temperature (K)
@@ -544,7 +539,6 @@ subroutine eval8DAE(&
                           ! input data structures
                           mpar_data,                  & ! intent(in): model parameters
                           indx_data,                  & ! intent(in): model layer indices
-                          diag_data,                  & ! intent(in): model diagnostic variables for a local HRU
                           ! input: state variables
                           scalarCanopyIceTrial,       & ! intent(in): trial value for canopy ice content (kg m-2)
                           scalarCanopyLiqTrial,       & ! intent(in): trial value for the liquid water on the vegetation canopy (kg m-2)
@@ -607,7 +601,6 @@ subroutine eval8DAE(&
     call computThermConduct(&
                         ! input: control variables
                         computeVegFlux,               & ! intent(in): flag to denote if computing the vegetation flux
-                        canopyDepth,                  & ! intent(in): canopy depth (m)
                         ! input: state variables
                         scalarCanopyIceTrial,         & ! intent(in)
                         scalarCanopyLiqTrial,         & ! intent(in)

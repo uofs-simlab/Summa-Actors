@@ -192,25 +192,18 @@ contains
  logical(lgt),allocatable        :: computedCoupling(:)             ! .true. if computed the coupling for a given state variable
  real(rkind)                        :: scalarVolFracLiq                ! volumetric fraction of liquid water (-)
  real(rkind)                        :: scalarVolFracIce                ! volumetric fraction of ice (-)
- real(rkind)                        :: scalarVolFracLiqPrime           ! volumetric fraction of liquid water (-)
- real(rkind)                        :: scalarVolFracIcePrime           ! volumetric fraction of ice (-)
  real(rkind)                        :: Tcrit                           ! critical soil temperature below which ice exists (K)
  real(rkind)                        :: xTemp                           ! temporary temperature (K)
  real(rkind)                        :: effSat                          ! effective saturation (-)
- real(rkind)                        :: avPore                          ! available pore space (-)
- character(len=256)              :: cMessage                        ! error message of downwind routine
- logical(lgt),parameter          :: printFlag=.false.               ! flag to turn on printing
+ real(rkind)                        :: avPore=-9999                    ! available pore space (-)
+ character(len=256)                 :: cMessage                        ! error message of downwind routine
+ logical(lgt),parameter             :: printFlag=.false.               ! flag to turn on printing
  ! iterative solution for temperature
- real(rkind)                        :: meltNrg                         ! energy for melt+freeze (J m-3)
- real(rkind)                        :: residual                        ! residual in the energy equation (J m-3)
- real(rkind)                        :: derivative                      ! derivative in the energy equation (J m-3 K-1)
- real(rkind)                        :: tempInc                         ! iteration increment (K)
- integer(i4b)                    :: iter                            ! iteration index
- integer(i4b)                    :: niter                           ! number of iterations
- integer(i4b),parameter          :: maxiter=100                     ! maximum number of iterations
+ integer(i4b)                       :: iter                            ! iteration index
+ integer(i4b)                       :: niter                           ! number of iterations
+ integer(i4b),parameter             :: maxiter=100                     ! maximum number of iterations
  real(rkind),parameter              :: nrgConvTol=1.e-4_rkind             ! convergence tolerance for energy (J m-3)
  real(rkind),parameter              :: tempConvTol=1.e-6_rkind            ! convergence tolerance for temperature (K)
- real(rkind)                        :: critDiff                        ! temperature difference from critical (K)
  real(rkind)                        :: tempMin                         ! minimum bracket for temperature (K)
  real(rkind)                        :: tempMax                         ! maximum bracket for temperature (K)
  logical(lgt)                       :: bFlag                           ! flag to denote that iteration increment was constrained using bi-section

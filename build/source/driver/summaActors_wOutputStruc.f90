@@ -168,7 +168,6 @@ subroutine summaActors_writeToOutputStruc(&
   integer(i4b)                             :: nHRU
   integer(i4b)                             :: iFreq             ! index of the output frequency
   integer(i4b)                             :: iGRU              ! Temporary index for GRU        
-  integer(i4b)                             :: iDat
   nGRU = 1
   nHRU = 1
   iGRU = 1

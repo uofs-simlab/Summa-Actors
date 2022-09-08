@@ -200,14 +200,12 @@ subroutine solveByIDA(                         &
   ! --------------------------------------------------------------------------------------------------------------------------------
   type(N_Vector),           pointer :: sunvec_y             ! sundials solution vector
   type(N_Vector),           pointer :: sunvec_yp            ! sundials derivative vector
-  type(N_Vector),           pointer :: sunvec_av            ! sundials tolerance vector
   type(SUNMatrix),          pointer :: sunmat_A             ! sundials matrix
   type(SUNLinearSolver),    pointer :: sunlinsol_LS         ! sundials linear solver
   type(SUNNonLinearSolver), pointer :: sunnonlin_NLS        ! sundials nonlinear solver
   type(c_ptr)                       :: ida_mem              ! IDA memory
   type(eqnsData),           target  :: eqns_data            ! IDA type
   integer(i4b)                      :: retval, retvalr      ! return value
-  integer(i4b)                      :: rootsfound(3)        ! crossing direction of discontinuities
   logical(lgt)                      :: feasible             ! feasibility flag
   real(qp)                          :: t0                   ! staring time
   real(qp)                          :: dt_last(1)           ! last time step
@@ -216,13 +214,11 @@ subroutine solveByIDA(                         &
   logical(lgt)                      :: startQuadrature
   real(rkind)                       :: mLayerMatricHeadLiqPrev(nSoil)
   real(qp)                          :: h_init
-  integer(c_long)                   :: nState               ! total number of state variables
+  integer(c_long)                    :: nState               ! total number of state variables
   real(rkind)                       :: rVec(nStat)
   real(qp)                          :: tret(1)
   logical(lgt)                      :: mergedLayers
   logical(lgt),parameter            :: offErrWarnMessage = .false.
-  real(rkind)                       :: superflousSub        ! superflous sublimation (kg m-2 s-1)
-  real(rkind)                       :: superflousNrg        ! superflous energy that cannot be used for sublimation (W m-2 [J m-2 s-1])
   integer(i4b)                      :: i
 
   ! -----------------------------------------------------------------------------------------------------
@@ -540,7 +536,7 @@ subroutine solveByIDA(                         &
 
   if(idaSucceeds)then
     ! copy to output data
-    diag_data     = eqns_data%diag_data
+    diag_data%var(:)     = eqns_data%diag_data%var(:)
     flux_data     = eqns_data%flux_data
     deriv_data    = eqns_data%deriv_data
     ixSaturation  = eqns_data%ixSaturation
@@ -597,6 +593,7 @@ subroutine setInitialCondition(neq, y, sunvec_u, sunvec_up)
   ! pointers to data in SUNDIALS vectors
   real(c_double), pointer :: uu(:)
   real(c_double), pointer :: up(:)
+  
 
   ! get data arrays from SUNDIALS vectors
   uu(1:neq) => FN_VGetArrayPointer(sunvec_u)

@@ -175,8 +175,6 @@ contains
  integer(i4b)                         :: pLayer          ! indices of soil layers (used for the baseflow derivatives)
  ! conversion factors
  real(rkind)                          :: convLiq2tot     ! factor to convert liquid water derivative to total water derivative
- !
- real(rkind)                          :: dVolFracWat_dPsi0_iLayer
 
  ! --------------------------------------------------------------
  ! associate variables from data structures

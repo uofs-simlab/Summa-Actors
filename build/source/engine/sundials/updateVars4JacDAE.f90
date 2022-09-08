@@ -109,7 +109,6 @@ contains
  ! **********************************************************************************************************
  subroutine updateVars4JacDAE(&
                        ! input
-                       dt,                                        & ! intent(in):    time step
                        do_adjustTemp,                             & ! intent(in):    logical flag to adjust temperature to account for the energy used in melt+freeze
                        mpar_data,                                 & ! intent(in):    model parameters for a local HRU
                        indx_data,                                 & ! intent(in):    indices defining model states and layers
@@ -144,7 +143,6 @@ contains
  ! --------------------------------------------------------------------------------------------------------------------------------
  implicit none
  ! input
- real(rkind)      ,intent(in)    :: dt                              ! time step
  logical(lgt)     ,intent(in)    :: do_adjustTemp                   ! flag to adjust temperature to account for the energy used in melt+freeze
  type(var_dlength),intent(in)    :: mpar_data                       ! model parameters for a local HRU
  type(var_ilength),intent(in)    :: indx_data                       ! indices defining model states and layers

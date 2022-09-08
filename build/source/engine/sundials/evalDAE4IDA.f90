@@ -55,7 +55,7 @@ contains
     implicit none
 
     ! calling variables
-    real(rkind), value          :: tres      ! current time                 t
+    real(c_double), value          :: tres      ! current time                 t
     type(N_Vector)              :: sunvec_y  ! solution N_Vector    y
     type(N_Vector)              :: sunvec_yp ! derivative N_Vector  y'
     type(N_Vector)              :: sunvec_r  ! residual N_Vector    F(t,y,y')

@@ -104,13 +104,8 @@ subroutine setupHRUParam(&
    ! global data structures
    USE globalData,only:gru_struc                               ! gru-hru mapping structures
    USE globalData,only:localParFallback                        ! local column default parameters
-   USE globalData,only:basinParFallback                        ! basin-average default parameters
    USE globalData,only:model_decisions                         ! model decision structure
    USE globalData,only:greenVegFrac_monthly                    ! fraction of green vegetation in each month (0-1)
-   ! USE globalData,only:numtim                                  ! number of time steps in the simulation
-   ! run time options
-   USE globalData,only:startGRU                                ! index of the starting GRU for parallelization run
-   USE globalData,only:iRunMode                                ! define the current running mode
    ! output constraints
    USE globalData,only:maxLayers                               ! maximum number of layers
    USE globalData,only:maxSnowLayers                           ! maximum number of snow layers
@@ -157,7 +152,6 @@ subroutine setupHRUParam(&
    type(var_i),pointer                      :: oldTime              ! time for the previous model time step
    character(len=256)                       :: message            ! error message
    character(len=256)                       :: cmessage           ! error message of downwind routine
-   integer(i4b)                             :: iVar               ! looping variables
    ! ---------------------------------------------------------------------------------------
    ! initialize error control
    err=0; message='setupHRUParam/'

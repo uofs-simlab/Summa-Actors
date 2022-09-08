@@ -51,8 +51,8 @@ contains
     implicit none
 
     ! calling variables
-    real(rkind), value            :: t              ! current time
-    real(rkind), value            :: cj             ! step size scaling factor
+    real(c_double), value            :: t              ! current time
+    real(c_double), value            :: cj             ! step size scaling factor
     type(N_Vector)                :: sunvec_y       ! solution N_Vector
     type(N_Vector)                :: sunvec_yp      ! derivative N_Vector
     type(N_Vector)                :: sunvec_r       ! residual N_Vector

@@ -210,7 +210,7 @@ subroutine varSubstepSundials(&
   logical(lgt)                       :: checkMassBalance              ! flag to check the mass balance
   logical(lgt)                       :: checkNrgBalance
   logical(lgt)                       :: waterBalanceError             ! flag to denote that there is a water balance error
-  logical(lgt)                       :: nrgFluxModified               ! flag to denote that the energy fluxes were modified
+  logical(lgt)                       :: nrgFluxModified=.false.               ! flag to denote that the energy fluxes were modified
   ! energy fluxes
   real(rkind)                        :: sumCanopyEvaporation          ! sum of canopy evaporation/condensation (kg m-2 s-1)
   real(rkind)                        :: sumLatHeatCanopyEvap          ! sum of latent heat flux for evaporation from the canopy to the canopy air space (W m-2)
@@ -738,8 +738,6 @@ subroutine updateProgSundials(dt,nSnow,nSoil,nLayers,doAdjustTemp,computeVegFlux
   call varExtractSundials(&
                 ! input
                 stateVecPrime,            & ! intent(in):    derivative of model state vector (mixed units)
-                diag_data,                & ! intent(in):    model diagnostic variables for a local HRU
-                prog_data,                & ! intent(in):    model prognostic variables for a local HRU
                 indx_data,                & ! intent(in):    indices defining model states and layers
                 ! output: variables for the vegetation canopy
                 scalarCanairTempPrime,    & ! intent(out):   derivative of canopy air temperature (K)

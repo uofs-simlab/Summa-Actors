@@ -22,7 +22,7 @@ implicit none
    integer(i4b)                           :: nSnow                        ! number of snow layers
    integer(i4b)                           :: nSoil                        ! number of soil layers
    integer(i4b)                           :: nLayers                      ! total number of layers
-   integer                                :: nState                       ! total number of state variables
+   integer(kind=8)                        :: nState                       ! total number of state variables
    integer(i4b)                           :: ixMatrix                     ! form of matrix (dense or banded)
    logical(lgt)                           :: firstSubStep                 ! flag to indicate if we are processing the first sub-step
    logical(lgt)                           :: firstFluxCall

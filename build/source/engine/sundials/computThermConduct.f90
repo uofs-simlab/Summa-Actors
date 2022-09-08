@@ -67,7 +67,6 @@ contains
  subroutine computThermConduct(&
                        ! input: control variables
                        computeVegFlux,          & ! intent(in): flag to denote if computing the vegetation flux
-                       canopyDepth,             & ! intent(in): canopy depth (m)
                        ! input: state variables
                        scalarCanopyIce,           & ! intent(in): canopy ice content (kg m-2)
                        scalarCanopyLiquid,        & ! intent(in): canopy liquid water content (kg m-2)
@@ -86,7 +85,6 @@ contains
  ! --------------------------------------------------------------------------------------------------------------------------------------
  ! input: model control
  logical(lgt),intent(in)         :: computeVegFlux         ! logical flag to denote if computing the vegetation flux
- real(rkind),intent(in)             :: canopyDepth            ! depth of the vegetation canopy (m)
  real(rkind),intent(in)             :: scalarCanopyIce        ! trial value of canopy ice content (kg m-2)
  real(rkind),intent(in)             :: scalarCanopyLiquid
  real(rkind),intent(in)             :: mLayerVolFracLiq(:)        ! trial vector of volumetric liquid water content (-)

@@ -85,7 +85,6 @@ contains
                        ! input data structures
                        mpar_data,                     & ! intent(in):    model parameters
                        indx_data,                     & ! intent(in):    model layer indices
-                       diag_data,                     & ! intent(in):    model diagnostic variables for a local HRU
                        ! input: state variables
                        scalarCanopyIce,               & ! intent(in)
                        scalarCanopyLiquid,            & ! intent(in)
@@ -113,7 +112,6 @@ contains
  type(var_ilength),intent(in)       :: indx_data              ! model layer indices
  ! input:
  integer(i4b),intent(in)            :: nLayers
- type(var_dlength),intent(in)       :: diag_data              ! diagnostic variables for a local HRU
  real(rkind),intent(in)             :: scalarCanopyIce        ! trial value of canopy ice content (kg m-2)
  real(rkind),intent(in)             :: scalarCanopyLiquid
  real(rkind),intent(in)             :: scalarCanopyTempTrial  ! trial value of canopy temperature
@@ -335,7 +333,6 @@ contains
  character(*),intent(out)        :: message                ! error message
  ! --------------------------------------------------------------------------------------------------------------------------------
  ! local variables
- character(LEN=256)                :: cmessage               ! error message of downwind routine
  integer(i4b)                      :: iLayer                 ! index of model layer
  integer(i4b)                      :: iSoil                  ! index of soil layer
  ! --------------------------------------------------------------------------------------------------------------------------------
@@ -434,7 +431,6 @@ contains
  character(*),intent(out)        :: message                ! error message
  ! --------------------------------------------------------------------------------------------------------------------------------
  ! local variables
- character(LEN=256)                :: cmessage               ! error message of downwind routine
  integer(i4b)                      :: iLayer                 ! index of model layer
  integer(i4b)                      :: iSoil                  ! index of soil layer
  real(rkind)                       :: g1

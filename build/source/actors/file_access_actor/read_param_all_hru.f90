@@ -102,7 +102,6 @@ subroutine read_param_file_access_actor(startGRU,num_gru,err) bind(C, name="read
     integer(i4b)                          :: fHRU             ! index of HRU in input file
     integer(i4b)                          :: iGRU
     integer(i4b)                          :: iHRU
-    integer(i4b)                          :: iVar
 
     err=0; message="read_param_all_hru.f90/"    
     ! **********************************************************************************************

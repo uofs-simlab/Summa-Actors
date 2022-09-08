@@ -106,7 +106,6 @@ contains
  subroutine updateVars(&
                        ! input
                        do_adjustTemp,                             & ! intent(in):    logical flag to adjust temperature to account for the energy used in melt+freeze
-                       lookup_data,                               & ! intent(in):    lookup tables for a local HRU
                        mpar_data,                                 & ! intent(in):    model parameters for a local HRU
                        indx_data,                                 & ! intent(in):    indices defining model states and layers
                        prog_data,                                 & ! intent(in):    model prognostic variables for a local HRU
@@ -131,7 +130,6 @@ contains
  implicit none
  ! input
  logical(lgt)     ,intent(in)    :: do_adjustTemp                   ! flag to adjust temperature to account for the energy used in melt+freeze
- type(zLookup),    intent(in)    :: lookup_data                     ! lookup tables for a local HRU
  type(var_dlength),intent(in)    :: mpar_data                       ! model parameters for a local HRU
  type(var_ilength),intent(in)    :: indx_data                       ! indices defining model states and layers
  type(var_dlength),intent(in)    :: prog_data                       ! prognostic variables for a local HRU
