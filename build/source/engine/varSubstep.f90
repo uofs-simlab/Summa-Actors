@@ -403,7 +403,7 @@ subroutine varSubstep(&
 
   ! update prognostic variables
   call updateProg(dtSubstep,nSnow,nSoil,nLayers,doAdjustTemp,computeVegFlux,untappedMelt,stateVecTrial,checkMassBalance, & ! input: model control
-                  mpar_data,indx_data,flux_temp,prog_data,diag_data,deriv_data,                              & ! input-output: data structures
+                  lookup_data,mpar_data,indx_data,flux_temp,prog_data,diag_data,deriv_data,                              & ! input-output: data structures
                   waterBalanceError,nrgFluxModified,tooMuchMelt,err,cmessage)                                              ! output: flags and error control
   if(err/=0)then
    message=trim(message)//trim(cmessage)
@@ -551,7 +551,7 @@ subroutine varSubstep(&
  ! private subroutine updateProg: update prognostic variables
  ! **********************************************************************************************************
  subroutine updateProg(dt,nSnow,nSoil,nLayers,doAdjustTemp,computeVegFlux,untappedMelt,stateVecTrial,checkMassBalance, & ! input: model control
-                       mpar_data,indx_data,flux_data,prog_data,diag_data,deriv_data,                       & ! input-output: data structures
+                      lookup_data,mpar_data,indx_data,flux_data,prog_data,diag_data,deriv_data,                       & ! input-output: data structures
                        waterBalanceError,nrgFluxModified,tooMuchMelt,err,message)                                        ! output: flags and error control
  USE getVectorz_module,only:varExtract                             ! extract variables from the state vector
  USE updateVars_module,only:updateVars                             ! update prognostic variables
@@ -567,6 +567,7 @@ subroutine varSubstep(&
  real(dp)         ,intent(in)    :: stateVecTrial(:)               ! trial state vector (mixed units)
  logical(lgt)     ,intent(in)    :: checkMassBalance               ! flag to check the mass balance
  ! data structures
+ type(zLookup),    intent(in)    :: lookup_data                    ! lookup tables
  type(var_dlength),intent(in)    :: mpar_data                      ! model parameters
  type(var_ilength),intent(in)    :: indx_data                      ! indices for a local HRU
  type(var_dlength),intent(inout) :: flux_data                      ! model fluxes for a local HRU
@@ -713,6 +714,7 @@ subroutine varSubstep(&
  call updateVars(&
                  ! input
                  doAdjustTemp,             & ! intent(in):    logical flag to adjust temperature to account for the energy used in melt+freeze
+                 lookup_data,              & ! intent(in):    lookup tables for a local HRU
                  mpar_data,                & ! intent(in):    model parameters for a local HRU
                  indx_data,                & ! intent(in):    indices defining model states and layers
                  prog_data,                & ! intent(in):    model prognostic variables for a local HRU
