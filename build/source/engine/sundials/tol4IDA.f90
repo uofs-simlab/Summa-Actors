@@ -134,6 +134,7 @@ contains
                         prog_data,               & ! intent(in):    model prognostic variables for a local HRU
                         diag_data,               & ! intent(in):    model diagnostic variables for a local HRU
                         indx_data,               & ! intent(in):    indices defining model states and layers
+                        mpar_data,               & ! intent(in)
                         ! output
                         absTol,                  & ! intent(out):   model state vector
                         relTol,                  &
@@ -144,6 +145,7 @@ contains
  type(var_dlength),intent(in)    :: prog_data              ! prognostic variables for a local HRU
  type(var_dlength),intent(in)    :: diag_data              ! diagnostic variables for a local HRU
  type(var_ilength),intent(in)    :: indx_data              ! indices defining model states and layers
+ type(var_dlength),intent(in)    :: mpar_data              ! model parameters
  ! output
  real(rkind),intent(out)         :: absTol(:)            ! model state vector (mixed units)
  real(rkind),intent(out)         :: relTol(:)            ! model state vector (mixed units)

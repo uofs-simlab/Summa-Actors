@@ -127,7 +127,7 @@ module systemSolvSundials_module
                          err,message)         ! intent(out):   error code and error message
    ! ---------------------------------------------------------------------------------------
    ! structure allocations
-   USE allocspace_module,only:allocLocal                ! allocate local data structures
+   USE allocspace4chm_module,only:allocLocal                ! allocate local data structures
    ! simulation of fluxes and residuals given a trial state vector
    USE eval8summaSundials_module,only:eval8summaSundials ! simulation of fluxes and residuals given a trial state vector
    USE getVectorz_module,only:getScaling                ! get the scaling vectors

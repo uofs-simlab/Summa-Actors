@@ -142,7 +142,7 @@ module summaSolveSundialsIDA_module
    USE fsundials_nvector_mod                       ! Fortran interface to generic N_Vector
    USE fsundials_linearsolver_mod                  ! Fortran interface to generic SUNLinearSolver
    USE fsundials_nonlinearsolver_mod               ! Fortran interface to generic SUNNonlinearSolver
-   USE allocspace_module,only:allocLocal           ! allocate local data structures
+   USE allocspace4chm_module,only:allocLocal           ! allocate local data structures
    USE eval8summaSundials_module,only:eval8summa4IDA         ! DAE/ODE functions
    USE computJacobSundials_module,only:computJacob4IDA         ! system Jacobian
    USE tol4IDA_module,only:computWeight4IDA        ! weight required for tolerances
