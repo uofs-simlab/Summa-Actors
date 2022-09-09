@@ -537,10 +537,10 @@ subroutine solveByIDA(                         &
   if(idaSucceeds)then
     ! copy to output data
     diag_data%var(:)     = eqns_data%diag_data%var(:)
-    flux_data     = eqns_data%flux_data
-    deriv_data    = eqns_data%deriv_data
-    ixSaturation  = eqns_data%ixSaturation
-    dt_out        = tret(1)
+    flux_data%var(:)     = eqns_data%flux_data%var(:)
+    deriv_data%var(:)    = eqns_data%deriv_data%var(:)
+    ixSaturation         = eqns_data%ixSaturation
+    dt_out               = tret(1)
   endif
 
   ! free memory

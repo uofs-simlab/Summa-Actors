@@ -377,6 +377,8 @@ subroutine FileAccessActor_DeallocateStructures(handle_forcFileInfo, handle_ncid
   deallocate(ncid)
   deallocate(failedHRUs)
 
+  call deallocateOutputStruc(err)
+
 end subroutine FileAccessActor_DeallocateStructures
 
 

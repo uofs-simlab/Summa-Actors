@@ -616,7 +616,7 @@ subroutine popMetadat(err,message)
   deriv_meta(iLookDERIV%dVolHtCapBulk_dCanWat)         = var_info('dVolHtCapBulk_dCanWat'        , 'derivative in bulk heat capacity w.r.t. volumetric water content'      , 'J m-3 K-1'     , get_ixVarType('scalarv'), iMissVec, iMissVec, .false.)
   deriv_meta(iLookDERIV%dVolHtCapBulk_dTk)             = var_info('dVolHtCapBulk_dTk'            , 'derivative in bulk heat capacity w.r.t. temperature'                   , 'J m-3 K-2'     , get_ixVarType('midToto'), iMissVec, iMissVec, .false.)
   deriv_meta(iLookDERIV%dVolHtCapBulk_dTkCanopy)       = var_info('dVolHtCapBulk_dTkCanopy'      , 'derivative in bulk heat capacity w.r.t. temperature'                   , 'J m-3 K-2'     , get_ixVarType('scalarv'), iMissVec, iMissVec, .false.)
- 
+
   ! -----
   ! * basin-wide runoff and aquifer fluxes...
   ! -----------------------------------------

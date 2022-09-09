@@ -1,36 +1,36 @@
 #! /bin/bash
 
-echo "Starting Celia"
 cd celia1990
 ./run_test_summa_actors.sh
-python3 verify_celia.py
+echo "Starting Celia" > ../verify.txt
+python3 verify_celia.py >> ../verify.txt
 cd ..
 sleep 3
 
-echo "Starting Colbeck"
 cd colbeck1976
 ./run_test_summa_actors.sh
-python3 verify_colbeck.py
+echo "Starting Colbeck" >> ../verify.txt
+python3 verify_colbeck.py >> ../verify.txt
 cd ..
 sleep 3
 
-echo "Starting Miller"
 cd miller1998
 ./run_test_summa_actors.sh
-python3 verify_miller.py
+echo "Starting Miller" >> ../verify.txt
+python3 verify_miller.py >> ../verify.txt
 cd ..
 sleep 3
 
-echo "Starting Mizoguchi"
 cd mizoguchi1990
 ./run_test_summa_actors.sh
-python3 verify_mizoguchi.py
+echo "Starting Mizoguchi" >> ../verify.txt
+python3 verify_mizoguchi.py >> ../verify.txt
 cd ..
 sleep 3
 
-echo "Starting Vanderborght"
 cd vanderborght2005
 ./run_test_summa_actors.sh
-python3 verify_vanderborght.py
+echo "Starting Vanderborght" >> ../verify.txt
+python3 verify_vanderborght.py >> ../verify.txt
 cd ..
 sleep 3

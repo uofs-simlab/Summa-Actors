@@ -58,7 +58,7 @@ def verify(verified_data_path, data_to_compare_path, output_variables, numHRU):
                         print("variable -",var, "has different values at", elem)
                         print("     verified_hru = ", verified_data[elem])
                         print("     hru_to_compare = ", to_verify_data[elem])
-                        # break
+                        break
 
             except TypeError:
                 print("variable - ", var, "Cannot be compared with len")
@@ -80,14 +80,14 @@ mLayerDepth = "mLayerDepth"
 output_variables = [scalarRainfall, scalarSnowfall, scalarRainPlusMelt, mLayerVolFracLiq, \
     mLayerVolFracIce, iLayerNrgFlux, iLayerHeight, mLayerDepth]
 
-verified_data_path = Path("./verification_data/colbeck1976-exp1_G1-1_timestep.nc")
-data_to_compare_path = Path("./output/colbeck1976-exp1GRU1-1_timestep.nc")
-verify(verified_data_path, data_to_compare_path, output_variables, numHRU)
+# verified_data_path = Path("./verification_data/colbeck1976-exp1_G1-1_timestep.nc")
+# data_to_compare_path = Path("./output/colbeck1976-exp1GRU1-1_timestep.nc")
+# verify(verified_data_path, data_to_compare_path, output_variables, numHRU)
 
 verified_data_path = Path("./verification_data/colbeck1976-exp2_G1-1_timestep.nc")
 data_to_compare_path = Path("./output/colbeck1976-exp2GRU1-1_timestep.nc")
 verify(verified_data_path, data_to_compare_path, output_variables, numHRU)
 
-verified_data_path = Path("./verification_data/colbeck1976-exp3_G1-1_timestep.nc")
-data_to_compare_path = Path("./output/colbeck1976-exp3GRU1-1_timestep.nc")
-verify(verified_data_path, data_to_compare_path, output_variables, numHRU)
+# verified_data_path = Path("./verification_data/colbeck1976-exp3_G1-1_timestep.nc")
+# data_to_compare_path = Path("./output/colbeck1976-exp3GRU1-1_timestep.nc")
+# verify(verified_data_path, data_to_compare_path, output_variables, numHRU)

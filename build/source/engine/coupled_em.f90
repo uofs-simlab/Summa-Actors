@@ -1363,16 +1363,7 @@ subroutine coupled_em(&
     newSWE      = prog_data%var(iLookPROG%scalarSWE)%dat(1)
     delSWE      = newSWE - (oldSWE - sfcMeltPond)
     massBalance = delSWE - (effSnowfall + effRainfall + averageSnowSublimation - averageSnowDrainage*iden_water)*data_step
-    ! print*, "effSnowfall = ", effSnowfall
-    ! print*, "effRainfall = ", effRainfall
-    ! print*, "averageSnowSublimation = ", averageSnowSublimation
-    ! print*, "averageSnowDrainage = ", averageSnowDrainage
-    ! print*, "iden_water = ", iden_water
-    ! print*, "newSWE = ", newSWE
-    ! print*, "delSWE = ", delSWE
-    ! print*, "massBalance = ", massBalance
 
-    
     if(abs(massBalance) > absConvTol_liquid*iden_water*10._dp)then
       print*,                  'nSnow       = ', nSnow
       print*,                  'nSub        = ', nSub
