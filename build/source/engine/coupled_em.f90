@@ -253,6 +253,14 @@ subroutine coupled_em(&
   ! initialize error control
   err=0; message="coupled_em/"
 
+  ! print*, "scalarCanopyWat"
+  ! print*, "mLayerVolFracWat"
+  ! print*, "mLayerMatricHead"
+  ! print*, ""
+  ! print*, ""
+  ! print*, ""
+  ! print*, ""
+
   ! check that the decision is supported
   if(model_decisions(iLookDECISIONS%groundwatr)%iDecision==bigBucket .and. &
       model_decisions(iLookDECISIONS%spatial_gw)%iDecision/=localColumn)then
@@ -1355,22 +1363,32 @@ subroutine coupled_em(&
     newSWE      = prog_data%var(iLookPROG%scalarSWE)%dat(1)
     delSWE      = newSWE - (oldSWE - sfcMeltPond)
     massBalance = delSWE - (effSnowfall + effRainfall + averageSnowSublimation - averageSnowDrainage*iden_water)*data_step
-    if(abs(massBalance) > 1.d-6)then
-    print*,                  'nSnow       = ', nSnow
-    print*,                  'nSub        = ', nSub
-    write(*,'(a,1x,f20.10)') 'data_step   = ', data_step
-    write(*,'(a,1x,f20.10)') 'oldSWE      = ', oldSWE
-    write(*,'(a,1x,f20.10)') 'newSWE      = ', newSWE
-    write(*,'(a,1x,f20.10)') 'delSWE      = ', delSWE
-    write(*,'(a,1x,f20.10)') 'effRainfall = ', effRainfall*data_step
-    write(*,'(a,1x,f20.10)') 'effSnowfall = ', effSnowfall*data_step
-    write(*,'(a,1x,f20.10)') 'sublimation = ', averageSnowSublimation*data_step
-    write(*,'(a,1x,f20.10)') 'snwDrainage = ', averageSnowDrainage*iden_water*data_step
-    write(*,'(a,1x,f20.10)') 'sfcMeltPond = ', sfcMeltPond
-    write(*,'(a,1x,f20.10)') 'massBalance = ', massBalance
-    message=trim(message)//'SWE does not balance'
-    print*,message
-    err=20; return
+    ! print*, "effSnowfall = ", effSnowfall
+    ! print*, "effRainfall = ", effRainfall
+    ! print*, "averageSnowSublimation = ", averageSnowSublimation
+    ! print*, "averageSnowDrainage = ", averageSnowDrainage
+    ! print*, "iden_water = ", iden_water
+    ! print*, "newSWE = ", newSWE
+    ! print*, "delSWE = ", delSWE
+    ! print*, "massBalance = ", massBalance
+
+    
+    if(abs(massBalance) > absConvTol_liquid*iden_water*10._dp)then
+      print*,                  'nSnow       = ', nSnow
+      print*,                  'nSub        = ', nSub
+      write(*,'(a,1x,f20.10)') 'data_step   = ', data_step
+      write(*,'(a,1x,f20.10)') 'oldSWE      = ', oldSWE
+      write(*,'(a,1x,f20.10)') 'newSWE      = ', newSWE
+      write(*,'(a,1x,f20.10)') 'delSWE      = ', delSWE
+      write(*,'(a,1x,f20.10)') 'effRainfall = ', effRainfall*data_step
+      write(*,'(a,1x,f20.10)') 'effSnowfall = ', effSnowfall*data_step
+      write(*,'(a,1x,f20.10)') 'sublimation = ', averageSnowSublimation*data_step
+      write(*,'(a,1x,f20.10)') 'snwDrainage = ', averageSnowDrainage*iden_water*data_step
+      write(*,'(a,1x,f20.10)') 'sfcMeltPond = ', sfcMeltPond
+      write(*,'(a,1x,f20.10)') 'massBalance = ', massBalance
+      message=trim(message)//'SWE does not balance'
+      print*,message
+      err=20; return
     endif  ! if failed mass balance check
   endif  ! if snow layers exist
 

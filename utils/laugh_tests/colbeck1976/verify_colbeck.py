@@ -80,13 +80,13 @@ mLayerDepth = "mLayerDepth"
 output_variables = [scalarRainfall, scalarSnowfall, scalarRainPlusMelt, mLayerVolFracLiq, \
     mLayerVolFracIce, iLayerNrgFlux, iLayerHeight, mLayerDepth]
 
-verified_data_path = Path("./verification_data/colbeck1976-exp1_G1-1_timestep.nc")
-data_to_compare_path = Path("./output/colbeck1976-exp1GRU1-1_timestep.nc")
-verify(verified_data_path, data_to_compare_path, output_variables, numHRU)
+# verified_data_path = Path("./verification_data/colbeck1976-exp1_G1-1_timestep.nc")
+# data_to_compare_path = Path("./output/colbeck1976-exp1GRU1-1_timestep.nc")
+# verify(verified_data_path, data_to_compare_path, output_variables, numHRU)
 
-verified_data_path = Path("./verification_data/colbeck1976-exp2_G1-1_timestep.nc")
-data_to_compare_path = Path("./output/colbeck1976-exp2GRU1-1_timestep.nc")
-verify(verified_data_path, data_to_compare_path, output_variables, numHRU)
+# verified_data_path = Path("./verification_data/colbeck1976-exp2_G1-1_timestep.nc")
+# data_to_compare_path = Path("./output/colbeck1976-exp2GRU1-1_timestep.nc")
+# verify(verified_data_path, data_to_compare_path, output_variables, numHRU)
 
 verified_data_path = Path("./verification_data/colbeck1976-exp3_G1-1_timestep.nc")
 data_to_compare_path = Path("./output/colbeck1976-exp3GRU1-1_timestep.nc")

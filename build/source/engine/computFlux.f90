@@ -620,6 +620,10 @@ subroutine computFlux(&
   ! check the need to compute liquid water fluxes through snow
   if(nSnowOnlyHyd>0)then
 
+    ! print*, "scalarThroughfallRain = ", scalarThroughfallRain
+    ! print*, "scalarCanopyLiqDrainage = ", scalarCanopyLiqDrainage
+    ! print*, "mLayerVolFracLiqTrial(1) =", mLayerVolFracLiqTrial(1)
+
     ! compute liquid fluxes through snow
     call snowLiqFlx(&
                     ! input: model control
@@ -655,6 +659,7 @@ subroutine computFlux(&
 
     ! compute drainage from the soil zone (needed for mass balance checks)
     scalarSnowDrainage = iLayerLiqFluxSnow(nSnow)
+    ! print*, "scalarSnowDrainage = ", scalarSnowDrainage
 
       ! save bottom layer of snow derivatives
     above_soilLiqFluxDeriv = iLayerLiqFluxSnowDeriv(nSnow) ! derivative in vertical liquid water flux at bottom snow layer interface

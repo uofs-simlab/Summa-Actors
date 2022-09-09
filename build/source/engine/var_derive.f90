@@ -458,6 +458,10 @@ contains
    if(abs(1._dp - sumFrac) > tolerFrac)then
     write(*,*) 'fraction of basin runoff histogram being accounted for by time delay vector is ', sumFrac
     write(*,*) 'this is less than allowed by tolerFrac = ', tolerFrac
+    write(*,*) 'Solutions:'
+    write(*,*) ' (1) Check that the values of routingGammaShape and routingGammaScale are appropriate (and fix if necessary); or'
+    write(*,*) ' (2) Increase the hard coded parameter nTimeDelay in globalData.f90 (currently nTimeDelay is set to ', nTDH, ')'
+    write(*,*) '       -- note that nTimeDelay defines the number of time steps in the time delay histogram'
     message=trim(message)//'not enough bins for the time delay histogram -- fix hard-coded parameter in globalData.f90'
     err=20; return
    end if

@@ -365,6 +365,18 @@ subroutine opSplittin(&
   ! ---------------------------------------------------------------------------------------
   ! initialize error control
   err=0; message="opSplittin/"
+  ! print*, "BEFORE******"
+  ! print*, "scalarCanairTemp = ", scalarCanairTemp
+  ! print*, "scalarCanopyTemp = ", scalarCanopyTemp
+  ! print*, "scalarCanopyIce = ", scalarCanopyIce
+  ! print*, "scalarCanopyLiq = ", scalarCanopyLiq
+  ! print*, "scalarCanopyWat = ", scalarCanopyWat
+  ! print*, "mLayerTemp = ", mLayerTemp(1)
+  ! print*, "mLayerVolFracIce = ", mLayerVolFracIce(1)
+  ! print*, "mLayerVolFracLiq = ", mLayerVolFracLiq(1)
+  ! print*, "mLayerVolFracWat = ", mLayerVolFracWat(1)
+  ! print*, "mLayerMatricHead = ", mLayerMatricHead(1)
+  ! print*, "mLayerMatricHeadLiq = ", mLayerMatricHeadLiq(1)
   
   ! we just solve the fully coupled problem by ida
   select case(model_decisions(iLookDECISIONS%diffEqSolv)%iDecision)
@@ -919,9 +931,9 @@ subroutine opSplittin(&
                 if(err>0) return
               endif  ! (check for errors)
 
-              !    print*, trim(message)//'after varSubstep: scalarSnowDrainage = ', flux_data%var(iLookFLUX%scalarSnowDrainage)%dat
-              !    print*, trim(message)//'after varSubstep: iLayerLiqFluxSnow  = ', flux_data%var(iLookFLUX%iLayerLiqFluxSnow)%dat
-              !    print*, trim(message)//'after varSubstep: iLayerLiqFluxSoil  = ', flux_data%var(iLookFLUX%iLayerLiqFluxSoil)%dat
+              ! print*, trim(message)//'after varSubstep: scalarSnowDrainage = ', flux_data%var(iLookFLUX%scalarSnowDrainage)%dat
+              ! print*, trim(message)//'after varSubstep: iLayerLiqFluxSnow  = ', flux_data%var(iLookFLUX%iLayerLiqFluxSnow)%dat
+              ! print*, trim(message)//'after varSubstep: iLayerLiqFluxSoil  = ', flux_data%var(iLookFLUX%iLayerLiqFluxSoil)%dat
 
               ! check
               !if(ixSolution==scalar)then
@@ -1069,20 +1081,9 @@ subroutine opSplittin(&
     ! ==========================================================================================================================================
 
     ! success = exit the coupling loop
-    ! terminate DO loop early if fullyCoupled returns a solution,
-    ! so that the loop does not proceed to ixCoupling = stateTypeSplit
+
     if(ixCoupling==fullyCoupled .and. .not. failure) exit coupling
-  
-    ! if we reach stateTypeSplit, terminating the DO loop here is cleaner 
-    ! than letting the loop complete, because in the latter case the coupling 
-    ! loop will end with ixCoupling = nCoupling+1 = 3 (a FORTRAN loop 
-    ! increments the index variable at the end of each iteration and stops 
-    ! the loop if the index > specified stop value). Variable ixCoupling is 
-    ! used for error reporting in coupled_em.f90 in the balance checks and 
-    ! we thus need to make sure ixCoupling is not incremented to be larger 
-    ! than nCoupling.
-    if(ixCoupling==stateTypeSplit .and. .not. failure) exit coupling  
-  
+
   end do coupling ! coupling method
 
   ! check that all state variables were updated
@@ -1105,9 +1106,24 @@ subroutine opSplittin(&
   if(ixCoupling/=fullyCoupled .or. nSubsteps>1) dtMultiplier=0.5_dp
    
   ! compute the melt in each snow and soil layer
-  if(nSnow>0) mLayerMeltFreeze(      1:nSnow  ) = -(mLayerVolFracIce(      1:nSnow  ) - mLayerVolFracIceInit(      1:nSnow  ))*iden_ice
-              mLayerMeltFreeze(nSnow+1:nLayers) = -(mLayerVolFracIce(nSnow+1:nLayers) - mLayerVolFracIceInit(nSnow+1:nLayers))*iden_water
+  if(nSnow>0) then
+      diag_data%var(iLookDIAG%mLayerMeltFreeze)%dat(1:nSnow) = -( mLayerVolFracIce(1:nSnow) - mLayerVolFracIceInit(1:nSnow) ) * iden_ice
+      diag_data%var(iLookDIAG%mLayerMeltFreeze)%dat(nSnow+1:nLayers) = -(mLayerVolFracIce(nSnow+1:nLayers) - mLayerVolFracIceInit(nSnow+1:nLayers))*iden_water
+  endif
 
+
+  ! print*, "After******"
+  ! print*, "scalarCanairTemp = ", scalarCanairTemp
+  ! print*, "scalarCanopyTemp = ", scalarCanopyTemp
+  ! print*, "scalarCanopyIce = ", scalarCanopyIce
+  ! print*, "scalarCanopyLiq = ", scalarCanopyLiq
+  ! print*, "scalarCanopyWat = ", scalarCanopyWat
+  ! print*, "mLayerTemp = ", mLayerTemp(1)
+  ! print*, "mLayerVolFracIce = ", mLayerVolFracIce(1)
+  ! print*, "mLayerVolFracLiq = ", mLayerVolFracLiq(1)
+  ! print*, "mLayerVolFracWat = ", mLayerVolFracWat(1)
+  ! print*, "mLayerMatricHead = ", mLayerMatricHead(1)
+  ! print*, "mLayerMatricHeadLiq = ", mLayerMatricHeadLiq(1)
   ! end associate statements
   end associate globalVars
 
