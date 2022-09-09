@@ -553,10 +553,10 @@ MODULE var_lookup
   integer(i4b)    :: scalarNetRadiation              = integerMissing ! net radiation (W m-2)
  endtype iLook_flux
 
- ! ***********************************************************************************************************
- ! (9) define derivatives
- ! ***********************************************************************************************************
- type, public :: iLook_deriv
+! ***********************************************************************************************************
+! (9) define derivatives
+! ***********************************************************************************************************
+type, public :: iLook_deriv
   ! derivatives in net vegetation energy fluxes w.r.t. relevant state variables
   integer(i4b)    :: dCanairNetFlux_dCanairTemp      = integerMissing ! derivative in net canopy air space flux w.r.t. canopy air temperature (W m-2 K-1)
   integer(i4b)    :: dCanairNetFlux_dCanopyTemp      = integerMissing ! derivative in net canopy air space flux w.r.t. canopy temperature (W m-2 K-1)
@@ -637,7 +637,10 @@ MODULE var_lookup
   integer(i4b)    :: dVolHtCapBulk_dCanWat           = integerMissing ! derivative in bulk heat capacity w.r.t. volumetric water content
   integer(i4b)    :: dVolHtCapBulk_dTk               = integerMissing ! derivative in bulk heat capacity w.r.t. temperature
   integer(i4b)    :: dVolHtCapBulk_dTkCanopy         = integerMissing ! derivative in bulk heat capacity w.r.t. temperature
-  endtype iLook_deriv
+   ! derivatives in time
+  integer(i4b)    ::  mLayerdTemp_dt                 = integerMissing ! timestep change in layer temperature
+  integer(i4b)    ::  scalarCanopydTemp_dt           = integerMissing ! timestep change in canopy temperature
+endtype iLook_deriv
 
  ! ***********************************************************************************************************
  ! (10) define model indices
@@ -882,7 +885,7 @@ MODULE var_lookup
                                                                          31, 32, 33, 34, 35, 36, 37, 38, 39, 40,&
                                                                          41, 42, 43, 44, 45, 46, 47, 48, 49, 50,&
                                                                          51, 52, 53, 54, 55, 56, 57, 58, 59, 60,&
-                                                                         61, 62, 63, 64, 65)
+                                                                         61, 62, 63, 64, 65, 66, 67)
 
  ! named variables: model indices
  type(iLook_index),   public,parameter :: iLookINDEX    =ilook_index   (  1,  2,  3,  4,  5,  6,  7,  8,  9, 10,&
