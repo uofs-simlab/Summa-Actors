@@ -1,0 +1,2 @@
+#! /bin/bash
+valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --verbose --log-file=summa_out.txt /SUMMA/bin/summa_sundials.exe -g 1 1 -m /Summa-Actors/utils/laugh_tests/wigmosta1999/settings/summa_fileManager-exp1.txt

@@ -18,6 +18,7 @@ RUN apt-get update -y && \
     gfortran \
     wget \
     python3-pip \
+    valgrind \
     gdb &&\
     apt-get autoclean
 
