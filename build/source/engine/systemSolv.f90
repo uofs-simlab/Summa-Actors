@@ -143,7 +143,7 @@ contains
                        err,message)         ! intent(out):   error code and error message
  ! ---------------------------------------------------------------------------------------
  ! structure allocations
- USE allocspace4chm_module,only:allocLocal                ! allocate local data structures
+ USE allocspace_module,only:allocLocal                ! allocate local data structures
  ! simulation of fluxes and residuals given a trial state vector
  USE eval8summa_module,only:eval8summa                ! simulation of fluxes and residuals given a trial state vector
  USE summaSolve_module,only:summaSolve                ! calculate the iteration increment, evaluate the new state, and refine if necessary

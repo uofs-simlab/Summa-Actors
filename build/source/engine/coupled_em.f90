@@ -123,8 +123,8 @@ subroutine coupled_em(&
                        ! error control
                        err,message)         ! intent(out):   error control
   ! structure allocations
-  USE allocspace4chm_module,only:allocLocal      ! allocate local data structures
-  USE allocspace4chm_module,only:resizeData      ! clone a data structure
+  USE allocspace_module,only:allocLocal      ! allocate local data structures
+  USE allocspace_module,only:resizeData      ! clone a data structure
   ! preliminary subroutines
   USE vegPhenlgy_module,only:vegPhenlgy      ! compute vegetation phenology
   USE vegNrgFlux_module,only:wettedFrac      ! compute wetted fraction of the canopy (used in sw radiation fluxes)

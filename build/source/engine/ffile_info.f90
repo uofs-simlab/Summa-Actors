@@ -49,7 +49,7 @@ subroutine ffile_info(indxGRU,forcFileInfo,numFiles,err,message)
   USE globalData,only:gru_struc                      ! gru-hru mapping structure
   USE time_utils_module,only:extractTime
   USE globalData,only:time_meta
-  USE allocspace4chm_module,only:allocLocal
+  USE allocspace_module,only:allocLocal
   USE time_utils_module,only:extractTime     ! extract time info from units string
   USE summaActors_FileManager,only: SIM_START_TM, SIM_END_TM, FORCING_START ! time info from control file module
   USE var_lookup,only:iLookTIME              ! named variables that identify indices in the time structures

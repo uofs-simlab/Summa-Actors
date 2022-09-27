@@ -83,8 +83,8 @@ contains
   USE nrtype                                                  ! variable types, etc.
   USE time_utils_module,only:elapsedSec                       ! calculate the elapsed time
   ! subroutines and functions: allocate space
-  USE allocspace4chm_module,only:allocGlobal              ! module to allocate space for global data structures
-  USE allocspace4chm_module,only:allocLocal
+  USE allocspace_module,only:allocGlobal              ! module to allocate space for global data structures
+  USE allocspace_module,only:allocLocal
   ! timing variables
   USE globalData,only:startInit,endInit                       ! date/time for the start and end of the initialization
   USE globalData,only:elapsedRead                             ! elapsed time for the data read

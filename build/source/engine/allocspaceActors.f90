@@ -18,7 +18,7 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-module allocspace4chm_module
+module allocspace_module
 
 ! data types
 USE nrtype
@@ -637,4 +637,4 @@ contains
 
  end subroutine allocateDat_flag
 
-end module allocspace4chm_module
+end module allocspace_module
