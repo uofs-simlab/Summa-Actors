@@ -65,9 +65,8 @@ USE globalData,only:globalPrintFlag        ! the global print flag
 
 ! look-up values for the numerical method
 USE mDecisions_module,only:         &
- iterative,                         &      ! iterative
- nonIterative,                      &      ! non-iterative
- iterSurfEnergyBal                         ! iterate only on the surface energy balance
+ bEuler,                            &      ! home-grown backward Euler solution with long time steps
+ sundials                                  ! SUNDIALS/IDA solution
 
 ! look-up values for the maximum interception capacity
 USE mDecisions_module,only:         &
@@ -143,14 +142,6 @@ subroutine coupled_em(&
   USE var_derive_module,only:calcHeight      ! module to calculate height at layer interfaces and layer mid-point
   USE computSnowDepth_module,only:computSnowDepth
   ! look-up values for the numerical method
-  USE mDecisions_module,only:         &
-    iterative,                         &      ! iterative
-    nonIterative,                      &      ! non-iterative
-    iterSurfEnergyBal                         ! iterate only on the surface energy balance
-  ! look-up values for the maximum interception capacity
-  USE mDecisions_module,only:          &
-                        stickySnow,    &      ! maximum interception capacity an increasing function of temerature
-                        lightSnow             ! maximum interception capacity an inverse function of new snow density
   implicit none
   ! model control
   integer(4),intent(in)                :: indxHRU                ! hruId
@@ -252,14 +243,6 @@ subroutine coupled_em(&
   ! ----------------------------------------------------------------------------------------------------------------------------------------------
   ! initialize error control
   err=0; message="coupled_em/"
-
-  ! print*, "scalarCanopyWat"
-  ! print*, "mLayerVolFracWat"
-  ! print*, "mLayerMatricHead"
-  ! print*, ""
-  ! print*, ""
-  ! print*, ""
-  ! print*, ""
 
   ! check that the decision is supported
   if(model_decisions(iLookDECISIONS%groundwatr)%iDecision==bigBucket .and. &
@@ -1177,7 +1160,9 @@ subroutine coupled_em(&
 
     ! adjust length of the sub-step (make sure that we don't exceed the step)
     ! TODO: This is different in Ashley's code
-    dt_sub = min(data_step - dt_solv, dt_sub)
+    ! dt_sub = min(data_step - dt_solv, dt_sub)
+    dt_sub = data_step - dt_solv !min(data_step - dt_solv, dt_sub)
+
     !print*, 'dt_sub = ', dt_sub
 
   end do  substeps ! (sub-step loop)

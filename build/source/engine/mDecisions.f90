@@ -156,7 +156,7 @@ contains
 ! ************************************************************************************************
 ! public subroutine mDecisions: save model decisions as named integers
 ! ************************************************************************************************
-subroutine mDecisions(err,message)
+subroutine mDecisions(num_steps,err,message)
   ! model time structures
   USE multiconst,only:secprday               ! number of seconds in a day
   USE var_lookup,only:iLookTIME              ! named variables that identify indices in the time structures
@@ -181,10 +181,11 @@ subroutine mDecisions(err,message)
   USE time_utils_module,only:extractTime     ! extract time info from units string
   USE time_utils_module,only:compjulday      ! compute the julian day
   USE time_utils_module,only:fracDay         ! compute fractional day
-  USE summaFileManager,only: SIM_START_TM, SIM_END_TM   ! time info from control file module
+  USE summaActors_FileManager,only: SIM_START_TM, SIM_END_TM   ! time info from control file module
 
   implicit none
   ! define output
+  integer(i4b),intent(out)             :: num_steps
   integer(i4b),intent(out)             :: err            ! error code
   character(*),intent(out)             :: message        ! error message
   ! define local variables
@@ -287,8 +288,8 @@ subroutine mDecisions(err,message)
   oldTime%var(:) = startTime%var(:)
 
   ! compute the number of time steps
-  numtim = nint( (dJulianFinsh - dJulianStart)*secprday/data_step ) + 1
-  write(*,'(a,1x,i10)') 'number of time steps = ', numtim
+  num_steps = nint( (dJulianFinsh - dJulianStart)*secprday/data_step ) + 1
+  numTim = num_steps
 
 
   ! set Noah-MP options
@@ -675,8 +676,8 @@ subroutine readoption(err,message)
   USE ascii_util_module,only:file_open       ! open file
   USE ascii_util_module,only:linewidth       ! max character number for one line
   USE ascii_util_module,only:get_vlines      ! get a vector of non-comment lines
-  USE summaFileManager,only:SETTINGS_PATH    ! path for metadata files
-  USE summaFileManager,only:M_DECISIONS      ! definition of modeling options
+  USE summaActors_FileManager,only:SETTINGS_PATH    ! path for metadata files
+  USE summaActors_FileManager,only:M_DECISIONS      ! definition of modeling options
   USE get_ixname_module,only:get_ixdecisions ! identify index of named variable
   USE globalData,only:model_decisions        ! model decision structure
   implicit none

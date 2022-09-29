@@ -315,7 +315,7 @@ MODULE globalData
 
   ! define fixed dimensions
   integer(i4b),parameter,public                   :: nBand=2          ! number of spectral bands
-  integer(i4b),parameter,public                   :: nTimeDelay=3000  ! number of hours in the time delay histogram (default: ~1 season = 24*365/4)
+  integer(i4b),parameter,public                   :: nTimeDelay=2000  ! number of hours in the time delay histogram (default: ~1 season = 24*365/4)
 
 
   character(len=1024),public,save                 :: fname                         ! temporary filename
