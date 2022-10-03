@@ -1,6 +1,5 @@
 #include "caf/all.hpp"
 #include "caf/io/all.hpp"
-
 #include "summa_client.hpp"
 #include "summa_actor.hpp"
 #include "message_atoms.hpp"
@@ -89,8 +88,6 @@ behavior running(stateful_actor<summa_client_state>* self, const actor& server_a
                 num_hru, 
                 self->state.config_path.value_or(config_path), 
                 self);
-            
-
             
         },
 
