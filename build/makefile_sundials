@@ -140,10 +140,7 @@ SUMMA_SOLVER= \
 		sundials/computThermConduct.f90 \
 		sundials/computResidSundials.f90 \
 		sundials/eval8summaSundials.f90 \
-		sundials/evalDAE4IDA.f90 \
 		sundials/computJacobSundials.f90 \
-		sundials/eval8JacDAE.f90 \
-		sundials/evalJac4IDA.f90 \
 		sundials/computSnowDepth.f90 \
 		sundials/summaSolveSundialsIDA.f90 \
 		sundials/systemSolvSundials.f90 \
