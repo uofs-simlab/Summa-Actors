@@ -20,6 +20,7 @@ RUN apt-get update -y && \
     python3-pip \
     valgrind \
     gdb &&\
+    valgrind &&\
     apt-get autoclean
 
 RUN pip3 install xarray
