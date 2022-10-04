@@ -90,16 +90,16 @@ behavior summa_actor(stateful_actor<summa_actor_state>* self, int startGRU, int 
 
 void spawnJob(stateful_actor<summa_actor_state>* self) {
 	// Ensure we do not start a job with too many GRUs
-	if (self->state.numGRU > self->state.maxGRUPerJob) {
+	if (self->state.numGRU > self->state.summa_actor_settings.max_gru_per_job) {
 		// spawn the job actor
 		aout(self) << "\n Starting Job with startGRU = " << self->state.startGRU << "\n";
-		self->state.currentJob = self->spawn(job_actor, self->state.startGRU, self->state.maxGRUPerJob, 
+		self->state.currentJob = self->spawn(job_actor, self->state.startGRU, self->state.summa_actor_settings.max_gru_per_job, 
 			self->state.file_access_actor_settings, self->state.job_actor_settings, 
 			self->state.hru_actor_settings, self);
 		
 		// Update GRU count
-		self->state.numGRU = self->state.numGRU - self->state.maxGRUPerJob;
-		self->state.startGRU = self->state.startGRU + self->state.maxGRUPerJob;
+		self->state.numGRU = self->state.numGRU - self->state.summa_actor_settings.max_gru_per_job;
+		self->state.startGRU = self->state.startGRU + self->state.summa_actor_settings.max_gru_per_job;
 
 	} else {
 

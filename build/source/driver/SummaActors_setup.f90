@@ -66,8 +66,8 @@ contains
 
 ! initializes parameter data structures (e.g. vegetation and soil parameters).
 subroutine setupHRUParam(&
-                  indxHRU,                 & ! ID of hru
-                  indxGRU,                 & ! Index of the parent GRU of the HRU 
+                  indxGRU,                 & ! ID of hru
+                  indxHRU,                 & ! Index of the parent GRU of the HRU 
                   ! primary data structures (scalars)
                   handle_attrStruct,              & ! local attributes for each HRU
                   handle_typeStruct,              & ! local classification of soil veg etc. for each HRU

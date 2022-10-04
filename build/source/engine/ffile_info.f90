@@ -106,11 +106,20 @@ subroutine ffile_info(indxGRU,forcFileInfo,numFiles,err,message)
 
   ! open file
   call file_open(trim(infile),unt,err,cmessage)
-  if(err/=0)then; message=trim(message)//trim(cmessage); return; end if
+  if(err/=0)then
+    message=trim(message)//trim(cmessage)
+    print*, message
+    return
+  end if
 
   ! get a list of character strings from non-comment lines
   call get_vlines(unt,dataLines,err,cmessage)
-  if(err/=0)then; err=20; message=trim(message)//trim(cmessage); return; end if
+  if(err/=0)then
+    err=20
+    message=trim(message)//trim(cmessage)
+    print*, message
+    return
+  end if
   nFile = size(dataLines)
 
   ! Get the number of forcing files needed
@@ -128,7 +137,12 @@ subroutine ffile_info(indxGRU,forcFileInfo,numFiles,err,message)
                         startTime%var(iLookTIME%imin_tz),                      & ! time zone minnute
                         dsec_tz,                                               & ! time zone seconds
                         err,cmessage) 
-  if(err/=0)then; err=20; message=trim(message)//trim(cmessage); return; end if
+  if(err/=0)then
+    err=20
+    message=trim(message)//trim(cmessage)
+    print*, message
+    return
+  end if
   call extractTime(trim(FORCING_START),                                        & ! date-time string
                         forcingStart%var(iLookTIME%iyyy),                      & ! year
                         forcingStart%var(iLookTIME%im),                        & ! month
@@ -140,7 +154,12 @@ subroutine ffile_info(indxGRU,forcFileInfo,numFiles,err,message)
                         forcingStart%var(iLookTIME%imin_tz),                   & ! time zone minnute
                         dsec_tz,                                               & ! time zone seconds
                         err,cmessage)
-  if(err/=0)then; err=20; message=trim(message)//trim(cmessage); return; end if
+  if(err/=0)then
+    err=20
+    message=trim(message)//trim(cmessage)
+    print*, message
+    return
+  end if
   ! put simulation end time information into the time structures
   call extractTime(trim(SIM_END_TM),                                           & ! date-time string
                         finishTime%var(iLookTIME%iyyy),                        & ! year
@@ -153,26 +172,51 @@ subroutine ffile_info(indxGRU,forcFileInfo,numFiles,err,message)
                         finishTime%var(iLookTIME%imin_tz),                     & ! time zone minnute
                         dsec_tz,                                               & ! time zone seconds
                         err,cmessage)                                            ! error control
-  if(err/=0)then; err=20; message=trim(message)//trim(cmessage); return; end if
+  if(err/=0)then
+    err=20
+    message=trim(message)//trim(cmessage)
+    print*, message
+    return
+  end if
                         
   startIndx = (((startTime%var(iLookTIME%iyyy) - forcingStart%var(iLookTIME%iyyy)) * 12) &
     + startTime%var(iLookTIME%im) - forcingStart%var(iLookTIME%im) + 1)
+  if (startIndx < 0)then
+    print*, "Cannot have a startTime before the forcing files start. Check that forcingStart is less than startTime"
+    err=20
+    return
+  endif
     
   totalFiles = (((finishTime%var(iLookTIME%iyyy) - startTime%var(iLookTIME%iyyy)) * 12) &
     + finishTime%var(iLookTIME%im) - startTime%var(iLookTIME%im) + 1)
+  if (totalFiles < 0) then
+    print*, "Cannot have a negative number of forcing files, check end time is greater than starttime"
+    err=20
+    return
+  endif
     
   ! allocate space for forcing information
   if(allocated(forcFileInfo%ffile_list)) deallocate(forcFileInfo%ffile_list)
   allocate(forcFileInfo%ffile_list(totalFiles), stat=err)
-  if(err/=0)then; err=20; message=trim(message)//'problem allocating space for forcFileInfo'; return; end if
+  if(err/=0)then
+    err=20
+    message=trim(message)//'problem allocating space for forcFileInfo'
+    print*, message
+    return
+  end if
 
   ffinfo_index = 1
+  
   ! poputate the forcingInfo structure with filenames
   do iFile=startIndx,nFile
     if (ffinfo_index > totalFiles)then; exit; endif;
     ! split the line into "words" (expect one word: the file describing forcing data for that index)
     read(dataLines(iFile),*,iostat=err) filenameData
-    if(err/=0)then; message=trim(message)//'problem reading a line of data from file ['//trim(infile)//']'; return; end if
+    if(err/=0)then
+      message=trim(message)//'problem reading a line of data from file ['//trim(infile)//']'
+      print*, message
+      return
+    end if
     ! set forcing file name attribute
     forcFileInfo%ffile_list(ffinfo_index)%filenmData = trim(filenameData)
     ffinfo_index = ffinfo_index + 1
@@ -207,14 +251,20 @@ subroutine ffile_info(indxGRU,forcFileInfo,numFiles,err,message)
     ! check if file exists
     inquire(file=trim(infile),exist=xist)
     if(.not.xist)then
-    message=trim(message)//"FileNotFound[file='"//trim(infile)//"']"
-    err=10; return
+      message=trim(message)//"FileNotFound[file='"//trim(infile)//"']"
+      print*, message
+      err=10
+      return
     end if
 
     ! open file
     mode=nf90_NoWrite
     call nc_file_open(trim(infile), mode, ncid, err, cmessage)
-    if(err/=0)then; message=trim(message)//trim(cmessage); return; end if
+    if(err/=0)then
+      message=trim(message)//trim(cmessage)
+      print*, message
+      return
+    end if
 
     ! how many variables are there?
     err = nf90_inquire(ncid, nvariables=nVar)

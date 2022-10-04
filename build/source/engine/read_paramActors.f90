@@ -68,13 +68,9 @@ subroutine read_param(indxHRU,indxGRU,mparStruct,bparStruct,dparStruct,err)
 
    ! Start procedure here
    err=0; message="read_paramActors.f90/"
-   ! do iVar=1, size(mpar_meta)
-      dparStruct%var(:) = outputStructure(1)%dparStruct(1)%gru(indxGRU)%hru(indxHRU)%var(:)
-   ! end do
 
-   ! do iVar=1, size(localParFallback)
-   !    mparStruct%var(iVar)%dat(:) = dparStruct%var(iVar)
-   ! end do
+   dparStruct%var(:) = outputStructure(1)%dparStruct(1)%gru(indxGRU)%hru(indxHRU)%var(:)
+
 
    ! populate parameter structures
    do iVar=1, size(mpar_meta)
