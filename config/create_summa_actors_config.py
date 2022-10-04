@@ -30,7 +30,29 @@ def file_access_actor_settings():
 
 def job_actor_settings():
     job_actor_settings = {
-        "FileManagerPath" : "",
+        "FileManagerPath"       : "",
+        "controlVersion"        : "",
+        "simStartTime"          : "",
+        "simEndTime"            : "",
+        "tmZoneInfo"            : "",
+        "settingsPath"          : "",
+        "forcingPath"           : "",
+        "outputPath"            : "",
+        "forcingFreq"           : "",
+        "forcingStart"          : "",
+        "decisionsFile"         : "",
+        "outputControlFile"     : "",
+        "globalHruParamFile"    : "",
+        "globalGruParamFile"    : "",
+        "attributeFile"         : "",
+        "trialParamFile"        : "",
+        "forcingListFile"       : "",
+        "initConditionFile"     : "",
+        "outFilePrefix"         : "",
+        "vegTableFile"          : "",
+        "soilTableFile"         : "",
+        "generalTableFile"      : "",
+        "noahmpTableFile"       : "",
         "outputCSV": False,
         "csvPath": ""
     }
