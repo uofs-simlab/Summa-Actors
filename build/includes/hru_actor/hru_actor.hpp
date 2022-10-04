@@ -3,7 +3,7 @@
 #include "caf/all.hpp"
 #include "fortran_data_types.hpp"
 #include "timing_info.hpp"
-
+#include "settings_functions.hpp"
 #include <chrono>
 #include <string>
 
@@ -79,11 +79,15 @@ struct hru_state {
     bool        printOutput;
     int         outputFrequency;
 
-
     // Julian Day variables
     double      fracJulDay;
     double      tmZoneOffsetFracDay;
     int         yearLength;
+
+    // Settings
+    HRU_Actor_Settings hru_actor_settings;
+
+
     int         err = 0;			            // error conotrol
 
     TimingInfo hru_timing;
@@ -91,8 +95,8 @@ struct hru_state {
 };
 
 behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
-    std::string configPath,
-    caf::actor file_access_actor, int outputStrucSize, caf::actor parent);
+    HRU_Actor_Settings hru_actor_settings, caf::actor file_access_actor, 
+    int outputStrucSize, caf::actor parent);
 
 /**
  Function to initalize the HRU for running

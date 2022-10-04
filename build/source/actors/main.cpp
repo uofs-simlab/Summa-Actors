@@ -97,45 +97,41 @@ void caf_main(actor_system& sys, const config& cfg) {
                                   job_actor_settings, 
                                   hru_actor_settings);
 
+
+    aout(self) << "Printing Settings For SUMMA Simulation\n";
     check_settings_from_json(distributed_settings,
         summa_actor_settings, file_access_actor_settings, job_actor_settings,
         hru_actor_settings);
 
+    if (distributed_settings.distributed_mode) {
+        // only command line arguments needed are config_file and server-mode
+        auto system = cfg.server_mode ? run_server : run_client;
+        system(sys, cfg);
 
+    } else {
+        // Configure command line arguments
+        if (cfg.startGRU == -1) {
+            aout(self) << "Starting GRU was not defined!! " << 
+                "startGRU is set with the \"-g\" option\n";
+            aout(self) << "EXAMPLE: ./summaMain -g 1 -n 10 -c location/of/config \n";
+            return;
+        }
+        if (cfg.countGRU == -1) {
+            aout(self) << "Number of GRUs was not defined!! " <<
+                "countGRU is set with the \"-n\" option\n";
+            aout(self) << "EXAMPLE: ./summaMain -g 1 -n 10 -c location/of/config \n";
+            return;
+        }
+        if (cfg.config_file == "") {
+            aout(self) << "File Manager was not defined!! " << 
+                "fileManger is set with the \"-c\" option\n";
+            aout(self) << "EXAMPLE: ./summaMain -g 1 -n 10 -c location/of/config \n";
+            return;
+        }
 
-    // std::string key_1 = "DistributedSettings";
-    // std::string key_2 = "distributed-mode";
-    // bool distributed_mode = false;
-
-    // distributed_mode = getSettings(cfg.config_file, key_1, key_2, distributed_mode).value_or(false);
-    // if (distributed_mode) {
-    //     // only command line arguments needed are config_file and server-mode
-    //     auto system = cfg.server_mode ? run_server : run_client;
-    //     system(sys, cfg);
-
-    // } else {
-    //     // Configure command line arguments
-    //     if (cfg.startGRU == -1) {
-    //         aout(self) << "Starting GRU was not defined!! " << 
-    //             "startGRU is set with the \"-g\" option\n";
-    //         aout(self) << "EXAMPLE: ./summaMain -g 1 -n 10 -c location/of/config \n";
-    //         return;
-    //     }
-    //     if (cfg.countGRU == -1) {
-    //         aout(self) << "Number of GRUs was not defined!! " <<
-    //             "countGRU is set with the \"-n\" option\n";
-    //         aout(self) << "EXAMPLE: ./summaMain -g 1 -n 10 -c location/of/config \n";
-    //         return;
-    //     }
-    //     if (cfg.config_file == "") {
-    //         aout(self) << "File Manager was not defined!! " << 
-    //             "fileManger is set with the \"-c\" option\n";
-    //         aout(self) << "EXAMPLE: ./summaMain -g 1 -n 10 -c location/of/config \n";
-    //         return;
-    //     }
-
-    //     auto summa = sys.spawn(summa_actor, cfg.startGRU, cfg.countGRU, cfg.config_file, self);
-    // }
+        auto summa = sys.spawn(summa_actor, cfg.startGRU, cfg.countGRU, summa_actor_settings, 
+            file_access_actor_settings, job_actor_settings, hru_actor_settings, self);
+    }
     
 }
 

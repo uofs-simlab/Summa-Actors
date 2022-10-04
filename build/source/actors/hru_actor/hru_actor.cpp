@@ -8,7 +8,7 @@
 namespace caf {
 
 behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
-    std::string configPath, caf::actor file_access_actor, int outputStrucSize, caf::actor parent) {
+    HRU_Actor_Settings hru_actor_settings, caf::actor file_access_actor, int outputStrucSize, caf::actor parent) {
     
     // Timing Information
     self->state.hru_timing = TimingInfo();
@@ -39,20 +39,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
     self->state.iFile = 1;
 
     // Get the settings for the HRU
-    // parseSettings(self, configPath);
-
-    self->state.printOutput = getSettings(configPath, "HRUActor", "printOutput", 
-		self->state.printOutput).value_or(true);
-    self->state.outputFrequency = getSettings(configPath, "HRUActor", "outputFrequency", 
-		self->state.outputFrequency).value_or(500);
-    
-    // We only want to print this once
-    if (indxGRU == 1) {
-        aout(self) << "\nSETTINGS FOR HRU_ACTOR\n";
-        aout(self) << "Print Output = " << self->state.printOutput << "\n";
-        aout(self) << "Print Output every " << self->state.outputFrequency << " timesteps\n\n";
-    }
-
+    self->state.hru_actor_settings = hru_actor_settings;
 
     Initialize_HRU(self);
     self->state.hru_timing.updateEndPoint("total_duration");
@@ -252,8 +239,8 @@ int Run_HRU(stateful_actor<hru_state>* self) {
     }
     self->state.hru_timing.updateEndPoint("forcing_duration");
 
-    if (self->state.printOutput && 
-        self->state.timestep % self->state.outputFrequency == 0) {
+    if (self->state.hru_actor_settings.print_output && 
+        self->state.timestep % self->state.hru_actor_settings.output_frequency == 0) {
         printOutput(self);
     }
     

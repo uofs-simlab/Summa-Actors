@@ -29,21 +29,20 @@ bool inspect(Inspector& inspector, Distributed_Settings& distributed_settings) {
 
 
 struct Summa_Actor_Settings {
-    int output_structure_size;
     int max_gru_per_job;
 };
 
 template<class Inspector>
 bool inspect(Inspector& inspector, Summa_Actor_Settings& summa_actor_settings) {
     return inspector.object(summa_actor_settings).fields(
-                inspector.field("output_structure_size", summa_actor_settings.output_structure_size),
-                inspector.field("max_gru_per_job",       summa_actor_settings.max_gru_per_job));  
+                inspector.field("max_gru_per_job",  summa_actor_settings.max_gru_per_job));  
 }
 
 
 struct File_Access_Actor_Settings {
     int num_vectors_in_output_manager;
 };
+
 template<class Inspector>
 bool inspect(Inspector& inspector, File_Access_Actor_Settings& file_access_actor_settings) {
     return inspector.object(file_access_actor_settings).fields(
@@ -53,6 +52,7 @@ bool inspect(Inspector& inspector, File_Access_Actor_Settings& file_access_actor
 
 struct Job_Actor_Settings {
     std::string file_manager_path;
+    int output_structure_size;
     bool output_csv;
     std::string csv_path;
 };
@@ -61,6 +61,7 @@ template<class Inspector>
 bool inspect(Inspector& inspector, Job_Actor_Settings& job_actor_settings) {
     return inspector.object(job_actor_settings).fields(
                 inspector.field("file_manager_path", job_actor_settings.file_manager_path),
+                inspector.field("output_structure_size", job_actor_settings.output_structure_size),
                 inspector.field("output_csv",        job_actor_settings.output_csv),
                 inspector.field("csv_path",          job_actor_settings.csv_path));
 }

@@ -3,6 +3,7 @@
 #include "caf/all.hpp"
 #include "caf/io/all.hpp"
 #include "timing_info.hpp"
+#include "settings_functions.hpp"
 
 #include <chrono>
 #include <string>
@@ -36,9 +37,17 @@ struct summa_actor_state {
     caf::actor currentJob;  // Reference to the current job actor
     caf::actor parent;
 
+
+    // settings for all child actors (save in case we need to recover)
+    Summa_Actor_Settings summa_actor_settings;
+    File_Access_Actor_Settings file_access_actor_settings;
+    Job_Actor_Settings job_actor_settings; 
+    HRU_Actor_Settings hru_actor_settings;
 };
 
-behavior summa_actor(stateful_actor<summa_actor_state>* self, int startGRU, int numGRU, std::string configPath, actor parent);
+behavior summa_actor(stateful_actor<summa_actor_state>* self, int startGRU, int numGRU, 
+    Summa_Actor_Settings summa_actor_settings, File_Access_Actor_Settings file_access_actor_settings,
+    Job_Actor_Settings job_actor_settings, HRU_Actor_Settings hru_actor_settings, actor parent);
 
 void spawnJob(stateful_actor<summa_actor_state>* self);
 

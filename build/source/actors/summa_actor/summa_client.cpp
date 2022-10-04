@@ -83,11 +83,11 @@ behavior running(stateful_actor<summa_client_state>* self, const actor& server_a
             self->state.batch_id = batch_id;
 
             
-            self->state.summa_actor_ref = self->spawn(summa_actor, 
-                start_hru, 
-                num_hru, 
-                self->state.config_path.value_or(config_path), 
-                self);
+            // self->state.summa_actor_ref = self->spawn(summa_actor, 
+            //     start_hru, 
+            //     num_hru, 
+            //     self->state.config_path.value_or(config_path), 
+            //     self);
             
         },
 

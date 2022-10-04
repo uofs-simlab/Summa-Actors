@@ -4,6 +4,7 @@
 #include "output_manager.hpp"
 #include "forcing_file_info.hpp"
 #include "timing_info.hpp"
+#include "settings_functions.hpp"
 
 namespace caf {
 struct file_access_state {
@@ -24,6 +25,8 @@ struct file_access_state {
     int filesLoaded;
     int err;
 
+    File_Access_Actor_Settings file_access_actor_settings;
+
     std::vector<Forcing_File_Info> forcing_file_list; // list of steps in file
     std::vector<bool> outputFileInitHRU;
 
@@ -32,7 +35,8 @@ struct file_access_state {
 };
 
 behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU, int numGRU, 
-    int outputStrucSize, std::string configPath, actor parent);
+    int outputStrucSize, File_Access_Actor_Settings file_access_actor_settings, actor parent);
+
 void initalizeFileAccessActor(stateful_actor<file_access_state>* self);
 int writeOutput(stateful_actor<file_access_state>* self, int indxGRU, int indxHRU, int numStepsToWrite, int returnMessage, caf::actor actorRef);
 int readForcing(stateful_actor<file_access_state>* self, int currentFile);

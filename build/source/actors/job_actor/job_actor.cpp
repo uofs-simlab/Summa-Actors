@@ -20,49 +20,27 @@ namespace caf {
  * @return behavior 
  */
 behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru, 
-    std::string config_path, int output_struct_size, caf::actor parent) {
+    File_Access_Actor_Settings file_access_actor_settings, Job_Actor_Settings job_actor_settings, 
+    HRU_Actor_Settings hru_actor_settings, caf::actor parent) {
+
     // Timinig Information
     self->state.job_timing = TimingInfo();
     self->state.job_timing.addTimePoint("total_duration");
     self->state.job_timing.updateStartPoint("total_duration");
 
-
     // Set Job Variables
     self->state.start_gru = start_gru;
     self->state.num_gru = num_gru;
-    self->state.config_path = config_path;
     self->state.parent = parent;
-    self->state.output_struct_size = output_struct_size;
 
-    // Get All Settings
-    self->state.file_manager = getSettings(self->state.config_path, "JobActor", "FileManagerPath", 
-        self->state.file_manager).value_or("");
-    if(self->state.file_manager == "") {
-        aout(self) << "ERROR: Job_Actor - getSettings() - file_manager_path\n";
-        self->quit();
-        return {}; // Failure
-    }
-    self->state.output_csv = getSettings(self->state.config_path, "JobActor", "outputCSV",
-        self->state.output_csv).value_or(false);
-    if (self->state.output_csv) {
-        self->state.csv_path = getSettings(self->state.config_path, "JobActor", "csvPath",
-        self->state.csv_path).value_or("");
-        if (self->state.csv_path == ""){ // check if we found the value if not set output_csv to false
-            self->state.output_csv = false;
-        }
-    }
+    self->state.file_access_actor_settings = file_access_actor_settings;
+    self->state.job_actor_settings = job_actor_settings;
+    self->state.hru_actor_settings = hru_actor_settings;
+
     
-    // Print Settings
-    aout(self) << "\nSETTINGS FOR JOB_ACTOR\n" << 
-        "File Manager Path = " << self->state.file_manager << "\n" <<
-        "output_csv = " << self->state.output_csv << "\n";
-    if (self->state.output_csv) {
-        aout(self) << "csv_path = " << self->state.csv_path << "\n";
-    }
-
     // Initalize global variables
     int err = 0;
-    setTimesDirsAndFiles(self->state.file_manager.c_str(), &err);
+    setTimesDirsAndFiles(self->state.job_actor_settings.file_manager_path.c_str(), &err);
     if (err != 0) {
         aout(self) << "ERROR: Job_Actor - setTimesDirsAndFiles\n";
         return {}; // Failure
@@ -92,7 +70,7 @@ behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru,
 
     // Spawn the file_access_actor. This will return the number of forcing files we are working with
     self->state.file_access_actor = self->spawn(file_access_actor, self->state.start_gru, self->state.num_gru, 
-        self->state.output_struct_size, self->state.config_path, self);
+        self->state.job_actor_settings.output_structure_size, self->state.file_access_actor_settings, self);
 
 
     aout(self) << "Job Actor Initalized \n";
@@ -124,7 +102,7 @@ behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru,
             self->state.gru_list[indx_gru - 1]->doneRun(total_duration, init_duration, forcing_duration,
                 run_physics_duration, write_output_duration);
             
-            if (self->state.output_csv) {
+            if (self->state.job_actor_settings.output_csv) {
                 self->state.gru_list[indx_gru - 1]->writeSuccess(self->state.success_output_file);            
             }
             
@@ -161,12 +139,9 @@ behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru,
         },
 
         [=](done_file_access_actor_init) {
-            // Init GRU Actors and the Output Structure
+            // Init HRU Actors and the Output Structure
             self->send(self, init_hru_v);
-            // auto gru = self->spawn(gru_actor, 1, 1, 
-            //     self->state.config_path,
-            //     self->state.output_struct_size, self);
-            // self->send(gru, init_gru_v);
+
         },
 
         [=](done_init_gru) {
@@ -216,7 +191,7 @@ behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru,
                 aout(self) << "Error with the output file, will try creating it agian\n";
                 std::this_thread::sleep_for(std::chrono::seconds(5));
                 self->state.file_access_actor = self->spawn(file_access_actor, self->state.start_gru, self->state.num_gru, 
-                    self->state.output_struct_size, self->state.config_path, self);
+                    self->state.job_actor_settings.output_structure_size, self->state.file_access_actor_settings, self);
             } else {
                 aout(self) << "Letting Parent Know we are quitting\n";
                 self->send(self->state.parent, err_v);
@@ -225,16 +200,12 @@ behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru,
 
 
         }
-    // *******************************************************************************************
-    // ************************** END INTERFACE WITH FileAccessActor *****************************
-    // *******************************************************************************************
-
     };
 }
 
 void initCsvOutputFile(stateful_actor<job_state>* self) {
     std::string success = "Success"; // allows us to build the string
-    if (self->state.output_csv) {
+    if (self->state.job_actor_settings.output_csv) {
         std::ofstream file;
         self->state.success_output_file = self->state.csv_path += success += 
             std::to_string(self->state.start_gru) += ".csv";
@@ -257,10 +228,10 @@ void initalizeGRU(stateful_actor<job_state>* self) {
     for(int i = 0; i < self->state.num_gru; i++) {
         int start_gru = self->state.gru_list.size() + self->state.start_gru;
         int index_gru = self->state.gru_list.size() + 1; // Fortran reference starts at 1
-        auto gru = self->spawn(gru_actor, 
+        auto gru = self->spawn(hru_actor, 
                                start_gru, 
                                index_gru, 
-                               self->state.config_path, 
+                               self->state.hru_actor_settings,
                                self->state.file_access_actor, 
                                self->state.output_struct_size, 
                                self);
@@ -291,7 +262,7 @@ void restartFailures(stateful_actor<job_state>* self) {
             self->send(self->state.file_access_actor, reset_outputCounter_v, gru->getIndxGRU());
             gru->updateDt_init();
             auto newGRU = self->spawn(hru_actor, gru->getRefGRU(), gru->getIndxGRU(), 
-                self->state.config_path,self->state.file_access_actor, 
+                self->state.hru_actor_settings, self->state.file_access_actor, 
                 self->state.output_struct_size, self);
             gru->updateGRU(newGRU);
             gru->updateCurrentAttempt();

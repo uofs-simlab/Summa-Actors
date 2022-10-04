@@ -28,10 +28,7 @@ int read_settings_from_json(std::string json_settings_file,
 
     
     // read settings for summa actor
-    parent_key = "Summa_Actor";
-    summa_actor_settings.output_structure_size = getSettings(json_settings_file, parent_key,
-        "output_structure_size", summa_actor_settings.output_structure_size).value_or(250);
-    
+    parent_key = "Summa_Actor";    
     summa_actor_settings.max_gru_per_job = getSettings(json_settings_file, parent_key,
         "max_gru_per_job", summa_actor_settings.max_gru_per_job).value_or(250);
 
@@ -46,6 +43,9 @@ int read_settings_from_json(std::string json_settings_file,
     parent_key = "Job_Actor";
     job_actor_settings.file_manager_path = getSettings(json_settings_file, parent_key,
         "file_manager_path", job_actor_settings.file_manager_path).value_or("");
+
+    job_actor_settings.output_structure_size = getSettings(json_settings_file, parent_key,
+        "output_structure_size", job_actor_settings.output_structure_size).value_or(250);
 
     job_actor_settings.output_csv = getSettings(json_settings_file, parent_key,
         "output_csv", job_actor_settings.output_csv).value_or(false);
@@ -78,7 +78,6 @@ void check_settings_from_json(Distributed_Settings &distributed_settings,
     std::cout << distributed_settings.num_hru_per_batch << "\n\n\n";
 
     std::cout << "************ SUMMA_ACTOR_SETTINGS ************\n";
-    std::cout << summa_actor_settings.output_structure_size << "\n";
     std::cout << summa_actor_settings.max_gru_per_job << "\n\n\n";
 
     std::cout << "************ FILE_ACCESS_ACTOR_SETTINGS ************\n";
@@ -86,6 +85,7 @@ void check_settings_from_json(Distributed_Settings &distributed_settings,
 
     std::cout << "************ JOB_ACTOR_SETTINGS ************\n";
     std::cout << job_actor_settings.file_manager_path << "\n";
+    std::cout << job_actor_settings.output_structure_size << "\n";
     std::cout << job_actor_settings.output_csv << "\n";
     std::cout << job_actor_settings.csv_path << "\n\n\n";
 

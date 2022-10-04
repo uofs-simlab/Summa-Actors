@@ -14,7 +14,10 @@ using json = nlohmann::json;
 
 namespace caf {
 
-behavior summa_actor(stateful_actor<summa_actor_state>* self, int startGRU, int numGRU, std::string configPath, actor parent) {
+behavior summa_actor(stateful_actor<summa_actor_state>* self, int startGRU, int numGRU, 
+	Summa_Actor_Settings summa_actor_settings, File_Access_Actor_Settings file_access_actor_settings,
+    Job_Actor_Settings job_actor_settings, HRU_Actor_Settings hru_actor_settings, actor parent) {
+
  	// Set Timing Variables
 	self->state.summa_actor_timing = TimingInfo();
 	self->state.summa_actor_timing.addTimePoint("total_duration");
@@ -22,17 +25,12 @@ behavior summa_actor(stateful_actor<summa_actor_state>* self, int startGRU, int 
 	// Set Variables
 	self->state.startGRU = startGRU;
 	self->state.numGRU = numGRU;
-	self->state.configPath = configPath;
 	self->state.parent = parent;
 
-	self->state.outputStrucSize = getSettings(self->state.configPath, "SummaActor", "OuputStructureSize", 
-		self->state.outputStrucSize).value_or(250);
-	self->state.maxGRUPerJob = getSettings(self->state.configPath, "SummaActor", "maxGRUPerJob",
-		self->state.maxGRUPerJob).value_or(100);
-
-	aout(self) << "SETTINGS FOR SUMMA_ACTOR\n";
-	aout(self) << "Output Structure Size = " << self->state.outputStrucSize << "\n";
-	aout(self) << "Max GRUs Per Job = " << self->state.maxGRUPerJob << "\n";
+	self->state.summa_actor_settings = summa_actor_settings;
+	self->state.file_access_actor_settings = file_access_actor_settings;
+	self->state.job_actor_settings = job_actor_settings;
+	self->state.hru_actor_settings = hru_actor_settings;
 
 	// Create the job_actor and start SUMMA
 	spawnJob(self);
@@ -96,7 +94,8 @@ void spawnJob(stateful_actor<summa_actor_state>* self) {
 		// spawn the job actor
 		aout(self) << "\n Starting Job with startGRU = " << self->state.startGRU << "\n";
 		self->state.currentJob = self->spawn(job_actor, self->state.startGRU, self->state.maxGRUPerJob, 
-			self->state.configPath, self->state.outputStrucSize, self);
+			self->state.file_access_actor_settings, self->state.job_actor_settings, 
+			self->state.hru_actor_settings, self);
 		
 		// Update GRU count
 		self->state.numGRU = self->state.numGRU - self->state.maxGRUPerJob;
@@ -105,7 +104,8 @@ void spawnJob(stateful_actor<summa_actor_state>* self) {
 	} else {
 
 		self->state.currentJob = self->spawn(job_actor, self->state.startGRU, self->state.numGRU, 
-			self->state.configPath, self->state.outputStrucSize, self);
+			self->state.file_access_actor_settings, self->state.job_actor_settings, 
+			self->state.hru_actor_settings, self);
 		self->state.numGRU = 0;
 	}
 }

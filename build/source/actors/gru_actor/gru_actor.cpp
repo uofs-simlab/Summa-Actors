@@ -30,12 +30,12 @@ behavior gru_actor(stateful_actor<gru_state>* self,
 
         [=](init_hru) {
             for (int i = 0; i < self->state.num_hrus; i++) {
-                auto hru = self->spawn(hru_actor,
-                        self->state.ref_gru, self->state.indx_gru, 
-                        self->state.config_path, self->state.file_access_actor,
-                        self->state.output_struc_size,
-                        self);
-                self->state.hru_list.push_back(hru);
+                // auto hru = self->spawn(hru_actor,
+                //         self->state.ref_gru, self->state.indx_gru, 
+                //         self->state.config_path, self->state.file_access_actor,
+                //         self->state.output_struc_size,
+                //         self);
+                // self->state.hru_list.push_back(hru);
             }
         },
 

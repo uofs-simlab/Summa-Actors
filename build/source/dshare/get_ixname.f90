@@ -561,7 +561,8 @@ contains
   case('scalarVolLatHt_fus'             ); get_ixdiag = iLookDIAG%scalarVolLatHt_fus               ! volumetric latent heat of fusion     (J m-3)
   ! number of function evaluations
   case('numFluxCalls'                   ); get_ixdiag = iLookDIAG%numFluxCalls                     ! number of flux calls (-)
-  ! get to here if cannot find the variable
+  case('wallClockTime'                  ); get_ixdiag = iLookDIAG%wallClockTime                    ! wall clock time (s)
+    ! get to here if cannot find the variable
   case default
    get_ixdiag = integerMissing
  end select
