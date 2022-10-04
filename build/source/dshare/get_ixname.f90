@@ -997,6 +997,7 @@ contains
    case ('bpar' ); vDex = get_ixBpar(trim(varName))
    case ('bvar' ); vDex = get_ixBvar(trim(varName))
    case ('deriv'); vDex = get_ixDeriv(trim(varName))
+   case ('lookup'); vDex = get_ixLookup(trim(varName))
   end select
   if (vDex>0) then; typeName=trim(structInfo(iStruc)%structName); return; end if
  end do
@@ -1005,6 +1006,26 @@ contains
  err=20;message=trim(message)//'variable '//trim(varName)//' is not found in any structure'; return
 
  end subroutine get_ixUnknown
+
+! *******************************************************************************************************************
+! public function get_ixfreq: get the index of the named variables for the output frequencies
+! *******************************************************************************************************************
+function get_ixLookup(varName)
+  USE var_lookup,only:iLookLOOKUP                     ! indices of the named variables
+  implicit none
+  ! define dummy variables
+  character(*), intent(in) :: varName                 ! variable name
+  integer(i4b)             :: get_ixLookup            ! index of the named variable
+  ! get the index of the named variables
+  select case(trim(varName))
+    case('temperature'); get_ixLookup = iLookLOOKUP%temperature     ! temperature (K)
+    case('enthalpy'   ); get_ixLookup = iLookLOOKUP%enthalpy        ! enthalpy (J m-3)
+    case('deriv2'     ); get_ixLookup = iLookLOOKUP%deriv2          ! secind derivative of the interpolating function
+    ! get to here if cannot find the variable
+    case default
+      get_ixLookup = integerMissing
+  end select
+  end function get_ixLookup
 
  ! *******************************************************************************************************************
  ! public function get_ixfreq: get the index of the named variables for the output frequencies

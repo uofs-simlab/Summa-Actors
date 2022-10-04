@@ -23,77 +23,91 @@
 ! (C) Copyright 2009-2010  ---  Dmitri Kavetski and Martyn Clark ---  All rights reserved
 !******************************************************************
 MODULE summaActors_FileManager
-use nrtype
-implicit none
-public
-! summa-wide pathlength
-integer(i4b),parameter       :: summaPathLen=4096
-! defines the time of the run
-CHARACTER(LEN=summaPathLen)  :: CONTROL_VRS      = 'SUMMA_FILE_MANAGER_V3.0.0'      ! control version
-CHARACTER(LEN=summaPathLen)  :: SIM_START_TM     = '2000-01-01 00:00'               ! simulation start time
-CHARACTER(LEN=summaPathLen)  :: SIM_END_TM       = '2000-01-01 00:00'               ! simulation end time
-CHARACTER(LEN=summaPathLen)  :: NC_TIME_ZONE     = 'utcTime'                        ! time zone info
-! defines the path for data files (and default values)
-CHARACTER(LEN=summaPathLen)  :: SETTINGS_PATH    = 'settings/'                      ! settings dir path
-CHARACTER(LEN=summaPathLen)  :: STATE_PATH       = ''                               ! state file / init. cond. dir path (if omitted, defaults 
-                                                                                    !   to SETTINGS_PATH for input, OUTPATH for output)
-CHARACTER(LEN=summaPathLen)  :: FORCING_PATH     = 'forcing/default/'               ! input_dir_path
-CHARACTER(LEN=summaPathLen)  :: OUTPUT_PATH      = 'output/default/'                ! output_dir_path
-CHARACTER(LEN=summaPathLen)  :: FORCING_FREQ     = 'month'                          ! Frequency of forcing files (input)
-CHARACTER(LEN=summaPathLen)  :: FORCING_START    = '2000-01-01'                              ! Number of Forcing Files
-! define name of control files    (and default values)
-CHARACTER(LEN=summaPathLen)  :: M_DECISIONS      = 'summa_zDecisions.txt'           ! definition of model decisions
-CHARACTER(LEN=summaPathLen)  :: OUTPUT_CONTROL   = 'summa_zLocalModelVarMeta.txt'   ! metadata for model variables
-CHARACTER(LEN=summaPathLen)  :: LOCAL_ATTRIBUTES = 'summa_zLocalAttributes.txt'     ! local attributes
-CHARACTER(LEN=summaPathLen)  :: LOCALPARAM_INFO  = 'summa_zLocalParamInfo.txt'      ! default values and constraints for local model parameters
-CHARACTER(LEN=summaPathLen)  :: BASINPARAM_INFO  = 'summa_zBasinParamInfo.txt'      ! default values and constraints for basin model parameters
-CHARACTER(LEN=summaPathLen)  :: VEGPARM          = 'VEGPARM.TBL'                    ! noah vegetation parameter table
-CHARACTER(LEN=summaPathLen)  :: SOILPARM         = 'SOILPARM.TBL'                   ! noah soil parameter table
-CHARACTER(LEN=summaPathLen)  :: GENPARM          = 'GENPARM.TBL'                    ! noah general parameter table
-CHARACTER(LEN=summaPathLen)  :: MPTABLE          = 'MPTABLE.TBL'                    ! noah mp parameter table
-CHARACTER(LEN=summaPathLen)  :: FORCING_FILELIST = 'summa_zForcingFileList.txt'     ! list of focing files for each HRU
-CHARACTER(LEN=summaPathLen)  :: MODEL_INITCOND   = 'summa_zInitialCond.txt'         ! model initial conditions
-CHARACTER(LEN=summaPathLen)  :: PARAMETER_TRIAL  = 'summa_zParamTrial.txt'          ! trial values for model parameters
-CHARACTER(LEN=summaPathLen)  :: OUTPUT_PREFIX    = 'summa_output_'                  ! prefix for the output file
+  USE, intrinsic :: iso_c_binding
+  use nrtype
+  implicit none
+  public
+  ! summa-wide pathlength
+  integer(i4b),parameter       :: summaPathLen=4096
+  ! defines the time of the run
+  CHARACTER(LEN=summaPathLen)  :: CONTROL_VRS      = 'SUMMA_FILE_MANAGER_V3.0.0'      ! control version
+  CHARACTER(LEN=summaPathLen)  :: SIM_START_TM     = '2000-01-01 00:00'               ! simulation start time
+  CHARACTER(LEN=summaPathLen)  :: SIM_END_TM       = '2000-01-01 00:00'               ! simulation end time
+  CHARACTER(LEN=summaPathLen)  :: NC_TIME_ZONE     = 'utcTime'                        ! time zone info
+  ! defines the path for data files (and default values)
+  CHARACTER(LEN=summaPathLen)  :: SETTINGS_PATH    = 'settings/'                      ! settings dir path
+  CHARACTER(LEN=summaPathLen)  :: STATE_PATH       = ''                               ! state file / init. cond. dir path (if omitted, defaults 
+                                                                                      !   to SETTINGS_PATH for input, OUTPATH for output)
+  CHARACTER(LEN=summaPathLen)  :: FORCING_PATH     = 'forcing/default/'               ! input_dir_path
+  CHARACTER(LEN=summaPathLen)  :: OUTPUT_PATH      = 'output/default/'                ! output_dir_path
+  CHARACTER(LEN=summaPathLen)  :: FORCING_FREQ     = 'month'                          ! Frequency of forcing files (input)
+  CHARACTER(LEN=summaPathLen)  :: FORCING_START    = '2000-01-01'                              ! Number of Forcing Files
+  ! define name of control files    (and default values)
+  CHARACTER(LEN=summaPathLen)  :: M_DECISIONS      = 'summa_zDecisions.txt'           ! definition of model decisions
+  CHARACTER(LEN=summaPathLen)  :: OUTPUT_CONTROL   = 'summa_zLocalModelVarMeta.txt'   ! metadata for model variables
+  CHARACTER(LEN=summaPathLen)  :: LOCAL_ATTRIBUTES = 'summa_zLocalAttributes.txt'     ! local attributes
+  CHARACTER(LEN=summaPathLen)  :: LOCALPARAM_INFO  = 'summa_zLocalParamInfo.txt'      ! default values and constraints for local model parameters
+  CHARACTER(LEN=summaPathLen)  :: BASINPARAM_INFO  = 'summa_zBasinParamInfo.txt'      ! default values and constraints for basin model parameters
+  CHARACTER(LEN=summaPathLen)  :: VEGPARM          = 'VEGPARM.TBL'                    ! noah vegetation parameter table
+  CHARACTER(LEN=summaPathLen)  :: SOILPARM         = 'SOILPARM.TBL'                   ! noah soil parameter table
+  CHARACTER(LEN=summaPathLen)  :: GENPARM          = 'GENPARM.TBL'                    ! noah general parameter table
+  CHARACTER(LEN=summaPathLen)  :: MPTABLE          = 'MPTABLE.TBL'                    ! noah mp parameter table
+  CHARACTER(LEN=summaPathLen)  :: FORCING_FILELIST = 'summa_zForcingFileList.txt'     ! list of focing files for each HRU
+  CHARACTER(LEN=summaPathLen)  :: MODEL_INITCOND   = 'summa_zInitialCond.txt'         ! model initial conditions
+  CHARACTER(LEN=summaPathLen)  :: PARAMETER_TRIAL  = 'summa_zParamTrial.txt'          ! trial values for model parameters
+  CHARACTER(LEN=summaPathLen)  :: OUTPUT_PREFIX    = 'summa_output_'                  ! prefix for the output file
 
-contains
+  contains
 
 ! **************************************************************************************************
 ! public subroutine summa_SetTimesDirsAndFiles: Sets times, directories and filenames for summa run
 ! **************************************************************************************************
-subroutine summa_SetTimesDirsAndFiles(summaFileManagerIn,err,message)
+subroutine summa_SetTimesDirsAndFiles(file_manager,err) bind(C, name="setTimesDirsAndFiles")
   ! Purpose: Sets run times, directories and filenames for summa.
   ! ---
   USE ascii_util_module,only:file_open       ! function to open file
   USE ascii_util_module,only:linewidth       ! max character number for one line
   USE ascii_util_module,only:get_vlines      ! function to get a vector of non-comment lines
 
+  USE cppwrap_auxiliary,only:c_f_string
+
+
   implicit none
 
   ! input/output vars
-  character(*),intent(in)              :: summaFileManagerIn
-  integer(i4b),intent(out)             :: err
-  character(*),intent(out)             :: message
+  character(kind=c_char,len=1),intent(in)   :: file_manager
+  integer(c_int),intent(out)                  :: err
   ! local vars
-  character(*),parameter               :: summaFileManagerHeader='SUMMA_FILE_MANAGER_V3.0.0'
-  integer(i4b),parameter               :: runinfo_fileunit=67   ! file unit for run time information
-  character(len=8)                     :: cdate
-  character(len=10)                    :: ctime
-  character(len=256)                   :: cmessage              ! error message for downwind routine
-  integer(i4b)                         :: unt                   ! file unit (free unit output from file_open)
-  character(LEN=linewidth),allocatable :: charline(:)           ! vector of character strings
-  integer(i4b)                         :: iControl, nControl    ! number of model info
-  character(len=summaPathLen)          :: varEntry              ! name of model info
-  character(len=32)                    :: option                ! option for model info
+  character(len=256)                        :: summaFileManagerIn
+  character(len=256)                        :: message
+  character(*),parameter                    :: summaFileManagerHeader='SUMMA_FILE_MANAGER_V3.0.0'
+  integer(i4b),parameter                    :: runinfo_fileunit=67   ! file unit for run time information
+  character(len=8)                          :: cdate
+  character(len=10)                         :: ctime
+  character(len=256)                        :: cmessage              ! error message for downwind routine
+  integer(i4b)                              :: unt                   ! file unit (free unit output from file_open)
+  character(LEN=linewidth),allocatable      :: charline(:)           ! vector of character strings
+  integer(i4b)                              :: iControl, nControl    ! number of model info
+  character(len=summaPathLen)               :: varEntry              ! name of model info
+  character(len=32)                         :: option                ! option for model info
 
   err=0; message="summa_SetTimesDirsAndFiles/"
+
+  call c_f_string(file_manager, summaFileManagerIn, 256)
+  summaFileManagerIn = trim(summaFileManagerIn)
+
 
   ! read information from model control file, and populate model control structure
   ! populates global control information structure
 
   ! open file, read non-comment lines, close file
   call file_open(trim(summaFileManagerIn),unt,err,cmessage)
-  if(err/=0) then; message=trim(message)//trim(cmessage)//"/Failed to open control file [''"//trim(summaFileManagerIn)//"']"; err=-10; return; end if
+  if(err/=0) then 
+    message=trim(message)//trim(cmessage)//"/Failed to open control file [''"//trim(summaFileManagerIn)//"']"
+    print*, message
+    err=-10 
+    return 
+  end if
   call get_vlines(unt,charline,err,cmessage)  ! 'charline' is a list of strings from non-comment lines
   if(err/=0) then; message=trim(message)//trim(cmessage)//"/Control file read issue in get_vlines()"; return; end if
   close(unt)

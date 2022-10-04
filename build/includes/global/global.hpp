@@ -21,6 +21,7 @@ int getSettingsTest(std::vector<std::string> keys, T return_value) {
     return 0;
 }
 
+
 /**
  * Return the time between to time points
  */

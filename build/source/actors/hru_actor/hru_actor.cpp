@@ -56,7 +56,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
 
     Initialize_HRU(self);
     self->state.hru_timing.updateEndPoint("total_duration");
-    self->send(self->state.parent, done_init_hru_v);
+    self->send(self, start_hru_v);
 
     return {
         // Starts the HRU and tells it to ask for data from the file_access_actor
@@ -152,8 +152,9 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
 void Initialize_HRU(stateful_actor<hru_state>* self) {
     self->state.hru_timing.updateStartPoint("init_duration");
     
-    summaActors_initialize(&self->state.indxGRU,
+    initHRU(&self->state.indxGRU,
             &self->state.num_steps, 
+            self->state.handle_lookupStruct,
             self->state.handle_forcStat, 
             self->state.handle_progStat, 
             self->state.handle_diagStat, 
@@ -188,7 +189,7 @@ void Initialize_HRU(stateful_actor<hru_state>* self) {
         return;
     }
 
-    SetupParam(&self->state.indxGRU,
+    setupHRUParam(&self->state.indxGRU,
             &self->state.indxHRU, 
             self->state.handle_attrStruct, 
             self->state.handle_typeStruct, 

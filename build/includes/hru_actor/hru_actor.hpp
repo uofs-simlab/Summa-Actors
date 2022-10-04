@@ -53,7 +53,11 @@ struct hru_state {
     void *handle_bvarStruct = new_handle_var_dlength(); // basin-average variables
     // ancillary data structures
     void *handle_dparStruct = new_handle_var_d();		// default model parameters
-   // Local hru data
+    // sundials type
+    void *handle_lookupStruct = new_handle_z_lookup();
+
+    
+    // Local hru data
     void *handle_ncid = new_handle_var_i();             // output file ids
     void *handle_statCounter = new_handle_var_i();
     void *handle_outputTimeStep = new_handle_var_i();

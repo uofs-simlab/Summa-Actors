@@ -7,6 +7,9 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     CAF_ADD_ATOM(summa, start_summa)
     CAF_ADD_ATOM(summa, done_job)
     CAF_ADD_ATOM(summa, err)
+    // GRU Actor
+    CAF_ADD_ATOM(summa, init_gru)
+    CAF_ADD_ATOM(summa, done_init_gru)
     // Job Actor
     CAF_ADD_ATOM(summa, done_reading_forcingFile)
     CAF_ADD_ATOM(summa, done_reading_first_forcing_file)

@@ -5,6 +5,7 @@ USE data_types,only:var_time_ilength
 USE data_types,only:var_time_i
 USE data_types,only:var_time_d
 USE data_types,only:var_time_i8
+USE data_types,only:var_i8
 USE data_types,only:var_d
 USE data_types,only:var_i
 USE data_types,only:var_dlength
@@ -41,105 +42,114 @@ subroutine alloc_outputStruc(metaStruct,dataStruct,nSteps,nSnow,nSoil,err,messag
   integer(i4b)                     :: iVar
   character(len=256)               :: cmessage       ! error message of the downwind routine
   ! initalize error control
-  err=0; message='alloc_outputStruc'
+  message='alloc_outputStruc'
 
   nVars = size(metaStruct)
-  if(present(nSnow) .or. present(nSoil))then
-      ! check both are present
-      if(.not.present(nSoil))then; err=20; message=trim(message)//'expect nSoil to be present when nSnow is present'; return; end if
-      if(.not.present(nSnow))then; err=20; message=trim(message)//'expect nSnow to be present when nSoil is present'; return; end if
-      nLayers = nSnow+nSoil
+    if(present(nSnow) .or. present(nSoil))then
+        ! check both are present
+        if(.not.present(nSoil))then; err=20; message=trim(message)//'expect nSoil to be present when nSnow is present'; return; end if
+        if(.not.present(nSnow))then; err=20; message=trim(message)//'expect nSnow to be present when nSoil is present'; return; end if
+        nLayers = nSnow+nSoil
     
-      ! It is possible that nSnow and nSoil are actually needed here, so we return an error if the optional arguments are missing when needed
-  else
-      select type(dataStruct)
-          ! class is (var_flagVec); err=20
-          class is (var_time_ilength); err=20
-          class is (var_time_dlength); err=20
-      end select
-      if(err/=0)then; message=trim(message)//'expect nSnow and nSoil to be present for variable-length data structures'; return; end if
-  end if
+        ! It is possible that nSnow and nSoil are actually needed here, so we return an error if the optional arguments are missing when needed
+    else
+        select type(dataStruct)
+            ! class is (var_flagVec); err=20
+            class is (var_time_ilength); err=20
+            class is (var_time_dlength); err=20
+        end select
+        if(err/=0)then; message=trim(message)//'expect nSnow and nSoil to be present for variable-length data structures'; return; end if
+    end if
 
-  check=.false.
+    check=.false.
     ! allocate the dimension for model variables
-  select type(dataStruct)
+    select type(dataStruct)
 
-      class is (var_time_i)
-          if(allocated(dataStruct%var))then
-              check=.true.
-          else 
-              allocate(dataStruct%var(nVars),stat=err)
-          end if
-          do iVar=1, nVars
-              allocate(dataStruct%var(iVar)%tim(nSteps))
-          end do
-          return
+        class is (var_time_i)
+            if(allocated(dataStruct%var))then
+                check=.true.
+            else 
+                allocate(dataStruct%var(nVars),stat=err)
+            end if
+            
+            do iVar=1, nVars
+                allocate(dataStruct%var(iVar)%tim(nSteps))
+            end do
+            return
 
-      class is (var_time_i8)
-          if(allocated(dataStruct%var))then 
-              check=.true.
-          else 
-              allocate(dataStruct%var(nVars),stat=err) 
-          end if 
-          do iVar=1, nVars
-              allocate(dataStruct%var(iVar)%tim(nSteps))
-          end do
-          return
+        class is (var_time_i8)
+            if(allocated(dataStruct%var))then 
+                check=.true.
+            else 
+                allocate(dataStruct%var(nVars),stat=err) 
+            end if 
+            do iVar=1, nVars
+                allocate(dataStruct%var(iVar)%tim(nSteps))
+            end do
+            return
 
-      class is (var_time_d)
-          if(allocated(dataStruct%var))then
-              check=.true.
-          else
-              allocate(dataStruct%var(nVars),stat=err)
-          end if
-          do iVar=1, nVars
-              allocate(dataStruct%var(iVar)%tim(nSteps))
-          end do
-          return
-      
-      class is (var_d)
-          if(allocated(dataStruct%var))then
-              check=.true.
-          else
-              allocate(dataStruct%var(nVars),stat=err)
-          end if
-          return
-      
-      class is (var_i)
-          if(allocated(dataStruct%var))then
-              check=.true.
-          else
-              allocate(dataStruct%var(nVars),stat=err)
-          end if
-          return
-      
-      class is (var_dlength)
-          if(allocated(dataStruct%var))then
-              check=.true.
-          else
-              allocate(dataStruct%var(nVars),stat=err)
-          end if
-      ! class is (var_flagVec);      if(allocated(dataStruct%var))then; check=.true.; else; allocate(dataStruct%var(nVars),stat=err); end if
+        class is (var_time_d)
+            if(allocated(dataStruct%var))then
+                check=.true.
+            else
+                allocate(dataStruct%var(nVars),stat=err)
+            end if
+            do iVar=1, nVars
+                allocate(dataStruct%var(iVar)%tim(nSteps))
+            end do
+            return
+        
+        class is (var_d)
+            if(allocated(dataStruct%var))then
+                check=.true.
+            else
+                allocate(dataStruct%var(nVars),stat=err)
+            end if
+            return
+        
+        class is (var_i)
+            if(allocated(dataStruct%var))then
+                check=.true.
+            else
+                allocate(dataStruct%var(nVars),stat=err)
+            end if
+            return
+        
+        class is (var_i8)
+            if(allocated(dataStruct%var))then
+                check=.true.
+            else
+                allocate(dataStruct%var(nVars), stat=err)
+            end if
+            return
+        
+        class is (var_dlength)
+            if(allocated(dataStruct%var))then
+                check=.true.
+            else
+                allocate(dataStruct%var(nVars),stat=err)
+            end if
+        ! class is (var_flagVec);      if(allocated(dataStruct%var))then; check=.true.; else; allocate(dataStruct%var(nVars),stat=err); end if
 
-      class is (var_time_ilength)
-          if(allocated(dataStruct%var))then
-              check=.true. 
-          else 
-              allocate(dataStruct%var(nVars),stat=err) 
-          end if
-          do iVar=1, nVars
-              allocate(dataStruct%var(iVar)%tim(nSteps))
-          end do
+        class is (var_time_ilength)
+            if(allocated(dataStruct%var))then
+                check=.true. 
+            else 
+                allocate(dataStruct%var(nVars),stat=err) 
+            end if
+            do iVar=1, nVars
+                allocate(dataStruct%var(iVar)%tim(nSteps))
+            end do
 
-      class is (var_time_dlength)
-          if(allocated(dataStruct%var))then
-              check=.true.
-          else 
-              allocate(dataStruct%var(nVars),stat=err)
-          end if
-          do iVar=1, nVars
-              allocate(dataStruct%var(iVar)%tim(nSteps))
-          end do
+        class is (var_time_dlength)
+            if(allocated(dataStruct%var))then
+                check=.true.
+            else 
+                allocate(dataStruct%var(nVars),stat=err)
+            end if
+            do iVar=1, nVars
+                allocate(dataStruct%var(iVar)%tim(nSteps))
+            end do
       
       class default; err=20; message=trim(message)//'unable to identify derived data type for the variable dimension'; return
   end select

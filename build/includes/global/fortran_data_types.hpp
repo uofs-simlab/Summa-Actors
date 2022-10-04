@@ -96,4 +96,7 @@ extern "C" {
     void* new_handle_file_info();
     void delete_handle_file_info(void* handle);
 
+    // zLookup
+    void* new_handle_z_lookup();
+
 }

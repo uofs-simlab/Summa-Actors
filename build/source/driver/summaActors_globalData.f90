@@ -20,6 +20,7 @@
 
 module summa_globalData
 ! used to declare and allocate global summa data structures
+USE, intrinsic :: iso_c_binding
 
 ! access missing values
 USE globalData,only:integerMissing   ! missing integer
@@ -56,13 +57,14 @@ USE globalData,only:fluxChild_map                           ! index of the child
 USE globalData,only:indxChild_map                           ! index of the child data structure: stats indx
 USE globalData,only:bvarChild_map                           ! index of the child data structure: stats bvar
 
+USE globalData,only:startGRU
 ! safety: set private unless specified otherwise
 implicit none
 private
 public::summa_defineGlobalData
 contains
 
-subroutine summa_defineGlobalData(err, message)
+subroutine summa_defineGlobalData(start_gru_index, err) bind(C, name="defineGlobalData")
   ! ---------------------------------------------------------------------------------------
   ! * desired modules
   ! ---------------------------------------------------------------------------------------
@@ -87,9 +89,10 @@ subroutine summa_defineGlobalData(err, message)
   ! ---------------------------------------------------------------------------------------
   implicit none
   ! dummy variables
-  integer(i4b),intent(out)              :: err                ! error code
-  character(*),intent(out)              :: message            ! error message
+  integer(c_int),intent(in)             :: start_gru_index    ! Index of the starting GRU (-g option from user)
+  integer(c_int),intent(out)            :: err                ! error code
   ! local variables
+  character(len=256)                    :: message            ! error message
   character(LEN=256)                    :: cmessage           ! error message of downwind routine
   logical(lgt), dimension(maxvarFlux)   :: flux_mask          ! mask defining desired flux variables
   logical(lgt), dimension(maxvarForc)   :: statForc_mask      ! mask defining forc stats
@@ -111,22 +114,38 @@ subroutine summa_defineGlobalData(err, message)
 
   ! populate metadata for all model variables
   call popMetadat(err,cmessage)
-  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+  if(err/=0)then
+    message=trim(message)//trim(cmessage)
+    print*, message
+    return 
+  endif
 
   ! define mapping between fluxes and states
   call flxMapping(err,cmessage)
-  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+  if(err/=0)then
+    message=trim(message)//trim(cmessage)
+    print*, message
+    return 
+  endif
 
   ! check data structures
   call checkStruc(err,cmessage)
-  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+  if(err/=0)then 
+    message=trim(message)//trim(cmessage) 
+    print*, message
+    return 
+  endif
 
   ! define the mask to identify the subset of variables in the "child" data structure (just scalar variables)
   flux_mask = (flux_meta(:)%vartype==iLookVarType%scalarv)
 
   ! create the averageFlux metadata structure
   call childStruc(flux_meta, flux_mask, averageFlux_meta, childFLUX_MEAN, err, cmessage)
-  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+  if(err/=0)then 
+    message=trim(message)//trim(cmessage)
+    print*, message
+    return
+  endif
 
   ! child metadata structures - so that we do not carry full stats structures around everywhere
   ! only carry stats for variables with output frequency > model time step
@@ -148,7 +167,11 @@ subroutine summa_defineGlobalData(err, message)
       case('bvar'); call childStruc(bvar_meta,statBvar_mask,statBvar_meta,bvarChild_map,err,cmessage)
     end select
     ! check errors
-    if(err/=0)then; message=trim(message)//trim(cmessage)//'[statistics for =  '//trim(structInfo(iStruct)%structName)//']'; return; endif
+    if(err/=0)then
+      message=trim(message)//trim(cmessage)//'[statistics for =  '//trim(structInfo(iStruct)%structName)//']' 
+      print*, message 
+      return 
+    endif
   end do ! iStruct
 
   ! set all stats metadata to correct var types
@@ -158,6 +181,9 @@ subroutine summa_defineGlobalData(err, message)
   statFlux_meta(:)%vartype = iLookVarType%outstat
   statIndx_meta(:)%vartype = iLookVarType%outstat
   statBvar_meta(:)%vartype = iLookVarType%outstat
+
+  ! Set the startGRU
+  startGRU = start_gru_index
 
 end subroutine summa_defineGlobalData
 

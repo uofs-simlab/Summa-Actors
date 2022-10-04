@@ -14,10 +14,10 @@ ACTORS_LIBRARIES = -L/usr/lib -L/usr/local/lib -L/Summa-Actors/bin -lcaf_core -l
 
 
 # Production runs
-FLAGS_NOAH = -O3 -ffree-form -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
-FLAGS_COMM = -O3 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
-FLAGS_SUMMA = -O3 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
-FLAGS_ACTORS = -O3 -Wfatal-errors -std=c++17
+FLAGS_NOAH = -g -O3 -ffree-form -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
+FLAGS_COMM = -g -O3 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
+FLAGS_SUMMA = -g -O3 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
+FLAGS_ACTORS = -g -O3 -Wfatal-errors -std=c++17
 
 # Debug runs
 # FLAGS_NOAH = -g -O0 -ffree-form -ffree-line-length-none -fmax-errors=0 -fbacktrace -Wno-unused -Wno-unused-dummy-argument -fPIC
@@ -55,6 +55,7 @@ ACTORS_DIR = $(F_KORE_DIR)/actors
 JOB_ACTOR_DIR = $(ACTORS_DIR)/job_actor
 FILE_ACCESS_DIR = $(ACTORS_DIR)/file_access_actor
 HRU_ACTOR_DIR = $(ACTORS_DIR)/hru_actor
+GRU_ACTOR_DIR = $(ACTORS_DIR)/gru_actor
 
 #  utilities
 SUMMA_NRUTIL= \
@@ -83,10 +84,13 @@ SUMMA_DATAMS= \
 		data_types.f90 \
 		globalData.f90 \
 		flxMapping.f90 \
-		get_ixname.f90 \
+		get_ixname.f90
+DATAMS = $(patsubst %, $(DSHARE_DIR)/%, $(SUMMA_DATAMS))
+
+SUMMA_DEPEND_ON_FILEMANAGER= \
 		popMetadat.f90 \
 		outpt_stat.f90
-DATAMS = $(patsubst %, $(DSHARE_DIR)/%, $(SUMMA_DATAMS))
+DEPEND_ON_FILEMANAGER = $(patsubst %, $(DSHARE_DIR)/%, $(SUMMA_DEPEND_ON_FILEMANAGER))
 
 # utility modules
 SUMMA_UTILMS= \
@@ -135,15 +139,18 @@ SUMMA_INTERFACE= \
 
 INTERFACE = $(patsubst %, $(ACTORS_DIR)/global/%, $(SUMMA_INTERFACE))
 
+
 SUMMA_FILEACCESS_INTERFACE = \
 		initOutputStruc.f90 \
 		deallocateOutputStruc.f90 \
-		cppwrap_fileAccess.f90
+		cppwrap_fileAccess.f90 \
+		read_attribute_all_hru.f90 \
+		read_param_all_hru.f90
 
 FILEACCESS_INTERFACE = $(patsubst %, $(FILE_ACCESS_DIR)/%, $(SUMMA_FILEACCESS_INTERFACE))
 
 SUMMA_JOB_INTERFACE = \
-		cppwrap_job.f90
+		job_actor.f90
 
 JOB_INTERFACE =  $(patsubst %, $(JOB_ACTOR_DIR)/%, $(SUMMA_JOB_INTERFACE))
 
@@ -151,6 +158,11 @@ SUMMA_HRU_INTERFACE = \
 		cppwrap_hru.f90
 
 HRU_INTERFACE = $(patsubst %, $(HRU_ACTOR_DIR)/%, $(SUMMA_HRU_INTERFACE))
+
+SUMMA_GRU_INTERFACE = \
+		gru_actor.f90 \
+
+GRU_INTERFACE = $(patsubst %, $(GRU_ACTOR_DIR)/%, $(SUMMA_GRU_INTERFACE))
 		
 
 # Define routines for SUMMA preliminaries
@@ -212,7 +224,7 @@ SUMMA_NETCDF = \
 NETCDF = $(patsubst %, $(NETCDF_DIR)/%, $(SUMMA_NETCDF))
 
 # ... stitch together common programs
-COMM_ALL = $(NRUTIL) $(NRPROC) $(HOOKUP) $(DATAMS) $(UTILMS)
+COMM_ALL = $(NRUTIL) $(NRPROC) $(DATAMS) $(INTERFACE) $(HOOKUP) $(DEPEND_ON_FILEMANAGER) $(UTILMS)
 
 # ... stitch together SUMMA programs
 SUMMA_ALL = $(NETCDF) $(PRELIM) $(MODRUN) $(SOLVER) 
@@ -222,7 +234,7 @@ SUMMA_DRIVER= \
 		summaActors_type.f90 \
 		summaActors_util.f90 \
 		summaActors_globalData.f90 \
-		summaActors_init.f90 \
+		init_hru_actor.f90 \
 		SummaActors_setup.f90 \
 		summaActors_restart.f90 \
 		summaActors_forcing.f90 \
@@ -252,10 +264,13 @@ TIMEINFO = $(SOURCE_DIR)/global/timing_info.cpp
 SUMMA_ACTOR_INCLUDES = -I$(INCLUDE_DIR)/summa_actor
 SUMMA_ACTOR = $(SOURCE_DIR)/summa_actor/summa_actor.cpp
 SUMMA_CLIENT = $(SOURCE_DIR)/summa_actor/summa_client.cpp
-SUMMA_SERVER = $(SOURCE_DIR)/summa_actor/summa_server.cpp
 
+SUMMA_SERVER = $(SOURCE_DIR)/summa_actor/summa_server.cpp
 BATCH_MANGER = $(SOURCE_DIR)/summa_actor/batch_manager.cpp
 CLIENT_MANAGER = $(SOURCE_DIR)/summa_actor/client.cpp
+
+GRU_ACTOR_INCLUDES = -I$(INCLUDE_DIR)/gru_actor
+GRU_ACTOR = $(SOURCE_DIR)/gru_actor/gru_actor.cpp
 
 JOB_ACTOR_INCLUDES = -I$(INCLUDE_DIR)/job_actor
 JOB_ACTOR = $(SOURCE_DIR)/job_actor/job_actor.cpp
@@ -284,7 +299,7 @@ all: fortran cpp
 
 fortran: compile_noah compile_comm compile_summa link clean_fortran
 
-cpp: compile_globals compile_hru_actor compile_file_access_actor compile_job_actor compile_summa_actor \
+cpp: compile_globals compile_hru_actor compile_gru_actor compile_file_access_actor compile_job_actor compile_summa_actor \
 	compile_summa_client compile_summa_server compile_main link_cpp clean_cpp
 
 test: actors_test actors_testLink actorsClean
@@ -301,7 +316,7 @@ compile_comm:
 
 # compile SUMMA routines
 compile_summa: 
-	$(FC) $(FLAGS_SUMMA) -c $(SUMMA_ALL) $(DRIVER) $(INTERFACE) $(JOB_INTERFACE) $(FILEACCESS_INTERFACE) $(HRU_INTERFACE) $(INCLUDES)
+	$(FC) $(FLAGS_SUMMA) -c $(SUMMA_ALL) $(DRIVER) $(JOB_INTERFACE) $(FILEACCESS_INTERFACE) $(HRU_INTERFACE) $(GRU_INTERFACE) $(INCLUDES)
 
 # generate library
 link:   
@@ -322,6 +337,9 @@ clean_fortran:
 compile_globals:
 	$(CC) $(FLAGS_ACTORS) -c $(GLOBAL) $(TIMEINFO) $(GLOBAL_INCLUDES)
 
+compile_gru_actor:
+	$(CC) $(FLAGS_ACTORS) -c $(GRU_ACTOR) $(HRU_ACTOR_INCLUDES) $(GRU_ACTOR_INCLUDES) $(GLOBAL_INCLUDES) $(ACTORS_INCLUDES)
+
 compile_hru_actor:
 	$(CC) $(FLAGS_ACTORS) -c $(HRU_ACTOR) $(HRU_ACTOR_INCLUDES) $(GLOBAL_INCLUDES) $(ACTORS_INCLUDES)
 
@@ -331,7 +349,7 @@ compile_file_access_actor:
 
 compile_job_actor:
 	$(CC) $(FLAGS_ACTORS) -c $(JOB_ACTOR) $(GRUinfo) $(JOB_ACTOR_INCLUDES) $(GLOBAL_INCLUDES) $(ACTORS_INCLUDES) \
-	$(FILE_ACCESS_ACTOR_INCLUDES) $(HRU_ACTOR_INCLUDES)
+	$(FILE_ACCESS_ACTOR_INCLUDES) $(HRU_ACTOR_INCLUDES) $(GRU_ACTOR_INCLUDES)
 
 compile_summa_actor:
 	$(CC) $(FLAGS_ACTORS) -c $(SUMMA_ACTOR) $(SUMMA_ACTOR_INCLUDES) $(GLOBAL_INCLUDES) $(ACTORS_INCLUDES) \

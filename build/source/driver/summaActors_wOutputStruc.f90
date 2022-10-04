@@ -168,6 +168,7 @@ subroutine summaActors_writeToOutputStruc(&
   integer(i4b)                             :: nHRU
   integer(i4b)                             :: iFreq             ! index of the output frequency
   integer(i4b)                             :: iGRU              ! Temporary index for GRU        
+  integer(i4b)                             :: iDat
   nGRU = 1
   nHRU = 1
   iGRU = 1
@@ -233,9 +234,8 @@ subroutine summaActors_writeToOutputStruc(&
     outputTimeStep%var(:)=1
   end if  ! if defining a new file
 
-  ! copy finalized stats to output structure
+ ! If we do not do this looping we segfault - I am not sure why
   outputStructure(1)%finalizeStats(1)%gru(indxGRU)%hru(indxHRU)%tim(outputStep)%dat(:) = finalizeStats%dat(:)
-
  ! ****************************************************************************
  ! *** calculate output statistics
  ! ****************************************************************************
