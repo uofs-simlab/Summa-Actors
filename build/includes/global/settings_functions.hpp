@@ -85,3 +85,7 @@ int read_settings_from_json(std::string json_settings_file_path,
                             File_Access_Actor_Settings &file_access_actor_settings, 
                             Job_Actor_Settings &job_actor_settings, 
                             HRU_Actor_Settings &hru_actor_settings);
+
+void check_settings_from_json(Distributed_Settings &distributed_settings, 
+    Summa_Actor_Settings &summa_actor_settings, File_Access_Actor_Settings &file_access_actor_settings, 
+    Job_Actor_Settings &job_actor_settings, HRU_Actor_Settings &hru_actor_settings);

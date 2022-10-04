@@ -97,6 +97,10 @@ void caf_main(actor_system& sys, const config& cfg) {
                                   job_actor_settings, 
                                   hru_actor_settings);
 
+    check_settings_from_json(distributed_settings,
+        summa_actor_settings, file_access_actor_settings, job_actor_settings,
+        hru_actor_settings);
+
 
 
     // std::string key_1 = "DistributedSettings";
