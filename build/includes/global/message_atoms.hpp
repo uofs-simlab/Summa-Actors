@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../summa_actor/batch_manager.hpp"
+#include "settings_functions.hpp"
 
 CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     // Summa Actor
@@ -48,5 +49,11 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     // Server Actor
     CAF_ADD_ATOM(summa, done_batch)
     CAF_ADD_ATOM(summa, time_to_exit)
-
+    
+    // Struct Types
+    CAF_ADD_TYPE_ID(summa, (Distributed_Settings))
+    CAF_ADD_TYPE_ID(summa, (Summa_Actor_Settings))
+    CAF_ADD_TYPE_ID(summa, (File_Access_Actor_Settings))
+    CAF_ADD_TYPE_ID(summa, (Job_Actor_Settings))
+    CAF_ADD_TYPE_ID(summa, (HRU_Actor_Settings))
 CAF_END_TYPE_ID_BLOCK(summa)

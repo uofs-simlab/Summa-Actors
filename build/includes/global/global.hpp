@@ -7,20 +7,14 @@
 #include <bits/stdc++.h>
 #include <unistd.h>
 #include "json.hpp"
-
+#include "caf/all.hpp"
 
 using json = nlohmann::json;
 
+
+
 extern bool debug;
-template<typename T>
-int getSettingsTest(std::vector<std::string> keys, T return_value) {
-    for (std::vector<int>::size_type i = 0; i < keys.size(); i++) {
-        std::cout<< keys[i] << std::endl;
-    }
-
-    return 0;
-}
-
+// get_settings
 
 /**
  * Return the time between to time points
@@ -28,12 +22,13 @@ int getSettingsTest(std::vector<std::string> keys, T return_value) {
 double calculateTime(std::chrono::time_point<std::chrono::system_clock> start, 
     std::chrono::time_point<std::chrono::system_clock> end);
 
+
+
 template <typename T>
-std::optional<T> getSettings(std::string settings_file_path, std::string key_1, std::string key_2, 
+std::optional<T> getSettings(std::string json_settings_file, std::string key_1, std::string key_2, 
     T return_value) {
     json settings;
-    std::string summa_actors_settings = "/Summa_Actors_Settings.json";
-    std::ifstream settings_file(settings_file_path + summa_actors_settings);
+    std::ifstream settings_file(json_settings_file);
     settings_file >> settings;
     settings_file.close();
     
@@ -53,6 +48,8 @@ std::optional<T> getSettings(std::string settings_file_path, std::string key_1, 
         }
     } catch (json::exception& e) {
         std::cout << e.what() << "\n";
+        std::cout << key_1 << "\n";
+        std::cout << key_2 << "\n";
         return {};
     }
    

@@ -13,9 +13,6 @@ namespace caf {
 behavior summa_server(stateful_actor<summa_server_state>* self, std::string config_path) {
     aout(self) << "Summa Server has Started \n";
     self->state.config_path = config_path;
-    // std::string returnType;
-    // getSettingsTest(std::vector<std::string> {"test", "test2"} ,returnType);
-
     // --------------------------Initalize Settings --------------------------
     self->state.total_hru_count = getSettings(self->state.config_path, "SimulationSettings", "total_hru_count", 
 		self->state.total_hru_count).value_or(-1);
@@ -45,7 +42,6 @@ behavior summa_server(stateful_actor<summa_server_state>* self, std::string conf
     csv_output.close();
     // -------------------------- Initalize CSV ------------------------------
 
-    // -------------------------- Assemble Batches ---------------------------
     aout(self) << "Assembling HRUs into Batches\n";
     if (assembleBatches(self) == -1) {
         aout(self) << "ERROR: assembleBatches\n";
@@ -56,7 +52,6 @@ behavior summa_server(stateful_actor<summa_server_state>* self, std::string conf
             self->state.batch_list[i].printBatchInfo();
         }
     }
-    // -------------------------- Assemble Batches ---------------------------
 
     return {
         [=](connect_to_server, actor client, std::string hostname) {

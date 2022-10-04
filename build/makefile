@@ -260,6 +260,7 @@ SOURCE_DIR = /Summa-Actors/build/source/actors
 GLOBAL_INCLUDES = -I$(INCLUDE_DIR)/global
 GLOBAL = $(SOURCE_DIR)/global/global.cpp
 TIMEINFO = $(SOURCE_DIR)/global/timing_info.cpp
+SETTINGS_FILES = $(SOURCE_DIR)/global/settings_functions.cpp
 
 SUMMA_ACTOR_INCLUDES = -I$(INCLUDE_DIR)/summa_actor
 SUMMA_ACTOR = $(SOURCE_DIR)/summa_actor/summa_actor.cpp
@@ -335,7 +336,7 @@ clean_fortran:
 ################################################ COMPILE SUMMA-C++ ################################################
 ###################################################################################################################
 compile_globals:
-	$(CC) $(FLAGS_ACTORS) -c $(GLOBAL) $(TIMEINFO) $(GLOBAL_INCLUDES)
+	$(CC) $(FLAGS_ACTORS) -c $(GLOBAL) $(TIMEINFO) $(SETTINGS_FILES) $(GLOBAL_INCLUDES)
 
 compile_gru_actor:
 	$(CC) $(FLAGS_ACTORS) -c $(GRU_ACTOR) $(HRU_ACTOR_INCLUDES) $(GRU_ACTOR_INCLUDES) $(GLOBAL_INCLUDES) $(ACTORS_INCLUDES)
