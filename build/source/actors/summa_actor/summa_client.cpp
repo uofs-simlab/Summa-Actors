@@ -73,6 +73,21 @@ behavior running(stateful_actor<summa_client_state>* self, const actor& server_a
 
     self->send(server_actor, connect_to_server_v, self, self->state.hostname);
     return {
+        // Response from the server on successful connection
+        [=](connect_to_server, int client_id, Summa_Actor_Settings summa_actor_settings, File_Access_Actor_Settings file_access_actor_settings,
+                Job_Actor_Settings job_actor_settings, HRU_Actor_Settings hru_actor_settings) {
+            
+            aout(self) << "Successfully Connected to Server Actor \n"; 
+
+            self->state.client_id = client_id;
+            self->state.summa_actor_settings = summa_actor_settings;
+            self->state.file_access_actor_settings = file_access_actor_settings;
+            self->state.job_actor_settings = job_actor_settings;
+            self->state.hru_actor_settings = hru_actor_settings;
+            
+        },
+
+
         [=](batch, int client_id, int batch_id, int start_hru, int num_hru, std::string config_path) {
             aout(self) << "\nReceived batch to compute" << "\n";
             aout(self) << "BatchID = " << batch_id << "\n";
@@ -83,11 +98,14 @@ behavior running(stateful_actor<summa_client_state>* self, const actor& server_a
             self->state.batch_id = batch_id;
 
             
-            // self->state.summa_actor_ref = self->spawn(summa_actor, 
-            //     start_hru, 
-            //     num_hru, 
-            //     self->state.config_path.value_or(config_path), 
-            //     self);
+            self->state.summa_actor_ref = self->spawn(summa_actor, 
+                start_hru, 
+                num_hru, 
+                self->state.summa_actor_settings,
+                self->state.file_access_actor_settings,
+                self->state.job_actor_settings,
+                self->state.hru_actor_settings,
+                self);
             
         },
 

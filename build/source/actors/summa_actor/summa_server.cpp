@@ -10,37 +10,20 @@
 
 namespace caf {
 
-behavior summa_server(stateful_actor<summa_server_state>* self, std::string config_path) {
+behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Settings distributed_settings, 
+    Summa_Actor_Settings summa_actor_settings, File_Access_Actor_Settings file_access_actor_settings,
+    Job_Actor_Settings job_actor_settings, HRU_Actor_Settings hru_actor_settings) {
+        
     aout(self) << "Summa Server has Started \n";
-    self->state.config_path = config_path;
-    // --------------------------Initalize Settings --------------------------
-    self->state.total_hru_count = getSettings(self->state.config_path, "SimulationSettings", "total_hru_count", 
-		self->state.total_hru_count).value_or(-1);
-    if (self->state.total_hru_count == -1) {
-        aout(self) << "ERROR: With total_hru_count - CHECK Summa_Actors_Settings.json\n";
-    }
-    self->state.num_hru_per_batch = getSettings(self->state.config_path, "SimulationSettings", "num_hru_per_batch", 
-		self->state.num_hru_per_batch).value_or(-1);
-    if (self->state.num_hru_per_batch == -1) {
-        aout(self) << "ERROR: With num_hru_per_batch - CHECK Summa_Actors_Settings.json\n";
-    }
-    // --------------------------Initalize Settings --------------------------
+    self->state.distributed_settings = distributed_settings;
+    self->state.summa_actor_settings = summa_actor_settings; 
+    self->state.file_access_actor_settings = file_access_actor_settings;
+    self->state.job_actor_settings = job_actor_settings;
+    self->state.hru_actor_settings = hru_actor_settings;
 
-    // -------------------------- Initalize CSV ------------------------------
-    std::ofstream csv_output;
+
     self->state.csv_output_name = "Batch_Results.csv";
-    csv_output.open(self->state.csv_output_name, std::ios_base::out);
-    csv_output << 
-        "Batch_ID,"  <<
-        "Start_HRU," <<
-        "Num_HRU,"   << 
-        "Hostname,"  <<
-        "Run_Time,"  <<
-        "Read_Time," <<
-        "Write_Time,"<<
-        "Status\n";
-    csv_output.close();
-    // -------------------------- Initalize CSV ------------------------------
+    initializeCSVOutput(self->state.csv_output_name);
 
     aout(self) << "Assembling HRUs into Batches\n";
     if (assembleBatches(self) == -1) {
@@ -59,6 +42,12 @@ behavior summa_server(stateful_actor<summa_server_state>* self, std::string conf
             aout(self) << "Actor trying to connect with hostname " << hostname << "\n";
             int client_id = self->state.client_list.size(); // So we can lookup the client in O(1) time 
             self->state.client_list.push_back(Client(client_id, client, hostname));
+
+            // Tell client they are connected
+            self->send(client, connect_to_server_v, client_id, self->state.summa_actor_settings, 
+                self->state.file_access_actor_settings, self->state.job_actor_settings, self->state.hru_actor_settings);
+
+
 
             std::optional<int> batch_id = getUnsolvedBatchID(self);
             if (batch_id.has_value()) {
@@ -141,21 +130,21 @@ behavior summa_server(stateful_actor<summa_server_state>* self, std::string conf
 
 
 int assembleBatches(stateful_actor<summa_server_state>* self) {
-    int remaining_hru_to_batch = self->state.total_hru_count;
-    int count_index = 0; // this is like the offset for slurm bash scripts
+    int remaining_hru_to_batch = self->state.distributed_settings.total_hru_count;
+    int count_index = 0;
     int start_hru = 1;
 
     while(remaining_hru_to_batch > 0) {
-        if (self->state.num_hru_per_batch > remaining_hru_to_batch) {
+        if (self->state.distributed_settings.num_hru_per_batch > remaining_hru_to_batch) {
             self->state.batch_list.push_back(Batch(count_index, start_hru, 
                 remaining_hru_to_batch));
             remaining_hru_to_batch = 0;
         } else {
             self->state.batch_list.push_back(Batch(count_index, start_hru, 
-                self->state.num_hru_per_batch));
+                self->state.distributed_settings.num_hru_per_batch));
             
-            remaining_hru_to_batch -= self->state.num_hru_per_batch;
-            start_hru += self->state.num_hru_per_batch;
+            remaining_hru_to_batch -= self->state.distributed_settings.num_hru_per_batch;
+            start_hru += self->state.distributed_settings.num_hru_per_batch;
             count_index += 1;
         }
     }
@@ -170,6 +159,21 @@ std::optional<int> getUnsolvedBatchID(stateful_actor<summa_server_state>* self) 
         }
     }
     return {};
+}
+
+void initializeCSVOutput(std::string csv_output_name) {
+    std::ofstream csv_output;
+    csv_output.open(csv_output_name, std::ios_base::out);
+    csv_output << 
+        "Batch_ID,"  <<
+        "Start_HRU," <<
+        "Num_HRU,"   << 
+        "Hostname,"  <<
+        "Run_Time,"  <<
+        "Read_Time," <<
+        "Write_Time,"<<
+        "Status\n";
+    csv_output.close();
 }
 
 } // end namespace

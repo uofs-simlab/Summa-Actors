@@ -7,7 +7,11 @@ To use distributed mode. Set the "distributed-mode" setting to true in the Summa
 
 ## SUMMA-Server
 Run the server with:
- - summaMain -s -c /path/to/config
+ - summaMain -s -c /path/to/config/Summa_Actors_Settings.json
+
+The server gets its settings from Summa_Actors_Settings.json where the user can configure how many HRUs to compute and how many HRUs should be inside a batch.
 
 ## SUMMA-Client
 Run the cleint with
+ - summaMain -c /path/to/config/Summa_Actors_Settings.json
+ The client needs the Distributed_Settings from the Summa_Actors_Settings.json file. The rest are set by the server.

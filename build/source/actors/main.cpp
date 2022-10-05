@@ -37,41 +37,39 @@ class config : public actor_system_config {
     }
 };
 
-void run_client(actor_system& system, const config& cfg) {
+void run_client(actor_system& system, const config& cfg, Distributed_Settings distributed_settings) {
     scoped_actor self{system};
-    std::string host;
-    uint16_t port;
 
     aout(self) << "Starting SUMMA-Client in Distributed Mode\n";
-    host = getSettings(cfg.config_file, "DistributedSettings", "host", host).value_or("");
-    port = getSettings(cfg.config_file, "DistributedSettings", "port", port).value_or(-1);
     
-    if (host == "" || port == -1) {
+    if (distributed_settings.hostname == "" || distributed_settings.port == -1) {
        aout(self) << "ERROR: run_client() host and port - CHECK SETTINGS FILE\n";
        return;
     }
     std::optional<std::string> path = cfg.config_file;
     auto c = system.spawn(summa_client, path);
-    if (!host.empty() && port > 0) {
-        anon_send(c, connect_atom_v, host, port);
+    if (!distributed_settings.hostname.empty() && distributed_settings.port > 0) {
+        anon_send(c, connect_atom_v, distributed_settings.hostname , (uint16_t) distributed_settings.port );
     } else {
         aout(self) << "No Server Config" << std::endl;
     }
    
 }
 
-void run_server(actor_system& system, const config& cfg) {
+void run_server(actor_system& system, const config& cfg, Distributed_Settings distributed_settings, 
+    Summa_Actor_Settings summa_actor_settings, File_Access_Actor_Settings file_access_actor_settings,
+    Job_Actor_Settings job_actor_settings, HRU_Actor_Settings hru_actor_settings) {
     scoped_actor self{system};
-    uint16_t port;
+    int err;
 
-    port = getSettings(cfg.config_file, "DistributedSettings", "port", port).value_or(-1);
-    if (port == -1) {
+    if (distributed_settings.port == -1) {
         aout(self) << "ERROR: run_server() port - CHECK SETTINGS FILE\n";
         return;
     }
-    auto server = system.spawn(summa_server, cfg.config_file);
-    aout(self) << "Attempting to publish summa_server_actor on port " << port << std::endl;
-    auto is_port = io::publish(server, port);
+    auto server = system.spawn(summa_server, distributed_settings,
+        summa_actor_settings, file_access_actor_settings, job_actor_settings, hru_actor_settings);
+    aout(self) << "Attempting to publish summa_server_actor on port " << distributed_settings.port << std::endl;
+    auto is_port = io::publish(server, distributed_settings.port);
     if (!is_port) {
         std::cerr << "********PUBLISH FAILED*******" << to_string(is_port.error()) << "\n";
         return;
@@ -80,22 +78,21 @@ void run_server(actor_system& system, const config& cfg) {
 }
 
 
-
-
 void caf_main(actor_system& sys, const config& cfg) {
     scoped_actor self{sys};
     int err;
+
     Distributed_Settings distributed_settings;
     Summa_Actor_Settings summa_actor_settings;
     File_Access_Actor_Settings file_access_actor_settings;
     Job_Actor_Settings job_actor_settings;
     HRU_Actor_Settings hru_actor_settings;
     err = read_settings_from_json(cfg.config_file,
-                                  distributed_settings, 
-                                  summa_actor_settings, 
-                                  file_access_actor_settings,
-                                  job_actor_settings, 
-                                  hru_actor_settings);
+                                distributed_settings, 
+                                summa_actor_settings, 
+                                file_access_actor_settings,
+                                job_actor_settings, 
+                                hru_actor_settings);
 
 
     aout(self) << "Printing Settings For SUMMA Simulation\n";
@@ -105,8 +102,12 @@ void caf_main(actor_system& sys, const config& cfg) {
 
     if (distributed_settings.distributed_mode) {
         // only command line arguments needed are config_file and server-mode
-        auto system = cfg.server_mode ? run_server : run_client;
-        system(sys, cfg);
+        if (cfg.server_mode) {
+            run_server(sys, cfg, distributed_settings, summa_actor_settings, 
+                file_access_actor_settings, job_actor_settings, hru_actor_settings);
+        } else {
+            run_client(sys, cfg, distributed_settings);
+        }
 
     } else {
         // Configure command line arguments
@@ -127,7 +128,7 @@ void caf_main(actor_system& sys, const config& cfg) {
                 "fileManger is set with the \"-c\" option\n";
             aout(self) << "EXAMPLE: ./summaMain -g 1 -n 10 -c location/of/config \n";
             return;
-        }
+        }       
 
         auto summa = sys.spawn(summa_actor, cfg.startGRU, cfg.countGRU, summa_actor_settings, 
             file_access_actor_settings, job_actor_settings, hru_actor_settings, self);
