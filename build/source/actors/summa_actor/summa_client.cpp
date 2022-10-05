@@ -87,6 +87,8 @@ behavior running(stateful_actor<summa_client_state>* self, const actor& server_a
             
         },
 
+        // [=](compute_batch) {}
+
 
         [=](batch, int client_id, int batch_id, int start_hru, int num_hru, std::string config_path) {
             aout(self) << "\nReceived batch to compute" << "\n";

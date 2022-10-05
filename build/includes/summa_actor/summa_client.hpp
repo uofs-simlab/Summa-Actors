@@ -3,6 +3,7 @@
 #include "caf/all.hpp"
 #include "caf/io/all.hpp"
 #include "settings_functions.hpp"
+#include "batch_manager.hpp"
 
 #include <string>
 #include <optional>

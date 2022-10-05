@@ -109,4 +109,5 @@ void spawnJob(stateful_actor<summa_actor_state>* self) {
 		self->state.numGRU = 0;
 	}
 }
+
 } // end namespace
