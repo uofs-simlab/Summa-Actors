@@ -32,4 +32,15 @@ void Client_Container::addClient(caf::actor client_actor, std::string hostname) 
         Client{client_id, client_actor, hostname});
     
     this->num_clients++;
+
+}
+
+
+int Client_Container::getClientID(caf::actor client_actor) {
+    for (int i = 0; i < num_clients; i++) {
+        if (client_actor == this->client_list[i].getActor()){
+            return this->client_list[i].getID();
+        }
+    }
+    return -1;
 }

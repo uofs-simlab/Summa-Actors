@@ -28,20 +28,6 @@ behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Sett
     
     self->state.batch_container->printBatches();
 
-    // self->state.csv_output_name = "Batch_Results.csv";
-    // initializeCSVOutput(self->state.csv_output_name);
-
-    // aout(self) << "Assembling HRUs into Batches\n";
-    // if (assembleBatches(self) == -1) {
-    //     aout(self) << "ERROR: assembleBatches\n";
-    // } else {
-    //     aout(self) << "HRU Batches Assembled, Ready For Clients to Connect \n";
-
-    //     for (std::vector<int>::size_type i = 0; i < self->state.batch_list.size(); i++) {
-    //         self->state.batch_list[i].printBatchInfo();
-    //     }
-    // }
-
     return {
         /**
          * @brief A message from a client requresting to connect
@@ -56,10 +42,13 @@ behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Sett
             self->state.client_container->addClient(client_actor, hostname);
 
             // Tell client they are connected
-            self->send(client_actor, connect_to_server_v, 1, self->state.summa_actor_settings, 
-                self->state.file_access_actor_settings, self->state.job_actor_settings, self->state.hru_actor_settings);
+            self->send(client_actor, connect_to_server_v, self->state.client_container->getClientID(client_actor), 
+                self->state.summa_actor_settings, self->state.file_access_actor_settings, self->state.job_actor_settings, 
+                self->state.hru_actor_settings);
 
             
+            
+            Batch batch = self->state.batch_container->assignBatch(hostname, client_actor);
 
             // std::optional<int> batch_id = getUnsolvedBatchID(self);
             // if (batch_id.has_value()) {

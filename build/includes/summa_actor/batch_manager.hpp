@@ -10,8 +10,10 @@ class Batch {
         int batch_id;
         int start_hru;
         int num_hru;
-
+        
         bool assigned_to_actor;
+        std::string hostname;
+        caf::actor assigned_actor;
 
      public:
         Batch(int batch_id = -1, int start_hru = -1, int num_hru = -1);
@@ -29,7 +31,9 @@ class Batch {
                         inspector.field("batch_id", batch.batch_id), 
                         inspector.field("start_hru", batch.start_hru),
                         inspector.field("num_hru", batch.num_hru),
-                        inspector.field("status", batch.assigned_to_actor));
+                        inspector.field("status", batch.assigned_to_actor),
+                        inspector.field("hostname", batch.hostname),
+                        inspector.field("assigned_actor", batch.assigned_actor));
         }
 };
 

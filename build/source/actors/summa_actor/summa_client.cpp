@@ -78,7 +78,7 @@ behavior running(stateful_actor<summa_client_state>* self, const actor& server_a
                 Job_Actor_Settings job_actor_settings, HRU_Actor_Settings hru_actor_settings) {
             
             aout(self) << "Successfully Connected to Server Actor \n"; 
-
+            aout(self) << "Recieved ID of " << client_id << "\n"; 
             self->state.client_id = client_id;
             self->state.summa_actor_settings = summa_actor_settings;
             self->state.file_access_actor_settings = file_access_actor_settings;
@@ -110,7 +110,6 @@ behavior running(stateful_actor<summa_client_state>* self, const actor& server_a
                 self->state.job_actor_settings,
                 self->state.hru_actor_settings,
                 self);
-            
         },
 
         [=](done_batch, double total_duration, double total_read_duration, double total_write_duration) {

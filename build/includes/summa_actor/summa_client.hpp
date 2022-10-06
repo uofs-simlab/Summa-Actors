@@ -23,6 +23,7 @@ struct summa_client_state {
     Job_Actor_Settings job_actor_settings;
     HRU_Actor_Settings hru_actor_settings;
 };
+
 behavior summa_client(stateful_actor<summa_client_state>* self, std::optional<std::string> config_path);
 behavior unconnected(stateful_actor<summa_client_state>*);
 void connecting(stateful_actor<summa_client_state>*, const std::string& host, uint16_t port);

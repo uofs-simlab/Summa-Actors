@@ -29,12 +29,21 @@ void Batch_Container::assembleBatches(int total_hru_count, int num_hru_per_batch
     }
 }
 
-void Batch_Container::printBatches(){
+void Batch_Container::printBatches() {
     for (std::vector<int>::size_type i = 0; i < this->batch_list.size(); i++) {
         this->batch_list[i].printBatchInfo();
     }
 }
 
+
+Batch Batch_Container::assignBatch(std::string hostname, caf::actor actor_ref) {
+    for (std::vector<int>::size_type i = 0; i < this->batch_list.size(); i++) {
+        if (!this->batch_list[i].getBatchStatus()) {
+            return this->batch_list[i];
+        }
+    }
+    return NULL;
+}
 
 
 Batch::Batch(int batch_id, int start_hru, int num_hru){

@@ -50,4 +50,6 @@ class Client_Container {
          */
         void addClient(caf::actor client_actor, std::string hostname);
 
+        
+        int getClientID(caf::actor);
 };
