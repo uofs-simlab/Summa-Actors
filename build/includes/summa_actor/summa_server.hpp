@@ -22,8 +22,8 @@ struct summa_server_state {
     std::vector<Client> client_list;
     std::string csv_output_name;
     
-    Client_Container client_container;
-    // Batch_Container batch_container;
+    Client_Container *client_container;
+    Batch_Container *batch_container;
 
     Distributed_Settings distributed_settings;
     Summa_Actor_Settings summa_actor_settings;

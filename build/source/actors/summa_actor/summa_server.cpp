@@ -21,8 +21,12 @@ behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Sett
     self->state.job_actor_settings = job_actor_settings;
     self->state.hru_actor_settings = hru_actor_settings;
 
-    self->state.client_container = Client_Container();
-    // self->state.batch_manager = Batch_Manager();
+    self->state.client_container = new Client_Container();
+    self->state.batch_container = new Batch_Container(
+            self->state.distributed_settings.total_hru_count,
+            self->state.distributed_settings.num_hru_per_batch);
+    
+    self->state.batch_container->printBatches();
 
     // self->state.csv_output_name = "Batch_Results.csv";
     // initializeCSVOutput(self->state.csv_output_name);
@@ -49,13 +53,13 @@ behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Sett
         [=](connect_to_server, actor client_actor, std::string hostname) {
             // self->send(client, Batch{3,4,5});
             aout(self) << "Actor trying to connect with hostname " << hostname << "\n";
-            self->state.client_container.addClient(client_actor, hostname);
+            self->state.client_container->addClient(client_actor, hostname);
 
             // Tell client they are connected
             self->send(client_actor, connect_to_server_v, 1, self->state.summa_actor_settings, 
                 self->state.file_access_actor_settings, self->state.job_actor_settings, self->state.hru_actor_settings);
 
-
+            
 
             // std::optional<int> batch_id = getUnsolvedBatchID(self);
             // if (batch_id.has_value()) {
@@ -136,28 +140,6 @@ behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Sett
     };
 }
 
-
-int assembleBatches(stateful_actor<summa_server_state>* self) {
-    int remaining_hru_to_batch = self->state.distributed_settings.total_hru_count;
-    int count_index = 0;
-    int start_hru = 1;
-
-    while(remaining_hru_to_batch > 0) {
-        if (self->state.distributed_settings.num_hru_per_batch > remaining_hru_to_batch) {
-            self->state.batch_list.push_back(Batch(count_index, start_hru, 
-                remaining_hru_to_batch));
-            remaining_hru_to_batch = 0;
-        } else {
-            self->state.batch_list.push_back(Batch(count_index, start_hru, 
-                self->state.distributed_settings.num_hru_per_batch));
-            
-            remaining_hru_to_batch -= self->state.distributed_settings.num_hru_per_batch;
-            start_hru += self->state.distributed_settings.num_hru_per_batch;
-            count_index += 1;
-        }
-    }
-    return 0;
-}
 
 std::optional<int> getUnsolvedBatchID(stateful_actor<summa_server_state>* self) {
     // Find the first unassigned batch

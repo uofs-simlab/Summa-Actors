@@ -12,22 +12,27 @@ Batch_Container::Batch_Container(int total_hru_count, int num_hru_per_batch) {
 
 void Batch_Container::assembleBatches(int total_hru_count, int num_hru_per_batch) {
     int remaining_hru_to_batch = total_hru_count;
-    int count_index = 0;
+    int batch_id = 0;
     int start_hru = 1;
 
-    // while(remaining_hru_to_batch > 0) {
-    //     if (num_hru_per_batch > remaining_hru_to_batch) {
-    //         batch_list.push_back(Batch(count_index, start_hru, remaining_hru_to_batch));
-    //         remaining_hru_to_batch = 0;
-    //     } else {
-    //         batch_list.push_back(Batch(count_index, start_hru, num_hru_per_batch));
+    while(remaining_hru_to_batch > 0) {
+        if (num_hru_per_batch > remaining_hru_to_batch) {
+            this->batch_list.push_back(Batch(batch_id, start_hru, remaining_hru_to_batch));
+            remaining_hru_to_batch = 0;
+        } else {
+            this->batch_list.push_back(Batch(batch_id, start_hru, num_hru_per_batch));
             
-    //         remaining_hru_to_batch -= self->state.distributed_settings.num_hru_per_batch;
-    //         start_hru += self->state.distributed_settings.num_hru_per_batch;
-    //         count_index += 1;
-    //     }
-    // }
-    // return 0;
+            remaining_hru_to_batch -= num_hru_per_batch;
+            start_hru += num_hru_per_batch;
+            batch_id += 1;
+        }
+    }
+}
+
+void Batch_Container::printBatches(){
+    for (std::vector<int>::size_type i = 0; i < this->batch_list.size(); i++) {
+        this->batch_list[i].printBatchInfo();
+    }
 }
 
 
@@ -50,11 +55,11 @@ bool Batch::getBatchStatus() {
 }
 
 
-// void Batch::printBatchInfo() {
-//     std::cout << "batch_id: " << this->batch_id << "\n";
-//     std::cout << "start_hru: " << this->start_hru << "\n";
-//     std::cout << "num_hru: " << this->num_hru << "\n";
-// }
+void Batch::printBatchInfo() {
+    std::cout << "batch_id: " << this->batch_id << "\n";
+    std::cout << "start_hru: " << this->start_hru << "\n";
+    std::cout << "num_hru: " << this->num_hru << "\n";
+}
 
 // batch_status Batch::getBatchStatus() {
 //     return this->status;

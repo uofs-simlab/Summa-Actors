@@ -5,14 +5,7 @@
 
 class Batch;
 
-enum batch_status {
-    unassigned,
-    assigned,
-    solved,
-    failed
-};
-
-class Batch{
+class Batch {
     private:
         int batch_id;
         int start_hru;
@@ -27,6 +20,8 @@ class Batch{
 
         bool getBatchStatus();
 
+        void printBatchInfo();
+
 
         template <class Inspector>
         friend bool inspect(Inspector& inspector, Batch& batch) {
@@ -37,61 +32,6 @@ class Batch{
                         inspector.field("status", batch.assigned_to_actor));
         }
 };
-
-
-
-
-// class Batch {
-//     private:
-//         int batch_id;
-//         int start_hru;
-//         int num_hru;
-
-        // double run_time = -1;
-        // double read_time = -1;
-        // double write_time = -1;
-        
-//         std::string assigned_host;
-//         caf::actor assigned_actor;
-//         // batch_status status;
-
-
-//     public:
-//         Batch(int batch_id = -1, int start_hru = -1, int num_hru = -1);
-
-//         // void printBatchInfo();
-
-//         // batch_status getBatchStatus();
-
-//         // int getBatchID();
-
-//         // int getStartHRU();
-
-//         // int getNumHRU();
-
-//         // void solvedBatch(double run_time, double read_time, double write_time);
-
-//         // void assignedBatch(std::string hostname, caf::actor actor_ref);
-
-//         // void updateRunTime(double run_time);
-
-//         // void writeBatchToFile(std::string file_name);
-
-//         template <class Inspector>
-//         friend bool inspect(Inspector& inspector, Batch& batch) {
-//             return inspector.object(batch).fields(
-//                         inspector.field("batch_id", batch.batch_id), 
-//                         inspector.field("start_hru", batch.start_hru),
-//                         inspector.field("num_hru", batch.num_hru),
-//                         inspector.field("run_time", batch.run_time),
-//                         inspector.field("read_time", batch.read_time),
-//                         inspector.field("write_time", batch.write_time),
-//                         inspector.field("assigned_host", batch.assigned_host),
-//                         inspector.field("assigned_actor", batch.assigned_actor),
-//                         inspector.field("status", batch.status));
-//         }
-// };
-
 
 class Batch_Container {
     private:
@@ -145,6 +85,15 @@ class Batch_Container {
          * Create the csv file for the completed batches.
          */
         void inititalizeCSVOutput(std::string csv_output_name);
+
+
+        /**
+         * @brief Print the batches from the batch list
+         * 
+         */
+        void printBatches();
+
+
     
     private:
         /**
@@ -153,6 +102,8 @@ class Batch_Container {
          * provided by the user.
          */
         void assembleBatches(int total_hru_count, int num_hru_per_batch);
+
+
 
 
 
