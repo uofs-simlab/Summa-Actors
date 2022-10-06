@@ -52,7 +52,7 @@ behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Sett
             self->state.client_container.addClient(client_actor, hostname);
 
             // Tell client they are connected
-            self->send(client, connect_to_server_v, client_id, self->state.summa_actor_settings, 
+            self->send(client_actor, connect_to_server_v, 1, self->state.summa_actor_settings, 
                 self->state.file_access_actor_settings, self->state.job_actor_settings, self->state.hru_actor_settings);
 
 
