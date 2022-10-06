@@ -21,7 +21,9 @@ struct summa_server_state {
     std::vector<Batch> failed_batches;
     std::vector<Client> client_list;
     std::string csv_output_name;
-
+    
+    Client_Container client_container;
+    // Batch_Container batch_container;
 
     Distributed_Settings distributed_settings;
     Summa_Actor_Settings summa_actor_settings;
@@ -34,6 +36,7 @@ struct summa_server_state {
 behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Settings distributed_settings, 
     Summa_Actor_Settings summa_actor_settings, File_Access_Actor_Settings file_access_actor_settings,
     Job_Actor_Settings job_actor_settings, HRU_Actor_Settings hru_actor_settings);
+    
 int assembleBatches(stateful_actor<summa_server_state>* self);
 std::optional<int> getUnsolvedBatchID(stateful_actor<summa_server_state>* self);
 void initializeCSVOutput(std::string csv_output_name);

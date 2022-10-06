@@ -45,7 +45,7 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     CAF_ADD_ATOM(summa, dt_init_factor)
     // Client Actor
     CAF_ADD_ATOM(summa, connect_to_server)
-    CAF_ADD_ATOM(summa, batch)
+    CAF_ADD_ATOM(summa, compute_batch)
     // Server Actor
     CAF_ADD_ATOM(summa, done_batch)
     CAF_ADD_ATOM(summa, time_to_exit)
@@ -56,4 +56,7 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     CAF_ADD_TYPE_ID(summa, (File_Access_Actor_Settings))
     CAF_ADD_TYPE_ID(summa, (Job_Actor_Settings))
     CAF_ADD_TYPE_ID(summa, (HRU_Actor_Settings))
+
+    // Class Types
+    CAF_ADD_TYPE_ID(summa, (Batch))
 CAF_END_TYPE_ID_BLOCK(summa)

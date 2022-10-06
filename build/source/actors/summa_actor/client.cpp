@@ -23,3 +23,15 @@ int Client::getID() {
 std::string Client::getHostname() {
     return this->hostname;
 }
+
+
+Client_Container::Client_Container() {}
+
+void Client_Container::addClient(caf::actor client_actor, std::string hostname) {
+    int client_id = this->num_clients;
+    
+    this->client_list.push_back(
+        Client{client_id, client_actor, hostname});
+    
+    this->num_clients++;
+}

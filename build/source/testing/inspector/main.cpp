@@ -1,65 +1,65 @@
 #include "caf/all.hpp"
 #include "caf/io/all.hpp"
 
+#include "main.hpp"
+
 using namespace caf;
 
-struct struct_1;
-struct struct_2;
-struct struct_3;
-
-// Add the custom types as messages for actors
-CAF_BEGIN_TYPE_ID_BLOCK(custom_type, first_custom_type_id)
-    // CAF_ADD_TYPE_ID(custom_type, (struct_1))
-    CAF_ADD_TYPE_ID(custom_type, (struct_2))
-    CAF_ADD_TYPE_ID(custom_type, (struct_3))
-CAF_END_TYPE_ID_BLOCK(custom_type)
 
 
-struct struct_3 {
-    int num_1;
-    int num_2;
-};
 
-struct struct_2 {
-    int num_3;
-    int num_4;
-};
+// class Batch {
+//     private:
+//         int batch_id;
+//         int start_hru;
 
-struct struct_1 {
-    struct_3 test_struct_1;
-    struct_2 test_struct_2;
-};
+//     public:
+Batch::Batch(int batch_id0, int start_hru0) { this->batch_id=batch_id0; this->start_hru=start_hru0; }//: batch_id(batch_id0), start_hru(start_hru0){}
 
-template<class Inspector>
-bool inspect(Inspector& inspector, struct_2& struct_2_inspect) {
-    return inspector.object(struct_2_inspect).fields(
-                inspector.field("num_3", struct_2_inspect.num_3),
-                inspector.field("num_4", struct_2_inspect.num_4));
-}
-template<class Inspector>
-bool inspect(Inspector& inspector, struct_3& struct_3_inspect) {
-    return inspector.object(struct_3_inspect).fields(
-                inspector.field("num_1", struct_3_inspect.num_1),
-                inspector.field("num_2", struct_3_inspect.num_2));
+int Batch::getBatchID() {
+    return this->batch_id;
 }
 
-// Inspector overload is needed to compile
-template <class Inspector>
-bool insepct(Inspector& inspector, struct_1& struct_1_inspect, 
-    struct_2& struct_2_inspect, struct_3& struct_3_inspect) {
-    return inspector.object(struct_1_inspect).fields(
-                inspector.object(struct_2_inspect).fields(
-                    inspector.field("num_3", struct_2_inspect.num_3),
-                    inspector.field("num_4", struct_2_inspect.num_4)),
-                inspector.object(struct_3_inspect).fields(
-                    inspector.field("num_1", struct_3_inspect.num_1),
-                    inspector.filed("num_2", struct_3_inspect.num_2)));
-} 
+int Batch::getStartHRU() {
+    return this->start_hru;
+}
+//             this->batch_id = batch_id0;
+//             this->start_hru = start_hru0;
+//         }
+//         int getBatchID() {
+//             return this->batch_id;
+//         }
+
+//         int getStartHRU() {
+//             return this->start_hru;
+//         }
+
+//     template <class Inspector>
+//     friend bool inspect(Inspector& inspector, Batch& batch) {
+//         return inspector.object(batch).fields(inspector.field("a", batch.batch_id), inspector.field("b", batch.start_hru));
+//     }
+
+// };
+
+// template<class Inspector>
+// bool inspect(Inspector& inpsector, Batch& batch) {
+//     auto getBatchID = [&batch] {return batch.getBatchID();};
+//     auto getStartHRU
+// }
+
+behavior testee(event_based_actor* self) {
+    return {
+        [=](Batch& b) {
+            aout(self) << b.getBatchID() << std::endl;
+        }
+    };
+}
+
 
 void caf_main(actor_system& sys) {
     scoped_actor self{sys};
     aout(self) << "Started Test Actor \n"; 
-
+    anon_send(sys.spawn(testee), Batch{2, 4});
 }
 
-CAF_MAIN(id_block::custom_type)
+CAF_MAIN(id_block::custom_types_3)

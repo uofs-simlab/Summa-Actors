@@ -87,10 +87,12 @@ behavior running(stateful_actor<summa_client_state>* self, const actor& server_a
             
         },
 
-        // [=](compute_batch) {}
+        [=](Batch& batch) {
+            aout(self) << batch.getBatchID() << std::endl;
+        },
 
 
-        [=](batch, int client_id, int batch_id, int start_hru, int num_hru, std::string config_path) {
+        [=](compute_batch, int client_id, int batch_id, int start_hru, int num_hru, std::string config_path) {
             aout(self) << "\nReceived batch to compute" << "\n";
             aout(self) << "BatchID = " << batch_id << "\n";
             aout(self) << "Start HRU = " << start_hru << "\n";

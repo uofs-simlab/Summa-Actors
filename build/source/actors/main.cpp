@@ -67,7 +67,11 @@ void run_server(actor_system& system, const config& cfg, Distributed_Settings di
         return;
     }
     auto server = system.spawn(summa_server, distributed_settings,
-        summa_actor_settings, file_access_actor_settings, job_actor_settings, hru_actor_settings);
+                        summa_actor_settings, 
+                        file_access_actor_settings, 
+                        job_actor_settings, 
+                        hru_actor_settings);
+                        
     aout(self) << "Attempting to publish summa_server_actor on port " << distributed_settings.port << std::endl;
     auto is_port = io::publish(server, distributed_settings.port);
     if (!is_port) {
