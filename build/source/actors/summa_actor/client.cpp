@@ -35,6 +35,18 @@ void Client_Container::addClient(caf::actor client_actor, std::string hostname) 
 
 }
 
+int Client_Container::getNumClients() {
+    return this->num_clients;
+}
+
+Client Client_Container::getClient(int index) {
+    if (index > this->num_clients) {
+        throw "Trying to access a client outside of the client_list";
+    }
+
+    return this->client_list[index];
+}
+
 
 int Client_Container::getClientID(caf::actor client_actor) {
     for (int i = 0; i < num_clients; i++) {
@@ -58,3 +70,6 @@ Client Client_Container::removeClient_fromBack() {
     this->client_list.pop_back();
     return client;
 }
+
+
+

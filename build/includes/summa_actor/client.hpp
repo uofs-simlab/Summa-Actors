@@ -50,12 +50,18 @@ class Client_Container {
          */
         void addClient(caf::actor client_actor, std::string hostname);
 
+        int getNumClients();
+
         int getClientID(caf::actor);
+
+        Client getClient(int index);
 
         Client removeClient_fromBack();
 
         std::string getHostname_ByClientID(int client_id);
 
         bool isEmpty();
+
+        void sendHeartbeats();
 
 };

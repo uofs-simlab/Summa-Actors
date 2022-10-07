@@ -49,6 +49,9 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     // Server Actor
     CAF_ADD_ATOM(summa, done_batch)
     CAF_ADD_ATOM(summa, time_to_exit)
+    CAF_ADD_ATOM(summa, start_health_check)
+    CAF_ADD_ATOM(summa, check_on_clients)
+    CAF_ADD_ATOM(summa, heartbeat)
     
     // Struct Types
     CAF_ADD_TYPE_ID(summa, (Distributed_Settings))

@@ -6,6 +6,9 @@
 #include "message_atoms.hpp"
 #include "global.hpp"
 #include <optional>
+#include <iostream>
+#include <thread>
+#include <chrono>
 
 
 namespace caf {
@@ -53,6 +56,11 @@ behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Sett
                 aout(self) << "no more batches left to assign\n";
                 aout(self) << "we are not done yet. Clients could Fail\n";
             }
+
+            // Start the heartbeat actor after a client has connected
+            self->state.health_check_reminder_actor = self->spawn(cleint_health_check_reminder);
+            self->send(self->state.health_check_reminder_actor, 
+                start_health_check_v, self, self->state.heartbeat_interval);
             
         },
 
@@ -92,7 +100,18 @@ behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Sett
                     self->quit();
                 }
             }
-        }
+        },
+
+        [=](check_on_clients) {
+            for (int i = 0; i < self->state.client_container->getNumClients(); i++) {
+                Client client = self->state.client_container->getClient(i);
+                self->send(client.getActor(), heartbeat_v);
+            }
+        },
+
+        [=](heartbeat, int client_id) {
+            aout(self) << "Received HeartBeat From: " << client_id << "\n";
+        },
     };
 }
 
@@ -109,6 +128,19 @@ void initializeCSVOutput(std::string csv_output_name) {
         "Read_Time," <<
         "Write_Time\n";
     csv_output.close();
+}
+
+
+
+behavior cleint_health_check_reminder(event_based_actor* self) {
+    return {
+
+        [=](start_health_check, caf::actor summa_server, int sleep_duration) {
+            std::this_thread::sleep_for(std::chrono::seconds(sleep_duration));
+            self->send(summa_server, check_on_clients_v);
+        },
+    };
+
 }
 
 } // end namespace

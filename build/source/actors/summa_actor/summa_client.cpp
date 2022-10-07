@@ -119,6 +119,12 @@ behavior running(stateful_actor<summa_client_state>* self, const actor& server_a
             self->send(server_actor, done_batch_v, self, self->state.client_id, self->state.current_batch);
         },
 
+        [=](heartbeat) {
+            aout(self) << "Received Heartbeat \n";
+
+            self->send(server_actor, heartbeat_v, self->state.client_id); 
+        },
+
         [=](time_to_exit) {
             aout(self) << "Client Exiting\n";
             self->quit();
