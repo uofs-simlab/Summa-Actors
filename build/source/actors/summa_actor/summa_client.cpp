@@ -88,6 +88,7 @@ behavior running(stateful_actor<summa_client_state>* self, const actor& server_a
         },
 
         [=](Batch& batch) {
+            aout(self) << "Recieved Batch" << std::endl;
             aout(self) << batch.getBatchID() << std::endl;
         },
 

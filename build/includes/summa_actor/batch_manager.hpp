@@ -2,6 +2,7 @@
 #include "caf/all.hpp"
 #include <vector>
 #include <string>
+#include <optional>
 
 class Batch;
 
@@ -23,6 +24,13 @@ class Batch {
         bool getBatchStatus();
 
         void printBatchInfo();
+
+        /**
+         * @brief Mark batch as assigned to an actor
+         * Update the assigned_to_actor to True and
+         * update the hostname and assigned_actor instance variables
+         */
+        void assignToActor(std::string hostname, caf::actor assigned_actor);
 
 
         template <class Inspector>
@@ -62,7 +70,7 @@ class Batch_Container {
          * are added to the client for the servers awareness
          * The batch is then returned by this method and sent to the respective client
          */
-        Batch assignBatch(std::string hostname, caf::actor actor_ref);
+        std::optional<Batch> assignBatch(std::string hostname, caf::actor actor_ref);
 
         /**
          * On a successful batch we take the batch given to us by the client 
@@ -89,7 +97,6 @@ class Batch_Container {
          * Create the csv file for the completed batches.
          */
         void inititalizeCSVOutput(std::string csv_output_name);
-
 
         /**
          * @brief Print the batches from the batch list

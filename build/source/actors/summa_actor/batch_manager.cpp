@@ -36,14 +36,20 @@ void Batch_Container::printBatches() {
 }
 
 
-Batch Batch_Container::assignBatch(std::string hostname, caf::actor actor_ref) {
+std::optional<Batch> Batch_Container::assignBatch(std::string hostname, caf::actor actor_ref) {
+
     for (std::vector<int>::size_type i = 0; i < this->batch_list.size(); i++) {
         if (!this->batch_list[i].getBatchStatus()) {
+            this->batch_list[i].assignToActor(hostname, actor_ref);
             return this->batch_list[i];
         }
     }
-    return NULL;
+    return {};
 }
+
+
+
+
 
 
 Batch::Batch(int batch_id, int start_hru, int num_hru){
@@ -52,7 +58,6 @@ Batch::Batch(int batch_id, int start_hru, int num_hru){
     this->num_hru = num_hru;
     this->assigned_to_actor = false;
 }
-
 
 // Setters
 int Batch::getBatchID() {
@@ -63,6 +68,11 @@ bool Batch::getBatchStatus() {
     return this->assigned_to_actor;
 }
 
+void Batch::assignToActor(std::string hostname, caf::actor assigned_actor) {
+    this->hostname = hostname;
+    this->assigned_actor = assigned_actor;
+    this->assigned_to_actor = true;
+}
 
 void Batch::printBatchInfo() {
     std::cout << "batch_id: " << this->batch_id << "\n";
