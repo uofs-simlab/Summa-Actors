@@ -1,5 +1,3 @@
-#include "caf/all.hpp"
-#include <vector>
 #include "batch_manager.hpp"
 
 
@@ -8,6 +6,10 @@ Batch_Container::Batch_Container(int total_hru_count, int num_hru_per_batch) {
     this->num_hru_per_batch = num_hru_per_batch;
 
     this->assembleBatches(this->total_hru_count, this->num_hru_per_batch);
+}
+
+int Batch_Container::getBatchesRemaining() {
+    return this->batch_list.size();
 }
 
 void Batch_Container::assembleBatches(int total_hru_count, int num_hru_per_batch) {
@@ -47,6 +49,29 @@ std::optional<Batch> Batch_Container::assignBatch(std::string hostname, caf::act
     return {};
 }
 
+void Batch_Container::updateBatch_success(Batch successful_batch, std::string output_csv) {
+    this->solved_batches.push_back(successful_batch);
+
+    successful_batch.writeBatchToFile(output_csv);
+    
+    std::optional<int> index_to_remove = this->findBatch(successful_batch.getBatchID());
+    if (index_to_remove.has_value()) {
+        this->batch_list.erase(this->batch_list.begin() + index_to_remove.value());
+    } else {
+        throw "No element in BatchList Matches the succesful_batch";
+    }
+}
+
+std::optional<int> Batch_Container::findBatch(int batch_id) {
+
+    for(std::vector<int>::size_type i = 0; i < this->batch_list.size(); i++) {
+        if (this->batch_list[i].getBatchID() == batch_id) {
+            return i;
+        }
+    }
+
+    return {};
+}
 
 // **************************
 // Batch Class
@@ -76,6 +101,31 @@ bool Batch::getBatchStatus() {
     return this->assigned_to_actor;
 }
 
+double Batch::getRunTime() {
+    return this->run_time;
+}
+
+double Batch::getReadTime() {
+    return this->read_time;
+}
+
+double Batch::getWriteTime() {
+    return this->write_time;
+}
+
+// Setters
+void Batch::updateRunTime(double run_time) {
+    this->run_time = run_time;
+}
+
+void Batch::updateReadTime(double read_time) {
+    this->read_time = read_time;
+}
+
+void Batch::updateWriteTime(double write_time) {
+    this->write_time = write_time;
+}
+
 void Batch::assignToActor(std::string hostname, caf::actor assigned_actor) {
     this->hostname = hostname;
     this->assigned_actor = assigned_actor;
@@ -88,52 +138,33 @@ void Batch::printBatchInfo() {
     std::cout << "num_hru: " << this->num_hru << "\n";
 }
 
-// batch_status Batch::getBatchStatus() {
-//     return this->status;
-// }
+std::string Batch::toString() {
+    std::stringstream out_string;
 
-// int Batch::getBatchID() {
-//     return this->batch_id;
-// }
+    out_string << "batch_id: " << this->batch_id << "\n" <<
+                  "start_hru: " << this->start_hru << "\n" <<
+                  "num_hru: " << this->num_hru << "\n" <<
+                  "run_time: " << this->run_time << "\n" << 
+                  "read_time: " << this->read_time << "\n" <<
+                  "write_time: " << this->write_time << "\n" <<
+                  "assigned_to_actor: " << this->assigned_to_actor << "\n" <<
+                  "hostname: " << this->hostname << "\n";
 
-// int Batch::getStartHRU() {
-//     return this->start_hru;
-// }
+    return out_string.str();
+}
 
-// int Batch::getNumHRU() {
-//     return this->num_hru;
-// }
-
-// void Batch::solvedBatch(double run_time, double read_time, double write_time) {
-//     this->status = solved;
-//     this->run_time = run_time;
-//     this->read_time = read_time;
-//     this->write_time = write_time;
-// }
-
-// void Batch::assignedBatch(std::string hostname, caf::actor actor_ref) {
-//     this->status = assigned;
-//     this->assigned_host = hostname;
-//     this->assigned_actor = actor_ref;
-// }
-
-// void Batch::updateRunTime(double run_time) {
-//     this->run_time = run_time;
-// }
-
-// void Batch::writeBatchToFile(std::string file_name) {
-//     std::ofstream output_file;
-//     output_file.open(file_name, std::ios_base::app);
-//     output_file <<
-//         this->batch_id      << "," <<
-//         this->start_hru     << "," << 
-//         this->num_hru       << "," << 
-//         this->assigned_host << "," <<
-//         this->run_time      << "," << 
-//         this->read_time     << "," <<
-//         this->write_time    << "," <<
-//         this->status        << "\n";
-//     output_file.close();
-// }
+void Batch::writeBatchToFile(std::string file_name) {
+    std::ofstream output_file;
+    output_file.open(file_name, std::ios_base::app);
+    output_file <<
+        this->batch_id      << "," <<
+        this->start_hru     << "," << 
+        this->num_hru       << "," << 
+        this->hostname      << "," <<
+        this->run_time      << "," << 
+        this->read_time     << "," <<
+        this->write_time    << "\n";
+    output_file.close();
+}
 
 

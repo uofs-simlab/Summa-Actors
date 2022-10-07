@@ -18,6 +18,8 @@ struct summa_client_state {
     int batch_id;
     int client_id; // id held by server
 
+    Batch current_batch;
+
     Summa_Actor_Settings summa_actor_settings;
     File_Access_Actor_Settings file_access_actor_settings;
     Job_Actor_Settings job_actor_settings;

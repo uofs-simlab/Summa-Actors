@@ -44,3 +44,7 @@ int Client_Container::getClientID(caf::actor client_actor) {
     }
     return -1;
 }
+
+std::string Client_Container::getHostname_ByClientID(int client_id) {
+    return this->client_list[client_id].getHostname();
+}

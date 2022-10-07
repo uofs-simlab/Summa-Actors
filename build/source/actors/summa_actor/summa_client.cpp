@@ -89,25 +89,34 @@ behavior running(stateful_actor<summa_client_state>* self, const actor& server_a
 
         // Received batch from server to compute
         [=](Batch& batch) {
+            self->state.current_batch = batch;
             aout(self) << "\nReceived batch to compute\n";
-            aout(self) << "BatchID = " << batch.getBatchID() << "\n";
-            aout(self) << "StartHRU = " << batch.getStartHRU() << "\n";
-            aout(self) << "NumHRU = " << batch.getNumHRU() << "\n";
+            aout(self) << "BatchID = " << self->state.current_batch.getBatchID() << "\n";
+            aout(self) << "StartHRU = " << self->state.current_batch.getStartHRU() << "\n";
+            aout(self) << "NumHRU = " << self->state.current_batch.getNumHRU() << "\n";
 
             self->state.summa_actor_ref = self->spawn(summa_actor, 
-                batch.getStartHRU(), 
-                batch.getNumHRU(), 
+                self->state.current_batch.getStartHRU(), 
+                self->state.current_batch.getNumHRU(), 
                 self->state.summa_actor_settings,
                 self->state.file_access_actor_settings,
                 self->state.job_actor_settings,
                 self->state.hru_actor_settings,
                 self);
         },
+        
+        // Received completed batch information from the summa_actor 
+        [=](done_batch, double run_time, double read_time, double write_time) {
+            aout(self) << "Summa_Actor has finished, sending message to the server for another batch\n";
+            aout(self) << "run_time = " << run_time << "\n";
+            aout(self) << "read_time = " << read_time << "\n";
+            aout(self) << "write_time = " << write_time << "\n";
 
-        [=](done_batch, double total_duration, double total_read_duration, double total_write_duration) {
-            aout(self) << "summa_actor has finished, sending message to the server for another batch\n";
-            self->send(server_actor, done_batch_v, self, self->state.client_id, self->state.batch_id, 
-                total_duration, total_read_duration, total_write_duration);
+            self->state.current_batch.updateRunTime(run_time);
+            self->state.current_batch.updateReadTime(read_time);
+            self->state.current_batch.updateWriteTime(write_time);
+
+            self->send(server_actor, done_batch_v, self, self->state.client_id, self->state.current_batch);
         },
 
         [=](time_to_exit) {

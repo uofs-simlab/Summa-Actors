@@ -2,6 +2,7 @@
 #include "caf/all.hpp"
 #include <vector>
 #include <string>
+#include <sstream>
 #include <optional>
 
 class Batch;
@@ -11,6 +12,10 @@ class Batch {
         int batch_id;
         int start_hru;
         int num_hru;
+
+        double run_time;
+        double read_time;
+        double write_time;
         
         bool assigned_to_actor;
         std::string hostname;
@@ -19,16 +24,24 @@ class Batch {
      public:
         Batch(int batch_id = -1, int start_hru = -1, int num_hru = -1);
 
+        // Gettiners
         int getBatchID();
-
         int getStartHRU();
-
         int getNumHRU();
-
+        double getRunTime();
+        double getReadTime();
+        double getWriteTime();
         bool getBatchStatus();
 
-        void printBatchInfo();
+        // Setters
+        void updateRunTime(double run_time);
+        void updateReadTime(double read_time);
+        void updateWriteTime(double write_time);
 
+        void printBatchInfo();
+        void writeBatchToFile(std::string csv_output);
+
+        std::string toString();
         /**
          * @brief Mark batch as assigned to an actor
          * Update the assigned_to_actor to True and
@@ -43,6 +56,9 @@ class Batch {
                         inspector.field("batch_id", batch.batch_id), 
                         inspector.field("start_hru", batch.start_hru),
                         inspector.field("num_hru", batch.num_hru),
+                        inspector.field("run_time", batch.run_time),
+                        inspector.field("read_time", batch.read_time),
+                        inspector.field("write_time", batch.write_time),
                         inspector.field("status", batch.assigned_to_actor),
                         inspector.field("hostname", batch.hostname),
                         inspector.field("assigned_actor", batch.assigned_actor));
@@ -67,6 +83,12 @@ class Batch_Container {
          * with the two parameters that are passed in. 
          */
         Batch_Container(int total_hru_count, int num_hru_per_batch);
+
+        /**
+         * @brief Get the Batches Remaining
+         * returns the size of batch_list.
+         */
+        int getBatchesRemaining();
         
         /**
          * Assign a batch to be solved by a client.
@@ -117,6 +139,13 @@ class Batch_Container {
          * provided by the user.
          */
         void assembleBatches(int total_hru_count, int num_hru_per_batch);
+
+        /**
+         * @brief 
+         * Find a batch by its id, 
+         * return its index in the vector
+         */
+        std::optional<int> findBatch(int batch_id);
 
 
 

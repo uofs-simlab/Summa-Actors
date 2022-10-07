@@ -56,54 +56,23 @@ behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Sett
             
         },
 
-        [=](done_batch, actor client, int client_id, int batch_id, double total_duration, 
-            double total_read_duration, double total_write_duration) {
-            
-            // self->state.batch_list[batch_id].solvedBatch(total_duration, total_read_duration, total_write_duration);
-            // self->state.batch_list[batch_id].writeBatchToFile(self->state.csv_output_name);
-            // self->state.batches_solved++;
-            // self->state.batches_remaining = self->state.batch_list.size() - self->state.batches_solved;
+        [=](done_batch, actor client_actor, int client_id, Batch& batch) {
+            aout(self) << "Recieved Completed Batch From Client\n";
+    
+            aout(self) << batch.toString() << "\n\n";
 
-            // aout(self) << "\n****************************************\n";
-            // aout(self) << "Client finished batch: " << batch_id << "\n";
-            // aout(self) << "Client hostname = " << self->state.client_list[client_id].getHostname() << "\n";
-            // aout(self) << "Total Batch Duration = " << total_duration << "\n";
-            // aout(self) << "Total Batch Read Duration = " << total_read_duration << "\n";
-            // aout(self) << "Total Batch Write Duration = " << total_write_duration << "\n";
-            // aout(self) << "Batches Solved = " << self->state.batches_solved << "\n";
-            // aout(self) << "Batches Remaining = " << self->state.batches_remaining << "\n";
-            // aout(self) << "****************************************\n";
+            self->state.batch_container->updateBatch_success(batch, self->state.csv_output_name);
+            aout(self) << "******************\n" << "Batches Remaining: " << 
+                self->state.batch_container->getBatchesRemaining() << "\n******************\n\n";
 
-            // // Find a new batch
-            // std::optional<int> new_batch_id = getUnsolvedBatchID(self);
-            //  if (new_batch_id.has_value()) {
-            //     // update the batch in the batch list with the host and actor_ref
-            //     self->state.batch_list[new_batch_id.value()].assignedBatch(self->state.client_list[client_id].getHostname(), client);
-            
-            //     int start_hru = self->state.batch_list[new_batch_id.value()].getStartHRU();
-            //     int num_hru = self->state.batch_list[new_batch_id.value()].getNumHRU();
-
-            //     self->send(client, 
-            //         compute_batch_v, 
-            //         client_id, 
-            //         new_batch_id.value(), 
-            //         start_hru, 
-            //         num_hru, 
-            //         self->state.config_path);
-
-            // } else {
-            //     // We found no batch this means all batches are assigned
-            //     if (self->state.batches_remaining == 0) {
-            //         aout(self) << "All Batches Solved -- Telling Clients To Exit\n";
-            //         for (std::vector<int>::size_type i = 0; i < self->state.client_list.size(); i++) {
-            //             self->send(self->state.client_list[i].getActor(), time_to_exit_v);
-            //         }
-            //         aout(self) << "\nSUMMA_SERVER -- EXITING\n";
-            //         self->quit();
-            //     } else {
-            //         aout(self) << "No Batches left to compute -- letting client stay connected in case batch fails\n";
-            //     }
-            // }
+            std::optional<Batch> new_batch = self->state.batch_container->assignBatch(
+                self->state.client_container->getHostname_ByClientID(client_id), client_actor);
+            if (new_batch.has_value()) {
+                self->send(client_actor, new_batch.value());
+            } else {
+                aout(self) << "no more batches left to assign\n";
+                aout(self) << "we are not done yet. Clients could Fail\n";
+            }
         }
     };
 }
@@ -119,8 +88,7 @@ void initializeCSVOutput(std::string csv_output_name) {
         "Hostname,"  <<
         "Run_Time,"  <<
         "Read_Time," <<
-        "Write_Time,"<<
-        "Status\n";
+        "Write_Time\n";
     csv_output.close();
 }
 

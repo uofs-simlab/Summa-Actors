@@ -52,4 +52,6 @@ class Client_Container {
 
         
         int getClientID(caf::actor);
+
+        std::string getHostname_ByClientID(int client_id);
 };
