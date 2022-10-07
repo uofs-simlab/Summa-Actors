@@ -31,6 +31,11 @@ behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Sett
     
     self->state.batch_container->printBatches();
 
+     // Start the heartbeat actor after a client has connected
+    self->state.health_check_reminder_actor = self->spawn(cleint_health_check_reminder);
+    self->send(self->state.health_check_reminder_actor, 
+        start_health_check_v, self, self->state.heartbeat_interval);
+
     return {
         /**
          * @brief A message from a client requresting to connect
@@ -51,17 +56,15 @@ behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Sett
             
             std::optional<Batch> batch = self->state.batch_container->assignBatch(hostname, client_actor);
             if (batch.has_value()) {
+                self->state.client_container->updateCurrentBatch(
+                    self->state.client_container->getClientID(client_actor),
+                    batch.value().getBatchID());
                 self->send(client_actor, batch.value());
             } else {
                 aout(self) << "no more batches left to assign\n";
                 aout(self) << "we are not done yet. Clients could Fail\n";
             }
-
-            // Start the heartbeat actor after a client has connected
-            self->state.health_check_reminder_actor = self->spawn(cleint_health_check_reminder);
-            self->send(self->state.health_check_reminder_actor, 
-                start_health_check_v, self, self->state.heartbeat_interval);
-            
+ 
         },
 
         [=](done_batch, actor client_actor, int client_id, Batch& batch) {
@@ -107,10 +110,13 @@ behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Sett
                 Client client = self->state.client_container->getClient(i);
                 self->send(client.getActor(), heartbeat_v);
             }
+            self->send(self->state.health_check_reminder_actor, 
+                start_health_check_v, self, self->state.heartbeat_interval);
         },
 
         [=](heartbeat, int client_id) {
             aout(self) << "Received HeartBeat From: " << client_id << "\n";
+
         },
     };
 }

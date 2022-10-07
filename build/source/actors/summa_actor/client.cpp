@@ -14,6 +14,10 @@ caf::actor Client::getActor() {
     return this->client_actor;
 }
 
+void Client::updateCurrentBatchID(int batch_id) {
+    this->current_batch_id = batch_id;
+}
+
 int Client::getID() {
     return this->id;
 }
@@ -69,6 +73,14 @@ Client Client_Container::removeClient_fromBack() {
     Client client = this->client_list.back();
     this->client_list.pop_back();
     return client;
+}
+
+void Client_Container::updateCurrentBatch(int client_id, int batch_id) {
+    for (int i = 0; i < num_clients; i++) {
+        if (client_id == this->client_list[i].getID()){
+            this->client_list[i].updateCurrentBatchID(batch_id);
+        }
+    }
 }
 
 
