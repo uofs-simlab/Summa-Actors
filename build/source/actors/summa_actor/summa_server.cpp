@@ -37,7 +37,7 @@ behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Sett
          * @param hostname human readable hostname of the machine that the actor is running on
          */
         [=](connect_to_server, actor client_actor, std::string hostname) {
-            // self->send(client, Batch{3,4,5});
+
             aout(self) << "Actor trying to connect with hostname " << hostname << "\n";
             self->state.client_container->addClient(client_actor, hostname);
 

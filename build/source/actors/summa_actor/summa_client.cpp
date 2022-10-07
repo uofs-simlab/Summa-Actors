@@ -87,25 +87,16 @@ behavior running(stateful_actor<summa_client_state>* self, const actor& server_a
             
         },
 
+        // Received batch from server to compute
         [=](Batch& batch) {
-            aout(self) << "Recieved Batch" << std::endl;
-            aout(self) << batch.getBatchID() << std::endl;
-        },
+            aout(self) << "\nReceived batch to compute\n";
+            aout(self) << "BatchID = " << batch.getBatchID() << "\n";
+            aout(self) << "StartHRU = " << batch.getStartHRU() << "\n";
+            aout(self) << "NumHRU = " << batch.getNumHRU() << "\n";
 
-
-        [=](compute_batch, int client_id, int batch_id, int start_hru, int num_hru, std::string config_path) {
-            aout(self) << "\nReceived batch to compute" << "\n";
-            aout(self) << "BatchID = " << batch_id << "\n";
-            aout(self) << "Start HRU = " << start_hru << "\n";
-            aout(self) << "Num HRU = " << num_hru << "\n";
-            aout(self) << "Config Path = " << config_path << "\n";
-            self->state.client_id = client_id;
-            self->state.batch_id = batch_id;
-
-            
             self->state.summa_actor_ref = self->spawn(summa_actor, 
-                start_hru, 
-                num_hru, 
+                batch.getStartHRU(), 
+                batch.getNumHRU(), 
                 self->state.summa_actor_settings,
                 self->state.file_access_actor_settings,
                 self->state.job_actor_settings,

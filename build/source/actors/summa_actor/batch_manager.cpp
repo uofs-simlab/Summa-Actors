@@ -48,9 +48,9 @@ std::optional<Batch> Batch_Container::assignBatch(std::string hostname, caf::act
 }
 
 
-
-
-
+// **************************
+// Batch Class
+// **************************
 
 Batch::Batch(int batch_id, int start_hru, int num_hru){
     this->batch_id = batch_id;
@@ -59,9 +59,17 @@ Batch::Batch(int batch_id, int start_hru, int num_hru){
     this->assigned_to_actor = false;
 }
 
-// Setters
+// Getters
 int Batch::getBatchID() {
     return this->batch_id;
+}
+
+int Batch::getStartHRU() {
+    return this->start_hru;
+}
+
+int Batch::getNumHRU() {
+    return this->num_hru;
 }
 
 bool Batch::getBatchStatus() {

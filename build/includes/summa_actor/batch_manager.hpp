@@ -21,6 +21,10 @@ class Batch {
 
         int getBatchID();
 
+        int getStartHRU();
+
+        int getNumHRU();
+
         bool getBatchStatus();
 
         void printBatchInfo();
