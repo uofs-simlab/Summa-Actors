@@ -67,11 +67,30 @@ behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Sett
 
             std::optional<Batch> new_batch = self->state.batch_container->assignBatch(
                 self->state.client_container->getHostname_ByClientID(client_id), client_actor);
+            
             if (new_batch.has_value()) {
+                
                 self->send(client_actor, new_batch.value());
+            
             } else {
-                aout(self) << "no more batches left to assign\n";
-                aout(self) << "we are not done yet. Clients could Fail\n";
+                
+                if (self->state.batch_container->getBatchesRemaining() > 0) {
+                    
+                    aout(self) << "no more batches left to assign\n";
+                    aout(self) << "we are not done yet. Clients could Fail\n";
+
+                } else {
+                    aout(self) << "Telling Clients To Exit\n"; 
+                    while(!self->state.client_container->isEmpty()) {
+                        Client client = self->state.client_container->removeClient_fromBack();
+
+                        caf::actor client_actor =  client.getActor();
+                        self->send(client_actor, time_to_exit_v);
+                    }
+
+                    aout(self) << "SERVER EXITING!!\n";
+                    self->quit();
+                }
             }
         }
     };

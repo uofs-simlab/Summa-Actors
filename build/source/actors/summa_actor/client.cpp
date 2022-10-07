@@ -48,3 +48,13 @@ int Client_Container::getClientID(caf::actor client_actor) {
 std::string Client_Container::getHostname_ByClientID(int client_id) {
     return this->client_list[client_id].getHostname();
 }
+
+bool Client_Container::isEmpty() {
+    return this->client_list.empty();
+}
+
+Client Client_Container::removeClient_fromBack() {
+    Client client = this->client_list.back();
+    this->client_list.pop_back();
+    return client;
+}
