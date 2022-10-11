@@ -108,7 +108,12 @@ behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Sett
         [=](check_on_clients) {
             for (int i = 0; i < self->state.client_container->getNumClients(); i++) {
                 Client client = self->state.client_container->getClient(i);
-                self->send(client.getActor(), heartbeat_v);
+                if(self->state.client_container->checkForLostClient(i)) {
+                    // Client May Be Lost
+                    aout(self) << "Client " << client.getID() << " is considered lost\n";
+                } else {
+                    self->send(client.getActor(), heartbeat_v);
+                }
             }
             self->send(self->state.health_check_reminder_actor, 
                 start_health_check_v, self, self->state.heartbeat_interval);
@@ -116,7 +121,7 @@ behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Sett
 
         [=](heartbeat, int client_id) {
             aout(self) << "Received HeartBeat From: " << client_id << "\n";
-
+            self->state.client_container->decrementLostPotential(client_id);
         },
     };
 }

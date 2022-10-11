@@ -9,13 +9,13 @@ Client::Client(int id, caf::actor client_actor, std::string hostname) {
     this->connected = true;
 }
 
-
+// Getters
 caf::actor Client::getActor() {
     return this->client_actor;
 }
 
-void Client::updateCurrentBatchID(int batch_id) {
-    this->current_batch_id = batch_id;
+int Client::getLostPotentialIndicator() {
+    return this->lost_Potential_indicator;
 }
 
 int Client::getID() {
@@ -26,6 +26,26 @@ std::string Client::getHostname() {
     return this->hostname;
 }
 
+// Setters
+void Client::updateCurrentBatchID(int batch_id) {
+    this->current_batch_id = batch_id;
+}
+
+// Methods
+void Client::incrementLostPotential() {
+    this->lost_Potential_indicator++;
+}
+
+void Client::decrementLostPotential() {
+    this->lost_Potential_indicator--;
+}
+
+////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////
 
 Client_Container::Client_Container() {}
 
@@ -49,6 +69,21 @@ Client Client_Container::getClient(int index) {
     }
 
     return this->client_list[index];
+}
+
+// Needs to be used direclty after getClient so same index is used
+bool Client_Container::checkForLostClient(int index) {
+    this->client_list[index].incrementLostPotential();
+    if (this->lost_client_threshold < this->client_list[index].getLostPotentialIndicator()) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+void Client_Container::decrementLostPotential(int client_id) {
+    int index = findClientByID(client_id);
+    this->client_list[index].decrementLostPotential();
 }
 
 
@@ -76,12 +111,21 @@ Client Client_Container::removeClient_fromBack() {
 }
 
 void Client_Container::updateCurrentBatch(int client_id, int batch_id) {
-    for (int i = 0; i < num_clients; i++) {
+    int index = findClientByID(client_id);
+    this->client_list[index].updateCurrentBatchID(batch_id);;
+}
+
+int Client_Container::findClientByID(int client_id) {
+    for(int i = 0; i < this->num_clients; i++) {
         if (client_id == this->client_list[i].getID()){
-            this->client_list[i].updateCurrentBatchID(batch_id);
+            return i;
         }
     }
+    throw "Cannot Find Client";
 }
+
+
+
 
 
 

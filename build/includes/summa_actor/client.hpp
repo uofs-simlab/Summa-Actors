@@ -13,26 +13,76 @@ class Client {
         caf::actor client_actor;
         std::string hostname;
         int current_batch_id;
+        int lost_Potential_indicator; // value to indicate the Potential that a client is lost.
+        // The greater the lost_Potential_indicator the greater chances the client has been lost.
 
 
     public:
+        /**
+         * @brief Construct a new Client object
+         * 
+         * @param id 
+         * @param client_actor 
+         * @param hostname 
+         */
         Client(int id, caf::actor client_actor, std::string hostname);
 
-        void updateCurrentBatchID(int batch_id);
-
+        // Getters
+        /**
+         * @brief Returns the actor_reference of the client
+         */
         caf::actor getActor();
+               /**
+         * @brief Get the value of the lost_Potential_indicator variable.
+         * @return int 
+         */
+        int getLostPotentialIndicator();
 
+        /**
+         * @brief Returns the ID of the client
+         */
         int getID();
 
+        /**
+         * @brief Get the Hostname of the client
+         */
         std::string getHostname();
+
+        // Setters
+        /**
+         * @brief Sets the batch_id of the batch the client is currently computing
+         */
+        void updateCurrentBatchID(int batch_id);
+
+        // methods
+        /**
+         * @brief Increments the lost_likley_hood indicator variable
+         * this is done everytime a client is sent a heartbeat message
+         * 
+         * checks if the client is likely lost or not
+         */
+        void incrementLostPotential();
+
+        /**
+         * @brief Decrement the lost_likley_hood indicator variables
+         * this is done everytime a client sends a heartbeat message back 
+         * to the server
+         */
+        void decrementLostPotential();
 
 };
 
+////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////
 
 class Client_Container {
     private:
         int num_clients = 0;
-
+        int lost_client_threshold = 3; // value to determine if client is lost
         std::vector<Client> client_list;
 
 
@@ -42,6 +92,33 @@ class Client_Container {
          */
         Client_Container();
 
+        // Getters
+        /**
+         * @brief Get the number of connected clients
+         * 
+         * @return int 
+         */
+        int getNumClients();
+        
+        /**
+         * @brief Get the Client ID of a cleint from its actor ref
+         * 
+         * @param cleint_actor 
+         * @return int 
+         */
+        int getClientID(caf::actor client_actor);
+        
+        /**
+         * @brief Get a client from the client list
+         * This is used when we need to get all of the 
+         * clients but we do not want to remove them
+         * from the client_list;
+         * @param index 
+         * @return Client 
+         */
+        Client getClient(int index);
+
+        // Methods
         /**
          * @brief add a client to the client vector
          * increment the number of clients
@@ -59,31 +136,19 @@ class Client_Container {
          * @param batch_id The id of the batch
          */
         void updateCurrentBatch(int client_id, int batch_id);
+       
+        /**
+         * @brief Increments the lost_potential indicator variable
+         * this is done everytime a client is sent a heartbeat message
+         */
+        bool checkForLostClient(int index);
 
         /**
-         * @brief Get the number of connected clients
-         * 
-         * @return int 
+         * @brief Decrement the lost_likley_hood indicator variables
+         * this is done everytime a client sends a heartbeat message back 
+         * to the server
          */
-        int getNumClients();
-
-        /**
-         * @brief Get the Client ID of a cleint from its actor ref
-         * 
-         * @param cleint_actor 
-         * @return int 
-         */
-        int getClientID(caf::actor client_actor);
-
-        /**
-         * @brief Get a client from the client list
-         * This is used when we need to get all of the 
-         * clients but we do not want to remove them
-         * from the client_list;
-         * @param index 
-         * @return Client 
-         */
-        Client getClient(int index);
+        void decrementLostPotential(int client_id);
 
         /**
          * @brief Removes a client from the back of the list
@@ -109,4 +174,11 @@ class Client_Container {
          */
         bool isEmpty();
 
+        /**
+         * @brief Find the index of a client in the client_list
+         * 
+         * @param client_id 
+         * @return int 
+         */
+        int findClientByID(int client_id);
 };
