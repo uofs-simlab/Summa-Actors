@@ -22,6 +22,10 @@ int Client::getID() {
     return this->id;
 }
 
+int Client::getCurrentBatchID() {
+    return this->current_batch_id;
+}
+
 std::string Client::getHostname() {
     return this->hostname;
 }
@@ -124,6 +128,11 @@ int Client_Container::findClientByID(int client_id) {
         }
     }
     throw "Cannot Find Client";
+}
+
+void Client_Container::removeLostClient(int index) {
+    this->client_list.erase(this->client_list.begin() + index);
+    this->num_clients--;
 }
 
 

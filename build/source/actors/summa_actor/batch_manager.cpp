@@ -37,6 +37,15 @@ void Batch_Container::printBatches() {
     }
 }
 
+void Batch_Container::updateBatchStatus_LostClient(int batch_id) {
+    std::optional<int> index = this->findBatch(batch_id);
+    if (index.has_value()) {
+        this->batch_list[index.value()].updateAssignedActor(false);
+    } else {
+        throw "updateBatchStatus_LostClient - Could not find batch with id";
+    }
+}
+
 
 std::optional<Batch> Batch_Container::assignBatch(std::string hostname, caf::actor actor_ref) {
 
@@ -126,6 +135,11 @@ void Batch::updateWriteTime(double write_time) {
     this->write_time = write_time;
 }
 
+void Batch::updateAssignedActor(bool boolean) {
+    this->assigned_to_actor = boolean;
+}
+
+// general methods
 void Batch::assignToActor(std::string hostname, caf::actor assigned_actor) {
     this->hostname = hostname;
     this->assigned_actor = assigned_actor;

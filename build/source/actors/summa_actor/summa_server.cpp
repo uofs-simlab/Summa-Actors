@@ -67,6 +67,13 @@ behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Sett
  
         },
 
+        /**
+         * @brief Construct a new [=] object
+         * 
+         * @param client_actor 
+         * @param client_id 
+         * @param batch 
+         */
         [=](done_batch, actor client_actor, int client_id, Batch& batch) {
             aout(self) << "Recieved Completed Batch From Client\n";
     
@@ -105,12 +112,21 @@ behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Sett
             }
         },
 
+        /**
+         * @brief Construct a new [=] object
+         * 
+         */
         [=](check_on_clients) {
             for (int i = 0; i < self->state.client_container->getNumClients(); i++) {
                 Client client = self->state.client_container->getClient(i);
                 if(self->state.client_container->checkForLostClient(i)) {
                     // Client May Be Lost
                     aout(self) << "Client " << client.getID() << " is considered lost\n";
+
+                    self->state.batch_container->updateBatchStatus_LostClient(client.getCurrentBatchID());
+
+                    self->state.client_container->removeLostClient(i);
+
                 } else {
                     self->send(client.getActor(), heartbeat_v);
                 }
@@ -119,6 +135,11 @@ behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Sett
                 start_health_check_v, self, self->state.distributed_settings.heartbeat_interval);
         },
 
+        /**
+         * @brief Construct a new [=] object
+         * 
+         * @param client_id 
+         */
         [=](heartbeat, int client_id) {
             aout(self) << "Received HeartBeat From: " << client_id << "\n";
             self->state.client_container->decrementLostPotential(client_id);

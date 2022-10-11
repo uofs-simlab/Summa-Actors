@@ -44,6 +44,11 @@ class Client {
         int getID();
 
         /**
+         * @brief Get the current_batch_id
+         */
+        int getCurrentBatchID();
+
+        /**
          * @brief Get the Hostname of the client
          */
         std::string getHostname();
@@ -181,4 +186,6 @@ class Client_Container {
          * @return int 
          */
         int findClientByID(int client_id);
+
+        void removeLostClient(int index);
 };

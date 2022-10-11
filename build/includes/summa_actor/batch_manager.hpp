@@ -37,6 +37,7 @@ class Batch {
         void updateRunTime(double run_time);
         void updateReadTime(double read_time);
         void updateWriteTime(double write_time);
+        void updateAssignedActor(bool boolean);
 
         void printBatchInfo();
         void writeBatchToFile(std::string csv_output);
@@ -129,6 +130,12 @@ class Batch_Container {
          * 
          */
         void printBatches();
+
+        /**
+         * @brief 
+         * 
+         */
+        void updateBatchStatus_LostClient(int batch_id);
 
 
     
