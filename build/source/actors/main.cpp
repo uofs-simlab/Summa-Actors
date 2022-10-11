@@ -101,8 +101,10 @@ void caf_main(actor_system& sys, const config& cfg) {
 
     aout(self) << "Printing Settings For SUMMA Simulation\n";
     check_settings_from_json(distributed_settings,
-        summa_actor_settings, file_access_actor_settings, job_actor_settings,
-        hru_actor_settings);
+                            summa_actor_settings, 
+                            file_access_actor_settings, 
+                            job_actor_settings,
+                            hru_actor_settings);
 
     if (distributed_settings.distributed_mode) {
         // only command line arguments needed are config_file and server-mode

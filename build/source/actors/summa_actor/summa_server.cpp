@@ -24,7 +24,7 @@ behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Sett
     self->state.job_actor_settings = job_actor_settings;
     self->state.hru_actor_settings = hru_actor_settings;
 
-    self->state.client_container = new Client_Container();
+    self->state.client_container = new Client_Container(self->state.distributed_settings.lost_node_threshold);
     self->state.batch_container = new Batch_Container(
             self->state.distributed_settings.total_hru_count,
             self->state.distributed_settings.num_hru_per_batch);
@@ -34,7 +34,7 @@ behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Sett
      // Start the heartbeat actor after a client has connected
     self->state.health_check_reminder_actor = self->spawn(cleint_health_check_reminder);
     self->send(self->state.health_check_reminder_actor, 
-        start_health_check_v, self, self->state.heartbeat_interval);
+        start_health_check_v, self, self->state.distributed_settings.heartbeat_interval);
 
     return {
         /**
@@ -116,7 +116,7 @@ behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Sett
                 }
             }
             self->send(self->state.health_check_reminder_actor, 
-                start_health_check_v, self, self->state.heartbeat_interval);
+                start_health_check_v, self, self->state.distributed_settings.heartbeat_interval);
         },
 
         [=](heartbeat, int client_id) {

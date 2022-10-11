@@ -15,6 +15,9 @@ struct Distributed_Settings {
     int port;               // the port number of the server actor
     int total_hru_count;
     int num_hru_per_batch;
+    int heartbeat_interval; // number of seconds between each heartbeat message
+    int lost_node_threshold; // the maximum value the lost_potentail_indicator value can be before
+    // we assume the node is lost
 };
 
 template<class Inspector>
@@ -24,7 +27,9 @@ bool inspect(Inspector& inspector, Distributed_Settings& distributed_settings) {
                 inspector.field("hostname",         distributed_settings.hostname),
                 inspector.field("port",             distributed_settings.port),
                 inspector.field("total_hru_count",  distributed_settings.total_hru_count),
-                inspector.field("num_hru_per_batch",distributed_settings.num_hru_per_batch));
+                inspector.field("num_hru_per_batch",distributed_settings.num_hru_per_batch),
+                inspector.field("heartbeat_interval",distributed_settings.heartbeat_interval),
+                inspector.field("lost_node_threshold",distributed_settings.lost_node_threshold));
 }
 
 

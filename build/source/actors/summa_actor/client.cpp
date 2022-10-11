@@ -47,7 +47,9 @@ void Client::decrementLostPotential() {
 ////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////
 
-Client_Container::Client_Container() {}
+Client_Container::Client_Container(int lost_node_threshold) {
+    this->lost_client_threshold = lost_node_threshold;
+}
 
 void Client_Container::addClient(caf::actor client_actor, std::string hostname) {
     int client_id = this->num_clients;

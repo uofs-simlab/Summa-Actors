@@ -82,7 +82,7 @@ class Client {
 class Client_Container {
     private:
         int num_clients = 0;
-        int lost_client_threshold = 3; // value to determine if client is lost
+        int lost_client_threshold; // value to determine if client is lost
         std::vector<Client> client_list;
 
 
@@ -90,7 +90,7 @@ class Client_Container {
         /**
          * @brief Construct a new Client_Container object
          */
-        Client_Container();
+        Client_Container(int lost_node_threshold);
 
         // Getters
         /**

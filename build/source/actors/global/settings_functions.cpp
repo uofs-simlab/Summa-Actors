@@ -26,6 +26,12 @@ int read_settings_from_json(std::string json_settings_file,
     distributed_settings.num_hru_per_batch = getSettings(json_settings_file, parent_key,
         "num_hru_per_batch", distributed_settings.num_hru_per_batch).value_or(-1);
 
+    distributed_settings.heartbeat_interval = getSettings(json_settings_file, parent_key,
+        "heartbeat_interval", distributed_settings.heartbeat_interval).value_or(-1);
+    
+    distributed_settings.lost_node_threshold = getSettings(json_settings_file, parent_key,
+        "lost_node_threshold", distributed_settings.lost_node_threshold).value_or(-1);
+
     
     // read settings for summa actor
     parent_key = "Summa_Actor";    
@@ -75,7 +81,9 @@ void check_settings_from_json(Distributed_Settings &distributed_settings,
     std::cout << distributed_settings.hostname << "\n";
     std::cout << distributed_settings.port << "\n";
     std::cout << distributed_settings.total_hru_count << "\n";
-    std::cout << distributed_settings.num_hru_per_batch << "\n\n\n";
+    std::cout << distributed_settings.num_hru_per_batch << "\n";
+    std::cout << distributed_settings.heartbeat_interval << "\n";
+    std::cout << distributed_settings.lost_node_threshold << "\n\n\n";
 
     std::cout << "************ SUMMA_ACTOR_SETTINGS ************\n";
     std::cout << summa_actor_settings.max_gru_per_job << "\n\n\n";

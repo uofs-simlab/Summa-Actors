@@ -25,7 +25,6 @@ struct summa_server_state {
     Client_Container *client_container;
     Batch_Container *batch_container;
 
-    int heartbeat_interval = 20;
     caf::actor health_check_reminder_actor;
 
     Distributed_Settings distributed_settings;
