@@ -4,7 +4,11 @@ def distributed_settings():
     distributed_settings = {
         "distributed-mode": False,
         "host":"localhost",
-        "port":4444
+        "port":4444,
+        "total_hru_count": 5,
+        "num_hru_per_batch": 1,
+        "heartbeat_interval": 20,
+        "lost_node_threshold": 3
     }   
     return distributed_settings
 
