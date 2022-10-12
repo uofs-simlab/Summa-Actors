@@ -3,7 +3,7 @@ import sys
 
 def distributed_settings(hostname, port):
     distributed_settings = {
-        "distributed-mode": False,
+        "distributed-mode": True,
         "host":hostname,
         "port":port,
         "total_hru_count": 5,
