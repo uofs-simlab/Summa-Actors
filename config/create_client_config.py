@@ -15,13 +15,13 @@ def distributed_settings(hostname, port):
 
 
 settings_dict = {
-    "DistributedSettings": {}
+    "Distributed_Settings": {}
 }
 
 hostname = sys.argv[1]
 port = sys.argv[2]
 
 
-settings_dict['DistributedSettings'] = distributed_settings(hostname, int(port))
+settings_dict['Distributed_Settings'] = distributed_settings(hostname, int(port))
 with open('Summa_Actors_Settings.json', 'w') as summa_actors_settings_file:
         json.dump(settings_dict, summa_actors_settings_file, indent=2)
