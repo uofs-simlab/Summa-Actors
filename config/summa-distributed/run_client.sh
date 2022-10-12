@@ -1,6 +1,6 @@
 #!/bin/bash
-PORT = 4444
-HOSTNAME = "simlab03"
+export PORT = 4444
+export HOSTNAME = "simlab03"
 
 export LD_LIBRARY_PATH=/Summa-Actors/bin/:/usr/local/lib
 cd /Summa-Actors/config/
