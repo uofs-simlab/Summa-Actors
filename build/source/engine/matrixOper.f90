@@ -43,188 +43,188 @@ public::scaleMatrices
 public::computeGradient
 contains
 
- ! **********************************************************************************************************
- ! public subroutine: scaleMatrices: scale the matrices
- ! **********************************************************************************************************
- subroutine scaleMatrices(ixMatrix,nState,aJac,fScale,xScale,aJacScaled,err,message)
- implicit none
- ! input variables
- integer(i4b),intent(in)         :: ixMatrix          ! type of matrix (full Jacobian or band diagonal)
- integer(i4b),intent(in)         :: nState            ! number of state variables
- real(dp),intent(in)             :: aJac(:,:)         ! original Jacobian matrix
- real(dp),intent(in)             :: fScale(:)         ! function scaling vector
- real(dp),intent(in)             :: xScale(:)         ! "variable" scaling vector, i.e., for state variables
- ! output variables
- real(dp),intent(out)            :: aJacScaled(:,:)   ! scaled Jacobian matrix
- integer(i4b),intent(out)        :: err               ! error code
- character(*),intent(out)        :: message           ! error message
- ! ---------------------------------------------------------------------------------------------------------
- ! local variables
- integer(i4b)                    :: iState            ! row index
- integer(i4b)                    :: jState            ! comumn index
- integer(i4b)                    :: kState            ! band diagonal index
- ! ---------------------------------------------------------------------------------------------------------
- ! initialize error control
- err=0; message='scaleMatrices/'
+! **********************************************************************************************************
+! public subroutine: scaleMatrices: scale the matrices
+! **********************************************************************************************************
+subroutine scaleMatrices(ixMatrix,nState,aJac,fScale,xScale,aJacScaled,err,message)
+implicit none
+! input variables
+integer(i4b),intent(in)         :: ixMatrix          ! type of matrix (full Jacobian or band diagonal)
+integer(i4b),intent(in)         :: nState            ! number of state variables
+real(rkind),intent(in)             :: aJac(:,:)         ! original Jacobian matrix
+real(rkind),intent(in)             :: fScale(:)         ! function scaling vector
+real(rkind),intent(in)             :: xScale(:)         ! "variable" scaling vector, i.e., for state variables
+! output variables
+real(rkind),intent(out)            :: aJacScaled(:,:)   ! scaled Jacobian matrix
+integer(i4b),intent(out)        :: err               ! error code
+character(*),intent(out)        :: message           ! error message
+! ---------------------------------------------------------------------------------------------------------
+! local variables
+integer(i4b)                    :: iState            ! row index
+integer(i4b)                    :: jState            ! comumn index
+integer(i4b)                    :: kState            ! band diagonal index
+! ---------------------------------------------------------------------------------------------------------
+! initialize error control
+err=0; message='scaleMatrices/'
 
- ! select the type of matrix
- select case(ixMatrix)
+! select the type of matrix
+select case(ixMatrix)
 
-  ! * full matrix
-  case(ixFullMatrix)
+! * full matrix
+case(ixFullMatrix)
 
-   ! scale by both the scaling factors for the function (fScale) and variable (xScale)
-   do iState=1,nState
-    do jState=1,nState
-     aJacScaled(iState,jState) = fScale(iState)*aJac(iState,jState)*xScale(jState)
-    end do
-   end do
+! scale by both the scaling factors for the function (fScale) and variable (xScale)
+do iState=1,nState
+do jState=1,nState
+    aJacScaled(iState,jState) = fScale(iState)*aJac(iState,jState)*xScale(jState)
+end do
+end do
 
-  ! * band-diagonal matrix
-  case(ixBandMatrix)
+! * band-diagonal matrix
+case(ixBandMatrix)
 
-   ! initialize the matrix to zero (some un-used elements)
-   aJacScaled(:,:) = 0._dp
+! initialize the matrix to zero (some un-used elements)
+aJacScaled(:,:) = 0._rkind
 
-   ! scale the rows by the function scaling factor and the colmns by the variable scaling factor
-   do jState=1,nState       ! (loop through model state variables)
-    do iState=max(1,jState-ku),min(nState,jState+kl)
-     kState = kl+ku+1+iState-jState
-     aJacScaled(kState,jState) = fScale(iState)*aJac(kState,jState)*xScale(jState)
-    end do
-   end do  ! looping through state variables
+! scale the rows by the function scaling factor and the colmns by the variable scaling factor
+do jState=1,nState       ! (loop through model state variables)
+do iState=max(1,jState-ku),min(nState,jState+kl)
+    kState = kl+ku+1+iState-jState
+    aJacScaled(kState,jState) = fScale(iState)*aJac(kState,jState)*xScale(jState)
+end do
+end do  ! looping through state variables
 
-  ! check that we found a valid option (should not get here because of the check above; included for completeness)
-  case default; err=20; message=trim(message)//'unable to identify option for the type of matrix'
+! check that we found a valid option (should not get here because of the check above; included for completeness)
+case default; err=20; message=trim(message)//'unable to identify option for the type of matrix'
 
- end select  ! (option to solve the linear system A.X=B)
+end select  ! (option to solve the linear system A.X=B)
 
- end subroutine scaleMatrices
-
-
- ! *********************************************************************************************************
- ! * private subroutine computeGradient: compute the gradient of the function
- ! *********************************************************************************************************
- subroutine computeGradient(ixMatrix,nState,aJac,rVec,grad,err,message)
- implicit none
- ! input
- integer(i4b),intent(in)        :: ixMatrix   ! type of matrix (full Jacobian or band diagonal)
- integer(i4b),intent(in)        :: nState     ! number of state variables
- real(dp),intent(in)            :: aJac(:,:)  ! jacobian matrix
- real(dp),intent(in)            :: rVec(:)    ! residual vector
- ! output
- real(dp),intent(out)           :: grad(:)    ! gradient
- integer(i4b),intent(out)       :: err        ! error code
- character(*),intent(out)       :: message    ! error message
- ! local
- integer(i4b)                   :: iJac       ! index of model state variable
- integer(i4b)                   :: iState     ! index of the residual vector
- ! initialize error control
- err=0; message='computeGradient/'
-
- ! check if full Jacobian or band-diagonal matrix
- select case(ixMatrix)
-
-  ! full Jacobian matrix
-  case(ixFullMatrix)
-
-   ! compute the gradient
-   grad = matmul(rVec,aJac)         ! gradient
-
-  ! band-diagonal matrix
-  case(ixBandMatrix)
-
-   ! compute the gradient
-   grad(:) = 0._dp
-   do iJac=1,nState  ! (loop through state variables)
-    do iState=max(1,iJac-ku),min(nState,iJac+kl)
-     grad(iJac) = grad(iJac) + aJac(kl+ku+1+iState-iJac,iJac)*rVec(iState)
-    end do
-   end do
-
-  ! check that we found a valid option
-  case default; err=20; message=trim(message)//'unable to identify option for the type of matrix'
-
- end select  ! (option to solve the linear system A.X=B)
-
- end subroutine computeGradient
+end subroutine scaleMatrices
 
 
- ! *********************************************************************************************************
- ! public subroutine lapackSolv: use the lapack routines to solve the linear system A.X=B
- ! *********************************************************************************************************
- subroutine lapackSolv(ixMatrix,nState,aJac,rVec,xInc,err,message)
- implicit none
- ! dummy
- integer(i4b),intent(in)        :: ixMatrix      ! type of matrix (full Jacobian or band diagonal)
- integer(i4b),intent(in)        :: nState        ! number of state variables
- real(dp),intent(inout)         :: aJac(:,:)     ! input = the Jacobian matrix A; output = decomposed matrix
- real(dp),intent(in)            :: rVec(:)       ! the residual vector B
- real(dp),intent(out)           :: xInc(:)       ! the solution vector X
- integer(i4b),intent(out)       :: err           ! error code
- character(*),intent(out)       :: message       ! error message
- ! local
- real(dp)                       :: rhs(nState,1) ! the nState-by-nRHS matrix of matrix B, for the linear system A.X=B
- integer(i4b)                   :: iPiv(nState)  ! defines if row i of the matrix was interchanged with row iPiv(i)
- ! initialize error control
- select case(ixMatrix)
-  case(ixFullMatrix); message='lapackSolv/dgesv/'
-  case(ixBandMatrix); message='lapackSolv/dgbsv/'
-  case default; err=20; message=trim(message)//'unable to identify option for the type of matrix'
- end select
+! *********************************************************************************************************
+! * private subroutine computeGradient: compute the gradient of the function
+! *********************************************************************************************************
+subroutine computeGradient(ixMatrix,nState,aJac,rVec,grad,err,message)
+implicit none
+! input
+integer(i4b),intent(in)        :: ixMatrix   ! type of matrix (full Jacobian or band diagonal)
+integer(i4b),intent(in)        :: nState     ! number of state variables
+real(rkind),intent(in)            :: aJac(:,:)  ! jacobian matrix
+real(rkind),intent(in)            :: rVec(:)    ! residual vector
+! output
+real(rkind),intent(out)           :: grad(:)    ! gradient
+integer(i4b),intent(out)       :: err        ! error code
+character(*),intent(out)       :: message    ! error message
+! local
+integer(i4b)                   :: iJac       ! index of model state variable
+integer(i4b)                   :: iState     ! index of the residual vector
+! initialize error control
+err=0; message='computeGradient/'
 
- ! form the rhs matrix
- ! NOTE: copy the vector here to ensure that the residual vector is not overwritten
- rhs(:,1) = rVec(:)
+! check if full Jacobian or band-diagonal matrix
+select case(ixMatrix)
 
- ! identify option to solve the linear system A.X=B
- select case(ixMatrix)
+! full Jacobian matrix
+case(ixFullMatrix)
 
-  ! lapack: use the full Jacobian matrix to solve the linear system A.X=B
-  case(ixFullMatrix)
-   call dgesv(nState,    &  ! intent(in):    [i4b]               number of state variables
-              nRHS,      &  ! intent(in):    [i4b]               number of columns of the matrix B
-              aJac,      &  ! intent(inout): [dp(nState,nState)] input = the nState-by-nState Jacobian matrix A; output = decomposed matrix
-              nState,    &  ! intent(in):    [i4b]               the leading dimension of aJac
-              iPiv,      &  ! intent(out):   [i4b(nState)]       defines if row i of the matrix was interchanged with row iPiv(i)
-              rhs,       &  ! intent(inout): [dp(nState,nRHS)]   input = the nState-by-nRHS matrix of matrix B; output: the solution matrix X
-              nState,    &  ! intent(in):    [i4b]               the leading dimension of matrix rhs
-              err)          ! intent(out)    [i4b]               error code
+! compute the gradient
+grad = matmul(rVec,aJac)         ! gradient
 
-  ! lapack: use the band diagonal matrix to solve the linear system A.X=B
-  case(ixBandMatrix)
-   call dgbsv(nState,    &  ! intent(in):    [i4b]               number of state variables
-              kl,        &  ! intent(in):    [i4b]               number of subdiagonals within the band of A
-              ku,        &  ! intent(in):    [i4b]               number of superdiagonals within the band of A
-              nRHS,      &  ! intent(in):    [i4b]               number of columns of the matrix B
-              aJac,      &  ! intent(inout): [dp(nBands,nState)] input = the nBands-by-nState Jacobian matrix A; output = decomposed matrix
-              nBands,    &  ! intent(in):    [i4b]               the leading dimension of aJac
-              iPiv,      &  ! intent(out):   [i4b(nState)]       defines if row i of the matrix was interchanged with row iPiv(i)
-              rhs,       &  ! intent(inout): [dp(nState,nRHS)]   input = the nState-by-nRHS matrix of matrix B; output: the solution matrix X
-              nState,    &  ! intent(in):    [i4b]               the leading dimension of matrix rhs
-              err)          ! intent(out)    [i4b]               error code
+! band-diagonal matrix
+case(ixBandMatrix)
 
-  ! check that we found a valid option (should not get here because of the check above; included for completeness)
-  case default; err=20; message=trim(message)//'unable to identify option for the type of matrix'
+! compute the gradient
+grad(:) = 0._rkind
+do iJac=1,nState  ! (loop through state variables)
+do iState=max(1,iJac-ku),min(nState,iJac+kl)
+    grad(iJac) = grad(iJac) + aJac(kl+ku+1+iState-iJac,iJac)*rVec(iState)
+end do
+end do
 
- end select  ! (option to solve the linear system A.X=B)
+! check that we found a valid option
+case default; err=20; message=trim(message)//'unable to identify option for the type of matrix'
 
- ! identify any errors
- ! NOTE: return negative error code to force a time step reduction and another trial
- if(err/=0)then
-  if(err<0)then
-   write(message,'(a,i0,a)') trim(message)//'the ',err,'-th argument had an illegal value'
-   err=-20; return
-  else
-   write(message,'(a,i0,a,i0,a)') trim(message)//'U(',err,',',err,') is exactly zero - factorization complete, but U is singular so the solution could not be completed'
-   err=-20; return
-  end if
- end if
+end select  ! (option to solve the linear system A.X=B)
 
- ! extract the iteration increment
- xInc(1:nState) = rhs(1:nState,1)
+end subroutine computeGradient
 
- end subroutine lapackSolv
+
+! *********************************************************************************************************
+! public subroutine lapackSolv: use the lapack routines to solve the linear system A.X=B
+! *********************************************************************************************************
+subroutine lapackSolv(ixMatrix,nState,aJac,rVec,xInc,err,message)
+implicit none
+! dummy
+integer(i4b),intent(in)        :: ixMatrix      ! type of matrix (full Jacobian or band diagonal)
+integer(i4b),intent(in)        :: nState        ! number of state variables
+real(rkind),intent(inout)      :: aJac(:,:)     ! input = the Jacobian matrix A; output = decomposed matrix
+real(rkind),intent(in)         :: rVec(:)       ! the residual vector B
+real(rkind),intent(out)        :: xInc(:)       ! the solution vector X
+integer(i4b),intent(out)       :: err           ! error code
+character(*),intent(out)       :: message       ! error message
+! local
+real(rkind)                    :: rhs(nState,1) ! the nState-by-nRHS matrix of matrix B, for the linear system A.X=B
+integer(i4b)                   :: iPiv(nState)  ! defines if row i of the matrix was interchanged with row iPiv(i)
+! initialize error control
+select case(ixMatrix)
+case(ixFullMatrix); message='lapackSolv/dgesv/'
+case(ixBandMatrix); message='lapackSolv/dgbsv/'
+case default; err=20; message=trim(message)//'unable to identify option for the type of matrix'
+end select
+
+! form the rhs matrix
+! NOTE: copy the vector here to ensure that the residual vector is not overwritten
+rhs(:,1) = rVec(:)
+
+! identify option to solve the linear system A.X=B
+select case(ixMatrix)
+
+! lapack: use the full Jacobian matrix to solve the linear system A.X=B
+case(ixFullMatrix)
+call dgesv(nState,    &  ! intent(in):    [i4b]               number of state variables
+            nRHS,      &  ! intent(in):    [i4b]               number of columns of the matrix B
+            aJac,      &  ! intent(inout): [dp(nState,nState)] input = the nState-by-nState Jacobian matrix A; output = decomposed matrix
+            nState,    &  ! intent(in):    [i4b]               the leading dimension of aJac
+            iPiv,      &  ! intent(out):   [i4b(nState)]       defines if row i of the matrix was interchanged with row iPiv(i)
+            rhs,       &  ! intent(inout): [dp(nState,nRHS)]   input = the nState-by-nRHS matrix of matrix B; output: the solution matrix X
+            nState,    &  ! intent(in):    [i4b]               the leading dimension of matrix rhs
+            err)          ! intent(out)    [i4b]               error code
+
+! lapack: use the band diagonal matrix to solve the linear system A.X=B
+case(ixBandMatrix)
+call dgbsv(nState,    &  ! intent(in):    [i4b]               number of state variables
+            kl,        &  ! intent(in):    [i4b]               number of subdiagonals within the band of A
+            ku,        &  ! intent(in):    [i4b]               number of superdiagonals within the band of A
+            nRHS,      &  ! intent(in):    [i4b]               number of columns of the matrix B
+            aJac,      &  ! intent(inout): [dp(nBands,nState)] input = the nBands-by-nState Jacobian matrix A; output = decomposed matrix
+            nBands,    &  ! intent(in):    [i4b]               the leading dimension of aJac
+            iPiv,      &  ! intent(out):   [i4b(nState)]       defines if row i of the matrix was interchanged with row iPiv(i)
+            rhs,       &  ! intent(inout): [dp(nState,nRHS)]   input = the nState-by-nRHS matrix of matrix B; output: the solution matrix X
+            nState,    &  ! intent(in):    [i4b]               the leading dimension of matrix rhs
+            err)          ! intent(out)    [i4b]               error code
+
+! check that we found a valid option (should not get here because of the check above; included for completeness)
+case default; err=20; message=trim(message)//'unable to identify option for the type of matrix'
+
+end select  ! (option to solve the linear system A.X=B)
+
+! identify any errors
+! NOTE: return negative error code to force a time step reduction and another trial
+if(err/=0)then
+if(err<0)then
+write(message,'(a,i0,a)') trim(message)//'the ',err,'-th argument had an illegal value'
+err=-20; return
+else
+write(message,'(a,i0,a,i0,a)') trim(message)//'U(',err,',',err,') is exactly zero - factorization complete, but U is singular so the solution could not be completed'
+err=-20; return
+end if
+end if
+
+! extract the iteration increment
+xInc(1:nState) = rhs(1:nState,1)
+
+end subroutine lapackSolv
 
 
 

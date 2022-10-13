@@ -221,6 +221,7 @@ subroutine setupHRUParam(&
    call read_param(indxHRU,indxGRU,mparStruct,bparStruct,dparStruct,err)
    if(err/=0)then
       message=trim(message)//trim(cmessage)
+      print*, message
       return
    endif
    ! *****************************************************************************
@@ -257,7 +258,10 @@ subroutine setupHRUParam(&
                    mparStruct,        &   ! intent(in):    parameter data structure
                    lookupStruct,      &   ! intent(inout): lookup table data structure
                    err,cmessage)                              ! intent(out):   error control
-   if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+   if(err/=0)then; message=trim(message)//trim(cmessage)
+      print*, message
+      return; 
+   endif
 
    ! overwrite the vegetation height
    HVT(typeStruct%var(iLookTYPE%vegTypeIndex)) = mparStruct%var(iLookPARAM%heightCanopyTop)%dat(1)

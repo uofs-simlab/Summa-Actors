@@ -217,7 +217,6 @@ NOAHMP = $(patsubst %, $(NOAHMP_DIR)/%, $(SUMMA_NOAHMP))
 SUMMA_MODRUN = \
 		indexState.f90 \
 		getVectorz.f90 \
-		sundials/getVectorzAddSundials.f90 \
 		sundials/t2enthalpy.f90 \
 		updateVars.f90 \
 		sundials/updateVarsSundials.f90 \

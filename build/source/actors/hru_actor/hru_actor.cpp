@@ -182,7 +182,7 @@ void Initialize_HRU(stateful_actor<hru_state>* self) {
 
 
     if (self->state.err != 0) {
-        aout(self) << "Error: Initialize - HRU = " << self->state.indxHRU << 
+        aout(self) << "Error: HRU_Actor - Initialize - HRU = " << self->state.indxHRU << 
         " - indxGRU = " << self->state.indxGRU << " - refGRU = "<< self->state.refGRU << std::endl;
         aout(self) << "Error = " << self->state.err << "\n";
         self->quit();
@@ -203,7 +203,7 @@ void Initialize_HRU(stateful_actor<hru_state>* self) {
             self->state.handle_oldTime,
             &self->state.upArea, &self->state.err);
     if (self->state.err != 0) {
-        aout(self) << "Error: SetupParam - HRU = " << self->state.indxHRU <<
+        aout(self) << "Error: HRU_Actor - SetupHRUParam - HRU = " << self->state.indxHRU <<
         " - indxGRU = " << self->state.indxGRU << " - refGRU = " << self->state.refGRU << std::endl;
         self->quit();
         return;
@@ -219,7 +219,7 @@ void Initialize_HRU(stateful_actor<hru_state>* self) {
             self->state.handle_bvarStruct, 
             &self->state.dt_init, &self->state.err);
     if (self->state.err != 0) {
-        aout(self) << "Error: Restart - HRU = " << self->state.indxHRU <<
+        aout(self) << "Error: HRU_Actor - Restart - HRU = " << self->state.indxHRU <<
         " - indxGRU = " << self->state.indxGRU << " - refGRU = " << self->state.refGRU << std::endl;
         self->quit();
         return;
