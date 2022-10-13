@@ -531,8 +531,8 @@ end subroutine varSubstepSundials
 ! private subroutine updateProgSundials: update prognostic variables
 ! **********************************************************************************************************
 subroutine updateProgSundials(dt,nSnow,nSoil,nLayers,doAdjustTemp,computeVegFlux,untappedMelt,stateVecTrial,stateVecPrime,checkMassBalance, checkNrgBalance, & ! input: model control
-                        lookup_data,mpar_data,indx_data,flux_data,prog_data,diag_data,deriv_data,                                   & ! input-output: data structures
-                        waterBalanceError,nrgFluxModified,err,message)                                                    ! output: flags and error control
+                       lookup_data,mpar_data,indx_data,flux_data,prog_data,diag_data,deriv_data,                                   & ! input-output: data structures
+                       waterBalanceError,nrgFluxModified,err,message)                                                    ! output: flags and error control
   USE getVectorz_module,only:varExtract                             ! extract variables from the state vector
   USE updateVarsSundials_module,only:updateVarsSundials             ! update prognostic variables
   USE computEnthalpy_module,only:computEnthalpy

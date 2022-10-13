@@ -34,7 +34,7 @@ USE var_lookup,only:iLookPARAM,iLookDIAG,iLookINDEX  ! named variables for struc
 
 ! physical constants
 USE multiconst,only:&
-          Tfreeze, 	 & ! freezing point of water (K)
+					Tfreeze, 	 & ! freezing point of water (K)
                     iden_air,    & ! intrinsic density of air      (kg m-3)
                     iden_ice,    & ! intrinsic density of ice      (kg m-3)
                     iden_water,  & ! intrinsic density of water    (kg m-3)
@@ -78,32 +78,32 @@ contains
 ! public subroutine computHeatCap: compute diagnostic energy variables (heat capacity)
 ! **********************************************************************************************************
 subroutine computHeatCap(&
-                      ! input: control variables
-                      nLayers,                 	 & ! intent(in): number of layers (soil+snow)
-                      computeVegFlux,         		 & ! intent(in): flag to denote if computing the vegetation flux
-                      canopyDepth,             	 & ! intent(in): canopy depth (m)
-                      ! input data structures
-                      mpar_data,               	 & ! intent(in):    model parameters
-                      indx_data,               	 & ! intent(in):    model layer indices
-                      diag_data,               	 & ! intent(in):    model diagnostic variables for a local HRU
-                      ! input: state variables
-                      scalarCanopyIce,         	 & ! intent(in)
-                      scalarCanopyLiquid,       	 & ! intent(in)
-                      scalarCanopyTempTrial,   	 & ! intent(in):  trial value of canopy temperature (K)
-                      scalarCanopyTempPrev,    	 & ! intent(in):  previous value of canopy temperature (K)
-                      scalarCanopyEnthalpyTrial,    & ! intent(in):  trial enthalpy of the vegetation canopy (J m-3)
-                      scalarCanopyEnthalpyPrev,     & ! intent(in):  previous enthalpy of the vegetation canopy (J m-3)
-                      mLayerVolFracIce,        	 & ! intent(in): volumetric fraction of ice at the start of the sub-step (-)
-                      mLayerVolFracLiq,        	 & ! intent(in): volumetric fraction of liquid water at the start of the sub-step (-)
-                      mLayerTempTrial,          	 & ! intent(in): trial temperature
-                      mLayerTempPrev,           	 & ! intent(in): previous temperature
-                      mLayerEnthalpyTrial,      	 & ! intent(in): trial enthalpy for snow and soil
-                      mLayerEnthalpyPrev,       	 & ! intent(in): previous enthalpy for snow and soil
-                      ! output
-                      heatCapVeg,               	 &
-                      mLayerHeatCap,            	 & ! intent(out): heat capacity for snow and soil
-                      ! output: error control
-                      err,message)               ! intent(out): error control
+                     ! input: control variables
+                     nLayers,                 	 & ! intent(in): number of layers (soil+snow)
+                     computeVegFlux,         		 & ! intent(in): flag to denote if computing the vegetation flux
+                     canopyDepth,             	 & ! intent(in): canopy depth (m)
+                     ! input data structures
+                     mpar_data,               	 & ! intent(in):    model parameters
+                     indx_data,               	 & ! intent(in):    model layer indices
+                     diag_data,               	 & ! intent(in):    model diagnostic variables for a local HRU
+                     ! input: state variables
+                     scalarCanopyIce,         	 & ! intent(in)
+                     scalarCanopyLiquid,       	 & ! intent(in)
+                     scalarCanopyTempTrial,   	 & ! intent(in):  trial value of canopy temperature (K)
+                     scalarCanopyTempPrev,    	 & ! intent(in):  previous value of canopy temperature (K)
+                     scalarCanopyEnthalpyTrial,    & ! intent(in):  trial enthalpy of the vegetation canopy (J m-3)
+                     scalarCanopyEnthalpyPrev,     & ! intent(in):  previous enthalpy of the vegetation canopy (J m-3)
+                     mLayerVolFracIce,        	 & ! intent(in): volumetric fraction of ice at the start of the sub-step (-)
+                     mLayerVolFracLiq,        	 & ! intent(in): volumetric fraction of liquid water at the start of the sub-step (-)
+                     mLayerTempTrial,          	 & ! intent(in): trial temperature
+                     mLayerTempPrev,           	 & ! intent(in): previous temperature
+                     mLayerEnthalpyTrial,      	 & ! intent(in): trial enthalpy for snow and soil
+                     mLayerEnthalpyPrev,       	 & ! intent(in): previous enthalpy for snow and soil
+                     ! output
+                     heatCapVeg,               	 &
+                     mLayerHeatCap,            	 & ! intent(out): heat capacity for snow and soil
+                     ! output: error control
+                     err,message)               ! intent(out): error control
   ! --------------------------------------------------------------------------------------------------------------------------------------
   ! input: control variables
   logical(lgt),intent(in)         :: computeVegFlux         ! logical flag to denote if computing the vegetation flux
@@ -197,7 +197,7 @@ subroutine computHeatCap(&
   end associate
 
 end subroutine computHeatCap
-  
+ 
 ! **********************************************************************************************************
 ! public subroutine computStatMult: get scale factors
 ! **********************************************************************************************************
@@ -295,7 +295,7 @@ USE f2008funcs_module,only:findIndex              ! finds the index of the first
   end associate
 ! end association to variables in the data structure where vector length does not change
 end subroutine computStatMult
-  
+ 
 ! **********************************************************************************************************
 ! public subroutine computHeatCapAnalytic: compute diagnostic energy variables (heat capacity)
 ! **********************************************************************************************************
@@ -395,7 +395,7 @@ subroutine computHeatCapAnalytic(&
   ! end association to variables in the data structure
   end associate
 end subroutine computHeatCapAnalytic
-  
+ 
 ! **********************************************************************************************************
 ! public subroutine computCm
 ! **********************************************************************************************************
@@ -439,7 +439,7 @@ subroutine computCm(&
   real(rkind)						              :: g1
   real(rkind)						              :: g2
   real(rkind)                          :: Tcrit                     ! temperature where all water is unfrozen (K)
-  
+ 
   ! --------------------------------------------------------------------------------------------------------------------------------
   ! associate variables in data structure
   associate(&
@@ -507,4 +507,3 @@ end subroutine computCm
 
 
 end module computHeatCap_module
-  

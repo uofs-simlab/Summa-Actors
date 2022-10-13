@@ -43,7 +43,7 @@ private
 public::computEnthalpy
 public::computEnthalpyPrime
 contains
-  
+ 
 ! **********************************************************************************************************
 ! public subroutine computEnthalpy
 ! **********************************************************************************************************
@@ -89,7 +89,7 @@ subroutine computEnthalpy(&
   end associate
 
 end subroutine computEnthalpy
-  
+ 
 ! **********************************************************************************************************
 ! public subroutine computEnthalpyPrime
 ! **********************************************************************************************************
@@ -153,4 +153,3 @@ subroutine computEnthalpyPrime(&
 end subroutine computEnthalpyPrime
 
 end module computEnthalpy_module
-  

@@ -24,9 +24,9 @@ module soil_utilsAddSundials_module
 USE nrtype
 
 USE multiconst,only: gravity, & ! acceleration of gravity       (m s-2)
-                      Tfreeze, & ! temperature at freezing    (K)
-                      LH_fus,  & ! latent heat of fusion      (J kg-1, or m2 s-2)
-                      R_wv       ! gas constant for water vapor  (J kg-1 K-1; [J = Pa m3])
+                     Tfreeze, & ! temperature at freezing    (K)
+                     LH_fus,  & ! latent heat of fusion      (J kg-1, or m2 s-2)
+                     R_wv       ! gas constant for water vapor  (J kg-1 K-1; [J = Pa m3])
 USE soil_utils_module,only:matricHead
 USE soil_utils_module,only:dPsi_dTheta
 USE soil_utils_module,only:volFracLiq
@@ -69,7 +69,7 @@ subroutine liquidHeadSundials(&
                       dPsiLiq_dTemp                            ,& ! intent(out)   : derivative in the liquid water matric potential w.r.t. temperature (m K-1)
                       err,message)                                ! intent(out)   : error control
   ! computes the liquid water matric potential (and the derivatives w.r.t. total matric potential and temperature)
-  implicit none
+ implicit none
   ! input
   real(rkind),intent(in)            :: matricHeadTotal                           ! total water matric potential (m)
   real(rkind),intent(in)            :: matricHeadTotalPrime

@@ -63,20 +63,20 @@ USE var_lookup,only:iLookDERIV                   ! named variables for structure
 
 ! look-up values for the choice of groundwater representation (local-column, or single-basin)
 USE mDecisions_module,only:  &
-  localColumn,                & ! separate groundwater representation in each local soil column
-  singleBasin,                & ! single groundwater store over the entire basin
-  enthalpyFD                    ! heat capacity using enthalpy
+ localColumn,                & ! separate groundwater representation in each local soil column
+ singleBasin,                & ! single groundwater store over the entire basin
+ enthalpyFD                    ! heat capacity using enthalpy
 
 ! look-up values for the choice of groundwater parameterization
 USE mDecisions_module,only:  &
-  qbaseTopmodel,              & ! TOPMODEL-ish baseflow parameterization
-  bigBucket,                  & ! a big bucket (lumped aquifer model)
-  noExplicit                    ! no explicit groundwater parameterization
+ qbaseTopmodel,              & ! TOPMODEL-ish baseflow parameterization
+ bigBucket,                  & ! a big bucket (lumped aquifer model)
+ noExplicit                    ! no explicit groundwater parameterization
 
 ! look-up values for the form of Richards' equation
 USE mDecisions_module,only:  &
-  moisture,                   & ! moisture-based form of Richards' equation
-  mixdform                      ! mixed form of Richards' equation
+ moisture,                   & ! moisture-based form of Richards' equation
+ mixdform                      ! mixed form of Richards' equation
 
 implicit none
 private
@@ -519,7 +519,7 @@ subroutine eval8summaSundials(&
     endif
 
     if(updateCp)then
-        ! *** compute volumetric heat capacity C_p
+       ! *** compute volumetric heat capacity C_p
       if(model_decisions(iLookDECISIONS%howHeatCap)%iDecision == enthalpyFD)then
         ! compute H_T
         call t2enthalpy_T(&
@@ -858,7 +858,7 @@ integer(c_int) function eval8summa4IDA(tres, sunvec_y, sunvec_yp, sunvec_r, user
                 eqns_data%diag_data,               & ! intent(inout): model diagnostic variables for a local HRU
                 eqns_data%flux_data,               & ! intent(inout): model fluxes for a local HRU (initial flux structure)
                 eqns_data%deriv_data,              & ! intent(inout): derivatives in model fluxes w.r.t. relevant state variables
-                  ! input-output: here we need to pass some extra variables that do not get updated in in the Sundials loops
+                 ! input-output: here we need to pass some extra variables that do not get updated in in the Sundials loops
                 eqns_data%scalarCanopyTempTrial,   & ! intent(in):    trial value of canopy temperature (K)
                 eqns_data%scalarCanopyTempPrev,    & ! intent(in):    previous value of canopy temperature (K)
                 eqns_data%scalarCanopyIceTrial,    & ! intent(out):   trial value for mass of ice on the vegetation canopy (kg m-2)
@@ -885,7 +885,7 @@ integer(c_int) function eval8summa4IDA(tres, sunvec_y, sunvec_yp, sunvec_r, user
                 ! input-output: baseflow
                 eqns_data%ixSaturation,            & ! intent(inout): index of the lowest saturated layer
                 eqns_data%dBaseflow_dMatric,       & ! intent(out):   derivative in baseflow w.r.t. matric head (s-1)
-                  ! output: flux and residual vectors
+                 ! output: flux and residual vectors
                 feasible,                          & ! intent(out):   flag to denote the feasibility of the solution
                 eqns_data%fluxVec,                 & ! intent(out):   flux vector
                 eqns_data%resSink,                 & ! intent(out):   additional (sink) terms on the RHS of the state equation

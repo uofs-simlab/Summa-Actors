@@ -75,10 +75,10 @@ USE data_types,only:&
 USE mDecisions_module,only:  qbaseTopmodel ! TOPMODEL-ish baseflow parameterization
 
 ! privacy
-  implicit none
-  private::setInitialCondition
-  private::setSolverParams
-  public::summaSolveSundialsIDA
+ implicit none
+ private::setInitialCondition
+ private::setSolverParams
+ public::summaSolveSundialsIDA
 
 contains
 
@@ -466,7 +466,7 @@ subroutine summaSolveSundialsIDA(                         &
                   eqns_data%diag_data,                & ! intent(inout): model diagnostic variables for a local HRU
                   eqns_data%flux_data,                & ! intent(inout): model fluxes for a local HRU (initial flux structure)
                   eqns_data%deriv_data,               & ! intent(inout): derivatives in model fluxes w.r.t. relevant state variables
-                  ! input-output: here we need to pass some extra variables that do not get updated in in the Sundials loops
+                 ! input-output: here we need to pass some extra variables that do not get updated in in the Sundials loops
                   eqns_data%scalarCanopyTempTrial,    & ! intent(in):    trial value of canopy temperature (K)
                   eqns_data%scalarCanopyTempPrev,     & ! intent(in):    previous value of canopy temperature (K)
                   eqns_data%scalarCanopyIceTrial,     & ! intent(out):   trial value for mass of ice on the vegetation canopy (kg m-2)

@@ -212,9 +212,9 @@ subroutine computThermConduct(&
             ! ** mixture of constituents
             case(mixConstit)
               mLayerThermalC(iLayer) = thCond_soil(iSoil) * ( 1._rkind - theta_sat(iSoil) ) + & ! soil component
-                                lambda_ice         * mLayerVolFracIce(iLayer)     + & ! ice component
-                                lambda_water       * mLayerVolFracLiq(iLayer)     + & ! liquid water component
-                                lambda_air         * mLayerVolFracAir(iLayer)         ! air component
+                               lambda_ice         * mLayerVolFracIce(iLayer)     + & ! ice component
+                               lambda_water       * mLayerVolFracLiq(iLayer)     + & ! liquid water component
+                               lambda_air         * mLayerVolFracAir(iLayer)         ! air component
 
             ! ** test case for the mizoguchi lab experiment, Hansson et al. VZJ 2004
             case(hanssonVZJ)
@@ -283,4 +283,3 @@ end subroutine computThermConduct
 
 
 end module computThermConduct_module
-    

@@ -86,19 +86,19 @@ USE multiconst,only:&
 
 ! look-up values for the choice of groundwater representation (local-column, or single-basin)
 USE mDecisions_module,only:  &
-  localColumn,                & ! separate groundwater representation in each local soil column
-  singleBasin                   ! single groundwater store over the entire basin
+ localColumn,                & ! separate groundwater representation in each local soil column
+ singleBasin                   ! single groundwater store over the entire basin
 
 ! look-up values for the choice of groundwater parameterization
 USE mDecisions_module,only:  &
-  qbaseTopmodel,              & ! TOPMODEL-ish baseflow parameterization
-  bigBucket,                  & ! a big bucket (lumped aquifer model)
-  noExplicit                    ! no explicit groundwater parameterization
+ qbaseTopmodel,              & ! TOPMODEL-ish baseflow parameterization
+ bigBucket,                  & ! a big bucket (lumped aquifer model)
+ noExplicit                    ! no explicit groundwater parameterization
 
 ! look-up values for the form of Richards' equation
 USE mDecisions_module,only:  &
-  moisture,                   & ! moisture-based form of Richards' equation
-  mixdform                      ! mixed form of Richards' equation
+ moisture,                   & ! moisture-based form of Richards' equation
+ mixdform                      ! mixed form of Richards' equation
 
 implicit none
 ! define constants
@@ -390,7 +390,7 @@ subroutine computJacobSundials(&
             ! dt*scalarCanopyLiqDeriv*dCanLiq_dTcanopy is the derivative in throughfall and canopy drainage with canopy temperature
             if(ixVegNrg/=integerMissing) aJac(ixOffDiag(ixVegHyd,ixVegNrg),ixVegNrg) = -dCanopyEvaporation_dTCanopy*dt + dt*scalarCanopyLiqDeriv*dCanLiq_dTcanopy
             ! * liquid water fluxes for vegetation canopy (-), dt*scalarFracLiqVeg*scalarCanopyLiqDeriv is the derivative in throughfall and canopy drainage with canopy water
-                                          aJac(ixDiag,                      ixVegHyd) = -scalarFracLiqVeg*(dCanopyEvaporation_dCanWat - scalarCanopyLiqDeriv)*dt + 1._rkind * cj
+                                         aJac(ixDiag,                      ixVegHyd) = -scalarFracLiqVeg*(dCanopyEvaporation_dCanWat - scalarCanopyLiqDeriv)*dt + 1._rkind * cj
             if(ixTopNrg/=integerMissing) aJac(ixOffDiag(ixVegHyd,ixTopNrg),ixTopNrg) = -dCanopyEvaporation_dTGround*dt
 
             ! * cross-derivative terms w.r.t. canopy water (kg-1 m2)
@@ -419,7 +419,7 @@ subroutine computJacobSundials(&
           ! * energy fluxes with the vegetation canopy (J m-3 K-1)
           if(ixVegNrg/=integerMissing)then
             if(ixCasNrg/=integerMissing) aJac(ixOffDiag(ixVegNrg,ixCasNrg),ixCasNrg) = (dt/canopyDepth)*(-dCanopyNetFlux_dCanairTemp)
-                                          aJac(ixDiag,                      ixVegNrg) = (dt/canopyDepth)*(-dCanopyNetFlux_dCanopyTemp) + dMat(ixVegNrg)
+                                         aJac(ixDiag,                      ixVegNrg) = (dt/canopyDepth)*(-dCanopyNetFlux_dCanopyTemp) + dMat(ixVegNrg)
             if(ixTopNrg/=integerMissing) aJac(ixOffDiag(ixVegNrg,ixTopNrg),ixTopNrg) = (dt/canopyDepth)*(-dCanopyNetFlux_dGroundTemp)
           endif
 
@@ -754,7 +754,7 @@ subroutine computJacobSundials(&
 
           ! * energy fluxes with the canopy air space (J m-3 K-1)
           if(ixCasNrg/=integerMissing)then
-                                          aJac(ixCasNrg,ixCasNrg) = (dt/canopyDepth)*(-dCanairNetFlux_dCanairTemp) + dMat(ixCasNrg) * cj
+                                         aJac(ixCasNrg,ixCasNrg) = (dt/canopyDepth)*(-dCanairNetFlux_dCanairTemp) + dMat(ixCasNrg) * cj
             if(ixVegNrg/=integerMissing) aJac(ixCasNrg,ixVegNrg) = (dt/canopyDepth)*(-dCanairNetFlux_dCanopyTemp)
             if(ixTopNrg/=integerMissing) aJac(ixCasNrg,ixTopNrg) = (dt/canopyDepth)*(-dCanairNetFlux_dGroundTemp)
           endif

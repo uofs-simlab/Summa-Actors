@@ -98,16 +98,16 @@ USE data_types,only:&
 
 ! look-up values for the choice of groundwater representation (local-column, or single-basin)
 USE mDecisions_module,only:       &
-  localColumn,                     & ! separate groundwater representation in each local soil column
-  singleBasin                        ! single groundwater store over the entire basin
+ localColumn,                     & ! separate groundwater representation in each local soil column
+ singleBasin                        ! single groundwater store over the entire basin
 
 ! look-up values for the choice of groundwater parameterization
 USE mDecisions_module,only:      &
-  qbaseTopmodel,                  & ! TOPMODEL-ish baseflow parameterization
-  bigBucket,                      & ! a big bucket (lumped aquifer model)
-  noExplicit,                     & ! no explicit groundwater parameterization
-  sundials,                       & ! SUNDIALS/IDA solution
-  bEuler                            ! home-grown backward Euler solution with long time step
+ qbaseTopmodel,                  & ! TOPMODEL-ish baseflow parameterization
+ bigBucket,                      & ! a big bucket (lumped aquifer model)
+ noExplicit,                     & ! no explicit groundwater parameterization
+ sundials,                       & ! SUNDIALS/IDA solution
+ bEuler                            ! home-grown backward Euler solution with long time step
 
 ! safety: set private unless specified otherwise
 implicit none

@@ -73,9 +73,9 @@ contains
 ! public subroutine T2E_lookup: define a look-up table to compute enthalpy based on temperature
 ! ************************************************************************************************************************
 subroutine T2E_lookup(nSoil,                       &  ! intent(in):    number of soil layers
-                    mpar_data,                   &  ! intent(in):    parameter data structure
-                    lookup_data,                 &  ! intent(inout): lookup table data structure
-                    err,message)
+                     mpar_data,                   &  ! intent(in):    parameter data structure
+                     lookup_data,                 &  ! intent(inout): lookup table data structure
+                     err,message)
   USE nr_utility_module,only:arth                       ! use to build vectors with regular increments
   USE spline_int_module,only:spline,splint              ! use for cubic spline interpolation
   USE soil_utils_module,only:volFracLiq                 ! use to compute the volumetric fraction of liquid water
@@ -512,7 +512,7 @@ subroutine t2enthalpy(&
   end associate generalVars
 
 end subroutine t2enthalpy
-
+ 
 
 ! ************************************************************************************************************************
 ! public subroutine t2enthalpy_T: compute enthalpy from temperature and total water content

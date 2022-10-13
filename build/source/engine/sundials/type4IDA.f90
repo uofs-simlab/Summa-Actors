@@ -72,6 +72,11 @@ type eqnsData
   integer(i4b)          			:: err                    			! error code
   character(len = 50)         :: message                			! error message
 end type eqnsData
-  
-  
+ 
+ 
 end module type4IDA
+
+
+
+
+
