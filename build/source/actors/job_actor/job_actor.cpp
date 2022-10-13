@@ -207,7 +207,7 @@ void initCsvOutputFile(stateful_actor<job_state>* self) {
     std::string success = "Success"; // allows us to build the string
     if (self->state.job_actor_settings.output_csv) {
         std::ofstream file;
-        self->state.success_output_file = self->state.csv_path += success += 
+        self->state.success_output_file = self->state.job_actor_settings.csv_path += success += 
             std::to_string(self->state.start_gru) += ".csv";
         file.open(self->state.success_output_file, std::ios_base::out);
         file << 

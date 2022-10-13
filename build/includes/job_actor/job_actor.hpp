@@ -31,8 +31,6 @@ struct job_state {
 
     
     // Output File Names for Timings
-    std::string csv_out;
-    std::string csv_path;
     std::string success_output_file;
     std::string failed_output_file = "failedHRU";
     std::string file_access_actor_stats = "fileAccessActor.csv";

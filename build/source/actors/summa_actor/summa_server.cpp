@@ -31,6 +31,8 @@ behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Sett
     
     self->state.batch_container->printBatches();
 
+    initializeCSVOutput(self->state.job_actor_settings.csv_path, self->state.csv_output_name);
+
      // Start the heartbeat actor after a client has connected
     self->state.health_check_reminder_actor = self->spawn(cleint_health_check_reminder);
     self->send(self->state.health_check_reminder_actor, 
@@ -148,9 +150,10 @@ behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Sett
 }
 
 
-void initializeCSVOutput(std::string csv_output_name) {
+void initializeCSVOutput(std::string csv_output_path, std::string csv_output_name) {
     std::ofstream csv_output;
-    csv_output.open(csv_output_name, std::ios_base::out);
+    std::string csv_file = csv_output_path += csv_output_name;
+    csv_output.open(csv_file, std::ios_base::out);
     csv_output << 
         "Batch_ID,"  <<
         "Start_HRU," <<
