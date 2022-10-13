@@ -204,7 +204,7 @@ behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru,
 }
 
 void initCsvOutputFile(stateful_actor<job_state>* self) {
-    std::string success = "Success"; // allows us to build the string
+    std::string success = "/Success"; // allows us to build the string
     if (self->state.job_actor_settings.output_csv) {
         std::ofstream file;
         self->state.success_output_file = self->state.job_actor_settings.csv_path += success += 
