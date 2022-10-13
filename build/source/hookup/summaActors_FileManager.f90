@@ -109,7 +109,11 @@ subroutine summa_SetTimesDirsAndFiles(file_manager,err) bind(C, name="setTimesDi
     return 
   end if
   call get_vlines(unt,charline,err,cmessage)  ! 'charline' is a list of strings from non-comment lines
-  if(err/=0) then; message=trim(message)//trim(cmessage)//"/Control file read issue in get_vlines()"; return; end if
+  if(err/=0) then
+    message=trim(message)//trim(cmessage)//"/Control file read issue in get_vlines()"
+    print*, message
+    return
+  end if
   close(unt)
 
   ! get the number of model control file entries
@@ -121,10 +125,10 @@ subroutine summa_SetTimesDirsAndFiles(file_manager,err) bind(C, name="setTimesDi
     read(charline(iControl),*,iostat=err) option, varEntry
     if (err/=0) then 
       err=30; message=trim(message)//"error reading charline array"; 
+      print*, message
       return 
     end if
     ! get the index of the control file entry in the data structure
-    ! write(*,'(i4,1x,a)') iControl, trim(option)//': '//trim(varEntry)
 
     ! assign entries from control file to module public variables; add checking as needed
     select case(trim(option))
@@ -159,13 +163,20 @@ subroutine summa_SetTimesDirsAndFiles(file_manager,err) bind(C, name="setTimesDi
       case('outFilePrefix'      ); OUTPUT_PREFIX = trim(varEntry)                 ! filename root for output files
       ! get to here if cannot find the variable
       case default
-      err=10; message=trim(message)//"unknown control file option: "//trim(option); return
+        err=10
+        message=trim(message)//"unknown control file option: "//trim(option)
+        print*, message
+        return
     end select
   end do
 
   ! before embarking on a run, check that the output directory is writable; write system date and time to a log file there
   open(runinfo_fileunit,file=trim(OUTPUT_PATH)//"runinfo.txt",iostat=err)
-  if(err/=0)then; err=10; message=trim(message)//"cannot write to output directory '"//trim(OUTPUT_PATH)//"'"; return; end if
+  if(err/=0)then
+    err=10; message=trim(message)//"cannot write to output directory '"//trim(OUTPUT_PATH)//"'"
+    print*, message
+    return
+  end if
   call date_and_time(cdate,ctime)
   write(runinfo_fileunit,*) 'Run start time on system:  ccyy='//cdate(1:4)//' - mm='//cdate(5:6)//' - dd='//cdate(7:8), &
                           ' - hh='//ctime(1:2)//' - mi='//ctime(3:4)//' - ss='//ctime(5:10)
