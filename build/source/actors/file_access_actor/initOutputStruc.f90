@@ -221,7 +221,6 @@ subroutine initalizeOutput(forcFileInfo, maxSteps, num_gru, err)
       end do  ! looping through data structures
     
       ! Finalize stats structure for writing to output file
-      print*, "HERE"
       allocate(outputStructure(1)%finalizeStats(1)%gru(iGRU)%hru(iHRU)%tim(maxSteps))
       do iStep = 1, maxSteps
         allocate(outputStructure(1)%finalizeStats(1)%gru(iGRU)%hru(iHRU)%tim(iStep)%dat(1:maxVarFreq))
