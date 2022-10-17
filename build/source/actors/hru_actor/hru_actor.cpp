@@ -38,9 +38,6 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
     self->state.forcingStep = 1;    // Index into the forcing file
     self->state.iFile = 1;
 
-    // Get the settings for the HRU
-    // parseSettings(self, configPath);
-
     self->state.printOutput = getSettings(configPath, "HRUActor", "printOutput", 
 		self->state.printOutput).value_or(true);
     self->state.outputFrequency = getSettings(configPath, "HRUActor", "outputFrequency", 

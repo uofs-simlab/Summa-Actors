@@ -213,9 +213,6 @@ subroutine writeData(indxGRU,indxHRU,iStep,structName,finalizeStats, &
         ! Write the time step values
         select type(dat)      ! forcStruc
           class is (var_d)    ! x%var(:)
-            ! if(indxGRU == 3 .and. iFreq == 4)then
-            !   print*, "time = ", dat%var(iVar), "Step", iStep
-            ! endif
             outputStructure(1)%forcStruct(1)%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep) = dat%var(iVar)
           class default; err=20; message=trim(message)//'time variable must be of type var_d (forcing data structure)'; return
         end select

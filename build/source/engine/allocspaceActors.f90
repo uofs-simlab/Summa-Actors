@@ -66,55 +66,11 @@ USE var_lookup,only:maxvarFreq             ! allocation dimension (output freque
 ! privacy
 implicit none
 private
-public::allocGlobal
 public::allocLocal
 public::resizeData
 
 ! -----------------------------------------------------------------------------------------------------------------------------------
 contains
-
- ! ************************************************************************************************
- ! public subroutine allocGlobal4chm: allocate space for global data structures
- ! ************************************************************************************************
- subroutine allocGlobal(metaStruct,dataStruct,err,message)
- ! NOTE: safety -- ensure only used in allocGlobal4chm
- USE globalData,only: gru_struc     ! gru-hru mapping structures
- implicit none
- ! input
- type(var_info),intent(in)       :: metaStruct(:)  ! metadata structure
- ! output
- class(*),intent(out)            :: dataStruct     ! data structure
- integer(i4b),intent(out)        :: err            ! error code
- character(*),intent(out)        :: message        ! error message
- ! local variables
- logical(lgt)                    :: spatial=.false.        ! spatial flag
- character(len=256)              :: cmessage       ! error message of the downwind routine
- ! initialize error control
- err=0; message='allocGlobal4chm/'
- 
-   ! get the number of snow and soil layers
-   associate(&
-   nSnow => gru_struc(1)%hruInfo(1)%nSnow, & ! number of snow layers for each HRU
-   nSoil => gru_struc(1)%hruInfo(1)%nSoil  ) ! number of soil layers for each HRU
-
- ! * allocate local data structures where there is no spatial dimension
- select type(dataStruct)
-  class is (var_i);         call allocLocal(metaStruct,dataStruct,nSnow,nSoil,err,cmessage); spatial=.true.
-  class is (var_i8);        call allocLocal(metaStruct,dataStruct,nSnow,nSoil,err,cmessage); spatial=.true.
-  class is (var_d);         call allocLocal(metaStruct,dataStruct,nSnow,nSoil,err,cmessage); spatial=.true.
-  class is (var_ilength);   call allocLocal(metaStruct,dataStruct,nSnow,nSoil,err,cmessage); spatial=.true.
-  class is (var_dlength);   call allocLocal(metaStruct,dataStruct,nSnow,nSoil,err,cmessage); spatial=.true.
-  ! check identified the data type
-  class default; if(.not.spatial)then; err=20; message=trim(message)//'unable to identify derived data type'; return; end if
- end select
-
- ! error check
- if(err/=0)then; err=20; message=trim(message)//trim(cmessage); return; end if
- 
-  ! end association to info in data structures
-  end associate
-
- end subroutine allocGlobal
 
  ! ************************************************************************************************
  ! public subroutine allocLocal: allocate space for local data structures

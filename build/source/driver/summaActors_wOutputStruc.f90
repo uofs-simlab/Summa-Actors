@@ -205,8 +205,6 @@ subroutine summaActors_writeToOutputStruc(&
                             err, cmessage)                                  ! error control
   if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
 
-  ! if(printProgress) write(*,'(i4,1x,5(i2,1x))') timeStruct%var(1:5)
-
    ! check the need to create a new output file
   if(modelTimeStep==1)then
     ! define summa output files
