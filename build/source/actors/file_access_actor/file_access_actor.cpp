@@ -186,10 +186,49 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
 
         [=](reset_outputCounter, int indxGRU) {
             resetOutputCounter(&indxGRU);
-        }
+        },
+
+        [=](serialized_hru_data, 
+            // Statistic Structures
+            std::vector<std::vector<double>> forcStat,
+            std::vector<std::vector<double>> progStat,
+            std::vector<std::vector<double>> diagStat,
+            std::vector<std::vector<double>> fluxStat,
+            std::vector<std::vector<double>> indxStat,
+            std::vector<std::vector<double>> bvarStat,
+            // primary data structures (scalars)
+            std::vector<int> timeStruct,
+            std::vector<double> forcStruct,
+            std::vector<double> attrStruct,
+            std::vector<int> typestruct,
+            std::vector<long int> idStruct,
+            // primary data structures (variable length vectors)
+            std::vector<std::vector<int>> indxStruct,
+            std::vector<std::vector<double>> mparStruct,
+            std::vector<std::vector<double>> progStruct,
+            std::vector<std::vector<double>> diagStruct,
+            std::vector<std::vector<double>> fluxStruct,
+            // basin-average structures
+            std::vector<double>              bparSturct,
+            std::vector<std::vector<double>> bvarStruct,
+            // ancillary data structures
+            std::vector<double> dparStruct) {
+            aout(self) << "Receieved HRU Data\n";
+
+            
+
+
+
+
+
+
+
+
+        },
 
     };
 }
+
 
 void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
     int indx = 1;

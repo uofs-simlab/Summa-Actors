@@ -73,11 +73,41 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
 
             // ask file_access_actor to write paramaters
             self->send(self->state.file_access_actor, write_param_v, self->state.indxGRU, self->state.indxHRU);
-            
-            
             self->send(self->state.file_access_actor, access_forcing_v, self->state.iFile, self);
             self->state.hru_timing.updateEndPoint("total_duration");
         },
+
+        
+        // The file_access_actor sends the HRU a message with 
+        // the number of steps it can run based on the forcing data
+        [=](run_hru, int stepsInCurrentFFile) {
+            self->state.hru_timing.updateStartPoint("total_duration");
+
+            bool keepRunning = true;
+            int err = 0;
+            self->state.stepsInCurrentFFile = stepsInCurrentFFile;
+        
+            while( keepRunning ) {
+
+                err = Run_HRU(self); // Simulate a Timestep
+
+                // update Timings
+                self->state.timestep += 1;
+                self->state.outputStep += 1;
+                self->state.forcingStep += 1;
+
+                keepRunning = check_HRU(self, err); // check if we are done, need to write
+
+            }
+
+            self->send(self, serialize_data_v);
+     
+            self->state.hru_timing.updateEndPoint("total_duration");
+
+        },
+
+
+
 
         [=](done_write) {
             self->state.hru_timing.updateStartPoint("total_duration");
@@ -114,32 +144,6 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
             self->send(self, run_hru_v, self->state.stepsInCurrentFFile);
         },
 
-        [=](run_hru, int stepsInCurrentFFile) {
-            self->state.hru_timing.updateStartPoint("total_duration");
-
-            bool keepRunning = true;
-            int err = 0;
-            self->state.stepsInCurrentFFile = stepsInCurrentFFile;
-        
-            while( keepRunning ) {
-
-                err = Run_HRU(self); // Simulate a Timestep
-
-                // update Timings
-                self->state.timestep += 1;
-                self->state.outputStep += 1;
-                self->state.forcingStep += 1;
-
-                keepRunning = check_HRU(self, err); // check if we are done, need to write
-
-            }
-
-            self->send(self, serialize_data_v);
-     
-            self->state.hru_timing.updateEndPoint("total_duration");
-
-        },
-
         [=](serialize_data) {
 
             aout(self) << "We are here in Serialize Data\n";
@@ -150,27 +154,51 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
             std::vector<std::vector<double>> flux_stat_array    = get_var_dlength(self->state.handle_fluxStat);
             std::vector<std::vector<double>> indx_stat_array    = get_var_dlength(self->state.handle_indxStat);
             std::vector<std::vector<double>> bvar_stat_array    = get_var_dlength(self->state.handle_bvarStat);
-            
             // primary data structures (scalars)
             std::vector<int> time_struct_array                  = get_var_i(self->state.handle_timeStruct);
             std::vector<double> forc_struct_array               = get_var_d(self->state.handle_forcStruct);
             std::vector<double> attr_struct_array               = get_var_d(self->state.handle_attrStruct); 
             std::vector<int> type_struct_array                  = get_var_i(self->state.handle_typeStruct);
             std::vector<long int> id_struct_array               = get_var_i8(self->state.handle_idStruct);
-
             // primary data structures (variable length vectors)
             std::vector<std::vector<int>> indx_struct_array     = get_var_ilength(self->state.handle_indxStruct);
             std::vector<std::vector<double>> mpar_struct_array  = get_var_dlength(self->state.handle_mparStruct);
             std::vector<std::vector<double>> prog_struc_array   = get_var_dlength(self->state.handle_progStruct);
             std::vector<std::vector<double>> diag_struct_array  = get_var_dlength(self->state.handle_diagStruct);
             std::vector<std::vector<double>> flux_struct_array  = get_var_dlength(self->state.handle_fluxStruct);
-            
             // basin-average structures
             std::vector<double> bpar_struct_array               = get_var_d(self->state.handle_bparStruct);
             std::vector<std::vector<double>> bvar_struct_array  = get_var_dlength(self->state.handle_bvarStruct);
-            
             // ancillary data structures
             std::vector<double> dpar_struct_array               = get_var_d(self->state.handle_dparStruct);
+
+            self->send(self->state.file_access_actor, serialized_hru_data_v,
+                // Statistic Structures
+                forc_stat_array,
+                prog_stat_array,
+                diag_stat_array,
+                flux_stat_array,
+                indx_stat_array,
+                bvar_stat_array,
+                // primary data structures (scalars)
+                time_struct_array,
+                forc_struct_array,
+                attr_struct_array,
+                type_struct_array,
+                id_struct_array,
+                // primary data structures (variable length vectors)
+                indx_struct_array,
+                mpar_struct_array,
+                prog_struc_array,
+                diag_struct_array,
+                flux_struct_array,
+                // basin-average structures
+                bpar_struct_array,
+                bvar_struct_array,
+                // ancillary data structures
+                dpar_struct_array);
+
+
         },
 
         [=](dt_init_factor, int dt_init_factor) {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../summa_actor/batch_manager.hpp"
+#include <vector>
 
 CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     // Summa Actor
@@ -37,6 +38,7 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     CAF_ADD_ATOM(summa, read_and_write)
     CAF_ADD_ATOM(summa, write_param)
     CAF_ADD_ATOM(summa, restart_failures)
+    CAF_ADD_ATOM(summa, serialized_hru_data)
     // HRU Actor
     CAF_ADD_ATOM(summa, run_hru)
     CAF_ADD_ATOM(summa, start_hru)
@@ -49,5 +51,13 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     // Server Actor
     CAF_ADD_ATOM(summa, done_batch)
     CAF_ADD_ATOM(summa, time_to_exit)
+
+
+    CAF_ADD_TYPE_ID(summa, (std::vector<std::vector<double>>))
+    CAF_ADD_TYPE_ID(summa, (std::vector<std::vector<int>>))
+    CAF_ADD_TYPE_ID(summa, (std::vector<int>))
+    CAF_ADD_TYPE_ID(summa, (std::vector<double>))
+    CAF_ADD_TYPE_ID(summa, (std::vector<long int>))
+
 
 CAF_END_TYPE_ID_BLOCK(summa)
