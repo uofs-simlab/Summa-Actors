@@ -66,13 +66,19 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
             
             err = 0;
             // Write Paramaters to OutputStruc
-            Write_Param_C(&self->state.indxGRU, &self->state.indxHRU, 
-                self->state.handle_attrStruct, self->state.handle_typeStruct,
-                self->state.handle_mparStruct, self->state.handle_bparStruct, 
-                &err);
+            // Write_Param_C(&self->state.indxGRU, &self->state.indxHRU, 
+            //     self->state.handle_attrStruct, self->state.handle_typeStruct,
+            //     self->state.handle_mparStruct, self->state.handle_bparStruct, 
+            //     &err);
+            std::vector<double> attr_struct_array = get_var_d(self->state.handle_attrStruct); 
+            std::vector<int> type_struct_array    = get_var_i(self->state.handle_typeStruct);
+            std::vector<std::vector<double>> mpar_struct_array = get_var_dlength(self->state.handle_mparStruct);
+            std::vector<double> bpar_struct_array = get_var_d(self->state.handle_bparStruct);
 
             // ask file_access_actor to write paramaters
-            self->send(self->state.file_access_actor, write_param_v, self->state.indxGRU, self->state.indxHRU);
+            self->send(self->state.file_access_actor, write_param_v, 
+                self->state.indxGRU, self->state.indxHRU, attr_struct_array,
+                type_struct_array, mpar_struct_array, bpar_struct_array);
             self->send(self->state.file_access_actor, access_forcing_v, self->state.iFile, self);
             self->state.hru_timing.updateEndPoint("total_duration");
         },
@@ -172,6 +178,8 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
             // ancillary data structures
             std::vector<double> dpar_struct_array               = get_var_d(self->state.handle_dparStruct);
 
+            std::vector<int> finalize_stats_array               = get_flagVec(self->state.handle_finalizeStats);
+
             self->send(self->state.file_access_actor, serialized_hru_data_v,
                 // Statistic Structures
                 forc_stat_array,
@@ -196,7 +204,8 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
                 bpar_struct_array,
                 bvar_struct_array,
                 // ancillary data structures
-                dpar_struct_array);
+                dpar_struct_array,
+                finalize_stats_array);
 
 
         },

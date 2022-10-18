@@ -9,35 +9,35 @@
  * These are all of the functions to get the Fortran data types into C
  * /
 /*************** SET DATA **************/  
-void set_flagVec(const std::vector<int>& arr_i, void* handle) {
+void set_flagVec(std::vector<int>& arr_i, void* handle) {
     set_data_flagVec(handle, &arr_i[0], arr_i.size());
 }
 
-void set_var_i(const std::vector<int>& arr_i, void* handle) {
+void set_var_i(std::vector<int>& arr_i, void* handle) {
     set_data_var_i(handle, &arr_i[0], arr_i.size());
 }
 
-void set_var_d(const std::vector<double> &arr_d, void* handle) {
+void set_var_d(std::vector<double> &arr_d, void* handle) {
     set_data_var_d(handle, &arr_d[0], arr_d.size());
 }
 
-void set_var_i8(const std::vector<long int>& arr_i, void* handle) {
-    ::set_data_var_i8(handle, &arr_i[0], arr_i.size());
+void set_var_i8(std::vector<long int>& arr_i, void* handle) {
+    set_data_var_i8(handle, &arr_i[0], arr_i.size());
 }
 
-void set_i8length(const std::vector<long int> &arr_i8length, void* handle) {
+void set_i8length(std::vector<long int> &arr_i8length, void* handle) {
     set_data_i8length(handle, &arr_i8length[0], arr_i8length.size());
 }
 
-void set_ilength(const std::vector<int> &arr_ilength, void* handle) {
+void set_ilength(std::vector<int> &arr_ilength, void* handle) {
     set_data_ilength(handle, &arr_ilength[0], arr_ilength.size());
 }
 
-void set_dlength(const std::vector<double> &arr_dlength, void* handle) {
+void set_dlength(std::vector<double> &arr_dlength, void* handle) {
     set_data_dlength(handle, &arr_dlength[0], arr_dlength.size());
 }
 
-void set_var_flagVec(const std::vector<std::vector<int> > &mat, void* handle) {
+void set_var_flagVec(std::vector<std::vector<int> > &mat, void* handle) {
 
     size_t num_row = mat.size();
     std::vector<int> num_col( num_row );
@@ -54,7 +54,7 @@ void set_var_flagVec(const std::vector<std::vector<int> > &mat, void* handle) {
     set_data_var_flagVec(handle, &array[0], num_row, &num_col[0], num_elements);
 }
 
-void set_var_ilength(const std::vector<std::vector<int> > &mat, void* handle) {
+void set_var_ilength(std::vector<std::vector<int> > &mat, void* handle) {
 
     size_t num_row = mat.size();
     std::vector<int> num_col( num_row );
@@ -71,7 +71,7 @@ void set_var_ilength(const std::vector<std::vector<int> > &mat, void* handle) {
     set_data_var_ilength(handle, &array[0], num_row, &num_col[0], num_elements);
 }
 
-void set_var_i8length(const std::vector<std::vector<long int> > &mat, void* handle) {
+void set_var_i8length(std::vector<std::vector<long int> > &mat, void* handle) {
 
     size_t num_row = mat.size();
     std::vector<int> num_col( num_row );
@@ -88,7 +88,7 @@ void set_var_i8length(const std::vector<std::vector<long int> > &mat, void* hand
     set_data_var_i8length(handle, &array[0], num_row, &num_col[0], num_elements);
 }
 
-void set_var_dlength(const std::vector<std::vector<double> > &mat, void *handle) {
+void set_var_dlength(std::vector<std::vector<double> > &mat, void *handle) {
 
     size_t num_row = mat.size();
     std::vector<int> num_col( num_row );

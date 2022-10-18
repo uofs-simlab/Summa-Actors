@@ -343,6 +343,9 @@ subroutine FileAccessActor_WriteOutput(&
 
 end subroutine
 
+
+
+
 subroutine FileAccessActor_DeallocateStructures(handle_forcFileInfo, handle_ncid) bind(C,name="FileAccessActor_DeallocateStructures")
   USE netcdf_util_module,only:nc_file_close 
   USE globalData,only:structInfo                              ! information on the data structures

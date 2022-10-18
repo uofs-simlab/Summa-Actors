@@ -7,6 +7,7 @@
 #include "message_atoms.hpp"
 #include "global.hpp"
 #include "json.hpp"
+#include "auxilary.hpp"
 
 using json = nlohmann::json;
 
@@ -52,13 +53,28 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
             }
         },
 
-        [=](write_param, int indxGRU, int indxHRU) {
-            int err;
-            err = 0;
-            Write_HRU_Param(self->state.handle_ncid, &indxGRU, &indxHRU, &err);
-            if (err != 0) {
-                aout(self) << "ERROR: Write_HRU_PARAM -- For HRU = " << indxHRU << "\n"; 
-            }
+        [=](write_param, int index_gru, int index_hru, std::vector<double> attr_struct, 
+            std::vector<int> type_struct, std::vector<std::vector<double>> mpar_struct,
+            std::vector<double> bpar_struct) {
+            int err = 0;
+            void *handle_attr_struct = new_handle_var_d();
+            void *handle_type_struct = new_handle_var_i();
+            void *handle_mpar_struct = new_handle_var_dlength();
+            void *handle_bpar_struct = new_handle_var_d(); 
+
+            set_var_d(attr_struct, handle_attr_struct);
+            set_var_i(type_struct, handle_type_struct);
+            set_var_dlength(mpar_struct, handle_mpar_struct);
+            set_var_d(bpar_struct, handle_bpar_struct);
+
+            writeParamToNetCDF(self->state.handle_ncid, &index_gru, &index_hru, 
+                handle_attr_struct, handle_type_struct, handle_mpar_struct, 
+                handle_bpar_struct, &err);
+
+            // Write_HRU_Param(self->state.handle_ncid, &index_gru, &index_hru, &err);
+            // if (err != 0) {
+            //     aout(self) << "ERROR: Write_HRU_PARAM -- For HRU = " << index_hru << "\n"; 
+            // }
         },
 
         [=](access_forcing, int currentFile, caf::actor refToRespondTo) {
@@ -128,10 +144,10 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
             int err;
             int returnMessage = 9999;
             
-            err = writeOutput(self, indxGRU, indxHRU, numStepsToWrite, returnMessage, refToRespondTo);
-            if (err != 0) {
-                aout(self) << "FILE_ACCESS_ACTOR - ERROR Writing Output \n";
-            } 
+            // err = writeOutput(self, indxGRU, indxHRU, numStepsToWrite, returnMessage, refToRespondTo);
+            // if (err != 0) {
+            //     aout(self) << "FILE_ACCESS_ACTOR - ERROR Writing Output \n";
+            // } 
         },
 
         [=](read_and_write, int indxGRU, int indxHRU, int numStepsToWrite, int currentFile, 
@@ -142,9 +158,9 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
             if (err != 0)
                 aout(self) << "\nERROR: FILE_ACCESS_ACTOR - READING_FORCING FAILED\n";
 
-            err = writeOutput(self, indxGRU, indxHRU, numStepsToWrite, currentFile, refToRespondTo);
-            if (err != 0)
-                aout(self) << "FILE_ACCESS_ACTOR - ERROR Writing Output \n";
+            // err = writeOutput(self, indxGRU, indxHRU, numStepsToWrite, currentFile, refToRespondTo);
+            // if (err != 0)
+            //     aout(self) << "FILE_ACCESS_ACTOR - ERROR Writing Output \n";
         },
 
         [=](run_failure, int indxGRU) {
@@ -212,17 +228,11 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
             std::vector<double>              bparSturct,
             std::vector<std::vector<double>> bvarStruct,
             // ancillary data structures
-            std::vector<double> dparStruct) {
+            std::vector<double> dparStruct,
+            std::vector<int> finalizeStats) {
+
+
             aout(self) << "Receieved HRU Data\n";
-
-            
-
-
-
-
-
-
-
 
         },
 
@@ -352,35 +362,39 @@ int write(stateful_actor<file_access_state>* self, int listIndex) {
     return 0;
 }
 
-int writeOutput(stateful_actor<file_access_state>* self, int indxGRU, int indxHRU, 
-    int numStepsToWrite, int returnMessage, caf::actor actorRef) {
-    self->state.file_access_timing.updateStartPoint("write_duration");
+// int writeOutput(stateful_actor<file_access_state>* self, ) {
 
-    if (debug) {
-        aout(self) << "Recieved Write Request From GRU: " << indxGRU << "\n";
-    }
-    int err = 0;
-    int listIndex = self->state.output_manager->addActor(actorRef, indxGRU, returnMessage, numStepsToWrite);
-    if (self->state.output_manager->isFull(listIndex)) {
-        if (debug) {
-            aout(self) << "List with Index " << listIndex << " is full and ready to write\n";
-            aout(self) << "Minimum GRU Index = " << self->state.output_manager->getMinIndex(listIndex) << "\n";
-            aout(self) << "Maximum GRU Index = " << self->state.output_manager->getMaxIndex(listIndex) << "\n";
-        }
+// }
 
-       err = write(self, listIndex);
+// int writeOutput(stateful_actor<file_access_state>* self, int indxGRU, int indxHRU, 
+//     int numStepsToWrite, int returnMessage, caf::actor actorRef) {
+//     self->state.file_access_timing.updateStartPoint("write_duration");
 
-    } else {
-        if (debug) {
-            aout(self) << "List with Index " << listIndex << " is not full yet waiting to write\n";
-            aout(self) << "Size of list is " << self->state.output_manager->getSize(listIndex) << "\n";
-        }
-    }
+//     if (debug) {
+//         aout(self) << "Recieved Write Request From GRU: " << indxGRU << "\n";
+//     }
+//     int err = 0;
+//     int listIndex = self->state.output_manager->addActor(actorRef, indxGRU, returnMessage, numStepsToWrite);
+//     if (self->state.output_manager->isFull(listIndex)) {
+//         if (debug) {
+//             aout(self) << "List with Index " << listIndex << " is full and ready to write\n";
+//             aout(self) << "Minimum GRU Index = " << self->state.output_manager->getMinIndex(listIndex) << "\n";
+//             aout(self) << "Maximum GRU Index = " << self->state.output_manager->getMaxIndex(listIndex) << "\n";
+//         }
+
+//        err = write(self, listIndex);
+
+//     } else {
+//         if (debug) {
+//             aout(self) << "List with Index " << listIndex << " is not full yet waiting to write\n";
+//             aout(self) << "Size of list is " << self->state.output_manager->getSize(listIndex) << "\n";
+//         }
+//     }
    
-    self->state.file_access_timing.updateEndPoint("write_duration");
-    return err;
+//     self->state.file_access_timing.updateEndPoint("write_duration");
+//     return err;
 
-}
+// }
 
 int readForcing(stateful_actor<file_access_state>* self, int currentFile) {
     // Check if we have already loaded this file
