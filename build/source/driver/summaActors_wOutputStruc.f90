@@ -116,8 +116,6 @@ subroutine summaActors_writeToOutputStruc(&
   USE time_utils_module,only:elapsedSec                       ! calculate the elapsed time
   USE globalData,only:elapsedWrite                            ! elapsed time to write data
   USE globalData,only:outputStructure
-  USE netcdf_util_module,only:nc_file_close  ! close netcdf file
-  USE netcdf_util_module,only:nc_file_open   ! open netcdf file
 
   implicit none
   integer(i4b),intent(in)                  :: indxHRU         ! index of hru in GRU
