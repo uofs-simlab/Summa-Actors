@@ -3,6 +3,7 @@
 #include "global.hpp"
 #include "message_atoms.hpp"
 #include "hru_actor_subroutine_wrappers.hpp"
+#include "serialize_data_structure.hpp"
 
 
 namespace caf {
@@ -132,9 +133,44 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
                 keepRunning = check_HRU(self, err); // check if we are done, need to write
 
             }
+
+            self->send(self, serialize_data_v);
      
             self->state.hru_timing.updateEndPoint("total_duration");
 
+        },
+
+        [=](serialize_data) {
+
+            aout(self) << "We are here in Serialize Data\n";
+            // Statistic Structures
+            std::vector<std::vector<double>> forc_stat_array    = get_var_dlength(self->state.handle_forcStat);
+            std::vector<std::vector<double>> prog_stat_array    = get_var_dlength(self->state.handle_progStat);
+            std::vector<std::vector<double>> diag_stat_array    = get_var_dlength(self->state.handle_diagStat);
+            std::vector<std::vector<double>> flux_stat_array    = get_var_dlength(self->state.handle_fluxStat);
+            std::vector<std::vector<double>> indx_stat_array    = get_var_dlength(self->state.handle_indxStat);
+            std::vector<std::vector<double>> bvar_stat_array    = get_var_dlength(self->state.handle_bvarStat);
+            
+            // primary data structures (scalars)
+            std::vector<int> time_struct_array                  = get_var_i(self->state.handle_timeStruct);
+            std::vector<double> forc_struct_array               = get_var_d(self->state.handle_forcStruct);
+            std::vector<double> attr_struct_array               = get_var_d(self->state.handle_attrStruct); 
+            std::vector<int> type_struct_array                  = get_var_i(self->state.handle_typeStruct);
+            std::vector<long int> id_struct_array               = get_var_i8(self->state.handle_idStruct);
+
+            // primary data structures (variable length vectors)
+            std::vector<std::vector<int>> indx_struct_array     = get_var_ilength(self->state.handle_indxStruct);
+            std::vector<std::vector<double>> mpar_struct_array  = get_var_dlength(self->state.handle_mparStruct);
+            std::vector<std::vector<double>> prog_struc_array   = get_var_dlength(self->state.handle_progStruct);
+            std::vector<std::vector<double>> diag_struct_array  = get_var_dlength(self->state.handle_diagStruct);
+            std::vector<std::vector<double>> flux_struct_array  = get_var_dlength(self->state.handle_fluxStruct);
+            
+            // basin-average structures
+            std::vector<double> bpar_struct_array               = get_var_d(self->state.handle_bparStruct);
+            std::vector<std::vector<double>> bvar_struct_array  = get_var_dlength(self->state.handle_bvarStruct);
+            
+            // ancillary data structures
+            std::vector<double> dpar_struct_array               = get_var_d(self->state.handle_dparStruct);
         },
 
         [=](dt_init_factor, int dt_init_factor) {

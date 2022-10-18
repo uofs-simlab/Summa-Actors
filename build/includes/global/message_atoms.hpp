@@ -42,6 +42,7 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     CAF_ADD_ATOM(summa, start_hru)
     CAF_ADD_ATOM(summa, file_information)
     CAF_ADD_ATOM(summa, dt_init_factor)
+    CAF_ADD_ATOM(summa, serialize_data)
     // Client Actor
     CAF_ADD_ATOM(summa, connect_to_server)
     CAF_ADD_ATOM(summa, batch)

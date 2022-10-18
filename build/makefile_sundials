@@ -175,7 +175,8 @@ SUMMA_JOB_INTERFACE = \
 JOB_INTERFACE =  $(patsubst %, $(JOB_ACTOR_DIR)/%, $(SUMMA_JOB_INTERFACE))
 
 SUMMA_HRU_INTERFACE = \
-		cppwrap_hru.f90
+		cppwrap_hru.f90 \
+		hru_actor.f90
 
 HRU_INTERFACE = $(patsubst %, $(HRU_ACTOR_DIR)/%, $(SUMMA_HRU_INTERFACE))
 
@@ -183,6 +184,7 @@ SUMMA_GRU_INTERFACE = \
 		gru_actor.f90 \
 
 GRU_INTERFACE = $(patsubst %, $(GRU_ACTOR_DIR)/%, $(SUMMA_GRU_INTERFACE))
+
 		
 
 # Define routines for SUMMA preliminaries
@@ -283,6 +285,7 @@ SOURCE_DIR = /Summa-Actors/build/source/actors
 GLOBAL_INCLUDES = -I$(INCLUDE_DIR)/global
 GLOBAL = $(SOURCE_DIR)/global/global.cpp
 TIMEINFO = $(SOURCE_DIR)/global/timing_info.cpp
+AUXILARY = $(SOURCE_DIR)/global/auxiliary.cpp
 
 SUMMA_ACTOR_INCLUDES = -I$(INCLUDE_DIR)/summa_actor
 SUMMA_ACTOR = $(SOURCE_DIR)/summa_actor/summa_actor.cpp
@@ -358,7 +361,7 @@ clean_fortran:
 ################################################ COMPILE SUMMA-C++ ################################################
 ###################################################################################################################
 compile_globals:
-	$(CC) $(FLAGS_ACTORS) -c $(GLOBAL) $(TIMEINFO) $(GLOBAL_INCLUDES)
+	$(CC) $(FLAGS_ACTORS) -c $(GLOBAL) $(TIMEINFO) $(AUXILARY) $(GLOBAL_INCLUDES)
 
 compile_gru_actor:
 	$(CC) $(FLAGS_ACTORS) -c $(GRU_ACTOR) $(HRU_ACTOR_INCLUDES) $(GRU_ACTOR_INCLUDES) $(GLOBAL_INCLUDES) $(ACTORS_INCLUDES)
