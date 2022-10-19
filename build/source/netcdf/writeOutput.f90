@@ -78,6 +78,7 @@ public::writeParm
 public::writeData
 public::writeBasin
 public::writeTime
+public::writeDataNew
 private::writeScalar
 private::writeVector
 ! define dimension lengths
@@ -148,6 +149,34 @@ subroutine writeParm(ncid,ispatial,struct,meta,err,message)
 
 end subroutine writeParm
 
+! Change Name to writeData when done
+subroutine writeDataNew(ncid, finalize_stats, output_timestep, max_layers, index_gru, num_gru, meta, &
+    stat, dat, structName, map, indx, err, message)
+  
+  USE data_types,only:var_info                       ! metadata type
+
+  implicit none
+  type(var_i),      intent(in)       :: ncid
+  logical(lgt),     intent(in)       :: finalize_stats(:)  ! flags to finalize statistics
+  integer(i4b),     intent(inout)    :: output_timestep(:) ! number of HRUs in the run domain
+  integer(i4b),     intent(in)       :: max_layers
+  integer(i4b),     intent(in)       :: index_gru
+  integer(i4b),     intent(in)       :: num_gru
+  type(var_info),   intent(in)       :: meta(:)           ! meta data
+  class(*),         intent(in)       :: stat              ! stats data
+  class(*),         intent(in)       :: dat               ! timestep data
+  character(*),     intent(in)       :: structName
+  integer(i4b),     intent(in)       :: map(:)            ! map into stats child struct
+  type(var_ilength),intent(in)       :: indx
+  integer(i4b)  ,intent(out)         :: err               ! error code
+  character(*)  ,intent(out)         :: message           ! error message
+
+  err=0;message="writeParm/"
+
+
+
+end subroutine writeDataNew
+
 ! **************************************************************************************
 ! public subroutine writeData: write model time-dependent data
 ! **************************************************************************************
@@ -205,7 +234,6 @@ subroutine writeData(ncid,outputTimestep,outputTimestepUpdate,maxLayers,nSteps, 
 
     ! loop through model variables
     do iVar = 1,size(meta)
-      stepCounter = 0
 
       if (meta(iVar)%varName=='time' .and. structName == 'forc')then
         ! get variable index
@@ -224,12 +252,6 @@ subroutine writeData(ncid,outputTimestep,outputTimestepUpdate,maxLayers,nSteps, 
           end do  
         endif
 
-        do iStep = 1, nSteps
-          ! check if we want this timestep
-          if(.not.outputStructure(1)%finalizeStats(1)%gru(verifiedGRUIndex)%hru(1)%tim(iStep)%dat(iFreq)) cycle
-          stepCounter = stepCounter+1
-          timeVec(stepCounter) = outputStructure(1)%forcStruct(1)%gru(verifiedGRUIndex)%hru(1)%var(iVar)%tim(iStep)
-        end do ! iStep
 
         err = nf90_put_var(ncid%var(iFreq),ncVarID,timeVec(1:stepCounter),start=(/outputTimestep(iFreq)/),count=(/stepCounter/))
         call netcdf_err(err,message); if (err/=0)then; print*, "err"; return; endif

@@ -96,4 +96,13 @@ extern "C" {
         int* indxGRU, int* indxHRU,
         void* handle_attrStruct, void* handle_typeStruct, void* handle_mparStruct, void* handle_bparStruct,
         int* err);
+
+  void prepareOutput(int* model_timestep, void* handle_force_stat, void* handle_prog_stat, 
+        void* handle_diag_stat, void* handle_flux_stat, void* handle_indx_stat,
+        void* handle_bvar_stat, void* handle_time_struct, void* handle_forc_struct,
+        void* handle_attr_struct, void* handle_type_struct, void* handle_indx_struct,
+        void* handle_mpar_struct, void* handle_prog_struct, void* handle_diag_struct,
+        void* handle_flux_struct, void* handle_bpar_struct, void* handle_bvar_struct,
+        void* stat_counter, void* output_timestep, void* reset_stats, void* finalize_stats,
+        void* finish_time, void* old_time, int* err);
 }

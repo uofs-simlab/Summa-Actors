@@ -57,24 +57,21 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
             std::vector<int> type_struct, std::vector<std::vector<double>> mpar_struct,
             std::vector<double> bpar_struct) {
             int err = 0;
+
+            // create structures to populate in Fortran
             void *handle_attr_struct = new_handle_var_d();
             void *handle_type_struct = new_handle_var_i();
             void *handle_mpar_struct = new_handle_var_dlength();
             void *handle_bpar_struct = new_handle_var_d(); 
-
+            // populate the newly created Fortran structures
             set_var_d(attr_struct, handle_attr_struct);
             set_var_i(type_struct, handle_type_struct);
             set_var_dlength(mpar_struct, handle_mpar_struct);
             set_var_d(bpar_struct, handle_bpar_struct);
-
+            // write the populated data to netCDF
             writeParamToNetCDF(self->state.handle_ncid, &index_gru, &index_hru, 
                 handle_attr_struct, handle_type_struct, handle_mpar_struct, 
                 handle_bpar_struct, &err);
-
-            // Write_HRU_Param(self->state.handle_ncid, &index_gru, &index_hru, &err);
-            // if (err != 0) {
-            //     aout(self) << "ERROR: Write_HRU_PARAM -- For HRU = " << index_hru << "\n"; 
-            // }
         },
 
         [=](access_forcing, int currentFile, caf::actor refToRespondTo) {
@@ -137,6 +134,18 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
             } else {
                 aout(self) << "All Forcing Files Loaded \n";
             }
+        },
+
+        [=](write_output, int index_gru, int index_hru, std::vector<int> finalize_stats, 
+            std::vector<std::vector<double>> forc_stat, std::vector<double> forc_struct,
+            std::vector<std::vector<double>> prog_stat, std::vector<std::vector<double>> prog_struct,
+            std::vector<std::vector<double>> diag_stat, std::vector<std::vector<double>> diag_struct,
+            std::vector<std::vector<double>> flux_stat, std::vector<std::vector<double>> flux_struct,
+            std::vector<std::vector<double>> indx_stat, std::vector<std::vector<int>> indx_struct,
+            std::vector<int> outptu_timestep) {
+                
+
+
         },
 
         [=](write_output, int indxGRU, int indxHRU, int numStepsToWrite,

@@ -38,7 +38,7 @@ extern "C" {
   
   void readParamFileAccessActor(int* start_gru, int* num_gru, int* err);
 
-  void writeParamToNetCDF(void* handle_ncid, int* index_gru, int* index_hru, 
+  void writeParamToNetCDF(void* handle_ncid, int* index_gru, int* index_hru,
     void* handle_attr_struct, void* handle_type_struct, void* handle_mpar_struct,
     void* handle_bpar_struct, int* err);
 }

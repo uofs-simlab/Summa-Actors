@@ -24,34 +24,33 @@ end subroutine getSummaVariableInfo
 subroutine prepareOutput(&
                         modelTimeStep,      &
                         ! statistics variables
-                        forcStat,           & ! model forcing data
-                        progStat,           & ! model prognostic (state) variables
-                        diagStat,           & ! model diagnostic variables
-                        fluxStat,           & ! model fluxes
-                        indxStat,           & ! model indices
-                        bvarStat,           & ! basin-average variables
+                        handle_forcStat,           & ! model forcing data
+                        handle_progStat,           & ! model prognostic (state) variables
+                        handle_diagStat,           & ! model diagnostic variables
+                        handle_fluxStat,           & ! model fluxes
+                        handle_indxStat,           & ! model indices
+                        handle_bvarStat,           & ! basin-average variables
                         ! primary data structures (scalars)
-                        timeStruct,         & ! x%var(:)     -- model time data
-                        forcStruct,         & ! x%var(:)     -- model forcing data
-                        attrStruct,         & ! x%var(:)     -- local attributes for each HRU
-                        typeStruct,         & ! x%var(:)     -- local classification of soil veg etc. for each HRU
+                        handle_timeStruct,         & ! x%var(:)     -- model time data
+                        handle_forcStruct,         & ! x%var(:)     -- model forcing data
+                        handle_attrStruct,         & ! x%var(:)     -- local attributes for each HRU
+                        handle_typeStruct,         & ! x%var(:)     -- local classification of soil veg etc. for each HRU
                         ! primary data structures (variable length vectors)
-                        indxStruct,         & ! x%var(:)%dat -- model indices
-                        mparStruct,         & ! x%var(:)%dat -- model parameters
-                        progStruct,         & ! x%var(:)%dat -- model prognostic (state) variables
-                        diagStruct,         & ! x%var(:)%dat -- model diagnostic variables
-                        fluxStruct,         & ! x%var(:)%dat -- model fluxes
+                        handle_indxStruct,         & ! x%var(:)%dat -- model indices
+                        handle_mparStruct,         & ! x%var(:)%dat -- model parameters
+                        handle_progStruct,         & ! x%var(:)%dat -- model prognostic (state) variables
+                        handle_diagStruct,         & ! x%var(:)%dat -- model diagnostic variables
+                        handle_fluxStruct,         & ! x%var(:)%dat -- model fluxes
                         ! basin-average structures
-                        bparStruct,         & ! x%var(:)     -- basin-average parameters
-                        bvarStruct,         & ! x%var(:)%dat -- basin-average variables
-                        statCounter,        &
-                        outputTimeStep,     & ! x%var(:)
-                        resetStats,         & ! x%var(:)
-                        finalizeStats,      & ! x%var(:)
-                        finshTime,          & ! x%var(:)    -- end time for the model simulation
-                        oldTime,            & ! x%var(:)    -- time for the previous model time step
-                        outputStep,         & ! index into the output Struc
-                        err, message)
+                        handle_bparStruct,         & ! x%var(:)     -- basin-average parameters
+                        handle_bvarStruct,         & ! x%var(:)%dat -- basin-average variables
+                        handle_statCounter,        &
+                        handle_outputTimeStep,     & ! x%var(:)
+                        handle_resetStats,         & ! x%var(:)
+                        handle_finalizeStats,      & ! x%var(:)
+                        handle_finshTime,          & ! x%var(:)    -- end time for the model simulation
+                        handle_oldTime,            & ! x%var(:)    -- time for the previous model time step
+                        err) bind(C, name="prepareOutput")
   USE globalData,only:structInfo
   USE globalData,only:startWrite,endWrite
 
@@ -67,79 +66,106 @@ subroutine prepareOutput(&
   USE outputStrucWrite_module,only:writeParm                  ! module to write model parameters
   USE time_utils_module,only:elapsedSec                       ! calculate the elapsed time
   USE globalData,only:elapsedWrite   
-  USE var_lookup,only:iLookTIME                 ! named variables for time data structure
-  USE var_lookup,only:iLookDIAG                 ! named variables for local column model diagnostic variables
-  USE var_lookup,only:iLookPROG                 ! named variables for local column model prognostic variables
-  USE var_lookup,only:iLookINDEX                ! named variables for local column index variables
-  USE var_lookup,only:iLookFreq                 ! named variables for the frequency structure
-  USE var_lookup,only:maxvarFreq                ! maximum number of output files
-  USE globalData,only:time_meta                 ! metadata on the model time
-  USE globalData,only:forc_meta                 ! metadata on the model forcing data
-  USE globalData,only:diag_meta                 ! metadata on the model diagnostic variables
-  USE globalData,only:prog_meta                 ! metadata on the model prognostic variables
-  USE globalData,only:flux_meta                 ! metadata on the model fluxes
-  USE globalData,only:indx_meta                 ! metadata on the model index variables
-  USE globalData,only:bvar_meta                 ! metadata on basin-average variables
-  USE globalData,only:bpar_meta                 ! basin parameter metadata structure
-  USE globalData,only:mpar_meta                 ! local parameter metadata structure
-  ! child metadata for stats
-  USE globalData,only:statForc_meta             ! child metadata for stats
-  USE globalData,only:statProg_meta             ! child metadata for stats
-  USE globalData,only:statDiag_meta             ! child metadata for stats
-  USE globalData,only:statFlux_meta             ! child metadata for stats
-  USE globalData,only:statIndx_meta             ! child metadata for stats
-  USE globalData,only:statBvar_meta             ! child metadata for stats
+  USE var_lookup,only:iLookTIME,iLookDIAG,iLookPROG,iLookINDEX, &
+    iLookFreq,maxvarFreq ! named variables for time data structure
+  USE globalData,only:time_meta,forc_meta,diag_meta,prog_meta,&
+    flux_meta,indx_meta,bvar_meta,bpar_meta,mpar_meta           ! metadata on the model time
+  USE globalData,only:statForc_meta,statProg_meta,statDiag_meta,&
+    statFlux_meta,statIndx_meta,statBvar_meta             ! child metadata for stats
   ! index of the child data structure
-  USE globalData,only:forcChild_map             ! index of the child data structure: stats forc
-  USE globalData,only:progChild_map             ! index of the child data structure: stats prog
-  USE globalData,only:diagChild_map             ! index of the child data structure: stats diag
-  USE globalData,only:fluxChild_map             ! index of the child data structure: stats flux
-  USE globalData,only:indxChild_map             ! index of the child data structure: stats indx
-  USE globalData,only:bvarChild_map             ! index of the child data structure: stats bvar
+  USE globalData,only:forcChild_map,progChild_map,diagChild_map,&
+    fluxChild_map,indxChild_map,bvarChild_map             ! index of the child data structure: stats forc
   implicit none
   integer(i4b),intent(in)                  :: modelTimeStep   ! time step index
-  type(var_dlength),intent(inout)          :: forcStat        ! model forcing data
-  type(var_dlength),intent(inout)          :: progStat        ! model prognostic (state) variables
-  type(var_dlength),intent(inout)          :: diagStat        ! model diagnostic variables
-  type(var_dlength),intent(inout)          :: fluxStat        ! model fluxes
-  type(var_dlength),intent(inout)          :: indxStat        ! model indices
-  type(var_dlength),intent(inout)          :: bvarStat        ! basin-average variabl
+  type(c_ptr), intent(in), value           :: handle_forcStat !  model forcing data
+  type(c_ptr), intent(in), value           :: handle_progStat !  model prognostic (state) variables
+  type(c_ptr), intent(in), value           :: handle_diagStat !  model diagnostic variables
+  type(c_ptr), intent(in), value           :: handle_fluxStat !  model fluxes
+  type(c_ptr), intent(in), value           :: handle_indxStat !  model indices
+  type(c_ptr), intent(in), value           :: handle_bvarStat !  basin-average variables
   ! primary data structures (scalars)
-  type(var_i),intent(inout)                :: timeStruct      ! model time data
-  type(var_d),intent(inout)                :: forcStruct      ! model forcing data
-  type(var_d),intent(inout)                :: attrStruct      ! local attributes for each HRU
-  type(var_i),intent(inout)                :: typeStruct      ! local classification of soil veg etc. for each HRU
+  type(c_ptr), intent(in), value           :: handle_timeStruct !  model time data
+  type(c_ptr), intent(in), value           :: handle_forcStruct !  model forcing data
+  type(c_ptr), intent(in), value           :: handle_attrStruct !  local attributes for each HRU
+  type(c_ptr), intent(in), value           :: handle_typeStruct !  local classification of soil veg etc. for each HRU
   ! primary data structures (variable length vectors)
-  type(var_ilength),intent(inout)          :: indxStruct      ! model indices
-  type(var_dlength),intent(inout)          :: mparStruct      ! model parameters
-  type(var_dlength),intent(inout)          :: progStruct      ! model prognostic (state) variables
-  type(var_dlength),intent(inout)          :: diagStruct      ! model diagnostic variables
-  type(var_dlength),intent(inout)          :: fluxStruct      ! model fluxes
+  type(c_ptr), intent(in), value           :: handle_indxStruct !  model indices
+  type(c_ptr), intent(in), value           :: handle_mparStruct !  model parameters
+  type(c_ptr), intent(in), value           :: handle_progStruct !  model prognostic (state) variables
+  type(c_ptr), intent(in), value           :: handle_diagStruct !  model diagnostic variables
+  type(c_ptr), intent(in), value           :: handle_fluxStruct !  model fluxes
   ! basin-average structures
-  type(var_d),intent(inout)                :: bparStruct      ! basin-average parameters
-  type(var_dlength),intent(inout)          :: bvarStruct      ! basin-average variables
-  ! local HRU data
-  type(var_i),intent(inout)                :: statCounter     ! time counter for stats
-  type(var_i),intent(inout)                :: outputTimeStep  ! timestep in output files
-  type(flagVec),intent(inout)              :: resetStats      ! flags to reset statistics
-  type(flagVec),intent(inout)              :: finalizeStats   ! flags to finalize statistics
-  type(var_i),intent(inout)                :: finshTime       ! end time for the model simulation
-  type(var_i),intent(inout)                :: oldTime         !
-  integer(i4b),intent(in)                  :: outputStep      ! index into the outputStructure
+  type(c_ptr), intent(in), value           :: handle_bparStruct !  basin-average parameters
+  type(c_ptr), intent(in), value           :: handle_bvarStruct !  basin-average variables
+  ! local HRU variables
+  type(c_ptr), intent(in), value           :: handle_statCounter
+  type(c_ptr), intent(in), value           :: handle_outputTimeStep
+  type(c_ptr), intent(in), value           :: handle_resetStats
+  type(c_ptr), intent(in), value           :: handle_finalizeStats
+  type(c_ptr), intent(in), value           :: handle_finshTime    ! end time for the model simulation
+  type(c_ptr), intent(in), value           :: handle_oldTime      ! time for the previous model time step
   ! run time variables
   integer(i4b),intent(out)                 :: err
-  character(*),intent(out)                 :: message 
-
+  ! local vairiables for pointers
+  type(var_dlength),pointer                :: forcStat        ! model forcing data
+  type(var_dlength),pointer                :: progStat        ! model prognostic (state) variables
+  type(var_dlength),pointer                :: diagStat        ! model diagnostic variables
+  type(var_dlength),pointer                :: fluxStat        ! model fluxes
+  type(var_dlength),pointer                :: indxStat        ! model indices
+  type(var_dlength),pointer                :: bvarStat        ! basin-average variabl
+  type(var_i),pointer                      :: timeStruct      ! model time data
+  type(var_d),pointer                      :: forcStruct      ! model forcing data
+  type(var_d),pointer                      :: attrStruct      ! local attributes for each HRU
+  type(var_i),pointer                      :: typeStruct      ! local classification of soil veg etc. for each HRU
+  type(var_ilength),pointer                :: indxStruct      ! model indices
+  type(var_dlength),pointer                :: mparStruct      ! model parameters
+  type(var_dlength),pointer                :: progStruct      ! model prognostic (state) variables
+  type(var_dlength),pointer                :: diagStruct      ! model diagnostic variables
+  type(var_dlength),pointer                :: fluxStruct      ! model fluxes
+  type(var_d),pointer                      :: bparStruct      ! basin-average parameters
+  type(var_dlength),pointer                :: bvarStruct      ! basin-average variables
+  type(var_i),pointer                      :: statCounter     ! time counter for stats
+  type(var_i),pointer                      :: outputTimeStep  ! timestep in output files
+  type(flagVec),pointer                    :: resetStats      ! flags to reset statistics
+  type(flagVec),pointer                    :: finalizeStats   ! flags to finalize statistics
+  type(var_i),pointer                      :: finshTime       ! end time for the model simulation
+  type(var_i),pointer                      :: oldTime         !
+  ! local variables
+  character(len=256)                       :: message 
   character(len=256)                       :: cmessage
-
   logical(lgt)                             :: defNewOutputFile=.false.
   integer(i4b)                             :: iFreq             ! index of the output frequency
   integer(i4b)                             :: iStruct           ! index of model structure
   logical(lgt)                             :: printProgress=.false.
   logical(lgt)                             :: printRestart=.false.
-
-
-
+  ! ---------------------------------------------------------------------------------------
+  ! * Convert From C++ to Fortran
+  ! ---------------------------------------------------------------------------------------
+  call c_f_pointer(handle_forcStat, forcStat)
+  call c_f_pointer(handle_progStat, progStat)
+  call c_f_pointer(handle_diagStat, diagStat)
+  call c_f_pointer(handle_fluxStat, fluxStat)
+  call c_f_pointer(handle_indxStat, indxStat)
+  call c_f_pointer(handle_bvarStat, bvarStat)
+  call c_f_pointer(handle_timeStruct, timeStruct)
+  call c_f_pointer(handle_forcStruct, forcStruct)
+  call c_f_pointer(handle_attrStruct, attrStruct)
+  call c_f_pointer(handle_typeStruct, typeStruct)
+  call c_f_pointer(handle_indxStruct, indxStruct)
+  call c_f_pointer(handle_mparStruct, mparStruct)
+  call c_f_pointer(handle_progStruct, progStruct)
+  call c_f_pointer(handle_diagStruct, diagStruct)
+  call c_f_pointer(handle_fluxStruct, fluxStruct)
+  call c_f_pointer(handle_bparStruct, bparStruct)
+  call c_f_pointer(handle_bvarStruct, bvarStruct)
+  call c_f_pointer(handle_statCounter, statCounter)
+  call c_f_pointer(handle_outputTimeStep, outputTimeStep)
+  call c_f_pointer(handle_resetStats, resetStats)
+  call c_f_pointer(handle_finalizeStats, finalizeStats)
+  call c_f_pointer(handle_finshTime, finshTime);
+  call c_f_pointer(handle_oldTime, oldTime)
+  
+  ! Start of Subroutine
   err=0; message='summa_manageOutputFiles/'
   ! identify the start of the writing
   call date_and_time(values=startWrite)

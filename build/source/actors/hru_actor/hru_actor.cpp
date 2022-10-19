@@ -61,15 +61,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
         [=](start_hru) {
             self->state.hru_timing.updateStartPoint("total_duration");
 
-            
-            int err;
-            
-            err = 0;
-            // Write Paramaters to OutputStruc
-            // Write_Param_C(&self->state.indxGRU, &self->state.indxHRU, 
-            //     self->state.handle_attrStruct, self->state.handle_typeStruct,
-            //     self->state.handle_mparStruct, self->state.handle_bparStruct, 
-            //     &err);
+            int err = 0;
             std::vector<double> attr_struct_array = get_var_d(self->state.handle_attrStruct); 
             std::vector<int> type_struct_array    = get_var_i(self->state.handle_typeStruct);
             std::vector<std::vector<double>> mpar_struct_array = get_var_dlength(self->state.handle_mparStruct);
@@ -111,9 +103,6 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
             self->state.hru_timing.updateEndPoint("total_duration");
 
         },
-
-
-
 
         [=](done_write) {
             self->state.hru_timing.updateStartPoint("total_duration");
@@ -364,34 +353,31 @@ int Run_HRU(stateful_actor<hru_state>* self) {
     self->state.hru_timing.updateEndPoint("run_physics_duration");
 
     self->state.hru_timing.updateStartPoint("write_output_duration");
-    WriteOutput(&self->state.indxHRU,
-            &self->state.indxGRU,
-            &self->state.timestep,
-            self->state.handle_forcStat, 
-            self->state.handle_progStat,
-            self->state.handle_diagStat,
-            self->state.handle_fluxStat, 
-            self->state.handle_indxStat,
-            self->state.handle_bvarStat,
-            self->state.handle_timeStruct, 
-            self->state.handle_forcStruct,
-            self->state.handle_attrStruct,
-            self->state.handle_typeStruct,
-            self->state.handle_indxStruct,
-            self->state.handle_mparStruct, 
-            self->state.handle_progStruct,
-            self->state.handle_diagStruct,
-            self->state.handle_fluxStruct,
-            self->state.handle_bparStruct,
-            self->state.handle_bvarStruct,
-            self->state.handle_statCounter,
-            self->state.handle_outputTimeStep,
-            self->state.handle_resetStats, 
-            self->state.handle_finalizeStats,
-            self->state.handle_finshTime,
-            self->state.handle_oldTime,
-            &self->state.outputStep, 
-            &self->state.err);
+    prepareOutput(&self->state.timestep,
+        self->state.handle_forcStat,
+        self->state.handle_progStat,
+        self->state.handle_diagStat,
+        self->state.handle_fluxStat,
+        self->state.handle_indxStat,
+        self->state.handle_bvarStat,
+        self->state.handle_timeStruct,
+        self->state.handle_forcStruct,
+        self->state.handle_attrStruct,
+        self->state.handle_typeStruct,
+        self->state.handle_indxStruct,
+        self->state.handle_mparStruct,
+        self->state.handle_progStruct,
+        self->state.handle_diagStruct,
+        self->state.handle_fluxStruct,
+        self->state.handle_bparStruct,
+        self->state.handle_bvarStruct,
+        self->state.handle_statCounter,
+        self->state.handle_outputTimeStep,
+        self->state.handle_resetStats,
+        self->state.handle_finalizeStats,
+        self->state.handle_finshTime,
+        self->state.handle_oldTime,
+        &self->state.err);
     if (self->state.err != 0) {
         aout(self) << "Error: WriteOutput - HRU = " << self->state.indxHRU << 
             " - indxGRU = " << self->state.indxGRU << " - refGRU = " << self->state.refGRU <<
