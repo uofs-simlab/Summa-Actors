@@ -142,9 +142,9 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
             std::vector<std::vector<double>> diag_stat, std::vector<std::vector<double>> diag_struct,
             std::vector<std::vector<double>> flux_stat, std::vector<std::vector<double>> flux_struct,
             std::vector<std::vector<double>> indx_stat, std::vector<std::vector<int>> indx_struct,
-            std::vector<int> outptu_timestep) {
-                
-
+            std::vector<int> output_timestep) {
+            
+            aout(self) << "Fake Write\n";
 
         },
 

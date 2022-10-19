@@ -151,11 +151,15 @@ end subroutine writeParm
 
 ! Change Name to writeData when done
 subroutine writeDataNew(ncid, finalize_stats, output_timestep, max_layers, index_gru, num_gru, meta, &
-    stat, dat, structName, map, indx, err, message)
-  
+    stat, dat, struct_name, map, indx, err, message)
+  USE netcdf
   USE data_types,only:var_info                       ! metadata type
-
+  USE globalData,only:outFreq                        ! output file information
+  USE var_lookup,only:iLookVarType                   ! index into type structure
+  USE var_lookup,only:iLookIndex                     ! index into index structure
+  USE get_ixName_module,only:get_statName            ! to access type strings for error messages
   implicit none
+  ! dummy variables
   type(var_i),      intent(in)       :: ncid
   logical(lgt),     intent(in)       :: finalize_stats(:)  ! flags to finalize statistics
   integer(i4b),     intent(inout)    :: output_timestep(:) ! number of HRUs in the run domain
@@ -165,16 +169,146 @@ subroutine writeDataNew(ncid, finalize_stats, output_timestep, max_layers, index
   type(var_info),   intent(in)       :: meta(:)           ! meta data
   class(*),         intent(in)       :: stat              ! stats data
   class(*),         intent(in)       :: dat               ! timestep data
-  character(*),     intent(in)       :: structName
+  character(*),     intent(in)       :: struct_name
   integer(i4b),     intent(in)       :: map(:)            ! map into stats child struct
   type(var_ilength),intent(in)       :: indx
-  integer(i4b)  ,intent(out)         :: err               ! error code
-  character(*)  ,intent(out)         :: message           ! error message
+  integer(i4b),     intent(out)      :: err               ! error code
+  character(*),     intent(out)      :: message           ! error message
+  ! local variables
+  integer(i4b)                       :: iVar              ! variable index
+  integer(i4b)                       :: iStat             ! statistics index
+  integer(i4b)                       :: iFreq             ! frequency index
+  integer(i4b)                       :: ncVarID           ! used only for time
+  integer(i4b)                       :: index_hru
+  integer(i4b)                       :: nSnow             ! number of snow layers
+  integer(i4b)                       :: nSoil             ! number of soil layers
+  integer(i4b)                       :: nLayers           ! total number of layers
+  ! output array
+  integer(i4b)                       :: datLength         ! length of each data vector
+  integer(i4b)                       :: maxLength         ! maximum length of each data vector
+  
+  err=0;message="writeOutput.f90 - writeDataNew/"
+  ! loop through output frequencies
+  do iFreq=1,maxvarFreq
+    if(.not.outFreq(iFreq)) cycle ! check if frequency is desired (timestep, day, month, year)
+    
+    if(.not.finalize_stats(iFreq)) cycle ! check we have statistics for a frequency
+    
+    do iVar = 1,size(meta)
+      ! handle time
+      if (meta(iVar)%varName=='time' .and. struct_name == 'forc')then
+        
+        ! get variable index
+        err = nf90_inq_varid(ncid%var(iFreq),trim(meta(iVar)%varName),ncVarID)
+        call netcdf_err(err,message)
+        if (err/=0) then
+          print*, message
+          return
+        endif 
 
-  err=0;message="writeParm/"
+        select type(dat)
+          class is(var_dlength)
+            err = nf90_put_var(ncid%var(iFreq),ncVarID,dat%var(iVar)%dat(1),start=(/output_timestep(iFreq)/))
+            call netcdf_err(err,message)
+            if (err/=0) then
+              print*, message
+              return
+            endif
+            cycle
+            class default
+              err=20
+              message=trim(message)//'time variable must be of type var_dlength (forcing data structure)'
+              print*, message
+              return
+        end select
+        
+        call netcdf_err(err,message)
+        if (err/=0) then
+          print*, message
+          return
+        endif
+      endif 
 
+      ! define the statistics index
+      iStat = meta(iVar)%statIndex(iFreq)
 
+      ! check that the variable is desired
+      if (iStat==integerMissing.or.trim(meta(iVar)%varName)=='unknown') cycle
+      
+      ! check if we are writing a vector or a scalar
+      if(meta(iVar)%varType==iLookVarType%scalarv) then
+        select type(stat)
+          class is (var_dlength)
+            ! realVec(gru_struc(index_gru)%hruInfo(index_hru)%hru_ix) = stat%var(map(iVar))%dat(iFreq)
+            err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),(stat%var(map(iVar))%dat(iFreq)),start=(/index_gru,output_timestep(iFreq)/))
+            if (err/=0) then
+              print*, message
+              return
+            endif 
+          class default
+            err=20
+            message=trim(message)//'stats must be scalarv and of type var_dlength'
+            print*, message
+            return
+        end select ! stat
 
+      else
+        ! vector
+        nSoil   = indx%var(iLookIndex%nSoil)%dat(1)
+        nSnow   = indx%var(iLookIndex%nSnow)%dat(1)
+        nLayers = indx%var(iLookIndex%nLayers)%dat(1)
+
+         ! get the length of each data vector
+        select case (meta(iVar)%varType)
+          case(iLookVarType%wLength); datLength = maxSpectral
+          case(iLookVarType%midToto); datLength = nLayers
+          case(iLookVarType%midSnow); datLength = nSnow
+          case(iLookVarType%midSoil); datLength = nSoil
+          case(iLookVarType%ifcToto); datLength = nLayers+1
+          case(iLookVarType%ifcSnow); datLength = nSnow+1
+          case(iLookVarType%ifcSoil); datLength = nSoil+1
+          case default; cycle
+        end select ! vartype
+
+        ! get the maximum length of each data vector
+        select case (meta(iVar)%varType)
+          case(iLookVarType%wLength); maxLength = maxSpectral
+          case(iLookVarType%midToto); maxLength = max_layers
+          case(iLookVarType%midSnow); maxLength = max_layers-nSoil
+          case(iLookVarType%midSoil); maxLength = nSoil
+          case(iLookVarType%ifcToto); maxLength = max_layers+1
+          case(iLookVarType%ifcSnow); maxLength = (max_layers-nSoil)+1
+          case(iLookVarType%ifcSoil); maxLength = nSoil+1
+          case default; cycle
+        end select ! vartype
+
+        ! Write the data
+        select type(dat)
+          class is (var_dlength)
+            err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),(dat%var(iVar)%dat(:)),start=(/index_gru,1,output_timestep(iFreq)/),count=(/num_gru,maxLength,1/))
+          class is (var_ilength)
+            err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),(dat%var(iVar)%dat(:)),start=(/index_gru,1,output_timestep(iFreq)/),count=(/num_gru,maxLength,1/))
+          class default
+            err=20
+            message=trim(message)//'data must be of type integer or real'
+            print*, message
+            return
+        end select
+      endif
+
+         ! process error code
+      if (err/=0)then
+        message=trim(message)//trim(meta(iVar)%varName)//'_'//trim(get_statName(iStat))
+        print*, message
+      end if
+      call netcdf_err(err,message)
+      if (err/=0) then
+        print*, message
+        return
+      endif
+
+    end do ! iVar
+  end do ! iFreq
 end subroutine writeDataNew
 
 ! **************************************************************************************

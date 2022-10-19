@@ -221,7 +221,6 @@ subroutine prepareOutput(&
   ! *****************************************************************************
   ! *** update counters
   ! *****************************************************************************
-
   ! increment output file timestep
   do iFreq = 1,maxvarFreq
     statCounter%var(iFreq) = statCounter%var(iFreq)+1
