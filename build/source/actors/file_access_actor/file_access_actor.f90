@@ -195,7 +195,7 @@ subroutine writeDataToNetCDF(handle_ncid,          &
   end do  ! (looping through structures)
 end subroutine writeDataToNetCDF
 
-subroutine writeBasinToNetCDF(handle_ncid, index_gru, index_hru, handle_finalize_stats, &
+subroutine writeBasinToNetCDF(handle_ncid, index_gru, handle_finalize_stats, &
   handle_output_timestep, handle_bvar_stat, handle_bvar_struct, err) bind(C, name="writeBasinToNetCDF")
   USE writeOutput_module,only:writeBasin
   USE globalData,only:bvar_meta                 ! metadata on basin-average variables
@@ -205,7 +205,6 @@ subroutine writeBasinToNetCDF(handle_ncid, index_gru, index_hru, handle_finalize
   ! dummy variables
   type(c_ptr),    intent(in), value  :: handle_ncid
   integer(c_int), intent(in)         :: index_gru
-  integer(c_int), intent(in)         :: index_hru
   type(c_ptr),    intent(in), value  :: handle_finalize_stats
   type(c_ptr),    intent(in), value  :: handle_output_timestep
   type(c_ptr),    intent(in), value  :: handle_bvar_stat

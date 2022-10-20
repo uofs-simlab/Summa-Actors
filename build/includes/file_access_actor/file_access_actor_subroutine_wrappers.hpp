@@ -48,4 +48,10 @@ extern "C" {
     void* handle_diag_struct, void* handle_flux_stat, void* handle_flux_struct,
     void* handle_indx_stat, void* handle_indx_struct, void* handle_output_timestep,
     int* err);
+
+  void writeBasinToNetCDF(void* handle_ncid, int* index_gru, void* handle_finalize_stats,
+    void* handle_output_timestep, void* handle_bvar_stat, void* handle_bvar_struct, int* err);
+
+  void writeTimeToNetCDF(void* handle_ncid, void* handle_finalize_stats, void* handle_output_timestep,
+    void* handle_time_struct, int* err);
 }

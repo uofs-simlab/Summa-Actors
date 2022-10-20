@@ -136,46 +136,82 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
             }
         },
 
-        [=](write_output, int index_gru, int index_hru, std::vector<int> finalize_stats, 
-            std::vector<std::vector<double>> forc_stat, std::vector<double> forc_struct,
-            std::vector<std::vector<double>> prog_stat, std::vector<std::vector<double>> prog_struct,
-            std::vector<std::vector<double>> diag_stat, std::vector<std::vector<double>> diag_struct,
-            std::vector<std::vector<double>> flux_stat, std::vector<std::vector<double>> flux_struct,
-            std::vector<std::vector<double>> indx_stat, std::vector<std::vector<int>> indx_struct,
-            std::vector<int> output_timestep) {
+        [=](write_output, int index_gru, int index_hru, 
+            // statistic structures
+            std::vector<std::vector<double>> forc_stat, std::vector<std::vector<double>> prog_stat, std::vector<std::vector<double>> diag_stat,
+            std::vector<std::vector<double>> flux_stat, std::vector<std::vector<double>> indx_stat, std::vector<std::vector<double>> bvar_stat,
+            // primary data structures (scalars)
+            std::vector<int> time_struct, std::vector<double> forc_struct, std::vector<double> attr_struct,
+            std::vector<int> type_struct, std::vector<long int> id_struct,  
+            // primary data structures (variable length vectors)
+            std::vector<std::vector<int>> indx_struct, std::vector<std::vector<double>> mpar_struct, std::vector<std::vector<double>> prog_struct,
+            std::vector<std::vector<double>> diag_struct, std::vector<std::vector<double>> flux_struct,
+             // basin-average structures
+            std::vector<double> bpar_struct, std::vector<std::vector<double>> bvar_struct,
+            // ancillary data structures
+            std::vector<double> dpar_struct, std::vector<int> finalize_stats, std::vector<int> output_timestep ) {
             
             int err = 0;
-            void* handle_finalize_stats   = new_handle_var_i();
+            // statistic structures
             void* handle_forc_stat        = new_handle_var_dlength();
-            void* handle_forc_struct      = new_handle_var_d();
             void* handle_prog_stat        = new_handle_var_dlength();
-            void* handle_prog_struct       = new_handle_var_dlength();
             void* handle_diag_stat        = new_handle_var_dlength();
-            void* handle_diag_struct      = new_handle_var_dlength();
             void* handle_flux_stat        = new_handle_var_dlength();
-            void* handle_flux_struct      = new_handle_var_dlength();
             void* handle_indx_stat        = new_handle_var_dlength();
-            void* handle_indx_struct      = new_handle_var_ilength();
-            void* handle_output_time_step = new_handle_var_i();
-            
-            set_var_i(finalize_stats, handle_finalize_stats);
+            void* handle_bvar_stat        = new_handle_var_dlength();
             set_var_dlength(forc_stat, handle_forc_stat);
-            set_var_d(forc_struct, handle_forc_struct);
             set_var_dlength(prog_stat, handle_prog_stat);
-            set_var_dlength(prog_struct, handle_prog_struct);
             set_var_dlength(diag_stat, handle_diag_stat);
-            set_var_dlength(diag_struct, handle_diag_struct);
             set_var_dlength(flux_stat, handle_flux_stat);
-            set_var_dlength(flux_struct, handle_flux_struct);
             set_var_dlength(indx_stat, handle_indx_stat);
+            set_var_dlength(bvar_stat, handle_bvar_stat);
+            // primary data structures (scalars)
+            void* handle_time_struct      = new_handle_var_i();
+            void* handle_forc_struct      = new_handle_var_d();
+            void* handle_attr_struct      = new_handle_var_d();
+            void* handle_type_struct      = new_handle_var_i();
+            void* handle_id_struct        = new_handle_var_i8();
+            set_var_i(time_struct, handle_time_struct);
+            set_var_d(forc_struct, handle_forc_struct);
+            set_var_d(attr_struct, handle_attr_struct);
+            set_var_i(type_struct, handle_type_struct);
+            set_var_i8(id_struct, handle_id_struct);
+            // primary data structures (variable length vectors)
+            void* handle_indx_struct      = new_handle_var_ilength();
+            void* handle_mpar_struct      = new_handle_var_dlength();
+            void* handle_prog_struct      = new_handle_var_dlength();
+            void* handle_diag_struct      = new_handle_var_dlength();
+            void* handle_flux_struct      = new_handle_var_dlength();
             set_var_ilength(indx_struct, handle_indx_struct);
-            set_var_i(output_timestep, handle_output_time_step);
+            set_var_dlength(mpar_struct, handle_mpar_struct);
+            set_var_dlength(prog_struct, handle_prog_struct);
+            set_var_dlength(diag_struct, handle_diag_struct);
+            set_var_dlength(flux_struct, handle_flux_struct);
+            // basin-average structures
+            void* handle_bpar_struct      = new_handle_var_d();
+            void* handle_bvar_struct      = new_handle_var_dlength();
+            set_var_d(bpar_struct,handle_bpar_struct);
+            set_var_dlength(bvar_struct,handle_bvar_struct);
+            // ancillary data structures
+            void* handle_dpar_struct      = new_handle_var_d();
+            void* handle_finalize_stats   = new_handle_var_i();
+            void* handle_output_timestep = new_handle_var_i();
+            set_var_d(dpar_struct, handle_dpar_struct);
+            set_var_i(finalize_stats, handle_finalize_stats);
+            set_var_i(output_timestep, handle_output_timestep);
+
+            writeBasinToNetCDF(self->state.handle_ncid, &index_gru,
+                handle_finalize_stats, handle_output_timestep, handle_bvar_stat,
+                handle_bvar_struct, &err);
+        
+            writeTimeToNetCDF(self->state.handle_ncid,
+                handle_finalize_stats, handle_output_timestep, handle_time_struct, &err);
 
             writeDataToNetCDF(self->state.handle_ncid, &index_gru, &index_hru,
                 handle_finalize_stats, handle_forc_stat, handle_forc_struct,
                 handle_prog_stat, handle_prog_struct, handle_diag_stat, 
                 handle_diag_struct, handle_flux_stat, handle_flux_struct,
-                handle_indx_stat, handle_indx_struct, handle_output_time_step,
+                handle_indx_stat, handle_indx_struct, handle_output_timestep,
                 &err);
 
         },

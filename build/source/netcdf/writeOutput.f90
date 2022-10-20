@@ -186,6 +186,12 @@ subroutine writeDataNew(ncid, finalize_stats, output_timestep, max_layers, index
   ! output array
   integer(i4b)                       :: datLength         ! length of each data vector
   integer(i4b)                       :: maxLength         ! maximum length of each data vector
+  real(rkind)                        :: realVec(num_gru)  ! real vector for all HRUs in the run domain
+  real(rkind)                        :: realArray(num_gru,max_layers+1)  ! real array for all HRUs in the run domain
+  integer(i4b)                       :: intArray(num_gru,max_layers+1)  ! real array for all HRUs in the run domain
+  integer(i4b)                       :: dataType          ! type of data
+  integer(i4b),parameter             :: ixInteger=1001    ! named variable for integer
+  integer(i4b),parameter             :: ixReal=1002       ! named variable for real
   
   err=0;message="writeOutput.f90 - writeDataNew/"
   ! loop through output frequencies
@@ -239,8 +245,8 @@ subroutine writeDataNew(ncid, finalize_stats, output_timestep, max_layers, index
       if(meta(iVar)%varType==iLookVarType%scalarv) then
         select type(stat)
           class is (var_dlength)
-            ! realVec(gru_struc(index_gru)%hruInfo(index_hru)%hru_ix) = stat%var(map(iVar))%dat(iFreq)
-            err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),(stat%var(map(iVar))%dat(iFreq)),start=(/index_gru,output_timestep(iFreq)/))
+            realVec(index_gru) = stat%var(map(iVar))%dat(iFreq)
+            err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),realVec,start=(/index_gru,output_timestep(iFreq)/),count=(/num_gru,1/))
             if (err/=0) then
               print*, message
               return
@@ -253,6 +259,19 @@ subroutine writeDataNew(ncid, finalize_stats, output_timestep, max_layers, index
         end select ! stat
 
       else
+
+         ! Write the data
+        select type(dat)
+          class is (var_dlength)
+            realArray(:,:) = realMissing;    dataType=ixReal
+          class is (var_ilength)
+            intArray(:,:) = integerMissing; dataType=ixInteger
+          class default
+          err=20
+          message=trim(message)//'data must be of type integer or real'
+          print*, message
+          return
+      end select
         ! vector
         nSoil   = indx%var(iLookIndex%nSoil)%dat(1)
         nSnow   = indx%var(iLookIndex%nSnow)%dat(1)
@@ -270,6 +289,13 @@ subroutine writeDataNew(ncid, finalize_stats, output_timestep, max_layers, index
           case default; cycle
         end select ! vartype
 
+                ! get the data vectors
+        select type (dat)
+          class is (var_dlength); realArray(index_gru,1:datLength) = dat%var(iVar)%dat(:)
+          class is (var_ilength);  intArray(index_gru,1:datLength) = dat%var(iVar)%dat(:)
+          class default; err=20; message=trim(message)//'data must not be scalarv and either of type gru_hru_doubleVec or gru_hru_intVec'; return
+        end select
+
         ! get the maximum length of each data vector
         select case (meta(iVar)%varType)
           case(iLookVarType%wLength); maxLength = maxSpectral
@@ -283,12 +309,12 @@ subroutine writeDataNew(ncid, finalize_stats, output_timestep, max_layers, index
         end select ! vartype
 
         ! Write the data
-        select type(dat)
-          class is (var_dlength)
-            err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),(dat%var(iVar)%dat(:)),start=(/index_gru,1,output_timestep(iFreq)/),count=(/num_gru,maxLength,1/))
-          class is (var_ilength)
-            err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),(dat%var(iVar)%dat(:)),start=(/index_gru,1,output_timestep(iFreq)/),count=(/num_gru,maxLength,1/))
-          class default
+        select case(dataType)
+          case(ixReal)
+            err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),realArray(1:num_gru,1:maxLength),start=(/index_gru,1,output_timestep(iFreq)/),count=(/num_gru,maxLength,1/))
+          case(ixInteger)
+            err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),realArray(1:num_gru,1:maxLength),start=(/index_gru,1,output_timestep(iFreq)/),count=(/num_gru,maxLength,1/))
+          case default
             err=20
             message=trim(message)//'data must be of type integer or real'
             print*, message
