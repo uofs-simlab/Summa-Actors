@@ -64,8 +64,6 @@ subroutine prepareOutput(&
   USE globalData,only:forc_meta,attr_meta,type_meta           ! metaData structures
   USE output_stats,only:calcStats                             ! module for compiling output statistics
   USE outputStrucWrite_module,only:writeParm                  ! module to write model parameters
-  USE time_utils_module,only:elapsedSec                       ! calculate the elapsed time
-  USE globalData,only:elapsedWrite   
   USE var_lookup,only:iLookTIME,iLookDIAG,iLookPROG,iLookINDEX, &
     iLookFreq,maxvarFreq ! named variables for time data structure
   USE globalData,only:time_meta,forc_meta,diag_meta,prog_meta,&
@@ -216,7 +214,37 @@ subroutine prepareOutput(&
   ! calc basin stats
   call calcStats(bvarStat%var(:), bvarStruct%var(:), statBvar_meta, resetStats%dat, finalizeStats%dat, statCounter%var, err, cmessage)
   if(err/=0)then; message=trim(message)//trim(cmessage)//'[bvar stats]'; return; endif
+
+end subroutine prepareOutput
+
+subroutine updateCounters(handle_timeStruct, handle_statCounter, handle_outputTimeStep, &
+        handle_resetStats, handle_oldTime, handle_finalizeStats) bind(C, name="updateCounters")
+  USE globalData,only:startWrite,endWrite,elapsedWrite
+  USE var_lookup,only:maxvarFreq
+  USE time_utils_module,only:elapsedSec                       ! calculate the elapsed time
+
+  type(c_ptr), intent(in), value           :: handle_statCounter
+  type(c_ptr), intent(in), value           :: handle_outputTimeStep
+  type(c_ptr), intent(in), value           :: handle_resetStats
+  type(c_ptr), intent(in), value           :: handle_oldTime      ! time for the previous model time step
+  type(c_ptr), intent(in), value           :: handle_timeStruct !  model time data
+  type(c_ptr), intent(in), value           :: handle_finalizeStats
+
+  type(var_i),pointer                      :: statCounter     ! time counter for stats
+  type(var_i),pointer                      :: outputTimeStep  ! timestep in output files
+  type(flagVec),pointer                    :: resetStats      ! flags to reset statistics
+  type(var_i),pointer                      :: oldTime         !
+  type(var_i),pointer                      :: timeStruct      ! model time data
+  type(flagVec),pointer                    :: finalizeStats   ! flags to finalize statistics
+
+  integer(i4b)                             :: iFreq
   
+  call c_f_pointer(handle_statCounter, statCounter)
+  call c_f_pointer(handle_outputTimeStep, outputTimeStep)
+  call c_f_pointer(handle_resetStats, resetStats)
+  call c_f_pointer(handle_oldTime, oldTime)
+  call c_f_pointer(handle_timeStruct, timeStruct)
+  call c_f_pointer(handle_finalizeStats, finalizeStats)
 
   ! *****************************************************************************
   ! *** update counters
@@ -241,9 +269,8 @@ subroutine prepareOutput(&
  call date_and_time(values=endWrite)
 
  elapsedWrite = elapsedWrite + elapsedSec(startWrite, endWrite)
+end subroutine updateCounters
 
-
-end subroutine prepareOutput
 
 
 end module hru_actor

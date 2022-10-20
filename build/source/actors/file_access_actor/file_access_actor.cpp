@@ -144,7 +144,39 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
             std::vector<std::vector<double>> indx_stat, std::vector<std::vector<int>> indx_struct,
             std::vector<int> output_timestep) {
             
-            aout(self) << "Fake Write\n";
+            int err = 0;
+            void* handle_finalize_stats   = new_handle_var_i();
+            void* handle_forc_stat        = new_handle_var_dlength();
+            void* handle_forc_struct      = new_handle_var_d();
+            void* handle_prog_stat        = new_handle_var_dlength();
+            void* handle_prog_struct       = new_handle_var_dlength();
+            void* handle_diag_stat        = new_handle_var_dlength();
+            void* handle_diag_struct      = new_handle_var_dlength();
+            void* handle_flux_stat        = new_handle_var_dlength();
+            void* handle_flux_struct      = new_handle_var_dlength();
+            void* handle_indx_stat        = new_handle_var_dlength();
+            void* handle_indx_struct      = new_handle_var_ilength();
+            void* handle_output_time_step = new_handle_var_i();
+            
+            set_var_i(finalize_stats, handle_finalize_stats);
+            set_var_dlength(forc_stat, handle_forc_stat);
+            set_var_d(forc_struct, handle_forc_struct);
+            set_var_dlength(prog_stat, handle_prog_stat);
+            set_var_dlength(prog_struct, handle_prog_struct);
+            set_var_dlength(diag_stat, handle_diag_stat);
+            set_var_dlength(diag_struct, handle_diag_struct);
+            set_var_dlength(flux_stat, handle_flux_stat);
+            set_var_dlength(flux_struct, handle_flux_struct);
+            set_var_dlength(indx_stat, handle_indx_stat);
+            set_var_ilength(indx_struct, handle_indx_struct);
+            set_var_i(output_timestep, handle_output_time_step);
+
+            writeDataToNetCDF(self->state.handle_ncid, &index_gru, &index_hru,
+                handle_finalize_stats, handle_forc_stat, handle_forc_struct,
+                handle_prog_stat, handle_prog_struct, handle_diag_stat, 
+                handle_diag_struct, handle_flux_stat, handle_flux_struct,
+                handle_indx_stat, handle_indx_struct, handle_output_time_step,
+                &err);
 
         },
 
@@ -213,35 +245,12 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
             resetOutputCounter(&indxGRU);
         },
 
-        [=](serialized_hru_data, 
-            // Statistic Structures
-            std::vector<std::vector<double>> forcStat,
-            std::vector<std::vector<double>> progStat,
-            std::vector<std::vector<double>> diagStat,
-            std::vector<std::vector<double>> fluxStat,
-            std::vector<std::vector<double>> indxStat,
-            std::vector<std::vector<double>> bvarStat,
-            // primary data structures (scalars)
-            std::vector<int> timeStruct,
-            std::vector<double> forcStruct,
-            std::vector<double> attrStruct,
-            std::vector<int> typestruct,
-            std::vector<long int> idStruct,
-            // primary data structures (variable length vectors)
-            std::vector<std::vector<int>> indxStruct,
-            std::vector<std::vector<double>> mparStruct,
-            std::vector<std::vector<double>> progStruct,
-            std::vector<std::vector<double>> diagStruct,
-            std::vector<std::vector<double>> fluxStruct,
-            // basin-average structures
-            std::vector<double>              bparSturct,
-            std::vector<std::vector<double>> bvarStruct,
-            // ancillary data structures
-            std::vector<double> dparStruct,
-            std::vector<int> finalizeStats) {
+        [=](serialized_hru_data) {
 
 
             aout(self) << "Receieved HRU Data\n";
+
+            // self->send()
 
         },
 

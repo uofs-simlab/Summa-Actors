@@ -132,6 +132,9 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
                     indx_struct_array,
                     output_time_step_array);
 
+                updateCounters(self->state.handle_timeStruct, self->state.handle_statCounter, self->state.handle_outputTimeStep,
+                        self->state.handle_resetStats, self->state.handle_oldTime, self->state.handle_finalizeStats);
+
                 // update Timings
                 self->state.timestep += 1;
                 self->state.outputStep += 1;
@@ -142,10 +145,9 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
 
             }
 
-            self->send(self, serialize_data_v);
+            self->send(self, done_write_v);
      
             self->state.hru_timing.updateEndPoint("total_duration");
-
         },
 
         [=](done_write) {
@@ -185,60 +187,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
 
         [=](serialize_data) {
 
-            aout(self) << "We are here in Serialize Data\n";
-            // Statistic Structures
-            std::vector<std::vector<double>> forc_stat_array    = get_var_dlength(self->state.handle_forcStat);
-            std::vector<std::vector<double>> prog_stat_array    = get_var_dlength(self->state.handle_progStat);
-            std::vector<std::vector<double>> diag_stat_array    = get_var_dlength(self->state.handle_diagStat);
-            std::vector<std::vector<double>> flux_stat_array    = get_var_dlength(self->state.handle_fluxStat);
-            std::vector<std::vector<double>> indx_stat_array    = get_var_dlength(self->state.handle_indxStat);
-            std::vector<std::vector<double>> bvar_stat_array    = get_var_dlength(self->state.handle_bvarStat);
-            // primary data structures (scalars)
-            std::vector<int> time_struct_array                  = get_var_i(self->state.handle_timeStruct);
-            std::vector<double> forc_struct_array               = get_var_d(self->state.handle_forcStruct);
-            std::vector<double> attr_struct_array               = get_var_d(self->state.handle_attrStruct); 
-            std::vector<int> type_struct_array                  = get_var_i(self->state.handle_typeStruct);
-            std::vector<long int> id_struct_array               = get_var_i8(self->state.handle_idStruct);
-            // primary data structures (variable length vectors)
-            std::vector<std::vector<int>> indx_struct_array     = get_var_ilength(self->state.handle_indxStruct);
-            std::vector<std::vector<double>> mpar_struct_array  = get_var_dlength(self->state.handle_mparStruct);
-            std::vector<std::vector<double>> prog_struc_array   = get_var_dlength(self->state.handle_progStruct);
-            std::vector<std::vector<double>> diag_struct_array  = get_var_dlength(self->state.handle_diagStruct);
-            std::vector<std::vector<double>> flux_struct_array  = get_var_dlength(self->state.handle_fluxStruct);
-            // basin-average structures
-            std::vector<double> bpar_struct_array               = get_var_d(self->state.handle_bparStruct);
-            std::vector<std::vector<double>> bvar_struct_array  = get_var_dlength(self->state.handle_bvarStruct);
-            // ancillary data structures
-            std::vector<double> dpar_struct_array               = get_var_d(self->state.handle_dparStruct);
-
-            std::vector<int> finalize_stats_array               = get_flagVec(self->state.handle_finalizeStats);
-
-            self->send(self->state.file_access_actor, serialized_hru_data_v,
-                // Statistic Structures
-                forc_stat_array,
-                prog_stat_array,
-                diag_stat_array,
-                flux_stat_array,
-                indx_stat_array,
-                bvar_stat_array,
-                // primary data structures (scalars)
-                time_struct_array,
-                forc_struct_array,
-                attr_struct_array,
-                type_struct_array,
-                id_struct_array,
-                // primary data structures (variable length vectors)
-                indx_struct_array,
-                mpar_struct_array,
-                prog_struc_array,
-                diag_struct_array,
-                flux_struct_array,
-                // basin-average structures
-                bpar_struct_array,
-                bvar_struct_array,
-                // ancillary data structures
-                dpar_struct_array,
-                finalize_stats_array);
+            self->send(self->state.file_access_actor, serialized_hru_data_v, self);
 
 
         },

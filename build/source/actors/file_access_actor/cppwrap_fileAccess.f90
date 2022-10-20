@@ -297,12 +297,12 @@ subroutine FileAccessActor_WriteOutput(&
   do iGRU=minGRU, maxGRU
     stepCounter(:) = outputTimeStep(iGRU)%dat(:) ! We want to avoid updating outputTimeStep
     do iStep=1, nSteps
-      call writeBasin(ncid,iGRU,stepCounter(:),iStep,bvar_meta, &
-              outputStructure(1)%bvarStat(1)%gru(iGRU)%hru(indxHRU)%var, &
-              outputStructure(1)%bvarStruct(1)%gru(iGRU)%hru(indxHRU)%var, bvarChild_map, err, cmessage)
+      ! call writeBasin(ncid,iGRU,stepCounter(:),iStep,bvar_meta, &
+      !         outputStructure(1)%bvarStat(1)%gru(iGRU)%hru(indxHRU)%var, &
+      !         outputStructure(1)%bvarStruct(1)%gru(iGRU)%hru(indxHRU)%var, bvarChild_map, err, cmessage)
       
-      call writeTime(ncid,outputTimeStep(iGRU)%dat(:),iStep,time_meta, &
-              outputStructure(1)%timeStruct(1)%gru(iGRU)%hru(indxHRU)%var,err,cmessage)
+      ! call writeTime(ncid,outputTimeStep(iGRU)%dat(:),iStep,time_meta, &
+      !         outputStructure(1)%timeStruct(1)%gru(iGRU)%hru(indxHRU)%var,err,cmessage)
     end do ! istep
   end do ! iGRU
   numGRU = maxGRU-minGRU + 1 

@@ -105,4 +105,7 @@ extern "C" {
         void* handle_flux_struct, void* handle_bpar_struct, void* handle_bvar_struct,
         void* stat_counter, void* output_timestep, void* reset_stats, void* finalize_stats,
         void* finish_time, void* old_time, int* err);
+  
+  void updateCounters(void* handle_timeStruct, void*  handle_statCounter, void* handle_outputTimeStep,
+        void* handle_resetStats, void* handle_oldTime, void* handle_finalizeStats);
 }
