@@ -196,7 +196,7 @@ subroutine prepareOutput(&
                             statCounter%var,                             &   ! statistics counter
                             err, cmessage)                                  ! error control
   if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
-  
+
  ! ****************************************************************************
  ! *** calculate output statistics
  ! ****************************************************************************
