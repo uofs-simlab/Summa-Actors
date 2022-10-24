@@ -116,7 +116,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
                 std::vector<double>   dpar_struct_array             = get_var_d(self->state.handle_dparStruct);
                 std::vector<int>      finalize_stats_array          = get_flagVec(self->state.handle_finalizeStats);
                 std::vector<int>      output_time_step_array        = get_var_i(self->state.handle_outputTimeStep);
-
+                
                 self->send(self->state.file_access_actor, write_output_v,
                     self->state.indxGRU,
                     self->state.indxHRU,

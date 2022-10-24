@@ -157,6 +157,7 @@ subroutine writeDataNew(ncid, finalize_stats, output_timestep, max_layers, index
   USE globalData,only:outFreq                        ! output file information
   USE var_lookup,only:iLookVarType                   ! index into type structure
   USE var_lookup,only:iLookIndex                     ! index into index structure
+  USE var_lookup,only:iLookProg                    ! index into index structure
   USE get_ixName_module,only:get_statName            ! to access type strings for error messages
   implicit none
   ! dummy variables
@@ -194,6 +195,7 @@ subroutine writeDataNew(ncid, finalize_stats, output_timestep, max_layers, index
   integer(i4b),parameter             :: ixReal=1002       ! named variable for real
   
   err=0;message="writeOutput.f90 - writeDataNew/"
+
   ! loop through output frequencies
   do iFreq=1,maxvarFreq
     if(.not.outFreq(iFreq)) cycle ! check if frequency is desired (timestep, day, month, year)
@@ -291,7 +293,8 @@ subroutine writeDataNew(ncid, finalize_stats, output_timestep, max_layers, index
 
                 ! get the data vectors
         select type (dat)
-          class is (var_dlength); realArray(index_gru,1:datLength) = dat%var(iVar)%dat(:)
+          class is (var_dlength)
+            realArray(index_gru,1:datLength) = dat%var(iVar)%dat(:)
           class is (var_ilength);  intArray(index_gru,1:datLength) = dat%var(iVar)%dat(:)
           class default; err=20; message=trim(message)//'data must not be scalarv and either of type gru_hru_doubleVec or gru_hru_intVec'; return
         end select
@@ -313,7 +316,7 @@ subroutine writeDataNew(ncid, finalize_stats, output_timestep, max_layers, index
           case(ixReal)
             err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),realArray(1:num_gru,1:maxLength),start=(/index_gru,1,output_timestep(iFreq)/),count=(/num_gru,maxLength,1/))
           case(ixInteger)
-            err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),realArray(1:num_gru,1:maxLength),start=(/index_gru,1,output_timestep(iFreq)/),count=(/num_gru,maxLength,1/))
+            err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),intArray(1:num_gru,1:maxLength),start=(/index_gru,1,output_timestep(iFreq)/),count=(/num_gru,maxLength,1/))
           case default
             err=20
             message=trim(message)//'data must be of type integer or real'

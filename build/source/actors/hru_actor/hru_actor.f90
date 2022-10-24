@@ -196,11 +196,7 @@ subroutine prepareOutput(&
                             statCounter%var,                             &   ! statistics counter
                             err, cmessage)                                  ! error control
   if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
-
-  print*, "iLookPROG%mLayerHeight = ", iLookPROG%mLayerHeight
-  print*, "mLayerHeight = ", progStruct%var(iLookPROG%mLayerHeight)%dat(100)
-  print*, "mLayerHeight = ", progStruct%var(iLookPROG%mLayerHeight)%dat(103)
-
+  
  ! ****************************************************************************
  ! *** calculate output statistics
  ! ****************************************************************************
