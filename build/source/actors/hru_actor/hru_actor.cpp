@@ -106,7 +106,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
                 // primary data structures (variable length vectors)
                 std::vector<std::vector<int>>    indx_struct_array  = get_var_ilength(self->state.handle_indxStruct);
                 std::vector<std::vector<double>> mpar_struct_array  = get_var_dlength(self->state.handle_mparStruct);
-                std::vector<std::vector<double>> prog_struct_array   = get_var_dlength(self->state.handle_progStruct);
+                std::vector<std::vector<double>> prog_struct_array  = get_var_dlength(self->state.handle_progStruct);
                 std::vector<std::vector<double>> diag_struct_array  = get_var_dlength(self->state.handle_diagStruct);
                 std::vector<std::vector<double>> flux_struct_array  = get_var_dlength(self->state.handle_fluxStruct);
                 // basin-average structures

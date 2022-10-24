@@ -250,7 +250,7 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
           
             // Check if this list is now full
             if(self->state.output_manager->isFull(listIndex)) {
-                write(self, listIndex);
+                // write(self, listIndex);
             }
         },
 
@@ -391,64 +391,6 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
     }
 }
 
-int write(stateful_actor<file_access_state>* self, int listIndex) {
-    int err = 0;
-    int minGRU = self->state.output_manager->getMinIndex(listIndex);
-    int maxGRU = self->state.output_manager->getMaxIndex(listIndex);
-    int numStepsToWrite = self->state.output_manager->getNumStepsToWrite(listIndex);
-    FileAccessActor_WriteOutput(self->state.handle_ncid,
-        &numStepsToWrite, &minGRU, 
-        &maxGRU, &err);
-        
-    // Pop The actors and send them the correct continue message
-    while(!self->state.output_manager->isEmpty(listIndex)) {
-        std::tuple<caf::actor, int> actor = self->state.output_manager->popActor(listIndex);
-        if (get<1>(actor) == 9999) {
-            
-            self->send(get<0>(actor), done_write_v);
-
-        }  else {
-            self->send(get<0>(actor), run_hru_v, 
-                self->state.forcing_file_list[get<1>(actor) - 1].getNumSteps());
-        }
-    }
-
-    return 0;
-}
-
-// int writeOutput(stateful_actor<file_access_state>* self, ) {
-
-// }
-
-// int writeOutput(stateful_actor<file_access_state>* self, int indxGRU, int indxHRU, 
-//     int numStepsToWrite, int returnMessage, caf::actor actorRef) {
-//     self->state.file_access_timing.updateStartPoint("write_duration");
-
-//     if (debug) {
-//         aout(self) << "Recieved Write Request From GRU: " << indxGRU << "\n";
-//     }
-//     int err = 0;
-//     int listIndex = self->state.output_manager->addActor(actorRef, indxGRU, returnMessage, numStepsToWrite);
-//     if (self->state.output_manager->isFull(listIndex)) {
-//         if (debug) {
-//             aout(self) << "List with Index " << listIndex << " is full and ready to write\n";
-//             aout(self) << "Minimum GRU Index = " << self->state.output_manager->getMinIndex(listIndex) << "\n";
-//             aout(self) << "Maximum GRU Index = " << self->state.output_manager->getMaxIndex(listIndex) << "\n";
-//         }
-
-//        err = write(self, listIndex);
-
-//     } else {
-//         if (debug) {
-//             aout(self) << "List with Index " << listIndex << " is not full yet waiting to write\n";
-//             aout(self) << "Size of list is " << self->state.output_manager->getSize(listIndex) << "\n";
-//         }
-//     }
-   
-//     self->state.file_access_timing.updateEndPoint("write_duration");
-//     return err;
-
-// }
 
 int readForcing(stateful_actor<file_access_state>* self, int currentFile) {
     // Check if we have already loaded this file

@@ -63,7 +63,6 @@ subroutine prepareOutput(&
 
   USE globalData,only:forc_meta,attr_meta,type_meta           ! metaData structures
   USE output_stats,only:calcStats                             ! module for compiling output statistics
-  USE outputStrucWrite_module,only:writeParm                  ! module to write model parameters
   USE var_lookup,only:iLookTIME,iLookDIAG,iLookPROG,iLookINDEX, &
     iLookFreq,maxvarFreq ! named variables for time data structure
   USE globalData,only:time_meta,forc_meta,diag_meta,prog_meta,&
