@@ -256,8 +256,8 @@ void Initialize_HRU(stateful_actor<hru_state>* self) {
         return;
     }
 
-    setupHRUParam(&self->state.indxGRU,
-            &self->state.indxHRU, 
+    setupHRUParam(&self->state.indxHRU, 
+            &self->state.indxGRU,
             self->state.handle_attrStruct, 
             self->state.handle_typeStruct, 
             self->state.handle_idStruct,

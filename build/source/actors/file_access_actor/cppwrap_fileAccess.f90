@@ -306,36 +306,36 @@ subroutine FileAccessActor_WriteOutput(&
     end do ! istep
   end do ! iGRU
   numGRU = maxGRU-minGRU + 1 
-  do iStruct=1,size(structInfo)
-    select case(trim(structInfo(iStruct)%structName))
-      case('forc')
-        call writeData(ncid,outputTimeStep(minGRU)%dat(:),outputTimestepUpdate,maxLayers,nSteps,&
-                      minGRU, maxGRU, numGRU, & 
-                      forc_meta,outputStructure(1)%forcStat(1),outputStructure(1)%forcStruct(1),'forc', &
-                      forcChild_map,outputStructure(1)%indxStruct(1),err,cmessage)
-      case('prog')
-        call writeData(ncid,outputTimeStep(minGRU)%dat(:),outputTimestepUpdate,maxLayers,nSteps,&
-                      minGRU, maxGRU, numGRU, &
-                      prog_meta,outputStructure(1)%progStat(1),outputStructure(1)%progStruct(1),'prog', &
-                      progChild_map,outputStructure(1)%indxStruct(1),err,cmessage)
-      case('diag')
-        call writeData(ncid,outputTimeStep(minGRU)%dat(:),outputTimestepUpdate,maxLayers,nSteps,&
-                      minGRU, maxGRU, numGRU, &
-                      diag_meta,outputStructure(1)%diagStat(1),outputStructure(1)%diagStruct(1),'diag', &
-                      diagChild_map,outputStructure(1)%indxStruct(1),err,cmessage)
-      case('flux')
-        call writeData(ncid,outputTimeStep(minGRU)%dat(:),outputTimestepUpdate,maxLayers,nSteps,&
-                      minGRU, maxGRU, numGRU, &
-                      flux_meta,outputStructure(1)%fluxStat(1),outputStructure(1)%fluxStruct(1),'flux', &
-                      fluxChild_map,outputStructure(1)%indxStruct(1),err,cmessage)
-      case('indx')
-        call writeData(ncid,outputTimeStep(minGRU)%dat(:),outputTimestepUpdate,maxLayers,nSteps,&
-                      minGRU, maxGRU, numGRU, &
-                      indx_meta,outputStructure(1)%indxStat(1),outputStructure(1)%indxStruct(1),'indx', &
-                      indxChild_map,outputStructure(1)%indxStruct(1),err,cmessage)
-    end select
-    if(err/=0)then; message=trim(message)//trim(cmessage)//'['//trim(structInfo(iStruct)%structName)//']'; return; endif
-  end do  ! (looping through structures)
+  ! do iStruct=1,size(structInfo)
+  !   select case(trim(structInfo(iStruct)%structName))
+  !     case('forc')
+  !       call writeData(ncid,outputTimeStep(minGRU)%dat(:),outputTimestepUpdate,maxLayers,nSteps,&
+  !                     minGRU, maxGRU, numGRU, & 
+  !                     forc_meta,outputStructure(1)%forcStat(1),outputStructure(1)%forcStruct(1),'forc', &
+  !                     forcChild_map,outputStructure(1)%indxStruct(1),err,cmessage)
+  !     case('prog')
+  !       call writeData(ncid,outputTimeStep(minGRU)%dat(:),outputTimestepUpdate,maxLayers,nSteps,&
+  !                     minGRU, maxGRU, numGRU, &
+  !                     prog_meta,outputStructure(1)%progStat(1),outputStructure(1)%progStruct(1),'prog', &
+  !                     progChild_map,outputStructure(1)%indxStruct(1),err,cmessage)
+  !     case('diag')
+  !       call writeData(ncid,outputTimeStep(minGRU)%dat(:),outputTimestepUpdate,maxLayers,nSteps,&
+  !                     minGRU, maxGRU, numGRU, &
+  !                     diag_meta,outputStructure(1)%diagStat(1),outputStructure(1)%diagStruct(1),'diag', &
+  !                     diagChild_map,outputStructure(1)%indxStruct(1),err,cmessage)
+  !     case('flux')
+  !       call writeData(ncid,outputTimeStep(minGRU)%dat(:),outputTimestepUpdate,maxLayers,nSteps,&
+  !                     minGRU, maxGRU, numGRU, &
+  !                     flux_meta,outputStructure(1)%fluxStat(1),outputStructure(1)%fluxStruct(1),'flux', &
+  !                     fluxChild_map,outputStructure(1)%indxStruct(1),err,cmessage)
+  !     case('indx')
+  !       call writeData(ncid,outputTimeStep(minGRU)%dat(:),outputTimestepUpdate,maxLayers,nSteps,&
+  !                     minGRU, maxGRU, numGRU, &
+  !                     indx_meta,outputStructure(1)%indxStat(1),outputStructure(1)%indxStruct(1),'indx', &
+  !                     indxChild_map,outputStructure(1)%indxStruct(1),err,cmessage)
+  !   end select
+  !   if(err/=0)then; message=trim(message)//trim(cmessage)//'['//trim(structInfo(iStruct)%structName)//']'; return; endif
+  ! end do  ! (looping through structures)
   
   do iFreq = 1,maxvarFreq
     outputTimeStep(minGRU)%dat(iFreq) = outputTimeStep(minGRU)%dat(iFreq) + outputTimeStepUpdate(iFreq) 

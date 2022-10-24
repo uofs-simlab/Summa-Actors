@@ -101,7 +101,7 @@ subroutine writeDataToNetCDF(handle_ncid,          &
   USE globalData,only:maxLayers                               ! maximum number of layers
   USE globalData,only:structInfo
   USE writeOutput_module,only:writeParm 
-  USE writeOutput_module,only:writeDataNew
+  USE writeOutput_module,only:writeData
 
   implicit none
   ! dummy variables
@@ -162,27 +162,27 @@ subroutine writeDataToNetCDF(handle_ncid,          &
   do iStruct=1,size(structInfo)
     select case(trim(structInfo(iStruct)%structName))
       case('forc')
-        call writeDataNew(ncid, finalize_stats%dat(:), output_timestep%var(:),maxLayers,&
+        call writeData(ncid, finalize_stats%dat(:), output_timestep%var(:),maxLayers,&
                       index_gru, numGRU, & 
                       forc_meta,forc_stat,forc_struct,'forc', &
                       forcChild_map,indx_struct,err,cmessage)
       case('prog')
-        call writeDataNew(ncid, finalize_stats%dat(:), output_timestep%var(:),maxLayers,&
+        call writeData(ncid, finalize_stats%dat(:), output_timestep%var(:),maxLayers,&
                       index_gru, numGRU, &
                       prog_meta,prog_stat,prog_struct,'prog', &
                       progChild_map,indx_struct,err,cmessage)
       case('diag')
-        call writeDataNew(ncid, finalize_stats%dat(:), output_timestep%var(:),maxLayers,&
+        call writeData(ncid, finalize_stats%dat(:), output_timestep%var(:),maxLayers,&
                       index_gru, numGRU, &
                       diag_meta, diag_stat, diag_struct,'diag', &
                       diagChild_map,indx_struct,err,cmessage)
       case('flux')
-        call writeDataNew(ncid, finalize_stats%dat(:), output_timestep%var(:),maxLayers,&
+        call writeData(ncid, finalize_stats%dat(:), output_timestep%var(:),maxLayers,&
                       index_gru, numGRU, &
                       flux_meta,flux_stat,flux_struct,'flux', &
                       fluxChild_map,indx_struct,err,cmessage)
       case('indx')
-        call writeDataNew(ncid, finalize_stats%dat(:), output_timestep%var(:),maxLayers,&
+        call writeData(ncid, finalize_stats%dat(:), output_timestep%var(:),maxLayers,&
                       index_gru, numGRU, &
                       indx_meta,indx_stat, indx_struct, 'indx', &
                       indxChild_map,indx_struct,err,cmessage)
