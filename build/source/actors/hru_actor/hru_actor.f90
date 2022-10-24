@@ -271,6 +271,4 @@ subroutine updateCounters(handle_timeStruct, handle_statCounter, handle_outputTi
  elapsedWrite = elapsedWrite + elapsedSec(startWrite, endWrite)
 end subroutine updateCounters
 
-
-
 end module hru_actor
