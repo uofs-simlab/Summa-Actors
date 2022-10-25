@@ -58,6 +58,9 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
             std::vector<double> bpar_struct) {
             int err = 0;
 
+            self->state.file_access_timing.updateStartPoint("write_duration");
+
+
             // create structures to populate in Fortran
             void *handle_attr_struct = new_handle_var_d();
             void *handle_type_struct = new_handle_var_i();
@@ -72,6 +75,9 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
             writeParamToNetCDF(self->state.handle_ncid, &index_gru, &index_hru, 
                 handle_attr_struct, handle_type_struct, handle_mpar_struct, 
                 handle_bpar_struct, &err);
+
+            self->state.file_access_timing.updateEndPoint("write_duration");
+            
         },
 
         [=](access_forcing, int currentFile, caf::actor refToRespondTo) {
@@ -151,6 +157,8 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
             // ancillary data structures
             std::vector<double> dpar_struct, std::vector<int> finalize_stats, std::vector<int> output_timestep ) {
             
+            self->state.file_access_timing.updateStartPoint("write_duration");
+            
             int err = 0;
             // statistic structures
             void* handle_forc_stat        = new_handle_var_dlength();
@@ -213,6 +221,9 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
                 handle_diag_struct, handle_flux_stat, handle_flux_struct,
                 handle_indx_stat, handle_indx_struct, handle_output_timestep,
                 &err);
+            
+            self->state.file_access_timing.updateEndPoint("write_duration");
+            
 
         },
 
@@ -221,10 +232,6 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
             int err;
             int returnMessage = 9999;
             
-            // err = writeOutput(self, indxGRU, indxHRU, numStepsToWrite, returnMessage, refToRespondTo);
-            // if (err != 0) {
-            //     aout(self) << "FILE_ACCESS_ACTOR - ERROR Writing Output \n";
-            // } 
         },
 
         [=](read_and_write, int indxGRU, int indxHRU, int numStepsToWrite, int currentFile, 
@@ -234,10 +241,6 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
             err = readForcing(self, currentFile);
             if (err != 0)
                 aout(self) << "\nERROR: FILE_ACCESS_ACTOR - READING_FORCING FAILED\n";
-
-            // err = writeOutput(self, indxGRU, indxHRU, numStepsToWrite, currentFile, refToRespondTo);
-            // if (err != 0)
-            //     aout(self) << "FILE_ACCESS_ACTOR - ERROR Writing Output \n";
         },
 
         [=](run_failure, int indxGRU) {
@@ -248,10 +251,6 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
 
             listIndex = self->state.output_manager->decrementMaxSize(indxGRU);
           
-            // Check if this list is now full
-            if(self->state.output_manager->isFull(listIndex)) {
-                // write(self, listIndex);
-            }
         },
 
         /**
@@ -279,15 +278,6 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
 
         [=](reset_outputCounter, int indxGRU) {
             resetOutputCounter(&indxGRU);
-        },
-
-        [=](serialized_hru_data) {
-
-
-            aout(self) << "Receieved HRU Data\n";
-
-            // self->send()
-
         },
 
     };

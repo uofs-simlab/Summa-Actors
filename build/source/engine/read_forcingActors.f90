@@ -142,9 +142,6 @@ subroutine read_forcingActors(&
   ! *****         Then read the data
   ! **********************************************************************************************
   ! check to see if we've passed end of netcdf file
-  ! print*, "iRead = ", iRead
-  ! print*, "iFile = ", iFile
-  ! print*, "nTimeSteps = ", forcingDataStruct(iFile)%nTimeSteps
   if(iRead>forcingDataStruct(iFile)%nTimeSteps)then
 
     ! increment iFile so we look in the correct location in the forcingDataStruct structure
@@ -272,7 +269,6 @@ subroutine getFirstTimestep(currentJulday,iFile,iRead,tmZoneOffsetFracDay,err,me
 
   ! find difference of fileTime from currentJulday
   diffTime=abs(fileTime-currentJulday)
-  ! print*, "diffTime = ", diffTime
   ! start time is in the current file
   if(any(diffTime < verySmall))then
    iRead=minloc(diffTime,1)
@@ -336,13 +332,6 @@ subroutine openForcingFile(iFile,tmZoneOffsetFracDay,err,message)
   case default; err=20; message=trim(message)//'unable to identify time zone info option'; return
  end select ! (option time zone option)
 
-
- ! convert the reference time to days since the beginning of time
-!  call compjulday(iyyy,im,id,ih,imin,dsec,                & ! output = year, month, day, hour, minute, second
-!                  refJulday_data,err,cmessage)              ! output = julian day (fraction of day) + error control
-!  if(err/=0)then; message=trim(message)//trim(cmessage); return; end if
-
-
 end subroutine openForcingFile
 
 ! *************************************************************************
@@ -354,7 +343,6 @@ subroutine readForcingDataActors(&
     USE time_utils_module,only:compcalday                 ! convert julian day to calendar date
     USE time_utils_module,only:compJulday                 ! convert calendar date to julian day
     USE get_ixname_module,only:get_ixforce                ! identify index of named variable
-    ! USE globalData,only:forcing_data,forcing_helper
     ! dummy variables
     integer(i4b),intent(in)                 :: indxGRU          ! index of GRU in gru_struc  
     real(dp),intent(in)                     :: currentJulday    ! Julian day of current time step
