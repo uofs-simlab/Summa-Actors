@@ -58,7 +58,7 @@ NOAHMP_DIR = $(F_KORE_DIR)/noah-mp
 ENGINE_DIR = $(F_KORE_DIR)/engine
 ACTORS_DIR = $(F_KORE_DIR)/actors
 JOB_ACTOR_DIR = $(ACTORS_DIR)/job_actor
-FILE_ACCESS_DIR = $(ACTORS_DIR)/file_access_actor
+FILE_ACCESS_DIR = $(ACTORS_DIR)/file_access_actor/fortran_code
 HRU_ACTOR_DIR = $(ACTORS_DIR)/hru_actor
 GRU_ACTOR_DIR = $(ACTORS_DIR)/gru_actor
 
@@ -166,7 +166,7 @@ SUMMA_FILEACCESS_INTERFACE = \
 		cppwrap_fileAccess.f90 \
 		read_attribute_all_hru.f90 \
 		read_param_all_hru.f90 \
-		file_access_actor.f90
+		write_to_netcdf.f90
 
 FILEACCESS_INTERFACE = $(patsubst %, $(FILE_ACCESS_DIR)/%, $(SUMMA_FILEACCESS_INTERFACE))
 
@@ -302,9 +302,9 @@ JOB_ACTOR = $(SOURCE_DIR)/job_actor/job_actor.cpp
 GRUinfo = $(SOURCE_DIR)/job_actor/GRUinfo.cpp
 
 FILE_ACCESS_ACTOR_INCLUDES = -I$(INCLUDE_DIR)/file_access_actor
-FILE_ACCESS_ACTOR = $(SOURCE_DIR)/file_access_actor/file_access_actor.cpp
-FORCING_FILE_INFO = $(SOURCE_DIR)/file_access_actor/forcing_file_info.cpp
-OUTPUT_MANAGER = $(SOURCE_DIR)/file_access_actor/output_manager.cpp
+FILE_ACCESS_ACTOR = $(SOURCE_DIR)/file_access_actor/cpp_code/file_access_actor.cpp
+FORCING_FILE_INFO = $(SOURCE_DIR)/file_access_actor/cpp_code/forcing_file_info.cpp
+OUTPUT_MANAGER = $(SOURCE_DIR)/file_access_actor/cpp_code/output_manager.cpp
 
 HRU_ACTOR_INCLUDES = -I$(INCLUDE_DIR)/hru_actor
 HRU_ACTOR = $(SOURCE_DIR)/hru_actor/hru_actor.cpp

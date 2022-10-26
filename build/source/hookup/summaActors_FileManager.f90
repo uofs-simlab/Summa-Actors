@@ -76,7 +76,7 @@ subroutine summa_SetTimesDirsAndFiles(file_manager,err) bind(C, name="setTimesDi
 
   ! input/output vars
   character(kind=c_char,len=1),intent(in)   :: file_manager
-  integer(c_int),intent(out)                  :: err
+  integer(c_int),intent(out)                :: err
   ! local vars
   character(len=256)                        :: summaFileManagerIn
   character(len=256)                        :: message

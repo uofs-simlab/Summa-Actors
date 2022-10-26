@@ -6,6 +6,10 @@ module read_param_all_hru
     public::read_param_file_access_actor
     public::overwriteParam
 contains
+
+
+! overwriteParm sets the basin parameters
+! It can then overwrite them from information from the Noah-MP tables
 subroutine overwriteParam(num_gru, err) bind(C, name="overwriteParam")
     USE globalData,only:outputStructure
     USE pOverwrite_module,only:pOverwrite                       ! module to overwrite default parameter values with info from the Noah tables

@@ -40,26 +40,12 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
     initalizeFileAccessActor(self);
 
     return {
-        [=](initalize_outputStructure) {
-            aout(self) << "Initalizing Output Structure" << std::endl;
-            Init_OutputStruct(self->state.handle_forcing_file_info, &self->state.outputStrucSize, 
-                &self->state.numGRU, &self->state.err);
-            if (self->state.err != 0) {
-                aout(self) << "ERROR: FILE_ACCESS_ACTOR init_OutputStruct \n";
-                std::string function = "init_OutputStruc";
-                self->send(self->state.parent, file_access_actor_err_v, function);
-                self->quit();
-                return;
-            }
-        },
-
         [=](write_param, int index_gru, int index_hru, std::vector<double> attr_struct, 
             std::vector<int> type_struct, std::vector<std::vector<double>> mpar_struct,
             std::vector<double> bpar_struct) {
             int err = 0;
 
             self->state.file_access_timing.updateStartPoint("write_duration");
-
 
             // create structures to populate in Fortran
             void *handle_attr_struct = new_handle_var_d();
@@ -350,6 +336,7 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
         return;
     }
 
+    // Noah-MP table information
     overwriteParam(&self->state.numGRU, &err);
     if (err != 0) {
         aout(self) << "ERROR: FILE_ACCESS_ACTOR overwriteParam() \n";
@@ -413,5 +400,16 @@ int readForcing(stateful_actor<file_access_state>* self, int currentFile) {
     }
 
 }
+
+
+// void readAttributes(stateful_actor<file_access_state>* self) {
+
+//     openAttributeFile();
+//     getNumVar();
+//     // for loop over all HRUs
+//         //readAttribute()
+//     closeAttributesFile();
+
+// }
 
 } // end namespace

@@ -54,4 +54,10 @@ extern "C" {
 
   void writeTimeToNetCDF(void* handle_ncid, void* handle_finalize_stats, void* handle_output_timestep,
     void* handle_time_struct, int* err);
+
+
+  // ncFileOpen(char const* inFile, int* mode, int* ncid, int* err, char)
+  void openAttributeFile(char const* inFile, int* ncid, int* err);
+
+  
 }

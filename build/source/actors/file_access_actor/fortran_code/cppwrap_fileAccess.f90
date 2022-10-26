@@ -66,6 +66,10 @@ subroutine mDecisions_C(num_steps,err) bind(C, name='mDecisions_C')
 
 end subroutine mDecisions_C
 
+
+! Read in the inital parameters, from the txt files that are give to summa as input
+! LocalParamInfo.txt
+! BasinParamInfo.txt
 subroutine read_pinit_C(err) bind(C, name='read_pinit_C')
   USE globalData,only:localParFallback                        ! local column default parameters
   USE globalData,only:basinParFallback                        ! basin-average default parameters

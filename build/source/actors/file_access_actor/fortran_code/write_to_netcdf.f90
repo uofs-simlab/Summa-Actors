@@ -1,4 +1,4 @@
-module file_access_actor
+module write_to_netcdf_module
 USE, intrinsic :: iso_c_binding
 USE nrtype
 USE data_types
@@ -273,7 +273,4 @@ subroutine writeTimeToNetCDF(handle_ncid, handle_finalize_stats, handle_output_t
 
 end subroutine writeTimeToNetCDF
 
-
-
-
-end module file_access_actor
+end module write_to_netcdf_module
