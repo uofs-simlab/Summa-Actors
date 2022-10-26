@@ -128,6 +128,17 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
             }
         },
 
+        [=] (get_attributes, int ref_gru, caf::actor actor_to_respond) {
+            // ref_gru will always be 1 index too high (FORTRAN arrays start at 1)
+            std::vector<double> attr_array_to_send = self->state.attr_arrays_for_hrus[ref_gru-1];
+            std::vector<int> type_array_to_send = self->state.type_arrays_for_hrus[ref_gru-1];
+            std::vector<long int> id_array_to_send = self->state.id_arrays_for_hrus[ref_gru-1];
+
+            self->send(actor_to_respond, get_attributes_v, attr_array_to_send,
+                type_array_to_send, id_array_to_send);
+            
+        },
+
         [=](write_output, int index_gru, int index_hru, 
             // statistic structures
             std::vector<std::vector<double>> forc_stat, std::vector<std::vector<double>> prog_stat, std::vector<std::vector<double>> diag_stat,
@@ -326,28 +337,22 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
     Init_OutputStruct(self->state.handle_forcing_file_info, &self->state.outputStrucSize, 
         &self->state.num_gru, &self->state.err);
 
-    // // Read In all of the attribres for the number of GRUs in the run Domian
-    // readAttributeFileAccessActor(&self->state.num_gru, &err);
+    // Read in the attribute information for the HRUs to request
+    readAttributes(self);
+
+    readParameters(self);
+
+    // Noah-MP table information
+    // overwriteParam(&self->state.num_gru, &err);
     // if (err != 0) {
-    //     aout(self) << "ERROR: FILE_ACCESS_ACTOR readAttributeFilAccessActor() \n";
-    //     std::string function = "readAttributeFileAccessActor";
+    //     aout(self) << "ERROR: FILE_ACCESS_ACTOR overwriteParam() \n";
+    //     std::string function = "overwriteParam";
     //     self->send(self->state.parent, file_access_actor_err_v, function);
     //     self->quit();
     //     return;
     // }
 
-    // Noah-MP table information
-    overwriteParam(&self->state.num_gru, &err);
-    if (err != 0) {
-        aout(self) << "ERROR: FILE_ACCESS_ACTOR overwriteParam() \n";
-        std::string function = "overwriteParam";
-        self->send(self->state.parent, file_access_actor_err_v, function);
-        self->quit();
-        return;
-    }
-
-
-    // // Read in all of the parmeters for the number of GRUs in the run Domain
+    // Read in all of the parmeters for the number of GRUs in the run Domain
     // readParamFileAccessActor(&self->state.start_gru, &self->state.num_gru, &err);
     // if (err != 0) {
     //     aout(self) <<  "ERROR: FILE_ACCESS_ACTOR readParamFileAccessActor() \n";
@@ -405,9 +410,8 @@ int readForcing(stateful_actor<file_access_state>* self, int currentFile) {
 void readAttributes(stateful_actor<file_access_state>* self) {
     int err = 0;
     openAttributeFile(&self->state.attribute_ncid, &err);
-    getNumVar(&self->state.attribute_ncid, &self->state.num_var_in_attributes_file, &err);
-    for (int index_gru = self->state.start_gru; 
-        index_gru < self->state.num_gru + self->state.start_gru; index_gru++) {
+    getNumVarAttr(&self->state.attribute_ncid, &self->state.num_var_in_attributes_file, &err);
+    for (int index_gru = 1; index_gru < self->state.num_gru + 1; index_gru++) {
 
         std::vector<double> attr_array(self->state.num_var_in_attributes_file);
         std::vector<int> type_array(self->state.num_var_in_attributes_file);
@@ -427,8 +431,31 @@ void readAttributes(stateful_actor<file_access_state>* self) {
 
 }
 
-// void readParameters(stateful_actor<file_access_state>* self) {
+void readParameters(stateful_actor<file_access_state>* self) {
+    int err = 0;
+    int index_hru = 1;
+    getParamSizes(&self->state.dpar_array_size, &self->state.bpar_array_size);
+    // openParamFile();
+    for (int index_gru = 1; index_gru < self->state.num_gru + 1; index_gru++) {
 
-// }
+        std::vector<double> dpar_array(self->state.dpar_array_size);
+        void* handle_mpar_struct = new_handle_var_dlength();        
+        std::vector<double> bpar_array(self->state.dpar_array_size);        
+
+
+        overwriteParam(&index_gru, &index_hru, &self->state.num_var_in_attributes_file, 
+            &self->state.attr_arrays_for_hrus[index_gru-1][0],
+            &dpar_array[0], handle_mpar_struct, &bpar_array[0], &err);
+
+
+        // readParamFromNetCDF();
+
+        self->state.dpar_arrays_for_hrus.push_back(dpar_array);
+        self->state.mpar_structs_for_hrus.push_back(handle_mpar_struct);
+        self->state.bpar_arrays_for_hrus.push_back(bpar_array);
+    }
+    // closeParamFile();
+
+}
 
 } // end namespace

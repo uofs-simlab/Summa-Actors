@@ -5,7 +5,7 @@ USE nrtype
 implicit none
 private
 public::openAttributeFile
-public::getNumVar
+public::getNumVarAttr
 public::closeAttributeFile
 public::readAttributeFromNetCDF
 
@@ -14,8 +14,6 @@ contains
 subroutine openAttributeFile(attr_ncid, err) bind(C, name="openAttributeFile")
   USE netcdf
   USE netcdf_util_module,only:nc_file_open                   ! open netcdf file
-  USE netcdf_util_module,only:nc_file_close                  ! close netcdf file
-  USE netcdf_util_module,only:netcdf_err                     ! netcdf error handling function
   ! Attribute File
   USE summaActors_FileManager,only:SETTINGS_PATH                     ! define path to settings files (e.g., parameters, soil and veg. tables)
   USE summaActors_FileManager,only:LOCAL_ATTRIBUTES                  ! name of model initial attributes file
@@ -39,12 +37,12 @@ subroutine openAttributeFile(attr_ncid, err) bind(C, name="openAttributeFile")
 
 end subroutine
 
-subroutine getNumVar(attr_ncid, num_var, err) bind(C, name="getNumVar")
+subroutine getNumVarAttr(attr_ncid, num_var, err) bind(C, name="getNumVarAttr")
   USE netcdf
   USE netcdf_util_module,only:netcdf_err                     ! netcdf error handling function
   implicit none
   integer(c_int),intent(in)                 :: attr_ncid
-  integer(c_int),intent(out)                 :: num_var
+  integer(c_int),intent(out)                :: num_var
   integer(c_int),intent(out)                :: err
 
   ! local variables
@@ -58,7 +56,7 @@ subroutine getNumVar(attr_ncid, num_var, err) bind(C, name="getNumVar")
       return
   endif
 
-end subroutine getNumVar
+end subroutine getNumVarAttr
 
 subroutine closeAttributeFile(attr_ncid, err) bind(C, name="closeAttributeFile")
   USE netcdf_util_module,only:nc_file_close

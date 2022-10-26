@@ -52,12 +52,38 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
     }
 
 
-    Initialize_HRU(self);
+    initHRU(&self->state.indxGRU, &self->state.num_steps, self->state.handle_lookupStruct, self->state.handle_forcStat,
+        self->state.handle_progStat, self->state.handle_diagStat, self->state.handle_fluxStat, self->state.handle_indxStat, 
+        self->state.handle_bvarStat, self->state.handle_timeStruct, self->state.handle_forcStruct, self->state.handle_attrStruct, 
+        self->state.handle_typeStruct, self->state.handle_idStruct,self->state.handle_indxStruct, self->state.handle_mparStruct, 
+        self->state.handle_progStruct, self->state.handle_diagStruct, self->state.handle_fluxStruct,self->state.handle_bparStruct,
+        self->state.handle_bvarStruct, self->state.handle_dparStruct, self->state.handle_startTime, self->state.handle_finshTime, 
+        self->state.handle_refTime,self->state.handle_oldTime, &self->state.err);
+    if (self->state.err != 0) {
+        aout(self) << "Error: HRU_Actor - Initialize - HRU = " << self->state.indxHRU << 
+            " - indxGRU = " << self->state.indxGRU << " - refGRU = "<< self->state.refGRU << std::endl;
+        aout(self) << "Error = " << self->state.err << "\n";
+        self->quit();
+    }
+
+
+    // Get attributes
+    self->send(self->state.file_access_actor, get_attributes_v, self->state.refGRU, self);
+
+
     self->state.hru_timing.updateEndPoint("total_duration");
     self->send(self, start_hru_v);
 
     return {
         // Starts the HRU and tells it to ask for data from the file_access_actor
+        [=](get_attributes, std::vector<double> attr_array, std::vector<int> type_array, 
+            std::vector<long int> id_array) {
+            
+            aout(self) << "Received Attribute Information \n";
+        
+        },
+
+
         [=](start_hru) {
             self->state.hru_timing.updateStartPoint("total_duration");
 
@@ -218,43 +244,8 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
 
 void Initialize_HRU(stateful_actor<hru_state>* self) {
     self->state.hru_timing.updateStartPoint("init_duration");
-    
-    initHRU(&self->state.indxGRU,
-            &self->state.num_steps, 
-            self->state.handle_lookupStruct,
-            self->state.handle_forcStat, 
-            self->state.handle_progStat, 
-            self->state.handle_diagStat, 
-            self->state.handle_fluxStat, 
-            self->state.handle_indxStat, 
-            self->state.handle_bvarStat, 
-            self->state.handle_timeStruct, 
-            self->state.handle_forcStruct, 
-            self->state.handle_attrStruct, 
-            self->state.handle_typeStruct, 
-            self->state.handle_idStruct,
-            self->state.handle_indxStruct, 
-            self->state.handle_mparStruct, 
-            self->state.handle_progStruct, 
-            self->state.handle_diagStruct, 
-            self->state.handle_fluxStruct,
-            self->state.handle_bparStruct, 
-            self->state.handle_bvarStruct, 
-            self->state.handle_dparStruct, 
-            self->state.handle_startTime, 
-            self->state.handle_finshTime, 
-            self->state.handle_refTime,
-            self->state.handle_oldTime, 
-            &self->state.err);
 
 
-    if (self->state.err != 0) {
-        aout(self) << "Error: HRU_Actor - Initialize - HRU = " << self->state.indxHRU << 
-        " - indxGRU = " << self->state.indxGRU << " - refGRU = "<< self->state.refGRU << std::endl;
-        aout(self) << "Error = " << self->state.err << "\n";
-        self->quit();
-        return;
-    }
 
 
     // Need to send a message to the file_access_actor for the data

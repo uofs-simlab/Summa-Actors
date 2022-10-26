@@ -47,16 +47,9 @@ subroutine initalizeOutput(forcFileInfo, maxSteps, num_gru, err)
 
 
   ! Primary Data Structures (scalars)
-  allocate(outputStructure(1)%attrStruct(1))
-  allocate(outputStructure(1)%typeStruct(1))
-  allocate(outputStructure(1)%idStruct(1))
   allocate(outputStructure(1)%mparStruct(1))
   allocate(outputStructure(1)%bparStruct(1))
   allocate(outputStructure(1)%dparStruct(1))
-
-  allocate(outputStructure(1)%attrStruct(1)%gru(num_gru))
-  allocate(outputStructure(1)%typeStruct(1)%gru(num_gru))
-  allocate(outputStructure(1)%idStruct(1)%gru(num_gru))
   allocate(outputStructure(1)%mparStruct(1)%gru(num_gru))
   allocate(outputStructure(1)%bparStruct(1)%gru(num_gru))
   allocate(outputStructure(1)%dparStruct(1)%gru(num_gru))
@@ -67,9 +60,6 @@ subroutine initalizeOutput(forcFileInfo, maxSteps, num_gru, err)
     num_hru = gru_struc(iGRU)%hruCount
 
     ! Primary Data Structures (scalars)
-    allocate(outputStructure(1)%attrStruct(1)%gru(iGRU)%hru(num_hru))
-    allocate(outputStructure(1)%typeStruct(1)%gru(iGRU)%hru(num_hru))
-    allocate(outputStructure(1)%idStruct(1)%gru(iGRU)%hru(num_hru))
     allocate(outputStructure(1)%mparStruct(1)%gru(iGRU)%hru(num_hru))
     allocate(outputStructure(1)%dparStruct(1)%gru(iGRU)%hru(num_hru))
 

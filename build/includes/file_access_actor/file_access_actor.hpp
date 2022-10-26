@@ -34,9 +34,13 @@ struct file_access_state {
     std::vector<std::vector<int>> type_arrays_for_hrus;
     std::vector<std::vector<long int>> id_arrays_for_hrus;
 
-    // vector of handles for parameters
-    std::vector<void *> mpar_struct_handles;
-    std::vector<void *> bpar_struct_handles;
+    // Variables for handling parameters file
+    std::vector<void*> mpar_structs_for_hrus;
+    std::vector<std::vector<double>> bpar_arrays_for_hrus;
+    std::vector<std::vector<double>> dpar_arrays_for_hrus;
+    int dpar_array_size;
+    int bpar_array_size;
+    bool param_file_exists;
 
 
      // Timing Variables
@@ -53,5 +57,7 @@ int write(stateful_actor<file_access_state>* self, int listIndex);
 // Read in the attributes for all HRUs that are in the run-domain
 void readAttributes(stateful_actor<file_access_state>* self); 
 
+// read in the parameters for all HRUs that are in the run-domain
+void readParameters(stateful_actor<file_access_state>* self);
 
 } // end namespace

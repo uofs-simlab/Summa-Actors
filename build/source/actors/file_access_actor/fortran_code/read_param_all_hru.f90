@@ -112,22 +112,22 @@ subroutine read_param_file_access_actor(startGRU,num_gru,err) bind(C, name="read
     ! * open files, etc.
     ! **********************************************************************************************
     
-    infile = trim(SETTINGS_PATH)//trim(PARAMETER_TRIAL) ! build filename
+    ! infile = trim(SETTINGS_PATH)//trim(PARAMETER_TRIAL) ! build filename
 
-    ! check whether the user-specified file exists and warn if it does not
-    inquire(file=trim(infile),exist=fexist)
-    if (.not.fexist) then
-        write(*,'(A)') NEW_LINE('A')//'!! WARNING:  trial parameter file not found; proceeding instead with other default parameters; check path in file manager input if this was not the desired behavior'//NEW_LINE('A')
-        return
-    endif
+    ! ! check whether the user-specified file exists and warn if it does not
+    ! inquire(file=trim(infile),exist=fexist)
+    ! if (.not.fexist) then
+    !     write(*,'(A)') NEW_LINE('A')//'!! WARNING:  trial parameter file not found; proceeding instead with other default parameters; check path in file manager input if this was not the desired behavior'//NEW_LINE('A')
+    !     return
+    ! endif
 
-    ! open trial parameters file if it exists
-    call nc_file_open(trim(infile),nf90_nowrite,ncid,err,cmessage)
-    if(err/=0)then; message=trim(message)//trim(cmessage); return; end if
+    ! ! open trial parameters file if it exists
+    ! call nc_file_open(trim(infile),nf90_nowrite,ncid,err,cmessage)
+    ! if(err/=0)then; message=trim(message)//trim(cmessage); return; end if
 
-    ! get the number of variables in the parameter file
-    err=nf90_inquire(ncid, nDimensions=nDims, nVariables=nVars)
-    call netcdf_err(err,message); if (err/=0) then; err=20; return; end if
+    ! ! get the number of variables in the parameter file
+    ! err=nf90_inquire(ncid, nDimensions=nDims, nVariables=nVars)
+    ! call netcdf_err(err,message); if (err/=0) then; err=20; return; end if
 
     ! initialize the number of HRUs
     nHRU_file=integerMissing
