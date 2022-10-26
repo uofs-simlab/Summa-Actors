@@ -164,7 +164,7 @@ SUMMA_FILEACCESS_INTERFACE = \
 		initOutputStruc.f90 \
 		deallocateOutputStruc.f90 \
 		cppwrap_fileAccess.f90 \
-		read_attribute_all_hru.f90 \
+		read_attribute.f90 \
 		read_param_all_hru.f90 \
 		write_to_netcdf.f90
 
@@ -198,7 +198,7 @@ SUMMA_PRELIM= \
 		checkStruc.f90 \
 		childStruc.f90 \
 		ffile_info.f90 \
-		read_attribute.f90 \
+		read_dimension.f90 \
 		read_pinit.f90 \
 		pOverwrite.f90 \
 		read_paramActors.f90 \

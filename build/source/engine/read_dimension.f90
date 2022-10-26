@@ -18,13 +18,13 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-module read_attribute_module
+module read_dimension_module
 USE, intrinsic :: iso_c_binding
 USE nrtype
 implicit none
 private
 public::read_dimension
-public::read_attribute
+! public::read_attribute
 contains
 
 ! ************************************************************************************************
@@ -159,131 +159,131 @@ subroutine read_dimension(numGRUs,numHRUs,startGRU,err) bind(C, name="readDimens
 
 end subroutine read_dimension
 
-subroutine read_attribute(indxHRU, indxGRU, attrStruct, typeStruct, idStruct, err, message)
-  USE netcdf
-  USE netcdf_util_module,only:nc_file_open                   ! open netcdf file
-  USE netcdf_util_module,only:nc_file_close                  ! close netcdf file
-  USE netcdf_util_module,only:netcdf_err                     ! netcdf error handling function
-  ! provide access to derived data types
-  USE data_types,only:var_d                            ! x%var(:)     (i4b)
-  USE data_types,only:var_i                            ! x%var(:)     integer(8)
-  USE data_types,only:var_i8                           ! x%var(:)     (dp)
-  ! provide access to global data
-  USE globalData,only:attr_meta,type_meta,id_meta            ! metadata structures
-  USE get_ixname_module,only:get_ixAttr,get_ixType,get_ixId  ! access function to find index of elements in structure
-  ! get the settings from the output stucture so we do not have to go to file
-  USE globalData,only:outputStructure 
-  implicit none
+! subroutine read_attribute(indxHRU, indxGRU, attrStruct, typeStruct, idStruct, err, message)
+!   USE netcdf
+!   USE netcdf_util_module,only:nc_file_open                   ! open netcdf file
+!   USE netcdf_util_module,only:nc_file_close                  ! close netcdf file
+!   USE netcdf_util_module,only:netcdf_err                     ! netcdf error handling function
+!   ! provide access to derived data types
+!   USE data_types,only:var_d                            ! x%var(:)     (i4b)
+!   USE data_types,only:var_i                            ! x%var(:)     integer(8)
+!   USE data_types,only:var_i8                           ! x%var(:)     (dp)
+!   ! provide access to global data
+!   USE globalData,only:attr_meta,type_meta,id_meta            ! metadata structures
+!   USE get_ixname_module,only:get_ixAttr,get_ixType,get_ixId  ! access function to find index of elements in structure
+!   ! get the settings from the output stucture so we do not have to go to file
+!   USE globalData,only:outputStructure 
+!   implicit none
 
-  integer(i4b),intent(in)              :: indxHRU            ! id of the HRU
-  integer(i4b),intent(in)              :: indxGRU            ! id of the parent GRU    
-  ! io vars
-  type(var_d),intent(inout)            :: attrStruct         ! local attributes for each HRU
-  type(var_i),intent(inout)            :: typeStruct         ! local classification of soil veg etc. for each HRU
-  type(var_i8),intent(inout)           :: idStruct           ! 
-  integer(i4b),intent(out)             :: err                ! error code
-  character(*),intent(out)             :: message            ! error message
+!   integer(i4b),intent(in)              :: indxHRU            ! id of the HRU
+!   integer(i4b),intent(in)              :: indxGRU            ! id of the parent GRU    
+!   ! io vars
+!   type(var_d),intent(inout)            :: attrStruct         ! local attributes for each HRU
+!   type(var_i),intent(inout)            :: typeStruct         ! local classification of soil veg etc. for each HRU
+!   type(var_i8),intent(inout)           :: idStruct           ! 
+!   integer(i4b),intent(out)             :: err                ! error code
+!   character(*),intent(out)             :: message            ! error message
 
-  ! define local variables
-  integer(i4b)                         :: iVar               ! loop through varibles in the netcdf file
+!   ! define local variables
+!   integer(i4b)                         :: iVar               ! loop through varibles in the netcdf file
 
-  ! check structures
-  integer(i4b)                         :: iCheck             ! index of an attribute name
-  logical(lgt),allocatable             :: checkType(:)       ! vector to check if we have all desired categorical values
-  logical(lgt),allocatable             :: checkId(:)         ! vector to check if we have all desired IDs
-  logical(lgt),allocatable             :: checkAttr(:)       ! vector to check if we have all desired local attributes
+!   ! check structures
+!   integer(i4b)                         :: iCheck             ! index of an attribute name
+!   logical(lgt),allocatable             :: checkType(:)       ! vector to check if we have all desired categorical values
+!   logical(lgt),allocatable             :: checkId(:)         ! vector to check if we have all desired IDs
+!   logical(lgt),allocatable             :: checkAttr(:)       ! vector to check if we have all desired local attributes
 
-  ! netcdf variables
-  integer(i4b),parameter               :: categorical=101    ! named variable to denote categorical data
-  integer(i4b),parameter               :: numerical=102      ! named variable to denote numerical data
-  integer(i4b),parameter               :: idrelated=103      ! named variable to denote ID related data
+!   ! netcdf variables
+!   integer(i4b),parameter               :: categorical=101    ! named variable to denote categorical data
+!   integer(i4b),parameter               :: numerical=102      ! named variable to denote numerical data
+!   integer(i4b),parameter               :: idrelated=103      ! named variable to denote ID related data
 
-  ! define mapping variables
+!   ! define mapping variables
 
-  ! Start procedure here
-  err=0; message="read_attribute.f90/"
+!   ! Start procedure here
+!   err=0; message="read_attribute.f90/"
 
-  ! **********************************************************************************************
-  ! (1) prepare check vectors
-  ! **********************************************************************************************
-  allocate(checkType(size(type_meta)),checkAttr(size(attr_meta)),checkId(size(id_meta)),stat=err)
-  if(err/=0)then
-    err=20
-    message=trim(message)//'problem allocating space for variable check vectors'
-    print*, message
-    return 
-  endif
+!   ! **********************************************************************************************
+!   ! (1) prepare check vectors
+!   ! **********************************************************************************************
+!   allocate(checkType(size(type_meta)),checkAttr(size(attr_meta)),checkId(size(id_meta)),stat=err)
+!   if(err/=0)then
+!     err=20
+!     message=trim(message)//'problem allocating space for variable check vectors'
+!     print*, message
+!     return 
+!   endif
 
-  checkType(:) = .false.
-  checkAttr(:) = .false.
-  checkId(:)   = .false.
+!   checkType(:) = .false.
+!   checkAttr(:) = .false.
+!   checkId(:)   = .false.
   
-  ! Copy the attribute data that was filled in read_attribute_all_hru.f90
+!   ! Copy the attribute data that was filled in read_attribute_all_hru.f90
 
-  ! ** categorical data (typeStruct)
-  do iVar = 1, size(type_meta)
-    checkType(iVar) = .true.
-    typeStruct%var(iVar) = outputStructure(1)%typeStruct(1)%gru(indxGRU)%hru(indxHRU)%var(iVar)
-  end do
+!   ! ** categorical data (typeStruct)
+!   do iVar = 1, size(type_meta)
+!     checkType(iVar) = .true.
+!     typeStruct%var(iVar) = outputStructure(1)%typeStruct(1)%gru(indxGRU)%hru(indxHRU)%var(iVar)
+!   end do
 
-  ! ** ID related data (idStruct)
-  do iVar=1, size(id_meta)
-    checkId(iVar) = .true.
-    idStruct%var(iVar) = outputStructure(1)%idStruct(1)%gru(indxGRU)%hru(indxHRU)%var(iVar)
-  end do
+!   ! ** ID related data (idStruct)
+!   do iVar=1, size(id_meta)
+!     checkId(iVar) = .true.
+!     idStruct%var(iVar) = outputStructure(1)%idStruct(1)%gru(indxGRU)%hru(indxHRU)%var(iVar)
+!   end do
 
-  ! ** numerical data (attrStruct)
-  do iVar=1, size(attr_meta)
-    checkAttr(iVar) = .true.
-    attrStruct%var(iVar) = outputStructure(1)%attrStruct(1)%gru(indxGRU)%hru(indxHRU)%var(iVar)
-  end do
+!   ! ** numerical data (attrStruct)
+!   do iVar=1, size(attr_meta)
+!     checkAttr(iVar) = .true.
+!     attrStruct%var(iVar) = outputStructure(1)%attrStruct(1)%gru(indxGRU)%hru(indxHRU)%var(iVar)
+!   end do
  
-! TODO: downkHRU can cause issues do not know how to hanlde yet
-!  varIndx = get_ixTYPE('downkHRU')
-!  checkType(varIndx) = .true.
-!  typeStruct%var(varIndx) = 0
+! ! TODO: downkHRU can cause issues do not know how to hanlde yet
+! !  varIndx = get_ixTYPE('downkHRU')
+! !  checkType(varIndx) = .true.
+! !  typeStruct%var(varIndx) = 0
 
- ! **********************************************************************************************
- ! (4) check that we have all the desired varaibles
- ! **********************************************************************************************
- ! check that we have all desired categorical variables
-  if(any(.not.checkType))then
-    do iCheck = 1,size(type_meta)
-      if(.not.checkType(iCheck))then
-        err=20; message=trim(message)//'missing variable ['//trim(type_meta(iCheck)%varname)//'] in local attributes file'
-        print*, message
-        return
-      endif
-    end do
- endif
+!  ! **********************************************************************************************
+!  ! (4) check that we have all the desired varaibles
+!  ! **********************************************************************************************
+!  ! check that we have all desired categorical variables
+!   if(any(.not.checkType))then
+!     do iCheck = 1,size(type_meta)
+!       if(.not.checkType(iCheck))then
+!         err=20; message=trim(message)//'missing variable ['//trim(type_meta(iCheck)%varname)//'] in local attributes file'
+!         print*, message
+!         return
+!       endif
+!     end do
+!  endif
 
-  ! check that we have all desired ID variables
-  if(any(.not.checkId))then
-    do iCheck = 1,size(id_meta)
-      if(.not.checkId(iCheck))then
-        err=20
-        message=trim(message)//'missing variable ['//trim(id_meta(iCheck)%varname)//'] in local attributes file'
-        print*, message
-        return
-      endif
-    end do
-  endif
+!   ! check that we have all desired ID variables
+!   if(any(.not.checkId))then
+!     do iCheck = 1,size(id_meta)
+!       if(.not.checkId(iCheck))then
+!         err=20
+!         message=trim(message)//'missing variable ['//trim(id_meta(iCheck)%varname)//'] in local attributes file'
+!         print*, message
+!         return
+!       endif
+!     end do
+!   endif
 
- ! check that we have all desired local attributes
-  if(any(.not.checkAttr))then
-    do iCheck = 1,size(attr_meta)
-      if(.not.checkAttr(iCheck))then
-        err=20
-        message=trim(message)//'missing variable ['//trim(attr_meta(iCheck)%varname)//'] in local attributes file'
-        return
-      endif
-    end do
- endif
+!  ! check that we have all desired local attributes
+!   if(any(.not.checkAttr))then
+!     do iCheck = 1,size(attr_meta)
+!       if(.not.checkAttr(iCheck))then
+!         err=20
+!         message=trim(message)//'missing variable ['//trim(attr_meta(iCheck)%varname)//'] in local attributes file'
+!         return
+!       endif
+!     end do
+!  endif
 
- ! free memory
- deallocate(checkType)
- deallocate(checkId)
- deallocate(checkAttr)
+!  ! free memory
+!  deallocate(checkType)
+!  deallocate(checkId)
+!  deallocate(checkAttr)
 
-end subroutine read_attribute
-end module read_attribute_module
+! end subroutine read_attribute
+end module read_dimension_module

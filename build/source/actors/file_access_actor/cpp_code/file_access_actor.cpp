@@ -16,7 +16,7 @@ bool debug;
 
 namespace caf {
 
-behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU, int numGRU, 
+behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gru, int num_gru, 
     int outputStrucSize, std::string configPath, actor parent) {
     aout(self) << "\n----------File_Access_Actor Started----------\n";
     // Set Up timing Info we wish to track
@@ -26,8 +26,8 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
 
 
     self->state.parent = parent;
-    self->state.numGRU = numGRU;
-    self->state.startGRU = startGRU;
+    self->state.num_gru = num_gru;
+    self->state.start_gru = start_gru;
     self->state.outputStrucSize = outputStrucSize;
     self->state.handle_forcing_file_info = new_handle_file_info();
     self->state.handle_ncid = new_handle_var_i();
@@ -79,8 +79,8 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
                     
                     // Load the file
                     FileAccessActor_ReadForcing(self->state.handle_forcing_file_info, &currentFile,
-                        &self->state.stepsInCurrentFile, &self->state.startGRU, 
-                        &self->state.numGRU, &self->state.err);
+                        &self->state.stepsInCurrentFile, &self->state.start_gru, 
+                        &self->state.num_gru, &self->state.err);
                     if (self->state.err != 0) {
                         aout(self) << "ERROR: Reading Forcing" << std::endl;
                     }
@@ -112,8 +112,8 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU
                 self->state.file_access_timing.updateStartPoint("read_duration");
 
                 FileAccessActor_ReadForcing(self->state.handle_forcing_file_info, &currentFile,
-                    &self->state.stepsInCurrentFile, &self->state.startGRU, 
-                    &self->state.numGRU, &self->state.err);
+                    &self->state.stepsInCurrentFile, &self->state.start_gru, 
+                    &self->state.num_gru, &self->state.err);
                 if (self->state.err != 0) {
                     aout(self) << "ERROR: Reading Forcing" << std::endl;
                 }
@@ -310,9 +310,9 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
         return;
     }
 
-    initFailedHRUTracker(&self->state.numGRU);
+    initFailedHRUTracker(&self->state.num_gru);
 
-    def_output(self->state.handle_ncid, &self->state.startGRU, &self->state.numGRU, &self->state.numGRU, &err);
+    def_output(self->state.handle_ncid, &self->state.start_gru, &self->state.num_gru, &self->state.num_gru, &err);
     if (err != 0) {
         aout(self) << "ERROR: Create_OutputFile\n";
         std::string function = "def_output";
@@ -324,20 +324,20 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
     // Initalize the output Structure
     aout(self) << "Initalizing Output Structure" << std::endl;
     Init_OutputStruct(self->state.handle_forcing_file_info, &self->state.outputStrucSize, 
-        &self->state.numGRU, &self->state.err);
+        &self->state.num_gru, &self->state.err);
 
-    // Read In all of the attribres for the number of GRUs in the run Domian
-    readAttributeFileAccessActor(&self->state.numGRU, &err);
-    if (err != 0) {
-        aout(self) << "ERROR: FILE_ACCESS_ACTOR readAttributeFilAccessActor() \n";
-        std::string function = "readAttributeFileAccessActor";
-        self->send(self->state.parent, file_access_actor_err_v, function);
-        self->quit();
-        return;
-    }
+    // // Read In all of the attribres for the number of GRUs in the run Domian
+    // readAttributeFileAccessActor(&self->state.num_gru, &err);
+    // if (err != 0) {
+    //     aout(self) << "ERROR: FILE_ACCESS_ACTOR readAttributeFilAccessActor() \n";
+    //     std::string function = "readAttributeFileAccessActor";
+    //     self->send(self->state.parent, file_access_actor_err_v, function);
+    //     self->quit();
+    //     return;
+    // }
 
     // Noah-MP table information
-    overwriteParam(&self->state.numGRU, &err);
+    overwriteParam(&self->state.num_gru, &err);
     if (err != 0) {
         aout(self) << "ERROR: FILE_ACCESS_ACTOR overwriteParam() \n";
         std::string function = "overwriteParam";
@@ -347,18 +347,18 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
     }
 
 
-    // Read in all of the parmeters for the number of GRUs in the run Domain
-    readParamFileAccessActor(&self->state.startGRU, &self->state.numGRU, &err);
-    if (err != 0) {
-        aout(self) <<  "ERROR: FILE_ACCESS_ACTOR readParamFileAccessActor() \n";
-        std::string function = "readParamFileAccessActor";
-        self->send(self->state.parent, file_access_actor_err_v, function);
-        self->quit();
-        return;
-    }
+    // // Read in all of the parmeters for the number of GRUs in the run Domain
+    // readParamFileAccessActor(&self->state.start_gru, &self->state.num_gru, &err);
+    // if (err != 0) {
+    //     aout(self) <<  "ERROR: FILE_ACCESS_ACTOR readParamFileAccessActor() \n";
+    //     std::string function = "readParamFileAccessActor";
+    //     self->send(self->state.parent, file_access_actor_err_v, function);
+    //     self->quit();
+    //     return;
+    // }
 
     // Initalize the output manager  
-    self->state.output_manager = new OutputManager(self->state.num_vectors_in_output_manager, self->state.numGRU);
+    self->state.output_manager = new OutputManager(self->state.num_vectors_in_output_manager, self->state.num_gru);
     
     self->send(self->state.parent, done_file_access_actor_init_v);
     // initalize the forcingFile array
@@ -382,8 +382,8 @@ int readForcing(stateful_actor<file_access_state>* self, int currentFile) {
 
         // Load the file
         FileAccessActor_ReadForcing(self->state.handle_forcing_file_info, &currentFile,
-            &self->state.stepsInCurrentFile, &self->state.startGRU, 
-            &self->state.numGRU, &self->state.err);
+            &self->state.stepsInCurrentFile, &self->state.start_gru, 
+            &self->state.num_gru, &self->state.err);
         
         if (self->state.err != 0) {
             if (debug)
@@ -402,13 +402,32 @@ int readForcing(stateful_actor<file_access_state>* self, int currentFile) {
 }
 
 
-// void readAttributes(stateful_actor<file_access_state>* self) {
+void readAttributes(stateful_actor<file_access_state>* self) {
+    int err = 0;
+    openAttributeFile(&self->state.attribute_ncid, &err);
+    getNumVar(&self->state.attribute_ncid, &self->state.num_var_in_attributes_file, &err);
+    for (int index_gru = self->state.start_gru; 
+        index_gru < self->state.num_gru + self->state.start_gru; index_gru++) {
 
-//     openAttributeFile();
-//     getNumVar();
-//     // for loop over all HRUs
-//         //readAttribute()
-//     closeAttributesFile();
+        std::vector<double> attr_array(self->state.num_var_in_attributes_file);
+        std::vector<int> type_array(self->state.num_var_in_attributes_file);
+        std::vector<long int> id_array(self->state.num_var_in_attributes_file);
+
+        int index_hru = 1;
+        readAttributeFromNetCDF(&self->state.attribute_ncid, &index_gru, &index_hru,
+            &self->state.num_var_in_attributes_file, &attr_array[0], &type_array[0],
+            &id_array[0], &err);
+
+        self->state.attr_arrays_for_hrus.push_back(attr_array);
+        self->state.type_arrays_for_hrus.push_back(type_array);
+        self->state.id_arrays_for_hrus.push_back(id_array);
+    }
+
+    closeAttributeFile(&self->state.attribute_ncid, &err);
+
+}
+
+// void readParameters(stateful_actor<file_access_state>* self) {
 
 // }
 

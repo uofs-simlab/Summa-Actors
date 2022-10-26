@@ -7,7 +7,7 @@ private
 public::openAttributeFile
 public::getNumVar
 public::closeAttributeFile
-public::read_attribute
+public::readAttributeFromNetCDF
 
 contains
 
@@ -16,18 +16,23 @@ subroutine openAttributeFile(attr_ncid, err) bind(C, name="openAttributeFile")
   USE netcdf_util_module,only:nc_file_open                   ! open netcdf file
   USE netcdf_util_module,only:nc_file_close                  ! close netcdf file
   USE netcdf_util_module,only:netcdf_err                     ! netcdf error handling function
+  ! Attribute File
+  USE summaActors_FileManager,only:SETTINGS_PATH                     ! define path to settings files (e.g., parameters, soil and veg. tables)
+  USE summaActors_FileManager,only:LOCAL_ATTRIBUTES                  ! name of model initial attributes file
   implicit none
-  character(kind=c_char,len=1),intent(in)   :: file_manager
-  integer(c_int),intent(in)                 :: attr_ncid
+  integer(c_int),intent(out)                :: attr_ncid
   integer(c_int),intent(out)                :: err
 
   ! local variables
   character(len=256)                        :: message       ! error message
+  character(len=256)                        :: attrFile           ! attributes file name
+
   err=0; message="read_attribute.f90 - openAttributesFile"
+  attrFile = trim(SETTINGS_PATH)//trim(LOCAL_ATTRIBUTES)
 
   call nc_file_open(trim(attrFile),nf90_noWrite,attr_ncid,err,message)
   if(err/=0)then
-      message=trim(message)//trim(cmessage)
+      message=trim(message)
       print*, message
       return
   endif
@@ -39,7 +44,7 @@ subroutine getNumVar(attr_ncid, num_var, err) bind(C, name="getNumVar")
   USE netcdf_util_module,only:netcdf_err                     ! netcdf error handling function
   implicit none
   integer(c_int),intent(in)                 :: attr_ncid
-  integer(c_int),intent(in)                 :: num_var
+  integer(c_int),intent(out)                 :: num_var
   integer(c_int),intent(out)                :: err
 
   ! local variables
@@ -64,7 +69,7 @@ subroutine closeAttributeFile(attr_ncid, err) bind(C, name="closeAttributeFile")
   character(len=256)                :: message
   err=0; message="read_attribute.f90 - closeAttributeFile"
 
-  call nc_file_close(ncID,err,message)
+  call nc_file_close(attr_ncid,err,message)
   if (err/=0)then
     message=trim(message)
     return
@@ -75,8 +80,8 @@ end subroutine closeAttributeFile
 
 
 ! Read in the local attributes for an HRU
-subroutine readAttribute(ncid, index_gru, index_hru, num_var, &
-  attr_struct, type_struct, id_struct, err) bind(C, name="readAttribute")
+subroutine readAttributeFromNetCDF(ncid, index_gru, index_hru, num_var, &
+  attr_array, type_array, id_array, err) bind(C, name="readAttributeFromNetCDF")
   ! netcdf utilities
   USE netcdf
   USE netcdf_util_module,only:nc_file_open                   ! open netcdf file
@@ -97,14 +102,16 @@ subroutine readAttribute(ncid, index_gru, index_hru, num_var, &
   ! number of variables from the netCDF file
   integer(c_int), intent(in)            :: num_var
   ! data structures to populate
-  type(c_ptr), intent(in), value        :: attr_struct             
-  type(c_ptr), intent(in), value        :: type_struct             
-  type(c_ptr), intent(in), value        :: id_struct
+  real(c_double), intent(out)           :: attr_array(num_var)            
+  integer(c_int), intent(out)           :: type_array(num_var)             
+  integer(c_long),intent(out)           :: id_array(num_var)
   ! error control
   integer(c_int), intent(out)           :: err
   
   ! local variables
   integer(i4b)                          :: iVar               ! loop through varibles in the netcdf file
+  integer(i4b)                          :: varType            ! type of variable (categorica, numerical, idrelated)
+  integer(i4b)                          :: varIndx            ! index of variable within its data structure
 
   ! check structures - to verify input
   integer(i4b)                          :: iCheck             ! index of an attribute name
@@ -114,6 +121,12 @@ subroutine readAttribute(ncid, index_gru, index_hru, num_var, &
   
   ! netcdf variables
   character(LEN=nf90_max_name)          :: varName            ! character array of netcdf variable name
+  integer(i4b),parameter                :: categorical=101    ! named variable to denote categorical data
+  integer(i4b),parameter                :: numerical=102      ! named variable to denote numerical data
+  integer(i4b),parameter                :: idrelated=103      ! named variable to denote ID related data
+  integer(i4b)                          :: categorical_var(1) ! temporary categorical variable from local attributes netcdf file
+  real(rkind)                           :: numeric_var(1)     ! temporary numeric variable from local attributes netcdf file
+  integer(8)                            :: idrelated_var(1)   ! temporary ID related variable from local attributes netcdf file
 
 
   character(len=256)                    :: attr_file          ! attributes file name
@@ -140,7 +153,7 @@ subroutine readAttribute(ncid, index_gru, index_hru, num_var, &
   checkId(:)   = .false.
 
   iCheck = 1
-  do iVar = 1,nVar
+  do iVar = 1,num_var
     ! inqure about current variable name, type, number of dimensions
     err = nf90_inquire_variable(ncID,iVar,name=varName)
     if(err/=nf90_noerr)then; 
@@ -175,7 +188,7 @@ subroutine readAttribute(ncid, index_gru, index_hru, num_var, &
               print*, message
               return
           end if
-          type_struct%var(varIndx) = categorical_var(1)
+          type_array(varIndx) = categorical_var(1)
 
           ! ** ID related data
       case('hruId')
@@ -200,7 +213,7 @@ subroutine readAttribute(ncid, index_gru, index_hru, num_var, &
               print*, message
               return
           end if
-          id_struct%var(varIndx) = idrelated_var(1)
+          id_array(varIndx) = idrelated_var(1)
 
 
       ! ** numerical data
@@ -225,7 +238,7 @@ subroutine readAttribute(ncid, index_gru, index_hru, num_var, &
               print*, message
               return
           end if
-          attr_struct%var(varIndx) = numeric_var(1)
+          attr_array(varIndx) = numeric_var(1)
     
       
       ! for mapping varibles, do nothing (information read above)
@@ -247,7 +260,7 @@ subroutine readAttribute(ncid, index_gru, index_hru, num_var, &
   ! check that the variable was not found in the attribute file
   if(.not. checkAttr(varIndx)) then
       write(*,*) NEW_LINE('A')//'INFO: aspect not found in the input attribute file, continuing ...'//NEW_LINE('A')
-      attr_struct%var(varIndx) = nr_realMissing      ! populate variable with out-of-range value, used later
+      attr_array(varIndx) = nr_realMissing      ! populate variable with out-of-range value, used later
       checkAttr(varIndx) = .true.
   endif
 
@@ -293,5 +306,9 @@ subroutine readAttribute(ncid, index_gru, index_hru, num_var, &
     end do
   endif
 
-end subroutine readAttribute
+  ! free memory
+  deallocate(checkType)
+  deallocate(checkId)
+  deallocate(checkAttr)
+end subroutine readAttributeFromNetCDF
 end module read_attribute_module

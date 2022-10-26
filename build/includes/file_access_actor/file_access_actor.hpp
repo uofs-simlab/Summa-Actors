@@ -9,8 +9,8 @@ namespace caf {
 struct file_access_state {
     // Variables set on Spwan
     caf::actor parent; 
-    int startGRU;
-    int numGRU;
+    int start_gru;
+    int num_gru;
 
 
     void *handle_forcing_file_info; // Handle for the forcing file information
@@ -27,11 +27,12 @@ struct file_access_state {
     std::vector<Forcing_File_Info> forcing_file_list; // list of steps in file
     std::vector<bool> outputFileInitHRU;
 
-
-    // vector of handles for attributes
-    std::vector<void *> type_struct_handles;
-    std::vector<void *> id_struct_handles;
-    std::vector<void *> attr_struct_handles;
+    // Variables for hanlding attributes file
+    int attribute_ncid;
+    int num_var_in_attributes_file;
+    std::vector<std::vector<double>> attr_arrays_for_hrus;
+    std::vector<std::vector<int>> type_arrays_for_hrus;
+    std::vector<std::vector<long int>> id_arrays_for_hrus;
 
     // vector of handles for parameters
     std::vector<void *> mpar_struct_handles;

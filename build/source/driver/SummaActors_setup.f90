@@ -93,7 +93,7 @@ subroutine setupHRUParam(&
    use time_utils_module,only:elapsedSec                       ! calculate the elapsed time
    USE mDecisions_module,only:mDecisions                       ! module to read model decisions
    USE ffile_info_module,only:ffile_info                       ! module to read information on forcing datafile
-   USE read_attribute_module,only:read_attribute               ! module to read local attributes
+   ! USE read_attribute_module,only:read_attribute               ! module to read local attributes
    USE paramCheck_module,only:paramCheck                       ! module to check consistency of model parameters
    USE pOverwrite_module,only:pOverwrite                       ! module to overwrite default parameter values with info from the Noah tables
    USE read_param4chm_module,only:read_param                       ! module to read model parameter sets
@@ -191,12 +191,12 @@ subroutine setupHRUParam(&
    ! *****************************************************************************
    ! *** read local attributes for each HRU
    ! *****************************************************************************
-   call read_attribute(indxHRU,indxGRU,attrStruct,typeStruct,idStruct,err,cmessage)
-   if(err/=0)then
-      message=trim(message)//trim(cmessage)
-      print*, message
-      return
-   endif
+   ! call read_attribute(indxHRU,indxGRU,attrStruct,typeStruct,idStruct,err,cmessage)
+   ! if(err/=0)then
+   !    message=trim(message)//trim(cmessage)
+   !    print*, message
+   !    return
+   ! endif
 
    ! define monthly fraction of green vegetation
    greenVegFrac_monthly = (/0.01_dp, 0.02_dp, 0.03_dp, 0.07_dp, 0.50_dp, 0.90_dp, 0.95_dp, 0.96_dp, 0.65_dp, 0.24_dp, 0.11_dp, 0.02_dp/)

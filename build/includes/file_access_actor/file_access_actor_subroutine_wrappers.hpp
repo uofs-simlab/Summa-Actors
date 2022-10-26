@@ -32,12 +32,13 @@ extern "C" {
 
   void Write_HRU_Param(void* handle_ncid, int* indxGRU, int* indxHRU, int* err);
 
-  void readAttributeFileAccessActor(int* num_gru, int* err);
+  // void readAttributeFileAccessActor(int* num_gru, int* err);
 
   void overwriteParam(int* num_gru, int* err);
   
-  void readParamFileAccessActor(int* start_gru, int* num_gru, int* err);
+  // void readParamFileAccessActor(int* start_gru, int* num_gru, int* err);
 
+  // Writing to NETCDF
   void writeParamToNetCDF(void* handle_ncid, int* index_gru, int* index_hru,
     void* handle_attr_struct, void* handle_type_struct, void* handle_mpar_struct,
     void* handle_bpar_struct, int* err);
@@ -56,8 +57,15 @@ extern "C" {
     void* handle_time_struct, int* err);
 
 
-  // ncFileOpen(char const* inFile, int* mode, int* ncid, int* err, char)
-  void openAttributeFile(char const* inFile, int* ncid, int* err);
+  // Attributes Files
+  void openAttributeFile(int* att_ncid, int* err);
+
+  void getNumVar(int* attr_ncid, int* num_var_attr, int* err);
+
+  void closeAttributeFile(int* attr_ncid, int* err);
+
+  void readAttributeFromNetCDF(int* attr_ncid, int* index_gru, int* index_hru, int* num_var,
+    void* attr_array, void* type_array, void* id_array, int* err);
 
   
 }
