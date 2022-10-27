@@ -133,9 +133,17 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
             std::vector<double> attr_array_to_send = self->state.attr_arrays_for_hrus[ref_gru-1];
             std::vector<int> type_array_to_send = self->state.type_arrays_for_hrus[ref_gru-1];
             std::vector<long int> id_array_to_send = self->state.id_arrays_for_hrus[ref_gru-1];
+            std::vector<double> bpar_array_to_send = self->state.bpar_arrays_for_hrus[ref_gru-1];
+            std::vector<double> dpar_array_to_send = self->state.dpar_arrays_for_hrus[ref_gru-1];
+
+            void* handle_mpar_struct = self->state.mpar_structs_for_hrus[ref_gru-1];
+
+            std::vector<std::vector<double>> mpar_array_to_send = get_var_dlength(handle_mpar_struct);
+
 
             self->send(actor_to_respond, get_attributes_v, attr_array_to_send,
-                type_array_to_send, id_array_to_send);
+                type_array_to_send, id_array_to_send, bpar_array_to_send, 
+                dpar_array_to_send, mpar_array_to_send);
             
         },
 
@@ -220,8 +228,7 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
                 &err);
             
             self->state.file_access_timing.updateEndPoint("write_duration");
-            
-
+        
         },
 
         [=](write_output, int indxGRU, int indxHRU, int numStepsToWrite,
@@ -332,35 +339,9 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
         return;
     }
 
-    // Initalize the output Structure
-    aout(self) << "Initalizing Output Structure" << std::endl;
-    Init_OutputStruct(self->state.handle_forcing_file_info, &self->state.outputStrucSize, 
-        &self->state.num_gru, &self->state.err);
-
-    // Read in the attribute information for the HRUs to request
+    // Read in the attribute and parameter information for the HRUs to request
     readAttributes(self);
-
     readParameters(self);
-
-    // Noah-MP table information
-    // overwriteParam(&self->state.num_gru, &err);
-    // if (err != 0) {
-    //     aout(self) << "ERROR: FILE_ACCESS_ACTOR overwriteParam() \n";
-    //     std::string function = "overwriteParam";
-    //     self->send(self->state.parent, file_access_actor_err_v, function);
-    //     self->quit();
-    //     return;
-    // }
-
-    // Read in all of the parmeters for the number of GRUs in the run Domain
-    // readParamFileAccessActor(&self->state.start_gru, &self->state.num_gru, &err);
-    // if (err != 0) {
-    //     aout(self) <<  "ERROR: FILE_ACCESS_ACTOR readParamFileAccessActor() \n";
-    //     std::string function = "readParamFileAccessActor";
-    //     self->send(self->state.parent, file_access_actor_err_v, function);
-    //     self->quit();
-    //     return;
-    // }
 
     // Initalize the output manager  
     self->state.output_manager = new OutputManager(self->state.num_vectors_in_output_manager, self->state.num_gru);
@@ -434,8 +415,21 @@ void readAttributes(stateful_actor<file_access_state>* self) {
 void readParameters(stateful_actor<file_access_state>* self) {
     int err = 0;
     int index_hru = 1;
-    getParamSizes(&self->state.dpar_array_size, &self->state.bpar_array_size);
-    // openParamFile();
+
+    openParamFile(&self->state.param_ncid, &self->state.param_file_exists, 
+        &err);
+
+    getParamSizes(&self->state.dpar_array_size, &self->state.bpar_array_size,
+        &self->state.type_array_size);
+    
+
+    if (self->state.param_file_exists) {
+        getNumVarParam(&self->state.param_ncid, &self->state.num_var_in_param_file,
+            &err);
+    } else {
+        self->state.num_var_in_param_file = self->state.type_array_size;
+    }
+
     for (int index_gru = 1; index_gru < self->state.num_gru + 1; index_gru++) {
 
         std::vector<double> dpar_array(self->state.dpar_array_size);
@@ -443,18 +437,22 @@ void readParameters(stateful_actor<file_access_state>* self) {
         std::vector<double> bpar_array(self->state.dpar_array_size);        
 
 
-        overwriteParam(&index_gru, &index_hru, &self->state.num_var_in_attributes_file, 
+        overwriteParam(&index_gru, &index_hru, &self->state.num_var_in_param_file, 
             &self->state.attr_arrays_for_hrus[index_gru-1][0],
             &dpar_array[0], handle_mpar_struct, &bpar_array[0], &err);
 
-
-        // readParamFromNetCDF();
+        if (self->state.param_file_exists) {
+            readParamFromNetCDF(&self->state.param_ncid, &index_gru, &index_hru,
+                &self->state.start_gru, &self->state.num_var_in_param_file, 
+                &self->state.bpar_array_size, handle_mpar_struct, &bpar_array[0],
+                &err);
+        }
 
         self->state.dpar_arrays_for_hrus.push_back(dpar_array);
         self->state.mpar_structs_for_hrus.push_back(handle_mpar_struct);
         self->state.bpar_arrays_for_hrus.push_back(bpar_array);
     }
-    // closeParamFile();
+    closeParamFile(&self->state.param_ncid, &err);
 
 }
 

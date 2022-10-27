@@ -94,17 +94,20 @@ subroutine closeParamFile(param_ncid, err) bind(C, name="closeParamFile")
 end subroutine closeParamFile
 
 ! get the sizes of the arrays for dpar_array bpar_array
-subroutine getParamSizes(dpar_array_size, bpar_array_size) bind(C, name="getParamSizes")
+subroutine getParamSizes(dpar_array_size, bpar_array_size, type_array_size) bind(C, name="getParamSizes")
   USE var_lookup,only:maxvarMpar      ! model parameters: maximum number variables
   USE var_lookup,only:maxvarBpar      ! model parameters: maximum number variables
+  USE var_lookup,only:maxvarType
 
   implicit none
   integer(c_int),intent(out)    :: dpar_array_size
   integer(c_int),intent(out)    :: bpar_array_size
+  integer(c_int),intent(out)    :: type_array_size
 
 
   dpar_array_size = maxvarMpar
   bpar_array_size = maxvarBpar
+  type_array_size = maxvarType
 
 
 end subroutine getParamSizes

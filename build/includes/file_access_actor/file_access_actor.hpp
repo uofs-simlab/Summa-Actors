@@ -40,7 +40,10 @@ struct file_access_state {
     std::vector<std::vector<double>> dpar_arrays_for_hrus;
     int dpar_array_size;
     int bpar_array_size;
+    int type_array_size;
     bool param_file_exists;
+    int num_var_in_param_file;
+    int param_ncid;
 
 
      // Timing Variables

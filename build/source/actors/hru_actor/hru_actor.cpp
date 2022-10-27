@@ -77,7 +77,8 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
     return {
         // Starts the HRU and tells it to ask for data from the file_access_actor
         [=](get_attributes, std::vector<double> attr_array, std::vector<int> type_array, 
-            std::vector<long int> id_array) {
+            std::vector<long int> id_array, std::vector<double> bpar_array, 
+            std::vector<double> dpar_array, std::vector<std::vector<double>> mpar_array) {
             
             aout(self) << "Received Attribute Information \n";
         

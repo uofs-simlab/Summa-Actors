@@ -72,7 +72,7 @@ extern "C" {
   void openParamFile(int* param_ncid, bool* param_file_exists, int* err);
   void getNumVarParam(int* param_ncid, int* num_var_param, int* err);
   void closeParamFile(int* param_ncid, int* err);
-  void getParamSizes(int* dpar_array_size, int* bpar_array_size);
+  void getParamSizes(int* dpar_array_size, int* bpar_array_size, int* type_array_size);
 
   void overwriteParam(int* index_gru, int* index_hru, int* num_var_attr,
     void* type_array, void* dpar_array, void* handle_mpar_struct, void* bpar_array,
