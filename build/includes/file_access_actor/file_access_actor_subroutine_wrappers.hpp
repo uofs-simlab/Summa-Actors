@@ -58,6 +58,9 @@ extern "C" {
 
 
   // Attributes Files
+  void allocateAttributeStructures(int* index_gru, int* index_hru, void* handle_attr_struct, 
+      void* handle_type_struct, void* handle_id_struct, int* err);
+  
   void openAttributeFile(int* att_ncid, int* err);
 
   void getNumVarAttr(int* attr_ncid, int* num_var_attr, int* err);
@@ -69,16 +72,18 @@ extern "C" {
 
 
   // Parameters File
+  void allocateParamStructures(int* index_gru, int* index_hru, void* handle_dpar_struct,
+      void* handle_mpar_struct, void* handle_bpar_struct, int* err);
   void openParamFile(int* param_ncid, bool* param_file_exists, int* err);
   void getNumVarParam(int* param_ncid, int* num_var_param, int* err);
   void closeParamFile(int* param_ncid, int* err);
   void getParamSizes(int* dpar_array_size, int* bpar_array_size, int* type_array_size);
 
-  void overwriteParam(int* index_gru, int* index_hru, int* num_var_attr,
-    void* type_array, void* dpar_array, void* handle_mpar_struct, void* bpar_array,
-    int* err);
+  void overwriteParam(int* index_gru, int* index_hru,
+    void* handle_type_struct, void* handle_dpar_struct, void* handle_mpar_struct, 
+    void* handle_bpar_struct, int* err);
 
   void readParamFromNetCDF(int* param_ncid, int* index_gru, int* index_hru, int* start_index_gru,
-    int* num_var_param, int* bpar_array_size, void* handle_mpar_struct, void* bpar_array, int* err);
+    int* num_var_param, void* handle_mpar_struct, void* _handle_bpar_struct, int* err);
   
 }

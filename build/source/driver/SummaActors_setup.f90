@@ -188,16 +188,6 @@ subroutine setupHRUParam(&
    ! get the maximum number of layers
    maxLayers = gru_struc(1)%hruInfo(1)%nSoil + maxSnowLayers
 
-   ! *****************************************************************************
-   ! *** read local attributes for each HRU
-   ! *****************************************************************************
-   ! call read_attribute(indxHRU,indxGRU,attrStruct,typeStruct,idStruct,err,cmessage)
-   ! if(err/=0)then
-   !    message=trim(message)//trim(cmessage)
-   !    print*, message
-   !    return
-   ! endif
-
    ! define monthly fraction of green vegetation
    greenVegFrac_monthly = (/0.01_dp, 0.02_dp, 0.03_dp, 0.07_dp, 0.50_dp, 0.90_dp, 0.95_dp, 0.96_dp, 0.65_dp, 0.24_dp, 0.11_dp, 0.02_dp/)
 
@@ -214,16 +204,6 @@ subroutine setupHRUParam(&
          return
    end select
 
- 
-   ! *****************************************************************************
-   ! *** read trial model parameter values for each HRU, and populate initial data structures
-   ! *****************************************************************************
-   call read_param(indxHRU,indxGRU,mparStruct,bparStruct,dparStruct,err)
-   if(err/=0)then
-      message=trim(message)//trim(cmessage)
-      print*, message
-      return
-   endif
    ! *****************************************************************************
    ! *** compute derived model variables that are pretty much constant for the basin as a whole
    ! *****************************************************************************

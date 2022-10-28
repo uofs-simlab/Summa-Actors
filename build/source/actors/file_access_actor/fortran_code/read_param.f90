@@ -3,6 +3,7 @@ module read_param_module
   USE nrtype
   implicit none
   private
+  public::allocateParamStructures
   public::openParamFile
   public::getNumVarParam
   public::closeParamFile
@@ -10,6 +11,49 @@ module read_param_module
   public::overwriteParam
   public::readParamFromNetCDF
   contains
+subroutine allocateParamStructures(index_gru, index_hru, handle_dpar_struct, &
+    handle_mpar_struct, handle_bpar_struct, err) bind(C, name="allocateParamStructures")
+  
+  USE globalData,only:mpar_meta,bpar_meta
+  USE globalData,only:gru_struc
+  USE data_types,only:var_dlength,var_d
+  USE allocspace_module,only:allocLocal
+
+  implicit none
+  integer(c_int),intent(in)       :: index_gru
+  integer(c_int),intent(in)       :: index_hru
+  type(c_ptr),intent(in),value    :: handle_dpar_struct
+  type(c_ptr),intent(in),value    :: handle_mpar_struct
+  type(c_ptr),intent(in),value    :: handle_bpar_struct
+  integer(c_int),intent(out)      :: err
+
+  type(var_d), pointer            :: dpar_struct
+  type(var_dlength), pointer      :: mpar_struct
+  type(var_d), pointer            :: bpar_struct
+
+  integer(i4b)                    :: nSnow  
+  integer(i4b)                    :: nSoil
+
+  character(len=256)              :: message
+
+  ! ---------------------------------------------------------------------------------------
+  ! * Convert From C++ to Fortran
+  ! ---------------------------------------------------------------------------------------
+  call c_f_pointer(handle_dpar_struct, dpar_struct)
+  call c_f_pointer(handle_mpar_struct, mpar_struct)
+  call c_f_pointer(handle_bpar_struct, bpar_struct)
+  ! start of subroutine
+  err=0; message="read_attribute.f90 - allocateAttributeStructures"
+
+  nSnow = gru_struc(index_gru)%hruInfo(index_hru)%nSnow
+  nSoil = gru_struc(index_gru)%hruInfo(index_hru)%nSoil
+
+  ! initalize the structure with allocatable components
+  call allocLocal(mpar_meta,dpar_struct,nSnow,nSoil,err,message); 
+  call allocLocal(mpar_meta,mpar_struct,nSnow,nSoil,err,message); 
+  call allocLocal(bpar_meta,bpar_struct,nSnow=0,nSoil=0,err=err,message=message); 
+  if(err/=0)then; message=trim(message); print*, message; return; endif;
+end subroutine
 
 subroutine openParamFile(param_ncid, param_file_exists, err) bind(C, name="openParamFile")
   USE netcdf
@@ -112,37 +156,37 @@ subroutine getParamSizes(dpar_array_size, bpar_array_size, type_array_size) bind
 
 end subroutine getParamSizes
 
-subroutine overwriteParam(index_gru, index_hru, num_var_attr, type_array, &
-  dpar_array, handle_mpar_struct, bpar_array, err) bind(C, name="overwriteParam")
+subroutine overwriteParam(index_gru, index_hru, handle_type_struct, &
+  handle_dpar_struct, handle_mpar_struct, handle_bpar_struct, err) bind(C, name="overwriteParam")
   USE var_lookup,only:maxvarMpar      ! model parameters: maximum number variables
   USE var_lookup,only:maxvarBpar      ! model parameters: maximum number variables
   USE var_lookup,only:iLookTYPE      ! named variables to index elements of the data vectors
-
   ! global data
   USE globalData,only:gru_struc
   USE globalData,only:localParFallback                        ! local column default parameters
   USE globalData,only:basinParFallback                        ! basin-average default parameter
-  USE globalData,only:mpar_meta
-  USE data_types,only:var_dlength
+  USE data_types,only:var_dlength,var_i,var_d
 
   USE pOverwrite_module,only:pOverwrite                       ! module to overwrite default parameter values with info from the Noah tables
   USE allocspace_module,only:allocLocal
-
-
   implicit none
   integer(c_int),intent(in)     :: index_gru
   integer(c_int),intent(in)     :: index_hru
-  integer(c_int),intent(in)     :: num_var_attr ! size of type array
-  ! arrays
-  integer(c_int),intent(in)     :: type_array(num_var_attr)
-  real(c_double),intent(out)    :: dpar_array(maxvarMpar)
+  ! structures
+  type(c_ptr),intent(in),value  :: handle_type_struct
+  type(c_ptr),intent(in),value  :: handle_dpar_struct
   type(c_ptr),intent(in),value  :: handle_mpar_struct
-  real(c_double),intent(out)    :: bpar_array(maxvarBpar)
+  type(c_ptr),intent(in),value  :: handle_bpar_struct
+
   ! error control
   integer(c_int), intent(out)   :: err
 
   ! local variables
+  type(var_i),pointer           :: type_struct                 !  model parameters
+  type(var_d),pointer           :: dpar_struct                 !  model parameters
   type(var_dlength),pointer     :: mpar_struct                 !  model parameters
+  type(var_d),pointer           :: bpar_struct                 !  model parameters
+
   integer(i4b)                  :: iVar
   integer(i4b)                  :: iDat
 
@@ -150,44 +194,41 @@ subroutine overwriteParam(index_gru, index_hru, num_var_attr, type_array, &
   ! ---------------------------------------------------------------------------------------
   ! * Convert From C++ to Fortran
   ! ---------------------------------------------------------------------------------------
+  call c_f_pointer(handle_type_struct, type_struct)
+  call c_f_pointer(handle_dpar_struct, dpar_struct)
   call c_f_pointer(handle_mpar_struct, mpar_struct)
+  call c_f_pointer(handle_bpar_struct, bpar_struct)
   ! Start subroutine
   err=0; message="read_param.f90 - overwriteParam"
 
-  ! initalize the structure with allocatable components
-  call allocLocal(mpar_meta,mpar_struct,           &
-    gru_struc(index_gru)%hruInfo(index_hru)%nSnow,&
-    gru_struc(index_gru)%hruInfo(index_hru)%nSoil,&
-    err,message); if(err/=0)then; message=trim(message); print*, message; return; endif;
-
   ! Set the basin parameters with the default values
   do ivar=1, size(localParFallback)
-    dpar_array(iVar) = localParFallback(iVar)%default_val
+    dpar_struct%var(iVar) = localParFallback(iVar)%default_val
   end do
 
-  call pOverwrite(type_array(iLookTYPE%vegTypeIndex), &  ! vegetation category
-                  type_array(iLookTYPE%soilTypeIndex),&  ! soil category
-                  dpar_array(:),err,message)             ! default model parameters
+  call pOverwrite(type_struct%var(iLookTYPE%vegTypeIndex), &  ! vegetation category
+                  type_struct%var(iLookTYPE%soilTypeIndex),&  ! soil category
+                  dpar_struct%var(:),err,message)             ! default model parameters
   
   do ivar=1, size(localParFallback)
     do iDat=1, size(mpar_struct%var(iVar)%dat)
-      mpar_struct%var(iVar)%dat(iDat) = dpar_array(iVar)
+      mpar_struct%var(iVar)%dat(iDat) = dpar_struct%var(iVar)
     end do
   end do
 
   do iVar=1, size(basinParFallback)
-    bpar_array(iVar) = basinParFallback(iVar)%default_val
+    bpar_struct%var(iVar) = basinParFallback(iVar)%default_val
   end do
 
 end subroutine overwriteParam
 
 
 subroutine readParamFromNetCDF(param_ncid, index_gru, index_hru, start_index_gru, &
-    num_vars, bpar_array_size, handle_mpar_struct, bpar_array, err) bind(C, name="readParamFromNetCDF")
+    num_vars, handle_mpar_struct, handle_bpar_struct, err) bind(C, name="readParamFromNetCDF")
   USE netcdf
   USE netcdf_util_module,only:netcdf_err     ! netcdf error handling function
 
-  USE data_types,only:var_dlength
+  USE data_types,only:var_dlength,var_d
   USE get_ixname_module,only:get_ixparam,get_ixbpar   ! access function to find index of elements in structure
   
   USE globalData,only:index_map,gru_struc             ! mapping from global HRUs to the elements in the data structures
@@ -200,12 +241,12 @@ subroutine readParamFromNetCDF(param_ncid, index_gru, index_hru, start_index_gru
   integer(c_int),intent(in)     :: index_hru
   integer(c_int),intent(in)     :: start_index_gru
   integer(c_int),intent(in)     :: num_vars
-  integer(c_int),intent(in)     :: bpar_array_size
-  type(c_ptr), intent(in),value :: handle_mpar_struct
-  real(c_double), intent(out)   :: bpar_array(bpar_array_size)
+  type(c_ptr),intent(in),value  :: handle_mpar_struct
+  type(c_ptr),intent(in),value  :: handle_bpar_struct
   integer(c_int), intent(out)   :: err
   ! define local variables
   type(var_dlength),pointer     :: mpar_struct                 !  model parameters
+  type(var_d),pointer           :: bpar_struct                 !  model parameters
 
   character(len=256)            :: message          ! error message
   character(len=1024)           :: cmessage         ! error message for downwind routine
@@ -231,6 +272,7 @@ subroutine readParamFromNetCDF(param_ncid, index_gru, index_hru, start_index_gru
   ! * Convert From C++ to Fortran
   ! ---------------------------------------------------------------------------------------
   call c_f_pointer(handle_mpar_struct, mpar_struct)
+  call c_f_pointer(handle_bpar_struct, bpar_struct)
   err=0; message="read_param.f90 - readParamFromNetCDF/"
 
 
@@ -342,7 +384,7 @@ subroutine readParamFromNetCDF(param_ncid, index_gru, index_hru, start_index_gru
 
         ! read parameter data
         netcdf_index = start_index_gru + index_gru - 1
-        err=nf90_get_var(param_ncid, ivarid, bpar_array(ixParam), start=(/netcdf_index/))
+        err=nf90_get_var(param_ncid, ivarid, bpar_struct%var(ixParam), start=(/netcdf_index/))
         if(err/=0)then
           message=trim(message)//trim(cmessage)
           print*, message

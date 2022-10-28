@@ -12,8 +12,20 @@ implicit none
 
 
 public::getSummaVariableInfo
+! public::setParamAndAttr
 public::prepareOutput
+public::updateCounters
 contains
+
+! subroutine setParamAndAttr(handle_attrStruct, handle_attrStruct, handle_idStruct, &
+!   handle_bparStruct, handle_dparStruct, attr_array, type_array, id_array, bpar_array) bind(C, name="setParamAndAttr")
+!   implicit none
+
+
+
+
+! end subroutine
+
 subroutine getSummaVariableInfo(var_type, var_fortran_index, data_struct) bind(C, name="getSummaVariableInfo")
   integer(c_int)          :: var_type
   integer(c_int)          :: var_fortran_index

@@ -130,20 +130,32 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
 
         [=] (get_attributes, int ref_gru, caf::actor actor_to_respond) {
             // ref_gru will always be 1 index too high (FORTRAN arrays start at 1)
-            std::vector<double> attr_array_to_send = self->state.attr_arrays_for_hrus[ref_gru-1];
-            std::vector<int> type_array_to_send = self->state.type_arrays_for_hrus[ref_gru-1];
-            std::vector<long int> id_array_to_send = self->state.id_arrays_for_hrus[ref_gru-1];
-            std::vector<double> bpar_array_to_send = self->state.bpar_arrays_for_hrus[ref_gru-1];
-            std::vector<double> dpar_array_to_send = self->state.dpar_arrays_for_hrus[ref_gru-1];
+            // std::vector<double> attr_array_to_send = self->state.attr_arrays_for_hrus[ref_gru-1];
+            // std::vector<int> type_array_to_send = self->state.type_arrays_for_hrus[ref_gru-1];
+            // std::vector<long int> id_array_to_send = self->state.id_arrays_for_hrus[ref_gru-1];
+            // std::vector<double> bpar_array_to_send = self->state.bpar_arrays_for_hrus[ref_gru-1];
+            // std::vector<double> dpar_array_to_send = self->state.dpar_arrays_for_hrus[ref_gru-1];
+            void* handle_attr_struct = self->state.attr_structs_for_hrus[ref_gru-1];
+            std::vector<double> attr_struct_to_send = get_var_d(handle_attr_struct);
+
+            void* handle_type_struct = self->state.type_structs_for_hrus[ref_gru-1];
+            std::vector<int> type_struct_to_send = get_var_i(handle_type_struct);
+
+            void* handle_id_struct = self->state.id_structs_for_hrus[ref_gru-1];
+            std::vector<long int> id_struct_to_send = get_var_i8(handle_id_struct);
+
+            void* handle_bpar_struct = self->state.bpar_structs_for_hrus[ref_gru-1];
+            std::vector<double> bpar_struct_to_send = get_var_d(handle_bpar_struct); 
+
+            void* handle_dpar_struct = self->state.dpar_structs_for_hrus[ref_gru-1];
+            std::vector<double> dpar_struct_to_send = get_var_d(handle_dpar_struct);
 
             void* handle_mpar_struct = self->state.mpar_structs_for_hrus[ref_gru-1];
+            std::vector<std::vector<double>> mpar_struct_to_send = get_var_dlength(handle_mpar_struct);
 
-            std::vector<std::vector<double>> mpar_array_to_send = get_var_dlength(handle_mpar_struct);
-
-
-            self->send(actor_to_respond, get_attributes_v, attr_array_to_send,
-                type_array_to_send, id_array_to_send, bpar_array_to_send, 
-                dpar_array_to_send, mpar_array_to_send);
+            self->send(actor_to_respond, get_attributes_v, attr_struct_to_send,
+                type_struct_to_send, id_struct_to_send, bpar_struct_to_send, 
+                dpar_struct_to_send, mpar_struct_to_send);
             
         },
 
@@ -391,25 +403,29 @@ int readForcing(stateful_actor<file_access_state>* self, int currentFile) {
 void readAttributes(stateful_actor<file_access_state>* self) {
     int err = 0;
     openAttributeFile(&self->state.attribute_ncid, &err);
+    
     getNumVarAttr(&self->state.attribute_ncid, &self->state.num_var_in_attributes_file, &err);
+    
     for (int index_gru = 1; index_gru < self->state.num_gru + 1; index_gru++) {
 
-        std::vector<double> attr_array(self->state.num_var_in_attributes_file);
-        std::vector<int> type_array(self->state.num_var_in_attributes_file);
-        std::vector<long int> id_array(self->state.num_var_in_attributes_file);
-
+        void* handle_attr_struct = new_handle_var_d();
+        void* handle_type_struct = new_handle_var_i();
+        void* handle_id_struct   = new_handle_var_i8();
         int index_hru = 1;
-        readAttributeFromNetCDF(&self->state.attribute_ncid, &index_gru, &index_hru,
-            &self->state.num_var_in_attributes_file, &attr_array[0], &type_array[0],
-            &id_array[0], &err);
 
-        self->state.attr_arrays_for_hrus.push_back(attr_array);
-        self->state.type_arrays_for_hrus.push_back(type_array);
-        self->state.id_arrays_for_hrus.push_back(id_array);
+        allocateAttributeStructures(&index_gru, &index_hru, handle_attr_struct, handle_type_struct,
+            handle_id_struct, &err);
+
+        readAttributeFromNetCDF(&self->state.attribute_ncid, &index_gru, &index_hru,
+            &self->state.num_var_in_attributes_file, handle_attr_struct, handle_type_struct,
+            handle_id_struct, &err);
+
+        self->state.attr_structs_for_hrus.push_back(handle_attr_struct);
+        self->state.type_structs_for_hrus.push_back(handle_type_struct);
+        self->state.id_structs_for_hrus.push_back(handle_id_struct);
     }
 
     closeAttributeFile(&self->state.attribute_ncid, &err);
-
 }
 
 void readParameters(stateful_actor<file_access_state>* self) {
@@ -433,24 +449,33 @@ void readParameters(stateful_actor<file_access_state>* self) {
     for (int index_gru = 1; index_gru < self->state.num_gru + 1; index_gru++) {
 
         std::vector<double> dpar_array(self->state.dpar_array_size);
-        void* handle_mpar_struct = new_handle_var_dlength();        
+        void* handle_dpar_struct = new_handle_var_d();
+        void* handle_mpar_struct = new_handle_var_dlength();      
+        void* handle_bpar_struct = new_handle_var_d();  
         std::vector<double> bpar_array(self->state.dpar_array_size);        
 
+        allocateParamStructures(&index_gru, &index_hru, handle_dpar_struct, 
+            handle_mpar_struct, handle_bpar_struct, &err);
 
-        overwriteParam(&index_gru, &index_hru, &self->state.num_var_in_param_file, 
-            &self->state.attr_arrays_for_hrus[index_gru-1][0],
-            &dpar_array[0], handle_mpar_struct, &bpar_array[0], &err);
+        overwriteParam(&index_gru, &index_hru, 
+            self->state.type_structs_for_hrus[index_gru-1],
+            handle_dpar_struct, 
+            handle_mpar_struct, 
+            handle_bpar_struct, 
+            &err);
 
         if (self->state.param_file_exists) {
             readParamFromNetCDF(&self->state.param_ncid, &index_gru, &index_hru,
-                &self->state.start_gru, &self->state.num_var_in_param_file, 
-                &self->state.bpar_array_size, handle_mpar_struct, &bpar_array[0],
+                &self->state.start_gru, 
+                &self->state.num_var_in_param_file, 
+                handle_mpar_struct, 
+                handle_bpar_struct,
                 &err);
         }
 
-        self->state.dpar_arrays_for_hrus.push_back(dpar_array);
+        self->state.dpar_structs_for_hrus.push_back(handle_dpar_struct);
         self->state.mpar_structs_for_hrus.push_back(handle_mpar_struct);
-        self->state.bpar_arrays_for_hrus.push_back(bpar_array);
+        self->state.bpar_structs_for_hrus.push_back(handle_bpar_struct);
     }
     closeParamFile(&self->state.param_ncid, &err);
 

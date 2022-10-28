@@ -1,27 +1,8 @@
 module summaActors_deallocateOuptutStruct
   USE nrtype
   implicit none
-  public::deallocateOutputStruc
 
   contains
-subroutine deallocateOutputStruc(err)
-  USE globalData,only:outputStructure
-  implicit none
-  integer(i4b), intent(inout)   :: err
-
-  err = 0
-  ! id
-  call deallocateData_output(outputStructure(1)%idStruct(1));       deallocate(outputStructure(1)%idStruct)
-  ! attr
-  call deallocateData_output(outputStructure(1)%attrStruct(1));     deallocate(outputStructure(1)%attrStruct)
-  ! type
-  call deallocateData_output(outputStructure(1)%typeStruct(1));     deallocate(outputStructure(1)%typeStruct)
-  ! mpar
-  call deallocateData_output(outputStructure(1)%mparStruct(1));     deallocate(outputStructure(1)%mparStruct)
-  ! bpar
-  call deallocateData_output(outputStructure(1)%bparStruct(1));     deallocate(outputStructure(1)%bparStruct)
-
-end subroutine deallocateOutputStruc
 
 subroutine deallocateData_output(dataStruct)
   USE data_types,only:gru_hru_time_doubleVec, &

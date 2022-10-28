@@ -30,14 +30,15 @@ struct file_access_state {
     // Variables for hanlding attributes file
     int attribute_ncid;
     int num_var_in_attributes_file;
-    std::vector<std::vector<double>> attr_arrays_for_hrus;
-    std::vector<std::vector<int>> type_arrays_for_hrus;
-    std::vector<std::vector<long int>> id_arrays_for_hrus;
+    std::vector<void*> attr_structs_for_hrus;
+    std::vector<void*> type_structs_for_hrus;
+    std::vector<void*> id_structs_for_hrus;
 
     // Variables for handling parameters file
     std::vector<void*> mpar_structs_for_hrus;
-    std::vector<std::vector<double>> bpar_arrays_for_hrus;
-    std::vector<std::vector<double>> dpar_arrays_for_hrus;
+    std::vector<void*> bpar_structs_for_hrus;
+    std::vector<void*> dpar_structs_for_hrus;
+    
     int dpar_array_size;
     int bpar_array_size;
     int type_array_size;

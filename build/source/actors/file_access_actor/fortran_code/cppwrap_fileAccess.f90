@@ -12,7 +12,6 @@ module cppwrap_fileAccess
   implicit none
   public::ffile_info_C
   public::mDecisions_C
-  public::Init_OutputStruct
   public::initFailedHRUTracker
   public::FileAccessActor_ReadForcing
   
@@ -165,27 +164,6 @@ subroutine resetOutputCounter(indxGRU) bind(C, name="resetOutputCounter")
 
 end subroutine resetOutputCounter
 
-subroutine Init_OutputStruct(handle_forcFileInfo, maxSteps, nGRU, err) bind(C, name="Init_OutputStruct")
-  USE summaActors_initOutputStruct,only:initalizeOutput
-  USE globalData,only:outputStructure
-
-  implicit none
-  type(c_ptr), intent(in), value        :: handle_forcFileInfo
-  integer(c_int), intent(in)            :: maxSteps
-  integer(c_int), intent(in)            :: nGRU
-  integer(c_int), intent(inout)         :: err 
-
-  ! local Variables
-  type(file_info_array), pointer        :: forcFileInfo
-  call c_f_pointer(handle_forcFileInfo, forcFileInfo)
-
-  if (allocated(outputStructure))then
-    print*, "Already Allocated"
-  else
-    call initalizeOutput(forcFileInfo,maxSteps,nGRU,err)
-  endif
-
-end subroutine Init_OutputStruct
 
 subroutine FileAccessActor_ReadForcing(handle_forcFileInfo, currentFile, stepsInFile, startGRU, numGRU, err) bind(C,name="FileAccessActor_ReadForcing")
   USE access_forcing_module,only:access_forcingFile
@@ -211,7 +189,6 @@ subroutine FileAccessActor_DeallocateStructures(handle_forcFileInfo, handle_ncid
   USE globalData,only:structInfo                              ! information on the data structures
   USE globalData,only:outputTimeStep
   USE globalData,only:failedHRUs
-  USE summaActors_deallocateOuptutStruct,only:deallocateOutputStruc
   implicit none
   type(c_ptr),intent(in), value        :: handle_forcFileInfo
   type(c_ptr),intent(in), value        :: handle_ncid
@@ -239,9 +216,6 @@ subroutine FileAccessActor_DeallocateStructures(handle_forcFileInfo, handle_ncid
   deallocate(outputTimeStep)
   deallocate(ncid)
   deallocate(failedHRUs)
-
-  call deallocateOutputStruc(err)
-
 end subroutine FileAccessActor_DeallocateStructures
 
 

@@ -4,12 +4,52 @@ USE nrtype
 
 implicit none
 private
+public::allocateAttributeStructures
 public::openAttributeFile
 public::getNumVarAttr
 public::closeAttributeFile
 public::readAttributeFromNetCDF
 
 contains
+
+subroutine allocateAttributeStructures(index_gru, index_hru, & ! indexes into gru_struc
+    handle_attr_struct, handle_type_struct, handle_id_struct, err) bind(C, name="allocateAttributeStructures")
+  USE data_types,only:var_d, var_i, var_i8
+  USE globalData,only:gru_struc
+  USE globalData,only:attr_meta,type_meta,id_meta
+  USE allocspace_module,only:allocLocal
+  implicit none
+  integer(c_int),intent(in)           :: index_gru
+  integer(c_int),intent(in)           :: index_hru
+  type(c_ptr), intent(in), value      :: handle_attr_struct
+  type(c_ptr), intent(in), value      :: handle_type_struct
+  type(c_ptr), intent(in), value      :: handle_id_struct
+  integer(c_int), intent(out)         :: err
+  type(var_d), pointer                :: attr_struct
+  type(var_i), pointer                :: type_struct
+  type(var_i8), pointer               :: id_struct
+  integer(i4b)                        :: nSoil
+  integer(i4b)                        :: nSnow
+  character(len=256)                  :: message
+  ! ---------------------------------------------------------------------------------------
+  ! * Convert From C++ to Fortran
+  ! ---------------------------------------------------------------------------------------
+  call c_f_pointer(handle_attr_struct, attr_struct)
+  call c_f_pointer(handle_type_struct, type_struct)
+  call c_f_pointer(handle_id_struct,   id_struct)
+  ! Start subroutine
+  err=0; message="read_attribute.f90 - allocateAttributeStructures"
+
+  nSnow = gru_struc(index_gru)%hruInfo(index_hru)%nSnow
+  nSoil = gru_struc(index_gru)%hruInfo(index_hru)%nSoil
+
+  call allocLocal(attr_meta,attr_struct,nSnow,nSoil,err,message);
+  call allocLocal(type_meta,type_struct,nSnow,nSoil,err,message);
+  call allocLocal(id_meta,id_struct,nSnow,nSoil,err,message);
+  if(err/=0)then; message=trim(message); print*, message; return; endif;
+  
+end subroutine allocateAttributeStructures
+
 
 subroutine openAttributeFile(attr_ncid, err) bind(C, name="openAttributeFile")
   USE netcdf
@@ -79,7 +119,7 @@ end subroutine closeAttributeFile
 
 ! Read in the local attributes for an HRU
 subroutine readAttributeFromNetCDF(ncid, index_gru, index_hru, num_var, &
-  attr_array, type_array, id_array, err) bind(C, name="readAttributeFromNetCDF")
+  handle_attr_struct, handle_type_struct, handle_id_struct, err) bind(C, name="readAttributeFromNetCDF")
   ! netcdf utilities
   USE netcdf
   USE netcdf_util_module,only:nc_file_open                   ! open netcdf file
@@ -92,6 +132,8 @@ subroutine readAttributeFromNetCDF(ncid, index_gru, index_hru, num_var, &
   ! Information to make up the attributes file
   USE summaActors_FileManager,only:SETTINGS_PATH                     ! define path to settings files (e.g., parameters, soil and veg. tables)
   USE summaActors_FileManager,only:LOCAL_ATTRIBUTES                  ! name of model initial attributes file
+  ! Fortran Data Type Structures
+  USE data_types,only:var_d, var_i, var_i8
   implicit none
   ! indexes into gru_struc
   integer(c_int), intent(in)            :: ncid
@@ -100,23 +142,24 @@ subroutine readAttributeFromNetCDF(ncid, index_gru, index_hru, num_var, &
   ! number of variables from the netCDF file
   integer(c_int), intent(in)            :: num_var
   ! data structures to populate
-  real(c_double), intent(out)           :: attr_array(num_var)            
-  integer(c_int), intent(out)           :: type_array(num_var)             
-  integer(c_long),intent(out)           :: id_array(num_var)
+  type(c_ptr), intent(in), value        :: handle_attr_struct
+  type(c_ptr), intent(in), value        :: handle_type_struct
+  type(c_ptr), intent(in), value        :: handle_id_struct
   ! error control
   integer(c_int), intent(out)           :: err
-  
   ! local variables
   integer(i4b)                          :: iVar               ! loop through varibles in the netcdf file
   integer(i4b)                          :: varType            ! type of variable (categorica, numerical, idrelated)
   integer(i4b)                          :: varIndx            ! index of variable within its data structure
-
+  ! Fortran structures
+  type(var_d), pointer                  :: attr_struct
+  type(var_i), pointer                  :: type_struct
+  type(var_i8), pointer                 :: id_struct
   ! check structures - to verify input
   integer(i4b)                          :: iCheck             ! index of an attribute name
   logical(lgt),allocatable              :: checkType(:)       ! vector to check if we have all desired categorical values
   logical(lgt),allocatable              :: checkId(:)         ! vector to check if we have all desired IDs
   logical(lgt),allocatable              :: checkAttr(:)       ! vector to check if we have all desired local attributes
-  
   ! netcdf variables
   character(LEN=nf90_max_name)          :: varName            ! character array of netcdf variable name
   integer(i4b),parameter                :: categorical=101    ! named variable to denote categorical data
@@ -125,12 +168,14 @@ subroutine readAttributeFromNetCDF(ncid, index_gru, index_hru, num_var, &
   integer(i4b)                          :: categorical_var(1) ! temporary categorical variable from local attributes netcdf file
   real(rkind)                           :: numeric_var(1)     ! temporary numeric variable from local attributes netcdf file
   integer(8)                            :: idrelated_var(1)   ! temporary ID related variable from local attributes netcdf file
-
-
   character(len=256)                    :: attr_file          ! attributes file name
   character(len=256)                    :: message           
-
-
+  ! ---------------------------------------------------------------------------------------
+  ! * Convert From C++ to Fortran
+  ! ---------------------------------------------------------------------------------------
+  call c_f_pointer(handle_attr_struct, attr_struct)
+  call c_f_pointer(handle_type_struct, type_struct)
+  call c_f_pointer(handle_id_struct,   id_struct)
 
   err=0; message="read_attribute_file_access_actor - read_attribute.f90"
 
@@ -186,7 +231,7 @@ subroutine readAttributeFromNetCDF(ncid, index_gru, index_hru, num_var, &
               print*, message
               return
           end if
-          type_array(varIndx) = categorical_var(1)
+          type_struct%var(varIndx) = categorical_var(1)
 
           ! ** ID related data
       case('hruId')
@@ -211,7 +256,7 @@ subroutine readAttributeFromNetCDF(ncid, index_gru, index_hru, num_var, &
               print*, message
               return
           end if
-          id_array(varIndx) = idrelated_var(1)
+          id_struct%var(varIndx) = idrelated_var(1)
 
 
       ! ** numerical data
@@ -236,7 +281,7 @@ subroutine readAttributeFromNetCDF(ncid, index_gru, index_hru, num_var, &
               print*, message
               return
           end if
-          attr_array(varIndx) = numeric_var(1)
+          attr_struct%var(varIndx) = numeric_var(1)
     
       
       ! for mapping varibles, do nothing (information read above)
@@ -258,7 +303,7 @@ subroutine readAttributeFromNetCDF(ncid, index_gru, index_hru, num_var, &
   ! check that the variable was not found in the attribute file
   if(.not. checkAttr(varIndx)) then
       write(*,*) NEW_LINE('A')//'INFO: aspect not found in the input attribute file, continuing ...'//NEW_LINE('A')
-      attr_array(varIndx) = nr_realMissing      ! populate variable with out-of-range value, used later
+      attr_struct%var(varIndx) = nr_realMissing      ! populate variable with out-of-range value, used later
       checkAttr(varIndx) = .true.
   endif
 

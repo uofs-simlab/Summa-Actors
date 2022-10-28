@@ -59,7 +59,7 @@ ENGINE_DIR = $(F_KORE_DIR)/engine
 ACTORS_DIR = $(F_KORE_DIR)/actors
 JOB_ACTOR_DIR = $(ACTORS_DIR)/job_actor
 FILE_ACCESS_DIR = $(ACTORS_DIR)/file_access_actor/fortran_code
-HRU_ACTOR_DIR = $(ACTORS_DIR)/hru_actor
+HRU_ACTOR_DIR = $(ACTORS_DIR)/hru_actor/fortran_code
 GRU_ACTOR_DIR = $(ACTORS_DIR)/gru_actor
 
 #  utilities
@@ -307,7 +307,7 @@ FORCING_FILE_INFO = $(SOURCE_DIR)/file_access_actor/cpp_code/forcing_file_info.c
 OUTPUT_MANAGER = $(SOURCE_DIR)/file_access_actor/cpp_code/output_manager.cpp
 
 HRU_ACTOR_INCLUDES = -I$(INCLUDE_DIR)/hru_actor
-HRU_ACTOR = $(SOURCE_DIR)/hru_actor/hru_actor.cpp
+HRU_ACTOR = $(SOURCE_DIR)/hru_actor/cpp_code/hru_actor.cpp
 
 MAIN = $(F_KORE_DIR)/actors/main.cpp
 

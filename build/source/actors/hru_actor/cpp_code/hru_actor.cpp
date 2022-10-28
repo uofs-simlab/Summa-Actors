@@ -54,10 +54,9 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
 
     initHRU(&self->state.indxGRU, &self->state.num_steps, self->state.handle_lookupStruct, self->state.handle_forcStat,
         self->state.handle_progStat, self->state.handle_diagStat, self->state.handle_fluxStat, self->state.handle_indxStat, 
-        self->state.handle_bvarStat, self->state.handle_timeStruct, self->state.handle_forcStruct, self->state.handle_attrStruct, 
-        self->state.handle_typeStruct, self->state.handle_idStruct,self->state.handle_indxStruct, self->state.handle_mparStruct, 
-        self->state.handle_progStruct, self->state.handle_diagStruct, self->state.handle_fluxStruct,self->state.handle_bparStruct,
-        self->state.handle_bvarStruct, self->state.handle_dparStruct, self->state.handle_startTime, self->state.handle_finshTime, 
+        self->state.handle_bvarStat, self->state.handle_timeStruct, self->state.handle_forcStruct, self->state.handle_indxStruct,
+        self->state.handle_progStruct, self->state.handle_diagStruct, self->state.handle_fluxStruct,
+        self->state.handle_bvarStruct, self->state.handle_startTime, self->state.handle_finshTime, 
         self->state.handle_refTime,self->state.handle_oldTime, &self->state.err);
     if (self->state.err != 0) {
         aout(self) << "Error: HRU_Actor - Initialize - HRU = " << self->state.indxHRU << 
@@ -72,16 +71,25 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
 
 
     self->state.hru_timing.updateEndPoint("total_duration");
-    self->send(self, start_hru_v);
 
     return {
         // Starts the HRU and tells it to ask for data from the file_access_actor
-        [=](get_attributes, std::vector<double> attr_array, std::vector<int> type_array, 
-            std::vector<long int> id_array, std::vector<double> bpar_array, 
-            std::vector<double> dpar_array, std::vector<std::vector<double>> mpar_array) {
+        [=](get_attributes, std::vector<double> attr_struct, std::vector<int> type_struct, 
+            std::vector<long int> id_struct, std::vector<double> bpar_struct, 
+            std::vector<double> dpar_struct, std::vector<std::vector<double>> mpar_struct) {
             
-            aout(self) << "Received Attribute Information \n";
-        
+            int err = 0;
+            set_var_d(attr_struct, self->state.handle_attrStruct);
+            set_var_i(type_struct, self->state.handle_typeStruct);
+            set_var_i8(id_struct, self->state.handle_idStruct);
+            set_var_d(bpar_struct, self->state.handle_bparStruct);
+            set_var_d(dpar_struct, self->state.handle_dparStruct);
+            set_var_dlength(mpar_struct, self->state.handle_mparStruct);
+
+            Initialize_HRU(self);
+
+            self->send(self, start_hru_v);
+
         },
 
 
@@ -245,9 +253,6 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
 
 void Initialize_HRU(stateful_actor<hru_state>* self) {
     self->state.hru_timing.updateStartPoint("init_duration");
-
-
-
 
     // Need to send a message to the file_access_actor for the data
 
