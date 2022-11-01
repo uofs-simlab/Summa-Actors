@@ -1,42 +1,47 @@
 #pragma once
 
 extern "C" {
-  
+  // initalizeFileAccessActor
+  void ffile_info(int* indxGRU, void* forcFileInfo, int* numFiles, int* err);
+  void mDecisions(int* numSteps, int* err);
   void read_pinit_C(int* err);
-
   void read_vegitationTables(int* err);
-
   void initFailedHRUTracker(int* numGRU);
+  void def_output(void* handle_ncid, int* startGRU, int* numGRU, int* numHRU, int* err);
+  
+  // Attributes Files- called inside initalizeFileAccessActor
+  void allocateAttributeStructures(int* index_gru, int* index_hru, void* handle_attr_struct, 
+      void* handle_type_struct, void* handle_id_struct, int* err);
+  void openAttributeFile(int* att_ncid, int* err);
+  void getNumVarAttr(int* attr_ncid, int* num_var_attr, int* err);
+  void closeAttributeFile(int* attr_ncid, int* err);
+  void readAttributeFromNetCDF(int* attr_ncid, int* index_gru, int* index_hru, int* num_var,
+    void* attr_array, void* type_array, void* id_array, int* err);
+  
+  // Parameters File - called inside initalizeFileAccessActor
+  void allocateParamStructures(int* index_gru, int* index_hru, void* handle_dpar_struct,
+      void* handle_mpar_struct, void* handle_bpar_struct, int* err);
+  void openParamFile(int* param_ncid, bool* param_file_exists, int* err);
+  void getNumVarParam(int* param_ncid, int* num_var_param, int* err);
+  void closeParamFile(int* param_ncid, int* err);
+  void getParamSizes(int* dpar_array_size, int* bpar_array_size, int* type_array_size);
+  void overwriteParam(int* index_gru, int* index_hru,
+    void* handle_type_struct, void* handle_dpar_struct, void* handle_mpar_struct, 
+    void* handle_bpar_struct, int* err);
+  void readParamFromNetCDF(int* param_ncid, int* index_gru, int* index_hru, int* start_index_gru,
+    int* num_var_param, void* handle_mpar_struct, void* _handle_bpar_struct, int* err);
 
   void updateFailed(int* indxHRU);
 
   void resetFailedArray();
 
   void resetOutputCounter(int* indxGRU);
-  
-  void mDecisions_C(int* numSteps, int* err);
-  
-  void ffile_info_C(int* indxGRU, void* forcFileInfo, int* numFiles, int* err);
-
-  void Init_OutputStruct(void* forcFileInfo, int* maxSteps, int* nGru, int* err);
 
   void FileAccessActor_ReadForcing(void* forcFileInfo, int* currentFile, int* stepsInFile,
          int* startGRU, int* numGRU, int* err);
 
-  void FileAccessActor_WriteOutput(void* handle_ncid,
-        int* stepsInCurrentFile, int*indxGRU, int*indxHRU, int* err);
-
   void FileAccessActor_DeallocateStructures(void* handle_forcFileInfo, void* handle_ncid);
   
-  void def_output(void* handle_ncid, int* startGRU, int* numGRU, int* numHRU, int* err);
-
-  // void Write_HRU_Param(void* handle_ncid, int* indxGRU, int* indxHRU, int* err);
-
-  // void readAttributeFileAccessActor(int* num_gru, int* err);
-
-  // void overwriteParam(int* num_gru, int* err);
-  
-  // void readParamFileAccessActor(int* start_gru, int* num_gru, int* err);
 
   // Writing to NETCDF
   void writeParamToNetCDF(void* handle_ncid, int* index_gru, int* index_hru,
@@ -57,33 +62,9 @@ extern "C" {
     void* handle_time_struct, int* err);
 
 
-  // Attributes Files
-  void allocateAttributeStructures(int* index_gru, int* index_hru, void* handle_attr_struct, 
-      void* handle_type_struct, void* handle_id_struct, int* err);
-  
-  void openAttributeFile(int* att_ncid, int* err);
-
-  void getNumVarAttr(int* attr_ncid, int* num_var_attr, int* err);
-
-  void closeAttributeFile(int* attr_ncid, int* err);
-
-  void readAttributeFromNetCDF(int* attr_ncid, int* index_gru, int* index_hru, int* num_var,
-    void* attr_array, void* type_array, void* id_array, int* err);
 
 
-  // Parameters File
-  void allocateParamStructures(int* index_gru, int* index_hru, void* handle_dpar_struct,
-      void* handle_mpar_struct, void* handle_bpar_struct, int* err);
-  void openParamFile(int* param_ncid, bool* param_file_exists, int* err);
-  void getNumVarParam(int* param_ncid, int* num_var_param, int* err);
-  void closeParamFile(int* param_ncid, int* err);
-  void getParamSizes(int* dpar_array_size, int* bpar_array_size, int* type_array_size);
 
-  void overwriteParam(int* index_gru, int* index_hru,
-    void* handle_type_struct, void* handle_dpar_struct, void* handle_mpar_struct, 
-    void* handle_bpar_struct, int* err);
 
-  void readParamFromNetCDF(int* param_ncid, int* index_gru, int* index_hru, int* start_index_gru,
-    int* num_var_param, void* handle_mpar_struct, void* _handle_bpar_struct, int* err);
   
 }

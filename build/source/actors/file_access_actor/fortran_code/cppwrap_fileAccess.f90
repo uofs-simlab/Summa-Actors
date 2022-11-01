@@ -10,60 +10,10 @@ module cppwrap_fileAccess
 
 
   implicit none
-  public::ffile_info_C
-  public::mDecisions_C
   public::initFailedHRUTracker
   public::FileAccessActor_ReadForcing
   
   contains
-
-subroutine ffile_info_C(indxGRU, handle_forcFileInfo, numFiles, err) bind(C, name='ffile_info_C')
-  USE ffile_info_module,only:ffile_info 
-  
-  implicit none
-  ! dummy variables
-
-  integer(c_int), intent(in)             :: indxGRU
-  type(c_ptr), intent(in), value         :: handle_forcFileInfo
-  integer(c_int), intent(out)            :: numFiles
-  integer(c_int)                         :: err
-  ! local variables
-  type(file_info_array),pointer          :: forcFileInfo
-  character(len=256)                     :: message
-
-  call c_f_pointer(handle_forcFileInfo, forcFileInfo)
-
-  call ffile_info(indxGRU,forcFileInfo,numFiles,err,message)
-  if(err/=0)then 
-    message=trim(message)
-    write(*,*) message
-    return 
-  endif
-
-end subroutine ffile_info_C
-
-! THis subroutine needs to be called after the ffile_info_C subroutine
-! It might make more sense to have this in the global data inialization 
-! subroutine. But here it sits
-subroutine mDecisions_C(num_steps,err) bind(C, name='mDecisions_C')
-  USE mDecisions_module,only:mDecisions ! module to read model decisions
-
-  implicit none
-  ! dummy variables
-  integer(c_int),intent(inout)        :: num_steps
-  integer(c_int),intent(inout)        :: err                ! Error Code
-  ! local variables
-  character(len=256)                  :: message            ! error message 
-  character(LEN=256)                  :: cmessage           ! error message of downwind routine
-
-  call mDecisions(num_steps,err,cmessage)
-    if(err/=0)then 
-    message=trim(message)//trim(cmessage)
-    print*, message
-    return
-  endif
-
-end subroutine mDecisions_C
 
 
 ! Read in the inital parameters, from the txt files that are give to summa as input
@@ -107,16 +57,15 @@ subroutine read_vegitationTables(err) bind(C, name="read_vegitationTables")
 
   implicit none
   
-  integer(c_int),intent(inout)        :: err                ! Error Code
-
+  integer(c_int),intent(inout)              :: err                        ! Error Code
   err = 0
 
  ! read Noah soil and vegetation tables
-  call soil_veg_gen_parm(trim(SETTINGS_PATH)//trim(VEGPARM),                            & ! filename for vegetation table
-  trim(SETTINGS_PATH)//trim(SOILPARM),                           & ! filename for soils table
-  trim(SETTINGS_PATH)//trim(GENPARM),                            & ! filename for general table
-  trim(model_decisions(iLookDECISIONS%vegeParTbl)%cDecision),    & ! classification system used for vegetation
-  trim(model_decisions(iLookDECISIONS%soilCatTbl)%cDecision))      ! classification system used for soils
+  call soil_veg_gen_parm(trim(SETTINGS_PATH)//trim(VEGPARM),      & ! filename for vegetation table
+      trim(SETTINGS_PATH)//trim(SOILPARM),                        & ! filename for soils table
+      trim(SETTINGS_PATH)//trim(GENPARM),                         & ! filename for general table
+      trim(model_decisions(iLookDECISIONS%vegeParTbl)%cDecision), & ! classification system used for vegetation
+      trim(model_decisions(iLookDECISIONS%soilCatTbl)%cDecision))   ! classification system used for soils
 
   ! read Noah-MP vegetation tables
   call read_mp_veg_parameters(trim(SETTINGS_PATH)//trim(MPTABLE),                       & ! filename for Noah-MP table

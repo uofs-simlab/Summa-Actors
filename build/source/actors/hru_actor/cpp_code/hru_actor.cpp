@@ -67,14 +67,14 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
 
 
     // Get attributes
-    self->send(self->state.file_access_actor, get_attributes_v, self->state.refGRU, self);
+    self->send(self->state.file_access_actor, get_attributes_params_v, self->state.refGRU, self);
 
 
     self->state.hru_timing.updateEndPoint("total_duration");
 
     return {
         // Starts the HRU and tells it to ask for data from the file_access_actor
-        [=](get_attributes, std::vector<double> attr_struct, std::vector<int> type_struct, 
+        [=](get_attributes_params, std::vector<double> attr_struct, std::vector<int> type_struct, 
             std::vector<long int> id_struct, std::vector<double> bpar_struct, 
             std::vector<double> dpar_struct, std::vector<std::vector<double>> mpar_struct) {
             

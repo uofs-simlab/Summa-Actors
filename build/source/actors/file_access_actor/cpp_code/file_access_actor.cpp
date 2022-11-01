@@ -128,13 +128,7 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
             }
         },
 
-        [=] (get_attributes, int ref_gru, caf::actor actor_to_respond) {
-            // ref_gru will always be 1 index too high (FORTRAN arrays start at 1)
-            // std::vector<double> attr_array_to_send = self->state.attr_arrays_for_hrus[ref_gru-1];
-            // std::vector<int> type_array_to_send = self->state.type_arrays_for_hrus[ref_gru-1];
-            // std::vector<long int> id_array_to_send = self->state.id_arrays_for_hrus[ref_gru-1];
-            // std::vector<double> bpar_array_to_send = self->state.bpar_arrays_for_hrus[ref_gru-1];
-            // std::vector<double> dpar_array_to_send = self->state.dpar_arrays_for_hrus[ref_gru-1];
+        [=] (get_attributes_params, int ref_gru, caf::actor actor_to_respond) {
             void* handle_attr_struct = self->state.attr_structs_for_hrus[ref_gru-1];
             std::vector<double> attr_struct_to_send = get_var_d(handle_attr_struct);
 
@@ -153,7 +147,7 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
             void* handle_mpar_struct = self->state.mpar_structs_for_hrus[ref_gru-1];
             std::vector<std::vector<double>> mpar_struct_to_send = get_var_dlength(handle_mpar_struct);
 
-            self->send(actor_to_respond, get_attributes_v, attr_struct_to_send,
+            self->send(actor_to_respond, get_attributes_params_v, attr_struct_to_send,
                 type_struct_to_send, id_struct_to_send, bpar_struct_to_send, 
                 dpar_struct_to_send, mpar_struct_to_send);
             
@@ -303,8 +297,10 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
 void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
     int indx = 1;
     int err = 0;
-
-    ffile_info_C(&indx, self->state.handle_forcing_file_info, &self->state.numFiles, &err);
+    
+    // read information on model forcing files
+    ffile_info(&indx, 
+        self->state.handle_forcing_file_info, &self->state.numFiles, &err);
     if (err != 0) {
         aout(self) << "Error: ffile_info_C - File_Access_Actor \n";
         std::string function = "ffile_info_C";
@@ -313,7 +309,8 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
         return;
     }
 
-    mDecisions_C(&self->state.num_steps, &err);
+    // save model decisions as named integers
+    mDecisions(&self->state.num_steps, &err); 
     if (err != 0) {
         aout(self) << "Error: mDecisions - FileAccess Actor \n";
         std::string function = "mDecisions_C";
@@ -366,7 +363,6 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
     }
 }
 
-
 int readForcing(stateful_actor<file_access_state>* self, int currentFile) {
     // Check if we have already loaded this file
     if(self->state.forcing_file_list[currentFile -1].isFileLoaded()) {
@@ -398,7 +394,6 @@ int readForcing(stateful_actor<file_access_state>* self, int currentFile) {
     }
 
 }
-
 
 void readAttributes(stateful_actor<file_access_state>* self) {
     int err = 0;
