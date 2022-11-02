@@ -7,13 +7,11 @@ extern "C" {
         // Statistics Structures
         void* forcStat, void* progStat, void* diagStat, void* fluxStat, void* indxStat, void* bvarStat,
         // Primary Data Structures (scalars) 
-        void* timeStruct, void* forcStruct, void* attrStruct, void* typeStruct, void* idStruct, 
+        void* timeStruct, void* forcStruct,
         // primary data structures (variable length vectors)
-        void* indxStruct, void* mparStruct, void* progStruct, void* diagStruct, void* fluxStruct,
+        void* indxStruct, void* progStruct, void* diagStruct, void* fluxStruct,
         // basin-average structures
-        void* bparStruct, void* bvarStruct,
-        // ancillary data structures
-        void* dparStruct,
+        void* bvarStruct,
         // local HRU data 
         void* startTime, void* finshTime, void* refTime, void* oldTime, int* err);
     
@@ -22,6 +20,8 @@ extern "C" {
       void* attrStruct, void* typeStruct, void* idStruct,
       // primary data structures (variable length vectors)
       void* mparStruct, void* bparStruct, void* bvarStruct, void* dparStruct,
+      // lookup tables
+      void* lookupStruct,
       // local HRU data
       void* startTime, void* oldTime,
       // miscellaneous
@@ -55,6 +55,7 @@ extern "C" {
       void* indxStruct, void* mparStruct, void* progStruct, void* diagStruct, void* fluxStruct,
       // basin-average structures 
       void* bvarStruct,
+      void* lookupStruct,
       double* fracJulDay, double* tmZoneOffsetFracDay, int* yearLength,
       // misc
       int* flag, double* dt, int* dt_int_factor, int* err);
@@ -93,4 +94,16 @@ extern "C" {
         int* indxGRU, int* indxHRU,
         void* handle_attrStruct, void* handle_typeStruct, void* handle_mparStruct, void* handle_bparStruct,
         int* err);
+
+  void prepareOutput(int* model_timestep, void* handle_force_stat, void* handle_prog_stat, 
+        void* handle_diag_stat, void* handle_flux_stat, void* handle_indx_stat,
+        void* handle_bvar_stat, void* handle_time_struct, void* handle_forc_struct,
+        void* handle_attr_struct, void* handle_type_struct, void* handle_indx_struct,
+        void* handle_mpar_struct, void* handle_prog_struct, void* handle_diag_struct,
+        void* handle_flux_struct, void* handle_bpar_struct, void* handle_bvar_struct,
+        void* stat_counter, void* output_timestep, void* reset_stats, void* finalize_stats,
+        void* finish_time, void* old_time, int* err);
+  
+  void updateCounters(void* handle_timeStruct, void*  handle_statCounter, void* handle_outputTimeStep,
+        void* handle_resetStats, void* handle_oldTime, void* handle_finalizeStats);
 }

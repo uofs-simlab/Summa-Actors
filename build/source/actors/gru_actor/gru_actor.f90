@@ -74,7 +74,7 @@ subroutine fillVarTypeLists(num_bpar_vars, &
                             bvar_struct_var_type_list, &
                             err) bind(C, name="fillVarTypeLists")
     
-    USE globalData,only:type_meta,bpar_meta,bvar_meta
+    USE globalData,only:bpar_meta,bvar_meta
     USE var_lookup,only:iLookBVAR,iLookBPAR,iLookVarType
     implicit none
     integer(c_int), intent(in)                              :: num_bpar_vars
@@ -197,7 +197,7 @@ end subroutine fillVarTypeLists
 
 ! end subroutine
 
-integer function getNumHRU(indx_gru) bind(C, name="getNumHRU")
+integer(c_int) function getNumHRU(indx_gru) bind(C, name="getNumHRU")
     USE globalData,only:gru_struc
     implicit none
     integer(c_int), intent(in)        :: indx_gru

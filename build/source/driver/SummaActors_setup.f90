@@ -29,7 +29,8 @@ USE data_types,only:&
                     var_i8,              & ! x%var(:)            (i8b)
                     var_d,               & ! x%var(:)            (dp)
                     var_ilength,         & ! x%var(:)%dat        (i4b)
-                    var_dlength            ! x%var(:)%dat        (dp)
+                    var_dlength,         & ! x%var(:)%dat        (dp)
+                    zLookup
 
 ! access missing values
 USE globalData,only:integerMissing   ! missing integer
@@ -77,7 +78,8 @@ subroutine setupHRUParam(&
                   handle_bparStruct,              & ! basin-average parameters
                   handle_bvarStruct,              & ! basin-average variables
                   handle_dparStruct,              & ! default model parameters
-                   ! local HRU data
+                  handle_lookupStruct,            & ! lookup tables
+                  ! local HRU data
                   handle_startTime,               & ! start time for the model simulation
                   handle_oldTime,                 & ! time for the previous model time step
                   ! miscellaneous variables
@@ -91,23 +93,19 @@ subroutine setupHRUParam(&
    use time_utils_module,only:elapsedSec                       ! calculate the elapsed time
    USE mDecisions_module,only:mDecisions                       ! module to read model decisions
    USE ffile_info_module,only:ffile_info                       ! module to read information on forcing datafile
-   USE read_attribute_module,only:read_attribute               ! module to read local attributes
+   ! USE read_attribute_module,only:read_attribute               ! module to read local attributes
    USE paramCheck_module,only:paramCheck                       ! module to check consistency of model parameters
    USE pOverwrite_module,only:pOverwrite                       ! module to overwrite default parameter values with info from the Noah tables
    USE read_param4chm_module,only:read_param                       ! module to read model parameter sets
    USE ConvE2Temp_module,only:E2T_lookup                       ! module to calculate a look-up table for the temperature-enthalpy conversion
+   USE t2enthalpy_module,only:T2E_lookup                       ! module to calculate a look-up table for the temperature-enthalpy conversion
    USE var_derive_module,only:fracFuture                       ! module to calculate the fraction of runoff in future time steps (time delay histogram)
    USE module_sf_noahmplsm,only:read_mp_veg_parameters         ! module to read NOAH vegetation tables
    ! global data structures
    USE globalData,only:gru_struc                               ! gru-hru mapping structures
    USE globalData,only:localParFallback                        ! local column default parameters
-   USE globalData,only:basinParFallback                        ! basin-average default parameters
    USE globalData,only:model_decisions                         ! model decision structure
    USE globalData,only:greenVegFrac_monthly                    ! fraction of green vegetation in each month (0-1)
-   ! USE globalData,only:numtim                                  ! number of time steps in the simulation
-   ! run time options
-   USE globalData,only:startGRU                                ! index of the starting GRU for parallelization run
-   USE globalData,only:iRunMode                                ! define the current running mode
    ! output constraints
    USE globalData,only:maxLayers                               ! maximum number of layers
    USE globalData,only:maxSnowLayers                           ! maximum number of snow layers
@@ -135,6 +133,7 @@ subroutine setupHRUParam(&
    type(c_ptr), intent(in), value           :: handle_bparStruct    ! basin-average parameters
    type(c_ptr), intent(in), value           :: handle_bvarStruct    ! basin-average variables
    type(c_ptr), intent(in), value           :: handle_dparStruct    ! default model parameters
+   type(c_ptr), intent(in), value           :: handle_lookupStruct     ! start time for the model simulation
    type(c_ptr), intent(in), value           :: handle_startTime     ! start time for the model simulation
    type(c_ptr), intent(in), value           :: handle_oldTime       ! time for the previous model time step
    real(c_double),intent(inout)             :: upArea
@@ -148,11 +147,11 @@ subroutine setupHRUParam(&
    type(var_d),pointer                      :: bparStruct           ! basin-average parameters
    type(var_dlength),pointer                :: bvarStruct           ! basin-average variables
    type(var_d),pointer                      :: dparStruct           ! default model parameters
+   type(zLookup),pointer                    :: lookupStruct         ! default model parameters
    type(var_i),pointer                      :: startTime            ! start time for the model simulation
    type(var_i),pointer                      :: oldTime              ! time for the previous model time step
    character(len=256)                       :: message            ! error message
    character(len=256)                       :: cmessage           ! error message of downwind routine
-   integer(i4b)                             :: iVar               ! looping variables
    ! ---------------------------------------------------------------------------------------
    ! initialize error control
    err=0; message='setupHRUParam/'
@@ -167,6 +166,7 @@ subroutine setupHRUParam(&
    call c_f_pointer(handle_bparStruct, bparStruct)
    call c_f_pointer(handle_bvarStruct, bvarStruct)
    call c_f_pointer(handle_dparStruct, dparStruct)
+   call c_f_pointer(handle_lookupStruct, lookupStruct)
    call c_f_pointer(handle_startTime, startTime)
    call c_f_pointer(handle_oldTime, oldTime)
 
@@ -188,16 +188,6 @@ subroutine setupHRUParam(&
    ! get the maximum number of layers
    maxLayers = gru_struc(1)%hruInfo(1)%nSoil + maxSnowLayers
 
-   ! *****************************************************************************
-   ! *** read local attributes for each HRU
-   ! *****************************************************************************
-   call read_attribute(indxHRU,indxGRU,attrStruct,typeStruct,idStruct,err,cmessage)
-   if(err/=0)then
-      message=trim(message)//trim(cmessage)
-      print*, message
-      return
-   endif
-
    ! define monthly fraction of green vegetation
    greenVegFrac_monthly = (/0.01_dp, 0.02_dp, 0.03_dp, 0.07_dp, 0.50_dp, 0.90_dp, 0.95_dp, 0.96_dp, 0.65_dp, 0.24_dp, 0.11_dp, 0.02_dp/)
 
@@ -214,15 +204,6 @@ subroutine setupHRUParam(&
          return
    end select
 
- 
-   ! *****************************************************************************
-   ! *** read trial model parameter values for each HRU, and populate initial data structures
-   ! *****************************************************************************
-   call read_param(indxHRU,indxGRU,mparStruct,bparStruct,dparStruct,err)
-   if(err/=0)then
-      message=trim(message)//trim(cmessage)
-      return
-   endif
    ! *****************************************************************************
    ! *** compute derived model variables that are pretty much constant for the basin as a whole
    ! *****************************************************************************
@@ -250,6 +231,16 @@ subroutine setupHRUParam(&
       message=trim(message)//trim(cmessage)
       print*, message
       return
+   endif
+
+   ! calculate a lookup table to compute enthalpy from temperature
+   call T2E_lookup(gru_struc(indxGRU)%hruInfo(indxHRU)%nSoil,   &   ! intent(in):    number of soil layers
+                   mparStruct,        &   ! intent(in):    parameter data structure
+                   lookupStruct,      &   ! intent(inout): lookup table data structure
+                   err,cmessage)                              ! intent(out):   error control
+   if(err/=0)then; message=trim(message)//trim(cmessage)
+      print*, message
+      return; 
    endif
 
    ! overwrite the vegetation height

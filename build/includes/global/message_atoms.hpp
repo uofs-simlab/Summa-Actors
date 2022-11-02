@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../summa_actor/batch_manager.hpp"
+#include <vector>
 #include "settings_functions.hpp"
 
 CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
@@ -38,11 +39,14 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     CAF_ADD_ATOM(summa, read_and_write)
     CAF_ADD_ATOM(summa, write_param)
     CAF_ADD_ATOM(summa, restart_failures)
+    CAF_ADD_ATOM(summa, serialized_hru_data)
+    CAF_ADD_ATOM(summa, get_attributes_params)
     // HRU Actor
     CAF_ADD_ATOM(summa, run_hru)
     CAF_ADD_ATOM(summa, start_hru)
     CAF_ADD_ATOM(summa, file_information)
     CAF_ADD_ATOM(summa, dt_init_factor)
+    CAF_ADD_ATOM(summa, serialize_data)
     // Client Actor
     CAF_ADD_ATOM(summa, connect_to_server)
     CAF_ADD_ATOM(summa, compute_batch)
@@ -62,4 +66,12 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
 
     // Class Types
     CAF_ADD_TYPE_ID(summa, (Batch))
+
+    CAF_ADD_TYPE_ID(summa, (std::vector<std::vector<double>>))
+    CAF_ADD_TYPE_ID(summa, (std::vector<std::vector<int>>))
+    CAF_ADD_TYPE_ID(summa, (std::vector<int>))
+    CAF_ADD_TYPE_ID(summa, (std::vector<double>))
+    CAF_ADD_TYPE_ID(summa, (std::vector<long int>))
+
+
 CAF_END_TYPE_ID_BLOCK(summa)

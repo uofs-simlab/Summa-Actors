@@ -18,7 +18,9 @@ RUN apt-get update -y && \
     gfortran \
     wget \
     python3-pip \
+    valgrind \
     gdb &&\
+    valgrind &&\
     apt-get autoclean
 
 RUN pip3 install xarray

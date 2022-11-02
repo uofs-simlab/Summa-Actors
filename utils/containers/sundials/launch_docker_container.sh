@@ -1,7 +1,8 @@
 #! /bin/bash
 
-export PROJECT_DIR=/Users/kyleklenk/SUMMA-Projects/Summa-Actors
-export NA_TEST=/home/local/kck540/NA_Summa_Test
+# Program Locations to bind
+export SUMMA_ACTORS=/Users/kyleklenk/SUMMA-Projects/Summa-Actors
 export SUMMA=/Users/kyleklenk/SUMMA-Projects/Summa-Sundials/summa
-docker run -d -it --ulimit memlock=32768:32768 --name SUMMA-Sundials --mount type=bind,source=${PROJECT_DIR},target=/Summa-Actors \
+export CONTAINTER_NAME="Summa-Sundials"
+docker run -d -it --name ${CONTAINTER_NAME} --mount type=bind,source=${SUMMA_ACTORS},target=/Summa-Actors \
     --mount type=bind,source=${SUMMA},target=/SUMMA summa-sundials:latest

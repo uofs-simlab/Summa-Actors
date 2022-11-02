@@ -19,10 +19,10 @@ ACTORS_LIBRARIES = -L/usr/lib -L/usr/local/lib -L/Summa-Actors/bin -lcaf_core -l
 
 
 # Production runs
-FLAGS_NOAH = -g -O3 -ffree-form -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
-FLAGS_COMM = -g -O3 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
-FLAGS_SUMMA = -g -O3 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
-FLAGS_ACTORS = -g -O3 -Wfatal-errors -std=c++17
+FLAGS_NOAH = -g -O0 -ffree-form -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
+FLAGS_COMM = -g -O0 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
+FLAGS_SUMMA = -g -O0 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
+FLAGS_ACTORS = -g -O0 -Wfatal-errors -std=c++17
 
 # Debug runs
 # FLAGS_NOAH = -g -O0 -ffree-form -ffree-line-length-none -fmax-errors=0 -fbacktrace -Wno-unused -Wno-unused-dummy-argument -fPIC
@@ -58,15 +58,16 @@ NOAHMP_DIR = $(F_KORE_DIR)/noah-mp
 ENGINE_DIR = $(F_KORE_DIR)/engine
 ACTORS_DIR = $(F_KORE_DIR)/actors
 JOB_ACTOR_DIR = $(ACTORS_DIR)/job_actor
-FILE_ACCESS_DIR = $(ACTORS_DIR)/file_access_actor
-HRU_ACTOR_DIR = $(ACTORS_DIR)/hru_actor
+FILE_ACCESS_DIR = $(ACTORS_DIR)/file_access_actor/fortran_code
+HRU_ACTOR_DIR = $(ACTORS_DIR)/hru_actor/fortran_code
 GRU_ACTOR_DIR = $(ACTORS_DIR)/gru_actor
 
 #  utilities
 SUMMA_NRUTIL= \
 		nrtype.f90 \
 		f2008funcs.f90 \
-		nr_utility.f90
+		nr_utility.f90 \
+
 NRUTIL = $(patsubst %, $(ENGINE_DIR)/%, $(SUMMA_NRUTIL))
 
 # Numerical recipes procedures
@@ -103,7 +104,9 @@ SUMMA_UTILMS= \
 		mDecisions.f90 \
 		snow_utils.f90 \
 		soil_utils.f90 \
+		sundials/soil_utilsAddSundials.f90 \
 		updatState.f90 \
+		sundials/updatStateSundials.f90 \
 		matrixOper.f90
 UTILMS = $(patsubst %, $(ENGINE_DIR)/%, $(SUMMA_UTILMS))
 
@@ -130,7 +133,19 @@ SUMMA_SOLVER= \
 		eval8summa.f90 \
 		summaSolve.f90 \
 		systemSolv.f90 \
+		sundials/type4IDA.f90 \
+		sundials/tol4IDA.f90 \
+		sundials/computEnthalpy.f90 \
+		sundials/computHeatCap.f90 \
+		sundials/computThermConduct.f90 \
+		sundials/computResidSundials.f90 \
+		sundials/eval8summaSundials.f90 \
+		sundials/computJacobSundials.f90 \
+		sundials/computSnowDepth.f90 \
+		sundials/summaSolveSundialsIDA.f90 \
+		sundials/systemSolvSundials.f90 \
 		varSubstep.f90 \
+		sundials/varSubstepSundials.f90 \
 		opSplittin.f90 \
 		coupled_em.f90
 		
@@ -146,11 +161,10 @@ INTERFACE = $(patsubst %, $(ACTORS_DIR)/global/%, $(SUMMA_INTERFACE))
 
 
 SUMMA_FILEACCESS_INTERFACE = \
-		initOutputStruc.f90 \
-		deallocateOutputStruc.f90 \
 		cppwrap_fileAccess.f90 \
-		read_attribute_all_hru.f90 \
-		read_param_all_hru.f90
+		read_attribute.f90 \
+		read_param.f90 \
+		write_to_netcdf.f90
 
 FILEACCESS_INTERFACE = $(patsubst %, $(FILE_ACCESS_DIR)/%, $(SUMMA_FILEACCESS_INTERFACE))
 
@@ -160,7 +174,8 @@ SUMMA_JOB_INTERFACE = \
 JOB_INTERFACE =  $(patsubst %, $(JOB_ACTOR_DIR)/%, $(SUMMA_JOB_INTERFACE))
 
 SUMMA_HRU_INTERFACE = \
-		cppwrap_hru.f90
+		cppwrap_hru.f90 \
+		hru_actor.f90
 
 HRU_INTERFACE = $(patsubst %, $(HRU_ACTOR_DIR)/%, $(SUMMA_HRU_INTERFACE))
 
@@ -168,6 +183,7 @@ SUMMA_GRU_INTERFACE = \
 		gru_actor.f90 \
 
 GRU_INTERFACE = $(patsubst %, $(GRU_ACTOR_DIR)/%, $(SUMMA_GRU_INTERFACE))
+
 		
 
 # Define routines for SUMMA preliminaries
@@ -180,7 +196,7 @@ SUMMA_PRELIM= \
 		checkStruc.f90 \
 		childStruc.f90 \
 		ffile_info.f90 \
-		read_attribute.f90 \
+		read_dimension.f90 \
 		read_pinit.f90 \
 		pOverwrite.f90 \
 		read_paramActors.f90 \
@@ -198,10 +214,13 @@ SUMMA_NOAHMP= \
 NOAHMP = $(patsubst %, $(NOAHMP_DIR)/%, $(SUMMA_NOAHMP))
 
 # Define routines for the SUMMA model runs
+# sundials - t2enthalpy.f90
 SUMMA_MODRUN = \
 		indexState.f90 \
 		getVectorz.f90 \
+		sundials/t2enthalpy.f90 \
 		updateVars.f90 \
+		sundials/updateVarsSundials.f90 \
 		var_derive.f90 \
 		read_forcingActors.f90 \
 		access_forcing.f90\
@@ -223,7 +242,6 @@ MODRUN = $(patsubst %, $(ENGINE_DIR)/%, $(SUMMA_MODRUN))
 SUMMA_NETCDF = \
 		netcdf_util.f90 \
 		def_output.f90 \
-		outputStrucWrite.f90 \
 		writeOutput.f90	\
 		read_icondActors.f90
 NETCDF = $(patsubst %, $(NETCDF_DIR)/%, $(SUMMA_NETCDF))
@@ -244,8 +262,7 @@ SUMMA_DRIVER= \
 		summaActors_restart.f90 \
 		summaActors_forcing.f90 \
 		SummaActors_modelRun.f90 \
-		summaActors_alarms.f90 \
-		summaActors_wOutputStruc.f90
+		summaActors_alarms.f90
 		
 		
 DRIVER = $(patsubst %, $(DRIVER_DIR)/%, $(SUMMA_DRIVER))
@@ -265,6 +282,7 @@ SOURCE_DIR = /Summa-Actors/build/source/actors
 GLOBAL_INCLUDES = -I$(INCLUDE_DIR)/global
 GLOBAL = $(SOURCE_DIR)/global/global.cpp
 TIMEINFO = $(SOURCE_DIR)/global/timing_info.cpp
+AUXILARY = $(SOURCE_DIR)/global/auxiliary.cpp
 
 SUMMA_ACTOR_INCLUDES = -I$(INCLUDE_DIR)/summa_actor
 SUMMA_ACTOR = $(SOURCE_DIR)/summa_actor/summa_actor.cpp
@@ -282,12 +300,12 @@ JOB_ACTOR = $(SOURCE_DIR)/job_actor/job_actor.cpp
 GRUinfo = $(SOURCE_DIR)/job_actor/GRUinfo.cpp
 
 FILE_ACCESS_ACTOR_INCLUDES = -I$(INCLUDE_DIR)/file_access_actor
-FILE_ACCESS_ACTOR = $(SOURCE_DIR)/file_access_actor/file_access_actor.cpp
-FORCING_FILE_INFO = $(SOURCE_DIR)/file_access_actor/forcing_file_info.cpp
-OUTPUT_MANAGER = $(SOURCE_DIR)/file_access_actor/output_manager.cpp
+FILE_ACCESS_ACTOR = $(SOURCE_DIR)/file_access_actor/cpp_code/file_access_actor.cpp
+FORCING_FILE_INFO = $(SOURCE_DIR)/file_access_actor/cpp_code/forcing_file_info.cpp
+OUTPUT_MANAGER = $(SOURCE_DIR)/file_access_actor/cpp_code/output_manager.cpp
 
 HRU_ACTOR_INCLUDES = -I$(INCLUDE_DIR)/hru_actor
-HRU_ACTOR = $(SOURCE_DIR)/hru_actor/hru_actor.cpp
+HRU_ACTOR = $(SOURCE_DIR)/hru_actor/cpp_code/hru_actor.cpp
 
 MAIN = $(F_KORE_DIR)/actors/main.cpp
 
@@ -340,7 +358,7 @@ clean_fortran:
 ################################################ COMPILE SUMMA-C++ ################################################
 ###################################################################################################################
 compile_globals:
-	$(CC) $(FLAGS_ACTORS) -c $(GLOBAL) $(TIMEINFO) $(GLOBAL_INCLUDES)
+	$(CC) $(FLAGS_ACTORS) -c $(GLOBAL) $(TIMEINFO) $(AUXILARY) $(GLOBAL_INCLUDES)
 
 compile_gru_actor:
 	$(CC) $(FLAGS_ACTORS) -c $(GRU_ACTOR) $(HRU_ACTOR_INCLUDES) $(GRU_ACTOR_INCLUDES) $(GLOBAL_INCLUDES) $(ACTORS_INCLUDES)

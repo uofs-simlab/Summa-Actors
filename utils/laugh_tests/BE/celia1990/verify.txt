@@ -1,0 +1,3 @@
+variable -  fieldCapacity Cannot be compared with len
+     verified_hru =  0.2
+     hru_to_compare =  0.2

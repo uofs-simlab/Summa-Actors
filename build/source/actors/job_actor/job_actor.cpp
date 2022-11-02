@@ -85,7 +85,7 @@ behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru,
             if (debug) {
                 aout(self) << "Done Init\n";
             }
-            // aout(self) << "Done init\n";
+
             self->state.gru_init++;
             if (self->state.gru_init >= self->state.num_gru) {
                 aout(self) << "All GRUs are initalized\n";
@@ -141,7 +141,6 @@ behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru,
         [=](done_file_access_actor_init) {
             // Init HRU Actors and the Output Structure
             self->send(self, init_hru_v);
-
         },
 
         [=](done_init_gru) {

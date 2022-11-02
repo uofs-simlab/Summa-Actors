@@ -1,5 +1,8 @@
 #pragma once
 
+#include <vector>
+
+
 class Forcing_File_Info {
     private:
         int file_ID;
@@ -16,5 +19,13 @@ class Forcing_File_Info {
         void updateIsLoaded();
 
         void updateNumSteps(int num_steps);
+
+};
+
+struct Forcing_Info {
+    int num_vars;
+    int num_timesteps;
+    std::vector<int> index_forc_var;
+    std::vector<int> ncid_var;
 
 };

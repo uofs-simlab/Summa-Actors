@@ -116,8 +116,6 @@ subroutine summaActors_writeToOutputStruc(&
   USE time_utils_module,only:elapsedSec                       ! calculate the elapsed time
   USE globalData,only:elapsedWrite                            ! elapsed time to write data
   USE globalData,only:outputStructure
-  USE netcdf_util_module,only:nc_file_close  ! close netcdf file
-  USE netcdf_util_module,only:nc_file_open   ! open netcdf file
 
   implicit none
   integer(i4b),intent(in)                  :: indxHRU         ! index of hru in GRU
@@ -168,10 +166,13 @@ subroutine summaActors_writeToOutputStruc(&
   integer(i4b)                             :: nHRU
   integer(i4b)                             :: iFreq             ! index of the output frequency
   integer(i4b)                             :: iGRU              ! Temporary index for GRU        
-  integer(i4b)                             :: iDat
+  integer(i4b)                             :: i 
+  integer(i4b)                             :: j
+  
   nGRU = 1
   nHRU = 1
   iGRU = 1
+
 
   err=0; message='summa_manageOutputFiles/'
   ! identify the start of the writing
@@ -205,8 +206,6 @@ subroutine summaActors_writeToOutputStruc(&
                             statCounter%var,                             &   ! statistics counter
                             err, cmessage)                                  ! error control
   if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
-
-  ! if(printProgress) write(*,'(i4,1x,5(i2,1x))') timeStruct%var(1:5)
 
    ! check the need to create a new output file
   if(modelTimeStep==1)then

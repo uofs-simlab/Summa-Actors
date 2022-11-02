@@ -315,8 +315,7 @@ subroutine get_data_ilength(handle, array) bind(C, name='get_data_ilength')
 end subroutine get_data_ilength
 
 ! **************************** i8length **************************
-
-  function new_handle_i8length() result(handle) bind(C, name='new_handle_i8length')
+function new_handle_i8length() result(handle) bind(C, name='new_handle_i8length')
   
   type(c_ptr) :: handle
   type(i8length), pointer :: p
@@ -758,7 +757,8 @@ subroutine get_data_var_ilength(handle, array) bind(C, name='get_data_var_ilengt
   type(c_ptr), intent(in), value :: handle
   integer(c_int), intent(out) :: array(*)
   type(var_ilength), pointer :: p
-  integer(c_int)  :: i,j,size_var,size_dat,size_array
+  integer(c_int)  :: i,j,size_var,size_dat,size_array,j2
+  integer(c_int)  :: start_index(1)
   
   call c_f_pointer(handle, p)
   
@@ -767,7 +767,14 @@ subroutine get_data_var_ilength(handle, array) bind(C, name='get_data_var_ilengt
     size_var = size(p%var)
     do i=1,size_var
       size_dat = size(p%var(i)%dat)
-      do j=1,size_dat
+      start_index = lbound(p%var(i)%dat)
+
+      if (start_index(1) == 0) then
+        size_dat = size_dat - 1
+      endif
+
+      j2=1
+      do j=start_index(1),size_dat
         array(size_array+j) = p%var(i)%dat(j)
       end do
       size_array = size_array + size_dat
@@ -876,7 +883,8 @@ subroutine get_data_var_i8length(handle, array) bind(C, name='get_data_var_i8len
   type(c_ptr), intent(in), value :: handle
   integer(c_long), intent(out) :: array(*)
   type(var_i8length), pointer :: p
-  integer(c_int)  :: i,j,size_var,size_dat,size_array
+  integer(c_int)              :: i,j,size_var,size_dat,size_array,j2,loop_val
+  integer(c_int)              :: start_index(1)
   
   call c_f_pointer(handle, p)
   
@@ -885,8 +893,19 @@ subroutine get_data_var_i8length(handle, array) bind(C, name='get_data_var_i8len
     size_var = size(p%var)
     do i=1,size_var
       size_dat = size(p%var(i)%dat)
-      do j=1,size_dat
+      start_index = lbound(p%var(i)%dat)
+
+      if (start_index(1) == 0) then
+        loop_val = size_dat - 1
+      else
+        loop_val = size_dat
+      endif
+
+
+      j2=1
+      do j=1,loop_val
         array(size_array+j) = p%var(i)%dat(j)
+        j2=j2+1
       end do
       size_array = size_array + size_dat
     end do
@@ -994,8 +1013,9 @@ subroutine get_data_var_dlength(handle, array) bind(C, name='get_data_var_dlengt
   
   type(c_ptr), intent(in), value :: handle
   real(c_double), intent(out) :: array(*)
-  type(var_dlength), pointer :: p
-  integer(c_int)  :: i,j,size_var,size_dat,size_array
+  type(var_dlength), pointer  :: p
+  integer(c_int)              :: i,j,size_var,size_dat,size_array,j2,loop_val
+  integer(c_int)              :: start_index(1)
   
   call c_f_pointer(handle, p)
   
@@ -1004,8 +1024,18 @@ subroutine get_data_var_dlength(handle, array) bind(C, name='get_data_var_dlengt
     size_var = size(p%var)
     do i=1,size_var
       size_dat = size(p%var(i)%dat)
-      do j=1,size_dat
-        array(size_array+j) = p%var(i)%dat(j)
+      start_index = lbound(p%var(i)%dat)
+
+      if (start_index(1) == 0) then
+        loop_val = size_dat - 1
+      else
+        loop_val = size_dat
+      endif
+
+      j2=1
+      do j=start_index(1),loop_val
+        array(size_array+j2) = p%var(i)%dat(j)
+        j2=j2+1
       end do
       size_array = size_array + size_dat
     end do

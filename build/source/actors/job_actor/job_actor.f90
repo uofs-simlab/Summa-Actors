@@ -10,7 +10,7 @@ module job_actor
 
 subroutine allocateTimeStructure(err) bind(C, name="allocateTimeStructure")
     USE globalData,only:startTime,finshTime,refTime,oldTime
-    USE allocspace4chm_module,only:allocLocal
+    USE allocspace_module,only:allocLocal
     USE globalData,only:time_meta
 
     implicit none
