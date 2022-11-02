@@ -24,7 +24,6 @@ struct job_state {
     int gru_init = 0;                // Number of GRUs initalized 
     int err = 0;                    // Error Code
     int num_gru_failed = 0;           // Number of GRUs that have failed
-    int output_struct_size;
 
     // Timing Variables
     TimingInfo job_timing;

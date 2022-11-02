@@ -9,8 +9,7 @@
 namespace caf {
 
 behavior gru_actor(stateful_actor<gru_state>* self, 
-    int ref_gru, int indx_gru, 
-    std::string config_path, caf::actor file_access_actor, int output_struc_size, 
+    int ref_gru, int indx_gru, std::string config_path, caf::actor file_access_actor,
     caf::actor parent) {
 
     aout(self) << "GRU Actor Has Started\n";
@@ -19,7 +18,6 @@ behavior gru_actor(stateful_actor<gru_state>* self,
     self->state.indx_gru = indx_gru;
     self->state.config_path = config_path;
     self->state.file_access_actor = file_access_actor;
-    self->state.output_struc_size = output_struc_size;
     self->state.parent = parent;
 
     self->state.num_hrus = getNumHRU(&self->state.indx_gru);

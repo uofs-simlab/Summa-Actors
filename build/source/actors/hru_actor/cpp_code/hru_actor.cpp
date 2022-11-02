@@ -9,7 +9,7 @@
 namespace caf {
 
 behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
-    HRU_Actor_Settings hru_actor_settings, caf::actor file_access_actor, int outputStrucSize, caf::actor parent) {
+    HRU_Actor_Settings hru_actor_settings, caf::actor file_access_actor, caf::actor parent) {
     
     // Timing Information
     self->state.hru_timing = TimingInfo();
@@ -29,9 +29,6 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
     self->state.indxHRU     = 1;
     self->state.indxGRU     = indxGRU;
     self->state.refGRU      = refGRU;
-
-    // OutputStructure Size (how many timesteps we can compute before we need to write)
-    self->state.outputStrucSize = outputStrucSize;
 
     // initialize counters 
     self->state.timestep   = 1;     // Timestep of total simulation
@@ -411,34 +408,10 @@ bool check_HRU(stateful_actor<hru_state>* self, int err) {
     } else if (self->state.timestep > self->state.num_steps) {
         // check if simulation is finished
         self->state.outputStep -= 1; // prevents segfault
-        
-        self->send(self->state.file_access_actor, write_output_v, 
-            self->state.indxGRU, self->state.indxHRU, self->state.outputStep, self);
 
         self->state.hru_timing.updateEndPoint("total_duration");
 
-        return false;
-
-    } else if (self->state.outputStep > self->state.outputStrucSize && 
-        self->state.forcingStep > self->state.stepsInCurrentFFile) {
-        // Special case where we need both reading and writing
-        self->state.outputStep -= 1; // prevents segfault
-
-        self->send(self->state.file_access_actor, read_and_write_v, self->state.indxGRU, 
-            self->state.indxHRU, self->state.outputStep, self->state.iFile + 1, self);
-        self->state.outputStep = 1;
-
         return false; 
-
-    } else if (self->state.outputStep > self->state.outputStrucSize) {
-        // check if we need to clear the output struc
-        self->state.outputStep -= 1;
-        
-        self->send(self->state.file_access_actor, write_output_v, 
-            self->state.indxGRU, self->state.indxHRU, self->state.outputStep, self);
-        self->state.outputStep = 1;
-
-        return false;
 
     } else if (self->state.forcingStep > self->state.stepsInCurrentFFile) {
         // we need more forcing data

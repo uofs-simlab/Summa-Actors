@@ -17,7 +17,7 @@ bool debug;
 namespace caf {
 
 behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gru, int num_gru, 
-    int output_structure_size, File_Access_Actor_Settings file_access_actor_settings, actor parent) {
+    File_Access_Actor_Settings file_access_actor_settings, actor parent) {
     aout(self) << "\n----------File_Access_Actor Started----------\n";
     // Set Up timing Info we wish to track
     self->state.file_access_timing = TimingInfo();
@@ -29,7 +29,6 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
     self->state.parent = parent;
     self->state.num_gru = num_gru;
     self->state.start_gru = start_gru;
-    self->state.outputStrucSize = output_structure_size;
     self->state.handle_forcing_file_info = new_handle_file_info();
     self->state.handle_ncid = new_handle_var_i();
     self->state.err = 0;
@@ -127,6 +126,7 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
         },
 
         [=] (get_attributes_params, int ref_gru, caf::actor actor_to_respond) {
+            // Find the correct attribute file we loaded in
             void* handle_attr_struct = self->state.attr_structs_for_hrus[ref_gru-1];
             std::vector<double> attr_struct_to_send = get_var_d(handle_attr_struct);
 

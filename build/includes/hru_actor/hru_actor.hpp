@@ -24,7 +24,6 @@ struct hru_state {
     int refGRU;			// The actual ID of the GRU we are
 
     // Variables for output/forcing structures
-    int outputStrucSize;
 	int outputStep;
 	int stepsInCurrentFFile;
 	int forcingFileStep;
@@ -98,7 +97,7 @@ struct hru_state {
 
 behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
     HRU_Actor_Settings hru_actor_settings, caf::actor file_access_actor, 
-    int outputStrucSize, caf::actor parent);
+    caf::actor parent);
 
 /**
  Function to initalize the HRU for running

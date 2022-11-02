@@ -70,7 +70,7 @@ behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru,
 
     // Spawn the file_access_actor. This will return the number of forcing files we are working with
     self->state.file_access_actor = self->spawn(file_access_actor, self->state.start_gru, self->state.num_gru, 
-        self->state.job_actor_settings.output_structure_size, self->state.file_access_actor_settings, self);
+        self->state.file_access_actor_settings, self);
 
 
     aout(self) << "Job Actor Initalized \n";
@@ -190,7 +190,7 @@ behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru,
                 aout(self) << "Error with the output file, will try creating it agian\n";
                 std::this_thread::sleep_for(std::chrono::seconds(5));
                 self->state.file_access_actor = self->spawn(file_access_actor, self->state.start_gru, self->state.num_gru, 
-                    self->state.job_actor_settings.output_structure_size, self->state.file_access_actor_settings, self);
+                   self->state.file_access_actor_settings, self);
             } else {
                 aout(self) << "Letting Parent Know we are quitting\n";
                 self->send(self->state.parent, err_v);
@@ -232,7 +232,6 @@ void initalizeGRU(stateful_actor<job_state>* self) {
                                index_gru, 
                                self->state.hru_actor_settings,
                                self->state.file_access_actor, 
-                               self->state.output_struct_size, 
                                self);
         self->state.gru_list.push_back(new GRUinfo(start_gru, index_gru, gru, 
             self->state.dt_init_start_factor, self->state.max_run_attempts));
@@ -262,7 +261,7 @@ void restartFailures(stateful_actor<job_state>* self) {
             gru->updateDt_init();
             auto newGRU = self->spawn(hru_actor, gru->getRefGRU(), gru->getIndxGRU(), 
                 self->state.hru_actor_settings, self->state.file_access_actor, 
-                self->state.output_struct_size, self);
+                self);
             gru->updateGRU(newGRU);
             gru->updateCurrentAttempt();
             self->send(gru->getActor(), dt_init_factor_v, gru->getDt_init());

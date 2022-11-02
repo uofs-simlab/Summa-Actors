@@ -47,6 +47,5 @@ behavior gru_actor(stateful_actor<gru_state>* self,
     int indx_gru, 
     std::string config_path, 
     caf::actor file_access_actor, 
-    int output_struc_size, 
     caf::actor parent);
 }

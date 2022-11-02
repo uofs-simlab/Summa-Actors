@@ -19,7 +19,6 @@ struct file_access_state {
     OutputManager *output_manager;
     int num_vectors_in_output_manager;
     int num_steps;
-    int outputStrucSize;
     int stepsInCurrentFile;
     int numFiles;
     int filesLoaded;
@@ -55,7 +54,7 @@ struct file_access_state {
 };
 
 behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU, int numGRU, 
-    int outputStrucSize, File_Access_Actor_Settings file_access_actor_settings, actor parent);
+   File_Access_Actor_Settings file_access_actor_settings, actor parent);
 
 void initalizeFileAccessActor(stateful_actor<file_access_state>* self);
 int writeOutput(stateful_actor<file_access_state>* self, int indxGRU, int indxHRU, int numStepsToWrite, int returnMessage, caf::actor actorRef);
