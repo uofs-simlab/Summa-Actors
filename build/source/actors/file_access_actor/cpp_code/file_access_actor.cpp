@@ -75,7 +75,7 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
                     self->state.file_access_timing.updateStartPoint("read_duration");
                     
                     // Load the file
-                    FileAccessActor_ReadForcing(self->state.handle_forcing_file_info, &currentFile,
+                    read_forcingFile(self->state.handle_forcing_file_info, &currentFile,
                         &self->state.stepsInCurrentFile, &self->state.start_gru, 
                         &self->state.num_gru, &self->state.err);
                     if (self->state.err != 0) {
@@ -102,13 +102,12 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
         [=](access_forcing_internal, int currentFile) {
             if (self->state.filesLoaded <= self->state.numFiles &&
                 currentFile <= self->state.numFiles) {
-                // aout(self) << "Loading in background, File:" << currentFile << "\n";
                 if (self->state.forcing_file_list[currentFile - 1].isFileLoaded()) {
                     aout(self) << "File Loaded when shouldn't be \n";
                 }
                 self->state.file_access_timing.updateStartPoint("read_duration");
 
-                FileAccessActor_ReadForcing(self->state.handle_forcing_file_info, &currentFile,
+                read_forcingFile(self->state.handle_forcing_file_info, &currentFile,
                     &self->state.stepsInCurrentFile, &self->state.start_gru, 
                     &self->state.num_gru, &self->state.err);
                 if (self->state.err != 0) {
@@ -373,7 +372,7 @@ int readForcing(stateful_actor<file_access_state>* self, int currentFile) {
         self->state.file_access_timing.updateStartPoint("read_duration");
 
         // Load the file
-        FileAccessActor_ReadForcing(self->state.handle_forcing_file_info, &currentFile,
+        read_forcingFile(self->state.handle_forcing_file_info, &currentFile,
             &self->state.stepsInCurrentFile, &self->state.start_gru, 
             &self->state.num_gru, &self->state.err);
         

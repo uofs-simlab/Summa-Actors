@@ -37,7 +37,7 @@ extern "C" {
 
   void resetOutputCounter(int* indxGRU);
 
-  void FileAccessActor_ReadForcing(void* forcFileInfo, int* currentFile, int* stepsInFile,
+  void read_forcingFile(void* forcFileInfo, int* currentFile, int* stepsInFile,
          int* startGRU, int* numGRU, int* err);
 
   void FileAccessActor_DeallocateStructures(void* handle_forcFileInfo, void* handle_ncid);

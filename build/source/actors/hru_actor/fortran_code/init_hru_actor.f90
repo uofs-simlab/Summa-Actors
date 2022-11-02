@@ -74,7 +74,6 @@ contains
   ! ---------------------------------------------------------------------------------------
   ! data types
   USE nrtype                                                  ! variable types, etc.
-  USE time_utils_module,only:elapsedSec                       ! calculate the elapsed time
   ! subroutines and functions: allocate space
   USE allocspace_module,only:allocLocal
   ! timing variables
@@ -86,8 +85,9 @@ contains
   USE globalData,only:gru_struc                               ! gru-hru mapping structures
   USE globalData,only:structInfo                              ! information on the data structures
   USE globalData,only:numtim
-  USE var_lookup,only:maxvarFreq                              ! maximum number of output files
   USE globalData,only:startTime,finshTime,refTime,oldTime
+
+  USE var_lookup,only:maxvarFreq                              ! maximum number of output files
   
   implicit none
   
@@ -150,9 +150,9 @@ contains
   ! ---------------------------------------------------------------------------------------
   ! * Local Subroutine Variables
   ! ---------------------------------------------------------------------------------------
-  character(LEN=256)                       :: message                    ! error message
-  character(LEN=256)                       :: cmessage                   ! error message of downwind routine
-  integer(i4b)                             :: iStruct                    ! looping variables
+  character(LEN=256)                         :: message                    ! error message
+  character(LEN=256)                         :: cmessage                   ! error message of downwind routine
+  integer(i4b)                               :: iStruct                    ! looping variables
   ! ---------------------------------------------------------------------------------------
   ! * Convert From C++ to Fortran
   ! ---------------------------------------------------------------------------------------

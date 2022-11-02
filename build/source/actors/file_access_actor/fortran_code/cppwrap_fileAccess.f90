@@ -11,7 +11,6 @@ module cppwrap_fileAccess
 
   implicit none
   public::initFailedHRUTracker
-  public::FileAccessActor_ReadForcing
   
   contains
 
@@ -113,25 +112,6 @@ subroutine resetOutputCounter(indxGRU) bind(C, name="resetOutputCounter")
 
 end subroutine resetOutputCounter
 
-
-subroutine FileAccessActor_ReadForcing(handle_forcFileInfo, currentFile, stepsInFile, startGRU, numGRU, err) bind(C,name="FileAccessActor_ReadForcing")
-  USE access_forcing_module,only:access_forcingFile
-  implicit none
-  type(c_ptr), intent(in), value         :: handle_forcFileInfo
-  integer(c_int), intent(in)             :: currentFile ! the current forcing file we are on
-  integer(c_int), intent(inout)          :: stepsInFile
-  integer(c_int), intent(in)             :: startGRU
-  integer(c_int), intent(in)             :: numGRU
-  integer(c_int), intent(inout)          :: err
-
-  type(file_info_array), pointer         :: forcFileInfo
-  character(len=256)                     :: message              ! error message 
-
-  call c_f_pointer(handle_forcFileInfo, forcFileInfo)
-
-  call access_forcingFile(forcFileInfo, currentFile, stepsInFile, startGRU, numGRU, err, message)
-
-end subroutine FileAccessActor_ReadForcing
 
 subroutine FileAccessActor_DeallocateStructures(handle_forcFileInfo, handle_ncid) bind(C,name="FileAccessActor_DeallocateStructures")
   USE netcdf_util_module,only:nc_file_close 

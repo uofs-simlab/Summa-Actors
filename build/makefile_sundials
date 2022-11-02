@@ -163,6 +163,7 @@ INTERFACE = $(patsubst %, $(ACTORS_DIR)/global/%, $(SUMMA_INTERFACE))
 SUMMA_FILEACCESS_INTERFACE = \
 		cppwrap_fileAccess.f90 \
 		read_attribute.f90 \
+		read_forcing.f90 \
 		read_param.f90 \
 		write_to_netcdf.f90
 
@@ -175,7 +176,9 @@ JOB_INTERFACE =  $(patsubst %, $(JOB_ACTOR_DIR)/%, $(SUMMA_JOB_INTERFACE))
 
 SUMMA_HRU_INTERFACE = \
 		cppwrap_hru.f90 \
-		hru_actor.f90
+		hru_actor.f90 \
+		init_hru_actor.f90 \
+
 
 HRU_INTERFACE = $(patsubst %, $(HRU_ACTOR_DIR)/%, $(SUMMA_HRU_INTERFACE))
 
@@ -192,14 +195,12 @@ SUMMA_PRELIM= \
 		sunGeomtry.f90 \
 		convE2Temp.f90 \
 		allocspaceActors.f90 \
-		alloc_file_access.f90\
 		checkStruc.f90 \
 		childStruc.f90 \
 		ffile_info.f90 \
 		read_dimension.f90 \
 		read_pinit.f90 \
 		pOverwrite.f90 \
-		read_paramActors.f90 \
 		paramCheck.f90 \
 		check_icondActors.f90 \
 		# allocspace.f90
@@ -223,8 +224,6 @@ SUMMA_MODRUN = \
 		sundials/updateVarsSundials.f90 \
 		var_derive.f90 \
 		read_forcingActors.f90 \
-		access_forcing.f90\
-		access_write.f90 \
 		derivforce.f90 \
 		snowAlbedo.f90 \
 		canopySnow.f90 \
@@ -257,7 +256,6 @@ SUMMA_DRIVER= \
 		summaActors_type.f90 \
 		summaActors_util.f90 \
 		summaActors_globalData.f90 \
-		init_hru_actor.f90 \
 		SummaActors_setup.f90 \
 		summaActors_restart.f90 \
 		summaActors_forcing.f90 \
