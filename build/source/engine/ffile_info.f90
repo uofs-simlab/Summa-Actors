@@ -118,7 +118,7 @@ subroutine ffile_info(indxGRU,handle_forcFileInfo,num_forcing_files,err) bind(C,
     
   ! allocate space for forcing information
   if(allocated(forcFileInfo%ffile_list)) deallocate(forcFileInfo%ffile_list)
-  allocate(forcFileInfo%ffile_list(totalFiles), stat=err)
+  allocate(forcFileInfo%ffile_list(nFile), stat=err)
   if(err/=0)then; err=20; message=trim(message)//'problem allocating space for forcFileInfo'; return; end if
 
   ! poputate the forcingInfo structure with filenames
