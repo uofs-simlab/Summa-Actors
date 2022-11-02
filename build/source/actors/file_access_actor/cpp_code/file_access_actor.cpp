@@ -169,65 +169,56 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
             
             int err = 0;
             // statistic structures
-            void* handle_forc_stat        = new_handle_var_dlength();
-            void* handle_prog_stat        = new_handle_var_dlength();
-            void* handle_diag_stat        = new_handle_var_dlength();
-            void* handle_flux_stat        = new_handle_var_dlength();
-            void* handle_indx_stat        = new_handle_var_dlength();
-            void* handle_bvar_stat        = new_handle_var_dlength();
-            set_var_dlength(forc_stat, handle_forc_stat);
-            set_var_dlength(prog_stat, handle_prog_stat);
-            set_var_dlength(diag_stat, handle_diag_stat);
-            set_var_dlength(flux_stat, handle_flux_stat);
-            set_var_dlength(indx_stat, handle_indx_stat);
-            set_var_dlength(bvar_stat, handle_bvar_stat);
+            set_var_dlength(forc_stat, self->state.output_handles.handle_forc_stat);
+            set_var_dlength(prog_stat, self->state.output_handles.handle_prog_stat);
+            set_var_dlength(diag_stat, self->state.output_handles.handle_diag_stat);
+            set_var_dlength(flux_stat, self->state.output_handles.handle_flux_stat);
+            set_var_dlength(indx_stat, self->state.output_handles.handle_indx_stat);
+            set_var_dlength(bvar_stat, self->state.output_handles.handle_bvar_stat);
             // primary data structures (scalars)
-            void* handle_time_struct      = new_handle_var_i();
-            void* handle_forc_struct      = new_handle_var_d();
-            void* handle_attr_struct      = new_handle_var_d();
-            void* handle_type_struct      = new_handle_var_i();
-            void* handle_id_struct        = new_handle_var_i8();
-            set_var_i(time_struct, handle_time_struct);
-            set_var_d(forc_struct, handle_forc_struct);
-            set_var_d(attr_struct, handle_attr_struct);
-            set_var_i(type_struct, handle_type_struct);
-            set_var_i8(id_struct, handle_id_struct);
+            set_var_i(time_struct, self->state.output_handles.handle_time_struct);
+            set_var_d(forc_struct, self->state.output_handles.handle_forc_struct);
+            set_var_d(attr_struct, self->state.output_handles.handle_attr_struct);
+            set_var_i(type_struct, self->state.output_handles.handle_type_struct);
+            set_var_i8(id_struct, self->state.output_handles.handle_id_struct);
             // primary data structures (variable length vectors)
-            void* handle_indx_struct      = new_handle_var_ilength();
-            void* handle_mpar_struct      = new_handle_var_dlength();
-            void* handle_prog_struct      = new_handle_var_dlength();
-            void* handle_diag_struct      = new_handle_var_dlength();
-            void* handle_flux_struct      = new_handle_var_dlength();
-            set_var_ilength(indx_struct, handle_indx_struct);
-            set_var_dlength(mpar_struct, handle_mpar_struct);
-            set_var_dlength(prog_struct, handle_prog_struct);
-            set_var_dlength(diag_struct, handle_diag_struct);
-            set_var_dlength(flux_struct, handle_flux_struct);
+            set_var_ilength(indx_struct, self->state.output_handles.handle_indx_struct);
+            set_var_dlength(mpar_struct, self->state.output_handles.handle_mpar_struct);
+            set_var_dlength(prog_struct, self->state.output_handles.handle_prog_struct);
+            set_var_dlength(diag_struct, self->state.output_handles.handle_diag_struct);
+            set_var_dlength(flux_struct, self->state.output_handles.handle_flux_struct);
             // basin-average structures
-            void* handle_bpar_struct      = new_handle_var_d();
-            void* handle_bvar_struct      = new_handle_var_dlength();
-            set_var_d(bpar_struct,handle_bpar_struct);
-            set_var_dlength(bvar_struct,handle_bvar_struct);
+            set_var_d(bpar_struct, self->state.output_handles.handle_bpar_struct);
+            set_var_dlength(bvar_struct, self->state.output_handles.handle_bvar_struct);
             // ancillary data structures
-            void* handle_dpar_struct      = new_handle_var_d();
-            void* handle_finalize_stats   = new_handle_var_i();
-            void* handle_output_timestep = new_handle_var_i();
-            set_var_d(dpar_struct, handle_dpar_struct);
-            set_var_i(finalize_stats, handle_finalize_stats);
-            set_var_i(output_timestep, handle_output_timestep);
+            set_var_d(dpar_struct, self->state.output_handles.handle_dpar_struct);
+            set_var_i(finalize_stats, self->state.output_handles.handle_finalize_stats);
+            set_var_i(output_timestep, self->state.output_handles.handle_output_timestep);
 
             writeBasinToNetCDF(self->state.handle_ncid, &index_gru,
-                handle_finalize_stats, handle_output_timestep, handle_bvar_stat,
-                handle_bvar_struct, &err);
+                self->state.output_handles.handle_finalize_stats, 
+                self->state.output_handles.handle_output_timestep, 
+                self->state.output_handles.handle_bvar_stat,
+                self->state.output_handles.handle_bvar_struct, &err);
         
             writeTimeToNetCDF(self->state.handle_ncid,
-                handle_finalize_stats, handle_output_timestep, handle_time_struct, &err);
+                self->state.output_handles.handle_finalize_stats, 
+                self->state.output_handles.handle_output_timestep, 
+                self->state.output_handles.handle_time_struct, &err);
 
             writeDataToNetCDF(self->state.handle_ncid, &index_gru, &index_hru,
-                handle_finalize_stats, handle_forc_stat, handle_forc_struct,
-                handle_prog_stat, handle_prog_struct, handle_diag_stat, 
-                handle_diag_struct, handle_flux_stat, handle_flux_struct,
-                handle_indx_stat, handle_indx_struct, handle_output_timestep,
+                self->state.output_handles.handle_finalize_stats, 
+                self->state.output_handles.handle_forc_stat, 
+                self->state.output_handles.handle_forc_struct,
+                self->state.output_handles.handle_prog_stat, 
+                self->state.output_handles.handle_prog_struct, 
+                self->state.output_handles.handle_diag_stat, 
+                self->state.output_handles.handle_diag_struct, 
+                self->state.output_handles.handle_flux_stat, 
+                self->state.output_handles.handle_flux_struct,
+                self->state.output_handles.handle_indx_stat, 
+                self->state.output_handles.handle_indx_struct, 
+                self->state.output_handles.handle_output_timestep,
                 &err);
             
             self->state.file_access_timing.updateEndPoint("write_duration");
@@ -256,7 +247,7 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
             // update the list in Fortran
             updateFailed(&indxGRU);
 
-            listIndex = self->state.output_manager->decrementMaxSize(indxGRU);
+            // listIndex = self->state.output_manager->decrementMaxSize(indxGRU);
           
         },
 
@@ -266,7 +257,7 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
          */
         [=](restart_failures) {
             resetFailedArray();
-            self->state.output_manager->restartFailures();
+            // self->state.output_manager->restartFailures();
         },
 
         [=](deallocate_structures) {
@@ -348,9 +339,6 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
     // Read in the attribute and parameter information for the HRUs to request
     readAttributes(self);
     readParameters(self);
-
-    // Initalize the output manager  
-    self->state.output_manager = new OutputManager(self->state.num_vectors_in_output_manager, self->state.num_gru);
     
     self->send(self->state.parent, done_file_access_actor_init_v);
     // initalize the forcingFile array

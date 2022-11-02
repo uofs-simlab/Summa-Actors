@@ -2,9 +2,8 @@
 
 #include "caf/all.hpp"
 #include "fortran_data_types.hpp"
-#include "timing_info.hpp"
-#include "fortran_data_types.hpp"
 #include "auxilary.hpp"
+#include "timing_info.hpp"
 #include "settings_functions.hpp"
 #include <chrono>
 #include <string>
