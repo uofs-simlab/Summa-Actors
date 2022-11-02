@@ -17,25 +17,23 @@ bool debug;
 namespace caf {
 
 behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gru, int num_gru, 
-    int outputStrucSize, std::string configPath, actor parent) {
+    int output_structure_size, File_Access_Actor_Settings file_access_actor_settings, actor parent) {
     aout(self) << "\n----------File_Access_Actor Started----------\n";
     // Set Up timing Info we wish to track
     self->state.file_access_timing = TimingInfo();
     self->state.file_access_timing.addTimePoint("read_duration");
     self->state.file_access_timing.addTimePoint("write_duration");
 
+    self->state.file_access_actor_settings = file_access_actor_settings;
 
     self->state.parent = parent;
     self->state.num_gru = num_gru;
     self->state.start_gru = start_gru;
-    self->state.outputStrucSize = outputStrucSize;
+    self->state.outputStrucSize = output_structure_size;
     self->state.handle_forcing_file_info = new_handle_file_info();
     self->state.handle_ncid = new_handle_var_i();
     self->state.err = 0;
 
-    // Get Settings from configuration file
-    self->state.num_vectors_in_output_manager = getSettings(configPath, "FileAccessActor", "num_vectors_in_output_manager", 
-		self->state.num_vectors_in_output_manager).value_or(1);
         
     initalizeFileAccessActor(self);
 
