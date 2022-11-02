@@ -40,8 +40,6 @@ MODULE summaActors_FileManager
                                                                                       !   to SETTINGS_PATH for input, OUTPATH for output)
   CHARACTER(LEN=summaPathLen)  :: FORCING_PATH     = 'forcing/default/'               ! input_dir_path
   CHARACTER(LEN=summaPathLen)  :: OUTPUT_PATH      = 'output/default/'                ! output_dir_path
-  CHARACTER(LEN=summaPathLen)  :: FORCING_FREQ     = 'month'                          ! Frequency of forcing files (input)
-  CHARACTER(LEN=summaPathLen)  :: FORCING_START    = '2000-01-01'                              ! Number of Forcing Files
   ! define name of control files    (and default values)
   CHARACTER(LEN=summaPathLen)  :: M_DECISIONS      = 'summa_zDecisions.txt'           ! definition of model decisions
   CHARACTER(LEN=summaPathLen)  :: OUTPUT_CONTROL   = 'summa_zLocalModelVarMeta.txt'   ! metadata for model variables
@@ -145,8 +143,6 @@ subroutine summa_SetTimesDirsAndFiles(file_manager,err) bind(C, name="setTimesDi
       case('settingsPath'       ); SETTINGS_PATH = trim(varEntry)                 ! settings directory
       case('forcingPath'        ); FORCING_PATH = trim(varEntry)                  ! input forcing directory
       case('outputPath'         ); OUTPUT_PATH = trim(varEntry)                   ! output directory
-      case('forcingFreq'        ); FORCING_FREQ = trim(varEntry)                  ! Frequency of forcing files (input)
-      case('forcingStart'       ); FORCING_START = trim(varEntry)                    ! number of forcing files
       case('statePath'          ); STATE_PATH = trim(varEntry)                    ! state file input/output directory
       case('decisionsFile'      ); M_DECISIONS = trim(varEntry)                   ! model decisions file
       case('outputControlFile'  ); OUTPUT_CONTROL = trim(varEntry)                ! output control file
