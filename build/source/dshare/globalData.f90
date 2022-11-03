@@ -42,7 +42,6 @@ MODULE globalData
   USE data_types,only:var_forc
   USE data_types,only:dlength
   USE data_types,only:ilength
-  USE data_types,only:summa_output_type               ! master summa data type
 
   ! number of variables in each data structure
   USE var_lookup,only:maxvarTime      ! time:                     maximum number variables

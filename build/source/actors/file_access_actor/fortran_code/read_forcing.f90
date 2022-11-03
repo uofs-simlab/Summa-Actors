@@ -13,7 +13,6 @@ USE data_types,only:file_info_array
 USE globalData,only:gru_struc
 USE globalData,only:forcingDataStruct
 USE globalData,only:vecTime
-USE globalData,only:outputStructure
 USE globalData,only:time_meta,forc_meta       ! metadata structures
 USE globalData,only:integerMissing            ! integer missing value
 
