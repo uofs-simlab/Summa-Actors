@@ -222,27 +222,6 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
             self->send(self, run_hru_v, self->state.stepsInCurrentFFile);
         },
 
-        [=](run_hru, int stepsInCurrentFFile) {
-            self->state.hru_timing.updateStartPoint("total_duration");
-
-            bool keepRunning = true;
-            int err = 0;
-            self->state.stepsInCurrentFFile = stepsInCurrentFFile;
-        
-            while( keepRunning ) {
-
-                err = Run_HRU(self); // Simulate a Timestep
-
-            self->send(self->state.file_access_actor, serialized_hru_data_v, self);
-
-                keepRunning = check_HRU(self, err); // check if we are done, need to write
-
-            }
-     
-            self->state.hru_timing.updateEndPoint("total_duration");
-
-        },
-
         [=](dt_init_factor, int dt_init_factor) {
             aout(self) << "Recieved New dt_init_factor to attempt on next run \n";
             self->state.dt_init_factor = dt_init_factor;

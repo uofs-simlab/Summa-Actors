@@ -425,7 +425,4 @@ void readParameters(stateful_actor<file_access_state>* self) {
 
 }
 
-void cleanup(stateful_actor<file_access_state>* self) {
-
-}
 } // end namespace

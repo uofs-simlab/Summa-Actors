@@ -131,7 +131,4 @@ void readAttributes(stateful_actor<file_access_state>* self);
 // read in the parameters for all HRUs that are in the run-domain
 void readParameters(stateful_actor<file_access_state>* self);
 
-// deallocate all dynamically allocated structures
-void cleanup(stateful_actor<file_access_state>* self);
-
 } // end namespace

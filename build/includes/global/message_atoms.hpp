@@ -22,14 +22,6 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     // Summary:
     CAF_ADD_ATOM(summa, done_init_gru)
     // Sender:
-    // Reciever: 
-    // Summary:
-    CAF_ADD_ATOM(summa, done_reading_forcingFile)
-    // Sender:
-    // Reciever: 
-    // Summary:
-    CAF_ADD_ATOM(summa, done_reading_first_forcing_file)
-    // Sender:
     // Reciever:
     // Summary:
     CAF_ADD_ATOM(summa, init_hru)
@@ -44,15 +36,7 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     // Sender:
     // Reciever:
     // Summary:
-    CAF_ADD_ATOM(summa, doneFile)
-    // Sender:
-    // Reciever:
-    // Summary:
     CAF_ADD_ATOM(summa, done_hru)
-    // Sender:
-    // Reciever:
-    // Summary:
-    CAF_ADD_ATOM(summa, done_final_write)
     // Sender:
     // Reciever:
     // Summary:
@@ -72,15 +56,7 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     // Sender:
     // Reciever:
     // Summary:
-    CAF_ADD_ATOM(summa, initalize_outputStructure)
-    // Sender:
-    // Reciever:
-    // Summary:
     CAF_ADD_ATOM(summa, access_forcing)
-    // Sender:
-    // Reciever:
-    // Summary:
-    CAF_ADD_ATOM(summa, access_first_forcing_file)
     // Sender:
     // Reciever:
     // Summary:
@@ -92,28 +68,8 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     // Sender:
     // Reciever:
     // Summary:
-    CAF_ADD_ATOM(summa, write_output_final)
-    // Sender:
-    // Reciever:
-    // Summary:
     CAF_ADD_ATOM(summa, deallocate_structures)
-        // Sender:
-    // Reciever:
-    // Summary:
-    CAF_ADD_ATOM(summa, update_completed)
-        // Sender:
-    // Reciever:
-    // Summary:
-    CAF_ADD_ATOM(summa, update_failed)
-        // Sender:
-    // Reciever:
-    // Summary:
-    CAF_ADD_ATOM(summa, reset_outputCounter)
-        // Sender:
-    // Reciever:
-    // Summary:
-    CAF_ADD_ATOM(summa, read_and_write)
-        // Sender:
+    // Sender:
     // Reciever:
     // Summary:
     CAF_ADD_ATOM(summa, write_param)
@@ -121,10 +77,6 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     // Reciever:
     // Summary:
     CAF_ADD_ATOM(summa, restart_failures)
-        // Sender:
-    // Reciever:
-    // Summary:
-    CAF_ADD_ATOM(summa, serialized_hru_data)
     // Sender:
     // Reciever:
     // Summary:
@@ -140,15 +92,7 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     // Sender:
     // Reciever:
     // Summary:    
-    CAF_ADD_ATOM(summa, file_information)
-    // Sender:
-    // Reciever:
-    // Summary:    
     CAF_ADD_ATOM(summa, dt_init_factor)
-    // Sender:
-    // Reciever:
-    // Summary:    
-    CAF_ADD_ATOM(summa, serialize_data)
     // Sender:
     // Reciever:
     // Summary:
