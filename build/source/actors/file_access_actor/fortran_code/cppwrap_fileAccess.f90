@@ -103,20 +103,9 @@ subroutine resetFailedArray() bind(C, name="resetFailedArray")
 end subroutine
 
 
-subroutine resetOutputCounter(indxGRU) bind(C, name="resetOutputCounter")
-  USE globalData,only:outputTimeStep
-  implicit none
-  integer(c_int),intent(in)         :: indxGRU
-
-  outputTimeStep(indxGRU)%dat(:) = 1
-
-end subroutine resetOutputCounter
-
-
 subroutine FileAccessActor_DeallocateStructures(handle_forcFileInfo, handle_ncid) bind(C,name="FileAccessActor_DeallocateStructures")
   USE netcdf_util_module,only:nc_file_close 
   USE globalData,only:structInfo                              ! information on the data structures
-  USE globalData,only:outputTimeStep
   USE globalData,only:failedHRUs
   implicit none
   type(c_ptr),intent(in), value        :: handle_forcFileInfo
@@ -142,7 +131,6 @@ subroutine FileAccessActor_DeallocateStructures(handle_forcFileInfo, handle_ncid
   end do
   
   deallocate(forcFileInfo)
-  deallocate(outputTimeStep)
   deallocate(ncid)
   deallocate(failedHRUs)
 end subroutine FileAccessActor_DeallocateStructures

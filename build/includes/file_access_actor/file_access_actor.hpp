@@ -87,18 +87,20 @@ struct file_access_state {
     TimingInfo file_access_timing;
 };
 
+// called to spawn a file_access_actor
 behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU, int numGRU, 
    File_Access_Actor_Settings file_access_actor_settings, actor parent);
 
+// Call Fortran functions that require file access and intialize the ffile_info structure
 void initalizeFileAccessActor(stateful_actor<file_access_state>* self);
-int writeOutput(stateful_actor<file_access_state>* self, int indxGRU, int indxHRU, int numStepsToWrite, int returnMessage, caf::actor actorRef);
-int readForcing(stateful_actor<file_access_state>* self, int currentFile);
-int write(stateful_actor<file_access_state>* self, int listIndex);
 
 // Read in the attributes for all HRUs that are in the run-domain
 void readAttributes(stateful_actor<file_access_state>* self); 
 
 // read in the parameters for all HRUs that are in the run-domain
 void readParameters(stateful_actor<file_access_state>* self);
+
+// deallocate all dynamically allocated structures
+void cleanup(stateful_actor<file_access_state>* self);
 
 } // end namespace

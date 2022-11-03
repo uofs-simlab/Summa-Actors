@@ -19,6 +19,7 @@ namespace caf {
 behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gru, int num_gru, 
     File_Access_Actor_Settings file_access_actor_settings, actor parent) {
     aout(self) << "\n----------File_Access_Actor Started----------\n";
+
     // Set Up timing Info we wish to track
     self->state.file_access_timing = TimingInfo();
     self->state.file_access_timing.addTimePoint("read_duration");
@@ -32,6 +33,7 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
     self->state.handle_forcing_file_info = new_handle_file_info();
     self->state.handle_ncid = new_handle_var_i();
     self->state.err = 0;
+
 
         
     initalizeFileAccessActor(self);
@@ -225,22 +227,6 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
         
         },
 
-        [=](write_output, int indxGRU, int indxHRU, int numStepsToWrite,
-            caf::actor refToRespondTo) {
-            int err;
-            int returnMessage = 9999;
-            
-        },
-
-        [=](read_and_write, int indxGRU, int indxHRU, int numStepsToWrite, int currentFile, 
-            caf::actor refToRespondTo) {
-            int err;
-
-            err = readForcing(self, currentFile);
-            if (err != 0)
-                aout(self) << "\nERROR: FILE_ACCESS_ACTOR - READING_FORCING FAILED\n";
-        },
-
         [=](run_failure, int indxGRU) {
             int listIndex;
 
@@ -272,10 +258,6 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
                 self->state.file_access_timing.getDuration("read_duration").value_or(-1.0), 
                 self->state.file_access_timing.getDuration("write_duration").value_or(-1.0));
             self->quit();
-        },
-
-        [=](reset_outputCounter, int indxGRU) {
-            resetOutputCounter(&indxGRU);
         },
 
     };
@@ -346,38 +328,6 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
     for (int i = 1; i <= self->state.numFiles; i++) {
         self->state.forcing_file_list.push_back(Forcing_File_Info(i));
     }
-}
-
-int readForcing(stateful_actor<file_access_state>* self, int currentFile) {
-    // Check if we have already loaded this file
-    if(self->state.forcing_file_list[currentFile -1].isFileLoaded()) {
-        if (debug)
-            aout(self) << "ForcingFile Already Loaded \n";
-        return 0;
-    
-    } else { // File Needs to be loaded
-
-        self->state.file_access_timing.updateStartPoint("read_duration");
-
-        // Load the file
-        read_forcingFile(self->state.handle_forcing_file_info, &currentFile,
-            &self->state.stepsInCurrentFile, &self->state.start_gru, 
-            &self->state.num_gru, &self->state.err);
-        
-        if (self->state.err != 0) {
-            if (debug)
-                aout(self) << "ERROR: FileAccessActor_ReadForcing\n" << 
-                "currentFile = " << currentFile << "\n" << "number of steps = " 
-                << self->state.stepsInCurrentFile << "\n";
-            return -1;
-        } else {
-            self->state.filesLoaded += 1;
-            self->state.forcing_file_list[currentFile - 1].updateNumSteps(self->state.stepsInCurrentFile);
-            self->state.file_access_timing.updateEndPoint("read_duration");
-            return 0;
-        }
-    }
-
 }
 
 void readAttributes(stateful_actor<file_access_state>* self) {
@@ -461,4 +411,7 @@ void readParameters(stateful_actor<file_access_state>* self) {
 
 }
 
+void cleanup(stateful_actor<file_access_state>* self) {
+    
+}
 } // end namespace

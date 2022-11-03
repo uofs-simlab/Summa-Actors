@@ -5,56 +5,177 @@
 #include "settings_functions.hpp"
 
 CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
-    // Summa Actor
-    CAF_ADD_ATOM(summa, start_summa)
+     // Sender: job_actor 
+     // Reciever: summa_actor
+     // Summary: job_actor finished job
     CAF_ADD_ATOM(summa, done_job)
+    // Sender:
+    // Reciever: 
+    // Summary:
     CAF_ADD_ATOM(summa, err)
-    // GRU Actor
+    // Sender:
+    // Reciever: 
+    // Summary:
     CAF_ADD_ATOM(summa, init_gru)
+    // Sender:
+    // Reciever: 
+    // Summary:
     CAF_ADD_ATOM(summa, done_init_gru)
-    // Job Actor
+    // Sender:
+    // Reciever: 
+    // Summary:
     CAF_ADD_ATOM(summa, done_reading_forcingFile)
+    // Sender:
+    // Reciever: 
+    // Summary:
     CAF_ADD_ATOM(summa, done_reading_first_forcing_file)
+    // Sender:
+    // Reciever:
+    // Summary:
     CAF_ADD_ATOM(summa, init_hru)
+    // Sender:
+    // Reciever:
+    // Summary:
     CAF_ADD_ATOM(summa, done_init_hru)
+    // Sender:
+    // Reciever:
+    // Summary:
     CAF_ADD_ATOM(summa, done_write)
+    // Sender:
+    // Reciever:
+    // Summary:
     CAF_ADD_ATOM(summa, doneFile)
+    // Sender:
+    // Reciever:
+    // Summary:
     CAF_ADD_ATOM(summa, done_hru)
+    // Sender:
+    // Reciever:
+    // Summary:
     CAF_ADD_ATOM(summa, done_final_write)
+    // Sender:
+    // Reciever:
+    // Summary:
     CAF_ADD_ATOM(summa, run_failure)
+    // Sender:
+    // Reciever:
+    // Summary:
     CAF_ADD_ATOM(summa, done_file_access_actor_init)
+    // Sender:
+    // Reciever:
+    // Summary:
     CAF_ADD_ATOM(summa, file_access_actor_done)
+    // Sender:
+    // Reciever:
+    // Summary:
     CAF_ADD_ATOM(summa, file_access_actor_err)
-    // FileAccess Actor
+    // Sender:
+    // Reciever:
+    // Summary:
     CAF_ADD_ATOM(summa, initalize_outputStructure)
+    // Sender:
+    // Reciever:
+    // Summary:
     CAF_ADD_ATOM(summa, access_forcing)
+    // Sender:
+    // Reciever:
+    // Summary:
     CAF_ADD_ATOM(summa, access_first_forcing_file)
+    // Sender:
+    // Reciever:
+    // Summary:
     CAF_ADD_ATOM(summa, access_forcing_internal)
+    // Sender:
+    // Reciever:
+    // Summary:
     CAF_ADD_ATOM(summa, write_output)
+    // Sender:
+    // Reciever:
+    // Summary:
     CAF_ADD_ATOM(summa, write_output_final)
+    // Sender:
+    // Reciever:
+    // Summary:
     CAF_ADD_ATOM(summa, deallocate_structures)
+        // Sender:
+    // Reciever:
+    // Summary:
     CAF_ADD_ATOM(summa, update_completed)
+        // Sender:
+    // Reciever:
+    // Summary:
     CAF_ADD_ATOM(summa, update_failed)
+        // Sender:
+    // Reciever:
+    // Summary:
     CAF_ADD_ATOM(summa, reset_outputCounter)
+        // Sender:
+    // Reciever:
+    // Summary:
     CAF_ADD_ATOM(summa, read_and_write)
+        // Sender:
+    // Reciever:
+    // Summary:
     CAF_ADD_ATOM(summa, write_param)
+        // Sender:
+    // Reciever:
+    // Summary:
     CAF_ADD_ATOM(summa, restart_failures)
+        // Sender:
+    // Reciever:
+    // Summary:
     CAF_ADD_ATOM(summa, serialized_hru_data)
+    // Sender:
+    // Reciever:
+    // Summary:
     CAF_ADD_ATOM(summa, get_attributes_params)
-    // HRU Actor
+    // Sender:
+    // Reciever:
+    // Summary:    
     CAF_ADD_ATOM(summa, run_hru)
+    // Sender:
+    // Reciever:
+    // Summary:    
     CAF_ADD_ATOM(summa, start_hru)
+    // Sender:
+    // Reciever:
+    // Summary:    
     CAF_ADD_ATOM(summa, file_information)
+    // Sender:
+    // Reciever:
+    // Summary:    
     CAF_ADD_ATOM(summa, dt_init_factor)
+    // Sender:
+    // Reciever:
+    // Summary:    
     CAF_ADD_ATOM(summa, serialize_data)
-    // Client Actor
+    // Sender:
+    // Reciever:
+    // Summary:
     CAF_ADD_ATOM(summa, connect_to_server)
+    // Sender:
+    // Reciever:
+    // Summary:    
     CAF_ADD_ATOM(summa, compute_batch)
-    // Server Actor
+    // Sender:
+    // Reciever:
+    // Summary:
     CAF_ADD_ATOM(summa, done_batch)
+    // Sender:
+    // Reciever:
+    // Summary:
     CAF_ADD_ATOM(summa, time_to_exit)
+    // Sender:
+    // Reciever:
+    // Summary:
     CAF_ADD_ATOM(summa, start_health_check)
+    // Sender:
+    // Reciever:
+    // Summary:
     CAF_ADD_ATOM(summa, check_on_clients)
+    // Sender:
+    // Reciever:
+    // Summary:
     CAF_ADD_ATOM(summa, heartbeat)
     
     // Struct Types

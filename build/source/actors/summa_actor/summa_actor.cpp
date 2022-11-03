@@ -53,7 +53,7 @@ behavior summa_actor(stateful_actor<summa_actor_state>* self, int startGRU, int 
 					aout(self) << "Job Write Duration = " << self->state.timing_info_for_jobs.job_write_duration[i] << "\n";
 				}
 
-				// TODO: Output CSV file for finished jobs
+
 				
 				aout(self) << "\n________________SUMMA_ACTOR TIMING INFO________________\n";
 				aout(self) << "Total Duration = " << self->state.summa_actor_timing.getDuration("total_duration").value_or(-1.0) << " Seconds\n";

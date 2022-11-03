@@ -82,7 +82,6 @@ subroutine def_output(handle_ncid,startGRU,nGRU,nHRU,err) bind(C, name='def_outp
   USE globalData,only:outFreq                                  ! output frequencies
   USE globalData,only:fname
   ! Some global variabels required in the writing process
-  USE globalData,only:outputTimeStep
   USE globalData,only:nHRUrun
   USE globalData,only:nGRUrun
   USE globalData,only:gru_struc
@@ -130,15 +129,6 @@ subroutine def_output(handle_ncid,startGRU,nGRU,nHRU,err) bind(C, name='def_outp
     allocate(ncid%var(maxVarFreq))
     ncid%var(:) = integerMissing
   endif
-
-  ! initalize outputTimeStep - keeps track of the step the GRU is writing for
-  if (.not.allocated(outputTimeStep))then
-    allocate(outputTimeStep(nGRU))
-    do iGRU = 1, nGRU
-      allocate(outputTimeStep(iGRU)%dat(maxVarFreq))
-      outputTimeStep(iGRU)%dat(:) = 1
-    end do
-  end if
 
   ! Set the global variable for the number of HRU and GRU in run
   nGRUrun = nGRU

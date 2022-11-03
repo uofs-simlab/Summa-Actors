@@ -257,7 +257,6 @@ void restartFailures(stateful_actor<job_state>* self) {
     for(auto gru : self->state.gru_list) {
         if (gru->isFailed() && !gru->isMaxAttemptsReached()) {
             gru->updateFailed();
-            self->send(self->state.file_access_actor, reset_outputCounter_v, gru->getIndxGRU());
             gru->updateDt_init();
             auto newGRU = self->spawn(hru_actor, gru->getRefGRU(), gru->getIndxGRU(), 
                 self->state.hru_actor_settings, self->state.file_access_actor, 
