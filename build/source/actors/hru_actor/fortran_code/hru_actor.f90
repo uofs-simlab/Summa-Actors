@@ -11,28 +11,12 @@ USE data_types,only:&
 implicit none
 
 
-public::getSummaVariableInfo
-! public::setParamAndAttr
 public::prepareOutput
 public::updateCounters
 contains
 
-! subroutine setParamAndAttr(handle_attrStruct, handle_attrStruct, handle_idStruct, &
-!   handle_bparStruct, handle_dparStruct, attr_array, type_array, id_array, bpar_array) bind(C, name="setParamAndAttr")
-!   implicit none
-
-
-
-
-! end subroutine
-
-subroutine getSummaVariableInfo(var_type, var_fortran_index, data_struct) bind(C, name="getSummaVariableInfo")
-  integer(c_int)          :: var_type
-  integer(c_int)          :: var_fortran_index
-  type(c_ptr)             :: data_struct
-
-end subroutine getSummaVariableInfo
-
+! Prepare structure for being sent off to the file access actor
+! call set alarms and calc stats
 subroutine prepareOutput(&
                         modelTimeStep,      &
                         ! statistics variables
@@ -228,6 +212,8 @@ subroutine prepareOutput(&
 
 end subroutine prepareOutput
 
+
+! Update all of the counters for time and output step
 subroutine updateCounters(handle_timeStruct, handle_statCounter, handle_outputTimeStep, &
         handle_resetStats, handle_oldTime, handle_finalizeStats) bind(C, name="updateCounters")
   USE globalData,only:startWrite,endWrite,elapsedWrite

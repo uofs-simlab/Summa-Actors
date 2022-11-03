@@ -37,7 +37,38 @@ struct hru_output_handles {
     // ancillary data structures
     void* handle_dpar_struct      = new_handle_var_d();
     void* handle_finalize_stats   = new_handle_var_i();
-    void* handle_output_timestep = new_handle_var_i();
+    void* handle_output_timestep  = new_handle_var_i();
+
+    // Destructor
+    ~hru_output_handles(){
+        // Statistic Structures
+        delete_handle_var_dlength(handle_forc_stat);
+        delete_handle_var_dlength(handle_prog_stat);
+        delete_handle_var_dlength(handle_diag_stat);
+        delete_handle_var_dlength(handle_flux_stat);
+        delete_handle_var_dlength(handle_indx_stat);
+        delete_handle_var_dlength(handle_bvar_stat);
+        // primary data structures (scalars)
+        delete_handle_var_i(handle_time_struct);
+        delete_handle_var_d(handle_forc_struct);
+        delete_handle_var_d(handle_attr_struct);
+        delete_handle_var_i(handle_type_struct);
+        delete_handle_var_i8(handle_id_struct);
+        // primary data structures (variable length vectors)
+        delete_handle_var_ilength(handle_indx_struct);
+        delete_handle_var_dlength(handle_mpar_struct);
+        delete_handle_var_dlength(handle_prog_struct);
+        delete_handle_var_dlength(handle_diag_struct);
+        delete_handle_var_dlength(handle_flux_struct);
+        // basin-average structures
+        delete_handle_var_d(handle_bpar_struct);
+        delete_handle_var_dlength(handle_bvar_struct);
+        // ancillary data structures
+        delete_handle_var_d(handle_dpar_struct);
+        delete_handle_var_i(handle_finalize_stats);
+        delete_handle_var_i(handle_output_timestep);
+    }
+
 };
 
 struct file_access_state {
@@ -65,14 +96,14 @@ struct file_access_state {
     // Variables for hanlding attributes file
     int attribute_ncid;
     int num_var_in_attributes_file;
-    std::vector<void*> attr_structs_for_hrus;
-    std::vector<void*> type_structs_for_hrus;
-    std::vector<void*> id_structs_for_hrus;
+    std::vector<std::vector<double>> attr_structs_for_hrus;
+    std::vector<std::vector<int>> type_structs_for_hrus;
+    std::vector<std::vector<long int>> id_structs_for_hrus;
 
     // Variables for handling parameters file
-    std::vector<void*> mpar_structs_for_hrus;
-    std::vector<void*> bpar_structs_for_hrus;
-    std::vector<void*> dpar_structs_for_hrus;
+    std::vector<std::vector<std::vector<double>>> mpar_structs_for_hrus;
+    std::vector<std::vector<double>> bpar_structs_for_hrus;
+    std::vector<std::vector<double>> dpar_structs_for_hrus;
     
     int dpar_array_size;
     int bpar_array_size;

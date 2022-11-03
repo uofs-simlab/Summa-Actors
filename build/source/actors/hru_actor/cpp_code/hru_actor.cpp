@@ -212,7 +212,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
                     self->state.hru_timing.getDuration("run_physics_duration").value_or(-1.0), 
                     self->state.hru_timing.getDuration("write_output_duration").value_or(-1.0));
                 
-                deallocateHRUStructures(self);
+                // deallocateHRUStructures(self);
 
                 self->quit();
                 return;
@@ -426,35 +426,36 @@ bool check_HRU(stateful_actor<hru_state>* self, int err) {
 
 void deallocateHRUStructures(stateful_actor<hru_state>* self) {
 
-    DeallocateStructures(self->state.handle_forcStat, 
-        self->state.handle_progStat,
-        self->state.handle_diagStat,
-        self->state.handle_fluxStat,
-        self->state.handle_indxStat,
-        self->state.handle_bvarStat,
-        self->state.handle_timeStruct,
-        self->state.handle_forcStruct,
-        self->state.handle_attrStruct,
-        self->state.handle_typeStruct,
-        self->state.handle_idStruct,
-        self->state.handle_indxStruct,
-        self->state.handle_mparStruct,
-        self->state.handle_progStruct,
-        self->state.handle_diagStruct,
-        self->state.handle_fluxStruct,
-        self->state.handle_bparStruct,
-        self->state.handle_bvarStruct,
-        self->state.handle_dparStruct,
-        self->state.handle_startTime,
-        self->state.handle_finshTime,
-        self->state.handle_refTime,
-        self->state.handle_oldTime,
-        self->state.handle_ncid,
-        self->state.handle_statCounter,
-        self->state.handle_outputTimeStep,
-        self->state.handle_resetStats,
-        self->state.handle_finalizeStats,
-        &self->state.err);
+    // DeallocateStructures(
+    //     self->state.handle_forcStat, 
+    //     self->state.handle_progStat,
+    //     self->state.handle_diagStat,
+    //     self->state.handle_fluxStat,
+    //     self->state.handle_indxStat,
+    //     self->state.handle_bvarStat,
+    //     self->state.handle_timeStruct,
+    //     self->state.handle_forcStruct,
+    //     self->state.handle_attrStruct,
+    //     self->state.handle_typeStruct,
+    //     self->state.handle_idStruct,
+    //     self->state.handle_indxStruct,
+    //     self->state.handle_mparStruct,
+    //     self->state.handle_progStruct,
+    //     self->state.handle_diagStruct,
+    //     self->state.handle_fluxStruct,
+    //     self->state.handle_bparStruct,
+    //     self->state.handle_bvarStruct,
+    //     self->state.handle_dparStruct,
+    //     self->state.handle_startTime,
+    //     self->state.handle_finshTime,
+    //     self->state.handle_refTime,
+    //     self->state.handle_oldTime,
+    //     self->state.handle_ncid,
+    //     self->state.handle_statCounter,
+    //     self->state.handle_outputTimeStep,
+    //     self->state.handle_resetStats,
+    //     self->state.handle_finalizeStats,
+    //     &self->state.err);
 }
 
 void printOutput(stateful_actor<hru_state>* self) {

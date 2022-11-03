@@ -46,20 +46,17 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
 
             self->state.file_access_timing.updateStartPoint("write_duration");
 
-            // create structures to populate in Fortran
-            void *handle_attr_struct = new_handle_var_d();
-            void *handle_type_struct = new_handle_var_i();
-            void *handle_mpar_struct = new_handle_var_dlength();
-            void *handle_bpar_struct = new_handle_var_d(); 
             // populate the newly created Fortran structures
-            set_var_d(attr_struct, handle_attr_struct);
-            set_var_i(type_struct, handle_type_struct);
-            set_var_dlength(mpar_struct, handle_mpar_struct);
-            set_var_d(bpar_struct, handle_bpar_struct);
+            set_var_d(attr_struct, self->state.output_handles.handle_attr_struct);
+            set_var_i(type_struct, self->state.output_handles.handle_type_struct);
+            set_var_dlength(mpar_struct, self->state.output_handles.handle_mpar_struct);
+            set_var_d(bpar_struct, self->state.output_handles.handle_bpar_struct);
             // write the populated data to netCDF
             writeParamToNetCDF(self->state.handle_ncid, &index_gru, &index_hru, 
-                handle_attr_struct, handle_type_struct, handle_mpar_struct, 
-                handle_bpar_struct, &err);
+                self->state.output_handles.handle_attr_struct, 
+                self->state.output_handles.handle_type_struct, 
+                self->state.output_handles.handle_mpar_struct, 
+                self->state.output_handles.handle_bpar_struct, &err);
 
             self->state.file_access_timing.updateEndPoint("write_duration");
             
@@ -127,24 +124,16 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
         },
 
         [=] (get_attributes_params, int ref_gru, caf::actor actor_to_respond) {
-            // Find the correct attribute file we loaded in
-            void* handle_attr_struct = self->state.attr_structs_for_hrus[ref_gru-1];
-            std::vector<double> attr_struct_to_send = get_var_d(handle_attr_struct);
+            
+            // From Attributes File
+            std::vector<double> attr_struct_to_send = self->state.attr_structs_for_hrus[ref_gru-1];
+            std::vector<int> type_struct_to_send = self->state.type_structs_for_hrus[ref_gru-1];
+            std::vector<long int> id_struct_to_send = self->state.id_structs_for_hrus[ref_gru-1];
 
-            void* handle_type_struct = self->state.type_structs_for_hrus[ref_gru-1];
-            std::vector<int> type_struct_to_send = get_var_i(handle_type_struct);
-
-            void* handle_id_struct = self->state.id_structs_for_hrus[ref_gru-1];
-            std::vector<long int> id_struct_to_send = get_var_i8(handle_id_struct);
-
-            void* handle_bpar_struct = self->state.bpar_structs_for_hrus[ref_gru-1];
-            std::vector<double> bpar_struct_to_send = get_var_d(handle_bpar_struct); 
-
-            void* handle_dpar_struct = self->state.dpar_structs_for_hrus[ref_gru-1];
-            std::vector<double> dpar_struct_to_send = get_var_d(handle_dpar_struct);
-
-            void* handle_mpar_struct = self->state.mpar_structs_for_hrus[ref_gru-1];
-            std::vector<std::vector<double>> mpar_struct_to_send = get_var_dlength(handle_mpar_struct);
+            // From Parameters File
+            std::vector<double> bpar_struct_to_send = self->state.bpar_structs_for_hrus[ref_gru-1];
+            std::vector<double> dpar_struct_to_send = self->state.dpar_structs_for_hrus[ref_gru-1];
+            std::vector<std::vector<double>> mpar_struct_to_send = self->state.mpar_structs_for_hrus[ref_gru-1];
 
             self->send(actor_to_respond, get_attributes_params_v, attr_struct_to_send,
                 type_struct_to_send, id_struct_to_send, bpar_struct_to_send, 
@@ -349,10 +338,19 @@ void readAttributes(stateful_actor<file_access_state>* self) {
         readAttributeFromNetCDF(&self->state.attribute_ncid, &index_gru, &index_hru,
             &self->state.num_var_in_attributes_file, handle_attr_struct, handle_type_struct,
             handle_id_struct, &err);
-
-        self->state.attr_structs_for_hrus.push_back(handle_attr_struct);
-        self->state.type_structs_for_hrus.push_back(handle_type_struct);
-        self->state.id_structs_for_hrus.push_back(handle_id_struct);
+        
+        // attr struct
+        std::vector<double> attr_struct_to_push = get_var_d(handle_attr_struct);
+        self->state.attr_structs_for_hrus.push_back(attr_struct_to_push);
+        delete_handle_var_d(handle_attr_struct);
+        // type struct
+        std::vector<int> type_struct_to_push = get_var_i(handle_type_struct);
+        self->state.type_structs_for_hrus.push_back(type_struct_to_push);
+        delete_handle_var_i(handle_type_struct);
+        // id struct
+        std::vector<long int> id_struct_to_push = get_var_i8(handle_id_struct);
+        self->state.id_structs_for_hrus.push_back(id_struct_to_push);
+        delete_handle_var_i8(handle_id_struct);
     }
 
     closeAttributeFile(&self->state.attribute_ncid, &err);
@@ -379,6 +377,7 @@ void readParameters(stateful_actor<file_access_state>* self) {
     for (int index_gru = 1; index_gru < self->state.num_gru + 1; index_gru++) {
 
         std::vector<double> dpar_array(self->state.dpar_array_size);
+        void* handle_type_struct = new_handle_var_i();
         void* handle_dpar_struct = new_handle_var_d();
         void* handle_mpar_struct = new_handle_var_dlength();      
         void* handle_bpar_struct = new_handle_var_d();  
@@ -387,8 +386,11 @@ void readParameters(stateful_actor<file_access_state>* self) {
         allocateParamStructures(&index_gru, &index_hru, handle_dpar_struct, 
             handle_mpar_struct, handle_bpar_struct, &err);
 
+        // need to convert attr_struct to FORTRAN format   
+        set_var_i(self->state.type_structs_for_hrus[index_gru-1], handle_type_struct); 
+    
         overwriteParam(&index_gru, &index_hru, 
-            self->state.type_structs_for_hrus[index_gru-1],
+            handle_type_struct,
             handle_dpar_struct, 
             handle_mpar_struct, 
             handle_bpar_struct, 
@@ -403,15 +405,27 @@ void readParameters(stateful_actor<file_access_state>* self) {
                 &err);
         }
 
-        self->state.dpar_structs_for_hrus.push_back(handle_dpar_struct);
-        self->state.mpar_structs_for_hrus.push_back(handle_mpar_struct);
-        self->state.bpar_structs_for_hrus.push_back(handle_bpar_struct);
+        // type_struct
+        delete_handle_var_i(handle_type_struct);
+        
+        // dpar_struct
+        std::vector<double> dpar_struct_to_push = get_var_d(handle_dpar_struct);
+        self->state.dpar_structs_for_hrus.push_back(dpar_struct_to_push);
+        delete_handle_var_d(handle_dpar_struct);
+        // mpar_struct
+        std::vector<std::vector<double>> mpar_struct_to_push = get_var_dlength(handle_mpar_struct);
+        self->state.mpar_structs_for_hrus.push_back(mpar_struct_to_push);
+        delete_handle_var_dlength(handle_mpar_struct);
+        // bpar_struct
+        std::vector<double> bpar_struct_to_push = get_var_d(handle_bpar_struct);
+        self->state.bpar_structs_for_hrus.push_back(bpar_struct_to_push);
+        delete_handle_var_d(handle_bpar_struct);
     }
     closeParamFile(&self->state.param_ncid, &err);
 
 }
 
 void cleanup(stateful_actor<file_access_state>* self) {
-    
+
 }
 } // end namespace

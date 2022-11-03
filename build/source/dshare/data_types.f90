@@ -424,24 +424,6 @@ endtype var_time_ilength
   type(vLookup),allocatable           :: z(:)        ! z(:)%var(:)%lookup(:)
  endtype zLookup
 
-type, public :: summa_output_type
-
-
-  ! define the primary data structures (scalars)
-  type(gru_hru_double),allocatable                  :: attrStruct(:)                 ! x%gru(:)%hru(:)%var(:)            -- local attributes for each HRU, DOES NOT CHANGE OVER TIMESTEPS
-  type(gru_hru_int),allocatable                     :: typeStruct(:)                 ! x%gru(:)%hru(:)%var(:)%tim(:)     -- local classification of soil veg etc. for each HRU, DOES NOT CHANGE OVER TIMESTEPS
-  type(gru_hru_int8),allocatable                    :: idStruct(:)                   ! x%gru(:)%hru(:)%var(:)
-
-  ! define the primary data structures (variable length vectors)
-  type(gru_hru_doubleVec),allocatable               :: mparStruct(:)                 ! x%gru(:)%hru(:)%var(:)%dat        -- model parameters, DOES NOT CHANGE OVER TIMESTEPS TODO: MAYBE
-  ! define the basin-average structures
-  type(gru_double),allocatable                      :: bparStruct(:)                 ! x%gru(:)%var(:)                   -- basin-average parameters, DOES NOT CHANGE OVER TIMESTEPS
-
-  ! define the ancillary data structures
-  type(gru_hru_double),allocatable                  :: dparStruct(:)                 ! x%gru(:)%hru(:)%var(:)
-
-
-end type summa_output_type
 
 END MODULE data_types
 

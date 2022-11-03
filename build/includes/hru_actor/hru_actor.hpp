@@ -10,6 +10,7 @@
 
 
 
+
 namespace caf {
 struct hru_state {
 	// Actor References
@@ -54,15 +55,13 @@ struct hru_state {
     // ancillary data structures
     void *handle_dparStruct = new_handle_var_d();		// default model parameters
     // sundials type
-    void *handle_lookupStruct = new_handle_z_lookup();
-
-    
-    // Local hru data
-    void *handle_ncid = new_handle_var_i();             // output file ids
+    void *handle_lookupStruct = new_handle_z_lookup();    
+    // Counter variables
     void *handle_statCounter = new_handle_var_i();
     void *handle_outputTimeStep = new_handle_var_i();
     void *handle_resetStats = new_handle_flagVec();
     void *handle_finalizeStats = new_handle_flagVec();
+    // Time variables
     void *handle_oldTime = new_handle_var_i();
     void *handle_refTime = new_handle_var_i();
     void *handle_finshTime = new_handle_var_i();
@@ -86,12 +85,50 @@ struct hru_state {
 
     // Settings
     HRU_Actor_Settings hru_actor_settings;
-
-
-    int         err = 0;			            // error conotrol
-
+    // error control
+    int         err = 0;			        
     TimingInfo hru_timing;
+    
+    ~hru_state() {
+        // statistics structures
+        delete_handle_var_dlength(handle_forcStat);
+        delete_handle_var_dlength(handle_progStat);
+        delete_handle_var_dlength(handle_diagStat);
+        delete_handle_var_dlength(handle_fluxStat);
+        delete_handle_var_dlength(handle_indxStat);
+        delete_handle_var_dlength(handle_bvarStat);
+        // primary data structures (scalars)
+        delete_handle_var_i(handle_timeStruct);
+        delete_handle_var_d(handle_forcStruct);
+        delete_handle_var_d(handle_attrStruct);
+        delete_handle_var_i(handle_typeStruct);
+        delete_handle_var_i8(handle_idStruct);
+        // primary data structures (variable length vectors)
+        delete_handle_var_ilength(handle_indxStruct);
+        delete_handle_var_dlength(handle_mparStruct);
+        delete_handle_var_dlength(handle_progStruct);
+        delete_handle_var_dlength(handle_diagStruct);
+        delete_handle_var_dlength(handle_fluxStruct);
+        // basin-average structures
+        delete_handle_var_d(handle_bparStruct);
+        delete_handle_var_dlength(handle_bvarStruct);
+        // ancillary data structures
+        delete_handle_var_d(handle_dparStruct);
+        // sundials type
+        delete_handle_z_lookup(handle_lookupStruct);
+        // counter variables
+        delete_handle_var_i(handle_statCounter);
+        delete_handle_var_i(handle_outputTimeStep);
+        delete_handle_flagVec(handle_resetStats);
+        delete_handle_flagVec(handle_finalizeStats);
+        // time variables
+        delete_handle_var_i(handle_oldTime);
+        delete_handle_var_i(handle_refTime);
+        delete_handle_var_i(handle_finshTime);
+        delete_handle_var_i(handle_startTime);
 
+
+    }
 };
 
 behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,

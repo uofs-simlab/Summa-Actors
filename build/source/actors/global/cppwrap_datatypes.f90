@@ -1096,6 +1096,15 @@ function new_handle_z_lookup() result(handle) bind(C, name="new_handle_z_lookup"
   allocate(p)
   handle = c_loc(p)
 end function
+
+subroutine delete_handle_z_lookup(handle) bind(C, name="delete_handle_z_lookup")
+  type(c_ptr), intent(in), value :: handle
+  type(zLookup), pointer :: p
+
+  call c_f_pointer(handle, p)
+  deallocate(p)
+end subroutine 
+
 end module cppwrap_datatypes
 
 

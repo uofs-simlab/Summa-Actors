@@ -308,7 +308,6 @@ MODULE globalData
   !!!!!!!!!!!!!!!!!!GLOBAL DATA STRUCTURES THAT ARE MANAGED BY FILEACCESSACTOR !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   type(var_forc),allocatable,save,public          :: forcingDataStruct(:)      ! forcingDataStruct(:)%var(:)%dataFromFile(:,:)
   type(dlength),allocatable,save,public           :: vecTime(:)
-  type(summa_output_type),allocatable,save,public :: outputStructure(:)        ! summa_OutputStructure(iFile)%struc%var(:)%dat(nTimeSteps) 
   logical(lgt),allocatable,save,public            :: failedHRUs(:)             ! list of true and false values to indicate if an HRU has failed              
   !!!!!!!!!!!!!!!!!!GLOBAL DATA STRUCTURES THAT ARE MANAGED BY FILEACCESSACTOR !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
