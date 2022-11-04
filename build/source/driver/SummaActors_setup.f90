@@ -231,9 +231,10 @@ subroutine setupHRUParam(&
       print*, message
       return
    endif
-
+   
+   print*, "is this invalid", gru_struc(1)%hruInfo(1)%nSoil
    ! calculate a lookup table to compute enthalpy from temperature
-   call T2E_lookup(gru_struc(indxGRU)%hruInfo(indxHRU)%nSoil,   &   ! intent(in):    number of soil layers
+   call T2E_lookup(gru_struc(1)%hruInfo(1)%nSoil,   &   ! intent(in):    number of soil layers
                    mparStruct,        &   ! intent(in):    parameter data structure
                    lookupStruct,      &   ! intent(inout): lookup table data structure
                    err,cmessage)                              ! intent(out):   error control

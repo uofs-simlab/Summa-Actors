@@ -54,7 +54,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
 
 
     // Get attributes
-    self->send(self->state.file_access_actor, get_attributes_params_v, self->state.refGRU, self);
+    self->send(self->state.file_access_actor, get_attributes_params_v, self->state.indxGRU, self);
 
 
     self->state.hru_timing.updateEndPoint("total_duration");

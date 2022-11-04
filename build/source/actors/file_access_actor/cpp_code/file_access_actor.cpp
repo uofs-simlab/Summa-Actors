@@ -123,17 +123,17 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
             }
         },
 
-        [=] (get_attributes_params, int ref_gru, caf::actor actor_to_respond) {
-            
+        [=] (get_attributes_params, int index_gru, caf::actor actor_to_respond) {
+            aout(self) << "index_gru = " << index_gru << std::endl;
             // From Attributes File
-            std::vector<double> attr_struct_to_send = self->state.attr_structs_for_hrus[ref_gru-1];
-            std::vector<int> type_struct_to_send = self->state.type_structs_for_hrus[ref_gru-1];
-            std::vector<long int> id_struct_to_send = self->state.id_structs_for_hrus[ref_gru-1];
+            std::vector<double> attr_struct_to_send = self->state.attr_structs_for_hrus[index_gru-1];
+            std::vector<int> type_struct_to_send = self->state.type_structs_for_hrus[index_gru-1];
+            std::vector<long int> id_struct_to_send = self->state.id_structs_for_hrus[index_gru-1];
 
             // From Parameters File
-            std::vector<double> bpar_struct_to_send = self->state.bpar_structs_for_hrus[ref_gru-1];
-            std::vector<double> dpar_struct_to_send = self->state.dpar_structs_for_hrus[ref_gru-1];
-            std::vector<std::vector<double>> mpar_struct_to_send = self->state.mpar_structs_for_hrus[ref_gru-1];
+            std::vector<double> bpar_struct_to_send = self->state.bpar_structs_for_hrus[index_gru-1];
+            std::vector<double> dpar_struct_to_send = self->state.dpar_structs_for_hrus[index_gru-1];
+            std::vector<std::vector<double>> mpar_struct_to_send = self->state.mpar_structs_for_hrus[index_gru-1];
 
             self->send(actor_to_respond, get_attributes_params_v, attr_struct_to_send,
                 type_struct_to_send, id_struct_to_send, bpar_struct_to_send, 
