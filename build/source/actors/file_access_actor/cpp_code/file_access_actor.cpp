@@ -45,7 +45,10 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
             int err = 0;
 
             self->state.file_access_timing.updateStartPoint("write_duration");
-
+            self->state.output_handles.handle_attr_struct = new_handle_var_d();
+            self->state.output_handles.handle_type_struct = new_handle_var_i();
+            self->state.output_handles.handle_mpar_struct = new_handle_var_dlength();
+            self->state.output_handles.handle_bpar_struct = new_handle_var_d();
             // populate the newly created Fortran structures
             set_var_d(attr_struct, self->state.output_handles.handle_attr_struct);
             set_var_i(type_struct, self->state.output_handles.handle_type_struct);
@@ -57,6 +60,12 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
                 self->state.output_handles.handle_type_struct, 
                 self->state.output_handles.handle_mpar_struct, 
                 self->state.output_handles.handle_bpar_struct, &err);
+            
+            delete_handle_var_d(self->state.output_handles.handle_attr_struct);
+            delete_handle_var_i(self->state.output_handles.handle_type_struct);
+            delete_handle_var_dlength(self->state.output_handles.handle_mpar_struct);
+            delete_handle_var_d(self->state.output_handles.handle_bpar_struct);
+            
 
             self->state.file_access_timing.updateEndPoint("write_duration");
             
@@ -157,6 +166,8 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
             std::vector<double> dpar_struct, std::vector<int> finalize_stats, std::vector<int> output_timestep ) {
             
             self->state.file_access_timing.updateStartPoint("write_duration");
+
+            initalizeOutputHandles(self);
             
             int err = 0;
             // statistic structures
@@ -213,6 +224,8 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
                 &err);
             
             self->state.file_access_timing.updateEndPoint("write_duration");
+
+            deallocateOutputHandles(self);
         
         },
 
@@ -423,6 +436,64 @@ void readParameters(stateful_actor<file_access_state>* self) {
     }
     closeParamFile(&self->state.param_ncid, &err);
 
+}
+
+void initalizeOutputHandles(stateful_actor<file_access_state>* self) {
+    // Statistic Structures
+    self->state.output_handles.handle_forc_stat = new_handle_var_dlength();
+    self->state.output_handles.handle_prog_stat = new_handle_var_dlength();
+    self->state.output_handles.handle_diag_stat = new_handle_var_dlength();
+    self->state.output_handles.handle_flux_stat = new_handle_var_dlength();
+    self->state.output_handles.handle_indx_stat = new_handle_var_dlength();
+    self->state.output_handles.handle_bvar_stat = new_handle_var_dlength();
+    // primary data structures (scalars)
+    self->state.output_handles.handle_time_struct = new_handle_var_i();
+    self->state.output_handles.handle_forc_struct = new_handle_var_d();
+    self->state.output_handles.handle_attr_struct = new_handle_var_d();
+    self->state.output_handles.handle_type_struct = new_handle_var_i();
+    self->state.output_handles.handle_id_struct   = new_handle_var_i8();
+    // primary data structures (variable length vectors)
+    self->state.output_handles.handle_indx_struct = new_handle_var_ilength();
+    self->state.output_handles.handle_mpar_struct = new_handle_var_dlength();
+    self->state.output_handles.handle_prog_struct = new_handle_var_dlength();
+    self->state.output_handles.handle_diag_struct = new_handle_var_dlength();
+    self->state.output_handles.handle_flux_struct = new_handle_var_dlength();
+    // basin-average structures
+    self->state.output_handles.handle_bpar_struct = new_handle_var_d();
+    self->state.output_handles.handle_bvar_struct = new_handle_var_dlength();
+    // ancillary data structures
+    self->state.output_handles.handle_dpar_struct     = new_handle_var_d();
+    self->state.output_handles.handle_finalize_stats  = new_handle_var_i();
+    self->state.output_handles.handle_output_timestep = new_handle_var_i();
+}
+
+void deallocateOutputHandles(stateful_actor<file_access_state>* self) {
+            // Statistic Structures
+    delete_handle_var_dlength(self->state.output_handles.handle_forc_stat);
+    delete_handle_var_dlength(self->state.output_handles.handle_prog_stat);
+    delete_handle_var_dlength(self->state.output_handles.handle_diag_stat);
+    delete_handle_var_dlength(self->state.output_handles.handle_flux_stat);
+    delete_handle_var_dlength(self->state.output_handles.handle_indx_stat);
+    delete_handle_var_dlength(self->state.output_handles.handle_bvar_stat);
+    // primary data structures (scalars)
+    delete_handle_var_i(self->state.output_handles.handle_time_struct);
+    delete_handle_var_d(self->state.output_handles.handle_forc_struct);
+    delete_handle_var_d(self->state.output_handles.handle_attr_struct);
+    delete_handle_var_i(self->state.output_handles.handle_type_struct);
+    delete_handle_var_i8(self->state.output_handles.handle_id_struct);
+    // primary data structures (variable length vectors)
+    delete_handle_var_ilength(self->state.output_handles.handle_indx_struct);
+    delete_handle_var_dlength(self->state.output_handles.handle_mpar_struct);
+    delete_handle_var_dlength(self->state.output_handles.handle_prog_struct);
+    delete_handle_var_dlength(self->state.output_handles.handle_diag_struct);
+    delete_handle_var_dlength(self->state.output_handles.handle_flux_struct);
+    // basin-average structures
+    delete_handle_var_d(self->state.output_handles.handle_bpar_struct);
+    delete_handle_var_dlength(self->state.output_handles.handle_bvar_struct);
+    // ancillary data structures
+    delete_handle_var_d(self->state.output_handles.handle_dpar_struct);
+    delete_handle_var_i(self->state.output_handles.handle_finalize_stats);
+    delete_handle_var_i(self->state.output_handles.handle_output_timestep);
 }
 
 } // end namespace

@@ -5,7 +5,7 @@ ROOT_DIR = /Summa-Actors
 FC = gfortran # Fortran
 CC = g++	  # C++
 
-DIR_SUNDIALS=/usr/local/sundials
+DIR_SUNDIALS=/code/sundials/instdir
 INC_SUNDIALS=-I$(DIR_SUNDIALS)/include -I$(DIR_SUNDIALS)/fortran
 LIB_SUNDIALS=-L$(DIR_SUNDIALS)/lib -lsundials_fnvecmanyvector_mod -lsundials_fida_mod -lsundials_fnvecserial_mod -lsundials_fsunlinsoldense_mod -lsundials_fsunmatrixdense_mod 
  
