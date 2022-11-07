@@ -302,7 +302,9 @@ subroutine readAttributeFromNetCDF(ncid, index_gru, index_hru, num_var, &
   varIndx = get_ixAttr('aspect')
   ! check that the variable was not found in the attribute file
   if(.not. checkAttr(varIndx)) then
-      write(*,*) NEW_LINE('A')//'INFO: aspect not found in the input attribute file, continuing ...'//NEW_LINE('A')
+      if (index_gru == 1) then
+        write(*,*) NEW_LINE('A')//'INFO: aspect not found in the input attribute file, continuing ...'//NEW_LINE('A')
+      endif
       attr_struct%var(varIndx) = nr_realMissing      ! populate variable with out-of-range value, used later
       checkAttr(varIndx) = .true.
   endif

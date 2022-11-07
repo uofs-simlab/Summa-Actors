@@ -133,7 +133,6 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
         },
 
         [=] (get_attributes_params, int index_gru, caf::actor actor_to_respond) {
-            aout(self) << "index_gru = " << index_gru << std::endl;
             // From Attributes File
             std::vector<double> attr_struct_to_send = self->state.attr_structs_for_hrus[index_gru-1];
             std::vector<int> type_struct_to_send = self->state.type_structs_for_hrus[index_gru-1];

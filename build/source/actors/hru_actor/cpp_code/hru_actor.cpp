@@ -51,8 +51,6 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
         self->quit();
     }
 
-    aout(self) << "Num Steps =" << self->state.num_steps << std::endl;
-
 
     // Get attributes
     self->send(self->state.file_access_actor, get_attributes_params_v, self->state.indxGRU, self);
