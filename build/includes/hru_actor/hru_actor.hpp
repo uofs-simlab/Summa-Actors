@@ -23,8 +23,7 @@ struct hru_state {
     int indxGRU; 		// index for gru part of derived types in FORTRAN
     int refGRU;			// The actual ID of the GRU we are
 
-    // Variables for output/forcing structures
-	int outputStep;
+    // Variables for forcing structures
 	int stepsInCurrentFFile;
 	int forcingFileStep;
 	int currentForcingFile = 1;
