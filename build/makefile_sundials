@@ -223,7 +223,6 @@ SUMMA_MODRUN = \
 		updateVars.f90 \
 		sundials/updateVarsSundials.f90 \
 		var_derive.f90 \
-		read_forcingActors.f90 \
 		derivforce.f90 \
 		snowAlbedo.f90 \
 		canopySnow.f90 \
@@ -258,7 +257,6 @@ SUMMA_DRIVER= \
 		summaActors_globalData.f90 \
 		SummaActors_setup.f90 \
 		summaActors_restart.f90 \
-		summaActors_forcing.f90 \
 		SummaActors_modelRun.f90 \
 		summaActors_alarms.f90
 		

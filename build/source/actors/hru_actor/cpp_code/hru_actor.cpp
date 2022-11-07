@@ -176,8 +176,6 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
                     self->state.hru_timing.getDuration("run_physics_duration").value_or(-1.0), 
                     self->state.hru_timing.getDuration("write_output_duration").value_or(-1.0));
                 
-                // deallocateHRUStructures(self);
-
                 self->quit();
                 return;
             }
