@@ -52,6 +52,8 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
         self->quit();
     }
 
+    aout(self) << "Num Steps =" << self->state.num_steps << std::endl;
+
 
     // Get attributes
     self->send(self->state.file_access_actor, get_attributes_params_v, self->state.indxGRU, self);
@@ -60,6 +62,29 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
     self->state.hru_timing.updateEndPoint("total_duration");
 
     return {
+
+        // First method called after initialization, starts the HRU and the HRU asks
+        // for parameters and forcing data from the file_access_actor
+        [=](start_hru) {
+            self->state.hru_timing.updateStartPoint("total_duration");
+
+            int err = 0;
+            std::vector<double> attr_struct_array = get_var_d(self->state.handle_attrStruct); 
+            std::vector<int> type_struct_array    = get_var_i(self->state.handle_typeStruct);
+            std::vector<std::vector<double>> mpar_struct_array = get_var_dlength(self->state.handle_mparStruct);
+            std::vector<double> bpar_struct_array = get_var_d(self->state.handle_bparStruct);
+
+            // ask file_access_actor to write parameters
+            self->send(self->state.file_access_actor, write_param_v, 
+                self->state.indxGRU, self->state.indxHRU, attr_struct_array,
+                type_struct_array, mpar_struct_array, bpar_struct_array);
+            
+            // ask file_access_actor for forcing data
+            self->send(self->state.file_access_actor, access_forcing_v, self->state.iFile, self);
+            
+            self->state.hru_timing.updateEndPoint("total_duration");
+        },
+
         // Starts the HRU and tells it to ask for data from the file_access_actor
         [=](get_attributes_params, std::vector<double> attr_struct, std::vector<int> type_struct, 
             std::vector<long int> id_struct, std::vector<double> bpar_struct, 
@@ -79,24 +104,6 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
 
         },
 
-
-        [=](start_hru) {
-            self->state.hru_timing.updateStartPoint("total_duration");
-
-            int err = 0;
-            std::vector<double> attr_struct_array = get_var_d(self->state.handle_attrStruct); 
-            std::vector<int> type_struct_array    = get_var_i(self->state.handle_typeStruct);
-            std::vector<std::vector<double>> mpar_struct_array = get_var_dlength(self->state.handle_mparStruct);
-            std::vector<double> bpar_struct_array = get_var_d(self->state.handle_bparStruct);
-
-            // ask file_access_actor to write paramaters
-            self->send(self->state.file_access_actor, write_param_v, 
-                self->state.indxGRU, self->state.indxHRU, attr_struct_array,
-                type_struct_array, mpar_struct_array, bpar_struct_array);
-            self->send(self->state.file_access_actor, access_forcing_v, self->state.iFile, self);
-            self->state.hru_timing.updateEndPoint("total_duration");
-        },
-
         
         // The file_access_actor sends the HRU a message with 
         // the number of steps it can run based on the forcing data
@@ -111,64 +118,9 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
 
                 err = Run_HRU(self); // Simulate a Timestep
 
-                // Get Data from fortran
-                // statistic structures
-                std::vector<std::vector<double>> forc_stat_array    = get_var_dlength(self->state.handle_forcStat);
-                std::vector<std::vector<double>> prog_stat_array    = get_var_dlength(self->state.handle_progStat);
-                std::vector<std::vector<double>> diag_stat_array    = get_var_dlength(self->state.handle_diagStat);
-                std::vector<std::vector<double>> flux_stat_array    = get_var_dlength(self->state.handle_fluxStat);
-                std::vector<std::vector<double>> indx_stat_array    = get_var_dlength(self->state.handle_indxStat);
-                std::vector<std::vector<double>> bvar_stat_array    = get_var_dlength(self->state.handle_bvarStat);
-                // primary data structures (scalars)
-                std::vector<int>      time_struct_array             = get_var_i(self->state.handle_timeStruct);
-                std::vector<double>   forc_struct_array             = get_var_d(self->state.handle_forcStruct);
-                std::vector<double>   attr_struct_array             = get_var_d(self->state.handle_attrStruct); 
-                std::vector<int>      type_struct_array             = get_var_i(self->state.handle_typeStruct);
-                std::vector<long int> id_struct_array               = get_var_i8(self->state.handle_idStruct);
-                // primary data structures (variable length vectors)
-                std::vector<std::vector<int>>    indx_struct_array  = get_var_ilength(self->state.handle_indxStruct);
-                std::vector<std::vector<double>> mpar_struct_array  = get_var_dlength(self->state.handle_mparStruct);
-                std::vector<std::vector<double>> prog_struct_array  = get_var_dlength(self->state.handle_progStruct);
-                std::vector<std::vector<double>> diag_struct_array  = get_var_dlength(self->state.handle_diagStruct);
-                std::vector<std::vector<double>> flux_struct_array  = get_var_dlength(self->state.handle_fluxStruct);
-                // basin-average structures
-                std::vector<double>              bpar_struct_array  = get_var_d(self->state.handle_bparStruct);
-                std::vector<std::vector<double>> bvar_struct_array  = get_var_dlength(self->state.handle_bvarStruct);
-                // ancillary data structures
-                std::vector<double>   dpar_struct_array             = get_var_d(self->state.handle_dparStruct);
-                std::vector<int>      finalize_stats_array          = get_flagVec(self->state.handle_finalizeStats);
-                std::vector<int>      output_time_step_array        = get_var_i(self->state.handle_outputTimeStep);
-                
-                self->send(self->state.file_access_actor, write_output_v,
-                    self->state.indxGRU,
-                    self->state.indxHRU,
-                    // statistic structures
-                    forc_stat_array,
-                    prog_stat_array,
-                    diag_stat_array,
-                    flux_stat_array,
-                    indx_stat_array,
-                    bvar_stat_array,
-                    // primary data structures (scalars)
-                    time_struct_array,
-                    forc_struct_array,
-                    attr_struct_array,
-                    type_struct_array,
-                    id_struct_array,
-                    // primary data structures (variable length vectors)
-                    indx_struct_array,
-                    mpar_struct_array,
-                    prog_struct_array,
-                    diag_struct_array,
-                    flux_struct_array,
-                    // basin-average structures
-                    bpar_struct_array,
-                    bvar_struct_array,
-                    // ancillary data structures
-                    dpar_struct_array,
-                    finalize_stats_array,
-                    output_time_step_array);
+                getAndSendOutput(self);
 
+                
                 updateCounters(self->state.handle_timeStruct, self->state.handle_statCounter, self->state.handle_outputTimeStep,
                         self->state.handle_resetStats, self->state.handle_oldTime, self->state.handle_finalizeStats);
 
@@ -384,7 +336,7 @@ bool check_HRU(stateful_actor<hru_state>* self, int err) {
         self->quit();
         return false;
     
-    } else if (self->state.timestep > self->state.num_steps) {
+    } else if (self->state.timestep >= self->state.num_steps) {
         // check if simulation is finished
         self->state.outputStep -= 1; // prevents segfault
 
@@ -394,6 +346,9 @@ bool check_HRU(stateful_actor<hru_state>* self, int err) {
 
     } else if (self->state.forcingStep > self->state.stepsInCurrentFFile) {
         // we need more forcing data
+        aout(self) << "Requesting File:" << self->state.iFile << "\n";
+        aout(self) << "forcingStep = " << self->state.forcingStep << "\n";
+        aout(self) << "stepsInCurrentFile = " << self->state.stepsInCurrentFFile << "\n";  
         self->send(self->state.file_access_actor, access_forcing_v, self->state.iFile + 1, self);
 
         return false;
@@ -403,42 +358,70 @@ bool check_HRU(stateful_actor<hru_state>* self, int err) {
     }
 }
 
-void deallocateHRUStructures(stateful_actor<hru_state>* self) {
-
-    // DeallocateStructures(
-    //     self->state.handle_forcStat, 
-    //     self->state.handle_progStat,
-    //     self->state.handle_diagStat,
-    //     self->state.handle_fluxStat,
-    //     self->state.handle_indxStat,
-    //     self->state.handle_bvarStat,
-    //     self->state.handle_timeStruct,
-    //     self->state.handle_forcStruct,
-    //     self->state.handle_attrStruct,
-    //     self->state.handle_typeStruct,
-    //     self->state.handle_idStruct,
-    //     self->state.handle_indxStruct,
-    //     self->state.handle_mparStruct,
-    //     self->state.handle_progStruct,
-    //     self->state.handle_diagStruct,
-    //     self->state.handle_fluxStruct,
-    //     self->state.handle_bparStruct,
-    //     self->state.handle_bvarStruct,
-    //     self->state.handle_dparStruct,
-    //     self->state.handle_startTime,
-    //     self->state.handle_finshTime,
-    //     self->state.handle_refTime,
-    //     self->state.handle_oldTime,
-    //     self->state.handle_ncid,
-    //     self->state.handle_statCounter,
-    //     self->state.handle_outputTimeStep,
-    //     self->state.handle_resetStats,
-    //     self->state.handle_finalizeStats,
-    //     &self->state.err);
-}
-
 void printOutput(stateful_actor<hru_state>* self) {
         aout(self) << self->state.refGRU << " - Timestep = " << self->state.timestep << std::endl;
+}
+
+void getAndSendOutput(stateful_actor<hru_state>* self) {
+    // Get Data from fortran
+    // statistic structures
+    std::vector<std::vector<double>> forc_stat_array    = get_var_dlength(self->state.handle_forcStat);
+    std::vector<std::vector<double>> prog_stat_array    = get_var_dlength(self->state.handle_progStat);
+    std::vector<std::vector<double>> diag_stat_array    = get_var_dlength(self->state.handle_diagStat);
+    std::vector<std::vector<double>> flux_stat_array    = get_var_dlength(self->state.handle_fluxStat);
+    std::vector<std::vector<double>> indx_stat_array    = get_var_dlength(self->state.handle_indxStat);
+    std::vector<std::vector<double>> bvar_stat_array    = get_var_dlength(self->state.handle_bvarStat);
+    // primary data structures (scalars)
+    std::vector<int>      time_struct_array             = get_var_i(self->state.handle_timeStruct);
+    std::vector<double>   forc_struct_array             = get_var_d(self->state.handle_forcStruct);
+    std::vector<double>   attr_struct_array             = get_var_d(self->state.handle_attrStruct); 
+    std::vector<int>      type_struct_array             = get_var_i(self->state.handle_typeStruct);
+    std::vector<long int> id_struct_array               = get_var_i8(self->state.handle_idStruct);
+    // primary data structures (variable length vectors)
+    std::vector<std::vector<int>>    indx_struct_array  = get_var_ilength(self->state.handle_indxStruct);
+    std::vector<std::vector<double>> mpar_struct_array  = get_var_dlength(self->state.handle_mparStruct);
+    std::vector<std::vector<double>> prog_struct_array  = get_var_dlength(self->state.handle_progStruct);
+    std::vector<std::vector<double>> diag_struct_array  = get_var_dlength(self->state.handle_diagStruct);
+    std::vector<std::vector<double>> flux_struct_array  = get_var_dlength(self->state.handle_fluxStruct);
+    // basin-average structures
+    std::vector<double>              bpar_struct_array  = get_var_d(self->state.handle_bparStruct);
+    std::vector<std::vector<double>> bvar_struct_array  = get_var_dlength(self->state.handle_bvarStruct);
+    // ancillary data structures
+    std::vector<double>   dpar_struct_array             = get_var_d(self->state.handle_dparStruct);
+    std::vector<int>      finalize_stats_array          = get_flagVec(self->state.handle_finalizeStats);
+    std::vector<int>      output_time_step_array        = get_var_i(self->state.handle_outputTimeStep);
+
+    // Send the output to the file_access_actor            
+    self->send(self->state.file_access_actor, write_output_v,
+        self->state.indxGRU,
+        self->state.indxHRU,
+        // statistic structures
+        forc_stat_array,
+        prog_stat_array,
+        diag_stat_array,
+        flux_stat_array,
+        indx_stat_array,
+        bvar_stat_array,
+        // primary data structures (scalars)
+        time_struct_array,
+        forc_struct_array,
+        attr_struct_array,
+        type_struct_array,
+        id_struct_array,
+        // primary data structures (variable length vectors)
+        indx_struct_array,
+        mpar_struct_array,
+        prog_struct_array,
+        diag_struct_array,
+        flux_struct_array,
+        // basin-average structures
+        bpar_struct_array,
+        bvar_struct_array,
+        // ancillary data structures
+        dpar_struct_array,
+        finalize_stats_array,
+        output_time_step_array);
+
 }
 
 }

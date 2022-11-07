@@ -12,6 +12,9 @@ This actor is used to control job actors and batch sizes. The user can specifies
 
 ## File Access Actor
 
+### Loading in Forcing Data
+Loads Forcing Files in one at a time. The loading of files is initiated by the HRU_Actor by a message to request forcing data. 
+
 ## GRU Actor
 
 ## HRU Actor

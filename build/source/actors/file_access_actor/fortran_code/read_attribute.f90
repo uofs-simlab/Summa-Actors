@@ -309,7 +309,6 @@ subroutine readAttributeFromNetCDF(ncid, index_gru, index_hru, num_var, &
 
   varIndx = get_ixTYPE('downkHRU')
   checkType(varIndx) = .true.
-  ! outputStructure(1)%typeStruct(1)%gru(iGRU)%hru(iHRU)%var(varIndx) = 0
   ! **********************************************************************************************
   ! (4) check that we have all the desired varaibles
   ! **********************************************************************************************

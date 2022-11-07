@@ -147,13 +147,11 @@ int Run_HRU(stateful_actor<hru_state>* self);
 
 bool check_HRU(stateful_actor<hru_state>* self, int err);
 
-void initalizeTimeVars(stateful_actor<hru_state>* self);
-
-void finalizeTimeVars(stateful_actor<hru_state>* self);
-
-void deallocateHRUStructures(stateful_actor<hru_state>* self);
-
+// Prints the timestep - the frequency of printing can be set by the user
 void printOutput(stateful_actor<hru_state>* self);
 
+// Get output from fortran into arrays
+// Send the output to the file_access_actor
+void getAndSendOutput(stateful_actor<hru_state>* self);
 
 }

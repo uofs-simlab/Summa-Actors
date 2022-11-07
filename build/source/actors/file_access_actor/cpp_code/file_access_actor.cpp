@@ -72,10 +72,8 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
         },
 
         [=](access_forcing, int currentFile, caf::actor refToRespondTo) {
-            // aout(self) << "Received Current FIle = " << currentFile << std::endl;
             if (currentFile <= self->state.numFiles) {
                 if(self->state.forcing_file_list[currentFile - 1].isFileLoaded()) { // C++ starts at 0 Fortran starts at 1
-                    // aout(self) << "ForcingFile Already Loaded \n";
                     self->send(refToRespondTo, run_hru_v, 
                         self->state.forcing_file_list[currentFile - 1].getNumSteps());
 
