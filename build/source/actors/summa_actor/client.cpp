@@ -7,6 +7,7 @@ Client::Client(int id, caf::actor client_actor, std::string hostname) {
     this->client_actor = client_actor;
     this->hostname = hostname;
     this->connected = true;
+    this->assigned_batch = false;
 }
 
 // Getters
@@ -30,9 +31,18 @@ std::string Client::getHostname() {
     return this->hostname;
 }
 
+bool Client::getAssignedBatch() {
+    return this->assigned_batch;
+}
+
 // Setters
 void Client::updateCurrentBatchID(int batch_id) {
     this->current_batch_id = batch_id;
+    this->assigned_batch = true;
+}
+
+void Client::setAssignedBatch(bool boolean) {
+    this->assigned_batch = boolean;
 }
 
 // Methods
@@ -65,6 +75,11 @@ void Client_Container::addClient(caf::actor client_actor, std::string hostname) 
 
 }
 
+void Client_Container::setAssignedBatch(int client_id, bool boolean) {
+    int index = findClientByID(client_id);
+    this->client_list[index].setAssignedBatch(boolean);
+}
+
 int Client_Container::getNumClients() {
     return this->num_clients;
 }
@@ -77,7 +92,7 @@ Client Client_Container::getClient(int index) {
     return this->client_list[index];
 }
 
-// Needs to be used direclty after getClient so same index is used
+// Needs to be used directly after getClient so same index is used
 bool Client_Container::checkForLostClient(int index) {
     this->client_list[index].incrementLostPotential();
     if (this->lost_client_threshold < this->client_list[index].getLostPotentialIndicator()) {
@@ -135,6 +150,15 @@ void Client_Container::removeLostClient(int index) {
     this->num_clients--;
 }
 
+std::optional<int> Client_Container::findIdleClientID() {
+    for(int i = 0; i < this->num_clients; i++) {
+        if (!this->client_list[i].getAssignedBatch()) {
+            return this->client_list[i].getID();
+        }
+    }
+
+    return {};
+}
 
 
 

@@ -77,7 +77,7 @@ behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Sett
          * @param batch 
          */
         [=](done_batch, actor client_actor, int client_id, Batch& batch) {
-            aout(self) << "Recieved Completed Batch From Client\n";
+            aout(self) << "Received Completed Batch From Client\n";
     
             aout(self) << batch.toString() << "\n\n";
 
@@ -97,7 +97,9 @@ behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Sett
                 if (self->state.batch_container->getBatchesRemaining() > 0) {
                     
                     aout(self) << "no more batches left to assign\n";
-                    aout(self) << "we are not done yet. Clients could Fail\n";
+                    aout(self) << "Keeping Client connected because other clients could Fail\n";
+
+                    self->state.client_container->setAssignedBatch(client_id, false);
 
                 } else {
                     aout(self) << "Telling Clients To Exit\n"; 
@@ -121,15 +123,19 @@ behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Sett
         [=](check_on_clients) {
             for (int i = 0; i < self->state.client_container->getNumClients(); i++) {
                 Client client = self->state.client_container->getClient(i);
-                if(self->state.client_container->checkForLostClient(i)) {
-                    // Client May Be Lost
+
+                if(self->state.client_container->checkForLostClient(i)) { // Client is lost
                     aout(self) << "Client " << client.getID() << " is considered lost\n";
 
                     self->state.batch_container->updateBatchStatus_LostClient(client.getCurrentBatchID());
 
                     self->state.client_container->removeLostClient(i);
 
-                } else {
+                    // now see if we have any idle clients
+                    self->state.client_container->findIdleClientID();
+
+
+                } else {    // No loss send another heartbeat
                     self->send(client.getActor(), heartbeat_v);
                 }
             }

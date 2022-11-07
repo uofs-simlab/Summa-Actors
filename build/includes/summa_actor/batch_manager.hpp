@@ -132,7 +132,8 @@ class Batch_Container {
         void printBatches();
 
         /**
-         * @brief 
+         * @brief Find the batch with the batch_id parameter
+         * update the batches assigned actor member variable to false
          * 
          */
         void updateBatchStatus_LostClient(int batch_id);
