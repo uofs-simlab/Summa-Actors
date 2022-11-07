@@ -51,6 +51,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
         self->quit();
     }
 
+    aout(self) << "NumSteps = " << self->state.num_steps << std::endl;  
 
     // Get attributes
     self->send(self->state.file_access_actor, get_attributes_params_v, self->state.indxGRU, self);
@@ -138,8 +139,9 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
                 self->state.timestep += 1;
 
                 // HRU has finished
-                if (self->state.timestep >= self->state.num_steps) {
-                    self->send(self, done_write_v);
+                if (self->state.timestep > self->state.num_steps) {
+                    self->send(self, done_hru_v);
+                    break;
                 }
             }
 
@@ -151,37 +153,27 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
             self->state.hru_timing.updateEndPoint("total_duration");
         },
 
-        [=](done_write) {
-            self->state.hru_timing.updateStartPoint("total_duration");
+        [=](done_hru) {
 
-            // We receive a done_write message so we ensure that
-            // stepsInCurrentFFile remains unchanged
-            if (self->state.timestep >= self->state.num_steps) {
-                self->state.hru_timing.updateEndPoint("total_duration");
+            // Tell our parent we are done, convert all timings to seconds
+            aout(self) << "\n________________HRU TIMING INFO RESULTS________________\n";
+            aout(self) << "Total Duration = " << self->state.hru_timing.getDuration("total_duration").value_or(-1.0) << " Seconds\n";
+            aout(self) << "Init Duration = " << self->state.hru_timing.getDuration("init_duration").value_or(-1.0) << " Seconds\n";
+            aout(self) << "Forcing Duration = " << self->state.hru_timing.getDuration("forcing_duration").value_or(-1.0) << " Seconds\n";
+            aout(self) << "Run Physics Duration = " << self->state.hru_timing.getDuration("run_physics_duration").value_or(-1.0) << " Seconds\n";
+            aout(self) << "Write Output Duration = " << self->state.hru_timing.getDuration("write_output_duration").value_or(-1.0) << " Seconds\n\n";
 
-                // Tell our parent we are done, convert all timings to seconds
-                aout(self) << "\n________________HRU TIMING INFO RESULTS________________\n";
-                aout(self) << "Total Duration = " << self->state.hru_timing.getDuration("total_duration").value_or(-1.0) << " Seconds\n";
-                aout(self) << "Init Duration = " << self->state.hru_timing.getDuration("init_duration").value_or(-1.0) << " Seconds\n";
-                aout(self) << "Forcing Duration = " << self->state.hru_timing.getDuration("forcing_duration").value_or(-1.0) << " Seconds\n";
-                aout(self) << "Run Physics Duration = " << self->state.hru_timing.getDuration("run_physics_duration").value_or(-1.0) << " Seconds\n";
-                aout(self) << "Write Output Duration = " << self->state.hru_timing.getDuration("write_output_duration").value_or(-1.0) << " Seconds\n\n";
-
-                self->send(self->state.parent, 
-                    done_hru_v,
-                    self->state.indxGRU, 
-                    self->state.hru_timing.getDuration("total_duration").value_or(-1.0),
-                    self->state.hru_timing.getDuration("init_duration").value_or(-1.0), 
-                    self->state.hru_timing.getDuration("forcing_duration").value_or(-1.0), 
-                    self->state.hru_timing.getDuration("run_physics_duration").value_or(-1.0), 
-                    self->state.hru_timing.getDuration("write_output_duration").value_or(-1.0));
-                
-                self->quit();
-                return;
-            }
-
-            self->state.hru_timing.updateEndPoint("total_duration");
-            self->send(self, run_hru_v, self->state.stepsInCurrentFFile);
+            self->send(self->state.parent, 
+                done_hru_v,
+                self->state.indxGRU, 
+                self->state.hru_timing.getDuration("total_duration").value_or(-1.0),
+                self->state.hru_timing.getDuration("init_duration").value_or(-1.0), 
+                self->state.hru_timing.getDuration("forcing_duration").value_or(-1.0), 
+                self->state.hru_timing.getDuration("run_physics_duration").value_or(-1.0), 
+                self->state.hru_timing.getDuration("write_output_duration").value_or(-1.0));
+            
+            self->quit();
+            return;
         },
 
         [=](dt_init_factor, int dt_init_factor) {
@@ -344,36 +336,6 @@ int Run_HRU(stateful_actor<hru_state>* self) {
 
     return 0;      
 }
-
-// bool check_HRU(stateful_actor<hru_state>* self, int err) {
-
-//     if (err != 0) { 
-//         // check for error
-        
-//         self->send(self->state.parent, run_failure_v, self, self->state.indxGRU, err);
-//         self->quit();
-//         return false;
-    
-//     } else if (self->state.timestep >= self->state.num_steps) {
-//         // check if simulation is finished
-
-//         self->state.hru_timing.updateEndPoint("total_duration");
-
-//         return false; 
-
-//     } else if (self->state.forcingStep > self->state.stepsInCurrentFFile) {
-//         // we need more forcing data
-//         aout(self) << "Requesting File:" << self->state.iFile << "\n";
-//         aout(self) << "forcingStep = " << self->state.forcingStep << "\n";
-//         aout(self) << "stepsInCurrentFile = " << self->state.stepsInCurrentFFile << "\n";  
-//         self->send(self->state.file_access_actor, access_forcing_v, self->state.iFile + 1, self);
-
-//         return false;
-
-//     } else {
-//         return true;
-//     }
-// }
 
 void printOutput(stateful_actor<hru_state>* self) {
         aout(self) << self->state.refGRU << " - Timestep = " << self->state.timestep << std::endl;
