@@ -3,77 +3,45 @@
 #include "caf/all.hpp"
 #include "batch_manager.hpp"
 #include <vector>
+#include <sstream>
 
 
 class Client {
     private:
+        // Identifying Characteristics 
+        caf::actor client_actor;
+        std::string hostname;
+
         int id;
         int batches_solved;
         bool connected;
         bool assigned_batch;
-        caf::actor client_actor;
-        std::string hostname;
         int current_batch_id;
-        int lost_Potential_indicator; // value to indicate the Potential that a client is lost.
+
+        int lost_potential_indicator = 0; // value to indicate the Potential that a client is lost.
         // The greater the lost_Potential_indicator the greater chances the client has been lost.
 
 
     public:
-        /**
-         * @brief Construct a new Client object
-         * 
-         * @param id 
-         * @param client_actor 
-         * @param hostname 
-         */
         Client(int id, caf::actor client_actor, std::string hostname);
-
-        // Getters
-        /**
-         * @brief Returns the actor_reference of the client
-         */
+        // ####################################################################
+        //                              Getters
+        // ####################################################################
         caf::actor getActor();
-               /**
-         * @brief Get the value of the lost_Potential_indicator variable.
-         * @return int 
-         */
         int getLostPotentialIndicator();
-
-        /**
-         * @brief Returns the ID of the client
-         */
         int getID();
-
-        /**
-         * @brief Get the current_batch_id
-         */
         int getCurrentBatchID();
-
-        /**
-         * @brief Get the Hostname of the client
-         */
         std::string getHostname();
-
-        /**
-        * See if the client is assigned a batch or not
-        */
         bool getAssignedBatch();
-
-        // Setters
-        /**
-         * @brief Sets the batch_id of the batch the client is currently computing
-         */
+        // ####################################################################
+        //                              Setters
+        // ####################################################################
         void updateCurrentBatchID(int batch_id);
-
-        /**
-         * Sets the assigned_batch variable to true or false
-         */
         void setAssignedBatch(bool boolean);
-        
         
         // methods
         /**
-         * @brief Increments the lost_likley_hood indicator variable
+         * @brief Increments the lost_likely_hood indicator variable
          * this is done everytime a client is sent a heartbeat message
          * 
          * checks if the client is likely lost or not
@@ -87,57 +55,40 @@ class Client {
          */
         void decrementLostPotential();
 
+        /**
+         * Check if the clients lost_potential_indicator is over a certain
+         * threshold
+        */
+        bool isLost(int threshold);
+
+
+        std::string toString();
+
 };
 
-////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////
 
 class Client_Container {
     private:
         int num_clients = 0;
         int lost_client_threshold; // value to determine if client is lost
-        std::vector<Client> client_list;
+        std::vector<Client> connected_client_list;
+        std::vector<Client> lost_client_list;
 
 
     public:
-        /**
-         * @brief Construct a new Client_Container object
-         */
         Client_Container(int lost_node_threshold);
-
-        // Getters
-        /**
-         * @brief Get the number of connected clients
-         * 
-         * @return int 
-         */
+        // ####################################################################
+        //                              Getters
+        // ####################################################################
         int getNumClients();
-        
-        /**
-         * @brief Get the Client ID of a cleint from its actor ref
-         * 
-         * @param cleint_actor 
-         * @return int 
-         */
         int getClientID(caf::actor client_actor);
-        
-        /**
-         * @brief Get a client from the client list
-         * This is used when we need to get all of the 
-         * clients but we do not want to remove them
-         * from the client_list;
-         * @param index 
-         * @return Client 
-         */
         Client getClient(int index);
+        std::vector<Client> getConnectedClientList();
+        std::vector<Client> getLostClientList();
 
-        /**
-         * Find the client by client_id and set its assigned batch to the boolean argument
-        */
+        // ####################################################################
+        //                              Setters
+        // ####################################################################
         void setAssignedBatch(int client_id, bool boolean);
 
         // Methods
@@ -171,6 +122,8 @@ class Client_Container {
          * to the server
          */
         void decrementLostPotential(int client_id);
+
+        void incrementLostPotential(int client_id);
 
         /**
          * @brief Removes a client from the back of the list
@@ -212,5 +165,27 @@ class Client_Container {
         /**
          * Look for an idle client
          */
-        std::optional<int> findIdleClientID();
+        std::optional<Client> findIdleClient();
+
+
+        /**
+            Function that checks for lost clients
+            Returns true if clients are lost and false if they are none
+        */
+        bool checkForLostClients();
+
+        /**
+         * Transfer all lost batches
+        */
+        void reconcileLostBatches(Batch_Container* batch_container);
+
+        std::string connectedClientsToString();
+
+        std::string lostClientsToString();
+
+
+        // /**
+        //  * Sends all connected clients a heartbeat message
+        // */
+        // void sendAllClientsHeartbeat(stateful_actor<summa_server_state>* self);
 };

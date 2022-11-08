@@ -385,7 +385,7 @@ compile_main:
 	$(CC) $(FLAGS_ACTORS) -c $(MAIN) $(GLOBAL_INCLUDES) $(SUMMA_ACTOR_INCLUDES) $(JOB_ACTOR_INCLUDES)
 
 link_cpp:
-	$(CC) $(FLAGS_ACTORS) -o summaMain *.o $(ACTORS_LIBRARIES)
+	$(CC) $(FLAGS_ACTORS) -Wl,-rpath='/Summa-Actors/bin:/usr/local/lib:/code/sundials/instdir/lib' -o summaMain *.o $(ACTORS_LIBRARIES)
 	mv summaMain $(ROOT_DIR)/bin
 
 clean_cpp:
