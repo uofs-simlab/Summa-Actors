@@ -10,6 +10,7 @@ class Client {
         int id;
         int batches_solved;
         bool connected;
+        bool assigned_batch;
         caf::actor client_actor;
         std::string hostname;
         int current_batch_id;
@@ -53,12 +54,23 @@ class Client {
          */
         std::string getHostname();
 
+        /**
+        * See if the client is assigned a batch or not
+        */
+        bool getAssignedBatch();
+
         // Setters
         /**
          * @brief Sets the batch_id of the batch the client is currently computing
          */
         void updateCurrentBatchID(int batch_id);
 
+        /**
+         * Sets the assigned_batch variable to true or false
+         */
+        void setAssignedBatch(bool boolean);
+        
+        
         // methods
         /**
          * @brief Increments the lost_likley_hood indicator variable
@@ -122,6 +134,11 @@ class Client_Container {
          * @return Client 
          */
         Client getClient(int index);
+
+        /**
+         * Find the client by client_id and set its assigned batch to the boolean argument
+        */
+        void setAssignedBatch(int client_id, bool boolean);
 
         // Methods
         /**
@@ -187,5 +204,13 @@ class Client_Container {
          */
         int findClientByID(int client_id);
 
+        /**
+        * Removes client from client container that has lost connection
+        */
         void removeLostClient(int index);
+
+        /**
+         * Look for an idle client
+         */
+        std::optional<int> findIdleClientID();
 };
