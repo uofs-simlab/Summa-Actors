@@ -18,7 +18,7 @@ behavior summa_client(stateful_actor<summa_client_state>* self, std::optional<st
         if(dm.source == self->state.current_server) {
             aout(self) << "*** Lost Connection to Server" << std::endl;
             self->state.current_server = nullptr;
-            self->become(unconnected(self));
+            // self->become(unconnected(self));
         }
     });
     return unconnected(self);
@@ -116,7 +116,13 @@ behavior running(stateful_actor<summa_client_state>* self, const actor& server_a
             self->state.current_batch.updateReadTime(read_time);
             self->state.current_batch.updateWriteTime(write_time);
 
-            self->send(server_actor, done_batch_v, self, self->state.client_id, self->state.current_batch);
+            if(self->state.current_server == nullptr) {
+                aout(self) << "Maybe We Should not Send this\n";
+            } else {
+                self->send(server_actor, done_batch_v, self, self->state.client_id, self->state.current_batch);
+
+            }
+
         },
 
         [=](heartbeat) {

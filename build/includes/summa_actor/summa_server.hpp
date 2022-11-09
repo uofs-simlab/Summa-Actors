@@ -12,8 +12,8 @@
 namespace caf {
 
 struct summa_server_state {
-    actor backup_server;
-    
+    actor backup_server = nullptr;
+    actor backup_server2 = nullptr;
     int num_clients;
     int batches_remaining = 0;
     int batches_solved = 0;

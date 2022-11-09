@@ -12,17 +12,20 @@ behavior summa_backup_server(stateful_actor<summa_backup_state>* self) {
     self->set_down_handler([=](const down_msg& dm){
         if(dm.source == self->state.current_server) {
             aout(self) << "*** Lost Connection to Server" << std::endl;
+            uint16_t port = 4444;
+            std::string host = "a0449745d77d";
+            connecting(self, host, port);
 
-            auto new_server = self->spawn(backup_server);
+            // auto new_server = self->spawn(backup_server);
 
-            int port = 4444;
-            aout(self) << "Attempting to publish backup server on port - " << port << std::endl;
-            auto is_port = io::publish(new_server, port);
-            if (!is_port) {
-                std::cerr << "********PUBLISH FAILED*******" << to_string(is_port.error()) << "\n";
-                return;
-            }
-            aout(self) << "Successfully Published summa_server_actor on port " << *is_port << "\n";
+            // int port = 4444;
+            // aout(self) << "Attempting to publish backup server on port - " << port << std::endl;
+            // auto is_port = io::publish(new_server, port);
+            // if (!is_port) {
+            //     std::cerr << "********PUBLISH FAILED*******" << to_string(is_port.error()) << "\n";
+            //     return;
+            // }
+            // aout(self) << "Successfully Published summa_server_actor on port " << *is_port << "\n";
 
             // self->state.current_server = nullptr;
             // self->become(unconnected(self));
@@ -79,20 +82,40 @@ behavior running(stateful_actor<summa_backup_state>* self, const actor& server_a
     return {
         [=](connect_as_backup) {
             aout(self) << "Successfully connected to current server\n";
-        }
+        },
+
+        [=](connect_as_backup, actor other_actor, int num_to_send) {
+            aout(self) << "Received other actor Can we send them a message?\n";
+            self->state.backup = other_actor;
+            self->send(self->state.backup, connect_as_backup_v, num_to_send);
+
+        },
+
+        [=](connect_as_backup, int num_to_send) {
+            aout(self) << "Received message from the other actor\n";
+            aout(self) << "We Got the number " << num_to_send << std::endl;
+            std::this_thread::sleep_for(std::chrono::seconds(2));
+            num_to_send++;
+            self->send(self->state.backup, connect_as_backup_v, num_to_send);
+            
+        },
 
 
     };
 }
 
-behavior backup_server(stateful_actor<summa_backup_state>* self) {
-    aout(self) << "Published\n";
-    return {
-        [=] (connect_as_backup) {
+// behavior backup_server(stateful_actor<summa_backup_state>* self) {
+//     aout(self) << "Published\n";
+//     return {
+//         [=] (connect_as_backup) {
 
-        }
-    };
-}
+//         }
+
+
+
+
+//     };
+// }
 
 
 

@@ -8,6 +8,7 @@ namespace caf {
     struct summa_backup_state {
         strong_actor_ptr current_server;
         std::string hostname;
+        actor backup;
     };
 
 behavior summa_backup_server(stateful_actor<summa_backup_state>* self);

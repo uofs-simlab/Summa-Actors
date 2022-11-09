@@ -20,10 +20,15 @@ behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Sett
     aout(self) << "Summa Server has Started \n";
     
     self->set_down_handler([=](const down_msg& dm) {
-        aout(self) << "Lost A Client\n";
+
+        if (dm.source == self->state.backup_server) {
+            aout(self) << "Lost Client 1\n";
+        }
+
+        if (dm.source == self->state.backup_server2) {
+            aout(self) << "Lost Client 2\n";
+        }
     });
-    
-    
     
     self->state.distributed_settings = distributed_settings;
     self->state.summa_actor_settings = summa_actor_settings; 
@@ -72,7 +77,15 @@ behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Sett
 
         [=](connect_as_backup, actor backup_server) {
             aout(self) << "Received Connection Request From a backup server\n";
-            self->state.backup_server = backup_server;
+            if (self->state.backup_server == nullptr) {
+                aout(self) << "Setup Backup Server\n";
+                self->state.backup_server = backup_server;
+            } else if (self->state.backup_server2 == nullptr) {
+                aout(self) << "Setup Backup Server 2\n";
+                self->state.backup_server2 = backup_server;
+                self->send(self->state.backup_server, connect_as_backup_v, self->state.backup_server2, 56);
+                self->send(self->state.backup_server2, connect_as_backup_v, self->state.backup_server, 89);
+            }
             self->monitor(backup_server);
             self->send(self->state.backup_server, connect_as_backup_v); // confirm connection
         },
