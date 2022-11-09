@@ -12,9 +12,12 @@
 namespace caf {
 
 struct summa_server_state {
+    actor backup_server;
+    
     int num_clients;
     int batches_remaining = 0;
     int batches_solved = 0;
+    
     std::string config_path;
     std::vector<Batch> batch_list;
     std::vector<Batch> solved_batches;
@@ -41,7 +44,7 @@ behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Sett
 
 void sendClientsHeartbeat(stateful_actor<summa_server_state>* self);
 
-behavior cleint_health_check_reminder(event_based_actor* self);
+behavior client_health_check_reminder(event_based_actor* self);
 
 int assembleBatches(stateful_actor<summa_server_state>* self);
 

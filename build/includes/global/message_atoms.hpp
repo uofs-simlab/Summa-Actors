@@ -99,6 +99,10 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     CAF_ADD_ATOM(summa, connect_to_server)
     // Sender:
     // Reciever:
+    // Summary:
+    CAF_ADD_ATOM(summa, connect_as_backup)
+    // Sender:
+    // Reciever:
     // Summary:    
     CAF_ADD_ATOM(summa, compute_batch)
     // Sender:

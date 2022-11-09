@@ -16,8 +16,15 @@ namespace caf {
 behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Settings distributed_settings, 
     Summa_Actor_Settings summa_actor_settings, File_Access_Actor_Settings file_access_actor_settings,
     Job_Actor_Settings job_actor_settings, HRU_Actor_Settings hru_actor_settings) {
-        
+    
     aout(self) << "Summa Server has Started \n";
+    
+    self->set_down_handler([=](const down_msg& dm) {
+        aout(self) << "Lost A Client\n";
+    });
+    
+    
+    
     self->state.distributed_settings = distributed_settings;
     self->state.summa_actor_settings = summa_actor_settings; 
     self->state.file_access_actor_settings = file_access_actor_settings;
@@ -34,18 +41,12 @@ behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Sett
     initializeCSVOutput(self->state.job_actor_settings.csv_path, self->state.csv_output_name);
 
      // Start the heartbeat actor after a client has connected
-    self->state.health_check_reminder_actor = self->spawn(cleint_health_check_reminder);
+    self->state.health_check_reminder_actor = self->spawn(client_health_check_reminder);
     self->send(self->state.health_check_reminder_actor, 
         start_health_check_v, self, self->state.distributed_settings.heartbeat_interval);
 
     return {
-        /**
-         * @brief A message from a client requesting to connect
-         * 
-         * @param client the actor_ref of the client_actor 
-         * (used to send messages to the client_actor)
-         * @param hostname human readable hostname of the machine that the actor is running on
-         */
+        // A message from a client requesting to connect
         [=](connect_to_server, actor client_actor, std::string hostname) {
 
             aout(self) << "Actor trying to connect with hostname " << hostname << "\n";
@@ -69,13 +70,13 @@ behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Sett
  
         },
 
-        /**
-         * @brief Construct a new [=] object
-         * 
-         * @param client_actor 
-         * @param client_id 
-         * @param batch 
-         */
+        [=](connect_as_backup, actor backup_server) {
+            aout(self) << "Received Connection Request From a backup server\n";
+            self->state.backup_server = backup_server;
+            self->monitor(backup_server);
+            self->send(self->state.backup_server, connect_as_backup_v); // confirm connection
+        },
+
         [=](done_batch, actor client_actor, int client_id, Batch& batch) {
             aout(self) << "Received Completed Batch From Client\n";
     
@@ -176,7 +177,7 @@ void initializeCSVOutput(std::string csv_output_path, std::string csv_output_nam
 
 
 
-behavior cleint_health_check_reminder(event_based_actor* self) {
+behavior client_health_check_reminder(event_based_actor* self) {
     return {
 
         [=](start_health_check, caf::actor summa_server, int sleep_duration) {
