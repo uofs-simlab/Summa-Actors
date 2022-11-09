@@ -121,6 +121,18 @@ behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Sett
             // Loop Through All Clients To see if any are lost
             if (self->state.client_container->checkForLostClients()) {
                 self->state.client_container->reconcileLostBatches(self->state.batch_container);
+                std::optional<Client> client = self->state.client_container->findIdleClient();
+                if(client.has_value()) {
+                    std::optional<Batch> new_batch = self->state.batch_container->assignBatch(
+                        self->state.client_container->getHostname_ByClientID(client.value().getID()), 
+                        client.value().getActor());
+            
+                    if (new_batch.has_value()) {
+            
+                        self->send(client.value().getActor(), new_batch.value());
+            
+                    }
+                }
             }
            sendClientsHeartbeat(self);
 

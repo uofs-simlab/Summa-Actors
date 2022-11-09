@@ -153,10 +153,6 @@ int Client_Container::findClientByID(int client_id) {
     throw "Cannot Find Client";
 }
 
-// void Client_Container::removeLostClient(int index) {
-//     this->client_list.erase(this->client_list.begin() + index);
-//     this->num_clients--;
-// }
 
 std::optional<Client> Client_Container::findIdleClient() {
     for(int i = 0; i < this->num_clients; i++) {
@@ -184,7 +180,11 @@ bool Client_Container::checkForLostClients() {
 
 
 void Client_Container::reconcileLostBatches(Batch_Container* batch_container) {
-    std::cout << "HERE\n";
+    for(auto client = begin(this->lost_client_list); client != end(this->lost_client_list); ++client) {
+        batch_container->updateBatchStatus_LostClient(client->getCurrentBatchID());
+    }
+
+    this->lost_client_list.clear();
 }
 
 std::string Client_Container::connectedClientsToString() {
@@ -203,10 +203,6 @@ std::string Client_Container::lostClientsToString() {
     return out_string.str();
 }
 
-// void Client_Container::sendAllClientsHeartbeat(stateful_actor<summa_server_state>* self) {
-//     for (auto client = begin(this->connected_client_list); client != end(this->connected_client_list); ++client)
-//         self->send(client->getActor(), heartbeat_v);
-// }
 
 
 
