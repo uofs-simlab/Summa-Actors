@@ -9,6 +9,8 @@ INCLUDE_DIR = /Summa-Actors/build/includes
 SUMMA_ACTOR_INCLUDES = -I$(INCLUDE_DIR)/summa_actor
 SETTINGS_FILES = $(SOURCE_DIR)/global/settings_functions.cpp
 GLOBAL_INCLUDES = -I$(INCLUDE_DIR)/global
+SUMMA_SERVER = $(SOURCE_DIR)/summa_actor/summa_server.cpp
+SUMMA_SERVER_BACKUP = $(SOURCE_DIR)/summa_actor/summa_backup_server.cpp
 
 BATCH_MANGER = $(SOURCE_DIR)/summa_actor/batch_manager.cpp
 CLIENT_MANAGER = $(SOURCE_DIR)/summa_actor/client.cpp
@@ -19,7 +21,7 @@ all: compile link clean
 
 compile:
 	g++ $(FLAGS) -c main.cpp test.cpp $(BATCH_MANGER) $(CLIENT_MANAGER) $(SETTINGS_FILES) \
-		$(SUMMA_ACTOR_INCLUDES) $(GLOBAL_INCLUDES) $(INCLUDES)
+		$(SUMMA_SERVER) $(SUMMA_SERVER_BACKUP) $(SUMMA_ACTOR_INCLUDES) $(GLOBAL_INCLUDES) $(INCLUDES)
 
 link:
 	g++ $(FLAGS) -Wl,-rpath='/usr/local/lib' -o main *.o $(LIBRARIES)

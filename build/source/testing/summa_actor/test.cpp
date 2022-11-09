@@ -1,5 +1,6 @@
 #include "test.hpp"
 #include "client.hpp"
+#include "batch_manager.hpp"
 #include <vector>
 #include "caf/all.hpp"
 
@@ -13,6 +14,7 @@ void TEST_CLIENT() {
     
     Client_Container* client_container = new Client_Container(lost_node_threshold);
     
+    // Set Up Client_Container
     caf::actor dummy1;
     std::string dummy_host1 = "dummy1";
     caf::actor dummy2;
@@ -28,21 +30,27 @@ void TEST_CLIENT() {
     client_container->addClient(dummy3, dummy_host3);
     client_container->addClient(dummy4, dummy_host4);
     client_container->addClient(dummy5, dummy_host5);
+
+    // Set up Batch Container
+    int total_hru_count = 12;
+    int num_hru_per_batch = 2;
+    Batch_Container* batch_container = new Batch_Container(total_hru_count,num_hru_per_batch);
+    batch_container->printBatches();
+
+    // client_container->incrementLostPotential(3);
+    // client_container->incrementLostPotential(3);
+
+    // IS_TRUE(!client_container->checkForLostClients());
     
-    client_container->incrementLostPotential(3);
-    client_container->incrementLostPotential(3);
+    // client_container->incrementLostPotential(3);
+    // client_container->incrementLostPotential(3);
 
-    IS_TRUE(!client_container->checkForLostClients());
-    
-    client_container->incrementLostPotential(3);
-    client_container->incrementLostPotential(3);
+    // IS_TRUE(!client_container->checkForLostClients());
 
-    IS_TRUE(!client_container->checkForLostClients());
-
-    std::cout << "********************************************\n";
-    std::cout << client_container->connectedClientsToString();
-    std::cout << "********************************************\n";
-    std::cout << client_container->lostClientsToString();
+    // std::cout << "********************************************\n";
+    // std::cout << client_container->connectedClientsToString();
+    // std::cout << "********************************************\n";
+    // std::cout << client_container->lostClientsToString();
 
 
 }
