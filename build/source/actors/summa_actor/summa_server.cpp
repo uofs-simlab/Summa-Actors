@@ -116,49 +116,19 @@ behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Sett
             }
         },
 
-        /**
-         * @brief Construct a new [=] object
-         */
+        // check for lost clients, send all connected a message
         [=](check_on_clients) {
             // Loop Through All Clients To see if any are lost
             if (self->state.client_container->checkForLostClients()) {
                 self->state.client_container->reconcileLostBatches(self->state.batch_container);
             }
-            // self->state.client_container->sendAllClientsHeartbeat(self);
+           sendClientsHeartbeat(self);
 
-
-            // // 
-            // for (int i = 0; i < self->state.client_container->getNumClients(); i++) {
-            //     Client client = self->state.client_container->getClient(i);
-
-            //     if(self->state.client_container->checkForLostClient(i)) { // Client is lost
-            //         aout(self) << "Client " << client.getID() << " is considered lost\n";
-
-            //         self->state.batch_container->updateBatchStatus_LostClient(client.getCurrentBatchID());
-
-            //         self->state.client_container->removeLostClient(i);
-
-            //         // now see if we have any idle clients
-            //         std::optional<Client>  = self->state.client_container->findIdleClientID();
-            //         if (idle_client_id.has_value()) {
-            //             // Send the idle client the batch that the lost node was computing
-            //             self->state.client_container.getActor();
-            //             self->send()
-            //         }
-
-            //     } else {    // No loss send another heartbeat
-            //         self->send(client.getActor(), heartbeat_v);
-            //     }
-            // }
             self->send(self->state.health_check_reminder_actor, 
                 start_health_check_v, self, self->state.distributed_settings.heartbeat_interval);
         },
 
-        /**
-         * @brief Construct a new [=] object
-         * 
-         * @param client_id 
-         */
+        // Received heartbeat from client
         [=](heartbeat, int client_id) {
             aout(self) << "Received HeartBeat From: " << client_id << "\n";
             self->state.client_container->decrementLostPotential(client_id);
@@ -166,6 +136,12 @@ behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Sett
     };
 }
 
+void sendClientsHeartbeat(stateful_actor<summa_server_state>* self) {
+    std::vector<Client> connected_clients = self->state.client_container->getConnectedClientList();
+    for(auto client = begin(connected_clients); client != end(connected_clients); ++client) {
+        self->send(client->getActor(), heartbeat_v);
+    }
+}
 
 void initializeCSVOutput(std::string csv_output_path, std::string csv_output_name) {
     std::ofstream csv_output;

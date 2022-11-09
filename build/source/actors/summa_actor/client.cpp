@@ -14,27 +14,21 @@ Client::Client(int id, caf::actor client_actor, std::string hostname) {
 caf::actor Client::getActor() {
     return this->client_actor;
 }
-
 int Client::getLostPotentialIndicator() {
     return this->lost_potential_indicator;
 }
-
 int Client::getID() {
     return this->id;
 }
-
 int Client::getCurrentBatchID() {
     return this->current_batch_id;
 }
-
 std::string Client::getHostname() {
     return this->hostname;
 }
-
 bool Client::getAssignedBatch() {
     return this->assigned_batch;
 }
-
 // Setters
 void Client::updateCurrentBatchID(int batch_id) {
     this->current_batch_id = batch_id;
@@ -107,15 +101,9 @@ Client Client_Container::getClient(int index) {
     return this->connected_client_list[index];
 }
 
-// Needs to be used directly after getClient so same index is used
-// bool Client_Container::checkForLostClient(int index) {
-//     this->client_list[index].incrementLostPotential();
-//     if (this->lost_client_threshold < this->client_list[index].getLostPotentialIndicator()) {
-//         return true;
-//     } else {
-//         return false;
-//     }
-// }
+std::vector<Client> Client_Container::getConnectedClientList() {
+    return this->connected_client_list;
+}
 
 void Client_Container::decrementLostPotential(int client_id) {
     int index = findClientByID(client_id);

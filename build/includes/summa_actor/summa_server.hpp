@@ -38,8 +38,14 @@ struct summa_server_state {
 behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Settings distributed_settings, 
     Summa_Actor_Settings summa_actor_settings, File_Access_Actor_Settings file_access_actor_settings,
     Job_Actor_Settings job_actor_settings, HRU_Actor_Settings hru_actor_settings);
+
+void sendClientsHeartbeat(stateful_actor<summa_server_state>* self);
+
 behavior cleint_health_check_reminder(event_based_actor* self);
+
 int assembleBatches(stateful_actor<summa_server_state>* self);
+
 std::optional<int> getUnsolvedBatchID(stateful_actor<summa_server_state>* self);
+
 void initializeCSVOutput(std::string csv_output_path, std::string csv_output_name);
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "caf/all.hpp"
+// #include "summa_server.hpp"
 #include "batch_manager.hpp"
 #include <vector>
 #include <sstream>
@@ -111,12 +112,6 @@ class Client_Container {
         void updateCurrentBatch(int client_id, int batch_id);
        
         /**
-         * @brief Increments the lost_potential indicator variable
-         * this is done everytime a client is sent a heartbeat message
-         */
-        bool checkForLostClient(int index);
-
-        /**
          * @brief Decrement the lost_likley_hood indicator variables
          * this is done everytime a client sends a heartbeat message back 
          * to the server
@@ -184,8 +179,8 @@ class Client_Container {
         std::string lostClientsToString();
 
 
-        // /**
-        //  * Sends all connected clients a heartbeat message
-        // */
+        /**
+         * Sends all connected clients a heartbeat message
+        */
         // void sendAllClientsHeartbeat(stateful_actor<summa_server_state>* self);
 };
