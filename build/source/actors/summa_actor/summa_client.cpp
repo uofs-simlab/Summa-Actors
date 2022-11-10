@@ -11,8 +11,7 @@
 
 namespace caf {
 
-behavior summa_client(stateful_actor<summa_client_state>* self, std::optional<std::string> config_path) {
-    self->state.config_path = config_path;
+behavior summa_client(stateful_actor<summa_client_state>* self) {
 
     self->set_down_handler([=](const down_msg& dm){
         if(dm.source == self->state.current_server) {

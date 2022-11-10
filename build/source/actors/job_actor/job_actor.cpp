@@ -13,17 +13,12 @@ using json = nlohmann::json;
 
 namespace caf {
 
-/**
- * @brief First Actor that is spawned that is not the Coordinator Actor.
- * 
- * @param self 
- * @return behavior 
- */
+// First Actor that is spawned that is not the Coordinator Actor.
 behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru, 
     File_Access_Actor_Settings file_access_actor_settings, Job_Actor_Settings job_actor_settings, 
     HRU_Actor_Settings hru_actor_settings, caf::actor parent) {
 
-    // Timinig Information
+    // Timing Information
     self->state.job_timing = TimingInfo();
     self->state.job_timing.addTimePoint("total_duration");
     self->state.job_timing.updateStartPoint("total_duration");
@@ -82,9 +77,6 @@ behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru,
         },
 
         [=](done_init_hru) {
-            if (debug) {
-                aout(self) << "Done Init\n";
-            }
 
             self->state.gru_init++;
             if (self->state.gru_init >= self->state.num_gru) {
@@ -151,15 +143,6 @@ behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru,
 
         [=](file_access_actor_done, double read_duration, double write_duration) {
             int err = 0;
-            if (debug) {
-                aout(self) << "\n********************************\n";
-                aout(self) << "Outputing Timing Info for HRUs\n";
-                
-                for(auto gru : self->state.gru_list) {
-                    gru->printOutput();
-                }
-                aout(self) << "********************************\n";
-            }
             // Delete GRUs
             for (auto GRU : self->state.gru_list) {
                 delete GRU;

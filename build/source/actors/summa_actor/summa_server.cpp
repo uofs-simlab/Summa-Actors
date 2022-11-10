@@ -51,6 +51,11 @@ behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Sett
         start_health_check_v, self, self->state.distributed_settings.heartbeat_interval);
 
     return {
+        // For when a backup server attempts to connect to the main server
+        [=] (connect_atom, const std::string& host, uint16_t port) {
+            connecting(self, host, port);
+        },
+
         // A message from a client requesting to connect
         [=](connect_to_server, actor client_actor, std::string hostname) {
 
@@ -186,6 +191,35 @@ void initializeCSVOutput(std::string csv_output_path, std::string csv_output_nam
         "Read_Time," <<
         "Write_Time\n";
     csv_output.close();
+}
+
+void connecting(stateful_actor<summa_server_state>* self, const std::string& host, uint16_t port) {
+    self->state.current_server = nullptr;
+
+    auto mm = self->system().middleman().actor_handle();
+    self->request(mm, infinite, connect_atom_v, host, port)
+        .await(
+            [=](const node_id&, strong_actor_ptr serv,
+                const std::set<std::string>& ifs) {
+                if (!serv) {
+                    aout(self) << R"(*** no server found at ")" << host << R"(":)" << port
+                     << std::endl;
+                    return;
+                }
+                if (!ifs.empty()) {
+                    aout(self) << R"(*** typed actor found at ")" << host << R"(":)"
+                        << port << ", but expected an untyped actor " << std::endl;
+                    return;
+                }
+                aout(self) << "*** successfully connected to server" << std::endl;
+                self->state.current_server = serv;
+                auto hdl = actor_cast<actor>(serv);
+                self->monitor(hdl);
+                },
+            [=](const error& err) {
+                aout(self) << R"(*** cannot connect to ")" << host << R"(":)" << port
+                   << " => " << to_string(err) << std::endl;
+        });
 }
 
 

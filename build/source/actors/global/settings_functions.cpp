@@ -35,9 +35,6 @@ std::optional<std::vector<std::string>> getSettingsArray(std::string json_settin
 }
 
 
-
-
-
 int read_settings_from_json(std::string json_settings_file,
         Distributed_Settings &distributed_settings, 
         Summa_Actor_Settings &summa_actor_settings,

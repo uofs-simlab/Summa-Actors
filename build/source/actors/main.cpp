@@ -24,7 +24,7 @@ class config : public actor_system_config {
         int startGRU = -1;
         int countGRU = -1;
         std::string config_file = "";
-        bool debugMode = false;
+        bool backup_server = false;
         bool server_mode = false;
     
     config() {
@@ -32,10 +32,28 @@ class config : public actor_system_config {
             .add(startGRU, "gru,g", "Starting GRU Index")
             .add(countGRU, "numGRU,n", "Total Number of GRUs")
             .add(config_file, "config,c", "Path name of the config directory")
-            .add(debugMode, "debug-mode,b", "enable debug mode")
+            .add(backup_server, "backup-server,b", "flag to denote if the server starting is a backup server")
             .add(server_mode, "server-mode,s", "enable server mode");
     }
 };
+
+void publish_server(caf::actor actor_to_publish, int port_number) {
+    std::cout << "Attempting to publish summa_server_actor on port " << port_number << std::endl;
+    auto is_port = io::publish(actor_to_publish, port_number);
+    if (!is_port) {
+        std::cerr << "********PUBLISH FAILED*******" << to_string(is_port.error()) << "\n";
+        return;
+    }
+    std::cout << "Successfully Published summa_server_actor on port " << *is_port << "\n";
+}
+
+void connect_client(caf::actor client_to_connect, std::string host_to_connect_to, int port_number) {
+    if (!host_to_connect_to.empty() && port_number > 0) {
+        anon_send(client_to_connect, connect_atom_v, host_to_connect_to, (uint16_t) port_number );
+    } else {
+        std::cerr << "No Server Config" << std::endl;
+    }
+}
 
 void run_client(actor_system& system, const config& cfg, Distributed_Settings distributed_settings) {
     scoped_actor self{system};
@@ -46,13 +64,8 @@ void run_client(actor_system& system, const config& cfg, Distributed_Settings di
        aout(self) << "ERROR: run_client() host and port - CHECK SETTINGS FILE\n";
        return;
     }
-    std::optional<std::string> path = cfg.config_file;
-    auto c = system.spawn(summa_client, path);
-    if (!distributed_settings.hostname.empty() && distributed_settings.port > 0) {
-        anon_send(c, connect_atom_v, distributed_settings.hostname , (uint16_t) distributed_settings.port );
-    } else {
-        aout(self) << "No Server Config" << std::endl;
-    }
+    auto client = system.spawn(summa_client);
+    connect_client(client, distributed_settings.hostname, distributed_settings.port);
    
 }
 
@@ -66,19 +79,24 @@ void run_server(actor_system& system, const config& cfg, Distributed_Settings di
         aout(self) << "ERROR: run_server() port - CHECK SETTINGS FILE\n";
         return;
     }
+
     auto server = system.spawn(summa_server, distributed_settings,
-                        summa_actor_settings, 
-                        file_access_actor_settings, 
-                        job_actor_settings, 
-                        hru_actor_settings);
-                        
-    aout(self) << "Attempting to publish summa_server_actor on port " << distributed_settings.port << std::endl;
-    auto is_port = io::publish(server, distributed_settings.port);
-    if (!is_port) {
-        std::cerr << "********PUBLISH FAILED*******" << to_string(is_port.error()) << "\n";
-        return;
+                               summa_actor_settings, 
+                               file_access_actor_settings, 
+                               job_actor_settings, 
+                               hru_actor_settings);
+
+    // Check if we have are the backup server
+    if (cfg.backup_server) {          
+        publish_server(server, distributed_settings.port);
+
+        connect_client(server, distributed_settings.hostname, distributed_settings.port);
+
+
+    } else {                        
+        publish_server(server, distributed_settings.port);
     }
-    aout(self) << "Successfully Published summa_server_actor on port " << *is_port << "\n";
+
 }
 
 
@@ -97,7 +115,9 @@ void caf_main(actor_system& sys, const config& cfg) {
                                 file_access_actor_settings,
                                 job_actor_settings, 
                                 hru_actor_settings);
-
+    if (err != 0) {
+        return;
+    } 
 
     aout(self) << "Printing Settings For SUMMA Simulation\n";
     check_settings_from_json(distributed_settings,

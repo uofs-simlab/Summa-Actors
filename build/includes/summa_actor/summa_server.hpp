@@ -14,6 +14,7 @@ namespace caf {
 struct summa_server_state {
     actor backup_server = nullptr;
     actor backup_server2 = nullptr;
+    strong_actor_ptr current_server; // if server is a backup then this will be set to the lead server
     int num_clients;
     int batches_remaining = 0;
     int batches_solved = 0;
@@ -51,4 +52,6 @@ int assembleBatches(stateful_actor<summa_server_state>* self);
 std::optional<int> getUnsolvedBatchID(stateful_actor<summa_server_state>* self);
 
 void initializeCSVOutput(std::string csv_output_path, std::string csv_output_name);
+
+void connecting(stateful_actor<summa_server_state>*, const std::string& host, uint16_t port);
 }

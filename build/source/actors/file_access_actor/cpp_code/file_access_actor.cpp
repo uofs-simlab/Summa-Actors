@@ -11,8 +11,6 @@
 
 using json = nlohmann::json;
 
-bool debug;
-
 
 namespace caf {
 

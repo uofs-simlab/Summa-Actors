@@ -2,8 +2,6 @@
 
 #include <chrono>
 
-extern bool debug;
-
 /**
  * Return the time between to time points
  */
