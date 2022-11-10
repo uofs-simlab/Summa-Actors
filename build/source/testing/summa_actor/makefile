@@ -20,11 +20,11 @@ CLIENT_MANAGER = $(SOURCE_DIR)/summa_actor/client.cpp
 all: compile link clean
 
 compile:
-	g++ $(FLAGS) -c main.cpp test.cpp $(BATCH_MANGER) $(CLIENT_MANAGER) $(SETTINGS_FILES) \
+	$(CC) $(FLAGS) -c main.cpp test.cpp $(BATCH_MANGER) $(CLIENT_MANAGER) $(SETTINGS_FILES) \
 		$(SUMMA_SERVER) $(SUMMA_SERVER_BACKUP) $(SUMMA_ACTOR_INCLUDES) $(GLOBAL_INCLUDES) $(INCLUDES)
 
 link:
-	g++ $(FLAGS) -Wl,-rpath='/usr/local/lib' -o main *.o $(LIBRARIES)
+	$(CC) $(FLAGS) -Wl,-rpath='/usr/local/lib' -o main *.o $(LIBRARIES)
 
 clean:
 	rm *.o

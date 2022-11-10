@@ -1,5 +1,42 @@
 #include "settings_functions.hpp"
-#include "global.hpp"
+
+std::optional<std::vector<std::string>> getSettingsArray(std::string json_settings_file, 
+    std::string key_1, std::string key_2) {
+    json settings;
+    std::ifstream settings_file(json_settings_file);
+    settings_file >> settings;
+    settings_file.close();
+    std::vector<std::string> return_vector;
+
+    // find first key
+    try {
+        if (settings.find(key_1) != settings.end()) {
+            json key_1_settings = settings[key_1];
+
+            // find value behind second key
+            if (key_1_settings.find(key_2) != key_1_settings.end()) {
+                for(auto& host : key_1_settings[key_2]) {
+                    return_vector.push_back(host["hostname"]);
+                }
+                return return_vector;
+            } else 
+                return {};
+
+        } else {
+            return {}; // return none in the optional (error value)
+        }
+    } catch (json::exception& e) {
+        std::cout << e.what() << "\n";
+        std::cout << key_1 << "\n";
+        std::cout << key_2 << "\n";
+        return {};
+    }
+   
+}
+
+
+
+
 
 int read_settings_from_json(std::string json_settings_file,
         Distributed_Settings &distributed_settings, 
@@ -8,6 +45,12 @@ int read_settings_from_json(std::string json_settings_file,
         Job_Actor_Settings &job_actor_settings, 
         HRU_Actor_Settings &hru_actor_settings) {
     
+    // Check if File Exists
+    struct stat buffer;
+    if (stat(json_settings_file.c_str(), &buffer) != 0) {
+        std::cout << "JSON Configuration File Could Not Be Found\n";
+        return -1;
+    }
     
     // read distributed settings
     std::string parent_key = "Distributed_Settings";
@@ -32,6 +75,8 @@ int read_settings_from_json(std::string json_settings_file,
     distributed_settings.lost_node_threshold = getSettings(json_settings_file, parent_key,
         "lost_node_threshold", distributed_settings.lost_node_threshold).value_or(-1);
 
+    distributed_settings.backup_servers = getSettingsArray(json_settings_file, parent_key,
+        "backup_servers").value_or(std::vector<std::string>());
     
     // read settings for summa actor
     parent_key = "Summa_Actor";    

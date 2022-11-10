@@ -1,6 +1,12 @@
 #pragma once
+#include <string>
+#include <vector>
+#include <optional>
+#include "json.hpp"
+#include <bits/stdc++.h>
+#include <sys/stat.h>
 
-#include "caf/all.hpp"
+using json = nlohmann::json;
 
 struct Distributed_Settings;
 struct Summa_Actor_Settings;
@@ -18,6 +24,7 @@ struct Distributed_Settings {
     int heartbeat_interval; // number of seconds between each heartbeat message
     int lost_node_threshold; // the maximum value the lost_potentail_indicator value can be before
     // we assume the node is lost
+    std::vector<std::string> backup_servers;
 };
 
 template<class Inspector>
@@ -84,7 +91,43 @@ bool inspect(Inspector& inspector, HRU_Actor_Settings& hru_actor_settings) {
                 inspector.field("output_frequency", hru_actor_settings.output_frequency));
 }
 
+// Read in the settings from JSON
+template <typename T>
+std::optional<T> getSettings(std::string json_settings_file, std::string key_1, std::string key_2, 
+    T return_value) {
+    json settings;
+    std::ifstream settings_file(json_settings_file);
+    settings_file >> settings;
+    settings_file.close();
+    
+    // find first key
+    try {
+        if (settings.find(key_1) != settings.end()) {
+            json key_1_settings = settings[key_1];
 
+            // find value behind second key
+            if (key_1_settings.find(key_2) != key_1_settings.end()) {
+                return key_1_settings[key_2];
+            } else 
+                return {};
+
+        } else {
+            return {}; // return none in the optional (error value)
+        }
+    } catch (json::exception& e) {
+        std::cout << e.what() << "\n";
+        std::cout << key_1 << "\n";
+        std::cout << key_2 << "\n";
+        return {};
+    }
+   
+}
+
+// Get settings from settings file in array format
+std::optional<std::vector<std::string>> getSettingsArray(std::string json_settings_file, std::string key_1, std::string key_2);
+
+
+// Load in the settings from Json For SUMMA
 int read_settings_from_json(std::string json_settings_file_path,
                             Distributed_Settings &distributed_settings, 
                             Summa_Actor_Settings &summa_actor_settings,
@@ -92,6 +135,7 @@ int read_settings_from_json(std::string json_settings_file_path,
                             Job_Actor_Settings &job_actor_settings, 
                             HRU_Actor_Settings &hru_actor_settings);
 
+// Check the settings - Print them out to stdout
 void check_settings_from_json(Distributed_Settings &distributed_settings, 
     Summa_Actor_Settings &summa_actor_settings, File_Access_Actor_Settings &file_access_actor_settings, 
     Job_Actor_Settings &job_actor_settings, HRU_Actor_Settings &hru_actor_settings);
