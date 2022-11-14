@@ -23,8 +23,8 @@ class Batch {
 
      public:
         Batch(int batch_id = -1, int start_hru = -1, int num_hru = -1);
-
-        // Gettiners
+        
+        // Getters
         int getBatchID();
         int getStartHRU();
         int getNumHRU();

@@ -52,9 +52,16 @@ behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Sett
 
     return {
         // For when a backup server attempts to connect to the main server
-        [=] (connect_atom, const std::string& host, uint16_t port) {
-            connecting(self, host, port);
-        },
+        // [=] (connect_atom, const std::string& host, uint16_t port) {
+        //     int err;
+        //     connecting(self, host, port);
+
+        // },
+
+        // [=](connect_to_server) {
+        //     self->state.current_server_actor = actor_cast<actor>(self->state.current_server);
+        //     self->send(self->state.current_server_actor, connect_as_backup_v, self);
+        // },
 
         // A message from a client requesting to connect
         [=](connect_to_server, actor client_actor, std::string hostname) {
@@ -82,17 +89,7 @@ behavior summa_server(stateful_actor<summa_server_state>* self, Distributed_Sett
 
         [=](connect_as_backup, actor backup_server) {
             aout(self) << "Received Connection Request From a backup server\n";
-            if (self->state.backup_server == nullptr) {
-                aout(self) << "Setup Backup Server\n";
-                self->state.backup_server = backup_server;
-            } else if (self->state.backup_server2 == nullptr) {
-                aout(self) << "Setup Backup Server 2\n";
-                self->state.backup_server2 = backup_server;
-                self->send(self->state.backup_server, connect_as_backup_v, self->state.backup_server2, 56);
-                self->send(self->state.backup_server2, connect_as_backup_v, self->state.backup_server, 89);
-            }
-            self->monitor(backup_server);
-            self->send(self->state.backup_server, connect_as_backup_v); // confirm connection
+
         },
 
         [=](done_batch, actor client_actor, int client_id, Batch& batch) {

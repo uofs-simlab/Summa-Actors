@@ -15,6 +15,7 @@ struct summa_server_state {
     actor backup_server = nullptr;
     actor backup_server2 = nullptr;
     strong_actor_ptr current_server; // if server is a backup then this will be set to the lead server
+    actor current_server_actor;
     int num_clients;
     int batches_remaining = 0;
     int batches_solved = 0;

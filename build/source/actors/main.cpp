@@ -3,6 +3,7 @@
 #include "summa_actor.hpp"
 #include "summa_client.hpp"
 #include "summa_server.hpp"
+#include "summa_backup_server.hpp"
 #include "global.hpp"
 #include "settings_functions.hpp"
 #include "message_atoms.hpp"
@@ -80,20 +81,23 @@ void run_server(actor_system& system, const config& cfg, Distributed_Settings di
         return;
     }
 
-    auto server = system.spawn(summa_server, distributed_settings,
-                               summa_actor_settings, 
-                               file_access_actor_settings, 
-                               job_actor_settings, 
-                               hru_actor_settings);
+
 
     // Check if we have are the backup server
     if (cfg.backup_server) {          
+        auto server = system.spawn(summa_backup_server_init,
+            distributed_settings,summa_actor_settings,file_access_actor_settings,
+            job_actor_settings,hru_actor_settings);
         publish_server(server, distributed_settings.port);
-
         connect_client(server, distributed_settings.hostname, distributed_settings.port);
+        self->send(server, connect_as_backup_v);
 
-
-    } else {                        
+    } else {     
+        auto server = system.spawn(summa_server, distributed_settings,
+                               summa_actor_settings, 
+                               file_access_actor_settings, 
+                               job_actor_settings, 
+                               hru_actor_settings);                   
         publish_server(server, distributed_settings.port);
     }
 
