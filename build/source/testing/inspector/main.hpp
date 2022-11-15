@@ -2,6 +2,7 @@
 #include "caf/all.hpp"
 #include "caf/io/all.hpp"
 class Batch;
+class Client;
 
 using namespace caf;
 
@@ -16,9 +17,37 @@ CAF_BEGIN_TYPE_ID_BLOCK(custom_types_3, first_custom_type_id)
 
     CAF_ADD_ATOM(custom_types_3, hello)
 
-  CAF_ADD_TYPE_ID(custom_types_3, (Batch))
+    CAF_ADD_TYPE_ID(custom_types_3, (Batch))
+    CAF_ADD_TYPE_ID(custom_types_3, (Client))
+
 
 CAF_END_TYPE_ID_BLOCK(custom_types_3)
+
+
+
+class Client {
+    private:
+        caf::actor client_actor;
+        std::string hostname;
+
+        int id;
+        int batches_solved;
+
+
+    public:
+        Client(int id = -1, caf::actor client_actor = nullptr, std::string hostname = "");
+
+
+    template <class Inspector>
+    friend bool inspect(Inspector& inspector, Client& client) {
+        return inspector.object(client).fields(
+            inspector.field("client_actor",client.client_actor),
+            inspector.field("hostname",client.hostname),
+            inspector.field("id",client.id),
+            inspector.field("batches_solved",client.batches_solved));
+        }
+};
+
 
 
 class Batch {

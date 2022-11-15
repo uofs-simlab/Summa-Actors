@@ -7,7 +7,7 @@
 #include <thread>
 namespace caf {
 
-behavior summa_backup_server(stateful_actor<summa_server_state>* self, Distributed_Settings distributed_settings, 
+behavior summa_backup_server_init(stateful_actor<summa_server_state>* self, Distributed_Settings distributed_settings, 
     Summa_Actor_Settings summa_actor_settings, File_Access_Actor_Settings file_access_actor_settings,
     Job_Actor_Settings job_actor_settings, HRU_Actor_Settings hru_actor_settings) {
     aout(self) << "Backup Server Started\n";
@@ -64,7 +64,7 @@ void connecting_backup(stateful_actor<summa_server_state>* self, const std::stri
                 self->state.current_server_actor = hdl;
                 self->monitor(hdl);
                 aout(self) << "Should become test\n";
-                self->become(test(self, hdl));
+                self->become(summa_backup_server(self, hdl));
 
                 },
             [=](const error& err) {
@@ -73,15 +73,18 @@ void connecting_backup(stateful_actor<summa_server_state>* self, const std::stri
         });
 }
 
-behavior test(stateful_actor<summa_server_state>* self, const actor& server_actor) {
+behavior summa_backup_server(stateful_actor<summa_server_state>* self, const actor& server_actor) {
     aout(self) << "We are the test behaviour\n";
     self->send(server_actor, connect_as_backup_v, self);
 
     return {
 
         [=] (connect_as_backup) {
-            aout(self) << "Received Message to connect to lead to server\n";
-            self->send(self->state.current_server_actor, connect_as_backup_v, self);
+            aout(self) << "We are now connected to the lead server\n";
+        },
+
+        [=] (update_with_current_state ) {
+
         }
     };
 

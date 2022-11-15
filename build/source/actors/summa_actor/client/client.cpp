@@ -5,7 +5,6 @@ Client::Client(int id, caf::actor client_actor, std::string hostname) {
     this->id = id;
     this->client_actor = client_actor;
     this->hostname = hostname;
-    this->connected = true;
     this->current_batch = {};
 }
 
@@ -39,8 +38,6 @@ std::string Client::toString() {
     
     out_string << "hostname: " << this->hostname << "\n" << 
                   "id: " << this->id << "\n" <<
-                  "batches_solved: " << this->batches_solved << "\n" <<
-                  "connected: " << this->connected << "\n";
-
+                  "batches_solved: " << this->batches_solved << "\n";
     return out_string.str();
 }

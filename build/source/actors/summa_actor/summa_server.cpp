@@ -32,11 +32,6 @@ behavior summa_server_init(stateful_actor<summa_server_state>* self, Distributed
 
     initializeCSVOutput(self->state.job_actor_settings.csv_path, self->state.csv_output_name);
 
-     // Start the heartbeat actor after a client has connected
-    // self->state.health_check_reminder_actor = self->spawn(client_health_check_reminder);
-    // self->send(self->state.health_check_reminder_actor, 
-    //     start_health_check_v, self, self->state.distributed_settings.heartbeat_interval);
-
     return summa_server(self);
 
 }
@@ -55,7 +50,9 @@ behavior summa_server(stateful_actor<summa_server_state>* self) {
             self->monitor(client_actor);
             // Tell client they are connected
             self->send(client_actor, connect_to_server_v, 
-                self->state.summa_actor_settings, self->state.file_access_actor_settings, self->state.job_actor_settings, 
+                self->state.summa_actor_settings, 
+                self->state.file_access_actor_settings, 
+                self->state.job_actor_settings, 
                 self->state.hru_actor_settings);
 
 
@@ -74,6 +71,12 @@ behavior summa_server(stateful_actor<summa_server_state>* self) {
 
         [=](connect_as_backup, actor backup_server) {
             aout(self) << "Received Connection Request From a backup server\n";
+            self->monitor(backup_server);
+            self->state.backup_servers_list.push_back(backup_server);
+            self->send(backup_server, connect_as_backup_v); // confirm connection with sender
+            // Now we need to send the backup actor our current state
+            // so that when we update in the future we just forward the update
+            
 
         }, 
 
@@ -85,10 +88,8 @@ behavior summa_server(stateful_actor<summa_server_state>* self) {
             Client client = self->state.client_container->getClient(client_actor.address());
 
             self->state.batch_container->updateBatch_success(batch, self->state.csv_output_name);
-            aout(self) << "******************\n" 
-                       << "Batches Remaining: " << 
-                       self->state.batch_container->getBatchesRemaining() << 
-                       "\n******************\n\n";
+
+            printRemainingBatches(self);
 
             std::optional<Batch> new_batch = self->state.batch_container->assignBatch(&client);
             
@@ -122,12 +123,6 @@ behavior summa_server(stateful_actor<summa_server_state>* self) {
     };
 }
 
-void sendClientsHeartbeat(stateful_actor<summa_server_state>* self) {
-    std::vector<Client> connected_clients = self->state.client_container->getConnectedClientList();
-    for(auto client = begin(connected_clients); client != end(connected_clients); ++client) {
-        self->send(client->getActor(), heartbeat_v);
-    }
-}
 
 void initializeCSVOutput(std::string csv_output_path, std::string csv_output_name) {
     std::ofstream csv_output;
@@ -144,46 +139,9 @@ void initializeCSVOutput(std::string csv_output_path, std::string csv_output_nam
     csv_output.close();
 }
 
-void connecting(stateful_actor<summa_server_state>* self, const std::string& host, uint16_t port) {
-    self->state.current_server = nullptr;
-
-    auto mm = self->system().middleman().actor_handle();
-    self->request(mm, infinite, connect_atom_v, host, port)
-        .await(
-            [=](const node_id&, strong_actor_ptr serv,
-                const std::set<std::string>& ifs) {
-                if (!serv) {
-                    aout(self) << R"(*** no server found at ")" << host << R"(":)" << port
-                     << std::endl;
-                    return;
-                }
-                if (!ifs.empty()) {
-                    aout(self) << R"(*** typed actor found at ")" << host << R"(":)"
-                        << port << ", but expected an untyped actor " << std::endl;
-                    return;
-                }
-                aout(self) << "*** successfully connected to server" << std::endl;
-                self->state.current_server = serv;
-                auto hdl = actor_cast<actor>(serv);
-                self->monitor(hdl);
-                },
-            [=](const error& err) {
-                aout(self) << R"(*** cannot connect to ")" << host << R"(":)" << port
-                   << " => " << to_string(err) << std::endl;
-        });
+void printRemainingBatches(stateful_actor<summa_server_state>* self) {
+       aout(self) << "******************\n"  << "Batches Remaining: " << 
+                  self->state.batch_container->getBatchesRemaining() << 
+                  "\n******************\n\n";
 }
-
-
-
-behavior client_health_check_reminder(event_based_actor* self) {
-    return {
-
-        [=](start_health_check, caf::actor summa_server, int sleep_duration) {
-            std::this_thread::sleep_for(std::chrono::seconds(sleep_duration));
-            self->send(summa_server, check_on_clients_v);
-        },
-    };
-
-}
-
 } // end namespace

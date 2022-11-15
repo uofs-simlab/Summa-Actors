@@ -7,6 +7,7 @@
 #include "global.hpp"
 #include "settings_functions.hpp"
 #include "message_atoms.hpp"
+#include "client/client.hpp"
 #include <string>
 #include <bits/stdc++.h>
 #include <unistd.h>
@@ -85,7 +86,7 @@ void run_server(actor_system& system, const config& cfg, Distributed_Settings di
 
     // Check if we have are the backup server
     if (cfg.backup_server) {          
-        auto server = system.spawn(summa_backup_server,
+        auto server = system.spawn(summa_backup_server_init,
             distributed_settings,summa_actor_settings,file_access_actor_settings,
             job_actor_settings,hru_actor_settings);
         publish_server(server, distributed_settings.port);
