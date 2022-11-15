@@ -12,7 +12,6 @@
 #include <unistd.h>
 #include <iostream>
 #include "json.hpp"
-#include "batch_manager.hpp"
 #include <optional>
 
 using namespace caf;
@@ -50,7 +49,8 @@ void publish_server(caf::actor actor_to_publish, int port_number) {
 
 void connect_client(caf::actor client_to_connect, std::string host_to_connect_to, int port_number) {
     if (!host_to_connect_to.empty() && port_number > 0) {
-        anon_send(client_to_connect, connect_atom_v, host_to_connect_to, (uint16_t) port_number );
+        uint16_t port = 4444;
+        anon_send(client_to_connect, connect_atom_v, host_to_connect_to, (uint16_t) port );
     } else {
         std::cerr << "No Server Config" << std::endl;
     }
@@ -85,15 +85,15 @@ void run_server(actor_system& system, const config& cfg, Distributed_Settings di
 
     // Check if we have are the backup server
     if (cfg.backup_server) {          
-        auto server = system.spawn(summa_backup_server_init,
+        auto server = system.spawn(summa_backup_server,
             distributed_settings,summa_actor_settings,file_access_actor_settings,
             job_actor_settings,hru_actor_settings);
         publish_server(server, distributed_settings.port);
         connect_client(server, distributed_settings.hostname, distributed_settings.port);
-        self->send(server, connect_as_backup_v);
+        // self->send(server, connect_as_backup_v);
 
     } else {     
-        auto server = system.spawn(summa_server, distributed_settings,
+        auto server = system.spawn(summa_server_init, distributed_settings,
                                summa_actor_settings, 
                                file_access_actor_settings, 
                                job_actor_settings, 

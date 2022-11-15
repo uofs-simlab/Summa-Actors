@@ -1,70 +1,7 @@
 #pragma once
 #include "caf/all.hpp"
-#include <vector>
-#include <string>
-#include <sstream>
-#include <optional>
+#include "client/client.hpp"
 
-class Batch;
-
-class Batch {
-    private:
-        int batch_id;
-        int start_hru;
-        int num_hru;
-
-        double run_time;
-        double read_time;
-        double write_time;
-        
-        bool assigned_to_actor;
-        std::string hostname;
-        caf::actor assigned_actor;
-
-     public:
-        Batch(int batch_id = -1, int start_hru = -1, int num_hru = -1);
-        
-        // Getters
-        int getBatchID();
-        int getStartHRU();
-        int getNumHRU();
-        double getRunTime();
-        double getReadTime();
-        double getWriteTime();
-        bool getBatchStatus();
-
-        // Setters
-        void updateRunTime(double run_time);
-        void updateReadTime(double read_time);
-        void updateWriteTime(double write_time);
-        void updateAssignedActor(bool boolean);
-
-        void printBatchInfo();
-        void writeBatchToFile(std::string csv_output);
-
-        std::string toString();
-        /**
-         * @brief Mark batch as assigned to an actor
-         * Update the assigned_to_actor to True and
-         * update the hostname and assigned_actor instance variables
-         */
-        void assignToActor(std::string hostname, caf::actor assigned_actor);
-
-
-        template <class Inspector>
-        friend bool inspect(Inspector& inspector, Batch& batch) {
-            return inspector.object(batch).fields(
-                        inspector.field("batch_id", batch.batch_id), 
-                        inspector.field("start_hru", batch.start_hru),
-                        inspector.field("num_hru", batch.num_hru),
-                        inspector.field("run_time", batch.run_time),
-                        inspector.field("read_time", batch.read_time),
-                        inspector.field("write_time", batch.write_time),
-                        inspector.field("status", batch.assigned_to_actor),
-                        inspector.field("hostname", batch.hostname),
-                        inspector.field("assigned_actor", batch.assigned_actor));
-        }
-};
 
 class Batch_Container {
     private:
@@ -97,7 +34,7 @@ class Batch_Container {
          * are added to the client for the servers awareness
          * The batch is then returned by this method and sent to the respective client
          */
-        std::optional<Batch> assignBatch(std::string hostname, caf::actor actor_ref);
+        std::optional<Batch> assignBatch(Client *client);
 
         /**
          * On a successful batch we take the batch given to us by the client 
@@ -154,9 +91,5 @@ class Batch_Container {
          * return its index in the vector
          */
         std::optional<int> findBatch(int batch_id);
-
-
-
-
 
 };

@@ -1,89 +1,23 @@
 #pragma once
-
 #include "caf/all.hpp"
-// #include "summa_server.hpp"
-#include "batch_manager.hpp"
 #include <vector>
-#include <sstream>
+#include "batch/batch.hpp"
+#include "client/client.hpp"
 
-
-class Client {
-    private:
-        // Identifying Characteristics 
-        caf::actor client_actor;
-        std::string hostname;
-
-        int id;
-        int batches_solved;
-        bool connected;
-        bool assigned_batch;
-        int current_batch_id;
-
-        int lost_potential_indicator = 0; // value to indicate the Potential that a client is lost.
-        // The greater the lost_Potential_indicator the greater chances the client has been lost.
-
-
-    public:
-        Client(int id, caf::actor client_actor, std::string hostname);
-        // ####################################################################
-        //                              Getters
-        // ####################################################################
-        caf::actor getActor();
-        int getLostPotentialIndicator();
-        int getID();
-        int getCurrentBatchID();
-        std::string getHostname();
-        bool getAssignedBatch();
-        // ####################################################################
-        //                              Setters
-        // ####################################################################
-        void updateCurrentBatchID(int batch_id);
-        void setAssignedBatch(bool boolean);
-        
-        // methods
-        /**
-         * @brief Increments the lost_likely_hood indicator variable
-         * this is done everytime a client is sent a heartbeat message
-         * 
-         * checks if the client is likely lost or not
-         */
-        void incrementLostPotential();
-
-        /**
-         * @brief Decrement the lost_likley_hood indicator variables
-         * this is done everytime a client sends a heartbeat message back 
-         * to the server
-         */
-        void decrementLostPotential();
-
-        /**
-         * Check if the clients lost_potential_indicator is over a certain
-         * threshold
-        */
-        bool isLost(int threshold);
-
-
-        std::string toString();
-
-};
 
 
 class Client_Container {
     private:
-        int num_clients = 0;
-        int lost_client_threshold; // value to determine if client is lost
-        std::vector<Client> connected_client_list;
-        std::vector<Client> lost_client_list;
-
+        std::vector<Client> client_list;
+        int id_counter;
 
     public:
-        Client_Container(int lost_node_threshold);
+        Client_Container();
         // ####################################################################
         //                              Getters
         // ####################################################################
         int getNumClients();
         int getClientID(caf::actor client_actor);
-        Client getClient(int index);
         std::vector<Client> getConnectedClientList();
         std::vector<Client> getLostClientList();
 
@@ -91,8 +25,10 @@ class Client_Container {
         //                              Setters
         // ####################################################################
         void setAssignedBatch(int client_id, bool boolean);
-
-        // Methods
+        void setBatchForClient(caf::actor client_ref, Batch *batch);
+        // ####################################################################
+        //                              Methods
+        // ####################################################################
         /**
          * @brief add a client to the client vector
          * increment the number of clients
@@ -111,14 +47,6 @@ class Client_Container {
          */
         void updateCurrentBatch(int client_id, int batch_id);
        
-        /**
-         * @brief Decrement the lost_likley_hood indicator variables
-         * this is done everytime a client sends a heartbeat message back 
-         * to the server
-         */
-        void decrementLostPotential(int client_id);
-
-        void incrementLostPotential(int client_id);
 
         /**
          * @brief Removes a client from the back of the list
@@ -163,6 +91,9 @@ class Client_Container {
         std::optional<Client> findIdleClient();
 
 
+        // find a client by its actor ref
+        Client getClient(caf::actor_addr client_ref);
+
         /**
             Function that checks for lost clients
             Returns true if clients are lost and false if they are none
@@ -172,7 +103,7 @@ class Client_Container {
         /**
          * Transfer all lost batches
         */
-        void reconcileLostBatches(Batch_Container* batch_container);
+        // void reconcileLostBatches(Batch_Container* batch_container);
 
         std::string connectedClientsToString();
 
@@ -184,3 +115,4 @@ class Client_Container {
         */
         // void sendAllClientsHeartbeat(stateful_actor<summa_server_state>* self);
 };
+

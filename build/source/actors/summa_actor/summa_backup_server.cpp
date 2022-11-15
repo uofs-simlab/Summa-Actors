@@ -7,7 +7,7 @@
 #include <thread>
 namespace caf {
 
-behavior summa_backup_server_init(stateful_actor<summa_server_state>* self, Distributed_Settings distributed_settings, 
+behavior summa_backup_server(stateful_actor<summa_server_state>* self, Distributed_Settings distributed_settings, 
     Summa_Actor_Settings summa_actor_settings, File_Access_Actor_Settings file_access_actor_settings,
     Job_Actor_Settings job_actor_settings, HRU_Actor_Settings hru_actor_settings) {
     aout(self) << "Backup Server Started\n";
@@ -18,21 +18,22 @@ behavior summa_backup_server_init(stateful_actor<summa_server_state>* self, Dist
     self->state.job_actor_settings = job_actor_settings;
     self->state.hru_actor_settings = hru_actor_settings;
 
-    // self->set_down_handler([=](const down_msg& dm){
-    //     if(dm.source == self->state.current_server) {
-    //         aout(self) << "*** Lost Connection to Server" << std::endl;
-    //         uint16_t port = 4444;
-    //         std::string host = "a0449745d77d";
-    //         connecting(self, host, port);
-    //     }
-    // });
+    self->set_down_handler([=](const down_msg& dm){
+        if(dm.source == self->state.current_server) {
+            // aout(self) << "*** Lost Connection to Server" << std::endl;
+            // uint16_t port = 4444;
+            // std::string host = "a0449745d77d";
+            // connecting(self, host, port);
+        }
+    });
     return {
         // Called by main to init the process
         [=](connect_atom, const std::string& host, uint16_t port) {
-            connecting(self, host, port);
+            connecting_backup(self, host, port);
         },
         [=] (connect_as_backup) {
-            aout(self) << "Received Message to connect to lead in beha server\n";
+            aout(self) << "Received Message to connect to lead to server\n";
+            self->send(self->state.current_server_actor, connect_as_backup_v, self);
         }
         // [=]() 
     };
@@ -60,8 +61,11 @@ void connecting_backup(stateful_actor<summa_server_state>* self, const std::stri
                 aout(self) << "*** successfully connected to server" << std::endl;
                 self->state.current_server = serv;
                 auto hdl = actor_cast<actor>(serv);
+                self->state.current_server_actor = hdl;
                 self->monitor(hdl);
-                self->become(summa_backup_server(self, hdl));
+                aout(self) << "Should become test\n";
+                self->become(test(self, hdl));
+
                 },
             [=](const error& err) {
                 aout(self) << R"(*** cannot connect to ")" << host << R"(":)" << port
@@ -69,22 +73,17 @@ void connecting_backup(stateful_actor<summa_server_state>* self, const std::stri
         });
 }
 
-
-behavior summa_backup_server(stateful_actor<summa_server_state>* self, const actor& summa_server) {
-    aout(self) << "Backup Server is now Running\n";
+behavior test(stateful_actor<summa_server_state>* self, const actor& server_actor) {
+    aout(self) << "We are the test behaviour\n";
+    self->send(server_actor, connect_as_backup_v, self);
 
     return {
+
         [=] (connect_as_backup) {
-            aout(self) << "Received Message to connect to lead server\n";
+            aout(self) << "Received Message to connect to lead to server\n";
+            self->send(self->state.current_server_actor, connect_as_backup_v, self);
         }
-
-
-
-
     };
+
 }
-
-
-
-
 }

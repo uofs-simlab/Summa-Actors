@@ -1,14 +1,4 @@
-#include "caf/all.hpp"
-#include "caf/io/all.hpp"
 #include "summa_client.hpp"
-#include "summa_actor.hpp"
-#include "message_atoms.hpp"
-#include "batch_manager.hpp"
-#include <optional>
-#include <unistd.h>
-#include <limits.h>
-
-
 namespace caf {
 
 behavior summa_client(stateful_actor<summa_client_state>* self) {
@@ -73,12 +63,10 @@ behavior running(stateful_actor<summa_client_state>* self, const actor& server_a
     self->send(server_actor, connect_to_server_v, self, self->state.hostname);
     return {
         // Response from the server on successful connection
-        [=](connect_to_server, int client_id, Summa_Actor_Settings summa_actor_settings, File_Access_Actor_Settings file_access_actor_settings,
+        [=](connect_to_server, Summa_Actor_Settings summa_actor_settings, File_Access_Actor_Settings file_access_actor_settings,
                 Job_Actor_Settings job_actor_settings, HRU_Actor_Settings hru_actor_settings) {
             
             aout(self) << "Successfully Connected to Server Actor \n"; 
-            aout(self) << "Recieved ID of " << client_id << "\n"; 
-            self->state.client_id = client_id;
             self->state.summa_actor_settings = summa_actor_settings;
             self->state.file_access_actor_settings = file_access_actor_settings;
             self->state.job_actor_settings = job_actor_settings;
@@ -118,16 +106,10 @@ behavior running(stateful_actor<summa_client_state>* self, const actor& server_a
             if(self->state.current_server == nullptr) {
                 aout(self) << "Maybe We Should not Send this\n";
             } else {
-                self->send(server_actor, done_batch_v, self, self->state.client_id, self->state.current_batch);
+                self->send(server_actor, done_batch_v, self, self->state.current_batch);
 
             }
 
-        },
-
-        [=](heartbeat) {
-            aout(self) << "Received Heartbeat \n";
-
-            self->send(server_actor, heartbeat_v, self->state.client_id); 
         },
 
         [=](time_to_exit) {

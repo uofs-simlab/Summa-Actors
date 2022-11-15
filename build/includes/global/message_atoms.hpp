@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../summa_actor/batch_manager.hpp"
+#include "batch/batch.hpp"
 #include <vector>
 #include "settings_functions.hpp"
 
