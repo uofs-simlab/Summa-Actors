@@ -7,25 +7,24 @@ class Batch_Container {
     private:
         int total_hru_count;
         int num_hru_per_batch;
-
-
+        int batches_remaining;
         std::vector<Batch> batch_list;
-        std::vector<Batch> solved_batches;
-        std::vector<Batch> failed_batches;        
-    
+
+        // Assemble the total number of HRUs given by the user into batches.
+        void assembleBatches(int total_hru_count, int num_hru_per_batch);
+
+        // Find a batch by its id, 
+        // return its index in the vector 
+        std::optional<int> findBatch(int batch_id);
     
     public:
-        /**
-         * @brief Construct a new Batch_Container object
-         * Creating the batch_manager will also create the batches
-         * with the two parameters that are passed in. 
-         */
-        Batch_Container(int total_hru_count, int num_hru_per_batch);
+        
+        // Creating the batch_manager will also create the batches
+        // with the two parameters that are passed in. 
+        Batch_Container(int total_hru_count = 0, int num_hru_per_batch = 0);
 
-        /**
-         * @brief Get the Batches Remaining
-         * returns the size of batch_list.
-         */
+    
+        // returns the size of the batch list
         int getBatchesRemaining();
         
         /**
@@ -34,7 +33,7 @@ class Batch_Container {
          * are added to the client for the servers awareness
          * The batch is then returned by this method and sent to the respective client
          */
-        std::optional<Batch> assignBatch(Client *client);
+        std::optional<Batch> assignBatch();
 
         /**
          * On a successful batch we take the batch given to us by the client 
@@ -75,21 +74,13 @@ class Batch_Container {
          */
         void updateBatchStatus_LostClient(int batch_id);
 
-
-    
-    private:
-        /**
-         * Assemble the total number of HRUs given by the user into batches.
-         * The total number of hrus and the sizes of the batches are parameters
-         * provided by the user.
-         */
-        void assembleBatches(int total_hru_count, int num_hru_per_batch);
-
-        /**
-         * @brief 
-         * Find a batch by its id, 
-         * return its index in the vector
-         */
-        std::optional<int> findBatch(int batch_id);
+        template <class Inspector>
+        friend bool inspect(Inspector& inspector, Batch_Container& batch_container) {
+            return inspector.object(batch_container).fields(
+                inspector.field("total_hru_count", batch_container.total_hru_count),
+                inspector.field("num_hru_per_batch", batch_container.num_hru_per_batch),
+                inspector.field("batch_list", batch_container.batch_list));
+        }
+ 
 
 };

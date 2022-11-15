@@ -23,10 +23,14 @@ std::string Client::getHostname() {
     return this->hostname;
 }
 
+std::optional<Batch> Client::getBatch() {
+    return this->current_batch;
+}
+
 // ####################################################################
 //                              Setters
 // ####################################################################
-void Client::setBatch(Batch *batch) {
+void Client::setBatch(Batch batch) {
     this->current_batch = batch;
 }
 

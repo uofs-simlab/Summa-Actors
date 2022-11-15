@@ -1,9 +1,6 @@
 #pragma once
 #include "caf/all.hpp"
-#include "client/client.hpp"
 #include <string>
-
-class Client;
 
 class Batch {
     private:
@@ -16,10 +13,7 @@ class Batch {
         double write_time;
         
         bool assigned_to_actor;
-        std::string hostname;
-        caf::actor assigned_actor;
-
-        Client* assigned_client;
+        bool solved;
 
      public:
         Batch(int batch_id = -1, int start_hru = -1, int num_hru = -1);
@@ -31,22 +25,20 @@ class Batch {
         double getRunTime();
         double getReadTime();
         double getWriteTime();
-        bool getBatchStatus();
-
+        bool isAssigned();
+        bool isSolved();
         // Setters
         void updateRunTime(double run_time);
         void updateReadTime(double read_time);
         void updateWriteTime(double write_time);
-        void updateAssignedActor(bool boolean);
-
+        void updateAssigned(bool boolean);
+        void updateSolved(bool boolean);
         void printBatchInfo();
         void writeBatchToFile(std::string csv_output);
 
         std::string toString();
 
         void assignToActor(std::string hostname, caf::actor assigned_actor);
-
-        void assignBatch(Client *client);
 
 
         template <class Inspector>
@@ -58,8 +50,7 @@ class Batch {
                         inspector.field("run_time", batch.run_time),
                         inspector.field("read_time", batch.read_time),
                         inspector.field("write_time", batch.write_time),
-                        inspector.field("status", batch.assigned_to_actor),
-                        inspector.field("hostname", batch.hostname),
-                        inspector.field("assigned_actor", batch.assigned_actor));
+                        inspector.field("assigned_to_actor", batch.assigned_to_actor),
+                        inspector.field("solved", batch.solved));
         }
 };

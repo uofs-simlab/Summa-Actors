@@ -112,6 +112,10 @@ behavior running(stateful_actor<summa_client_state>* self, const actor& server_a
 
         },
 
+        [=](heartbeat) {
+            aout(self) << "Received Heartbeat \n";
+        },
+
         [=](time_to_exit) {
             aout(self) << "Client Exiting\n";
             self->quit();

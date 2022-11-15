@@ -3,9 +3,6 @@
 #include <optional>
 #include "batch/batch.hpp"
 
-
-class Batch;
-
 class Client {
     private:
         caf::actor client_actor;
@@ -13,7 +10,7 @@ class Client {
 
         int id;
         int batches_solved;
-        std::optional<Batch*> current_batch;
+        std::optional<Batch> current_batch;
 
 
     public:
@@ -24,10 +21,11 @@ class Client {
         caf::actor getActor();
         int getID();
         std::string getHostname();
+        std::optional<Batch> getBatch();
         // ####################################################################
         //                              Setters
         // ####################################################################
-        void setBatch(Batch *batch);
+        void setBatch(Batch batch);
         // ####################################################################
         //                              Methods
         // ####################################################################
@@ -40,7 +38,8 @@ class Client {
                 inspector.field("client_actor",client.client_actor),
                 inspector.field("hostname",client.hostname),
                 inspector.field("id",client.id),
-                inspector.field("batches_solved",client.batches_solved));
+                inspector.field("batches_solved",client.batches_solved),
+                inspector.field("current_batch",client.current_batch));
             }
 
 };

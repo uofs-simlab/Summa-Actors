@@ -1,7 +1,9 @@
 #pragma once
 
 #include "batch/batch.hpp"
+#include "batch/batch_container.hpp"
 #include "client/client.hpp"
+#include "client/client_container.hpp"
 #include <vector>
 #include "settings_functions.hpp"
 
@@ -118,6 +120,7 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     // Reciever:
     // Summary:
     CAF_ADD_ATOM(summa, update_with_current_state)    
+    CAF_ADD_ATOM(summa, heartbeat)    
     // Struct Types
     CAF_ADD_TYPE_ID(summa, (Distributed_Settings))
     CAF_ADD_TYPE_ID(summa, (Summa_Actor_Settings))
@@ -127,7 +130,9 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
 
     // Class Types
     CAF_ADD_TYPE_ID(summa, (Client))
+    CAF_ADD_TYPE_ID(summa, (Client_Container))
     CAF_ADD_TYPE_ID(summa, (Batch))
+    CAF_ADD_TYPE_ID(summa, (Batch_Container))
 
 
     CAF_ADD_TYPE_ID(summa, (std::vector<std::vector<double>>))

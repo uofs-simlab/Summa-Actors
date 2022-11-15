@@ -3,8 +3,8 @@
 Batch_Container::Batch_Container(int total_hru_count, int num_hru_per_batch) {
     this->total_hru_count = total_hru_count;
     this->num_hru_per_batch = num_hru_per_batch;
-
     this->assembleBatches(this->total_hru_count, this->num_hru_per_batch);
+    this->batches_remaining = this->batch_list.size(); // batch_list set in assemble batches
 }
 
 int Batch_Container::getBatchesRemaining() {
@@ -37,20 +37,14 @@ void Batch_Container::printBatches() {
 }
 
 void Batch_Container::updateBatchStatus_LostClient(int batch_id) {
-    std::optional<int> index = this->findBatch(batch_id);
-    if (index.has_value()) {
-        this->batch_list[index.value()].updateAssignedActor(false);
-    } else {
-        throw "updateBatchStatus_LostClient - Could not find batch with id";
-    }
+    this->batch_list[batch_id].updateAssigned(false);
 }
 
-
-std::optional<Batch> Batch_Container::assignBatch(Client *client) {
+std::optional<Batch> Batch_Container::assignBatch() {
 
     for (std::vector<int>::size_type i = 0; i < this->batch_list.size(); i++) {
-        if (!this->batch_list[i].getBatchStatus()) {
-            this->batch_list[i].assignBatch(client);
+        if (!this->batch_list[i].isAssigned() && !this->batch_list[i].isSolved()) {
+            this->batch_list[i].updateAssigned(true);
             return this->batch_list[i];
         }
     }
@@ -58,16 +52,10 @@ std::optional<Batch> Batch_Container::assignBatch(Client *client) {
 }
 
 void Batch_Container::updateBatch_success(Batch successful_batch, std::string output_csv) {
-    this->solved_batches.push_back(successful_batch);
-
+    int batch_id = successful_batch.getBatchID();
     successful_batch.writeBatchToFile(output_csv);
-    
-    std::optional<int> index_to_remove = this->findBatch(successful_batch.getBatchID());
-    if (index_to_remove.has_value()) {
-        this->batch_list.erase(this->batch_list.begin() + index_to_remove.value());
-    } else {
-        throw "No element in BatchList Matches the succesful_batch";
-    }
+    this->batch_list[batch_id].updateSolved(true);
+    this->batches_remaining--;
 }
 
 std::optional<int> Batch_Container::findBatch(int batch_id) {

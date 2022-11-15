@@ -5,6 +5,7 @@ Batch::Batch(int batch_id, int start_hru, int num_hru){
     this->start_hru = start_hru;
     this->num_hru = num_hru;
     this->assigned_to_actor = false;
+    this->solved = false;
 }
 
 // Getters
@@ -20,10 +21,6 @@ int Batch::getNumHRU() {
     return this->num_hru;
 }
 
-bool Batch::getBatchStatus() {
-    return this->assigned_to_actor;
-}
-
 double Batch::getRunTime() {
     return this->run_time;
 }
@@ -34,6 +31,14 @@ double Batch::getReadTime() {
 
 double Batch::getWriteTime() {
     return this->write_time;
+}
+
+bool Batch::isAssigned() {
+    return this->assigned_to_actor;
+}
+
+bool Batch::isSolved() {
+    return this->solved;
 }
 
 // Setters
@@ -49,19 +54,12 @@ void Batch::updateWriteTime(double write_time) {
     this->write_time = write_time;
 }
 
-void Batch::updateAssignedActor(bool boolean) {
+void Batch::updateAssigned(bool boolean) {
     this->assigned_to_actor = boolean;
 }
 
-// general methods
-void Batch::assignToActor(std::string hostname, caf::actor assigned_actor) {
-    this->hostname = hostname;
-    this->assigned_actor = assigned_actor;
-    this->assigned_to_actor = true;
-}
-
-void Batch::assignBatch(Client *client) {
-    this->assigned_client = client;
+void Batch::updateSolved(bool boolean) {
+    this->solved = boolean;
 }
 
 void Batch::printBatchInfo() {
@@ -80,7 +78,7 @@ std::string Batch::toString() {
                   "read_time: " << this->read_time << "\n" <<
                   "write_time: " << this->write_time << "\n" <<
                   "assigned_to_actor: " << this->assigned_to_actor << "\n" <<
-                  "hostname: " << this->hostname << "\n";
+                  "solved: " << this->solved << "\n";
 
     return out_string.str();
 }
@@ -92,7 +90,6 @@ void Batch::writeBatchToFile(std::string file_name) {
         this->batch_id      << "," <<
         this->start_hru     << "," << 
         this->num_hru       << "," << 
-        this->hostname      << "," <<
         this->run_time      << "," << 
         this->read_time     << "," <<
         this->write_time    << "\n";

@@ -7,9 +7,38 @@ Client_Container::Client_Container() {
 // ####################################################################
 //                              Getters
 // ####################################################################
+
+int Client_Container::getNumClients() {
+    return this->client_list.size();
+}
+
+std::vector<Client> Client_Container::getClientList() {
+    return this->client_list;
+}
+
+Client Client_Container::getClient(caf::actor_addr client_ref) {
+    for(auto client = begin(this->client_list); client != end(this->client_list); ++client) {
+        if(client_ref == client->getActor()) {
+            return *client;
+        }
+    }
+    throw "ERROR -- Client Not Found";
+}
+
 // ####################################################################
 //                              Setters
 // ####################################################################
+
+void Client_Container::setBatchForClient(caf::actor client_ref, Batch batch) {
+    for(auto client = begin(this->client_list); client != end(this->client_list); ++client) {
+        if (client_ref == client->getActor()) {
+            client->setBatch(batch);
+            break;
+        }
+    }
+}
+
+
 // ####################################################################
 //                              Methods
 // ####################################################################
@@ -19,27 +48,6 @@ void Client_Container::addClient(caf::actor client_actor, std::string hostname) 
     
     this->client_list.push_back(
         Client{client_id, client_actor, hostname});
-}
-
-void Client_Container::setBatchForClient(caf::actor client_ref, Batch *batch) {
-    for(auto client = begin(this->client_list); client != end(this->client_list); ++client) {
-        if (client_ref == client->getActor()) {
-            client->setBatch(batch);
-            break;
-        }
-    }
-}
-
-int Client_Container::getNumClients() {
-    return this->client_list.size();
-}
-
-std::vector<Client> Client_Container::getConnectedClientList() {
-    return this->client_list;
-}
-
-std::string Client_Container::getHostname_ByClientID(int client_id) {
-    return this->client_list[client_id].getHostname();
 }
 
 bool Client_Container::isEmpty() {
@@ -52,17 +60,7 @@ Client Client_Container::removeClient_fromBack() {
     return client;
 }
 
-
-Client Client_Container::getClient(caf::actor_addr client_ref) {
-    for(auto client = begin(this->client_list); client != end(this->client_list); ++client) {
-        if(client_ref == client->getActor()) {
-            return *client;
-        }
-    }
-    throw "ERROR -- Client Not Found";
-}
-
-std::string Client_Container::connectedClientsToString() {
+std::string Client_Container::toString() {
     std::stringstream out_string;
     for(auto client = begin(this->client_list); client != end(this->client_list); ++client) {
         out_string << client->toString() << "\n";

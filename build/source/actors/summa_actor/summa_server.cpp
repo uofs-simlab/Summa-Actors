@@ -58,9 +58,10 @@ behavior summa_server(stateful_actor<summa_server_state>* self) {
 
             Client client = self->state.client_container->getClient(client_actor.address());
             
-            std::optional<Batch> batch = self->state.batch_container->assignBatch(&client);
+            std::optional<Batch> batch = self->state.batch_container->assignBatch();
             if (batch.has_value()) {
-                self->state.client_container->setBatchForClient(client_actor, &batch.value());
+                self->state.client_container->setBatchForClient(client_actor, batch.value());
+                aout(self) << "SENDING: " << batch.value().toString() << "\n";
                 self->send(client_actor, batch.value());
             } else {
                 aout(self) << "no more batches left to assign\n";
@@ -76,7 +77,19 @@ behavior summa_server(stateful_actor<summa_server_state>* self) {
             self->send(backup_server, connect_as_backup_v); // confirm connection with sender
             // Now we need to send the backup actor our current state
             // so that when we update in the future we just forward the update
+            Client client = self->state.client_container->removeClient_fromBack();
+            aout(self) << "Found Batch\n";
+            std::optional<Batch> batch = client.getBatch();
+            aout(self) << "Got a batch\n";
+
+            if (batch.has_value()) {
             
+                aout(self) << batch.value().toString() << "\n";
+
+            } else {
+                aout(self) << "No Value in Batch\n";
+            }
+            self->send(backup_server, update_with_current_state_v, *self->state.batch_container, *self->state.client_container);
 
         }, 
 
@@ -91,7 +104,7 @@ behavior summa_server(stateful_actor<summa_server_state>* self) {
 
             printRemainingBatches(self);
 
-            std::optional<Batch> new_batch = self->state.batch_container->assignBatch(&client);
+            std::optional<Batch> new_batch = self->state.batch_container->assignBatch();
             
             if (new_batch.has_value()) {
                 
