@@ -22,7 +22,7 @@ struct summa_client_state {
     int client_id; // id held by server
 
     // tuple is the actor ref and hostname of the backup server
-    std::vector<std::tuple<caf::actor, std::string>> backup_servers;
+    std::vector<std::tuple<caf::actor, std::string>> backup_servers_list;
 
     Batch current_batch;
 

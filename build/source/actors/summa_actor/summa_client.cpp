@@ -69,6 +69,11 @@ behavior summa_client(stateful_actor<summa_client_state>* self, const actor& ser
             
         },
 
+        [=](update_backup_server_list, std::vector<std::tuple<caf::actor, std::string>> backup_servers) {
+            aout(self) << "Received the backup server list from the server\n";
+            self->state.backup_servers_list = backup_servers;
+        },
+
         // Received batch from server to compute
         [=](Batch& batch) {
             self->state.current_batch = batch;
@@ -104,7 +109,6 @@ behavior summa_client(stateful_actor<summa_client_state>* self, const actor& ser
                 self->send(server_actor, done_batch_v, self, self->state.current_batch);
 
             }
-
         },
 
         [=](time_to_exit) {

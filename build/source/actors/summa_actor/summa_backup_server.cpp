@@ -80,10 +80,16 @@ behavior summa_backup_server(stateful_actor<summa_server_state>* self, const act
             aout(self) << "We are now connected to the lead server\n";
         },
 
+        // get the list of batches and clients from the lead server
         [=](update_with_current_state, Batch_Container& batch_container, Client_Container& client_container) {
             aout(self) << "Received the containers from the lead server\n";
             self->state.batch_container = &batch_container;
             self->state.client_container = &client_container;
+        },
+
+        [=](update_backup_server_list, std::vector<std::tuple<caf::actor, std::string>> backup_servers) {
+            aout(self) << "Received the backup server list from the lead server\n";
+            self->state.backup_servers_list = backup_servers;
         },
 
         // Client finished a batch and the lead server has sent an update
@@ -103,7 +109,6 @@ behavior summa_backup_server(stateful_actor<summa_server_state>* self, const act
         [=](no_more_batches, actor client_actor) {
             aout(self) << "No more batches to distribute\n";
             self->state.client_container->setBatchForClient(client_actor, {});
-
         },
 
         // Simulation has finished

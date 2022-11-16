@@ -128,6 +128,10 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     // Reciever:
     // Summary:
     CAF_ADD_ATOM(summa, no_more_batches)
+    // Sender:
+    // Reciever:
+    // Summary:
+    CAF_ADD_ATOM(summa, update_backup_server_list)
     // Struct Types
     CAF_ADD_TYPE_ID(summa, (Distributed_Settings))
     CAF_ADD_TYPE_ID(summa, (Summa_Actor_Settings))
@@ -141,12 +145,12 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     CAF_ADD_TYPE_ID(summa, (Batch))
     CAF_ADD_TYPE_ID(summa, (Batch_Container))
 
-
     CAF_ADD_TYPE_ID(summa, (std::vector<std::vector<double>>))
     CAF_ADD_TYPE_ID(summa, (std::vector<std::vector<int>>))
     CAF_ADD_TYPE_ID(summa, (std::vector<int>))
     CAF_ADD_TYPE_ID(summa, (std::vector<double>))
     CAF_ADD_TYPE_ID(summa, (std::vector<long int>))
+    CAF_ADD_TYPE_ID(summa, (std::vector<std::tuple<caf::actor, std::string>>))
 
 
 CAF_END_TYPE_ID_BLOCK(summa)

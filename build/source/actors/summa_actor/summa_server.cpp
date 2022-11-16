@@ -77,6 +77,14 @@ behavior summa_server(stateful_actor<summa_server_state>* self) {
             self->send(backup_server, connect_as_backup_v); // confirm connection with sender
             // Now we need to send the backup actor our current state
             self->send(backup_server, update_with_current_state_v, *self->state.batch_container, *self->state.client_container);
+            std::vector<Client> clients = self->state.client_container->getClientList();
+            for (Client client : clients) {
+                self->send(client.getActor(), update_backup_server_list_v, self->state.backup_servers_list);
+            }
+            
+            for(std::tuple<actor, std::string> backup_server : self->state.backup_servers_list) {
+                self->send(std::get<0>(backup_server), update_backup_server_list_v, self->state.backup_servers_list);
+            }
 
         }, 
 
