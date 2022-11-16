@@ -23,10 +23,15 @@ behavior summa_backup_server_init(stateful_actor<summa_server_state>* self, Dist
 
     self->set_down_handler([=](const down_msg& dm){
         if(dm.source == self->state.current_server) {
-            // aout(self) << "*** Lost Connection to Server" << std::endl;
-            // uint16_t port = 4444;
-            // std::string host = "a0449745d77d";
-            // connecting(self, host, port);
+            aout(self) << "*** Lost Connection to Server\n";
+            // check if we should become the new server
+            if (std::get<0>(self->state.backup_servers_list[0]) == self) {
+                aout(self) << "*** Becoming New Server\n";
+                self->become(summa_server(self));
+            } else {
+                aout(self) << "Still A backup - but need to connect to new server\n";
+                connecting_backup(self, std::get<1>(self->state.backup_servers_list[0]), (uint16_t) self->state.distributed_settings.port);
+            }
         }
     });
     return {
@@ -63,7 +68,7 @@ void connecting_backup(stateful_actor<summa_server_state>* self, const std::stri
                 self->monitor(hdl);
                 self->become(summa_backup_server(self, hdl));
 
-                },
+            },
             [=](const error& err) {
                 aout(self) << R"(*** cannot connect to ")" << host << R"(":)" << port
                    << " => " << to_string(err) << std::endl;
@@ -71,7 +76,7 @@ void connecting_backup(stateful_actor<summa_server_state>* self, const std::stri
 }
 
 behavior summa_backup_server(stateful_actor<summa_server_state>* self, const actor& server_actor) {
-    aout(self) << "We are the test behaviour\n";
+    aout(self) << "summa backup server has started\n";
     self->send(server_actor, connect_as_backup_v, self, self->state.hostname);
 
     return {
