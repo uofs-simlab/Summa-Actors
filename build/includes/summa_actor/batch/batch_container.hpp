@@ -32,7 +32,9 @@ class Batch_Container {
 
         // Update the batch to assigned = true
         void setBatchAssigned(Batch batch);
-
+        // Update the batch to assigned = false
+        void setBatchUnassigned(Batch batch);
+        
         // Check if there are batches left to solve
         bool hasUnsolvedBatches();
 

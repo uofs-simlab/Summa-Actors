@@ -132,6 +132,16 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     // Reciever:
     // Summary:
     CAF_ADD_ATOM(summa, update_backup_server_list)
+    // Sender:
+    // Reciever:
+    // Summary:
+    CAF_ADD_ATOM(summa, client_removed)
+    // Sender:
+    // Reciever:
+    // Summary:
+    CAF_ADD_ATOM(summa, new_client)
+    
+    
     // Struct Types
     CAF_ADD_TYPE_ID(summa, (Distributed_Settings))
     CAF_ADD_TYPE_ID(summa, (Summa_Actor_Settings))

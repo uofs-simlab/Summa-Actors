@@ -92,6 +92,16 @@ behavior summa_backup_server(stateful_actor<summa_server_state>* self, const act
             self->state.backup_servers_list = backup_servers;
         },
 
+        [=](new_client, caf::actor client_actor, std::string hostname) {
+            aout(self) << "Received a new client from the lead server\n";
+            self->state.client_container->addClient(client_actor, hostname);
+        },
+
+        [=](client_removed, Client& client) {
+            aout(self) << "Received a client removed message from the lead server\n";
+            self->state.client_container->removeClient(client);
+        },
+
         // Client finished a batch and the lead server has sent an update
         [=](done_batch, actor client_actor, Batch& batch) {
             aout(self) << "Batch: " << batch.getBatchID() << " is done\n";

@@ -3,7 +3,7 @@
 #include <vector>
 #include "batch/batch.hpp"
 #include "client/client.hpp"
-
+#include <optional>
 
 
 class Client_Container {
@@ -19,7 +19,7 @@ class Client_Container {
         
         int getNumClients();
         std::vector<Client> getClientList();
-        Client getClient(caf::actor_addr client_ref);
+        std::optional<Client> getClient(caf::actor_addr client_ref);
 
         // ####################################################################
         //                              Setters
@@ -33,6 +33,12 @@ class Client_Container {
         
         // add a new client to the client_list
         void addClient(caf::actor client_actor, std::string hostname);
+
+        // remove a client from the client_list
+        void removeClient(Client client);
+        
+        // return a client that is not solving a batch or return an empty optional    
+        std::optional<Client> getIdleClient();
 
         // Check if the client list is empty
         bool isEmpty();

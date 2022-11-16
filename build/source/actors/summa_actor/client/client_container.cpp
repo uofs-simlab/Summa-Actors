@@ -16,13 +16,13 @@ std::vector<Client> Client_Container::getClientList() {
     return this->client_list;
 }
 
-Client Client_Container::getClient(caf::actor_addr client_ref) {
+std::optional<Client> Client_Container::getClient(caf::actor_addr client_ref) {
     for(auto client = begin(this->client_list); client != end(this->client_list); ++client) {
         if(client_ref == client->getActor()) {
             return *client;
         }
     }
-    throw "ERROR -- Client Not Found";
+    return {};
 }
 
 // ####################################################################
@@ -48,6 +48,24 @@ void Client_Container::addClient(caf::actor client_actor, std::string hostname) 
     
     this->client_list.push_back(
         Client{client_id, client_actor, hostname});
+}
+
+void Client_Container::removeClient(Client client) {
+    for(auto client_it = begin(this->client_list); client_it != end(this->client_list); ++client_it) {
+        if (client_it->getID() == client.getID()) {
+            this->client_list.erase(client_it);
+            break;
+        }
+    }
+}
+
+std::optional<Client> Client_Container::getIdleClient() {
+    for(auto client = begin(this->client_list); client != end(this->client_list); ++client) {
+        if (client->getBatch().has_value() == false) {
+            return *client;
+        }
+    }
+    return {};
 }
 
 bool Client_Container::isEmpty() {

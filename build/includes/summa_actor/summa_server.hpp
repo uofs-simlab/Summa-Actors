@@ -58,6 +58,18 @@ behavior summa_server_exit(stateful_actor<summa_server_state>* self);
 // Creates the csv file that holds the results of the batches
 void initializeCSVOutput(std::string csv_output_path, std::string csv_output_name);
 
+// Send all connected actors the updated backup servers list
+void sendAllBackupServersList(stateful_actor<summa_server_state>* self);
+
+// Look for the lost backup server in the backup servers list and remove it
+void findAndRemoveLostBackupServer(stateful_actor<summa_server_state>* self, actor_addr lost_backup_server);
+
+// Check for an idle client to send the failed or next batch we find that is not assigned
+void checkForIdleClients(stateful_actor<summa_server_state>* self);
+
+void notifyBackupServersOfRemovedClient(stateful_actor<summa_server_state>* self, Client client);
+
 // Convience function to keep code clean - just does what you think it does
 void printRemainingBatches(stateful_actor<summa_server_state>* self);
-}
+
+} // namespace caf
