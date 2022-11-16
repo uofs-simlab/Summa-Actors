@@ -84,14 +84,36 @@ behavior summa_backup_server(stateful_actor<summa_server_state>* self, const act
         },
 
         [=](update_with_current_state, Batch_Container& batch_container, Client_Container& client_container) {
-            aout(self) << "Received the containers\n";
+            aout(self) << "Received the containers from the lead server\n";
             self->state.batch_container = &batch_container;
             self->state.client_container = &client_container;
-            aout(self) << "Num-Clients: " << self->state.client_container->getNumClients() << "\n";
-   
         },
 
-    };
+        // Client finished a batch and the lead server has sent an update
+        [=](done_batch, actor client_actor, Batch& batch) {
+            aout(self) << "Batch: " << batch.getBatchID() << " is done\n";
+            self->state.batch_container->updateBatch_success(batch);
+        },
 
+        // Client has been assigned new batch by the lead server
+        [=](new_assigned_batch, actor client_actor, Batch& batch) {
+            aout(self) << "New Batch: " << batch.getBatchID() << " has been assigned\n";
+            self->state.batch_container->setBatchAssigned(batch);
+            self->state.client_container->setBatchForClient(client_actor, batch);
+        },
+
+        // Lead server has no more batches to distribute
+        [=](no_more_batches, actor client_actor) {
+            aout(self) << "No more batches to distribute\n";
+            self->state.client_container->setBatchForClient(client_actor, {});
+
+        },
+
+        // Simulation has finished
+        [=](time_to_exit) {
+            aout(self) << "Received time to exit\n";
+            self->quit();
+        },
+    };
 }
 }

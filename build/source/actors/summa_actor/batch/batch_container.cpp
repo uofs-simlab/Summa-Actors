@@ -8,7 +8,7 @@ Batch_Container::Batch_Container(int total_hru_count, int num_hru_per_batch) {
 }
 
 int Batch_Container::getBatchesRemaining() {
-    return this->batch_list.size();
+    return this->batches_remaining;
 }
 
 void Batch_Container::assembleBatches(int total_hru_count, int num_hru_per_batch) {
@@ -40,8 +40,7 @@ void Batch_Container::updateBatchStatus_LostClient(int batch_id) {
     this->batch_list[batch_id].updateAssigned(false);
 }
 
-std::optional<Batch> Batch_Container::assignBatch() {
-
+std::optional<Batch> Batch_Container::getUnsolvedBatch() {
     for (std::vector<int>::size_type i = 0; i < this->batch_list.size(); i++) {
         if (!this->batch_list[i].isAssigned() && !this->batch_list[i].isSolved()) {
             this->batch_list[i].updateAssigned(true);
@@ -51,6 +50,10 @@ std::optional<Batch> Batch_Container::assignBatch() {
     return {};
 }
 
+void Batch_Container::setBatchAssigned(Batch batch) {
+    this->batch_list[batch.getBatchID()].updateAssigned(true);
+}
+
 void Batch_Container::updateBatch_success(Batch successful_batch, std::string output_csv) {
     int batch_id = successful_batch.getBatchID();
     successful_batch.writeBatchToFile(output_csv);
@@ -58,13 +61,13 @@ void Batch_Container::updateBatch_success(Batch successful_batch, std::string ou
     this->batches_remaining--;
 }
 
-std::optional<int> Batch_Container::findBatch(int batch_id) {
+void Batch_Container::updateBatch_success(Batch successful_batch) {
+    int batch_id = successful_batch.getBatchID();
+    this->batch_list[batch_id].updateSolved(true);
+    this->batches_remaining--;
+}
 
-    for(std::vector<int>::size_type i = 0; i < this->batch_list.size(); i++) {
-        if (this->batch_list[i].getBatchID() == batch_id) {
-            return i;
-        }
-    }
 
-    return {};
+bool Batch_Container::hasUnsolvedBatches() {
+    return this->batches_remaining > 0;
 }

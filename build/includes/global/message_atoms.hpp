@@ -8,11 +8,11 @@
 #include "settings_functions.hpp"
 
 CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
-     // Sender: job_actor 
-     // Reciever: summa_actor
-     // Summary: job_actor finished job
+    // Sender: job_actor 
+    // Reciever: summa_actor
+    // Summary: job_actor finished job
     CAF_ADD_ATOM(summa, done_job)
-    // Sender:
+    // Sender: 
     // Reciever: 
     // Summary:
     CAF_ADD_ATOM(summa, err)
@@ -119,8 +119,15 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     // Sender:
     // Reciever:
     // Summary:
-    CAF_ADD_ATOM(summa, update_with_current_state)    
-    CAF_ADD_ATOM(summa, heartbeat)    
+    CAF_ADD_ATOM(summa, update_with_current_state)
+    // Sender:
+    // Reciever:
+    // Summary:
+    CAF_ADD_ATOM(summa, new_assigned_batch)
+    // Sender:
+    // Reciever:
+    // Summary:
+    CAF_ADD_ATOM(summa, no_more_batches)
     // Struct Types
     CAF_ADD_TYPE_ID(summa, (Distributed_Settings))
     CAF_ADD_TYPE_ID(summa, (Summa_Actor_Settings))

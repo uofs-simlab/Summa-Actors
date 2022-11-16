@@ -1,5 +1,5 @@
-#pragma once
 #include "caf/all.hpp"
+#pragma once
 #include "client/client.hpp"
 
 
@@ -12,10 +12,6 @@ class Batch_Container {
 
         // Assemble the total number of HRUs given by the user into batches.
         void assembleBatches(int total_hru_count, int num_hru_per_batch);
-
-        // Find a batch by its id, 
-        // return its index in the vector 
-        std::optional<int> findBatch(int batch_id);
     
     public:
         
@@ -23,31 +19,26 @@ class Batch_Container {
         // with the two parameters that are passed in. 
         Batch_Container(int total_hru_count = 0, int num_hru_per_batch = 0);
 
-    
         // returns the size of the batch list
         int getBatchesRemaining();
         
-        /**
-         * Assign a batch to be solved by a client.
-         * The hostname and the actor_ref of the client solving this batch
-         * are added to the client for the servers awareness
-         * The batch is then returned by this method and sent to the respective client
-         */
-        std::optional<Batch> assignBatch();
+        // Find an unsolved batch, set it to assigned and return it.
+        std::optional<Batch> getUnsolvedBatch();
 
-        /**
-         * On a successful batch we take the batch given to us by the client 
-         * and add it to our solved_batches list.
-         *  
-         * We can then remove the batch from the global batch list.
-         */
+        // Update the batch status to solved and write the output to a file.
         void updateBatch_success(Batch successful_batch, std::string output_csv);
+        // Update the batch status but do not write the output to a file.
+        void updateBatch_success(Batch successful_batch);
 
-        /**
-         * A batch failure is returned to us by the client
-         * This is for when a client failed to solve the batch.
-         */
+        // Update the batch to assigned = true
+        void setBatchAssigned(Batch batch);
+
+        // Check if there are batches left to solve
+        bool hasUnsolvedBatches();
+
+        // TODO: Needs implementation
         void updateBatch_failure(Batch failed_batch);
+
 
         /**
          * A client has found to be disconnected. Unassign all batches

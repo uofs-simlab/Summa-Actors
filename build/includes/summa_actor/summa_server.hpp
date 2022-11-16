@@ -39,16 +39,20 @@ struct summa_server_state {
 
 };
 
-
+// Summa Server setup behaviour - initializes the state for the server
 behavior summa_server_init(stateful_actor<summa_server_state>* self, Distributed_Settings distributed_settings, 
     Summa_Actor_Settings summa_actor_settings, File_Access_Actor_Settings file_access_actor_settings,
     Job_Actor_Settings job_actor_settings, HRU_Actor_Settings hru_actor_settings);
 
+// Summa Server behaviour - handles messages from clients
 behavior summa_server(stateful_actor<summa_server_state>* self);
 
-int assembleBatches(stateful_actor<summa_server_state>* self);
+// Summa Server backup behaviour - handles the exit messages for clients
+behavior summa_server_exit(stateful_actor<summa_server_state>* self);
 
+// Creates the csv file that holds the results of the batches
 void initializeCSVOutput(std::string csv_output_path, std::string csv_output_name);
 
+// Convience function to keep code clean - just does what you think it does
 void printRemainingBatches(stateful_actor<summa_server_state>* self);
 }
