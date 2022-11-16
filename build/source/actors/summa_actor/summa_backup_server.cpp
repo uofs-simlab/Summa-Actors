@@ -87,17 +87,10 @@ behavior summa_backup_server(stateful_actor<summa_server_state>* self, const act
             aout(self) << "Received the containers\n";
             self->state.batch_container = &batch_container;
             self->state.client_container = &client_container;
-            Client client = self->state.client_container->removeClient_fromBack();
-            std::optional<Batch> batch = client.getBatch();
-            if (batch.has_value()) {
-                aout(self) << "batchHasValue\n";
-                aout(self) << batch.value().toString() << "\n";
-            } else {
-                aout(self) << "No Value in Batch\n";
-            }
-            // self->send(client.getActor(), heartbeat_v);
+            aout(self) << "Num-Clients: " << self->state.client_container->getNumClients() << "\n";
+   
+        },
 
-        }
     };
 
 }

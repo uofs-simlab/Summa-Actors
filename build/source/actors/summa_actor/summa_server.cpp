@@ -77,25 +77,12 @@ behavior summa_server(stateful_actor<summa_server_state>* self) {
             self->send(backup_server, connect_as_backup_v); // confirm connection with sender
             // Now we need to send the backup actor our current state
             // so that when we update in the future we just forward the update
-            Client client = self->state.client_container->removeClient_fromBack();
-            aout(self) << "Found Batch\n";
-            std::optional<Batch> batch = client.getBatch();
-            aout(self) << "Got a batch\n";
-
-            if (batch.has_value()) {
-            
-                aout(self) << batch.value().toString() << "\n";
-
-            } else {
-                aout(self) << "No Value in Batch\n";
-            }
             self->send(backup_server, update_with_current_state_v, *self->state.batch_container, *self->state.client_container);
 
         }, 
 
         [=](done_batch, actor client_actor, Batch& batch) {
             aout(self) << "Received Completed Batch From Client\n";
-
             aout(self) << batch.toString() << "\n\n";
 
             Client client = self->state.client_container->getClient(client_actor.address());

@@ -55,6 +55,9 @@ bool Client_Container::isEmpty() {
 }
 
 Client Client_Container::removeClient_fromBack() {
+    if (this->client_list.empty()) {
+        throw "ERROR -- Client List is Empty";
+    }
     Client client = this->client_list.back();
     this->client_list.pop_back();
     return client;
