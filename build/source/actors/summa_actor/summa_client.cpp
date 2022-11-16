@@ -1,7 +1,7 @@
 #include "summa_client.hpp"
 namespace caf {
 
-behavior summa_client(stateful_actor<summa_client_state>* self) {
+behavior summa_client_init(stateful_actor<summa_client_state>* self) {
 
     self->set_down_handler([=](const down_msg& dm){
         if(dm.source == self->state.current_server) {
@@ -10,16 +10,11 @@ behavior summa_client(stateful_actor<summa_client_state>* self) {
             // self->become(unconnected(self));
         }
     });
-    return unconnected(self);
-}
-/**
- * Attempt to connect to the server 
- */
-behavior unconnected(stateful_actor<summa_client_state>* self) {
+
     return {
         [=] (connect_atom, const std::string& host, uint16_t port) {
             connecting(self, host, port);
-        },
+        }
     };
 }
 
@@ -45,16 +40,16 @@ void connecting(stateful_actor<summa_client_state>* self, const std::string& hos
                 self->state.current_server = serv;
                 auto hdl = actor_cast<actor>(serv);
                 self->monitor(hdl);
-                self->become(running(self, hdl));
+                self->become(summa_client(self, hdl));
                 },
             [=](const error& err) {
                 aout(self) << R"(*** cannot connect to ")" << host << R"(":)" << port
                    << " => " << to_string(err) << std::endl;
-                self->become(unconnected(self));
+                self->become(summa_client_init(self));
         });
 }
 
-behavior running(stateful_actor<summa_client_state>* self, const actor& server_actor) {
+behavior summa_client(stateful_actor<summa_client_state>* self, const actor& server_actor) {
     char host[HOST_NAME_MAX];
     aout(self) << "Client Has Started Successfully" << std::endl;
     gethostname(host, HOST_NAME_MAX);

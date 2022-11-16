@@ -66,7 +66,7 @@ void run_client(actor_system& system, const config& cfg, Distributed_Settings di
        aout(self) << "ERROR: run_client() host and port - CHECK SETTINGS FILE\n";
        return;
     }
-    auto client = system.spawn(summa_client);
+    auto client = system.spawn(summa_client_init);
     connect_client(client, distributed_settings.hostname, distributed_settings.port);
    
 }

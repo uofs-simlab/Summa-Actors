@@ -70,10 +70,10 @@ behavior summa_server(stateful_actor<summa_server_state>* self) {
  
         },
 
-        [=](connect_as_backup, actor backup_server) {
+        [=](connect_as_backup, actor backup_server, std::string hostname) {
             aout(self) << "Received Connection Request From a backup server\n";
             self->monitor(backup_server);
-            self->state.backup_servers_list.push_back(backup_server);
+            self->state.backup_servers_list.push_back(std::make_tuple(backup_server, hostname));
             self->send(backup_server, connect_as_backup_v); // confirm connection with sender
             // Now we need to send the backup actor our current state
             self->send(backup_server, update_with_current_state_v, *self->state.batch_container, *self->state.client_container);
@@ -93,8 +93,9 @@ behavior summa_server(stateful_actor<summa_server_state>* self) {
                 self->state.client_container->setBatchForClient(client_actor, new_batch.value());
                 self->send(client_actor, new_batch.value());
                 for (auto& backup_server : self->state.backup_servers_list) {
-                    self->send(backup_server, done_batch_v, client_actor, batch);
-                    self->send(backup_server, new_assigned_batch_v, client_actor, new_batch.value());
+                    caf::actor backup_server_actor = std::get<0>(backup_server);
+                    self->send(backup_server_actor, done_batch_v, client_actor, batch);
+                    self->send(backup_server_actor, new_assigned_batch_v, client_actor, new_batch.value());
                 }
             } else {
                 // We may be done
@@ -107,8 +108,9 @@ behavior summa_server(stateful_actor<summa_server_state>* self) {
                 aout(self) << "No batches left to assign - Waiting for All Clients to finish\n";
                 self->state.client_container->setBatchForClient(client_actor, {});
                 for (auto& backup_server : self->state.backup_servers_list) {
-                    self->send(backup_server, done_batch_v, client_actor, batch);
-                    self->send(backup_server, no_more_batches_v, client_actor);
+                    caf::actor backup_server_actor = std::get<0>(backup_server);
+                    self->send(backup_server_actor, done_batch_v, client_actor, batch);
+                    self->send(backup_server_actor, no_more_batches_v, client_actor);
                 }
             }
         }, 
@@ -125,7 +127,8 @@ behavior summa_server_exit(stateful_actor<summa_server_state>* self) {
     }
     aout(self) << "Telling Backup Servers to Exit\n";
     for (auto& backup_server : self->state.backup_servers_list) {
-        self->send(backup_server, time_to_exit_v);
+        caf::actor backup_server_actor = std::get<0>(backup_server);
+        self->send(backup_server_actor, time_to_exit_v);
     }
     self->quit();
     return {};

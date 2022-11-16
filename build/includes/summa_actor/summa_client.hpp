@@ -17,8 +17,12 @@ struct summa_client_state {
     strong_actor_ptr current_server;
     std::string hostname;
     actor summa_actor_ref;
+    uint16_t port;
     int batch_id;
     int client_id; // id held by server
+
+    // tuple is the actor ref and hostname of the backup server
+    std::vector<std::tuple<caf::actor, std::string>> backup_servers;
 
     Batch current_batch;
 
@@ -28,9 +32,8 @@ struct summa_client_state {
     HRU_Actor_Settings hru_actor_settings;
 };
 
-behavior summa_client(stateful_actor<summa_client_state>* self);
-behavior unconnected(stateful_actor<summa_client_state>*);
+behavior summa_client_init(stateful_actor<summa_client_state>* self);
 void connecting(stateful_actor<summa_client_state>*, const std::string& host, uint16_t port);
-behavior running(stateful_actor<summa_client_state>*, const actor& summa_server);
+behavior summa_client(stateful_actor<summa_client_state>*, const actor& summa_server);
 
 }

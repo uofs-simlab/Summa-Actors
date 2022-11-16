@@ -23,12 +23,17 @@ struct summa_server_state {
     actor backup_server2 = nullptr;
     strong_actor_ptr current_server; // if server is a backup then this will be set to the lead server
     actor current_server_actor;
-    
+
+    std::string hostname;
+
+
     std::string csv_output_name = "/batch_results.csv";
     
     Client_Container *client_container;
     Batch_Container *batch_container;
-    std::vector<caf::actor> backup_servers_list;
+    
+    // Actor Reference, Hostname
+    std::vector<std::tuple<caf::actor, std::string>> backup_servers_list;
 
     // Settings Structures
     Distributed_Settings distributed_settings;
