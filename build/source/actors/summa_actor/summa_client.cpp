@@ -2,12 +2,22 @@
 namespace caf {
 
 behavior summa_client_init(stateful_actor<summa_client_state>* self) {
+    aout(self) << "Client Has Started Successfully" << std::endl;
 
+    char host[HOST_NAME_MAX];
+    gethostname(host, HOST_NAME_MAX);
+    self->state.hostname = host;
     self->set_down_handler([=](const down_msg& dm){
         if(dm.source == self->state.current_server) {
             aout(self) << "*** Lost Connection to Server" << std::endl;
             self->state.current_server = nullptr;
-            // self->become(unconnected(self));
+            // try to connect to new server
+            if (self->state.backup_servers_list.size() > 0) {
+                aout(self) << "Trying to connect to backup server" << std::endl;
+                connecting(self, std::get<1>(self->state.backup_servers_list[0]), self->state.port);
+            } else {
+                aout(self) << "No backup servers available" << std::endl;
+            }
         }
     });
 
@@ -20,7 +30,7 @@ behavior summa_client_init(stateful_actor<summa_client_state>* self) {
 
 void connecting(stateful_actor<summa_client_state>* self, const std::string& host, uint16_t port) {
     self->state.current_server = nullptr;
-
+    self->state.port = port;
     auto mm = self->system().middleman().actor_handle();
     self->request(mm, infinite, connect_atom_v, host, port)
         .await(
@@ -40,8 +50,13 @@ void connecting(stateful_actor<summa_client_state>* self, const std::string& hos
                 self->state.current_server = serv;
                 auto hdl = actor_cast<actor>(serv);
                 self->monitor(hdl);
-                self->become(summa_client(self, hdl));
-                },
+                self->state.current_server_actor = hdl;
+                if (!self->state.running) {
+                    // If we have just initalized than we need to do an inital connection
+                    // TODO: This is a hack - we should be able to do this as its own behavior
+                    self->become(summa_client(self));
+                }
+            },
             [=](const error& err) {
                 aout(self) << R"(*** cannot connect to ")" << host << R"(":)" << port
                    << " => " << to_string(err) << std::endl;
@@ -49,13 +64,9 @@ void connecting(stateful_actor<summa_client_state>* self, const std::string& hos
         });
 }
 
-behavior summa_client(stateful_actor<summa_client_state>* self, const actor& server_actor) {
-    char host[HOST_NAME_MAX];
-    aout(self) << "Client Has Started Successfully" << std::endl;
-    gethostname(host, HOST_NAME_MAX);
-    self->state.hostname = host;
-
-    self->send(server_actor, connect_to_server_v, self, self->state.hostname);
+behavior summa_client(stateful_actor<summa_client_state>* self) {
+    self->state.running = true;
+    self->send(self->state.current_server_actor, connect_to_server_v, self, self->state.hostname);
     return {
         // Response from the server on successful connection
         [=](connect_to_server, Summa_Actor_Settings summa_actor_settings, File_Access_Actor_Settings file_access_actor_settings,
@@ -106,7 +117,7 @@ behavior summa_client(stateful_actor<summa_client_state>* self, const actor& ser
             if(self->state.current_server == nullptr) {
                 aout(self) << "Maybe We Should not Send this\n";
             } else {
-                self->send(server_actor, done_batch_v, self, self->state.current_batch);
+                self->send(self->state.current_server_actor, done_batch_v, self, self->state.current_batch);
 
             }
         },

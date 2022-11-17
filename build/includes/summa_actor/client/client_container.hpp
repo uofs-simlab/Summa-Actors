@@ -40,6 +40,8 @@ class Client_Container {
         // return a client that is not solving a batch or return an empty optional    
         std::optional<Client> getIdleClient();
 
+        
+
         // Check if the client list is empty
         bool isEmpty();
         

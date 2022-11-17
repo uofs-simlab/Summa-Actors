@@ -52,34 +52,44 @@ behavior summa_server(stateful_actor<summa_server_state>* self) {
         // A message from a client requesting to connect
         [=](connect_to_server, actor client_actor, std::string hostname) {
             aout(self) << "Actor trying to connect with hostname " << hostname << "\n";
-            self->state.client_container->addClient(client_actor, hostname);
-            self->monitor(client_actor);
-            // Tell client they are connected
-            self->send(client_actor, connect_to_server_v, 
-                self->state.summa_actor_settings, 
-                self->state.file_access_actor_settings, 
-                self->state.job_actor_settings, 
-                self->state.hru_actor_settings);
-            
-            std::optional<Batch> batch = self->state.batch_container->getUnsolvedBatch();
-            if (batch.has_value()) {
-                self->state.client_container->setBatchForClient(client_actor, batch.value());
-                aout(self) << "SENDING: " << batch.value().toString() << "\n";
-                self->send(client_actor, batch.value());
-                for (auto& backup_server : self->state.backup_servers_list) {
-                    caf::actor backup_server_actor = std::get<0>(backup_server);
-                    self->send(backup_server_actor, new_client_v, client_actor, hostname);
-                    self->send(backup_server_actor, new_assigned_batch_v, client_actor, batch.value());
+            // Check if the client is already connected
+            std::optional<Client> client = self->state.client_container->getClient(client_actor.address());
+            if (client.has_value()) {
+                aout(self) << "Client is already connected\n";
+                aout(self) << "Checking if client has batch\n";
+                std::optional<Batch> batch = client.value().getBatch();
+                if (batch.has_value()) {
+                    return;
                 }
             } else {
-                aout(self) << "No batches left to assign - Waiting for All Clients to finish\n";
-                // Let Backup Servers know that a new client has connected
-                for (auto& backup_server : self->state.backup_servers_list) {
-                    caf::actor backup_server_actor = std::get<0>(backup_server);
-                    self->send(backup_server_actor, new_client_v, client_actor, hostname);
+                self->state.client_container->addClient(client_actor, hostname);
+                self->monitor(client_actor);
+                // Tell client they are connected
+                self->send(client_actor, connect_to_server_v, 
+                    self->state.summa_actor_settings, 
+                    self->state.file_access_actor_settings, 
+                    self->state.job_actor_settings, 
+                    self->state.hru_actor_settings);
+                
+                std::optional<Batch> batch = self->state.batch_container->getUnsolvedBatch();
+                if (batch.has_value()) {
+                    self->state.client_container->setBatchForClient(client_actor, batch.value());
+                    aout(self) << "SENDING: " << batch.value().toString() << "\n";
+                    self->send(client_actor, batch.value());
+                    for (auto& backup_server : self->state.backup_servers_list) {
+                        caf::actor backup_server_actor = std::get<0>(backup_server);
+                        self->send(backup_server_actor, new_client_v, client_actor, hostname);
+                        self->send(backup_server_actor, new_assigned_batch_v, client_actor, batch.value());
+                    }
+                } else {
+                    aout(self) << "No batches left to assign - Waiting for All Clients to finish\n";
+                    // Let Backup Servers know that a new client has connected
+                    for (auto& backup_server : self->state.backup_servers_list) {
+                        caf::actor backup_server_actor = std::get<0>(backup_server);
+                        self->send(backup_server_actor, new_client_v, client_actor, hostname);
+                    }
                 }
-            }
- 
+            } 
         },
 
         [=](connect_as_backup, actor backup_server, std::string hostname) {
