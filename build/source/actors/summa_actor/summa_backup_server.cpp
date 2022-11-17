@@ -91,8 +91,8 @@ behavior summa_backup_server(stateful_actor<summa_server_state>* self, const act
         // get the list of batches and clients from the lead server
         [=](update_with_current_state, Batch_Container& batch_container, Client_Container& client_container) {
             aout(self) << "Received the containers from the lead server\n";
-            self->state.batch_container = &batch_container;
-            self->state.client_container = &client_container;
+            self->state.batch_container = batch_container;
+            self->state.client_container = client_container;
         },
 
         [=](update_backup_server_list, std::vector<std::tuple<caf::actor, std::string>> backup_servers) {
@@ -102,31 +102,31 @@ behavior summa_backup_server(stateful_actor<summa_server_state>* self, const act
 
         [=](new_client, caf::actor client_actor, std::string hostname) {
             aout(self) << "Received a new client from the lead server\n";
-            self->state.client_container->addClient(client_actor, hostname);
+            self->state.client_container.addClient(client_actor, hostname);
         },
 
         [=](client_removed, Client& client) {
             aout(self) << "Received a client removed message from the lead server\n";
-            self->state.client_container->removeClient(client);
+            self->state.client_container.removeClient(client);
         },
 
         // Client finished a batch and the lead server has sent an update
         [=](done_batch, actor client_actor, Batch& batch) {
             aout(self) << "Batch: " << batch.getBatchID() << " is done\n";
-            self->state.batch_container->updateBatch_success(batch);
+            self->state.batch_container.updateBatch_success(batch);
         },
 
         // Client has been assigned new batch by the lead server
         [=](new_assigned_batch, actor client_actor, Batch& batch) {
             aout(self) << "New Batch: " << batch.getBatchID() << " has been assigned\n";
-            self->state.batch_container->setBatchAssigned(batch);
-            self->state.client_container->setBatchForClient(client_actor, batch);
+            self->state.batch_container.setBatchAssigned(batch);
+            self->state.client_container.setBatchForClient(client_actor, batch);
         },
 
         // Lead server has no more batches to distribute
         [=](no_more_batches, actor client_actor) {
             aout(self) << "No more batches to distribute\n";
-            self->state.client_container->setBatchForClient(client_actor, {});
+            self->state.client_container.setBatchForClient(client_actor, {});
         },
 
         // Simulation has finished

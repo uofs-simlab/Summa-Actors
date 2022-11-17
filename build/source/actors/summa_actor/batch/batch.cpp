@@ -4,8 +4,12 @@ Batch::Batch(int batch_id, int start_hru, int num_hru){
     this->batch_id = batch_id;
     this->start_hru = start_hru;
     this->num_hru = num_hru;
+    this->run_time = 0.0;
+    this->read_time = 0.0;
+    this->write_time = 0.0;
     this->assigned_to_actor = false;
     this->solved = false;
+
 }
 
 // Getters

@@ -1,6 +1,8 @@
 #include "test.hpp"
-#include "client.hpp"
-#include "batch_manager.hpp"
+#include "batch/batch.hpp"
+#include "batch/batch_container.hpp"
+#include "client/client.hpp"
+#include "client/client_container.hpp"
 #include <vector>
 #include "caf/all.hpp"
 
@@ -10,7 +12,6 @@
 void TEST_CLIENT() {
     std::cout << "Testing Client\n";
     // Create 5 Clients
-    int lost_node_threshold = 3;
     
     Client_Container* client_container = new Client_Container();
     
@@ -36,6 +37,9 @@ void TEST_CLIENT() {
     int num_hru_per_batch = 2;
     Batch_Container* batch_container = new Batch_Container(total_hru_count,num_hru_per_batch);
     batch_container->printBatches();
+
+    delete(batch_container);
+    delete(client_container);
 
     // client_container->incrementLostPotential(3);
     // client_container->incrementLostPotential(3);

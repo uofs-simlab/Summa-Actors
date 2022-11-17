@@ -72,6 +72,7 @@ class Batch_Container {
             return inspector.object(batch_container).fields(
                 inspector.field("total_hru_count", batch_container.total_hru_count),
                 inspector.field("num_hru_per_batch", batch_container.num_hru_per_batch),
+                inspector.field("batches_remaining", batch_container.batches_remaining),
                 inspector.field("batch_list", batch_container.batch_list));
         }
  

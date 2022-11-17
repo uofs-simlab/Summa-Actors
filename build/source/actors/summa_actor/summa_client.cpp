@@ -14,6 +14,7 @@ behavior summa_client_init(stateful_actor<summa_client_state>* self) {
             // try to connect to new server
             if (self->state.backup_servers_list.size() > 0) {
                 aout(self) << "Trying to connect to backup server" << std::endl;
+                std::this_thread::sleep_for(std::chrono::seconds(2)); // sleep to give the server time to start
                 connecting(self, std::get<1>(self->state.backup_servers_list[0]), self->state.port);
             } else {
                 aout(self) << "No backup servers available" << std::endl;

@@ -27,8 +27,8 @@ struct summa_server_state {
 
     std::string csv_output_name = "/batch_results.csv";
     
-    Client_Container *client_container;
-    Batch_Container *batch_container;
+    Client_Container client_container;
+    Batch_Container batch_container;
     
     // Actor Reference, Hostname
     std::vector<std::tuple<caf::actor, std::string>> backup_servers_list;
