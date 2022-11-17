@@ -27,6 +27,7 @@ behavior summa_backup_server_init(stateful_actor<summa_server_state>* self, Dist
             // check if we should become the new server
             if (std::get<0>(self->state.backup_servers_list[0]) == self) {
                 aout(self) << "*** Becoming New Server\n";
+                self->state.backup_servers_list.erase(self->state.backup_servers_list.begin());
                 self->become(summa_server(self));
             } else {
                 aout(self) << "Still A backup - but need to connect to new server\n";
@@ -74,6 +75,8 @@ void connecting_backup(stateful_actor<summa_server_state>* self, const std::stri
                    << " => " << to_string(err) << std::endl;
         });
 }
+
+
 
 behavior summa_backup_server(stateful_actor<summa_server_state>* self, const actor& server_actor) {
     aout(self) << "summa backup server has started\n";
