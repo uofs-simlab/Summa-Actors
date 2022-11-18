@@ -49,6 +49,10 @@ behavior summa_server(stateful_actor<summa_server_state>* self) {
 
     return {
 
+        [=] (is_lead_server, caf::actor client_actor) {
+            self->send(client_actor, is_lead_server_v, true, self);
+        },
+
         // A message from a client requesting to connect
         [=](connect_to_server, actor client_actor, std::string hostname) {
             aout(self) << "Actor trying to connect with hostname " << hostname << "\n";
@@ -69,7 +73,8 @@ behavior summa_server(stateful_actor<summa_server_state>* self) {
                     self->state.summa_actor_settings, 
                     self->state.file_access_actor_settings, 
                     self->state.job_actor_settings, 
-                    self->state.hru_actor_settings);
+                    self->state.hru_actor_settings,
+                    self->state.backup_servers_list);
                 
                 std::optional<Batch> batch = self->state.batch_container.getUnsolvedBatch();
                 if (batch.has_value()) {

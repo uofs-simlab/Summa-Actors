@@ -52,6 +52,7 @@ void connect_client(caf::actor client_to_connect, std::string host_to_connect_to
     if (!host_to_connect_to.empty() && port_number > 0) {
         uint16_t port = 4444;
         anon_send(client_to_connect, connect_atom_v, host_to_connect_to, (uint16_t) port );
+
     } else {
         std::cerr << "No Server Config" << std::endl;
     }
@@ -62,12 +63,10 @@ void run_client(actor_system& system, const config& cfg, Distributed_Settings di
 
     aout(self) << "Starting SUMMA-Client in Distributed Mode\n";
     
-    if (distributed_settings.hostname == "" || distributed_settings.port == -1) {
-       aout(self) << "ERROR: run_client() host and port - CHECK SETTINGS FILE\n";
-       return;
-    }
     auto client = system.spawn(summa_client_init);
-    connect_client(client, distributed_settings.hostname, distributed_settings.port);
+    for (auto host : distributed_settings.servers_list) {
+        connect_client(client, host, distributed_settings.port);
+    }
    
 }
 
@@ -82,15 +81,13 @@ void run_server(actor_system& system, const config& cfg, Distributed_Settings di
         return;
     }
 
-
-
     // Check if we have are the backup server
     if (cfg.backup_server) {          
         auto server = system.spawn(summa_backup_server_init,
             distributed_settings,summa_actor_settings,file_access_actor_settings,
             job_actor_settings,hru_actor_settings);
         publish_server(server, distributed_settings.port);
-        connect_client(server, distributed_settings.hostname, distributed_settings.port);
+        connect_client(server, distributed_settings.servers_list[0], distributed_settings.port);
         // self->send(server, connect_as_backup_v);
 
     } else {     
@@ -109,21 +106,12 @@ void caf_main(actor_system& sys, const config& cfg) {
     scoped_actor self{sys};
     int err;
 
-    Distributed_Settings distributed_settings;
-    Summa_Actor_Settings summa_actor_settings;
-    File_Access_Actor_Settings file_access_actor_settings;
-    Job_Actor_Settings job_actor_settings;
-    HRU_Actor_Settings hru_actor_settings;
-    err = read_settings_from_json(cfg.config_file,
-                                distributed_settings, 
-                                summa_actor_settings, 
-                                file_access_actor_settings,
-                                job_actor_settings, 
-                                hru_actor_settings);
-    if (err != 0) {
-        return;
-    } 
-
+    Distributed_Settings distributed_settings = readDistributedSettings(cfg.config_file);
+    Summa_Actor_Settings summa_actor_settings = readSummaActorSettings(cfg.config_file);
+    File_Access_Actor_Settings file_access_actor_settings = readFileAccessActorSettings(cfg.config_file);
+    Job_Actor_Settings job_actor_settings = readJobActorSettings(cfg.config_file);
+    HRU_Actor_Settings hru_actor_settings = readHRUActorSettings(cfg.config_file);
+    
     aout(self) << "Printing Settings For SUMMA Simulation\n";
     check_settings_from_json(distributed_settings,
                             summa_actor_settings, 

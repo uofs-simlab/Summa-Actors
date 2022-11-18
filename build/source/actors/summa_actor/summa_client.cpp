@@ -14,8 +14,9 @@ behavior summa_client_init(stateful_actor<summa_client_state>* self) {
             // try to connect to new server
             if (self->state.backup_servers_list.size() > 0) {
                 aout(self) << "Trying to connect to backup server" << std::endl;
-                std::this_thread::sleep_for(std::chrono::seconds(2)); // sleep to give the server time to start
+                std::this_thread::sleep_for(std::chrono::seconds(3)); // sleep to give the server time to start
                 connecting(self, std::get<1>(self->state.backup_servers_list[0]), self->state.port);
+
             } else {
                 aout(self) << "No backup servers available" << std::endl;
             }
@@ -29,56 +30,48 @@ behavior summa_client_init(stateful_actor<summa_client_state>* self) {
     };
 }
 
-void connecting(stateful_actor<summa_client_state>* self, const std::string& host, uint16_t port) {
-    self->state.current_server = nullptr;
-    self->state.port = port;
-    auto mm = self->system().middleman().actor_handle();
-    self->request(mm, infinite, connect_atom_v, host, port)
-        .await(
-            [=](const node_id&, strong_actor_ptr serv,
-                const std::set<std::string>& ifs) {
-                if (!serv) {
-                    aout(self) << R"(*** no server found at ")" << host << R"(":)" << port
-                     << std::endl;
-                    return;
-                }
-                if (!ifs.empty()) {
-                    aout(self) << R"(*** typed actor found at ")" << host << R"(":)"
-                        << port << ", but expected an untyped actor " << std::endl;
-                    return;
-                }
-                aout(self) << "*** successfully connected to server" << std::endl;
-                self->state.current_server = serv;
-                auto hdl = actor_cast<actor>(serv);
-                self->monitor(hdl);
-                self->state.current_server_actor = hdl;
-                if (!self->state.running) {
-                    // If we have just initalized than we need to do an inital connection
-                    // TODO: This is a hack - we should be able to do this as its own behavior
-                    self->become(summa_client(self));
-                }
-            },
-            [=](const error& err) {
-                aout(self) << R"(*** cannot connect to ")" << host << R"(":)" << port
-                   << " => " << to_string(err) << std::endl;
-                self->become(summa_client_init(self));
-        });
-}
-
+ 
 behavior summa_client(stateful_actor<summa_client_state>* self) {
     self->state.running = true;
     self->send(self->state.current_server_actor, connect_to_server_v, self, self->state.hostname);
     return {
         // Response from the server on successful connection
-        [=](connect_to_server, Summa_Actor_Settings summa_actor_settings, File_Access_Actor_Settings file_access_actor_settings,
-                Job_Actor_Settings job_actor_settings, HRU_Actor_Settings hru_actor_settings) {
+        [=](connect_to_server, 
+            Summa_Actor_Settings summa_actor_settings, 
+            File_Access_Actor_Settings file_access_actor_settings,
+            Job_Actor_Settings job_actor_settings, 
+            HRU_Actor_Settings hru_actor_settings,
+            std::vector<std::tuple<caf::actor, std::string>> backup_servers) {
             
             aout(self) << "Successfully Connected to Server Actor \n"; 
             self->state.summa_actor_settings = summa_actor_settings;
             self->state.file_access_actor_settings = file_access_actor_settings;
             self->state.job_actor_settings = job_actor_settings;
             self->state.hru_actor_settings = hru_actor_settings;
-            
+            self->state.backup_servers_list = backup_servers;
+        },
+
+        [=] (connect_atom, const std::string& host, uint16_t port) {
+            aout(self) << "Received a connect request while running\n";
+            // connecting(self, host, port);
+        },
+
+        [=] (is_lead_server, bool is_server, actor server_actor) {
+            if (is_server) {
+                aout(self) << "This is the lead server" << std::endl;
+                self->monitor(server_actor);
+                self->state.current_server_actor = server_actor;
+                for(auto& server : self->state.servers) {
+                    if(actor_cast<actor>(server) == server_actor ) {
+                        aout(self) << "Found Match\n";
+                        self->state.current_server = server;
+                    }
+                }
+                self->state.servers.clear();
+                self->send(self->state.current_server_actor, connect_to_server_v, self, self->state.hostname);
+            } else {
+                aout(self) << "This is not the lead server" << std::endl;
+            }
         },
 
         [=](update_backup_server_list, std::vector<std::tuple<caf::actor, std::string>> backup_servers) {
@@ -130,4 +123,39 @@ behavior summa_client(stateful_actor<summa_client_state>* self) {
         
     };
 }
+
+void connecting(stateful_actor<summa_client_state>* self, const std::string& host, uint16_t port) {
+    self->state.current_server = nullptr;
+    self->state.port = port;
+    auto mm = self->system().middleman().actor_handle();
+    self->request(mm, infinite, connect_atom_v, host, port)
+        .await(
+            [=](const node_id&, strong_actor_ptr serv,
+                const std::set<std::string>& ifs) {
+                if (!serv) {
+                    aout(self) << R"(*** no server found at ")" << host << R"(":)" << port
+                     << std::endl;
+                    return;
+                }
+                if (!ifs.empty()) {
+                    aout(self) << R"(*** typed actor found at ")" << host << R"(":)"
+                        << port << ", but expected an untyped actor " << std::endl;
+                    return;
+                }
+                aout(self) << "*** successfully connected to server" << std::endl;
+                self->state.servers.push_back(serv);
+                auto hdl = actor_cast<actor>(serv);
+                self->send(hdl, is_lead_server_v, self);
+                if (!self->state.running) {
+                    self->become(summa_client(self));
+                }
+            
+            },
+            [=](const error& err) {
+                aout(self) << R"(*** cannot connect to ")" << host << R"(":)" << port
+                   << " => " << to_string(err) << std::endl;
+                self->become(summa_client_init(self));
+        });
+}
+
 }

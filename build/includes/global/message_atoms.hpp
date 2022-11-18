@@ -140,7 +140,18 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     // Reciever:
     // Summary:
     CAF_ADD_ATOM(summa, new_client)
-    
+    // Sender:
+    // Reciever:
+    // Summary:
+    CAF_ADD_ATOM(summa, is_lead_server)
+    // Sender:
+    // Reciever:
+    // Summary:
+    CAF_ADD_ATOM(summa, yes)
+    // Sender:
+    // Reciever:
+    // Summary:
+    CAF_ADD_ATOM(summa, no)
     
     // Struct Types
     CAF_ADD_TYPE_ID(summa, (Distributed_Settings))
@@ -161,6 +172,8 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     CAF_ADD_TYPE_ID(summa, (std::vector<double>))
     CAF_ADD_TYPE_ID(summa, (std::vector<long int>))
     CAF_ADD_TYPE_ID(summa, (std::vector<std::tuple<caf::actor, std::string>>))
+
+    CAF_ADD_TYPE_ID(summa, (std::optional<caf::strong_actor_ptr>))
 
 
 CAF_END_TYPE_ID_BLOCK(summa)

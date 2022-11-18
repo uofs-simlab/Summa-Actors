@@ -83,6 +83,10 @@ behavior summa_backup_server(stateful_actor<summa_server_state>* self, const act
     self->send(server_actor, connect_as_backup_v, self, self->state.hostname);
 
     return {
+        
+        [=] (is_lead_server, caf::actor client_actor) {
+            self->send(client_actor, is_lead_server_v, false, self);
+        },
 
         [=](connect_as_backup) {
             aout(self) << "We are now connected to the lead server\n";
@@ -95,16 +99,19 @@ behavior summa_backup_server(stateful_actor<summa_server_state>* self, const act
             self->state.client_container = client_container;
         },
 
+        // We have a new backup server that was added to the server
         [=](update_backup_server_list, std::vector<std::tuple<caf::actor, std::string>> backup_servers) {
             aout(self) << "Received the backup server list from the lead server\n";
             self->state.backup_servers_list = backup_servers;
         },
-
+        
+        // New Client has been received
         [=](new_client, caf::actor client_actor, std::string hostname) {
             aout(self) << "Received a new client from the lead server\n";
             self->state.client_container.addClient(client_actor, hostname);
         },
 
+        // Lead server had client removed
         [=](client_removed, Client& client) {
             aout(self) << "Received a client removed message from the lead server\n";
             self->state.client_container.removeClient(client);

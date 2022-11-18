@@ -14,8 +14,10 @@
 namespace caf {
 
 struct summa_client_state {
-    strong_actor_ptr current_server;
+    strong_actor_ptr current_server = nullptr;
     actor current_server_actor;
+    std::vector<strong_actor_ptr> servers;
+    
     std::string hostname;
     actor summa_actor_ref;
     uint16_t port;
@@ -36,7 +38,11 @@ struct summa_client_state {
 };
 
 behavior summa_client_init(stateful_actor<summa_client_state>* self);
-void connecting(stateful_actor<summa_client_state>*, const std::string& host, uint16_t port);
 behavior summa_client(stateful_actor<summa_client_state>* self);
+
+void connecting(stateful_actor<summa_client_state>*, const std::string& host, uint16_t port);
+
+void findLeadServer(stateful_actor<summa_client_state>* self, strong_actor_ptr serv);
+
 
 }
