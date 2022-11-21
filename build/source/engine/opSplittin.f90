@@ -613,8 +613,6 @@ subroutine opSplittin(&
 
                       ! domain splitting
                       else
-                        print*,"split domain"
-
                         ! initialize to .false.
                         fluxMask%var(iVar)%dat = .false.
 
