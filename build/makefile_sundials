@@ -195,7 +195,7 @@ SUMMA_PRELIM= \
 		sunGeomtry.f90 \
 		convE2Temp.f90 \
 		allocspaceActors.f90 \
-		checkStruc.f90 \
+		sundials/checkStruc.f90 \
 		childStruc.f90 \
 		ffile_info.f90 \
 		read_dimension.f90 \
