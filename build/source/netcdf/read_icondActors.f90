@@ -52,9 +52,9 @@ subroutine read_icond_nlayers(nGRU,err) bind(C, name="readIcondNLayers")
     USE globalData,only:indx_meta
     
     ! file paths
-    USE summaActors_FileManager,only:STATE_PATH                        ! optional path to state/init. condition files (defaults to SETTINGS_PATH)
-    USE summaActors_FileManager,only:SETTINGS_PATH                     ! define path to settings files (e.g., parameters, soil and veg. tables)
-    USE summaActors_FileManager,only:MODEL_INITCOND                    ! name of model initial conditions file
+    USE summaFileManager,only:STATE_PATH                        ! optional path to state/init. condition files (defaults to SETTINGS_PATH)
+    USE summaFileManager,only:SETTINGS_PATH                     ! define path to settings files (e.g., parameters, soil and veg. tables)
+    USE summaFileManager,only:MODEL_INITCOND                    ! name of model initial conditions file
 
     implicit none
 

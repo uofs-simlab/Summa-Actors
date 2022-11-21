@@ -89,7 +89,7 @@ subroutine def_output(handle_ncid,startGRU,nGRU,nHRU,err) bind(C, name='def_outp
   ! modules that are not globalData
   USE var_lookup,only:maxVarFreq                               ! # of available output frequencies
   USE get_ixname_module,only:get_freqName                      ! get name of frequency from frequency index
-  USE summaActors_FileManager,only:OUTPUT_PATH,OUTPUT_PREFIX ! define output file
+  USE summaFileManager,only:OUTPUT_PATH,OUTPUT_PREFIX ! define output file
 
   ! ---------------------------------------------------------------------------------------
   ! * variables from C++

@@ -69,7 +69,7 @@ contains
  USE conv_funcs_module,only:SPHM2RELHM,RELHM2SPHM,WETBULBTMP   ! conversion functions
  USE snow_utils_module,only:fracliquid,templiquid              ! functions to compute temperature/liquid water
  USE time_utils_module,only:compcalday                         ! convert julian day to calendar date
- USE summaActors_FileManager,only: NC_TIME_ZONE                       ! time zone option from control file
+ USE summaFileManager,only: NC_TIME_ZONE                       ! time zone option from control file
  ! compute derived forcing data variables
  implicit none
  ! input variables

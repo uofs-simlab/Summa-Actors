@@ -737,8 +737,8 @@ end subroutine popMetadat
 subroutine read_output_file(err,message)
   USE netcdf
   ! to get name of output control file from user
-  USE summaActors_FileManager,only:SETTINGS_PATH       ! path for metadata files
-  USE summaActors_FileManager,only:OUTPUT_CONTROL      ! file with output controls
+  USE summaFileManager,only:SETTINGS_PATH       ! path for metadata files
+  USE summaFileManager,only:OUTPUT_CONTROL      ! file with output controls
 
   ! some dimensional parameters
   USE globalData, only:outFreq                  ! output frequencies

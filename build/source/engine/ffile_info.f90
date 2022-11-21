@@ -44,9 +44,9 @@ subroutine ffile_info(indxGRU,handle_forcFileInfo,num_forcing_files,err) bind(C,
   USE ascii_util_module,only:linewidth
   USE netcdf_util_module,only:nc_file_open           ! open netCDF file
   USE netcdf_util_module,only:netcdf_err             ! netcdf error handling function
-  USE summaActors_FileManager,only:SETTINGS_PATH            ! path for metadata files
-  USE summaActors_FileManager,only:FORCING_PATH             ! path for forcing files
-  USE summaActors_FileManager,only:FORCING_FILELIST         ! list of model forcing files
+  USE summaFileManager,only:SETTINGS_PATH            ! path for metadata files
+  USE summaFileManager,only:FORCING_PATH             ! path for forcing files
+  USE summaFileManager,only:FORCING_FILELIST         ! list of model forcing files
   USE globalData,only:forc_meta                      ! forcing metadata
   USE get_ixname_module,only:get_ixtime,get_ixforce  ! identify index of named variable
   USE ascii_util_module,only:get_vlines              ! get a vector of non-comment lines
@@ -55,7 +55,7 @@ subroutine ffile_info(indxGRU,handle_forcFileInfo,num_forcing_files,err) bind(C,
   USE globalData,only:time_meta
   USE allocspace_module,only:allocLocal
   USE time_utils_module,only:extractTime     ! extract time info from units string
-  USE summaActors_FileManager,only: SIM_START_TM, SIM_END_TM! time info from control file module
+  USE summaFileManager,only: SIM_START_TM, SIM_END_TM! time info from control file module
   USE var_lookup,only:iLookTIME              ! named variables that identify indices in the time structures
 
 

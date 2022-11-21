@@ -21,7 +21,7 @@ module cppwrap_fileAccess
 subroutine read_pinit_C(err) bind(C, name='read_pinit_C')
   USE globalData,only:localParFallback                        ! local column default parameters
   USE globalData,only:basinParFallback                        ! basin-average default parameters
-  USE summaActors_FileManager,only:LOCALPARAM_INFO,BASINPARAM_INFO   ! files defining the default values and constraints for model parameters
+  USE summaFileManager,only:LOCALPARAM_INFO,BASINPARAM_INFO   ! files defining the default values and constraints for model parameters
   USE globalData,only:mpar_meta,bpar_meta                     ! parameter metadata structures
   USE read_pinit_module,only:read_pinit                       ! module to read initial model parameter values
 
@@ -49,8 +49,8 @@ end subroutine read_pinit_C
 subroutine read_vegitationTables(err) bind(C, name="read_vegitationTables")
   USE SummaActors_setup,only:SOIL_VEG_GEN_PARM
   USE module_sf_noahmplsm,only:read_mp_veg_parameters         ! module to read NOAH vegetation tables
-  USE summaActors_FileManager,only:SETTINGS_PATH                     ! define path to settings files (e.g., parameters, soil and veg. tables)
-  USE summaActors_FileManager,only:GENPARM,VEGPARM,SOILPARM,MPTABLE  ! files defining the noah tables
+  USE summaFileManager,only:SETTINGS_PATH                     ! define path to settings files (e.g., parameters, soil and veg. tables)
+  USE summaFileManager,only:GENPARM,VEGPARM,SOILPARM,MPTABLE  ! files defining the noah tables
   USE globalData,only:model_decisions                         ! model decision structure
   USE var_lookup,only:iLookDECISIONS                          ! look-up values for model decisions
 

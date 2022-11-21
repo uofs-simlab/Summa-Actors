@@ -20,7 +20,7 @@ USE globalData,only:integerMissing            ! integer missing value
 USE var_lookup,only:iLookTIME,iLookFORCE      ! named variables to define structure elements
 
 
-USE summaActors_FileManager,only:FORCING_PATH        ! path of the forcing data file
+USE summaFileManager,only:FORCING_PATH        ! path of the forcing data file
 USE netcdf_util_module,only:nc_file_close  ! close netcdf file
 
 
@@ -161,7 +161,7 @@ subroutine openForcingFile(forcFileInfo,iFile,infile,ncId,err,message)
     USE globalData,only:utcTime                             ! all times in UTC (timeOffset = longitude/15. hours)
     USE globalData,only:localTime                           ! all times local (timeOffset = 0)
     USE globalData,only:refJulday_data
-    USE summaActors_filemanager,only:NC_TIME_ZONE
+    USE summafilemanager,only:NC_TIME_ZONE
     ! dummy variables
     type(file_info),intent(inout)     :: forcFileInfo(:)
     integer(i4b),intent(in)           :: iFile              ! index of current forcing file in forcing file list

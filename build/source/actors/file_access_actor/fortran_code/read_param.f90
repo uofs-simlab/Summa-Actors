@@ -59,8 +59,8 @@ subroutine openParamFile(param_ncid, param_file_exists, err) bind(C, name="openP
   USE netcdf
   USE netcdf_util_module,only:nc_file_open
   ! Parameters File
-  USE summaActors_FileManager,only:SETTINGS_PATH             ! path for metadata files
-  USE summaActors_FileManager,only:PARAMETER_TRIAL           ! file with parameter trial values
+  USE summaFileManager,only:SETTINGS_PATH             ! path for metadata files
+  USE summaFileManager,only:PARAMETER_TRIAL           ! file with parameter trial values
   
   implicit none
   integer(c_int),intent(out)          :: param_ncid

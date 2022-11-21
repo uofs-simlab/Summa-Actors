@@ -40,8 +40,8 @@ subroutine read_dimension(numGRUs,numHRUs,startGRU,err) bind(C, name="readDimens
   USE globalData,only:gru_struc                              ! gru->hru mapping structure
   USE globalData,only:index_map                              ! hru->gru mapping structure
   ! file paths for attribute file
-  USE summaActors_FileManager,only:SETTINGS_PATH                     ! define path to settings files (e.g., parameters, soil and veg. tables)
-  USE summaActors_FileManager,only:LOCAL_ATTRIBUTES                  ! name of model initial attributes file
+  USE summaFileManager,only:SETTINGS_PATH                     ! define path to settings files (e.g., parameters, soil and veg. tables)
+  USE summaFileManager,only:LOCAL_ATTRIBUTES                  ! name of model initial attributes file
 
 
   implicit none

@@ -25,8 +25,6 @@ USE nrtype
 
 ! global variables
 USE globalData,only:urbanVegCategory    ! vegetation category for urban areas
-!USE globalData,only:fracJulday          ! fractional julian days since the start of year
-! USE globalData,only:yearLength          ! number of days in the current year
 
 ! provide access to the derived types to define the data structures
 USE data_types,only:&

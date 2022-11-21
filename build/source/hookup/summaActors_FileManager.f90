@@ -22,7 +22,7 @@
 ! Original version based on:
 ! (C) Copyright 2009-2010  ---  Dmitri Kavetski and Martyn Clark ---  All rights reserved
 !******************************************************************
-MODULE summaActors_FileManager
+MODULE summaFileManager
   USE, intrinsic :: iso_c_binding
   use nrtype
   implicit none
@@ -180,4 +180,4 @@ subroutine summa_SetTimesDirsAndFiles(file_manager,err) bind(C, name="setTimesDi
 
 end subroutine summa_SetTimesDirsAndFiles
 
-END MODULE summaActors_FileManager
+END MODULE summaFileManager

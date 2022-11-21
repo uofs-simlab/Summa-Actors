@@ -70,7 +70,7 @@ subroutine setTimeZoneOffset(iFile, tmZoneOffsetFracDay, err) bind(C, name="setT
   USE time_utils_module,only:extractTime        ! extract time info from units string
   USE time_utils_module,only:fracDay            ! compute fractional day
 
-  USE summaActors_filemanager,only:NC_TIME_ZONE
+  USE summafilemanager,only:NC_TIME_ZONE
   implicit none
 
   integer(c_int),intent(in)             :: iFile

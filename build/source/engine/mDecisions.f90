@@ -182,7 +182,7 @@ subroutine mDecisions(num_steps,err) bind(C, name='mDecisions')
   USE time_utils_module,only:extractTime     ! extract time info from units string
   USE time_utils_module,only:compjulday      ! compute the julian day
   USE time_utils_module,only:fracDay         ! compute fractional day
-  USE summaActors_FileManager,only: SIM_START_TM, SIM_END_TM   ! time info from control file module
+  USE summaFileManager,only: SIM_START_TM, SIM_END_TM   ! time info from control file module
 
   implicit none
   ! define output
@@ -677,8 +677,8 @@ subroutine readoption(err,message)
   USE ascii_util_module,only:file_open       ! open file
   USE ascii_util_module,only:linewidth       ! max character number for one line
   USE ascii_util_module,only:get_vlines      ! get a vector of non-comment lines
-  USE summaActors_FileManager,only:SETTINGS_PATH    ! path for metadata files
-  USE summaActors_FileManager,only:M_DECISIONS      ! definition of modeling options
+  USE summaFileManager,only:SETTINGS_PATH    ! path for metadata files
+  USE summaFileManager,only:M_DECISIONS      ! definition of modeling options
   USE get_ixname_module,only:get_ixdecisions ! identify index of named variable
   USE globalData,only:model_decisions        ! model decision structure
   implicit none

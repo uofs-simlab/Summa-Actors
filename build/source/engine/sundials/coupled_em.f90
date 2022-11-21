@@ -65,8 +65,8 @@ USE globalData,only:globalPrintFlag        ! the global print flag
 
 ! look-up values for the numerical method
 USE mDecisions_module,only:         &
-  bEuler,                            &      ! home-grown backward Euler solution with long time steps
-  sundials                                  ! SUNDIALS/IDA solution
+ bEuler,                            &      ! home-grown backward Euler solution with long time steps
+ sundials                                  ! SUNDIALS/IDA solution
 
 ! look-up values for the maximum interception capacity
 USE mDecisions_module,only:         &
@@ -96,31 +96,31 @@ real(dp),parameter     :: dx=1.e-6_dp          ! finite difference increment
 contains
 
 
-  ! ************************************************************************************************
-  ! public subroutine coupled_em: run the coupled energy-mass model for one timestep
-  ! ************************************************************************************************
+ ! ************************************************************************************************
+ ! public subroutine coupled_em: run the coupled energy-mass model for one timestep
+ ! ************************************************************************************************
 subroutine coupled_em(&
-                        ! model control
-                        indxHRU,           & ! intent(in):    hruId
-                        dt_init,           & ! intent(inout): used to initialize the size of the sub-step
-                        dt_init_factor,    & ! Used to adjust the length of the timestep in the event of a failure
-                        computeVegFlux,    & ! intent(inout): flag to indicate if we are computing fluxes over vegetation (.false. means veg is buried with snow)
-                        ! data structures (input)
-                        type_data,         & ! intent(in):    local classification of soil veg etc. for each HRU
-                        attr_data,         & ! intent(in):    local attributes for each HRU
-                        forc_data,         & ! intent(in):    model forcing data
-                        mpar_data,         & ! intent(in):    model parameters
-                        bvar_data,         & ! intent(in):    basin-average variables
-                        lookup_data,       & ! intent(in):    lookup tables
-                        ! data structures (input-output)
-                        indx_data,         & ! intent(inout): model indices
-                        prog_data,         & ! intent(inout): prognostic variables for a local HRU
-                        diag_data,         & ! intent(inout): diagnostic variables for a local HRU
-                        flux_data,         & ! intent(inout): model fluxes for a local HRU
-                        fracJulDay,        &
-                        yearLength,        &
-                        ! error control
-                        err,message)         ! intent(out):   error control
+                       ! model control
+                       indxHRU,           & ! intent(in):    hruId
+                       dt_init,           & ! intent(inout): used to initialize the size of the sub-step
+                       dt_init_factor,    & ! Used to adjust the length of the timestep in the event of a failure
+                       computeVegFlux,    & ! intent(inout): flag to indicate if we are computing fluxes over vegetation (.false. means veg is buried with snow)
+                       ! data structures (input)
+                       type_data,         & ! intent(in):    local classification of soil veg etc. for each HRU
+                       attr_data,         & ! intent(in):    local attributes for each HRU
+                       forc_data,         & ! intent(in):    model forcing data
+                       mpar_data,         & ! intent(in):    model parameters
+                       bvar_data,         & ! intent(in):    basin-average variables
+                       lookup_data,       & ! intent(in):    lookup tables
+                       ! data structures (input-output)
+                       indx_data,         & ! intent(inout): model indices
+                       prog_data,         & ! intent(inout): prognostic variables for a local HRU
+                       diag_data,         & ! intent(inout): diagnostic variables for a local HRU
+                       flux_data,         & ! intent(inout): model fluxes for a local HRU
+                       fracJulDay,        &
+                       yearLength,        &
+                       ! error control
+                       err,message)         ! intent(out):   error control
   ! structure allocations
   USE allocspace_module,only:allocLocal      ! allocate local data structures
   USE allocspace_module,only:resizeData      ! clone a data structure
@@ -250,7 +250,7 @@ subroutine coupled_em(&
     message=trim(message)//'expect "spatial_gw" decision to equal localColumn when "groundwatr" decision is bigBucket'
     err=20; return
   endif
-  
+ 
   ! check if the aquifer is included
   includeAquifer = (model_decisions(iLookDECISIONS%groundwatr)%iDecision==bigBucket)
 
@@ -289,7 +289,7 @@ subroutine coupled_em(&
   nLayers = nSnow + nSoil
   
 
-  ! create temporary data structures for prognostic variables
+ ! create temporary data structures for prognostic variables
   call resizeData(prog_meta(:),prog_data,prog_temp,err=err,message=cmessage)
     if(err/=0)then
     err=20
@@ -333,7 +333,7 @@ subroutine coupled_em(&
   do iVar=1,size(averageFlux_meta)
     flux_mean%var(iVar)%dat(:) = 0._dp
   end do
-  
+ 
 
   ! associate local variables with information in the data structures
   associate(&
@@ -436,7 +436,7 @@ subroutine coupled_em(&
     print*, message
     return
   end if
-  
+ 
 
   ! check
   if(computeVegFlux)then
@@ -662,7 +662,7 @@ subroutine coupled_em(&
 
     ! save/recover copies of index variables
     do iVar=1,size(indx_data%var)
-      !print*, 'indx_meta(iVar)%varname = ', trim(indx_meta(iVar)%varname)
+     !print*, 'indx_meta(iVar)%varname = ', trim(indx_meta(iVar)%varname)
       select case(stepFailure)
         case(.false.); indx_temp%var(iVar)%dat(:) = indx_data%var(iVar)%dat(:)
         case(.true.);  indx_data%var(iVar)%dat(:) = indx_temp%var(iVar)%dat(:)
@@ -805,16 +805,16 @@ subroutine coupled_em(&
     ! (check for the special case of "snow without a layer")
     if(nSnow==0)then
       call implctMelt(&
-                    ! input/output: integrated snowpack properties
-                    prog_data%var(iLookPROG%scalarSWE)%dat(1),               & ! intent(inout): snow water equivalent (kg m-2)
-                    prog_data%var(iLookPROG%scalarSnowDepth)%dat(1),         & ! intent(inout): snow depth (m)
-                    prog_data%var(iLookPROG%scalarSfcMeltPond)%dat(1),       & ! intent(inout): surface melt pond (kg m-2)
-                    ! input/output: properties of the upper-most soil layer
-                    prog_data%var(iLookPROG%mLayerTemp)%dat(nSnow+1),        & ! intent(inout): surface layer temperature (K)
-                    prog_data%var(iLookPROG%mLayerDepth)%dat(nSnow+1),       & ! intent(inout): surface layer depth (m)
-                    diag_data%var(iLookDIAG%mLayerVolHtCapBulk)%dat(nSnow+1),& ! intent(inout): surface layer volumetric heat capacity (J m-3 K-1)
-                    ! output: error control
-                    err,cmessage                                             ) ! intent(out): error control
+                   ! input/output: integrated snowpack properties
+                   prog_data%var(iLookPROG%scalarSWE)%dat(1),               & ! intent(inout): snow water equivalent (kg m-2)
+                   prog_data%var(iLookPROG%scalarSnowDepth)%dat(1),         & ! intent(inout): snow depth (m)
+                   prog_data%var(iLookPROG%scalarSfcMeltPond)%dat(1),       & ! intent(inout): surface melt pond (kg m-2)
+                   ! input/output: properties of the upper-most soil layer
+                   prog_data%var(iLookPROG%mLayerTemp)%dat(nSnow+1),        & ! intent(inout): surface layer temperature (K)
+                   prog_data%var(iLookPROG%mLayerDepth)%dat(nSnow+1),       & ! intent(inout): surface layer depth (m)
+                   diag_data%var(iLookDIAG%mLayerVolHtCapBulk)%dat(nSnow+1),& ! intent(inout): surface layer volumetric heat capacity (J m-3 K-1)
+                   ! output: error control
+                   err,cmessage                                             ) ! intent(out): error control
       if(err/=0)then
         err=20
         message=trim(message)//trim(cmessage)
@@ -850,6 +850,7 @@ subroutine coupled_em(&
                   diag_data,                              & ! intent(inout): model diagnostic variables for a local HRU
                   flux_data,                              & ! intent(inout): model fluxes for a local HRU
                   bvar_data,                              & ! intent(in):    model variables for the local basin
+                  lookup_data,                            & ! intent(in):    lookup tables
                   model_decisions,                        & ! intent(in):    model decisions
                   ! output: model control
                   dtMultiplier,                           & ! intent(out):   substep multiplier (-)
@@ -1004,7 +1005,7 @@ subroutine coupled_em(&
         message=trim(message)//trim(cmessage)
         return
       end if
-    
+   
       ! recompute snow depth and SWE
       if(nSnow > 0)then
         prog_data%var(iLookPROG%scalarSnowDepth)%dat(1) = sum(  prog_data%var(iLookPROG%mLayerDepth)%dat(1:nSnow))
@@ -1012,16 +1013,16 @@ subroutine coupled_em(&
                                                             prog_data%var(iLookPROG%mLayerVolFracIce)%dat(1:nSnow)*iden_ice) &
                                                           * prog_data%var(iLookPROG%mLayerDepth)%dat(1:nSnow) )
       end if
-  
+ 
       ! increment fluxes
       dt_wght = dt_sub/data_step ! define weight applied to each sub-step
       do iVar=1,size(averageFlux_meta)
         flux_mean%var(iVar)%dat(:) = flux_mean%var(iVar)%dat(:) + flux_data%var(averageFlux_meta(iVar)%ixParent)%dat(:)*dt_wght
       end do
-  
+ 
       ! increment change in storage associated with the surface melt pond (kg m-2)
       if(nSnow==0) sfcMeltPond = sfcMeltPond + prog_data%var(iLookPROG%scalarSfcMeltPond)%dat(1)
-  
+ 
       ! increment soil compression (kg m-2)
       totalSoilCompress = totalSoilCompress + diag_data%var(iLookDIAG%scalarSoilCompress)%dat(1) ! total soil compression over whole layer (kg m-2)
       !********** END SUNDIALS ADDITION *****************
@@ -1209,11 +1210,11 @@ subroutine coupled_em(&
 
   ! update coordinate variables
   call calcHeight(&
-                  ! input/output: data structures
-                  indx_data,   & ! intent(in): layer type
-                  prog_data,   & ! intent(inout): model variables for a local HRU
-                  ! output: error control
-                  err,cmessage)
+                 ! input/output: data structures
+                 indx_data,   & ! intent(in): layer type
+                 prog_data,   & ! intent(inout): model variables for a local HRU
+                 ! output: error control
+                 err,cmessage)
   if(err/=0)then
     err=20
     message=trim(message)//trim(cmessage)
@@ -1226,17 +1227,17 @@ subroutine coupled_em(&
     flux_data%var(averageFlux_meta(iVar)%ixParent)%dat(:) = flux_mean%var(iVar)%dat(:)
   end do
 
-  ! ***********************************************************************************************************************************
-  ! ***********************************************************************************************************************************
-  ! ***********************************************************************************************************************************
-  ! ***********************************************************************************************************************************
+ ! ***********************************************************************************************************************************
+ ! ***********************************************************************************************************************************
+ ! ***********************************************************************************************************************************
+ ! ***********************************************************************************************************************************
 
-  ! ---
-  ! *** balance checks...
-  ! ---------------------
+ ! ---
+ ! *** balance checks...
+ ! ---------------------
 
-  ! save the average compression and melt pond storage in the data structures
-  prog_data%var(iLookPROG%scalarSfcMeltPond)%dat(1)  = sfcMeltPond
+ ! save the average compression and melt pond storage in the data structures
+ prog_data%var(iLookPROG%scalarSfcMeltPond)%dat(1)  = sfcMeltPond
 
   ! associate local variables with information in the data structures
   associate(&
@@ -1449,67 +1450,67 @@ subroutine coupled_em(&
 end subroutine coupled_em
 
 
-  ! *********************************************************************************************************
-  ! private subroutine implctMelt: compute melt of the "snow without a layer"
-  ! *********************************************************************************************************
-  subroutine implctMelt(&
-                        ! input/output: integrated snowpack properties
-                        scalarSWE,         & ! intent(inout): snow water equivalent (kg m-2)
-                        scalarSnowDepth,   & ! intent(inout): snow depth (m)
-                        scalarSfcMeltPond, & ! intent(inout): surface melt pond (kg m-2)
-                        ! input/output: properties of the upper-most soil layer
-                        soilTemp,          & ! intent(inout): surface layer temperature (K)
-                        soilDepth,         & ! intent(inout): surface layer depth (m)
-                        soilHeatcap,       & ! intent(inout): surface layer volumetric heat capacity (J m-3 K-1)
-                        ! output: error control
-                        err,message        ) ! intent(out): error control
-  implicit none
-  ! input/output: integrated snowpack properties
-  real(dp),intent(inout)    :: scalarSWE          ! snow water equivalent (kg m-2)
-  real(dp),intent(inout)    :: scalarSnowDepth    ! snow depth (m)
-  real(dp),intent(inout)    :: scalarSfcMeltPond  ! surface melt pond (kg m-2)
-  ! input/output: properties of the upper-most soil layer
-  real(dp),intent(inout)    :: soilTemp           ! surface layer temperature (K)
-  real(dp),intent(inout)    :: soilDepth          ! surface layer depth (m)
-  real(dp),intent(inout)    :: soilHeatcap        ! surface layer volumetric heat capacity (J m-3 K-1)
-  ! output: error control
-  integer(i4b),intent(out)  :: err                ! error code
-  character(*),intent(out)  :: message            ! error message
-  ! local variables
-  real(dp)                  :: nrgRequired        ! energy required to melt all the snow (J m-2)
-  real(dp)                  :: nrgAvailable       ! energy available to melt the snow (J m-2)
-  real(dp)                  :: snwDensity         ! snow density (kg m-3)
-  ! initialize error control
-  err=0; message='implctMelt/'
+ ! *********************************************************************************************************
+ ! private subroutine implctMelt: compute melt of the "snow without a layer"
+ ! *********************************************************************************************************
+ subroutine implctMelt(&
+                       ! input/output: integrated snowpack properties
+                       scalarSWE,         & ! intent(inout): snow water equivalent (kg m-2)
+                       scalarSnowDepth,   & ! intent(inout): snow depth (m)
+                       scalarSfcMeltPond, & ! intent(inout): surface melt pond (kg m-2)
+                       ! input/output: properties of the upper-most soil layer
+                       soilTemp,          & ! intent(inout): surface layer temperature (K)
+                       soilDepth,         & ! intent(inout): surface layer depth (m)
+                       soilHeatcap,       & ! intent(inout): surface layer volumetric heat capacity (J m-3 K-1)
+                       ! output: error control
+                       err,message        ) ! intent(out): error control
+ implicit none
+ ! input/output: integrated snowpack properties
+ real(dp),intent(inout)    :: scalarSWE          ! snow water equivalent (kg m-2)
+ real(dp),intent(inout)    :: scalarSnowDepth    ! snow depth (m)
+ real(dp),intent(inout)    :: scalarSfcMeltPond  ! surface melt pond (kg m-2)
+ ! input/output: properties of the upper-most soil layer
+ real(dp),intent(inout)    :: soilTemp           ! surface layer temperature (K)
+ real(dp),intent(inout)    :: soilDepth          ! surface layer depth (m)
+ real(dp),intent(inout)    :: soilHeatcap        ! surface layer volumetric heat capacity (J m-3 K-1)
+ ! output: error control
+ integer(i4b),intent(out)  :: err                ! error code
+ character(*),intent(out)  :: message            ! error message
+ ! local variables
+ real(dp)                  :: nrgRequired        ! energy required to melt all the snow (J m-2)
+ real(dp)                  :: nrgAvailable       ! energy available to melt the snow (J m-2)
+ real(dp)                  :: snwDensity         ! snow density (kg m-3)
+ ! initialize error control
+ err=0; message='implctMelt/'
 
-  if(scalarSWE > 0._dp)then
+ if(scalarSWE > 0._dp)then
   ! only melt if temperature of the top soil layer is greater than Tfreeze
   if(soilTemp > Tfreeze)then
-    ! compute the energy required to melt all the snow (J m-2)
-    nrgRequired     = scalarSWE*LH_fus
-    ! compute the energy available to melt the snow (J m-2)
-    nrgAvailable    = soilHeatcap*(soilTemp - Tfreeze)*soilDepth
-    ! compute the snow density (not saved)
-    snwDensity      = scalarSWE/scalarSnowDepth
-    ! compute the amount of melt, and update SWE (kg m-2)
-    if(nrgAvailable > nrgRequired)then
+   ! compute the energy required to melt all the snow (J m-2)
+   nrgRequired     = scalarSWE*LH_fus
+   ! compute the energy available to melt the snow (J m-2)
+   nrgAvailable    = soilHeatcap*(soilTemp - Tfreeze)*soilDepth
+   ! compute the snow density (not saved)
+   snwDensity      = scalarSWE/scalarSnowDepth
+   ! compute the amount of melt, and update SWE (kg m-2)
+   if(nrgAvailable > nrgRequired)then
     scalarSfcMeltPond  = scalarSWE
     scalarSWE          = 0._dp
-    else
+   else
     scalarSfcMeltPond  = nrgAvailable/LH_fus
     scalarSWE          = scalarSWE - scalarSfcMeltPond
-    end if
-    ! update depth
-    scalarSnowDepth = scalarSWE/snwDensity
-    ! update temperature of the top soil layer (K)
-    soilTemp =  soilTemp - (LH_fus*scalarSfcMeltPond/soilDepth)/soilHeatcap
+   end if
+   ! update depth
+   scalarSnowDepth = scalarSWE/snwDensity
+   ! update temperature of the top soil layer (K)
+   soilTemp =  soilTemp - (LH_fus*scalarSfcMeltPond/soilDepth)/soilHeatcap
   else  ! melt is zero if the temperature of the top soil layer is less than Tfreeze
-    scalarSfcMeltPond = 0._dp  ! kg m-2
+   scalarSfcMeltPond = 0._dp  ! kg m-2
   end if ! (if the temperature of the top soil layer is greater than Tfreeze)
-  else  ! melt is zero if the "snow without a layer" does not exist
+ else  ! melt is zero if the "snow without a layer" does not exist
   scalarSfcMeltPond = 0._dp  ! kg m-2
-  end if ! (if the "snow without a layer" exists)
+ end if ! (if the "snow without a layer" exists)
 
-  end subroutine implctMelt
+ end subroutine implctMelt
 
 end module coupled_em_module

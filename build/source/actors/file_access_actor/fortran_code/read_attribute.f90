@@ -55,8 +55,8 @@ subroutine openAttributeFile(attr_ncid, err) bind(C, name="openAttributeFile")
   USE netcdf
   USE netcdf_util_module,only:nc_file_open                   ! open netcdf file
   ! Attribute File
-  USE summaActors_FileManager,only:SETTINGS_PATH                     ! define path to settings files (e.g., parameters, soil and veg. tables)
-  USE summaActors_FileManager,only:LOCAL_ATTRIBUTES                  ! name of model initial attributes file
+  USE summaFileManager,only:SETTINGS_PATH                     ! define path to settings files (e.g., parameters, soil and veg. tables)
+  USE summaFileManager,only:LOCAL_ATTRIBUTES                  ! name of model initial attributes file
   implicit none
   integer(c_int),intent(out)                :: attr_ncid
   integer(c_int),intent(out)                :: err
@@ -130,8 +130,8 @@ subroutine readAttributeFromNetCDF(ncid, index_gru, index_hru, num_var, &
   USE globalData,only:attr_meta,type_meta,id_meta            ! metadata structures
   USE get_ixname_module,only:get_ixAttr,get_ixType,get_ixId  ! access function to find index of elements in structure
   ! Information to make up the attributes file
-  USE summaActors_FileManager,only:SETTINGS_PATH                     ! define path to settings files (e.g., parameters, soil and veg. tables)
-  USE summaActors_FileManager,only:LOCAL_ATTRIBUTES                  ! name of model initial attributes file
+  USE summaFileManager,only:SETTINGS_PATH                     ! define path to settings files (e.g., parameters, soil and veg. tables)
+  USE summaFileManager,only:LOCAL_ATTRIBUTES                  ! name of model initial attributes file
   ! Fortran Data Type Structures
   USE data_types,only:var_d, var_i, var_i8
   implicit none

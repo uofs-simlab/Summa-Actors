@@ -77,9 +77,9 @@ contains
  ! global data structures
  USE globalData,only:model_decisions                         ! model decision structure
  ! file paths
- USE summaActors_FileManager,only:SETTINGS_PATH                     ! path to settings files (e.g., Noah vegetation tables)
- USE summaActors_FileManager,only:STATE_PATH                        ! optional path to state/init. condition files (defaults to SETTINGS_PATH)
- USE summaActors_FileManager,only:MODEL_INITCOND                    ! name of model initial conditions file
+ USE summaFileManager,only:SETTINGS_PATH                     ! path to settings files (e.g., Noah vegetation tables)
+ USE summaFileManager,only:STATE_PATH                        ! optional path to state/init. condition files (defaults to SETTINGS_PATH)
+ USE summaFileManager,only:MODEL_INITCOND                    ! name of model initial conditions file
  ! timing variables
  USE globalData,only:startRestart,endRestart                 ! date/time for the start and end of reading model restart files
  USE globalData,only:elapsedRestart                          ! elapsed time to read model restart files

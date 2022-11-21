@@ -57,6 +57,10 @@ NUMREC_DIR = $(F_KORE_DIR)/numrec
 NOAHMP_DIR = $(F_KORE_DIR)/noah-mp
 ENGINE_DIR = $(F_KORE_DIR)/engine
 ACTORS_DIR = $(F_KORE_DIR)/actors
+
+SUMMA_ENGINE_DIR = $(MOD_PATH)/summa/build/source/engine
+
+
 JOB_ACTOR_DIR = $(ACTORS_DIR)/job_actor
 FILE_ACCESS_DIR = $(ACTORS_DIR)/file_access_actor/fortran_code
 HRU_ACTOR_DIR = $(ACTORS_DIR)/hru_actor/fortran_code
@@ -98,10 +102,22 @@ SUMMA_DEPEND_ON_FILEMANAGER= \
 		outpt_stat.f90
 DEPEND_ON_FILEMANAGER = $(patsubst %, $(DSHARE_DIR)/%, $(SUMMA_DEPEND_ON_FILEMANAGER))
 
+
+
+
 # utility modules
-SUMMA_UTILMS= \
-		time_utils.f90 \
+TIME_UTILS = \
+		time_utils.f90
+
+TIME_UTILS_UTILMS = $(patsubst %, $(ENGINE_DIR)/%, $(TIME_UTILS))
+
+M_DECISIONS = \
 		mDecisions.f90 \
+
+M_DECISIONS_UTILMS = $(patsubst %, $(SUMMA_ENGINE_DIR)/%, $(M_DECISIONS))
+
+
+SUMMA_UTILMS= \
 		snow_utils.f90 \
 		soil_utils.f90 \
 		sundials/soil_utilsAddSundials.f90 \
@@ -114,9 +130,15 @@ UTILMS = $(patsubst %, $(ENGINE_DIR)/%, $(SUMMA_UTILMS))
 SUMMA_MODGUT= \
 		MODGUT = $(patsubst %, $(ENGINE_DIR)/%, $(SUMMA_MODGUT))
 
-# Solver
+# Solver - Split up to compiling with old summa files vs new summa files
+
+VEG_PHENLGY= \
+		vegPhenlgy.f90
+
+VEG_PHENLGY_SOLVER = $(patsubst %, $(ENGINE_DIR)/%, $(VEG_PHENLGY))
+
+
 SUMMA_SOLVER= \
-		vegPhenlgy.f90 \
 		diagn_evar.f90 \
 		stomResist.f90 \
 		groundwatr.f90 \
@@ -133,23 +155,16 @@ SUMMA_SOLVER= \
 		eval8summa.f90 \
 		summaSolve.f90 \
 		systemSolv.f90 \
-		sundials/type4IDA.f90 \
-		sundials/tol4IDA.f90 \
-		sundials/computEnthalpy.f90 \
-		sundials/computHeatCap.f90 \
-		sundials/computThermConduct.f90 \
-		sundials/computResidSundials.f90 \
-		sundials/eval8summaSundials.f90 \
-		sundials/computJacobSundials.f90 \
-		sundials/computSnowDepth.f90 \
-		sundials/summaSolveSundialsIDA.f90 \
-		sundials/systemSolvSundials.f90 \
-		varSubstep.f90 \
-		sundials/varSubstepSundials.f90 \
-		opSplittin.f90 \
-		sundials/coupled_em.f90
+		opSplittin.f90
 		
-SOLVER = $(patsubst %, $(ENGINE_DIR)/%, $(SUMMA_SOLVER))
+SOLVER = $(patsubst %, $(SUMMA_ENGINE_DIR)/%, $(SUMMA_SOLVER))
+
+SUMMA_ACTORS_SOLVER = \
+		coupled_em.f90
+		
+COUPLED_EM = $(patsubst %, $(ENGINE_DIR)/%, $(SUMMA_ACTORS_SOLVER))
+
+
 
 # Interface code for Fortran-C++
 SUMMA_INTERFACE= \
@@ -245,10 +260,10 @@ SUMMA_NETCDF = \
 NETCDF = $(patsubst %, $(NETCDF_DIR)/%, $(SUMMA_NETCDF))
 
 # ... stitch together common programs
-COMM_ALL = $(NRUTIL) $(NRPROC) $(DATAMS) $(INTERFACE) $(HOOKUP) $(DEPEND_ON_FILEMANAGER) $(UTILMS)
-
+COMM_ALL = $(NRUTIL) $(NRPROC) $(DATAMS) $(INTERFACE) $(HOOKUP) $(DEPEND_ON_FILEMANAGER) \
+	$(TIME_UTILS_UTILMS) $(M_DECISIONS_UTILMS) $(UTILMS)
 # ... stitch together SUMMA programs
-SUMMA_ALL = $(NETCDF) $(PRELIM) $(MODRUN) $(SOLVER) 
+SUMMA_ALL = $(NETCDF) $(PRELIM) $(MODRUN) $(VEG_PHENLGY_SOLVER) $(SOLVER) $(COUPLED_EM)
 
 # Define the driver routine
 SUMMA_DRIVER= \
