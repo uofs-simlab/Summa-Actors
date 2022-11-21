@@ -58,6 +58,7 @@ NOAHMP_DIR = $(F_KORE_DIR)/noah-mp
 ENGINE_DIR = $(F_KORE_DIR)/engine
 ACTORS_DIR = $(F_KORE_DIR)/actors
 
+SUMMA_DSHARE_DIR = $(MOD_PATH)/summa/build/source/dshare
 SUMMA_ENGINE_DIR = $(MOD_PATH)/summa/build/source/engine
 
 
@@ -89,40 +90,30 @@ HOOKUP = $(patsubst %, $(HOOKUP_DIR)/%, $(SUMMA_HOOKUP))
 
 # Data modules
 SUMMA_DATAMS= \
-		multiconst.f90 \
 		var_lookup.f90 \
+		multiconst.f90 \
 		data_types.f90 \
 		globalData.f90 \
-		flxMapping.f90 \
-		get_ixname.f90
+		flxMapping.f90
 DATAMS = $(patsubst %, $(DSHARE_DIR)/%, $(SUMMA_DATAMS))
 
+IXNAME_METADAT = \
+		get_ixname.f90 \
+		popMetadat.f90
+IXNAME_METADAT_DATAMS = $(patsubst %, $(SUMMA_DSHARE_DIR)/%, $(IXNAME_METADAT))
+
 SUMMA_DEPEND_ON_FILEMANAGER= \
-		popMetadat.f90 \
 		outpt_stat.f90
 DEPEND_ON_FILEMANAGER = $(patsubst %, $(DSHARE_DIR)/%, $(SUMMA_DEPEND_ON_FILEMANAGER))
 
 
-
-
 # utility modules
-TIME_UTILS = \
-		time_utils.f90
-
-TIME_UTILS_UTILMS = $(patsubst %, $(ENGINE_DIR)/%, $(TIME_UTILS))
-
-M_DECISIONS = \
-		mDecisions.f90 \
-
-M_DECISIONS_UTILMS = $(patsubst %, $(SUMMA_ENGINE_DIR)/%, $(M_DECISIONS))
-
-
 SUMMA_UTILMS= \
+		time_utils.f90 \
+		mDecisions.f90 \
 		snow_utils.f90 \
 		soil_utils.f90 \
-		sundials/soil_utilsAddSundials.f90 \
 		updatState.f90 \
-		sundials/updatStateSundials.f90 \
 		matrixOper.f90
 UTILMS = $(patsubst %, $(ENGINE_DIR)/%, $(SUMMA_UTILMS))
 
@@ -136,6 +127,11 @@ VEG_PHENLGY= \
 		vegPhenlgy.f90
 
 VEG_PHENLGY_SOLVER = $(patsubst %, $(ENGINE_DIR)/%, $(VEG_PHENLGY))
+
+
+SNOW_DEPTH= \
+		sundials/computSnowDepth.f90
+SNOW_DEPTH_SOLVER = $(patsubst %, $(ENGINE_DIR)/%, $(SNOW_DEPTH))
 
 
 SUMMA_SOLVER= \
@@ -155,6 +151,7 @@ SUMMA_SOLVER= \
 		eval8summa.f90 \
 		summaSolve.f90 \
 		systemSolv.f90 \
+		varSubstep.f90 \
 		opSplittin.f90
 		
 SOLVER = $(patsubst %, $(SUMMA_ENGINE_DIR)/%, $(SUMMA_SOLVER))
@@ -230,15 +227,16 @@ SUMMA_NOAHMP= \
 NOAHMP = $(patsubst %, $(NOAHMP_DIR)/%, $(SUMMA_NOAHMP))
 
 # Define routines for the SUMMA model runs
-# sundials - t2enthalpy.f90
+DERIV_FORCE = \
+		derivforce.f90 \
+		sundials/t2enthalpy.f90
+DERIV_FORCE_MODRUN = $(patsubst %, $(ENGINE_DIR)/%, $(DERIV_FORCE))
+
 SUMMA_MODRUN = \
 		indexState.f90 \
 		getVectorz.f90 \
-		sundials/t2enthalpy.f90 \
 		updateVars.f90 \
-		sundials/updateVarsSundials.f90 \
 		var_derive.f90 \
-		derivforce.f90 \
 		snowAlbedo.f90 \
 		canopySnow.f90 \
 		tempAdjust.f90 \
@@ -247,7 +245,7 @@ SUMMA_MODRUN = \
 		layerDivide.f90 \
 		volicePack.f90 \
 		qTimeDelay.f90
-MODRUN = $(patsubst %, $(ENGINE_DIR)/%, $(SUMMA_MODRUN))
+MODRUN = $(patsubst %, $(SUMMA_ENGINE_DIR)/%, $(SUMMA_MODRUN))
 
 # Define NetCDF routines
 # OutputStrucWrite is not a netcdf subroutine and should be
@@ -260,10 +258,12 @@ SUMMA_NETCDF = \
 NETCDF = $(patsubst %, $(NETCDF_DIR)/%, $(SUMMA_NETCDF))
 
 # ... stitch together common programs
-COMM_ALL = $(NRUTIL) $(NRPROC) $(DATAMS) $(INTERFACE) $(HOOKUP) $(DEPEND_ON_FILEMANAGER) \
+COMM_ALL = $(NRUTIL) $(NRPROC) $(DATAMS)  \
+	$(INTERFACE) $(HOOKUP) $(IXNAME_METADAT_DATAMS) $(DEPEND_ON_FILEMANAGER) \
 	$(TIME_UTILS_UTILMS) $(M_DECISIONS_UTILMS) $(UTILMS)
 # ... stitch together SUMMA programs
-SUMMA_ALL = $(NETCDF) $(PRELIM) $(MODRUN) $(VEG_PHENLGY_SOLVER) $(SOLVER) $(COUPLED_EM)
+SUMMA_ALL = $(NETCDF) $(PRELIM) $(DERIV_FORCE_MODRUN) $(MODRUN) \
+ 	$(VEG_PHENLGY_SOLVER) $(SOLVER) $(SNOW_DEPTH_SOLVER) $(COUPLED_EM)
 
 # Define the driver routine
 SUMMA_DRIVER= \

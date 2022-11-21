@@ -63,11 +63,6 @@ USE globalData,only:data_step              ! time step of forcing data (s)
 USE globalData,only:model_decisions        ! model decision structure
 USE globalData,only:globalPrintFlag        ! the global print flag
 
-! look-up values for the numerical method
-USE mDecisions_module,only:         &
-  bEuler,                            &      ! home-grown backward Euler solution with long time steps
-  sundials                                  ! SUNDIALS/IDA solution
-
 ! look-up values for the maximum interception capacity
 USE mDecisions_module,only:         &
                       stickySnow,   &      ! maximum interception capacity an increasing function of temerature
@@ -236,7 +231,7 @@ subroutine coupled_em(&
   real(dp), allocatable                :: liqSnowInit(:)         ! volumetric liquid water conetnt of snow at the start of the time step
   real(dp), allocatable                :: liqSoilInit(:)         ! soil moisture at the start of the time step
   ! sundials addition
-  logical(lgt)                         :: sundials=.true.
+  logical(lgt)                         :: sundials=.false.
   logical(lgt)                         :: tooMuchSublim          ! flag to denote that there was too much sublimation in a given time step
 
   
