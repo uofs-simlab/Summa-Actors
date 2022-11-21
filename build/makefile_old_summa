@@ -5,17 +5,12 @@ ROOT_DIR = /Summa-Actors
 FC = gfortran # Fortran
 CC = g++	  # C++
 
-DIR_SUNDIALS=/code/sundials/instdir
-INC_SUNDIALS=-I$(DIR_SUNDIALS)/include -I$(DIR_SUNDIALS)/fortran
-LIB_SUNDIALS=-L$(DIR_SUNDIALS)/lib -lsundials_fnvecmanyvector_mod -lsundials_fida_mod -lsundials_fnvecserial_mod -lsundials_fsunlinsoldense_mod -lsundials_fsunmatrixdense_mod 
- 
-
 #### Includes AND Libraries ####
-INCLUDES = -I/usr/include -I/usr/local/include $(INC_SUNDIALS)
-LIBRARIES = -L/usr/lib -L/usr/local/lib -lnetcdff -lopenblas $(LIB_SUNDIALS)
+INCLUDES = -I/usr/include -I/usr/local/include
+LIBRARIES = -L/usr/lib -L/usr/local/lib -lnetcdff -lopenblas
 
-ACTORS_INCLUDES = -I/usr/include -I/usr/local/include $(INC_SUNDIALS)
-ACTORS_LIBRARIES = -L/usr/lib -L/usr/local/lib -L/Summa-Actors/bin -lcaf_core -lcaf_io -lsumma -lopenblas -lnetcdff $(LIB_SUNDIALS)
+ACTORS_INCLUDES = -I/usr/include -I/usr/local/include
+ACTORS_LIBRARIES = -L/usr/lib -L/usr/local/lib -L/Summa-Actors/bin -lcaf_core -lcaf_io -lsumma -lopenblas -lnetcdff
 
 
 # Production runs
@@ -408,7 +403,7 @@ compile_main:
 	$(CC) $(FLAGS_ACTORS) -c $(MAIN) $(GLOBAL_INCLUDES) $(SUMMA_ACTOR_INCLUDES) $(JOB_ACTOR_INCLUDES)
 
 link_cpp:
-	$(CC) $(FLAGS_ACTORS) -Wl,-rpath='/Summa-Actors/bin:/usr/local/lib:/code/sundials/instdir/lib' -o summaMain *.o $(ACTORS_LIBRARIES)
+	$(CC) $(FLAGS_ACTORS) -Wl,-rpath='/Summa-Actors/bin:/usr/local/lib' -o summaMain *.o $(ACTORS_LIBRARIES)
 	mv summaMain $(ROOT_DIR)/bin
 
 clean_cpp:
