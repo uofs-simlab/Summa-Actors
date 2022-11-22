@@ -116,19 +116,15 @@ UTILMS = $(patsubst %, $(ENGINE_DIR)/%, $(SUMMA_UTILMS))
 SUMMA_MODGUT= \
 		MODGUT = $(patsubst %, $(ENGINE_DIR)/%, $(SUMMA_MODGUT))
 
-# Solver - Split up to compiling with old summa files vs new summa files
 
+
+# Solver - Split up to compiling with old summa files vs new summa files
 VEG_PHENLGY= \
 		vegPhenlgy.f90
-
 VEG_PHENLGY_SOLVER = $(patsubst %, $(ENGINE_DIR)/%, $(VEG_PHENLGY))
-
-
 SNOW_DEPTH= \
 		sundials/computSnowDepth.f90
 SNOW_DEPTH_SOLVER = $(patsubst %, $(ENGINE_DIR)/%, $(SNOW_DEPTH))
-
-
 SUMMA_SOLVER= \
 		diagn_evar.f90 \
 		stomResist.f90 \
@@ -148,12 +144,9 @@ SUMMA_SOLVER= \
 		systemSolv.f90 \
 		varSubstep.f90 \
 		opSplittin.f90
-		
 SOLVER = $(patsubst %, $(SUMMA_ENGINE_DIR)/%, $(SUMMA_SOLVER))
-
 SUMMA_ACTORS_SOLVER = \
 		coupled_em.f90
-		
 COUPLED_EM = $(patsubst %, $(ENGINE_DIR)/%, $(SUMMA_ACTORS_SOLVER))
 
 
@@ -209,8 +202,7 @@ SUMMA_PRELIM= \
 		read_pinit.f90 \
 		pOverwrite.f90 \
 		paramCheck.f90 \
-		check_icondActors.f90 \
-		# allocspace.f90
+		check_icondActors.f90
 PRELIM = $(patsubst %, $(ENGINE_DIR)/%, $(SUMMA_PRELIM))
 
 SUMMA_NOAHMP= \
