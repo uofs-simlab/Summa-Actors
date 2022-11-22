@@ -107,6 +107,7 @@ subroutine FileAccessActor_DeallocateStructures(handle_forcFileInfo, handle_ncid
   USE netcdf_util_module,only:nc_file_close 
   USE globalData,only:structInfo                              ! information on the data structures
   USE globalData,only:failedHRUs
+  USE globalData,only:forcingDataStruct
   implicit none
   type(c_ptr),intent(in), value        :: handle_forcFileInfo
   type(c_ptr),intent(in), value        :: handle_ncid
@@ -133,6 +134,7 @@ subroutine FileAccessActor_DeallocateStructures(handle_forcFileInfo, handle_ncid
   deallocate(forcFileInfo)
   deallocate(ncid)
   deallocate(failedHRUs)
+  deallocate(forcingDataStruct)
 end subroutine FileAccessActor_DeallocateStructures
 
 

@@ -92,7 +92,6 @@ subroutine popMetadat(err,message)
   type_meta(iLookTYPE%soilTypeIndex)          = var_info('soilTypeIndex' , 'index defining soil type'                   , '-', get_ixVarType('scalarv'), iMissVec, iMissVec, .false.)
   type_meta(iLookTYPE%slopeTypeIndex)         = var_info('slopeTypeIndex', 'index defining slope'                       , '-', get_ixVarType('scalarv'), iMissVec, iMissVec, .false.)
   type_meta(iLookTYPE%downHRUindex)           = var_info('downHRUindex'  , 'index of downslope HRU (0 = basin outlet)'  , '-', get_ixVarType('scalarv'), iMissVec, iMissVec, .false.)
-  type_meta(iLookTYPE%downkHRU)               = var_info('downkHRU'      , 'real index of downslope HRU'                , '-', get_ixVarType('scalarv'), iMissVec, iMissVec, .false.)
   ! -----
   ! * hru and gru ID data...
   ! ---------------------

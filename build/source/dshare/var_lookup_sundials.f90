@@ -124,7 +124,6 @@ MODULE var_lookup
   integer(i4b)    :: soilTypeIndex = integerMissing  ! index defining soil type (-)
   integer(i4b)    :: slopeTypeIndex= integerMissing  ! index defining slope (-)
   integer(i4b)    :: downHRUindex  = integerMissing  ! index of downslope HRU (0 = basin outlet)
-  integer(i4b)    :: downkHRU      = integerMissing  ! reza index of downslope HRU (0 = basin outlet)
  end type iLook_type
 
  type, public  ::  iLook_id

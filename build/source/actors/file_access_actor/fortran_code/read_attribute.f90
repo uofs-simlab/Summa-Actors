@@ -309,8 +309,6 @@ subroutine readAttributeFromNetCDF(ncid, index_gru, index_hru, num_var, &
       checkAttr(varIndx) = .true.
   endif
 
-  varIndx = get_ixTYPE('downkHRU')
-  checkType(varIndx) = .true.
   ! **********************************************************************************************
   ! (4) check that we have all the desired varaibles
   ! **********************************************************************************************

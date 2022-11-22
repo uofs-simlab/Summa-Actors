@@ -196,7 +196,6 @@ contains
   case('soilTypeIndex'  ); get_ixType = iLookTYPE%soilTypeIndex      ! index defining soil type
   case('slopeTypeIndex' ); get_ixType = iLookTYPE%slopeTypeIndex     ! index defining slope
   case('downHRUindex'   ); get_ixType = iLookTYPE%downHRUindex       ! index of downslope HRU (0 = basin outlet)
-  case('downkHRU');        get_ixType = iLookTYPE%downkHRU 
     ! get to here if cannot find the variable
   case default
    get_ixType = integerMissing
