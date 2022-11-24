@@ -1,1 +1,0 @@
- Run start time on system:  ccyy=2022 - mm=09 - dd=19 - hh=21 - mi=25 - ss=29.458
