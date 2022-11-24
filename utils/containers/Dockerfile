@@ -20,17 +20,17 @@ RUN apt-get update -y && \
     python3-pip \
     valgrind \
     gdb &&\
-    valgrind &&\
     apt-get autoclean
 
 RUN pip3 install xarray
 RUN pip3 install netcdf4
 
-# Install the C++ Actor Framework From Git
-RUN git clone https://github.com/actor-framework/actor-framework.git
-WORKDIR /code/actor-framework
+# Install the C++ Actor Framework 0.18.6
+RUN wget https://github.com/actor-framework/actor-framework/archive/refs/tags/0.18.6.tar.gz
+RUN tar -xvf 0.18.6.tar.gz
+WORKDIR /code/actor-framework-0.18.6
 RUN ./configure
-WORKDIR /code/actor-framework/build
+WORKDIR /code/actor-framework-0.18.6/build
 RUN make
 RUN make test
 RUN make install
@@ -38,17 +38,16 @@ RUN make install
 WORKDIR /code
 
 # Install Sundials
-RUN wget https://github.com/LLNL/sundials/releases/download/v5.8.0/sundials-5.8.0.tar.gz
-RUN tar -xzf sundials-5.8.0.tar.gz
+RUN wget https://github.com/LLNL/sundials/releases/download/v6.3.0/sundials-6.3.0.tar.gz
+RUN tar -xzf sundials-6.3.0.tar.gz
 RUN mkdir sundials
 WORKDIR /code/sundials
-RUN mkdir instdir
+RUN mkdir /usr/local/sundials
 RUN mkdir builddir
 WORKDIR /code/sundials/builddir
-RUN cmake ../../sundials-5.8.0  -DBUILD_FORTRAN_MODULE_INTERFACE=ON -DCMAKE_Fortran_COMPILER=gfortran -DCMAKE_INSTALL_PREFIX=/code/sundials/instdir -DEXAMPLES_INSTALL_PATH=/code/sundials/instdir/examples
+RUN cmake ../../sundials-6.3.0  -DBUILD_FORTRAN_MODULE_INTERFACE=ON -DCMAKE_Fortran_COMPILER=gfortran -DCMAKE_INSTALL_PREFIX=/usr/local/sundials -DEXAMPLES_INSTALL_PATH=/code/sundials/instdir/examples
 RUN make
 RUN make install
 
 # Change workdir for when we attach to this container
 WORKDIR /Summa-Actors
-ENV LD_LIBRARY_PATH=/Summa-Actors/bin:/usr/local/lib:/code/sundials/instdir/lib
