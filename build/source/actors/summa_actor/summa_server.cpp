@@ -11,7 +11,7 @@ behavior summa_server_init(stateful_actor<summa_server_state>* self, Distributed
         aout(self) << "Lost Connection With A Connected Actor\n";
         std::optional<Client> client = self->state.client_container.getClient(dm.source);
         if (client.has_value()) {
-            aout(self) << "Lost Client: " << client.value().getID() << "\n";
+            aout(self) << "Lost Client: " << client.value().getHostname() << "\n";
             std::optional<Batch> batch = client.value().getBatch();
             self->state.batch_container.setBatchUnassigned(batch.value());
             self->state.client_container.removeClient(client.value());
@@ -98,7 +98,7 @@ behavior summa_server(stateful_actor<summa_server_state>* self) {
         },
 
         [=](connect_as_backup, actor backup_server, std::string hostname) {
-            aout(self) << "Received Connection Request From a backup server\n";
+            aout(self) << "Received Connection Request From a backup server " << hostname <<  "\n";
             self->monitor(backup_server);
             self->state.backup_servers_list.push_back(std::make_tuple(backup_server, hostname));
             self->send(backup_server, connect_as_backup_v); // confirm connection with sender
@@ -110,7 +110,7 @@ behavior summa_server(stateful_actor<summa_server_state>* self) {
         [=](done_batch, actor client_actor, Batch& batch) {
             aout(self) << "Received Completed Batch From Client\n";
             aout(self) << batch.toString() << "\n\n";\
-            self->state.batch_container.updateBatch_success(batch, self->state.summaMain_status);
+            self->state.batch_container.updateBatch_success(batch, self->state.csv_file_path);
             printRemainingBatches(self);
 
             std::optional<Batch> new_batch = self->state.batch_container.getUnsolvedBatch();
