@@ -320,6 +320,9 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
     // Read in the attribute and parameter information for the HRUs to request
     readAttributes(self);
     readParameters(self);
+
+    // read in the inital conditions for the grus/hrus
+    readInitConditions(self);
     
     self->send(self->state.parent, done_file_access_actor_init_v);
     // initalize the forcingFile array
@@ -433,6 +436,15 @@ void readParameters(stateful_actor<file_access_state>* self) {
     }
     closeParamFile(&self->state.param_ncid, &err);
 
+}
+
+
+void readInitConditions(stateful_actor<file_access_state>* self) {
+    int err;
+    openInitCondFile(&self->state.init_cond_ncid, &err);
+    readInitCond_prog(&self->state.init_cond_ncid, &self->state.start_gru, &self->state.num_gru, &err);
+    readInitCond_bvar(&self->state.init_cond_ncid, &self->state.start_gru, &self->state.num_gru, &err);
+    closeInitCondFile(&self->state.init_cond_ncid, &err); 
 }
 
 void initalizeOutputHandles(stateful_actor<file_access_state>* self) {

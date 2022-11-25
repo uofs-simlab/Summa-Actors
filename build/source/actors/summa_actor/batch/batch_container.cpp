@@ -58,9 +58,9 @@ void Batch_Container::setBatchUnassigned(Batch batch) {
     this->batch_list[batch.getBatchID()].updateAssigned(false);
 }
 
-void Batch_Container::updateBatch_success(Batch successful_batch, std::string output_csv) {
+void Batch_Container::updateBatch_success(Batch successful_batch, std::string output_csv, std::string hostname) {
     int batch_id = successful_batch.getBatchID();
-    successful_batch.writeBatchToFile(output_csv);
+    successful_batch.writeBatchToFile(output_csv, hostname);
     this->batch_list[batch_id].updateSolved(true);
     this->batches_remaining--;
 }

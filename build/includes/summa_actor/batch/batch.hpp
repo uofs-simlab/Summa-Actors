@@ -34,7 +34,7 @@ class Batch {
         void updateAssigned(bool boolean);
         void updateSolved(bool boolean);
         void printBatchInfo();
-        void writeBatchToFile(std::string csv_output);
+        void writeBatchToFile(std::string csv_output, std::string hostname);
 
         std::string toString();
 

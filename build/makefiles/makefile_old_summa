@@ -165,6 +165,7 @@ SUMMA_FILEACCESS_INTERFACE = \
 		read_attribute.f90 \
 		read_forcing.f90 \
 		read_param.f90 \
+		read_initcond.f90 \
 		write_to_netcdf.f90
 
 FILEACCESS_INTERFACE = $(patsubst %, $(FILE_ACCESS_DIR)/%, $(SUMMA_FILEACCESS_INTERFACE))

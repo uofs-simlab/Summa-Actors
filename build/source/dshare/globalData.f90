@@ -42,6 +42,7 @@ MODULE globalData
   USE data_types,only:var_forc
   USE data_types,only:dlength
   USE data_types,only:ilength
+  USE data_types,only:init_cond
 
   ! number of variables in each data structure
   USE var_lookup,only:maxvarTime      ! time:                     maximum number variables
@@ -308,6 +309,9 @@ MODULE globalData
   type(var_forc),allocatable,save,public          :: forcingDataStruct(:)      ! forcingDataStruct(:)%var(:)%dataFromFile(:,:)
   type(dlength),allocatable,save,public           :: vecTime(:)
   logical(lgt),allocatable,save,public            :: failedHRUs(:)             ! list of true and false values to indicate if an HRU has failed              
+  ! inital conditions
+  type(init_cond),allocatable,save,public         :: init_cond_prog_data(:)   ! variable data for initial conditions
+  type(init_cond),allocatable,save,public         :: init_cond_bvar_data(:)   ! variable data for initial conditions
   !!!!!!!!!!!!!!!!!!GLOBAL DATA STRUCTURES THAT ARE MANAGED BY FILEACCESSACTOR !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   ! define fixed dimensions

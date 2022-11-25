@@ -31,6 +31,13 @@ extern "C" {
   void readParamFromNetCDF(int* param_ncid, int* index_gru, int* index_hru, int* start_index_gru,
     int* num_var_param, void* handle_mpar_struct, void* _handle_bpar_struct, int* err);
 
+  // Set up global initial conditions
+  void openInitCondFile(int* init_cond_ncid, int* err);
+  void closeInitCondFile(int* init_cond_ncid, int* err);
+  void readInitCond_prog(int* init_cond_ncid, int* start_gru, int* num_gru, int* err);
+  void readInitCond_bvar(int* init_cond_ncid, int* start_gru, int* num_gru, int* err);
+  // void readInitCond_Fortran(int* start_gru, int* num_gru, int* err);
+
   void updateFailed(int* indxHRU);
 
   void resetFailedArray();

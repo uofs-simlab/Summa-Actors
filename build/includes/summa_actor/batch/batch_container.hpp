@@ -26,7 +26,7 @@ class Batch_Container {
         std::optional<Batch> getUnsolvedBatch();
 
         // Update the batch status to solved and write the output to a file.
-        void updateBatch_success(Batch successful_batch, std::string output_csv);
+        void updateBatch_success(Batch successful_batch, std::string output_csv, std::string hostname);
         // Update the batch status but do not write the output to a file.
         void updateBatch_success(Batch successful_batch);
 

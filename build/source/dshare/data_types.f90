@@ -150,6 +150,12 @@ MODULE data_types
   integer(i4b)                          :: localHRU_ix              ! index of a hru within a gru (start from 1 per gru)
  endtype hru2gru_map
 
+
+ ! define type for init_cond
+  type, public :: init_cond
+    real(rkind), allocatable            ::  var_data(:,:)             ! initial condition data
+  endtype init_cond
+
  ! ***********************************************************************************************************
  ! Define hierarchal derived data types
  ! ***********************************************************************************************************
@@ -414,7 +420,7 @@ endtype var_time_ilength
 
  ! Sundials lookup table type
  type, public :: dLookup
- real(rkind),allocatable                :: lookup(:)   ! lookup(:)
+ real(rkind),allocatable              :: lookup(:)   ! lookup(:)
  endtype dLookup
  ! ** double precision type for a variable number of soil layers; variable length
  type, public :: vLookup

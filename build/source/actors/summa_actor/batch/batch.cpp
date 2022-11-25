@@ -87,13 +87,14 @@ std::string Batch::toString() {
     return out_string.str();
 }
 
-void Batch::writeBatchToFile(std::string file_name) {
+void Batch::writeBatchToFile(std::string file_name, std::string hostname) {
     std::ofstream output_file;
     output_file.open(file_name, std::ios_base::app);
     output_file <<
         this->batch_id      << "," <<
         this->start_hru     << "," << 
         this->num_hru       << "," << 
+        hostname             << "," <<   
         this->run_time      << "," << 
         this->read_time     << "," <<
         this->write_time    << "\n";

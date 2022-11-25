@@ -125,6 +125,7 @@ subroutine closeParamFile(param_ncid, err) bind(C, name="closeParamFile")
   integer(c_int),intent(out)           :: err
   ! local variables
   character(len=256)                   :: message
+  ! --------------------------------------------------------------------------------------------------------
  
   err=0; message="read_param.f90 - closeParamFile/"
 

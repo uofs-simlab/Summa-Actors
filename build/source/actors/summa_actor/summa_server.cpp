@@ -110,7 +110,9 @@ behavior summa_server(stateful_actor<summa_server_state>* self) {
         [=](done_batch, actor client_actor, Batch& batch) {
             aout(self) << "Received Completed Batch From Client\n";
             aout(self) << batch.toString() << "\n\n";\
-            self->state.batch_container.updateBatch_success(batch, self->state.csv_file_path);
+            Client client = self->state.client_container.getClient(client_actor.address()).value();
+
+            self->state.batch_container.updateBatch_success(batch, self->state.csv_file_path, client.getHostname());
             printRemainingBatches(self);
 
             std::optional<Batch> new_batch = self->state.batch_container.getUnsolvedBatch();
