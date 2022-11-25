@@ -27,11 +27,16 @@ behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru,
     self->state.start_gru = start_gru;
     self->state.num_gru = num_gru;
     self->state.parent = parent;
-
+    
+    // Set the settings variables
     self->state.file_access_actor_settings = file_access_actor_settings;
     self->state.job_actor_settings = job_actor_settings;
     self->state.hru_actor_settings = hru_actor_settings;
 
+    // hostname information that is useful for verifying that the job actor is running on the correct node
+    char host[HOST_NAME_MAX];
+    gethostname(host, HOST_NAME_MAX);
+    self->state.hostname = host;
     
     // Initalize global variables
     int err = 0;
@@ -95,7 +100,7 @@ behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru,
                 run_physics_duration, write_output_duration);
             
             if (self->state.job_actor_settings.output_csv) {
-                self->state.gru_list[indx_gru - 1]->writeSuccess(self->state.success_output_file);            
+                self->state.gru_list[indx_gru - 1]->writeSuccess(self->state.success_output_file, self->state.hostname);            
             }
             
             self->state.num_gru_done++;
@@ -194,6 +199,7 @@ void initCsvOutputFile(stateful_actor<job_state>* self) {
         aout(self) << "Success Output File: " << self->state.success_output_file << "\n";
         file.open(self->state.success_output_file, std::ios_base::out);
         file << 
+            "hostname,"            <<
             "GRU,"                 << 
             "totalDuration,"       <<
             "initDuration,"        << 

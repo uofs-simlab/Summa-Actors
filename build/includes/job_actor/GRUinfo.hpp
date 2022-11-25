@@ -62,7 +62,7 @@ class GRUinfo {
             void doneRun(double runTime, double initDuration, double forcingDuration,
                 double runPhysicsDuration, double writeOutputDuration);
 
-            void writeSuccess(std::string fileName);
+            void writeSuccess(std::string fileName, std::string hostname);
 
             void writeFail(std::string fileName);
 

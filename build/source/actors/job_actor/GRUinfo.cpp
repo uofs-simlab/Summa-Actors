@@ -80,10 +80,11 @@ void GRUinfo::doneRun(double runTime, double initDuration, double forcingDuratio
 }
 
 // Methods for writing statistics to a file
-void GRUinfo::writeSuccess(std::string fileName) {
+void GRUinfo::writeSuccess(std::string fileName, std::string hostname) {
   std::ofstream file;
   file.open(fileName, std::ios_base::app);
-  file << this->refGRU << "," 
+  file  << hostname << ","
+        << this->refGRU << "," 
         << this->runTime << "," 
         << this->initDuration << "," 
         << this->forcingDuration << "," 

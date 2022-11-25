@@ -4,6 +4,8 @@
 #include "GRUinfo.hpp"
 #include "timing_info.hpp"
 #include "settings_functions.hpp"
+#include <unistd.h>
+#include <limits.h>
 
 namespace caf {
 struct job_state {
@@ -27,6 +29,8 @@ struct job_state {
 
     // Timing Variables
     TimingInfo job_timing;
+
+    std::string hostname;
 
     
     // Output File Names for Timings
