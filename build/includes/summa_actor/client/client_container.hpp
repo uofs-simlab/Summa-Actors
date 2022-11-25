@@ -25,7 +25,7 @@ class Client_Container {
         //                              Setters
         // ####################################################################
         
-        void setBatchForClient(caf::actor client_ref, Batch batch);
+        void setBatchForClient(caf::actor client_ref, std::optional<Batch> batch);
         
         // ####################################################################
         //                              Methods

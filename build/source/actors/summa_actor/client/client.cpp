@@ -29,7 +29,7 @@ std::optional<Batch> Client::getBatch() {
 // ####################################################################
 //                              Setters
 // ####################################################################
-void Client::setBatch(Batch batch) {
+void Client::setBatch(std::optional<Batch> batch) {
     this->current_batch = batch;
 }
 

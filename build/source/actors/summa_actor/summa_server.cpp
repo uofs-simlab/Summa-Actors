@@ -17,6 +17,7 @@ behavior summa_server_init(stateful_actor<summa_server_state>* self, Distributed
             self->state.client_container.removeClient(client.value());
             notifyBackupServersOfRemovedClient(self, client.value());
             checkForIdleClients(self);
+
         } else {
             aout(self) << "Lost Backup Server\n";
             findAndRemoveLostBackupServer(self, dm.source);
@@ -79,7 +80,7 @@ behavior summa_server(stateful_actor<summa_server_state>* self) {
                 
                 std::optional<Batch> batch = self->state.batch_container.getUnsolvedBatch();
                 if (batch.has_value()) {
-                    self->state.client_container.setBatchForClient(client_actor, batch.value());
+                    self->state.client_container.setBatchForClient(client_actor, batch);
                     aout(self) << "SENDING: " << batch.value().toString() << "\n";
                     self->send(client_actor, batch.value());
                     for (auto& backup_server : self->state.backup_servers_list) {
@@ -120,7 +121,7 @@ behavior summa_server(stateful_actor<summa_server_state>* self) {
             
             if (new_batch.has_value()) {
                 // send clients new batch and update backup servers
-                self->state.client_container.setBatchForClient(client_actor, new_batch.value());
+                self->state.client_container.setBatchForClient(client_actor, new_batch);
                 self->send(client_actor, new_batch.value());
                 for (auto& backup_server : self->state.backup_servers_list) {
                     caf::actor backup_server_actor = std::get<0>(backup_server);
@@ -209,12 +210,15 @@ void findAndRemoveLostBackupServer(stateful_actor<summa_server_state>* self, act
 }
 
 void checkForIdleClients(stateful_actor<summa_server_state>* self) {
+    aout(self) << "Looking for an idle Client\n";
     std::optional<Client> client = self->state.client_container.getIdleClient();
     if (client.has_value()) {
+        aout(self) << "Found an idle Client\n";
         std::optional<Batch> new_batch = self->state.batch_container.getUnsolvedBatch();
         if (new_batch.has_value()) {
             // send clients new batch and update backup servers
-            self->state.client_container.setBatchForClient(client.value().getActor(), new_batch.value());
+            aout(self) << "Found a batch to assign\n";
+            self->state.client_container.setBatchForClient(client.value().getActor(), new_batch);
             self->send(client.value().getActor(), new_batch.value());
             for (auto& backup_server : self->state.backup_servers_list) {
                 caf::actor backup_server_actor = std::get<0>(backup_server);

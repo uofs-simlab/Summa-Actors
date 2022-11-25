@@ -29,10 +29,14 @@ std::optional<Client> Client_Container::getClient(caf::actor_addr client_ref) {
 //                              Setters
 // ####################################################################
 
-void Client_Container::setBatchForClient(caf::actor client_ref, Batch batch) {
+void Client_Container::setBatchForClient(caf::actor client_ref, std::optional<Batch> batch) {
     for(auto client = begin(this->client_list); client != end(this->client_list); ++client) {
         if (client_ref == client->getActor()) {
-            client->setBatch(batch);
+            if (batch.has_value()) {
+                client->setBatch(batch.value());
+            } else {
+                client->setBatch({});
+            }
             break;
         }
     }
