@@ -24,8 +24,10 @@ struct summa_server_state {
 
     std::string hostname;
 
+    std::string csv_file_path;
 
     std::string csv_output_name = "/batch_results.csv";
+
     
     Client_Container client_container;
     Batch_Container batch_container;
@@ -54,7 +56,7 @@ behavior summa_server(stateful_actor<summa_server_state>* self);
 behavior summa_server_exit(stateful_actor<summa_server_state>* self);
 
 // Creates the csv file that holds the results of the batches
-void initializeCSVOutput(std::string csv_output_path, std::string csv_output_name);
+void initializeCSVOutput(std::string csv_output_path);
 
 // Send all connected actors the updated backup servers list
 void sendAllBackupServersList(stateful_actor<summa_server_state>* self);

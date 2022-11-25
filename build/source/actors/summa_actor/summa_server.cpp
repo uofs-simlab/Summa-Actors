@@ -35,9 +35,9 @@ behavior summa_server_init(stateful_actor<summa_server_state>* self, Distributed
             self->state.distributed_settings.total_hru_count,
             self->state.distributed_settings.num_hru_per_batch);
     
-    self->state.batch_container.printBatches();
-
-    initializeCSVOutput(self->state.job_actor_settings.csv_path, self->state.csv_output_name);
+    // self->state.batch_container.printBatches();
+    self->state.csv_file_path = self->state.job_actor_settings.csv_path += self->state.csv_output_name;
+    initializeCSVOutput(self->state.csv_file_path);
 
     return summa_server(self);
 
@@ -110,7 +110,7 @@ behavior summa_server(stateful_actor<summa_server_state>* self) {
         [=](done_batch, actor client_actor, Batch& batch) {
             aout(self) << "Received Completed Batch From Client\n";
             aout(self) << batch.toString() << "\n\n";\
-            self->state.batch_container.updateBatch_success(batch, self->state.csv_output_name);
+            self->state.batch_container.updateBatch_success(batch, self->state.summaMain_status);
             printRemainingBatches(self);
 
             std::optional<Batch> new_batch = self->state.batch_container.getUnsolvedBatch();
@@ -158,17 +158,14 @@ behavior summa_server_exit(stateful_actor<summa_server_state>* self) {
         caf::actor backup_server_actor = std::get<0>(backup_server);
         self->send(backup_server_actor, time_to_exit_v);
     }
-    // delete(self->state.batch_container);
-    // delete(self->state.client_container);
     self->quit();
     return {};
 }
 
 
-void initializeCSVOutput(std::string csv_output_path, std::string csv_output_name) {
+void initializeCSVOutput(std::string csv_output_path) {
     std::ofstream csv_output;
-    std::string csv_file = csv_output_path += csv_output_name;
-    csv_output.open(csv_file, std::ios_base::out);
+    csv_output.open(csv_output_path, std::ios_base::out);
     csv_output << 
         "Batch_ID,"  <<
         "Start_HRU," <<
