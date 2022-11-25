@@ -109,8 +109,8 @@ subroutine FileAccessActor_DeallocateStructures(handle_forcFileInfo, handle_ncid
   USE globalData,only:failedHRUs
   USE globalData,only:forcingDataStruct
   USE globalData,only:vectime
-  USE globalData,only:init_cond_prog_data
-  USE globalData,only:init_cond_bvar_data
+  USE globalData,only:init_cond_prog
+  USE globalData,only:init_cond_bvar
   implicit none
   type(c_ptr),intent(in), value        :: handle_forcFileInfo
   type(c_ptr),intent(in), value        :: handle_ncid
@@ -139,8 +139,8 @@ subroutine FileAccessActor_DeallocateStructures(handle_forcFileInfo, handle_ncid
   deallocate(failedHRUs)
   deallocate(forcingDataStruct)
   deallocate(vectime)
-  deallocate(init_cond_prog_data)
-  deallocate(init_cond_bvar_data)
+  deallocate(init_cond_prog)
+  if (allocated(init_cond_bvar))then; deallocate(init_cond_bvar); endif;
 end subroutine FileAccessActor_DeallocateStructures
 
 

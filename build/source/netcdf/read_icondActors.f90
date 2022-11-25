@@ -18,7 +18,7 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-module read_icond4chm_module
+module read_icond_gru_hru_module
 USE, intrinsic :: iso_c_binding
 USE nrtype
 USE netcdf
@@ -26,7 +26,7 @@ USE globalData,only: ixHRUfile_min,ixHRUfile_max
 USE globalData,only: nTimeDelay   ! number of hours in the time delay histogram
 implicit none
 private
-public::read_icond4chm
+public::read_icond
 public::read_icond_nlayers
 ! define single HRU restart file
 integer(i4b), parameter :: singleHRU=1001
@@ -156,12 +156,11 @@ end subroutine read_icond_nlayers
 
 
 ! ************************************************************************************************
-! public subroutine read_icond4chm: read model initial conditions
+! public subroutine read_icond: read model initial conditions
 ! ************************************************************************************************
-subroutine read_icond4chm(&
+subroutine read_icond(&
                     indxGRU,                       & ! intent(in):    Index of GRU in gru_struc
                     indxHRU,                       & ! intent(in):    Index of HRU in gru_struc
-                    iconFile,                      & ! intent(in):    name of initial conditions file
                     mparData,                      & ! intent(in):    model parameters
                     progData,                      & ! intent(inout): model prognostic variables
                     bvarData,                      & ! intent(inout): model basin (GRU) variables
@@ -178,16 +177,18 @@ subroutine read_icond4chm(&
   USE globalData,only:prog_meta                          ! metadata for prognostic variables
   USE globalData,only:bvar_meta                          ! metadata for basin (GRU) variables
   USE globalData,only:gru_struc                          ! gru-hru mapping structures
-  USE globalData,only:startGRU                           ! index of first gru for parallel runs
   USE globaldata,only:iname_soil,iname_snow              ! named variables to describe the type of layer
-  USE netcdf_util_module,only:nc_file_open               ! open netcdf file
-  USE netcdf_util_module,only:nc_file_close              ! close netcdf file
-  USE netcdf_util_module,only:netcdf_err                 ! netcdf error handling
   USE data_types,only:var_ilength                        ! full integer structure
   USE data_types,only:var_dlength                        ! double precision structure for a single HRU
   USE data_types,only:var_info                           ! metadata
   USE get_ixName_module,only:get_varTypeName             ! to access type strings for error messages
   USE updatState_module,only:updateSoil                  ! update soil states
+
+  USE netcdf
+
+  USE globalData,only:init_cond_prog
+  USE globalData,only:init_cond_bvar
+
 
   implicit none
 
@@ -196,7 +197,6 @@ subroutine read_icond4chm(&
   ! dummies
   integer(i4b)     ,intent(in)             :: indxGRU      ! index of GRU in gru_struc
   integer(i4b)     ,intent(in)             :: indxHRU      ! index of HRU in hru_struc
-  character(*)     ,intent(in)             :: iconFile     ! name of netcdf file containing the initial conditions
   type(var_dlength),intent(in)             :: mparData     ! model parameters
   type(var_dlength),intent(inout)          :: progData     ! model prognostic variables
   type(var_dlength),intent(inout)          :: bvarData     ! model basin (GRU) variables
@@ -216,9 +216,6 @@ subroutine read_icond4chm(&
   integer(i4b)                           :: dimLen       ! data dimensions
   integer(i4b)                           :: ncID         ! netcdf file ID
   integer(i4b)                           :: ixFile       ! index in file
-  integer(i4b)                           :: iHRU_local   ! index of HRU in the data subset
-  integer(i4b)                           :: iHRU_global  ! index of HRU in the netcdf file
-  real(dp),allocatable                   :: varData(:,:) ! variable data storage
   integer(i4b)                           :: nSoil, nSnow, nToto ! # layers
   integer(i4b)                           :: nTDH          ! number of points in time-delay histogram
   integer(i4b)                           :: iLayer,jLayer ! layer indices
@@ -233,18 +230,7 @@ subroutine read_icond4chm(&
   ! --------------------------------------------------------------------------------------------------------
 
   ! Start procedure here
-  err=0; message="read_icond4chm/"
-
-  ! --------------------------------------------------------------------------------------------------------
-  ! (1) read the file
-  ! --------------------------------------------------------------------------------------------------------
-  ! open netcdf file
-  call nc_file_open(iconFile,nf90_nowrite,ncID,err,cmessage)
-  if (err/=0) then; message=trim(message)//trim(cmessage); return; end if
-
-  ! get number of HRUs in file
-  err = nf90_inq_dimid(ncID,"hru",dimID);               if(err/=nf90_noerr)then; message=trim(message)//'problem finding hru dimension/'//trim(nf90_strerror(err)); return; end if
-  err = nf90_inquire_dimension(ncID,dimID,len=fileHRU); if(err/=nf90_noerr)then; message=trim(message)//'problem reading hru dimension/'//trim(nf90_strerror(err)); return; end if
+  err=0; message="read_icondActors.f90 - read_icond/"
 
   ! loop through prognostic variables
   do iVar = 1,size(prog_meta)
@@ -256,87 +242,37 @@ subroutine read_icond4chm(&
       prog_meta(iVar)%varName=='mLayerVolFracWat'          .or. &
       prog_meta(iVar)%varName=='mLayerHeight'                   ) cycle
 
-    ! get variable id
-    err = nf90_inq_varid(ncID,trim(prog_meta(iVar)%varName),ncVarID); call netcdf_err(err,message)
-    if(err/=0)then
-    message=trim(message)//': problem with getting variable id, var='//trim(prog_meta(iVar)%varName)
-    return
-    endif
-
-    ! get variable dimension IDs
-    select case (prog_meta(iVar)%varType)
-    case (iLookVarType%scalarv); err = nf90_inq_dimid(ncID,trim(scalDimName)   ,dimID); call netcdf_err(err,message)
-    case (iLookVarType%midSoil); err = nf90_inq_dimid(ncID,trim(midSoilDimName),dimID); call netcdf_err(err,message)
-    case (iLookVarType%midToto); err = nf90_inq_dimid(ncID,trim(midTotoDimName),dimID); call netcdf_err(err,message)
-    case (iLookVarType%ifcToto); err = nf90_inq_dimid(ncID,trim(ifcTotoDimName),dimID); call netcdf_err(err,message)
-    case default
-      message=trim(message)//"unexpectedVariableType[name='"//trim(prog_meta(iVar)%varName)//"';type='"//trim(get_varTypeName(prog_meta(iVar)%varType))//"']"
-      err=20; return
-    end select
-
-    ! check errors
-    if(err/=0)then
-    message=trim(message)//': problem with dimension ids, var='//trim(prog_meta(iVar)%varName)
-    return
-    endif
-
-    ! get the dimension length
-    err = nf90_inquire_dimension(ncID,dimID,dimName,dimLen); call netcdf_err(err,message)
-    if(err/=0)then; message=trim(message)//': problem getting the dimension length'; return; endif
-
-    ! initialize the variable data
-    allocate(varData(fileHRU,dimLen),stat=err)
-    if(err/=0)then; message=trim(message)//'problem allocating HRU variable data'; return; endif
-
-    ! get data
-    err = nf90_get_var(ncID,ncVarID,varData); call netcdf_err(err,message)
-    if(err/=0)then; message=trim(message)//': problem getting the data for variable '//trim(prog_meta(iVar)%varName); return; endif
-
-
-
-    ! Above is handled by the file access actor
-    !!******************************************************************************************************
-    !!******************************************************************************************************
-    !!******************************************************************************************************
-    !!******************************************************************************************************
-
-    ! store data in prognostics structure
-    iHRU_global = gru_struc(indxGRU)%hruInfo(indxHRU)%hru_nc
-    iHRU_local = (iHRU_global - ixHRUfile_min) + 1
 
     ! get the number of layers
     nSnow = gru_struc(indxGRU)%hruInfo(indxHRU)%nSnow
     nSoil = gru_struc(indxGRU)%hruInfo(indxHRU)%nSoil
     nToto = nSnow + nSoil
 
-    ! get the index in the file: single HRU
-    if(restartFileType==singleHRU)then
-    ixFile = 1  ! use for single HRU restart file
-    ! get the index in the file: multi HRU
-    else
-      ixFile = startGRU + iHRU_local - 1
-    endif
-
     ! put the data into data structures and check that none of the values are set to nf90_fill_double
     select case (prog_meta(iVar)%varType)
-    case (iLookVarType%scalarv)
-      progData%var(iVar)%dat(1)       = varData(ixFile,1)
-      if(abs(progData%var(iVar)%dat(1) - nf90_fill_double) < epsilon(varData))then; err=20; endif
-    case (iLookVarType%midSoil)
-      progData%var(iVar)%dat(1:nSoil) = varData(ixFile,1:nSoil)
-      if(any(abs(progData%var(iVar)%dat(1:nSoil) - nf90_fill_double) < epsilon(varData)))then; err=20; endif
-    case (iLookVarType%midToto)
-      progData%var(iVar)%dat(1:nToto) = varData(ixFile,1:nToto)
-      if(any(abs(progData%var(iVar)%dat(1:nToto) - nf90_fill_double) < epsilon(varData)))then; err=20; endif
-    case (iLookVarType%ifcToto)
-      progData%var(iVar)%dat(0:nToto) = varData(ixFile,1:nToto+1)
-      if(any(abs(progData%var(iVar)%dat(0:nToto) - nf90_fill_double) < epsilon(varData)))then; err=20; endif
-    case default
-      message=trim(message)//"unexpectedVariableType[name='"//trim(prog_meta(iVar)%varName)//"';type='"//trim(get_varTypeName(prog_meta(iVar)%varType))//"']"
-      err=20; return
+      case (iLookVarType%scalarv)
+        progData%var(iVar)%dat(1)       = init_cond_prog(iVar)%var_data(indxGRU,1)
+        if(abs(progData%var(iVar)%dat(1) - nf90_fill_double) < epsilon(init_cond_prog(iVar)%var_data))then; err=20; endif
+      case (iLookVarType%midSoil)
+        progData%var(iVar)%dat(1:nSoil) = init_cond_prog(iVar)%var_data(indxGRU,1:nSoil)
+        if(any(abs(progData%var(iVar)%dat(1:nSoil) - nf90_fill_double) < epsilon(init_cond_prog(iVar)%var_data)))then; err=20; endif
+      case (iLookVarType%midToto)
+        progData%var(iVar)%dat(1:nToto) = init_cond_prog(iVar)%var_data(indxGRU,1:nToto)
+        if(any(abs(progData%var(iVar)%dat(1:nToto) - nf90_fill_double) < epsilon(init_cond_prog(iVar)%var_data)))then; err=20; endif
+      case (iLookVarType%ifcToto)
+        progData%var(iVar)%dat(0:nToto) = init_cond_prog(iVar)%var_data(indxGRU,1:nToto+1)
+        if(any(abs(progData%var(iVar)%dat(0:nToto) - nf90_fill_double) < epsilon(init_cond_prog(iVar)%var_data)))then; err=20; endif
+      case default
+        message=trim(message)//"unexpectedVariableType[name='"//trim(prog_meta(iVar)%varName)//"';type='"//trim(get_varTypeName(prog_meta(iVar)%varType))//"']"
+        print*,message
+        err=20; return
     end select
 
-    if(err==20)then; message=trim(message)//"data set to the fill value (name='"//trim(prog_meta(iVar)%varName)//"')"; return; endif
+    if(err==20)then; 
+      message=trim(message)//"data set to the fill value (name='"//trim(prog_meta(iVar)%varName)//"')"; 
+      print*, message
+      return;
+    endif
 
     ! fix the snow albedo
     if(progData%var(iLookPROG%scalarSnowAlbedo)%dat(1) < 0._dp)then
@@ -345,10 +281,6 @@ subroutine read_icond4chm(&
 
     ! initialize the spectral albedo
     progData%var(iLookPROG%spectralSnowAlbedoDiffuse)%dat(1:nBand) = progData%var(iLookPROG%scalarSnowAlbedo)%dat(1)
-
-    ! deallocate storage vector for next variable
-    deallocate(varData, stat=err)
-    if(err/=0)then; message=trim(message)//'problem deallocating HRU variable data'; return; endif
 
   end do ! end looping through prognostic variables (iVar)
 
@@ -399,84 +331,25 @@ subroutine read_icond4chm(&
   ! --------------------------------------------------------------------------------------------------------
 
   ! get the index in the file: single HRU
-  if(restartFileType/=singleHRU)then
-
-    ! get dimension of time delay histogram (TDH) from initial conditions file
-    err = nf90_inq_dimid(ncID,"tdh",dimID);
-    if(err/=nf90_noerr)then
-    ! write(*,*) 'WARNING: routingRunoffFuture is not in the initial conditions file ... using zeros'  ! previously created in var_derive.f90
-    err=nf90_noerr    ! reset this err
-
-    else
-    ! the state file *does* have the basin variable(s), so process them
-    err = nf90_inquire_dimension(ncID,dimID,len=nTDH);
-    if(err/=nf90_noerr)then; message=trim(message)//'problem reading tdh dimension from initial condition file/'//trim(nf90_strerror(err)); return; end if
-
-    ! get number of GRUs in file
-    err = nf90_inq_dimid(ncID,"gru",dimID);               if(err/=nf90_noerr)then; message=trim(message)//'problem finding gru dimension/'//trim(nf90_strerror(err)); return; end if
-    err = nf90_inquire_dimension(ncID,dimID,len=fileGRU); if(err/=nf90_noerr)then; message=trim(message)//'problem reading gru dimension/'//trim(nf90_strerror(err)); return; end if
-
-    ! check vs hardwired value set in globalData.f90
-    if(nTDH /= nTimeDelay)then
-      write(*,*) 'tdh=',nTDH,' nTimeDelay=',nTimeDelay
-      message=trim(message)//': state file time delay dimension tdh does not match summa expectation of nTimeDelay set in globalData()'
-      return
-    endif
+  if(allocated(init_cond_bvar))then
 
     ! loop through specific basin variables (currently 1 but loop provided to enable inclusion of others)
     ndx = (/iLookBVAR%routingRunoffFuture/)   ! array of desired variable indices
     do i = 1,size(ndx)
       iVar = ndx(i)
 
-      ! get tdh dimension Id in file (should be 'tdh')
-      err = nf90_inq_dimid(ncID,trim(tdhDimName), dimID);
-      if(err/=0)then; message=trim(message)//': problem with dimension ids for tdh vars'; return; endif
-
-      ! get the tdh dimension length (dimName and dimLen are outputs of this call)
-      err = nf90_inquire_dimension(ncID,dimID,dimName,dimLen); call netcdf_err(err,message)
-      if(err/=0)then; message=trim(message)//': problem getting the dimension length for tdh vars'; return; endif
-
-      ! get tdh-based variable id
-      err = nf90_inq_varid(ncID,trim(bvar_meta(iVar)%varName),ncVarID); call netcdf_err(err,message)
-      if(err/=0)then; message=trim(message)//': problem with getting basin variable id, var='//trim(bvar_meta(iVar)%varName); return; endif
-
-      ! initialize the tdh variable data
-      allocate(varData(fileGRU,dimLen),stat=err)
-      if(err/=0)then; print*, 'err= ',err; message=trim(message)//'problem allocating GRU variable data'; return; endif
-
-      ! get data
-      err = nf90_get_var(ncID,ncVarID,varData); call netcdf_err(err,message)
-      if(err/=0)then; message=trim(message)//': problem getting the data'; return; endif
-
-
-      ! above is handled by the file_access_actor
-      ! *******************************************************************************************************
-      ! *******************************************************************************************************
-      ! *******************************************************************************************************
-      ! *******************************************************************************************************
-      ! *******************************************************************************************************
-
-
       ! store data in basin var (bvar) structure
 
       ! put the data into data structures
-      bvarData%var(iVar)%dat(1:nTDH) = varData((indxGRU+startGRU-1),1:nTDH)
+      bvarData%var(iVar)%dat(1:nTDH) = init_cond_bvar(i)%var_data(indxGRU,1:nTDH)
       ! check whether the first values is set to nf90_fill_double
-      if(any(abs(bvarData%var(iVar)%dat(1:nTDH) - nf90_fill_double) < epsilon(varData)))then; err=20; endif
+      if(any(abs(bvarData%var(iVar)%dat(1:nTDH) - nf90_fill_double) < epsilon(init_cond_bvar(i)%var_data)))then; err=20; endif
       if(err==20)then; message=trim(message)//"data set to the fill value (name='"//trim(bvar_meta(iVar)%varName)//"')"; return; endif
 
-      ! deallocate temporary data array for next variable
-      deallocate(varData, stat=err)
-      if(err/=0)then; message=trim(message)//'problem deallocating GRU variable data'; return; endif
-
     end do ! end looping through basin variables
-    endif  ! end if case for tdh variables being in init. cond. file
-  endif  ! end if case for not being a singleHRU run
+  endif  ! end if case for not being a singleHRU run - gaurded by the structure not being allocated
 
-  ! Remember to close the file
-  call nc_file_close(ncid,err,message)
-  if(err/=0)then;message=trim(message)//trim(cmessage);return;end if
 
-end subroutine read_icond4chm
+end subroutine read_icond
 
-end module read_icond4chm_module
+end module read_icond_gru_hru_module

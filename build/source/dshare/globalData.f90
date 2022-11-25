@@ -310,8 +310,8 @@ MODULE globalData
   type(dlength),allocatable,save,public           :: vecTime(:)
   logical(lgt),allocatable,save,public            :: failedHRUs(:)             ! list of true and false values to indicate if an HRU has failed              
   ! inital conditions
-  type(init_cond),allocatable,save,public         :: init_cond_prog_data(:)   ! variable data for initial conditions
-  type(init_cond),allocatable,save,public         :: init_cond_bvar_data(:)   ! variable data for initial conditions
+  type(init_cond),allocatable,save,public         :: init_cond_prog(:)   ! variable data for initial conditions
+  type(init_cond),allocatable,save,public         :: init_cond_bvar(:)   ! variable data for initial conditions
   !!!!!!!!!!!!!!!!!!GLOBAL DATA STRUCTURES THAT ARE MANAGED BY FILEACCESSACTOR !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   ! define fixed dimensions

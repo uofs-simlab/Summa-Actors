@@ -18,7 +18,7 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-module summa4chm_restart
+module summa_restart
 ! read restart data and reset the model state
 
 
@@ -44,11 +44,11 @@ USE var_lookup,only:iLookDECISIONS                          ! look-up values for
 ! safety: set private unless specified otherwise
 implicit none
 private
-public::summa4chm_readRestart
+public::summa_readRestart
 contains
 
  ! read restart data and reset the model state
- subroutine summa4chm_readRestart(&
+ subroutine summa_readRestart(&
                 indxGRU,    & ! index of GRU in gru_struc
                 indxHRU,    & ! index of HRU in gru_struc
                 ! primary data structures (variable length vectors)
@@ -68,7 +68,7 @@ contains
  USE nrtype                                                  ! variable types, etc.
  ! functions and subroutines
  USE time_utils_module,only:elapsedSec                       ! calculate the elapsed time
- USE read_icond4chm_module,only:read_icond4chm               ! module to read initial conditions
+ USE read_icond_gru_hru_module,only:read_icond               ! module to read initial conditions
  USE check_icond4chm_module,only:check_icond4chm             ! module to check initial conditions
  USE var_derive_module,only:calcHeight                       ! module to calculate height at layer interfaces and layer mid-point
  USE var_derive_module,only:v_shortcut                       ! module to calculate "short-cut" variables
@@ -76,10 +76,6 @@ contains
  USE var_derive_module,only:satHydCond                       ! module to calculate the saturated hydraulic conductivity in each soil layer
  ! global data structures
  USE globalData,only:model_decisions                         ! model decision structure
- ! file paths
- USE summaFileManager,only:SETTINGS_PATH                     ! path to settings files (e.g., Noah vegetation tables)
- USE summaFileManager,only:STATE_PATH                        ! optional path to state/init. condition files (defaults to SETTINGS_PATH)
- USE summaFileManager,only:MODEL_INITCOND                    ! name of model initial conditions file
  ! timing variables
  USE globalData,only:startRestart,endRestart                 ! date/time for the start and end of reading model restart files
  USE globalData,only:elapsedRestart                          ! elapsed time to read model restart files
@@ -121,18 +117,10 @@ contains
  ! *** read/check initial conditions
  ! *****************************************************************************
 
- ! define restart file path/name
- if(STATE_PATH == '') then
-   restartFile = trim(SETTINGS_PATH)//trim(MODEL_INITCOND)
- else
-   restartFile = trim(STATE_PATH)//trim(MODEL_INITCOND)
- endif
-
  ! read initial conditions
- call read_icond4chm(&
+ call read_icond(&
                  indxGRU,                       & ! intent(in):    index of GRU in gru_struc
                  indxHRU,                       & ! intent(in):    index of HRU in gru_struc
-                 restartFile,                   & ! intent(in):    name of initial conditions file
                  mparStruct,                    & ! intent(in):    model parameters
                  progStruct,                    & ! intent(inout): model prognostic variables
                  bvarStruct,                    & ! intent(inout): model basin (GRU) variables
@@ -239,8 +227,8 @@ contains
  ! aggregate the elapsed time for model writing
  elapsedRestart = elapsedSec(startRestart, endRestart)
 
- end subroutine summa4chm_readRestart
-end module summa4chm_restart
+ end subroutine summa_readRestart
+end module summa_restart
 
 
 

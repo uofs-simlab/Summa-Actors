@@ -72,7 +72,7 @@ end subroutine closeInitCondFile
 
 subroutine readInitCond_prog(init_cond_ncid, start_gru, num_gru, err) bind(C, name="readInitCond_prog")
   ! Structures to populate
-  USE globalData,only:init_cond_prog_data
+  USE globalData,only:init_cond_prog
   ! Netcdf
   USE netcdf
   USE netcdf_util_module,only:nc_file_close              ! close netcdf file
@@ -121,7 +121,7 @@ subroutine readInitCond_prog(init_cond_ncid, start_gru, num_gru, err) bind(C, na
   err = nf90_inquire_dimension(init_cond_ncid,dimID,len=fileHRU);
   if(err/=nf90_noerr)then; message=trim(message)//'problem reading hru dimension/'//trim(nf90_strerror(err)); return; end if
 
-  allocate(init_cond_prog_data(size(prog_meta)))
+  allocate(init_cond_prog(size(prog_meta)))
 
   ! loop through prognostic variables
   do iVar = 1,size(prog_meta)
@@ -170,23 +170,20 @@ subroutine readInitCond_prog(init_cond_ncid, start_gru, num_gru, err) bind(C, na
     if(err/=0)then;message=trim(message)//': problem getting the dimension length';print*, message;return;endif
 
     ! initialize the variable data
-    allocate(init_cond_prog_data(iVar)%var_data(num_gru,dimLen),stat=err)
+    allocate(init_cond_prog(iVar)%var_data(num_gru,dimLen),stat=err)
     if(err/=0)then;message=trim(message)//'problem allocating HRU variable data';print*, message;return;endif
 
      ! get data
-    err = nf90_get_var(init_cond_ncid,ncVarID,init_cond_prog_data(iVar)%var_data, start=(/start_gru,1/),count=(/num_gru,dimLen/)) 
+    err = nf90_get_var(init_cond_ncid,ncVarID,init_cond_prog(iVar)%var_data, start=(/start_gru,1/),count=(/num_gru,dimLen/)) 
     call netcdf_err(err,message)
     if(err/=0)then; message=trim(message)//': problem getting the data for variable '//trim(prog_meta(iVar)%varName); return; endif
 
   end do
 
-  
-
-
 end subroutine readInitCond_prog
 
 subroutine readInitCond_bvar(init_cond_ncid, start_gru, num_gru, err) bind(C, name="readInitCond_bvar")
-  USE globalData,only:init_cond_bvar_data
+  USE globalData,only:init_cond_bvar
   USE globalData,only: nTimeDelay   ! number of hours in the time delay histogram
   ! var_lookup
   USE var_lookup,only:iLookBVAR                     ! variable lookup structure
@@ -194,7 +191,7 @@ subroutine readInitCond_bvar(init_cond_ncid, start_gru, num_gru, err) bind(C, na
   USE globalData,only:bvar_meta                     ! metadata for basin (GRU) variables
   ! netcdf
   USE netcdf
-  USE netcdf_err
+  USE netcdf_util_module,only:netcdf_err                 ! netcdf error handling
   implicit none
   
   integer(c_int), intent(in)             :: init_cond_ncid
@@ -249,7 +246,7 @@ subroutine readInitCond_bvar(init_cond_ncid, start_gru, num_gru, err) bind(C, na
       endif
 
       ndx = (/iLookBVAR%routingRunoffFuture/)   ! array of desired variable indices
-      allocate(init_cond_bvar_data(size(ndx)))
+      allocate(init_cond_bvar(size(ndx)))
       do i = 1, size(ndx)
         iVar = ndx(i)
         ! get tdh dimension Id in file (should be 'tdh')
@@ -264,11 +261,11 @@ subroutine readInitCond_bvar(init_cond_ncid, start_gru, num_gru, err) bind(C, na
         err = nf90_inq_varid(init_cond_ncid,trim(bvar_meta(iVar)%varName),ncVarID); call netcdf_err(err,message)
         if(err/=0)then; message=trim(message)//': problem with getting basin variable id, var='//trim(bvar_meta(iVar)%varName); return; endif
 
-        allocate(init_cond_bvar_data(i)%var_data(num_gru,dimLen),stat=err)
+        allocate(init_cond_bvar(i)%var_data(num_gru,dimLen),stat=err)
         if(err/=0)then; print*, 'err= ',err; message=trim(message)//'problem allocating GRU variable data'; return; endif
 
         ! get data
-        err = nf90_get_var(init_cond_ncid,ncVarID,init_cond_bvar_data(i)%var_data, start=(/start_gru,1/),count=(/num_gru,dimLen/)); call netcdf_err(err,message)
+        err = nf90_get_var(init_cond_ncid,ncVarID,init_cond_bvar(i)%var_data, start=(/start_gru,1/),count=(/num_gru,dimLen/)); call netcdf_err(err,message)
         if(err/=0)then; message=trim(message)//': problem getting the data'; return; endif
       end do
     endif

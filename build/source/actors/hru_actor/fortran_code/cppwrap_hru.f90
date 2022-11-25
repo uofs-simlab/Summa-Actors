@@ -30,7 +30,7 @@ subroutine Restart(&
   dt_init,            &		
   err) bind(C,name='Restart')
 
-  use summa4chm_restart,only:summa4chm_readRestart           
+  use summa_restart,only:summa_readRestart           
 
   implicit none
   ! calling variables
@@ -69,7 +69,7 @@ subroutine Restart(&
   call c_f_pointer(handle_bvarStruct, bvarStruct)
 
   ! define global data (parameters, metadata)
-  call summa4chm_readRestart(&
+  call summa_readRestart(&
     indxGRU,    & ! index of GRU in gru_struc
     indxHRU,    & ! index of HRU in gru_struc
       ! primary data structures (variable length vectors)
