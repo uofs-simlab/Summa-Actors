@@ -1,45 +1,18 @@
 #pragma once
 
-#include "caf/stateful_actor.hpp"
-#include "output_manager.hpp"
+#include "caf/actor.hpp"
 #include "forcing_file_info.hpp"
 #include "timing_info.hpp"
+#include "output_container.hpp"
 #include "settings_functions.hpp"
 #include "fortran_data_types.hpp"
 #include "auxilary.hpp"
 
 
-struct hru_output_handles {
-    // Statistic Structures
-    void* handle_forc_stat        = new_handle_var_dlength();
-    void* handle_prog_stat        = new_handle_var_dlength();
-    void* handle_diag_stat        = new_handle_var_dlength();
-    void* handle_flux_stat        = new_handle_var_dlength();
-    void* handle_indx_stat        = new_handle_var_dlength();
-    void* handle_bvar_stat        = new_handle_var_dlength();
-    // primary data structures (scalars)
-    void* handle_time_struct      = new_handle_var_i();
-    void* handle_forc_struct      = new_handle_var_d();
-    void* handle_attr_struct      = new_handle_var_d();
-    void* handle_type_struct      = new_handle_var_i();
-    void* handle_id_struct        = new_handle_var_i8();
-    // primary data structures (variable length vectors)
-    void* handle_indx_struct      = new_handle_var_ilength();
-    void* handle_mpar_struct      = new_handle_var_dlength();
-    void* handle_prog_struct      = new_handle_var_dlength();
-    void* handle_diag_struct      = new_handle_var_dlength();
-    void* handle_flux_struct      = new_handle_var_dlength();
-    // basin-average structures
-    void* handle_bpar_struct      = new_handle_var_d();
-    void* handle_bvar_struct      = new_handle_var_dlength();
-    // ancillary data structures
-    void* handle_dpar_struct      = new_handle_var_d();
-    void* handle_finalize_stats   = new_handle_var_i();
-    void* handle_output_timestep  = new_handle_var_i();
-
-};
+// class Output_Container;
 
 namespace caf {
+
 
 struct file_access_state {
     // Variables set on Spwan
@@ -47,7 +20,7 @@ struct file_access_state {
     int start_gru;
     int num_gru;
 
-    std::vector<hru_output_handles> vector_of_output_handles;
+    // std::vector<hru_output_handles> vector_of_output_handles;
 
     void *handle_forcing_file_info; // Handle for the forcing file information
     void *handle_ncid;              // output file ids
@@ -57,6 +30,8 @@ struct file_access_state {
     int numFiles;
     int filesLoaded;
     int err;
+
+    Output_Container *output_container;
 
     File_Access_Actor_Settings file_access_actor_settings;
 

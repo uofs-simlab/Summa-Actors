@@ -31,6 +31,9 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
     self->state.handle_ncid = new_handle_var_i();
     self->state.err = 0;
 
+    int max_steps = 120;
+    self->state.output_container = new Output_Container(num_gru, max_steps);
+
 
         
     initalizeFileAccessActor(self);
@@ -172,70 +175,88 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
              - If no do nothing
             */
 
-
-
-
-            initalizeOutputHandles(self);
+            // initalizeOutputHandles(self);
+            hru_output_handles hru_output;
             
             int err = 0;
             // statistic structures
-            set_var_dlength(forc_stat, self->state.output_handles.handle_forc_stat);
-            set_var_dlength(prog_stat, self->state.output_handles.handle_prog_stat);
-            set_var_dlength(diag_stat, self->state.output_handles.handle_diag_stat);
-            set_var_dlength(flux_stat, self->state.output_handles.handle_flux_stat);
-            set_var_dlength(indx_stat, self->state.output_handles.handle_indx_stat);
-            set_var_dlength(bvar_stat, self->state.output_handles.handle_bvar_stat);
+            set_var_dlength(forc_stat, hru_output.handle_forc_stat);
+            set_var_dlength(prog_stat, hru_output.handle_prog_stat);
+            set_var_dlength(diag_stat, hru_output.handle_diag_stat);
+            set_var_dlength(flux_stat, hru_output.handle_flux_stat);
+            set_var_dlength(indx_stat, hru_output.handle_indx_stat);
+            set_var_dlength(bvar_stat, hru_output.handle_bvar_stat);
             // primary data structures (scalars)
-            set_var_i(time_struct, self->state.output_handles.handle_time_struct);
-            set_var_d(forc_struct, self->state.output_handles.handle_forc_struct);
-            set_var_d(attr_struct, self->state.output_handles.handle_attr_struct);
-            set_var_i(type_struct, self->state.output_handles.handle_type_struct);
-            set_var_i8(id_struct, self->state.output_handles.handle_id_struct);
+            set_var_i(time_struct, hru_output.handle_time_struct);
+            set_var_d(forc_struct, hru_output.handle_forc_struct);
+            set_var_d(attr_struct, hru_output.handle_attr_struct);
+            set_var_i(type_struct, hru_output.handle_type_struct);
+            set_var_i8(id_struct,  hru_output.handle_id_struct);
             // primary data structures (variable length vectors)
-            set_var_ilength(indx_struct, self->state.output_handles.handle_indx_struct);
-            set_var_dlength(mpar_struct, self->state.output_handles.handle_mpar_struct);
-            set_var_dlength(prog_struct, self->state.output_handles.handle_prog_struct);
-            set_var_dlength(diag_struct, self->state.output_handles.handle_diag_struct);
-            set_var_dlength(flux_struct, self->state.output_handles.handle_flux_struct);
+            set_var_ilength(indx_struct, hru_output.handle_indx_struct);
+            set_var_dlength(mpar_struct, hru_output.handle_mpar_struct);
+            set_var_dlength(prog_struct, hru_output.handle_prog_struct);
+            set_var_dlength(diag_struct, hru_output.handle_diag_struct);
+            set_var_dlength(flux_struct, hru_output.handle_flux_struct);
             // basin-average structures
-            set_var_d(bpar_struct, self->state.output_handles.handle_bpar_struct);
-            set_var_dlength(bvar_struct, self->state.output_handles.handle_bvar_struct);
+            set_var_d(bpar_struct, hru_output.handle_bpar_struct);
+            set_var_dlength(bvar_struct, hru_output.handle_bvar_struct);
             // ancillary data structures
-            set_var_d(dpar_struct, self->state.output_handles.handle_dpar_struct);
-            set_var_i(finalize_stats, self->state.output_handles.handle_finalize_stats);
-            set_var_i(output_timestep, self->state.output_handles.handle_output_timestep);
+            set_var_d(dpar_struct, hru_output.handle_dpar_struct);
+            set_var_i(finalize_stats, hru_output.handle_finalize_stats);
+            set_var_i(output_timestep, hru_output.handle_output_timestep);
 
-            self->state.vector_of_output_handles.push_back(self->state.output_handles);
+            // self->state.vector_of_output_handles.push_back(self->state.output_handles);
 
-            // writeBasinToNetCDF(self->state.handle_ncid, &index_gru,
-            //     self->state.output_handles.handle_finalize_stats, 
-            //     self->state.output_handles.handle_output_timestep, 
-            //     self->state.output_handles.handle_bvar_stat,
-            //     self->state.output_handles.handle_bvar_struct, &err);
+            self->state.output_container->insertOutput(index_gru, hru_output);
+
+            aout(self) << "Is container full: " << self->state.output_container->isFull(index_gru) << "\n";
+
+            if (self->state.output_container->isFull(index_gru)) {
+                aout(self) << "Writing output for GRU: " << index_gru << "\n";
+
+                std::vector<std::vector<hru_output_handles>> hru_output = self->state.output_container->getAllHRUOutput();
+
+                for (int i = 0; i < hru_output[0].size(); i++) {
+
+                writeBasinToNetCDF(self->state.handle_ncid, &index_gru,
+                    hru_output[0][i].handle_finalize_stats, 
+                    hru_output[0][i].handle_output_timestep, 
+                    hru_output[0][i].handle_bvar_stat,
+                    hru_output[0][i].handle_bvar_struct, &err);
+
+                writeTimeToNetCDF(self->state.handle_ncid,
+                    hru_output[0][i].handle_finalize_stats, 
+                    hru_output[0][i].handle_output_timestep, 
+                    hru_output[0][i].handle_time_struct, &err);
+
+                writeDataToNetCDF(self->state.handle_ncid, &index_gru, &index_hru,
+                    hru_output[0][i].handle_finalize_stats, 
+                    hru_output[0][i].handle_forc_stat, 
+                    hru_output[0][i].handle_forc_struct,
+                    hru_output[0][i].handle_prog_stat, 
+                    hru_output[0][i].handle_prog_struct, 
+                    hru_output[0][i].handle_diag_stat, 
+                    hru_output[0][i].handle_diag_struct, 
+                    hru_output[0][i].handle_flux_stat, 
+                    hru_output[0][i].handle_flux_struct,
+                    hru_output[0][i].handle_indx_stat, 
+                    hru_output[0][i].handle_indx_struct, 
+                    hru_output[0][i].handle_output_timestep,
+                    &err);
+                }
+                
+            }
+
+
         
-            // writeTimeToNetCDF(self->state.handle_ncid,
-            //     self->state.output_handles.handle_finalize_stats, 
-            //     self->state.output_handles.handle_output_timestep, 
-            //     self->state.output_handles.handle_time_struct, &err);
 
-            // writeDataToNetCDF(self->state.handle_ncid, &index_gru, &index_hru,
-            //     self->state.output_handles.handle_finalize_stats, 
-            //     self->state.output_handles.handle_forc_stat, 
-            //     self->state.output_handles.handle_forc_struct,
-            //     self->state.output_handles.handle_prog_stat, 
-            //     self->state.output_handles.handle_prog_struct, 
-            //     self->state.output_handles.handle_diag_stat, 
-            //     self->state.output_handles.handle_diag_struct, 
-            //     self->state.output_handles.handle_flux_stat, 
-            //     self->state.output_handles.handle_flux_struct,
-            //     self->state.output_handles.handle_indx_stat, 
-            //     self->state.output_handles.handle_indx_struct, 
-            //     self->state.output_handles.handle_output_timestep,
-            //     &err);
+
+
             
             self->state.file_access_timing.updateEndPoint("write_duration");
 
-            deallocateOutputHandles(self);
+            // deallocateOutputHandles(self);
         
         },
 
