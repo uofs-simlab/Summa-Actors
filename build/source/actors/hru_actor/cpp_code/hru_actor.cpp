@@ -343,6 +343,7 @@ void printOutput(stateful_actor<hru_state>* self) {
 
 void getAndSendOutput(stateful_actor<hru_state>* self) {
     // Get Data from fortran
+    // struct hru_output_state = getHRUOutput();
     // statistic structures
     std::vector<std::vector<double>> forc_stat_array    = get_var_dlength(self->state.handle_forcStat);
     std::vector<std::vector<double>> prog_stat_array    = get_var_dlength(self->state.handle_progStat);

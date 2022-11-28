@@ -1,14 +1,12 @@
 #pragma once
 
-#include "caf/all.hpp"
+#include "caf/stateful_actor.hpp"
 #include "output_manager.hpp"
 #include "forcing_file_info.hpp"
 #include "timing_info.hpp"
 #include "settings_functions.hpp"
 #include "fortran_data_types.hpp"
 #include "auxilary.hpp"
-
-namespace caf {
 
 
 struct hru_output_handles {
@@ -41,16 +39,18 @@ struct hru_output_handles {
 
 };
 
+namespace caf {
+
 struct file_access_state {
     // Variables set on Spwan
     caf::actor parent; 
     int start_gru;
     int num_gru;
 
+    std::vector<hru_output_handles> vector_of_output_handles;
 
     void *handle_forcing_file_info; // Handle for the forcing file information
     void *handle_ncid;              // output file ids
-    OutputManager *output_manager;
     int num_vectors_in_output_manager;
     int num_steps;
     int stepsInCurrentFile;
@@ -61,8 +61,8 @@ struct file_access_state {
     File_Access_Actor_Settings file_access_actor_settings;
 
     std::vector<Forcing_File_Info> forcing_file_list; // list of steps in file
-    std::vector<bool> outputFileInitHRU;
 
+    // Variables for handling the inital conditions
     int init_cond_ncid;
 
     // Variables for hanlding attributes file

@@ -1,4 +1,3 @@
-#include "caf/all.hpp"
 #include "file_access_actor.hpp"
 #include "output_manager.hpp"
 #include "forcing_file_info.hpp"
@@ -164,6 +163,18 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
             
             self->state.file_access_timing.updateStartPoint("write_duration");
 
+            /**
+             - We recive the output from one HRU
+             - We convert it to the correct storage format - from array to fortran handle
+             - We store it in out data structure
+             - Check if we need to write
+             - If we do, write
+             - If no do nothing
+            */
+
+
+
+
             initalizeOutputHandles(self);
             
             int err = 0;
@@ -194,31 +205,33 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
             set_var_i(finalize_stats, self->state.output_handles.handle_finalize_stats);
             set_var_i(output_timestep, self->state.output_handles.handle_output_timestep);
 
-            writeBasinToNetCDF(self->state.handle_ncid, &index_gru,
-                self->state.output_handles.handle_finalize_stats, 
-                self->state.output_handles.handle_output_timestep, 
-                self->state.output_handles.handle_bvar_stat,
-                self->state.output_handles.handle_bvar_struct, &err);
-        
-            writeTimeToNetCDF(self->state.handle_ncid,
-                self->state.output_handles.handle_finalize_stats, 
-                self->state.output_handles.handle_output_timestep, 
-                self->state.output_handles.handle_time_struct, &err);
+            self->state.vector_of_output_handles.push_back(self->state.output_handles);
 
-            writeDataToNetCDF(self->state.handle_ncid, &index_gru, &index_hru,
-                self->state.output_handles.handle_finalize_stats, 
-                self->state.output_handles.handle_forc_stat, 
-                self->state.output_handles.handle_forc_struct,
-                self->state.output_handles.handle_prog_stat, 
-                self->state.output_handles.handle_prog_struct, 
-                self->state.output_handles.handle_diag_stat, 
-                self->state.output_handles.handle_diag_struct, 
-                self->state.output_handles.handle_flux_stat, 
-                self->state.output_handles.handle_flux_struct,
-                self->state.output_handles.handle_indx_stat, 
-                self->state.output_handles.handle_indx_struct, 
-                self->state.output_handles.handle_output_timestep,
-                &err);
+            // writeBasinToNetCDF(self->state.handle_ncid, &index_gru,
+            //     self->state.output_handles.handle_finalize_stats, 
+            //     self->state.output_handles.handle_output_timestep, 
+            //     self->state.output_handles.handle_bvar_stat,
+            //     self->state.output_handles.handle_bvar_struct, &err);
+        
+            // writeTimeToNetCDF(self->state.handle_ncid,
+            //     self->state.output_handles.handle_finalize_stats, 
+            //     self->state.output_handles.handle_output_timestep, 
+            //     self->state.output_handles.handle_time_struct, &err);
+
+            // writeDataToNetCDF(self->state.handle_ncid, &index_gru, &index_hru,
+            //     self->state.output_handles.handle_finalize_stats, 
+            //     self->state.output_handles.handle_forc_stat, 
+            //     self->state.output_handles.handle_forc_struct,
+            //     self->state.output_handles.handle_prog_stat, 
+            //     self->state.output_handles.handle_prog_struct, 
+            //     self->state.output_handles.handle_diag_stat, 
+            //     self->state.output_handles.handle_diag_struct, 
+            //     self->state.output_handles.handle_flux_stat, 
+            //     self->state.output_handles.handle_flux_struct,
+            //     self->state.output_handles.handle_indx_stat, 
+            //     self->state.output_handles.handle_indx_struct, 
+            //     self->state.output_handles.handle_output_timestep,
+            //     &err);
             
             self->state.file_access_timing.updateEndPoint("write_duration");
 
