@@ -31,7 +31,10 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
     self->state.handle_ncid = new_handle_var_i();
     self->state.err = 0;
 
-    self->state.num_output_steps = 60;
+    // Setup output container
+
+
+    self->state.num_output_steps = 73;
     self->state.output_container = new Output_Container(num_gru, self->state.num_output_steps);
 
         
@@ -188,9 +191,9 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
             
             int err = 0;
             // hru information
-            hru_output.hru_actor = hru_actor;
-            hru_output.index_gru = index_gru;
-            hru_output.index_hru = index_hru;
+            // hru_output.hru_actor = hru_actor;
+            // hru_output.index_gru = index_gru;
+            // hru_output.index_hru = index_hru;
             // statistic structures
             set_var_dlength(forc_stat, hru_output.handle_forc_stat);
             set_var_dlength(prog_stat, hru_output.handle_prog_stat);

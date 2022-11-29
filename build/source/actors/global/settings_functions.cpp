@@ -81,8 +81,10 @@ File_Access_Actor_Settings readFileAccessActorSettings(std::string json_settings
     // read file access actor settings
     File_Access_Actor_Settings file_access_actor_settings;
     std::string parent_key = "File_Access_Actor";
-    file_access_actor_settings.num_vectors_in_output_manager = getSettings(json_settings_file, parent_key,
-        "num_vectors_in_output_manager", file_access_actor_settings.num_vectors_in_output_manager).value_or(1);
+    file_access_actor_settings.num_partitions_in_output_buffer = getSettings(json_settings_file, parent_key,
+        "num_partitions_in_output_buffer", file_access_actor_settings.num_partitions_in_output_buffer).value_or(1);
+    file_access_actor_settings.num_timesteps_in_output_buffer = getSettings(json_settings_file, parent_key,
+        "num_timesteps_in_output_buffer", file_access_actor_settings.num_timesteps_in_output_buffer).value_or(1);
 
     return file_access_actor_settings;
 }
@@ -137,7 +139,8 @@ void check_settings_from_json(Distributed_Settings &distributed_settings,
     std::cout << summa_actor_settings.max_gru_per_job << "\n\n\n";
 
     std::cout << "************ FILE_ACCESS_ACTOR_SETTINGS ************\n";
-    std::cout << file_access_actor_settings.num_vectors_in_output_manager << "\n\n\n";
+    std::cout << file_access_actor_settings.num_partitions_in_output_buffer << "\n";
+    std::cout << file_access_actor_settings.num_timesteps_in_output_buffer << "\n\n\n";
 
     std::cout << "************ JOB_ACTOR_SETTINGS ************\n";
     std::cout << job_actor_settings.file_manager_path << "\n";

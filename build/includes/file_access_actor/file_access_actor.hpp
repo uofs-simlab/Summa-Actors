@@ -33,6 +33,9 @@ struct file_access_state {
     int num_output_steps;
 
     Output_Container *output_container;
+    std::vector<output_partition> output_partitions;
+
+
 
     File_Access_Actor_Settings file_access_actor_settings;
 

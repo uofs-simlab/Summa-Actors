@@ -1,6 +1,33 @@
 #include "output_container.hpp"
 
 
+
+void initArrayOfOuputPartitions(std::vector<output_partition>& output_partitions, int num_partitions, int num_gru_run_domain, int num_timesteps) {
+    output_partitions.resize(num_partitions);
+    int start_gru_counter = 1;
+    int num_gru_per_partition = std::round(num_gru_run_domain / num_partitions);
+    for (int i = 0; i < num_partitions - 1; i++) {
+        output_partitions[i].start_gru = start_gru_counter;
+        output_partitions[i].num_gru = num_gru_per_partition;
+        output_partitions[i].num_timesteps = num_timesteps;
+        output_partitions[i].hru_info_and_data.resize(num_gru_per_partition);
+        start_gru_counter += num_gru_per_partition;
+    }
+    // The last partion may not easily divide with the number of GRUs
+    output_partitions[num_partitions - 1].start_gru = start_gru_counter;
+    output_partitions[num_partitions - 1].num_gru = num_gru_run_domain - start_gru_counter + 1;
+    output_partitions[num_partitions - 1].num_timesteps = num_timesteps;
+    output_partitions[num_partitions - 1].hru_info_and_data.resize(num_gru_run_domain - start_gru_counter + 1);
+}
+
+
+
+
+
+
+
+
+
 Output_Container::Output_Container(int max_hrus, int max_steps) {
     this->max_hrus = max_hrus;
     this->max_steps = max_steps;

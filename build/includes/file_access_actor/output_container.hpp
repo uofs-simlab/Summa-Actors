@@ -1,15 +1,14 @@
 #pragma once
 
 #include "caf/actor.hpp"
+#include <cmath>
 #include "fortran_data_types.hpp"
 #include <vector>
 #include <iostream>
 
 
+
 struct hru_output_handles {
-    caf::actor hru_actor;
-    int index_hru;
-    int index_gru;
     // Statistic Structures
     void* handle_forc_stat        = new_handle_var_dlength();
     void* handle_prog_stat        = new_handle_var_dlength();
@@ -36,8 +35,28 @@ struct hru_output_handles {
     void* handle_dpar_struct      = new_handle_var_d();
     void* handle_finalize_stats   = new_handle_var_i();
     void* handle_output_timestep  = new_handle_var_i();
-
 };
+
+struct hru_output_info {
+    caf::actor hru_actor;
+    int index_hru;
+    int index_gru;
+    std::vector<hru_output_handles> output_data;
+};
+
+
+struct output_partition {
+    int start_gru;
+    int num_gru;        // x dimension
+    int num_timesteps;  // y dimension
+    // 2D matrix of output handles
+    std::vector<hru_output_info> hru_info_and_data;
+};
+
+
+void initArrayOfOuputPartitions(std::vector<output_partition>& output_partitions, int num_partitions, int num_gru, int num_timesteps);
+
+
 
 // This class holds the output for the HRUs as a buffer so 
 // we can write more data at once

@@ -31,7 +31,8 @@ void testDistributedSettings() {
     std::cout << "Testing Summa Actor Settings Passed\n";
 
     File_Access_Actor_Settings file_access_actor_settings = readFileAccessActorSettings(config_file_1);
-    IS_TRUE(file_access_actor_settings.num_vectors_in_output_manager == 2);
+    IS_TRUE(file_access_actor_settings.num_partitions_in_output_buffer == 2);
+    IS_TRUE(file_access_actor_settings.num_timesteps_in_output_buffer == 60);
     std::cout << "Testing File Access Actor Settings Passed\n";
 
     Job_Actor_Settings job_actor_settings = readJobActorSettings(config_file_1);
