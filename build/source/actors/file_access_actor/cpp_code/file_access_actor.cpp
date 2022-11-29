@@ -32,9 +32,12 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
     self->state.err = 0;
 
     // Setup output container
+    initArrayOfOuputPartitions(self->state.output_partitions,
+        self->state.file_access_actor_settings.num_partitions_in_output_buffer,
+        self->state.num_gru,
+        self->state.file_access_actor_settings.num_timesteps_in_output_buffer);
 
-
-    self->state.num_output_steps = 73;
+    self->state.num_output_steps = self->state.file_access_actor_settings.num_timesteps_in_output_buffer;
     self->state.output_container = new Output_Container(num_gru, self->state.num_output_steps);
 
         
@@ -185,15 +188,10 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
              - If no do nothing
             */
 
-
-            // initalizeOutputHandles(self);
             hru_output_handles hru_output;
             
             int err = 0;
             // hru information
-            // hru_output.hru_actor = hru_actor;
-            // hru_output.index_gru = index_gru;
-            // hru_output.index_hru = index_hru;
             // statistic structures
             set_var_dlength(forc_stat, hru_output.handle_forc_stat);
             set_var_dlength(prog_stat, hru_output.handle_prog_stat);
@@ -221,53 +219,47 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
             set_var_i(finalize_stats, hru_output.handle_finalize_stats);
             set_var_i(output_timestep, hru_output.handle_output_timestep);
 
-            // self->state.vector_of_output_handles.push_back(self->state.output_handles);
+            std::optional<int> partition_index;
+            partition_index = addHRUOutput(self->state.output_partitions, hru_actor, index_gru, index_hru, hru_output);
+            if (partition_index.has_value()) {
+                // We have a partition to write
+                std::vector<std::vector<hru_output_handles>> hru_output_from_vector = getOutputHandlesFromPartition(partition_index.value(), self->state.output_partitions); 
 
-            self->state.output_container->insertOutput(index_gru, hru_output);
+                for (int i = 0; i < hru_output_from_vector[0].size(); i++) {
 
-            if (self->state.output_container->isFull(index_gru)) {
-                aout(self) << "Writing output for GRU: " << index_gru << "\n";
+                    writeBasinToNetCDF(self->state.handle_ncid, &index_gru,
+                        hru_output_from_vector[0][i].handle_finalize_stats, 
+                        hru_output_from_vector[0][i].handle_output_timestep, 
+                        hru_output_from_vector[0][i].handle_bvar_stat,
+                        hru_output_from_vector[0][i].handle_bvar_struct, &err);
 
-                std::vector<std::vector<hru_output_handles>> hru_output = self->state.output_container->getAllHRUOutput();
-                
+                    writeTimeToNetCDF(self->state.handle_ncid,
+                        hru_output_from_vector[0][i].handle_finalize_stats, 
+                        hru_output_from_vector[0][i].handle_output_timestep, 
+                        hru_output_from_vector[0][i].handle_time_struct, &err);
 
-                for (int i = 0; i < hru_output[0].size(); i++) {
-
-                writeBasinToNetCDF(self->state.handle_ncid, &index_gru,
-                    hru_output[0][i].handle_finalize_stats, 
-                    hru_output[0][i].handle_output_timestep, 
-                    hru_output[0][i].handle_bvar_stat,
-                    hru_output[0][i].handle_bvar_struct, &err);
-
-                writeTimeToNetCDF(self->state.handle_ncid,
-                    hru_output[0][i].handle_finalize_stats, 
-                    hru_output[0][i].handle_output_timestep, 
-                    hru_output[0][i].handle_time_struct, &err);
-
-                writeDataToNetCDF(self->state.handle_ncid, &index_gru, &index_hru,
-                    hru_output[0][i].handle_finalize_stats, 
-                    hru_output[0][i].handle_forc_stat, 
-                    hru_output[0][i].handle_forc_struct,
-                    hru_output[0][i].handle_prog_stat, 
-                    hru_output[0][i].handle_prog_struct, 
-                    hru_output[0][i].handle_diag_stat, 
-                    hru_output[0][i].handle_diag_struct, 
-                    hru_output[0][i].handle_flux_stat, 
-                    hru_output[0][i].handle_flux_struct,
-                    hru_output[0][i].handle_indx_stat, 
-                    hru_output[0][i].handle_indx_struct, 
-                    hru_output[0][i].handle_output_timestep,
-                    &err);
+                    writeDataToNetCDF(self->state.handle_ncid, &index_gru, &index_hru,
+                        hru_output_from_vector[0][i].handle_finalize_stats, 
+                        hru_output_from_vector[0][i].handle_forc_stat, 
+                        hru_output_from_vector[0][i].handle_forc_struct,
+                        hru_output_from_vector[0][i].handle_prog_stat, 
+                        hru_output_from_vector[0][i].handle_prog_struct, 
+                        hru_output_from_vector[0][i].handle_diag_stat, 
+                        hru_output_from_vector[0][i].handle_diag_struct, 
+                        hru_output_from_vector[0][i].handle_flux_stat, 
+                        hru_output_from_vector[0][i].handle_flux_struct,
+                        hru_output_from_vector[0][i].handle_indx_stat, 
+                        hru_output_from_vector[0][i].handle_indx_struct, 
+                        hru_output_from_vector[0][i].handle_output_timestep,
+                        &err);
                 }
-                
 
-                // reset the hrus counter
-                // for all hrus that just wrote, reset the counter
-                self->state.output_container->clearAll();
+                clearOutputPartition(self->state.output_partitions[partition_index.value()]);
+
                 self->send(hru_actor, num_steps_before_write_v, self->state.num_output_steps);
                 self->send(hru_actor, run_hru_v);
             }
-            
+
             self->state.file_access_timing.updateEndPoint("write_duration");
 
             // deallocateOutputHandles(self);

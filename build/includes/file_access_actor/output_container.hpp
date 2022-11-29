@@ -1,6 +1,7 @@
 #pragma once
 
 #include "caf/actor.hpp"
+#include <optional>
 #include <cmath>
 #include "fortran_data_types.hpp"
 #include <vector>
@@ -47,14 +48,44 @@ struct hru_output_info {
 
 struct output_partition {
     int start_gru;
-    int num_gru;        // x dimension
-    int num_timesteps;  // y dimension
+    int num_gru;            // x dimension
+    int num_timesteps;      // y dimension
     // 2D matrix of output handles
     std::vector<hru_output_info> hru_info_and_data;
 };
 
-
+// Take an unintialized vector of output partitions and initialize it
 void initArrayOfOuputPartitions(std::vector<output_partition>& output_partitions, int num_partitions, int num_gru, int num_timesteps);
+
+// Take a timestep of HRU data and add it to the output structure
+// If we need to write to a file then return the partition_index
+std::optional<int> addHRUOutput(std::vector<output_partition>& output_partitions, caf::actor hru_actor, int gru_index, int hru_index, hru_output_handles& timestep_output);
+
+// find which partition the HRU belongs to
+int findPatritionIndex(int grus_per_partition, int gru_index, int num_partitions);
+
+// Find a specific GRU in a partition given the index for the simulation
+int findGRUIndexInPartition(int gru_index, int start_gru);
+
+// Test if a partition in the output structure is full
+bool isPartitionFull(output_partition &output_partition);
+
+// Get the data for the HRUs from a partition
+std::vector<std::vector<hru_output_handles>> getOutputHandlesFromPartition(int partition_index, std::vector<output_partition>& output_partitions);
+
+// After wrting to a file, clear the data from the partition
+void clearOutputPartition(output_partition &output_partition);
+
+
+
+
+
+
+
+
+
+
+
 
 
 
