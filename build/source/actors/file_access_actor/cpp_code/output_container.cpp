@@ -53,3 +53,10 @@ std::vector<std::vector<hru_output_handles>> Output_Container::getAllHRUOutput()
     return this->hru_output_handles_vector;
 }
 
+
+void Output_Container::clearAll() {
+    for (int i = 0; i < this->max_hrus; i++) {
+        this->hru_output_handles_vector[i].clear();
+    }
+}
+

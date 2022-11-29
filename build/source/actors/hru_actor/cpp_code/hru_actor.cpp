@@ -53,6 +53,8 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
 
     aout(self) << "NumSteps = " << self->state.num_steps << std::endl;  
 
+    self->send(self->state.file_access_actor, get_num_output_steps_v, self);
+
     // Get attributes
     self->send(self->state.file_access_actor, get_attributes_params_v, self->state.indxGRU, self);
 
@@ -99,34 +101,25 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
             Initialize_HRU(self);
 
             self->send(self, start_hru_v);
-
         },
 
-        
-        // The file_access_actor sends the HRU a message with 
-        // the number of steps it can run based on the forcing data
-        [=](run_hru, int stepsInCurrentFFile, int iFile) {
+        [=](num_steps_before_write, int num_steps) {
+            aout(self) << "NumSteps = " << num_steps << std::endl;
+            self->state.num_steps_until_write = num_steps;
+        },
+
+        // Run HRU for a number of timesteps
+        [=](run_hru) {
             self->state.hru_timing.updateStartPoint("total_duration");
-
             int err = 0;
-            self->state.stepsInCurrentFFile = stepsInCurrentFFile;
-            self->state.iFile = iFile;
-            self->state.forcingStep = 1;
-            
-            setTimeZoneOffset(&self->state.iFile, 
-                &self->state.tmZoneOffsetFracDay, &err);
 
-            // We need to get the first timestep that we are on
-            if (self->state.timestep == 1 ) {
+            if (self->state.timestep == 1) {
                 getFirstTimestep(&self->state.iFile, &self->state.forcingStep, &err);
                 if (self->state.forcingStep == -1) { aout(self) << "HRU - Wrong starting forcing file\n";} 
             }
 
-
-            for (self->state.forcingStep; 
-            self->state.forcingStep <= self->state.stepsInCurrentFFile; 
-            self->state.forcingStep++) {
-                
+            while(self->state.num_steps_until_write > 0) {
+                self->state.num_steps_until_write--;
                 err = Run_HRU(self); // Simulate a Timestep
 
                 getAndSendOutput(self);
@@ -134,25 +127,36 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
                 // Update counters for the fortran side           
                 updateCounters(self->state.handle_timeStruct, self->state.handle_statCounter, self->state.handle_outputTimeStep,
                     self->state.handle_resetStats, self->state.handle_oldTime, self->state.handle_finalizeStats);
-
                 // model timestep
-                self->state.timestep += 1;
-
+                self->state.timestep++;
+                // forcing step
+                self->state.forcingStep++;
                 // HRU has finished
                 if (self->state.timestep > self->state.num_steps) {
                     self->send(self, done_hru_v);
                     break;
                 }
-            }
 
-            // get more forcing data from the file_access_actor
-            if (self->state.timestep < self->state.num_steps) {
-                self->send(self->state.file_access_actor, access_forcing_v, self->state.iFile + 1, self);
+                if (self->state.forcingStep > self->state.stepsInCurrentFFile) {
+                    self->send(self->state.file_access_actor, access_forcing_v, self->state.iFile+1, self);
+                    break;
+                }
             }
-
+            
             self->state.hru_timing.updateEndPoint("total_duration");
         },
 
+
+        [=](new_forcing_file, int num_forcing_steps_in_iFile, int iFile) {
+            int err;
+            self->state.hru_timing.updateStartPoint("total_duration");
+            self->state.iFile = iFile;
+            self->state.stepsInCurrentFFile = num_forcing_steps_in_iFile;
+            setTimeZoneOffset(&self->state.iFile, &self->state.tmZoneOffsetFracDay, &err);
+            self->send(self, run_hru_v);
+        },
+
+        
         [=](done_hru) {
 
             // Tell our parent we are done, convert all timings to seconds
@@ -162,6 +166,8 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
             aout(self) << "Forcing Duration = " << self->state.hru_timing.getDuration("forcing_duration").value_or(-1.0) << " Seconds\n";
             aout(self) << "Run Physics Duration = " << self->state.hru_timing.getDuration("run_physics_duration").value_or(-1.0) << " Seconds\n";
             aout(self) << "Write Output Duration = " << self->state.hru_timing.getDuration("write_output_duration").value_or(-1.0) << " Seconds\n\n";
+
+            self->send(self->state.file_access_actor, done_hru_v, self->state.indxGRU, self->state.indxHRU);
 
             self->send(self->state.parent, 
                 done_hru_v,
@@ -375,6 +381,7 @@ void getAndSendOutput(stateful_actor<hru_state>* self) {
     self->send(self->state.file_access_actor, write_output_v,
         self->state.indxGRU,
         self->state.indxHRU,
+        self,
         // statistic structures
         forc_stat_array,
         prog_stat_array,

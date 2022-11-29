@@ -152,6 +152,18 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     // Reciever:
     // Summary:
     CAF_ADD_ATOM(summa, no)
+    // Sender:
+    // Reciever:
+    // Summary:
+    CAF_ADD_ATOM(summa, new_forcing_file)
+    // Sender:
+    // Reciever:
+    // Summary:
+    CAF_ADD_ATOM(summa, num_steps_before_write)
+    // Sender:
+    // Reciever:
+    // Summary:
+    CAF_ADD_ATOM(summa, get_num_output_steps)
     
     // Struct Types
     CAF_ADD_TYPE_ID(summa, (Distributed_Settings))

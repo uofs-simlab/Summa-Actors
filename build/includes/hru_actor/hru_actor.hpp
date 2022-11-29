@@ -28,6 +28,7 @@ struct hru_state {
 	int forcingFileStep;
 	int currentForcingFile = 1;
 
+    int num_steps_until_write;
 
     // statistics structures
     void *handle_forcStat = new_handle_var_dlength();	// model forcing data	

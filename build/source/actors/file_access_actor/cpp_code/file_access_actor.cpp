@@ -31,9 +31,8 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
     self->state.handle_ncid = new_handle_var_i();
     self->state.err = 0;
 
-    int max_steps = 120;
-    self->state.output_container = new Output_Container(num_gru, max_steps);
-
+    self->state.num_output_steps = 60;
+    self->state.output_container = new Output_Container(num_gru, self->state.num_output_steps);
 
         
     initalizeFileAccessActor(self);
@@ -74,7 +73,9 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
         [=](access_forcing, int currentFile, caf::actor refToRespondTo) {
             if (currentFile <= self->state.numFiles) {
                 if(self->state.forcing_file_list[currentFile - 1].isFileLoaded()) { // C++ starts at 0 Fortran starts at 1
-                    self->send(refToRespondTo, run_hru_v, 
+                    // Send the HRU actor the new forcing file
+                    // then tell it to get back to running
+                    self->send(refToRespondTo, new_forcing_file_v, 
                         self->state.forcing_file_list[currentFile - 1].getNumSteps(),
                         currentFile);
 
@@ -97,7 +98,9 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
                         self->send(self, access_forcing_internal_v, currentFile + 1);
                     }
 
-                    self->send(refToRespondTo, run_hru_v, 
+                    // Send the HRU actor the new forcing file
+                    // then tell it to get back to running
+                    self->send(refToRespondTo, new_forcing_file_v, 
                         self->state.forcing_file_list[currentFile - 1].getNumSteps(),
                         currentFile);
                 }
@@ -149,7 +152,11 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
             
         },
 
-        [=](write_output, int index_gru, int index_hru, 
+        [=] (get_num_output_steps, caf::actor hru) {
+            self->send(hru, num_steps_before_write_v, self->state.num_output_steps);
+        },
+
+        [=](write_output, int index_gru, int index_hru, caf::actor hru_actor,
             // statistic structures
             std::vector<std::vector<double>> forc_stat, std::vector<std::vector<double>> prog_stat, std::vector<std::vector<double>> diag_stat,
             std::vector<std::vector<double>> flux_stat, std::vector<std::vector<double>> indx_stat, std::vector<std::vector<double>> bvar_stat,
@@ -180,6 +187,10 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
             hru_output_handles hru_output;
             
             int err = 0;
+            // hru information
+            hru_output.hru_actor = hru_actor;
+            hru_output.index_gru = index_gru;
+            hru_output.index_hru = index_hru;
             // statistic structures
             set_var_dlength(forc_stat, hru_output.handle_forc_stat);
             set_var_dlength(prog_stat, hru_output.handle_prog_stat);
@@ -211,12 +222,11 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
 
             self->state.output_container->insertOutput(index_gru, hru_output);
 
-            aout(self) << "Is container full: " << self->state.output_container->isFull(index_gru) << "\n";
-
             if (self->state.output_container->isFull(index_gru)) {
                 aout(self) << "Writing output for GRU: " << index_gru << "\n";
 
                 std::vector<std::vector<hru_output_handles>> hru_output = self->state.output_container->getAllHRUOutput();
+                
 
                 for (int i = 0; i < hru_output[0].size(); i++) {
 
@@ -247,13 +257,13 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
                     &err);
                 }
                 
+
+                // reset the hrus counter
+                // for all hrus that just wrote, reset the counter
+                self->state.output_container->clearAll();
+                self->send(hru_actor, num_steps_before_write_v, self->state.num_output_steps);
+                self->send(hru_actor, run_hru_v);
             }
-
-
-        
-
-
-
             
             self->state.file_access_timing.updateEndPoint("write_duration");
 
@@ -269,6 +279,11 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
 
             // listIndex = self->state.output_manager->decrementMaxSize(indxGRU);
           
+        },
+
+        [=](done_hru, caf::actor hru_actor, int index_gru, int index_hru) {
+            aout(self) << "HRU: " << index_hru << " is done" << "\n";
+
         },
 
         /**

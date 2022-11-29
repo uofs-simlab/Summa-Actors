@@ -1,11 +1,15 @@
 #pragma once
 
+#include "caf/actor.hpp"
 #include "fortran_data_types.hpp"
 #include <vector>
 #include <iostream>
 
 
 struct hru_output_handles {
+    caf::actor hru_actor;
+    int index_hru;
+    int index_gru;
     // Statistic Structures
     void* handle_forc_stat        = new_handle_var_dlength();
     void* handle_prog_stat        = new_handle_var_dlength();
@@ -56,6 +60,8 @@ class Output_Container {
 
         // returns the matrix of hru_outputs for writing
         std::vector<std::vector<hru_output_handles>> getAllHRUOutput();
+
+        void clearAll();
 
 
 };

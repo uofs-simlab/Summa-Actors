@@ -30,6 +30,7 @@ struct file_access_state {
     int numFiles;
     int filesLoaded;
     int err;
+    int num_output_steps;
 
     Output_Container *output_container;
 
