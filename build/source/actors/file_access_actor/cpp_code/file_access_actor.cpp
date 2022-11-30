@@ -216,34 +216,34 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
             if (partition_index.has_value()) {
                 // We have a partition to write
                 std::vector<std::vector<std::shared_ptr<hru_output_handles>>> hru_output_from_vector = getOutputHandlesFromPartition(partition_index.value(), self->state.output_partitions); 
+                for (int hru = 0; hru < hru_output_from_vector.size(); hru++) {
+                    for (int timestep = 0; timestep < hru_output_from_vector[hru].size(); timestep++) {
+                        writeBasinToNetCDF(self->state.handle_ncid, &index_gru,
+                            hru_output_from_vector[hru][timestep]->handle_finalize_stats, 
+                            hru_output_from_vector[hru][timestep]->handle_output_timestep, 
+                            hru_output_from_vector[hru][timestep]->handle_bvar_stat,
+                            hru_output_from_vector[hru][timestep]->handle_bvar_struct, &err);
 
-                for (int i = 0; i < hru_output_from_vector[0].size(); i++) {
+                        writeTimeToNetCDF(self->state.handle_ncid,
+                            hru_output_from_vector[hru][timestep]->handle_finalize_stats, 
+                            hru_output_from_vector[hru][timestep]->handle_output_timestep, 
+                            hru_output_from_vector[hru][timestep]->handle_time_struct, &err);
 
-                    writeBasinToNetCDF(self->state.handle_ncid, &index_gru,
-                        hru_output_from_vector[0][i]->handle_finalize_stats, 
-                        hru_output_from_vector[0][i]->handle_output_timestep, 
-                        hru_output_from_vector[0][i]->handle_bvar_stat,
-                        hru_output_from_vector[0][i]->handle_bvar_struct, &err);
-
-                    writeTimeToNetCDF(self->state.handle_ncid,
-                        hru_output_from_vector[0][i]->handle_finalize_stats, 
-                        hru_output_from_vector[0][i]->handle_output_timestep, 
-                        hru_output_from_vector[0][i]->handle_time_struct, &err);
-
-                    writeDataToNetCDF(self->state.handle_ncid, &index_gru, &index_hru,
-                        hru_output_from_vector[0][i]->handle_finalize_stats, 
-                        hru_output_from_vector[0][i]->handle_forc_stat, 
-                        hru_output_from_vector[0][i]->handle_forc_struct,
-                        hru_output_from_vector[0][i]->handle_prog_stat, 
-                        hru_output_from_vector[0][i]->handle_prog_struct, 
-                        hru_output_from_vector[0][i]->handle_diag_stat, 
-                        hru_output_from_vector[0][i]->handle_diag_struct, 
-                        hru_output_from_vector[0][i]->handle_flux_stat, 
-                        hru_output_from_vector[0][i]->handle_flux_struct,
-                        hru_output_from_vector[0][i]->handle_indx_stat, 
-                        hru_output_from_vector[0][i]->handle_indx_struct, 
-                        hru_output_from_vector[0][i]->handle_output_timestep,
-                        &err);
+                        writeDataToNetCDF(self->state.handle_ncid, &index_gru, &index_hru,
+                            hru_output_from_vector[hru][timestep]->handle_finalize_stats, 
+                            hru_output_from_vector[hru][timestep]->handle_forc_stat, 
+                            hru_output_from_vector[hru][timestep]->handle_forc_struct,
+                            hru_output_from_vector[hru][timestep]->handle_prog_stat, 
+                            hru_output_from_vector[hru][timestep]->handle_prog_struct, 
+                            hru_output_from_vector[hru][timestep]->handle_diag_stat, 
+                            hru_output_from_vector[hru][timestep]->handle_diag_struct, 
+                            hru_output_from_vector[hru][timestep]->handle_flux_stat, 
+                            hru_output_from_vector[hru][timestep]->handle_flux_struct,
+                            hru_output_from_vector[hru][timestep]->handle_indx_stat, 
+                            hru_output_from_vector[hru][timestep]->handle_indx_struct, 
+                            hru_output_from_vector[hru][timestep]->handle_output_timestep,
+                            &err);
+                    }
                 }
 
                 clearOutputPartition(self->state.output_partitions[partition_index.value()]);
@@ -255,7 +255,6 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
                     self->send(hru_output_info->hru_actor, num_steps_before_write_v, self->state.output_partitions[partition_index.value()]->num_timesteps);
                     self->send(hru_output_info->hru_actor, run_hru_v);
                 }
-      
             }
 
             self->state.file_access_timing.updateEndPoint("write_duration");
