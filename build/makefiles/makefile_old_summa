@@ -296,9 +296,6 @@ BATCH_CONTAINER = $(SOURCE_DIR)/summa_actor/batch/batch_container.cpp
 CLIENT = $(SOURCE_DIR)/summa_actor/client/client.cpp
 CLIENT_CONTAINER = $(SOURCE_DIR)/summa_actor/client/client_container.cpp
 
-CLIENT_BATCH = $(SOURCE_DIR)/summa_actor/batch_client.cpp
-CLIENT_BATCH_CONTAINERS = $(SOURCE_DIR)/summa_actor/batch_client_containers.cpp
-
 GRU_ACTOR_INCLUDES = -I$(INCLUDE_DIR)/gru_actor
 GRU_ACTOR = $(SOURCE_DIR)/gru_actor/gru_actor.cpp
 
@@ -364,7 +361,7 @@ clean_fortran:
 ###################################################################################################################
 ################################################ COMPILE SUMMA-C++ ################################################
 ###################################################################################################################
-compile_globals:
+compile_globals: 
 	$(CC) $(FLAGS_ACTORS) -c $(GLOBAL) $(TIMEINFO) $(AUXILARY) $(SETTINGS_FILES) $(GLOBAL_INCLUDES) $(SUMMA_ACTOR_INCLUDES)
 
 compile_gru_actor:
