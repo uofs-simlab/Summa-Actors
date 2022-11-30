@@ -35,7 +35,13 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
 
         
     initalizeFileAccessActor(self);
-        // Setup output container
+
+    if (self->state.num_steps < self->state.file_access_actor_settings.num_timesteps_in_output_buffer) {
+        self->state.num_output_steps = self->state.num_steps;
+        self->state.file_access_actor_settings.num_timesteps_in_output_buffer = self->state.num_steps;
+    }
+
+    // Setup output container
     initArrayOfOuputPartitions(self->state.output_partitions,
         self->state.file_access_actor_settings.num_partitions_in_output_buffer,
         self->state.num_gru,
@@ -51,10 +57,7 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
             std::shared_ptr<hru_output_handles> params = std::make_shared<hru_output_handles>();
 
             self->state.file_access_timing.updateStartPoint("write_duration");
-            params->handle_attr_struct = new_handle_var_d();
-            params->handle_type_struct = new_handle_var_i();
-            params->handle_mpar_struct = new_handle_var_dlength();
-            params->handle_bpar_struct = new_handle_var_d();
+
             // populate the newly created Fortran structures
             set_var_d(attr_struct, params->handle_attr_struct);
             set_var_i(type_struct, params->handle_type_struct);
@@ -174,6 +177,8 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
             std::vector<double> dpar_struct, std::vector<int> finalize_stats, std::vector<int> output_timestep ) {
             
             self->state.file_access_timing.updateStartPoint("write_duration");
+
+            aout(self) << "Called\n";
 
             std::shared_ptr<hru_output_handles> hru_output = std::make_shared<hru_output_handles>();
             

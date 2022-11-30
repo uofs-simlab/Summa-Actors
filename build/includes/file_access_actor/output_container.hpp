@@ -38,6 +38,7 @@ struct hru_output_handles {
     void* handle_output_timestep  = new_handle_var_i();
 
     ~hru_output_handles() {
+        std::cout << "Destructor called" << std::endl;
         // statistics structures
         delete_handle_var_dlength(handle_forc_stat);
         delete_handle_var_dlength(handle_prog_stat);
@@ -91,7 +92,9 @@ void initArrayOfOuputPartitions(std::vector<std::shared_ptr<output_partition>>& 
 
 // Take a timestep of HRU data and add it to the output structure
 // If we need to write to a file then return the partition_index
-std::optional<int> addHRUOutput(std::vector<std::shared_ptr<output_partition>>& output_partitions, caf::actor hru_actor, int gru_index, int hru_index, std::shared_ptr<hru_output_handles>& timestep_output);
+std::optional<int> addHRUOutput(std::vector<std::shared_ptr<output_partition>>& output_partitions, 
+     caf::actor hru_actor, int gru_index, int hru_index,
+     std::shared_ptr<hru_output_handles>& timestep_output);
 
 // find which partition the HRU belongs to
 int findPatritionIndex(int grus_per_partition, int gru_index, int num_partitions);

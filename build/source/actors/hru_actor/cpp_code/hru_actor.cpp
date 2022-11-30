@@ -171,7 +171,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
             aout(self) << "Run Physics Duration = " << self->state.hru_timing.getDuration("run_physics_duration").value_or(-1.0) << " Seconds\n";
             aout(self) << "Write Output Duration = " << self->state.hru_timing.getDuration("write_output_duration").value_or(-1.0) << " Seconds\n\n";
 
-            self->send(self->state.file_access_actor, done_hru_v, self->state.indxGRU, self->state.indxHRU);
+            // self->send(self->state.file_access_actor, done_hru_v, self->state.indxGRU, self->state.indxHRU);
 
             self->send(self->state.parent, 
                 done_hru_v,
