@@ -38,8 +38,7 @@ struct hru_output_handles {
     void* handle_output_timestep  = new_handle_var_i();
 
     ~hru_output_handles() {
-                // statistics structures
-        std::cout << "Called\n";
+        // statistics structures
         delete_handle_var_dlength(handle_forc_stat);
         delete_handle_var_dlength(handle_prog_stat);
         delete_handle_var_dlength(handle_diag_stat);
@@ -63,7 +62,6 @@ struct hru_output_handles {
         delete_handle_var_dlength(handle_bvar_struct);
         // ancillary data structures
         delete_handle_var_d(handle_dpar_struct);
-        // sundials type
         // counter variables
         delete_handle_var_i(handle_output_timestep);
         delete_handle_flagVec(handle_finalize_stats);
@@ -82,12 +80,14 @@ struct output_partition {
     int start_gru;
     int num_gru;            // x dimension
     int num_timesteps;      // y dimension
+    int simulation_timesteps_remaining;
     // 2D matrix of output handles
     std::vector<std::shared_ptr<hru_output_info>> hru_info_and_data;
 };
 
 // Take an unintialized vector of output partitions and initialize it
-void initArrayOfOuputPartitions(std::vector<std::shared_ptr<output_partition>>& output_partitions, int num_partitions, int num_gru, int num_timesteps);
+void initArrayOfOuputPartitions(std::vector<std::shared_ptr<output_partition>>& output_partitions, 
+    int num_partitions, int num_gru, int num_timesteps,  int simulation_timesteps_remaining);
 
 // Take a timestep of HRU data and add it to the output structure
 // If we need to write to a file then return the partition_index
@@ -108,7 +108,12 @@ std::vector<std::vector<std::shared_ptr<hru_output_handles>>>  getOutputHandlesF
 // After wrting to a file, clear the data from the partition
 void clearOutputPartition(std::shared_ptr<output_partition> &output_partition);
 
+// After writing to a file, update the number of timesteps remaining in the simulation
+void updateSimulationTimestepsRemaining(std::shared_ptr<output_partition>& output_partition);
 
+// After writing to a file, check if we need to send the hru a modified timestep value b/c we have less simulation timesteps remaining than 
+// the number of timesteps in the output file
+void updateNumTimeForPartition(std::shared_ptr<output_partition> &output_partition);
 
 
 

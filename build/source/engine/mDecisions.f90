@@ -292,7 +292,7 @@ contains
 
  ! compute the number of time steps
  numtim = nint( (dJulianFinsh - dJulianStart)*secprday/data_step ) + 1
- write(*,'(a,1x,i10)') 'number of time steps = ', numtim
+ num_steps = numtim
 
  ! -------------------------------------------------------------------------------------------------
 

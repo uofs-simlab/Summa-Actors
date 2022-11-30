@@ -3,7 +3,7 @@
 
 
 void initArrayOfOuputPartitions(std::vector<std::shared_ptr<output_partition>>& output_partitions, 
-    int num_partitions, int num_gru_run_domain, int num_timesteps) {
+    int num_partitions, int num_gru_run_domain, int num_timesteps,  int simulation_timesteps_remaining) {
 
     int start_gru_counter = 1;
     int num_gru_per_partition = std::round(num_gru_run_domain / num_partitions);
@@ -12,6 +12,7 @@ void initArrayOfOuputPartitions(std::vector<std::shared_ptr<output_partition>>& 
         output_partitions[i]->start_gru = start_gru_counter;
         output_partitions[i]->num_gru = num_gru_per_partition;
         output_partitions[i]->num_timesteps = num_timesteps;
+        output_partitions[i]->simulation_timesteps_remaining = simulation_timesteps_remaining;
 
         for (int a = 0; a < num_gru_per_partition; a++) {
             output_partitions[i]->hru_info_and_data.push_back(std::make_shared<hru_output_info>());
@@ -23,6 +24,7 @@ void initArrayOfOuputPartitions(std::vector<std::shared_ptr<output_partition>>& 
     output_partitions[num_partitions - 1]->start_gru = start_gru_counter;
     output_partitions[num_partitions - 1]->num_gru = num_gru_run_domain - start_gru_counter + 1;
     output_partitions[num_partitions - 1]->num_timesteps = num_timesteps;
+    output_partitions[num_partitions - 1]->simulation_timesteps_remaining = simulation_timesteps_remaining;
     for (int a = 0; a < num_gru_run_domain - start_gru_counter + 1; a++) {
         output_partitions[num_partitions - 1]->hru_info_and_data.push_back(std::make_shared<hru_output_info>());
     }
@@ -94,6 +96,18 @@ void clearOutputPartition(std::shared_ptr<output_partition>& output_partition) {
         hru_info_and_data->output_data.clear();
     }
 }
+
+
+void updateSimulationTimestepsRemaining(std::shared_ptr<output_partition>& output_partition) {
+    output_partition->simulation_timesteps_remaining -= output_partition->num_timesteps;
+}
+
+void updateNumTimeForPartition(std::shared_ptr<output_partition> &output_partition) {
+    if (output_partition->simulation_timesteps_remaining < output_partition->num_timesteps) {
+        output_partition->num_timesteps = output_partition->simulation_timesteps_remaining;
+    }
+}
+
 
 
 

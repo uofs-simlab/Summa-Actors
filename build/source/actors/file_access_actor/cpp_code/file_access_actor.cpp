@@ -31,16 +31,16 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
     self->state.handle_ncid = new_handle_var_i();
     self->state.err = 0;
 
-    // Setup output container
-    initArrayOfOuputPartitions(self->state.output_partitions,
-        self->state.file_access_actor_settings.num_partitions_in_output_buffer,
-        self->state.num_gru,
-        self->state.file_access_actor_settings.num_timesteps_in_output_buffer);
-
     self->state.num_output_steps = self->state.file_access_actor_settings.num_timesteps_in_output_buffer;
 
         
     initalizeFileAccessActor(self);
+        // Setup output container
+    initArrayOfOuputPartitions(self->state.output_partitions,
+        self->state.file_access_actor_settings.num_partitions_in_output_buffer,
+        self->state.num_gru,
+        self->state.file_access_actor_settings.num_timesteps_in_output_buffer,
+        self->state.num_steps);
 
     return {
         [=](write_param, int index_gru, int index_hru, std::vector<double> attr_struct, 
@@ -66,12 +66,7 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
                 params->handle_type_struct, 
                 params->handle_mpar_struct, 
                 params->handle_bpar_struct, &err);
-            
-            // delete_handle_var_d(self->state.output_handles.handle_attr_struct);
-            // delete_handle_var_i(self->state.output_handles.handle_type_struct);
-            // delete_handle_var_dlength(self->state.output_handles.handle_mpar_struct);
-            // delete_handle_var_d(self->state.output_handles.handle_bpar_struct);
-            
+        
 
             self->state.file_access_timing.updateEndPoint("write_duration");
             
@@ -247,14 +242,18 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
                 }
 
                 clearOutputPartition(self->state.output_partitions[partition_index.value()]);
+                updateSimulationTimestepsRemaining(self->state.output_partitions[partition_index.value()]);
+                updateNumTimeForPartition(self->state.output_partitions[partition_index.value()]);                 
 
-                self->send(hru_actor, num_steps_before_write_v, self->state.num_output_steps);
-                self->send(hru_actor, run_hru_v);
+                // Send all HRUs in the partition the next set of timesteps to compute
+                for (auto hru_output_info : self->state.output_partitions[partition_index.value()]->hru_info_and_data) {
+                    self->send(hru_output_info->hru_actor, num_steps_before_write_v, self->state.output_partitions[partition_index.value()]->num_timesteps);
+                    self->send(hru_output_info->hru_actor, run_hru_v);
+                }
+      
             }
 
             self->state.file_access_timing.updateEndPoint("write_duration");
-
-            // deallocateOutputHandles(self);
         
         },
 
@@ -263,8 +262,6 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
 
             // update the list in Fortran
             updateFailed(&indxGRU);
-
-            // listIndex = self->state.output_manager->decrementMaxSize(indxGRU);
           
         },
 
@@ -273,13 +270,8 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
 
         },
 
-        /**
-         * Message from JobActor
-         * OutputManager needs to be adjusted so the failed HRUs can run again
-         */
         [=](restart_failures) {
             resetFailedArray();
-            // self->state.output_manager->restartFailures();
         },
 
         [=](deallocate_structures) {
@@ -324,6 +316,8 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
         self->quit();
         return;
     }
+
+    aout(self) << "Simluations Steps: " << self->state.num_steps << "\n";
 
     read_pinit_C(&err);
     if (err != 0) {

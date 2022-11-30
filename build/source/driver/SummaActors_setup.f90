@@ -171,7 +171,6 @@ subroutine setupHRUParam(&
 
    ! ffile_info and mDecisions moved to their own seperate subroutine call
    
-   !numTimeSteps = numtim
    oldTime%var(:) = startTime%var(:)
 
    ! get the maximum number of snow layers

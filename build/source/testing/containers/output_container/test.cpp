@@ -14,24 +14,51 @@ void TEST_CLIENT() {
     int num_partitions = 4;
     int num_gru = 50;
     int num_timestep = 50;
-    initArrayOfOuputPartitions(output_partitions_vectors, num_partitions, num_gru, num_timestep);
+    int simulation_timesteps_remaining = 100;
+    initArrayOfOuputPartitions(output_partitions_vectors, num_partitions, num_gru, num_timestep, 
+        simulation_timesteps_remaining);
+    
     IS_TRUE(output_partitions_vectors.size() == 4);
     IS_TRUE(output_partitions_vectors[0]->start_gru == 1);
     IS_TRUE(output_partitions_vectors[0]->num_gru == 12);
     IS_TRUE(output_partitions_vectors[0]->num_timesteps == 50);
     IS_TRUE(output_partitions_vectors[0]->hru_info_and_data.size() == 12);
+    IS_TRUE(output_partitions_vectors[0]->simulation_timesteps_remaining == 100);
+    updateSimulationTimestepsRemaining(output_partitions_vectors[0]);
+    IS_TRUE(output_partitions_vectors[0]->simulation_timesteps_remaining == 50);
+    updateNumTimeForPartition(output_partitions_vectors[0]);
+    IS_TRUE(output_partitions_vectors[0]->num_timesteps == 50);
+
     IS_TRUE(output_partitions_vectors[1]->start_gru == 13);
     IS_TRUE(output_partitions_vectors[1]->num_gru == 12);
     IS_TRUE(output_partitions_vectors[1]->num_timesteps == 50);
     IS_TRUE(output_partitions_vectors[1]->hru_info_and_data.size() == 12);
+    IS_TRUE(output_partitions_vectors[1]->simulation_timesteps_remaining == 100);
+    updateSimulationTimestepsRemaining(output_partitions_vectors[1]);
+    IS_TRUE(output_partitions_vectors[1]->simulation_timesteps_remaining == 50);
+    updateNumTimeForPartition(output_partitions_vectors[1]);
+    IS_TRUE(output_partitions_vectors[1]->num_timesteps == 50);
+
     IS_TRUE(output_partitions_vectors[2]->start_gru == 25);
     IS_TRUE(output_partitions_vectors[2]->num_gru == 12);
     IS_TRUE(output_partitions_vectors[2]->num_timesteps == 50);
     IS_TRUE(output_partitions_vectors[2]->hru_info_and_data.size() == 12);
+    IS_TRUE(output_partitions_vectors[2]->simulation_timesteps_remaining == 100);
+    updateSimulationTimestepsRemaining(output_partitions_vectors[2]);
+    IS_TRUE(output_partitions_vectors[2]->simulation_timesteps_remaining == 50);
+    updateNumTimeForPartition(output_partitions_vectors[2]);
+    IS_TRUE(output_partitions_vectors[2]->num_timesteps == 50);
+
     IS_TRUE(output_partitions_vectors[3]->start_gru == 37);
     IS_TRUE(output_partitions_vectors[3]->num_gru == 14);
     IS_TRUE(output_partitions_vectors[3]->num_timesteps == 50);
     IS_TRUE(output_partitions_vectors[3]->hru_info_and_data.size() == 14);
+    IS_TRUE(output_partitions_vectors[3]->simulation_timesteps_remaining == 100);
+    updateSimulationTimestepsRemaining(output_partitions_vectors[3]);
+    IS_TRUE(output_partitions_vectors[3]->simulation_timesteps_remaining == 50);
+    updateNumTimeForPartition(output_partitions_vectors[3]);
+    IS_TRUE(output_partitions_vectors[3]->num_timesteps == 50);
+
     std::cout << "Testing Output Container: DONE TEST 1\n";
 
     std::cout << "Testing Partitions indexes\n";
@@ -121,40 +148,120 @@ void TEST_CLIENT() {
     int num_partitions2 = 8;
     int num_gru2 = 80;
     int num_timestep2 = 80;
-    initArrayOfOuputPartitions(output_partitions_vectors, num_partitions2, num_gru2, num_timestep2);
+    simulation_timesteps_remaining = 600;
+    initArrayOfOuputPartitions(output_partitions_vectors, num_partitions2, num_gru2, num_timestep2, simulation_timesteps_remaining);
     IS_TRUE(output_partitions_vectors.size() == 8);
     IS_TRUE(output_partitions_vectors[0]->start_gru == 1);
     IS_TRUE(output_partitions_vectors[0]->num_gru == 10);
     IS_TRUE(output_partitions_vectors[0]->num_timesteps == 80);
     IS_TRUE(output_partitions_vectors[0]->hru_info_and_data.size() == 10);
+    IS_TRUE(output_partitions_vectors[0]->simulation_timesteps_remaining == 600);
+    updateSimulationTimestepsRemaining(output_partitions_vectors[0]);
+    IS_TRUE(output_partitions_vectors[0]->simulation_timesteps_remaining == 520);
+    updateNumTimeForPartition(output_partitions_vectors[0]);
+    IS_TRUE(output_partitions_vectors[0]->num_timesteps == 80);
+    updateSimulationTimestepsRemaining(output_partitions_vectors[0]);
+    IS_TRUE(output_partitions_vectors[0]->simulation_timesteps_remaining == 440);
+    updateNumTimeForPartition(output_partitions_vectors[0]);
+    IS_TRUE(output_partitions_vectors[0]->num_timesteps == 80);
+    updateSimulationTimestepsRemaining(output_partitions_vectors[0]);
+    IS_TRUE(output_partitions_vectors[0]->simulation_timesteps_remaining == 360);
+    updateNumTimeForPartition(output_partitions_vectors[0]);
+    IS_TRUE(output_partitions_vectors[0]->num_timesteps == 80);
+    updateSimulationTimestepsRemaining(output_partitions_vectors[0]);
+    IS_TRUE(output_partitions_vectors[0]->simulation_timesteps_remaining == 280);
+    updateNumTimeForPartition(output_partitions_vectors[0]);
+    IS_TRUE(output_partitions_vectors[0]->num_timesteps == 80);
+    updateSimulationTimestepsRemaining(output_partitions_vectors[0]);
+    IS_TRUE(output_partitions_vectors[0]->simulation_timesteps_remaining == 200);
+    updateNumTimeForPartition(output_partitions_vectors[0]);
+    IS_TRUE(output_partitions_vectors[0]->num_timesteps == 80);
+    updateSimulationTimestepsRemaining(output_partitions_vectors[0]);
+    IS_TRUE(output_partitions_vectors[0]->simulation_timesteps_remaining == 120);
+    updateNumTimeForPartition(output_partitions_vectors[0]);
+    IS_TRUE(output_partitions_vectors[0]->num_timesteps == 80);
+    updateSimulationTimestepsRemaining(output_partitions_vectors[0]);
+    IS_TRUE(output_partitions_vectors[0]->simulation_timesteps_remaining == 40);
+    updateNumTimeForPartition(output_partitions_vectors[0]);
+    IS_TRUE(output_partitions_vectors[0]->num_timesteps == 40);
+    updateSimulationTimestepsRemaining(output_partitions_vectors[0]);
+    IS_TRUE(output_partitions_vectors[0]->simulation_timesteps_remaining == 0);
+    updateNumTimeForPartition(output_partitions_vectors[0]);
+    IS_TRUE(output_partitions_vectors[0]->num_timesteps == 0);
+
+
+
     IS_TRUE(output_partitions_vectors[1]->start_gru == 11);
     IS_TRUE(output_partitions_vectors[1]->num_gru == 10);
     IS_TRUE(output_partitions_vectors[1]->num_timesteps == 80);
     IS_TRUE(output_partitions_vectors[1]->hru_info_and_data.size() == 10);
+    IS_TRUE(output_partitions_vectors[1]->simulation_timesteps_remaining == 600);
+
     IS_TRUE(output_partitions_vectors[2]->start_gru == 21);
     IS_TRUE(output_partitions_vectors[2]->num_gru == 10);
     IS_TRUE(output_partitions_vectors[2]->num_timesteps == 80);
     IS_TRUE(output_partitions_vectors[2]->hru_info_and_data.size() == 10);
+    IS_TRUE(output_partitions_vectors[2]->simulation_timesteps_remaining == 600);
+
     IS_TRUE(output_partitions_vectors[3]->start_gru == 31);
     IS_TRUE(output_partitions_vectors[3]->num_gru == 10);
     IS_TRUE(output_partitions_vectors[3]->num_timesteps == 80);
     IS_TRUE(output_partitions_vectors[3]->hru_info_and_data.size() == 10);
+    IS_TRUE(output_partitions_vectors[3]->simulation_timesteps_remaining == 600);
+    updateSimulationTimestepsRemaining(output_partitions_vectors[3]);
+    IS_TRUE(output_partitions_vectors[3]->simulation_timesteps_remaining == 520);
+    updateNumTimeForPartition(output_partitions_vectors[3]);
+    IS_TRUE(output_partitions_vectors[3]->num_timesteps == 80);
+    updateSimulationTimestepsRemaining(output_partitions_vectors[3]);
+    IS_TRUE(output_partitions_vectors[3]->simulation_timesteps_remaining == 440);
+    updateNumTimeForPartition(output_partitions_vectors[3]);
+    IS_TRUE(output_partitions_vectors[3]->num_timesteps == 80);
+    updateSimulationTimestepsRemaining(output_partitions_vectors[3]);
+    IS_TRUE(output_partitions_vectors[3]->simulation_timesteps_remaining == 360);
+    updateNumTimeForPartition(output_partitions_vectors[3]);
+    IS_TRUE(output_partitions_vectors[3]->num_timesteps == 80);
+    updateSimulationTimestepsRemaining(output_partitions_vectors[3]);
+    IS_TRUE(output_partitions_vectors[3]->simulation_timesteps_remaining == 280);
+    updateNumTimeForPartition(output_partitions_vectors[3]);
+    IS_TRUE(output_partitions_vectors[3]->num_timesteps == 80);
+    updateSimulationTimestepsRemaining(output_partitions_vectors[3]);
+    IS_TRUE(output_partitions_vectors[3]->simulation_timesteps_remaining == 200);
+    updateNumTimeForPartition(output_partitions_vectors[3]);
+    IS_TRUE(output_partitions_vectors[3]->num_timesteps == 80);
+    updateSimulationTimestepsRemaining(output_partitions_vectors[3]);
+    IS_TRUE(output_partitions_vectors[3]->simulation_timesteps_remaining == 120);
+    updateNumTimeForPartition(output_partitions_vectors[3]);
+    IS_TRUE(output_partitions_vectors[3]->num_timesteps == 80);
+    updateSimulationTimestepsRemaining(output_partitions_vectors[3]);
+    IS_TRUE(output_partitions_vectors[3]->simulation_timesteps_remaining == 40);
+    updateNumTimeForPartition(output_partitions_vectors[3]);
+    IS_TRUE(output_partitions_vectors[3]->num_timesteps == 40);
+    updateSimulationTimestepsRemaining(output_partitions_vectors[3]);
+    IS_TRUE(output_partitions_vectors[3]->simulation_timesteps_remaining == 0);
+    updateNumTimeForPartition(output_partitions_vectors[3]);
+    IS_TRUE(output_partitions_vectors[3]->num_timesteps == 0);
+
     IS_TRUE(output_partitions_vectors[4]->start_gru == 41);
     IS_TRUE(output_partitions_vectors[4]->num_gru == 10);
     IS_TRUE(output_partitions_vectors[4]->num_timesteps == 80);
     IS_TRUE(output_partitions_vectors[4]->hru_info_and_data.size() == 10);
+    IS_TRUE(output_partitions_vectors[4]->simulation_timesteps_remaining == 600);
+
     IS_TRUE(output_partitions_vectors[5]->start_gru == 51);
     IS_TRUE(output_partitions_vectors[5]->num_gru == 10);
     IS_TRUE(output_partitions_vectors[5]->num_timesteps == 80);
     IS_TRUE(output_partitions_vectors[5]->hru_info_and_data.size() == 10);
+    IS_TRUE(output_partitions_vectors[5]->simulation_timesteps_remaining == 600);
     IS_TRUE(output_partitions_vectors[6]->start_gru == 61);
     IS_TRUE(output_partitions_vectors[6]->num_gru == 10);
     IS_TRUE(output_partitions_vectors[6]->num_timesteps == 80);
     IS_TRUE(output_partitions_vectors[6]->hru_info_and_data.size() == 10);
+    IS_TRUE(output_partitions_vectors[6]->simulation_timesteps_remaining == 600);
     IS_TRUE(output_partitions_vectors[7]->start_gru == 71);
     IS_TRUE(output_partitions_vectors[7]->num_gru == 10);
     IS_TRUE(output_partitions_vectors[7]->num_timesteps == 80);
     IS_TRUE(output_partitions_vectors[7]->hru_info_and_data.size() == 10);
+    IS_TRUE(output_partitions_vectors[7]->simulation_timesteps_remaining == 600);
 
     std::cout << "Testing Output Container: DONE TEST 2\n";
     partition_size = 10;
@@ -223,6 +330,7 @@ void TEST_CLIENT() {
     num_partitions = 5;
     num_gru = 8;
     num_timestep = 2;
+    simulation_timesteps_remaining = 10;
     caf::actor actor0; // index_gru = 1, hru_index = 1
     caf::actor actor1; // index_gru = 2, hru_index = 1
     caf::actor actor2; // index_gru = 3, hru_index = 1
@@ -231,7 +339,8 @@ void TEST_CLIENT() {
     caf::actor actor5; // index_gru = 6, hru_index = 1
     caf::actor actor6; // index_gru = 7, hru_index = 1
     caf::actor actor7; // index_gru = 8, hru_index = 1
-    initArrayOfOuputPartitions(output_partitions_vectors, num_partitions, num_gru, num_timestep);
+    initArrayOfOuputPartitions(output_partitions_vectors, num_partitions, 
+        num_gru, num_timestep, simulation_timesteps_remaining);
     std::optional<int> return_value;
     gru_index = 1;
     int hru_index = 1;

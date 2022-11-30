@@ -17,6 +17,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
     self->state.hru_timing.updateStartPoint("total_duration");
     // Add the rest of the timing
     self->state.hru_timing.addTimePoint("init_duration");
+    self->state.hru_timing.updateStartPoint("init_duration");
     self->state.hru_timing.addTimePoint("forcing_duration");
     self->state.hru_timing.addTimePoint("run_physics_duration");
     self->state.hru_timing.addTimePoint("write_output_duration");
@@ -60,6 +61,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
 
 
     self->state.hru_timing.updateEndPoint("total_duration");
+    self->state.hru_timing.updateEndPoint("init_duration");
 
     return {
 
@@ -89,6 +91,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
         [=](get_attributes_params, std::vector<double> attr_struct, std::vector<int> type_struct, 
             std::vector<long int> id_struct, std::vector<double> bpar_struct, 
             std::vector<double> dpar_struct, std::vector<std::vector<double>> mpar_struct) {
+            self->state.hru_timing.updateStartPoint("total_duration");
             
             int err = 0;
             set_var_d(attr_struct, self->state.handle_attrStruct);
@@ -101,6 +104,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
             Initialize_HRU(self);
 
             self->send(self, start_hru_v);
+            self->state.hru_timing.updateEndPoint("total_duration");
         },
 
         [=](num_steps_before_write, int num_steps) {
