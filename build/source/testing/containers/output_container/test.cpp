@@ -3,37 +3,35 @@
 
 void TEST_CLIENT() {
     std::cout << "Testing Output Container\n";
+    std::vector<std::shared_ptr<hru_output_handles>> dummy_data;
+    for (int i = 0; i < 50; i++) {
+        dummy_data.push_back(std::make_shared<hru_output_handles>());
+    }
+    // // Test insertOutput
+    // std::vector<hru_output_handles> dummy_data(50);
 
-    // Call constructor
-    int num_hrus = 2;
-    int num_steps = 2;
-
-    // Test insertOutput
-    hru_output_handles hru_output;
-    std::vector<hru_output_handles> dummy_data(50);
-
-    std::vector<output_partition> output_partitions_vectors;
+    std::vector<std::shared_ptr<output_partition>> output_partitions_vectors;
     int num_partitions = 4;
     int num_gru = 50;
     int num_timestep = 50;
     initArrayOfOuputPartitions(output_partitions_vectors, num_partitions, num_gru, num_timestep);
     IS_TRUE(output_partitions_vectors.size() == 4);
-    IS_TRUE(output_partitions_vectors[0].start_gru == 1);
-    IS_TRUE(output_partitions_vectors[0].num_gru == 12);
-    IS_TRUE(output_partitions_vectors[0].num_timesteps == 50);
-    IS_TRUE(output_partitions_vectors[0].hru_info_and_data.size() == 12);
-    IS_TRUE(output_partitions_vectors[1].start_gru == 13);
-    IS_TRUE(output_partitions_vectors[1].num_gru == 12);
-    IS_TRUE(output_partitions_vectors[1].num_timesteps == 50);
-    IS_TRUE(output_partitions_vectors[1].hru_info_and_data.size() == 12);
-    IS_TRUE(output_partitions_vectors[2].start_gru == 25);
-    IS_TRUE(output_partitions_vectors[2].num_gru == 12);
-    IS_TRUE(output_partitions_vectors[2].num_timesteps == 50);
-    IS_TRUE(output_partitions_vectors[2].hru_info_and_data.size() == 12);
-    IS_TRUE(output_partitions_vectors[3].start_gru == 37);
-    IS_TRUE(output_partitions_vectors[3].num_gru == 14);
-    IS_TRUE(output_partitions_vectors[3].num_timesteps == 50);
-    IS_TRUE(output_partitions_vectors[3].hru_info_and_data.size() == 14);
+    IS_TRUE(output_partitions_vectors[0]->start_gru == 1);
+    IS_TRUE(output_partitions_vectors[0]->num_gru == 12);
+    IS_TRUE(output_partitions_vectors[0]->num_timesteps == 50);
+    IS_TRUE(output_partitions_vectors[0]->hru_info_and_data.size() == 12);
+    IS_TRUE(output_partitions_vectors[1]->start_gru == 13);
+    IS_TRUE(output_partitions_vectors[1]->num_gru == 12);
+    IS_TRUE(output_partitions_vectors[1]->num_timesteps == 50);
+    IS_TRUE(output_partitions_vectors[1]->hru_info_and_data.size() == 12);
+    IS_TRUE(output_partitions_vectors[2]->start_gru == 25);
+    IS_TRUE(output_partitions_vectors[2]->num_gru == 12);
+    IS_TRUE(output_partitions_vectors[2]->num_timesteps == 50);
+    IS_TRUE(output_partitions_vectors[2]->hru_info_and_data.size() == 12);
+    IS_TRUE(output_partitions_vectors[3]->start_gru == 37);
+    IS_TRUE(output_partitions_vectors[3]->num_gru == 14);
+    IS_TRUE(output_partitions_vectors[3]->num_timesteps == 50);
+    IS_TRUE(output_partitions_vectors[3]->hru_info_and_data.size() == 14);
     std::cout << "Testing Output Container: DONE TEST 1\n";
 
     std::cout << "Testing Partitions indexes\n";
@@ -125,38 +123,38 @@ void TEST_CLIENT() {
     int num_timestep2 = 80;
     initArrayOfOuputPartitions(output_partitions_vectors, num_partitions2, num_gru2, num_timestep2);
     IS_TRUE(output_partitions_vectors.size() == 8);
-    IS_TRUE(output_partitions_vectors[0].start_gru == 1);
-    IS_TRUE(output_partitions_vectors[0].num_gru == 10);
-    IS_TRUE(output_partitions_vectors[0].num_timesteps == 80);
-    IS_TRUE(output_partitions_vectors[0].hru_info_and_data.size() == 10);
-    IS_TRUE(output_partitions_vectors[1].start_gru == 11);
-    IS_TRUE(output_partitions_vectors[1].num_gru == 10);
-    IS_TRUE(output_partitions_vectors[1].num_timesteps == 80);
-    IS_TRUE(output_partitions_vectors[1].hru_info_and_data.size() == 10);
-    IS_TRUE(output_partitions_vectors[2].start_gru == 21);
-    IS_TRUE(output_partitions_vectors[2].num_gru == 10);
-    IS_TRUE(output_partitions_vectors[2].num_timesteps == 80);
-    IS_TRUE(output_partitions_vectors[2].hru_info_and_data.size() == 10);
-    IS_TRUE(output_partitions_vectors[3].start_gru == 31);
-    IS_TRUE(output_partitions_vectors[3].num_gru == 10);
-    IS_TRUE(output_partitions_vectors[3].num_timesteps == 80);
-    IS_TRUE(output_partitions_vectors[3].hru_info_and_data.size() == 10);
-    IS_TRUE(output_partitions_vectors[4].start_gru == 41);
-    IS_TRUE(output_partitions_vectors[4].num_gru == 10);
-    IS_TRUE(output_partitions_vectors[4].num_timesteps == 80);
-    IS_TRUE(output_partitions_vectors[4].hru_info_and_data.size() == 10);
-    IS_TRUE(output_partitions_vectors[5].start_gru == 51);
-    IS_TRUE(output_partitions_vectors[5].num_gru == 10);
-    IS_TRUE(output_partitions_vectors[5].num_timesteps == 80);
-    IS_TRUE(output_partitions_vectors[5].hru_info_and_data.size() == 10);
-    IS_TRUE(output_partitions_vectors[6].start_gru == 61);
-    IS_TRUE(output_partitions_vectors[6].num_gru == 10);
-    IS_TRUE(output_partitions_vectors[6].num_timesteps == 80);
-    IS_TRUE(output_partitions_vectors[6].hru_info_and_data.size() == 10);
-    IS_TRUE(output_partitions_vectors[7].start_gru == 71);
-    IS_TRUE(output_partitions_vectors[7].num_gru == 10);
-    IS_TRUE(output_partitions_vectors[7].num_timesteps == 80);
-    IS_TRUE(output_partitions_vectors[7].hru_info_and_data.size() == 10);
+    IS_TRUE(output_partitions_vectors[0]->start_gru == 1);
+    IS_TRUE(output_partitions_vectors[0]->num_gru == 10);
+    IS_TRUE(output_partitions_vectors[0]->num_timesteps == 80);
+    IS_TRUE(output_partitions_vectors[0]->hru_info_and_data.size() == 10);
+    IS_TRUE(output_partitions_vectors[1]->start_gru == 11);
+    IS_TRUE(output_partitions_vectors[1]->num_gru == 10);
+    IS_TRUE(output_partitions_vectors[1]->num_timesteps == 80);
+    IS_TRUE(output_partitions_vectors[1]->hru_info_and_data.size() == 10);
+    IS_TRUE(output_partitions_vectors[2]->start_gru == 21);
+    IS_TRUE(output_partitions_vectors[2]->num_gru == 10);
+    IS_TRUE(output_partitions_vectors[2]->num_timesteps == 80);
+    IS_TRUE(output_partitions_vectors[2]->hru_info_and_data.size() == 10);
+    IS_TRUE(output_partitions_vectors[3]->start_gru == 31);
+    IS_TRUE(output_partitions_vectors[3]->num_gru == 10);
+    IS_TRUE(output_partitions_vectors[3]->num_timesteps == 80);
+    IS_TRUE(output_partitions_vectors[3]->hru_info_and_data.size() == 10);
+    IS_TRUE(output_partitions_vectors[4]->start_gru == 41);
+    IS_TRUE(output_partitions_vectors[4]->num_gru == 10);
+    IS_TRUE(output_partitions_vectors[4]->num_timesteps == 80);
+    IS_TRUE(output_partitions_vectors[4]->hru_info_and_data.size() == 10);
+    IS_TRUE(output_partitions_vectors[5]->start_gru == 51);
+    IS_TRUE(output_partitions_vectors[5]->num_gru == 10);
+    IS_TRUE(output_partitions_vectors[5]->num_timesteps == 80);
+    IS_TRUE(output_partitions_vectors[5]->hru_info_and_data.size() == 10);
+    IS_TRUE(output_partitions_vectors[6]->start_gru == 61);
+    IS_TRUE(output_partitions_vectors[6]->num_gru == 10);
+    IS_TRUE(output_partitions_vectors[6]->num_timesteps == 80);
+    IS_TRUE(output_partitions_vectors[6]->hru_info_and_data.size() == 10);
+    IS_TRUE(output_partitions_vectors[7]->start_gru == 71);
+    IS_TRUE(output_partitions_vectors[7]->num_gru == 10);
+    IS_TRUE(output_partitions_vectors[7]->num_timesteps == 80);
+    IS_TRUE(output_partitions_vectors[7]->hru_info_and_data.size() == 10);
 
     std::cout << "Testing Output Container: DONE TEST 2\n";
     partition_size = 10;
@@ -238,73 +236,73 @@ void TEST_CLIENT() {
     gru_index = 1;
     int hru_index = 1;
     IS_TRUE(addHRUOutput(output_partitions_vectors, actor0, gru_index, hru_index, dummy_data[0]).has_value() == false);
-    IS_TRUE(output_partitions_vectors[0].hru_info_and_data[0].output_data.size() == 1);
-    IS_TRUE(output_partitions_vectors[0].hru_info_and_data[0].index_gru == 1);
-    IS_TRUE(output_partitions_vectors[0].hru_info_and_data[0].index_hru == 1);
-    IS_TRUE(output_partitions_vectors[0].hru_info_and_data[0].hru_actor == actor0);
+    IS_TRUE(output_partitions_vectors[0]->hru_info_and_data[0]->output_data.size() == 1);
+    IS_TRUE(output_partitions_vectors[0]->hru_info_and_data[0]->index_gru == 1);
+    IS_TRUE(output_partitions_vectors[0]->hru_info_and_data[0]->index_hru == 1);
+    IS_TRUE(output_partitions_vectors[0]->hru_info_and_data[0]->hru_actor == actor0);
     IS_TRUE(addHRUOutput(output_partitions_vectors, actor0, gru_index, hru_index, dummy_data[8]).value() == 0);
 
     gru_index = 2;
     hru_index = 1;
     IS_TRUE(addHRUOutput(output_partitions_vectors, actor1, gru_index, hru_index, dummy_data[1]).has_value() == false);
-    IS_TRUE(output_partitions_vectors[1].hru_info_and_data[0].output_data.size() == 1);
-    IS_TRUE(output_partitions_vectors[1].hru_info_and_data[0].index_gru == 2);
-    IS_TRUE(output_partitions_vectors[1].hru_info_and_data[0].index_hru == 1);
-    IS_TRUE(output_partitions_vectors[1].hru_info_and_data[0].hru_actor == actor1);
+    IS_TRUE(output_partitions_vectors[1]->hru_info_and_data[0]->output_data.size() == 1);
+    IS_TRUE(output_partitions_vectors[1]->hru_info_and_data[0]->index_gru == 2);
+    IS_TRUE(output_partitions_vectors[1]->hru_info_and_data[0]->index_hru == 1);
+    IS_TRUE(output_partitions_vectors[1]->hru_info_and_data[0]->hru_actor == actor1);
     IS_TRUE(addHRUOutput(output_partitions_vectors, actor1, gru_index, hru_index, dummy_data[9]).value() == 1);
 
     gru_index = 3;
     hru_index = 1;
     IS_TRUE(addHRUOutput(output_partitions_vectors, actor2, gru_index, hru_index, dummy_data[2]).has_value() == false);
-    IS_TRUE(output_partitions_vectors[2].hru_info_and_data[0].output_data.size() == 1);
-    IS_TRUE(output_partitions_vectors[2].hru_info_and_data[0].index_gru == 3);
-    IS_TRUE(output_partitions_vectors[2].hru_info_and_data[0].index_hru == 1);
-    IS_TRUE(output_partitions_vectors[2].hru_info_and_data[0].hru_actor == actor2);
+    IS_TRUE(output_partitions_vectors[2]->hru_info_and_data[0]->output_data.size() == 1);
+    IS_TRUE(output_partitions_vectors[2]->hru_info_and_data[0]->index_gru == 3);
+    IS_TRUE(output_partitions_vectors[2]->hru_info_and_data[0]->index_hru == 1);
+    IS_TRUE(output_partitions_vectors[2]->hru_info_and_data[0]->hru_actor == actor2);
     IS_TRUE(addHRUOutput(output_partitions_vectors, actor2, gru_index, hru_index, dummy_data[10]).value() == 2);
 
     gru_index = 4;
     hru_index = 1;
     IS_TRUE(addHRUOutput(output_partitions_vectors, actor3, gru_index, hru_index, dummy_data[3]).has_value() == false);
-    IS_TRUE(output_partitions_vectors[3].hru_info_and_data[0].output_data.size() == 1);
-    IS_TRUE(output_partitions_vectors[3].hru_info_and_data[0].index_gru == 4);
-    IS_TRUE(output_partitions_vectors[3].hru_info_and_data[0].index_hru == 1);
-    IS_TRUE(output_partitions_vectors[3].hru_info_and_data[0].hru_actor == actor3);
+    IS_TRUE(output_partitions_vectors[3]->hru_info_and_data[0]->output_data.size() == 1);
+    IS_TRUE(output_partitions_vectors[3]->hru_info_and_data[0]->index_gru == 4);
+    IS_TRUE(output_partitions_vectors[3]->hru_info_and_data[0]->index_hru == 1);
+    IS_TRUE(output_partitions_vectors[3]->hru_info_and_data[0]->hru_actor == actor3);
     IS_TRUE(addHRUOutput(output_partitions_vectors, actor3, gru_index, hru_index, dummy_data[11]).value() == 3);
 
     gru_index = 5;
     hru_index = 1;
     IS_TRUE(addHRUOutput(output_partitions_vectors, actor4, gru_index, hru_index, dummy_data[4]).has_value() == false);
-    IS_TRUE(output_partitions_vectors[4].hru_info_and_data[0].output_data.size() == 1);
-    IS_TRUE(output_partitions_vectors[4].hru_info_and_data[0].index_gru == 5);
-    IS_TRUE(output_partitions_vectors[4].hru_info_and_data[0].index_hru == 1);
-    IS_TRUE(output_partitions_vectors[4].hru_info_and_data[0].hru_actor == actor4);
+    IS_TRUE(output_partitions_vectors[4]->hru_info_and_data[0]->output_data.size() == 1);
+    IS_TRUE(output_partitions_vectors[4]->hru_info_and_data[0]->index_gru == 5);
+    IS_TRUE(output_partitions_vectors[4]->hru_info_and_data[0]->index_hru == 1);
+    IS_TRUE(output_partitions_vectors[4]->hru_info_and_data[0]->hru_actor == actor4);
     IS_TRUE(addHRUOutput(output_partitions_vectors, actor4, gru_index, hru_index, dummy_data[12]).has_value() == false);
 
     gru_index = 6;
     hru_index = 1;
     IS_TRUE(addHRUOutput(output_partitions_vectors, actor5, gru_index, hru_index, dummy_data[5]).has_value() == false);
-    IS_TRUE(output_partitions_vectors[4].hru_info_and_data[1].output_data.size() == 1);
-    IS_TRUE(output_partitions_vectors[4].hru_info_and_data[1].index_gru == 6);
-    IS_TRUE(output_partitions_vectors[4].hru_info_and_data[1].index_hru == 1);
-    IS_TRUE(output_partitions_vectors[4].hru_info_and_data[1].hru_actor == actor5);
+    IS_TRUE(output_partitions_vectors[4]->hru_info_and_data[1]->output_data.size() == 1);
+    IS_TRUE(output_partitions_vectors[4]->hru_info_and_data[1]->index_gru == 6);
+    IS_TRUE(output_partitions_vectors[4]->hru_info_and_data[1]->index_hru == 1);
+    IS_TRUE(output_partitions_vectors[4]->hru_info_and_data[1]->hru_actor == actor5);
     IS_TRUE(addHRUOutput(output_partitions_vectors, actor5, gru_index, hru_index, dummy_data[13]).has_value() == false);
 
     gru_index = 7;
     hru_index = 1;
     IS_TRUE(addHRUOutput(output_partitions_vectors, actor6, gru_index, hru_index, dummy_data[6]).has_value() == false);
-    IS_TRUE(output_partitions_vectors[4].hru_info_and_data[2].output_data.size() == 1);
-    IS_TRUE(output_partitions_vectors[4].hru_info_and_data[2].index_gru == 7);
-    IS_TRUE(output_partitions_vectors[4].hru_info_and_data[2].index_hru == 1);
-    IS_TRUE(output_partitions_vectors[4].hru_info_and_data[2].hru_actor == actor6);
+    IS_TRUE(output_partitions_vectors[4]->hru_info_and_data[2]->output_data.size() == 1);
+    IS_TRUE(output_partitions_vectors[4]->hru_info_and_data[2]->index_gru == 7);
+    IS_TRUE(output_partitions_vectors[4]->hru_info_and_data[2]->index_hru == 1);
+    IS_TRUE(output_partitions_vectors[4]->hru_info_and_data[2]->hru_actor == actor6);
     IS_TRUE(addHRUOutput(output_partitions_vectors, actor6, gru_index, hru_index, dummy_data[14]).has_value() == false);
 
     gru_index = 8;
     hru_index = 1;
     IS_TRUE(addHRUOutput(output_partitions_vectors, actor7, gru_index, hru_index, dummy_data[7]).has_value() == false);
-    IS_TRUE(output_partitions_vectors[4].hru_info_and_data[3].output_data.size() == 1);
-    IS_TRUE(output_partitions_vectors[4].hru_info_and_data[3].index_gru == 8);
-    IS_TRUE(output_partitions_vectors[4].hru_info_and_data[3].index_hru == 1);
-    IS_TRUE(output_partitions_vectors[4].hru_info_and_data[3].hru_actor == actor7);
+    IS_TRUE(output_partitions_vectors[4]->hru_info_and_data[3]->output_data.size() == 1);
+    IS_TRUE(output_partitions_vectors[4]->hru_info_and_data[3]->index_gru == 8);
+    IS_TRUE(output_partitions_vectors[4]->hru_info_and_data[3]->index_hru == 1);
+    IS_TRUE(output_partitions_vectors[4]->hru_info_and_data[3]->hru_actor == actor7);
     IS_TRUE(addHRUOutput(output_partitions_vectors, actor7, gru_index, hru_index, dummy_data[15]).value() == 4);
 
 

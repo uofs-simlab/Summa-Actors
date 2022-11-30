@@ -32,8 +32,8 @@ struct file_access_state {
     int err;
     int num_output_steps;
 
-    Output_Container *output_container;
-    std::vector<output_partition> output_partitions;
+    // Output_Container *output_container;
+    std::vector<std::shared_ptr<output_partition>> output_partitions;
 
 
 
@@ -63,7 +63,7 @@ struct file_access_state {
     bool param_file_exists;
     int num_var_in_param_file;
 
-    hru_output_handles output_handles;
+    // hru_output_handles output_handles;
 
      // Timing Variables
     TimingInfo file_access_timing;

@@ -38,7 +38,6 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
         self->state.file_access_actor_settings.num_timesteps_in_output_buffer);
 
     self->state.num_output_steps = self->state.file_access_actor_settings.num_timesteps_in_output_buffer;
-    self->state.output_container = new Output_Container(num_gru, self->state.num_output_steps);
 
         
     initalizeFileAccessActor(self);
@@ -49,27 +48,29 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
             std::vector<double> bpar_struct) {
             int err = 0;
 
+            std::shared_ptr<hru_output_handles> params = std::make_shared<hru_output_handles>();
+
             self->state.file_access_timing.updateStartPoint("write_duration");
-            self->state.output_handles.handle_attr_struct = new_handle_var_d();
-            self->state.output_handles.handle_type_struct = new_handle_var_i();
-            self->state.output_handles.handle_mpar_struct = new_handle_var_dlength();
-            self->state.output_handles.handle_bpar_struct = new_handle_var_d();
+            params->handle_attr_struct = new_handle_var_d();
+            params->handle_type_struct = new_handle_var_i();
+            params->handle_mpar_struct = new_handle_var_dlength();
+            params->handle_bpar_struct = new_handle_var_d();
             // populate the newly created Fortran structures
-            set_var_d(attr_struct, self->state.output_handles.handle_attr_struct);
-            set_var_i(type_struct, self->state.output_handles.handle_type_struct);
-            set_var_dlength(mpar_struct, self->state.output_handles.handle_mpar_struct);
-            set_var_d(bpar_struct, self->state.output_handles.handle_bpar_struct);
+            set_var_d(attr_struct, params->handle_attr_struct);
+            set_var_i(type_struct, params->handle_type_struct);
+            set_var_dlength(mpar_struct, params->handle_mpar_struct);
+            set_var_d(bpar_struct, params->handle_bpar_struct);
             // write the populated data to netCDF
             writeParamToNetCDF(self->state.handle_ncid, &index_gru, &index_hru, 
-                self->state.output_handles.handle_attr_struct, 
-                self->state.output_handles.handle_type_struct, 
-                self->state.output_handles.handle_mpar_struct, 
-                self->state.output_handles.handle_bpar_struct, &err);
+                params->handle_attr_struct, 
+                params->handle_type_struct, 
+                params->handle_mpar_struct, 
+                params->handle_bpar_struct, &err);
             
-            delete_handle_var_d(self->state.output_handles.handle_attr_struct);
-            delete_handle_var_i(self->state.output_handles.handle_type_struct);
-            delete_handle_var_dlength(self->state.output_handles.handle_mpar_struct);
-            delete_handle_var_d(self->state.output_handles.handle_bpar_struct);
+            // delete_handle_var_d(self->state.output_handles.handle_attr_struct);
+            // delete_handle_var_i(self->state.output_handles.handle_type_struct);
+            // delete_handle_var_dlength(self->state.output_handles.handle_mpar_struct);
+            // delete_handle_var_d(self->state.output_handles.handle_bpar_struct);
             
 
             self->state.file_access_timing.updateEndPoint("write_duration");
@@ -179,78 +180,69 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
             
             self->state.file_access_timing.updateStartPoint("write_duration");
 
-            /**
-             - We recive the output from one HRU
-             - We convert it to the correct storage format - from array to fortran handle
-             - We store it in out data structure
-             - Check if we need to write
-             - If we do, write
-             - If no do nothing
-            */
-
-            hru_output_handles hru_output;
+            std::shared_ptr<hru_output_handles> hru_output = std::make_shared<hru_output_handles>();
             
             int err = 0;
             // hru information
             // statistic structures
-            set_var_dlength(forc_stat, hru_output.handle_forc_stat);
-            set_var_dlength(prog_stat, hru_output.handle_prog_stat);
-            set_var_dlength(diag_stat, hru_output.handle_diag_stat);
-            set_var_dlength(flux_stat, hru_output.handle_flux_stat);
-            set_var_dlength(indx_stat, hru_output.handle_indx_stat);
-            set_var_dlength(bvar_stat, hru_output.handle_bvar_stat);
+            set_var_dlength(forc_stat, hru_output->handle_forc_stat);
+            set_var_dlength(prog_stat, hru_output->handle_prog_stat);
+            set_var_dlength(diag_stat, hru_output->handle_diag_stat);
+            set_var_dlength(flux_stat, hru_output->handle_flux_stat);
+            set_var_dlength(indx_stat, hru_output->handle_indx_stat);
+            set_var_dlength(bvar_stat, hru_output->handle_bvar_stat);
             // primary data structures (scalars)
-            set_var_i(time_struct, hru_output.handle_time_struct);
-            set_var_d(forc_struct, hru_output.handle_forc_struct);
-            set_var_d(attr_struct, hru_output.handle_attr_struct);
-            set_var_i(type_struct, hru_output.handle_type_struct);
-            set_var_i8(id_struct,  hru_output.handle_id_struct);
+            set_var_i(time_struct, hru_output->handle_time_struct);
+            set_var_d(forc_struct, hru_output->handle_forc_struct);
+            set_var_d(attr_struct, hru_output->handle_attr_struct);
+            set_var_i(type_struct, hru_output->handle_type_struct);
+            set_var_i8(id_struct,  hru_output->handle_id_struct);
             // primary data structures (variable length vectors)
-            set_var_ilength(indx_struct, hru_output.handle_indx_struct);
-            set_var_dlength(mpar_struct, hru_output.handle_mpar_struct);
-            set_var_dlength(prog_struct, hru_output.handle_prog_struct);
-            set_var_dlength(diag_struct, hru_output.handle_diag_struct);
-            set_var_dlength(flux_struct, hru_output.handle_flux_struct);
+            set_var_ilength(indx_struct, hru_output->handle_indx_struct);
+            set_var_dlength(mpar_struct, hru_output->handle_mpar_struct);
+            set_var_dlength(prog_struct, hru_output->handle_prog_struct);
+            set_var_dlength(diag_struct, hru_output->handle_diag_struct);
+            set_var_dlength(flux_struct, hru_output->handle_flux_struct);
             // basin-average structures
-            set_var_d(bpar_struct, hru_output.handle_bpar_struct);
-            set_var_dlength(bvar_struct, hru_output.handle_bvar_struct);
+            set_var_d(bpar_struct, hru_output->handle_attr_struct);
+            set_var_dlength(bvar_struct, hru_output->handle_bvar_struct);
             // ancillary data structures
-            set_var_d(dpar_struct, hru_output.handle_dpar_struct);
-            set_var_i(finalize_stats, hru_output.handle_finalize_stats);
-            set_var_i(output_timestep, hru_output.handle_output_timestep);
+            set_var_d(dpar_struct, hru_output->handle_dpar_struct);
+            set_var_i(finalize_stats, hru_output->handle_finalize_stats);
+            set_var_i(output_timestep, hru_output->handle_output_timestep);
 
             std::optional<int> partition_index;
             partition_index = addHRUOutput(self->state.output_partitions, hru_actor, index_gru, index_hru, hru_output);
             if (partition_index.has_value()) {
                 // We have a partition to write
-                std::vector<std::vector<hru_output_handles>> hru_output_from_vector = getOutputHandlesFromPartition(partition_index.value(), self->state.output_partitions); 
+                std::vector<std::vector<std::shared_ptr<hru_output_handles>>> hru_output_from_vector = getOutputHandlesFromPartition(partition_index.value(), self->state.output_partitions); 
 
                 for (int i = 0; i < hru_output_from_vector[0].size(); i++) {
 
                     writeBasinToNetCDF(self->state.handle_ncid, &index_gru,
-                        hru_output_from_vector[0][i].handle_finalize_stats, 
-                        hru_output_from_vector[0][i].handle_output_timestep, 
-                        hru_output_from_vector[0][i].handle_bvar_stat,
-                        hru_output_from_vector[0][i].handle_bvar_struct, &err);
+                        hru_output_from_vector[0][i]->handle_finalize_stats, 
+                        hru_output_from_vector[0][i]->handle_output_timestep, 
+                        hru_output_from_vector[0][i]->handle_bvar_stat,
+                        hru_output_from_vector[0][i]->handle_bvar_struct, &err);
 
                     writeTimeToNetCDF(self->state.handle_ncid,
-                        hru_output_from_vector[0][i].handle_finalize_stats, 
-                        hru_output_from_vector[0][i].handle_output_timestep, 
-                        hru_output_from_vector[0][i].handle_time_struct, &err);
+                        hru_output_from_vector[0][i]->handle_finalize_stats, 
+                        hru_output_from_vector[0][i]->handle_output_timestep, 
+                        hru_output_from_vector[0][i]->handle_time_struct, &err);
 
                     writeDataToNetCDF(self->state.handle_ncid, &index_gru, &index_hru,
-                        hru_output_from_vector[0][i].handle_finalize_stats, 
-                        hru_output_from_vector[0][i].handle_forc_stat, 
-                        hru_output_from_vector[0][i].handle_forc_struct,
-                        hru_output_from_vector[0][i].handle_prog_stat, 
-                        hru_output_from_vector[0][i].handle_prog_struct, 
-                        hru_output_from_vector[0][i].handle_diag_stat, 
-                        hru_output_from_vector[0][i].handle_diag_struct, 
-                        hru_output_from_vector[0][i].handle_flux_stat, 
-                        hru_output_from_vector[0][i].handle_flux_struct,
-                        hru_output_from_vector[0][i].handle_indx_stat, 
-                        hru_output_from_vector[0][i].handle_indx_struct, 
-                        hru_output_from_vector[0][i].handle_output_timestep,
+                        hru_output_from_vector[0][i]->handle_finalize_stats, 
+                        hru_output_from_vector[0][i]->handle_forc_stat, 
+                        hru_output_from_vector[0][i]->handle_forc_struct,
+                        hru_output_from_vector[0][i]->handle_prog_stat, 
+                        hru_output_from_vector[0][i]->handle_prog_struct, 
+                        hru_output_from_vector[0][i]->handle_diag_stat, 
+                        hru_output_from_vector[0][i]->handle_diag_struct, 
+                        hru_output_from_vector[0][i]->handle_flux_stat, 
+                        hru_output_from_vector[0][i]->handle_flux_struct,
+                        hru_output_from_vector[0][i]->handle_indx_stat, 
+                        hru_output_from_vector[0][i]->handle_indx_struct, 
+                        hru_output_from_vector[0][i]->handle_output_timestep,
                         &err);
                 }
 
@@ -493,61 +485,61 @@ void readInitConditions(stateful_actor<file_access_state>* self) {
 }
 
 void initalizeOutputHandles(stateful_actor<file_access_state>* self) {
-    // Statistic Structures
-    self->state.output_handles.handle_forc_stat = new_handle_var_dlength();
-    self->state.output_handles.handle_prog_stat = new_handle_var_dlength();
-    self->state.output_handles.handle_diag_stat = new_handle_var_dlength();
-    self->state.output_handles.handle_flux_stat = new_handle_var_dlength();
-    self->state.output_handles.handle_indx_stat = new_handle_var_dlength();
-    self->state.output_handles.handle_bvar_stat = new_handle_var_dlength();
-    // primary data structures (scalars)
-    self->state.output_handles.handle_time_struct = new_handle_var_i();
-    self->state.output_handles.handle_forc_struct = new_handle_var_d();
-    self->state.output_handles.handle_attr_struct = new_handle_var_d();
-    self->state.output_handles.handle_type_struct = new_handle_var_i();
-    self->state.output_handles.handle_id_struct   = new_handle_var_i8();
-    // primary data structures (variable length vectors)
-    self->state.output_handles.handle_indx_struct = new_handle_var_ilength();
-    self->state.output_handles.handle_mpar_struct = new_handle_var_dlength();
-    self->state.output_handles.handle_prog_struct = new_handle_var_dlength();
-    self->state.output_handles.handle_diag_struct = new_handle_var_dlength();
-    self->state.output_handles.handle_flux_struct = new_handle_var_dlength();
-    // basin-average structures
-    self->state.output_handles.handle_bpar_struct = new_handle_var_d();
-    self->state.output_handles.handle_bvar_struct = new_handle_var_dlength();
-    // ancillary data structures
-    self->state.output_handles.handle_dpar_struct     = new_handle_var_d();
-    self->state.output_handles.handle_finalize_stats  = new_handle_var_i();
-    self->state.output_handles.handle_output_timestep = new_handle_var_i();
+    // // Statistic Structures
+    // self->state.output_handles.handle_forc_stat = new_handle_var_dlength();
+    // self->state.output_handles.handle_prog_stat = new_handle_var_dlength();
+    // self->state.output_handles.handle_diag_stat = new_handle_var_dlength();
+    // self->state.output_handles.handle_flux_stat = new_handle_var_dlength();
+    // self->state.output_handles.handle_indx_stat = new_handle_var_dlength();
+    // self->state.output_handles.handle_bvar_stat = new_handle_var_dlength();
+    // // primary data structures (scalars)
+    // self->state.output_handles.handle_time_struct = new_handle_var_i();
+    // self->state.output_handles.handle_forc_struct = new_handle_var_d();
+    // self->state.output_handles.handle_attr_struct = new_handle_var_d();
+    // self->state.output_handles.handle_type_struct = new_handle_var_i();
+    // self->state.output_handles.handle_id_struct   = new_handle_var_i8();
+    // // primary data structures (variable length vectors)
+    // self->state.output_handles.handle_indx_struct = new_handle_var_ilength();
+    // self->state.output_handles.handle_mpar_struct = new_handle_var_dlength();
+    // self->state.output_handles.handle_prog_struct = new_handle_var_dlength();
+    // self->state.output_handles.handle_diag_struct = new_handle_var_dlength();
+    // self->state.output_handles.handle_flux_struct = new_handle_var_dlength();
+    // // basin-average structures
+    // self->state.output_handles.handle_bpar_struct = new_handle_var_d();
+    // self->state.output_handles.handle_bvar_struct = new_handle_var_dlength();
+    // // ancillary data structures
+    // self->state.output_handles.handle_dpar_struct     = new_handle_var_d();
+    // self->state.output_handles.handle_finalize_stats  = new_handle_var_i();
+    // self->state.output_handles.handle_output_timestep = new_handle_var_i();
 }
 
-void deallocateOutputHandles(stateful_actor<file_access_state>* self) {
-            // Statistic Structures
-    delete_handle_var_dlength(self->state.output_handles.handle_forc_stat);
-    delete_handle_var_dlength(self->state.output_handles.handle_prog_stat);
-    delete_handle_var_dlength(self->state.output_handles.handle_diag_stat);
-    delete_handle_var_dlength(self->state.output_handles.handle_flux_stat);
-    delete_handle_var_dlength(self->state.output_handles.handle_indx_stat);
-    delete_handle_var_dlength(self->state.output_handles.handle_bvar_stat);
-    // primary data structures (scalars)
-    delete_handle_var_i(self->state.output_handles.handle_time_struct);
-    delete_handle_var_d(self->state.output_handles.handle_forc_struct);
-    delete_handle_var_d(self->state.output_handles.handle_attr_struct);
-    delete_handle_var_i(self->state.output_handles.handle_type_struct);
-    delete_handle_var_i8(self->state.output_handles.handle_id_struct);
-    // primary data structures (variable length vectors)
-    delete_handle_var_ilength(self->state.output_handles.handle_indx_struct);
-    delete_handle_var_dlength(self->state.output_handles.handle_mpar_struct);
-    delete_handle_var_dlength(self->state.output_handles.handle_prog_struct);
-    delete_handle_var_dlength(self->state.output_handles.handle_diag_struct);
-    delete_handle_var_dlength(self->state.output_handles.handle_flux_struct);
-    // basin-average structures
-    delete_handle_var_d(self->state.output_handles.handle_bpar_struct);
-    delete_handle_var_dlength(self->state.output_handles.handle_bvar_struct);
-    // ancillary data structures
-    delete_handle_var_d(self->state.output_handles.handle_dpar_struct);
-    delete_handle_var_i(self->state.output_handles.handle_finalize_stats);
-    delete_handle_var_i(self->state.output_handles.handle_output_timestep);
-}
+// void deallocateOutputHandles(stateful_actor<file_access_state>* self) {
+//             // Statistic Structures
+//     delete_handle_var_dlength(self->state.output_handles.handle_forc_stat);
+//     delete_handle_var_dlength(self->state.output_handles.handle_prog_stat);
+//     delete_handle_var_dlength(self->state.output_handles.handle_diag_stat);
+//     delete_handle_var_dlength(self->state.output_handles.handle_flux_stat);
+//     delete_handle_var_dlength(self->state.output_handles.handle_indx_stat);
+//     delete_handle_var_dlength(self->state.output_handles.handle_bvar_stat);
+//     // primary data structures (scalars)
+//     delete_handle_var_i(self->state.output_handles.handle_time_struct);
+//     delete_handle_var_d(self->state.output_handles.handle_forc_struct);
+//     delete_handle_var_d(self->state.output_handles.handle_attr_struct);
+//     delete_handle_var_i(self->state.output_handles.handle_type_struct);
+//     delete_handle_var_i8(self->state.output_handles.handle_id_struct);
+//     // primary data structures (variable length vectors)
+//     delete_handle_var_ilength(self->state.output_handles.handle_indx_struct);
+//     delete_handle_var_dlength(self->state.output_handles.handle_mpar_struct);
+//     delete_handle_var_dlength(self->state.output_handles.handle_prog_struct);
+//     delete_handle_var_dlength(self->state.output_handles.handle_diag_struct);
+//     delete_handle_var_dlength(self->state.output_handles.handle_flux_struct);
+//     // basin-average structures
+//     delete_handle_var_d(self->state.output_handles.handle_bpar_struct);
+//     delete_handle_var_dlength(self->state.output_handles.handle_bvar_struct);
+//     // ancillary data structures
+//     delete_handle_var_d(self->state.output_handles.handle_dpar_struct);
+//     delete_handle_var_i(self->state.output_handles.handle_finalize_stats);
+//     delete_handle_var_i(self->state.output_handles.handle_output_timestep);
+// }
 
 } // end namespace
