@@ -52,7 +52,6 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
         self->quit();
     }
 
-    aout(self) << "NumSteps = " << self->state.num_steps << std::endl;  
 
     self->send(self->state.file_access_actor, get_num_output_steps_v, self);
 
@@ -108,7 +107,6 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
         },
 
         [=](num_steps_before_write, int num_steps) {
-            aout(self) << "NumSteps = " << num_steps << std::endl;
             self->state.num_steps_until_write = num_steps;
         },
 

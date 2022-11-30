@@ -84,6 +84,7 @@ bool isPartitionFull(std::shared_ptr<output_partition> &output_partition) {
 
 std::vector<std::vector<std::shared_ptr<hru_output_handles>>> getOutputHandlesFromPartition(int partition_index, std::vector<std::shared_ptr<output_partition>>& output_partitions) {
     std::vector<std::vector<std::shared_ptr<hru_output_handles>>> output_handles;
+    std::cout << "numGRUs = " << output_partitions[partition_index]->hru_info_and_data.size() << std::endl;
     for (auto &hru_info_and_data : output_partitions[partition_index]->hru_info_and_data) {
         output_handles.push_back(hru_info_and_data->output_data);
     }

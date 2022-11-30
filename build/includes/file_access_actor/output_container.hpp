@@ -38,7 +38,6 @@ struct hru_output_handles {
     void* handle_output_timestep  = new_handle_var_i();
 
     ~hru_output_handles() {
-        std::cout << "Destructor called" << std::endl;
         // statistics structures
         delete_handle_var_dlength(handle_forc_stat);
         delete_handle_var_dlength(handle_prog_stat);
