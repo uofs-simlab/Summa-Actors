@@ -121,6 +121,11 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
             }
 
             while(self->state.num_steps_until_write > 0) {
+                if (self->state.forcingStep > self->state.stepsInCurrentFFile) {
+                    self->send(self->state.file_access_actor, access_forcing_v, self->state.iFile+1, self);
+                    break;
+                }
+
                 self->state.num_steps_until_write--;
                 err = Run_HRU(self); // Simulate a Timestep
 
@@ -139,10 +144,6 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
                     break;
                 }
 
-                if (self->state.forcingStep > self->state.stepsInCurrentFFile) {
-                    self->send(self->state.file_access_actor, access_forcing_v, self->state.iFile+1, self);
-                    break;
-                }
             }
             
             self->state.hru_timing.updateEndPoint("total_duration");
@@ -155,6 +156,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
             self->state.iFile = iFile;
             self->state.stepsInCurrentFFile = num_forcing_steps_in_iFile;
             setTimeZoneOffset(&self->state.iFile, &self->state.tmZoneOffsetFracDay, &err);
+            self->state.forcingStep = 1;
             self->send(self, run_hru_v);
         },
 
@@ -248,12 +250,32 @@ int Run_HRU(stateful_actor<hru_state>* self) {
                    self->state.handle_forcStruct, 
                    &self->state.iFile,
                    &self->state.err);
+    if (self->state.err != 0) {
+        aout(self) << "Error: HRU_Actor - ReadForcingHRU - HRU = " << self->state.indxHRU <<
+        " - indxGRU = " << self->state.indxGRU << " - refGRU = " << self->state.refGRU << std::endl;
+        aout(self) << "Forcing Step = " << self->state.forcingStep << std::endl;
+        aout(self) << "Timestep = " << self->state.timestep << std::endl;
+        aout(self) << "iFile = " << self->state.iFile << std::endl;
+        aout(self) << "Steps in Forcing File = " << self->state.stepsInCurrentFFile << std::endl;
+        self->quit();
+        return -1;
+    }
 
     computeTimeForcingHRU(self->state.handle_timeStruct,
                           self->state.handle_forcStruct, 
                           &self->state.fracJulDay,
                           &self->state.yearLength,
                           &self->state.err);
+    if (self->state.err != 0) {
+        aout(self) << "Error: HRU_Actor - ComputeTimeForcingHRU - HRU = " << self->state.indxHRU <<
+        " - indxGRU = " << self->state.indxGRU << " - refGRU = " << self->state.refGRU << std::endl;
+        aout(self) << "Forcing Step = " << self->state.forcingStep << std::endl;
+        aout(self) << "Timestep = " << self->state.timestep << std::endl;
+        aout(self) << "iFile = " << self->state.iFile << std::endl;
+        aout(self) << "Steps in Forcing File = " << self->state.stepsInCurrentFFile << std::endl;
+        self->quit();
+        return -1;
+    }
 
     if (self->state.err != 0) { 
         aout(self) << "*********************************************************\n";
@@ -304,6 +326,7 @@ int Run_HRU(stateful_actor<hru_state>* self) {
         aout(self) << "Error: RunPhysics - HRU = " << self->state.indxHRU << 
             " - indxGRU = " << self->state.indxGRU << " - refGRU = " << self->state.refGRU <<
             " - Timestep = " << self->state.timestep << std::endl;
+        self->quit();
         return 20;
     }
     self->state.hru_timing.updateEndPoint("run_physics_duration");

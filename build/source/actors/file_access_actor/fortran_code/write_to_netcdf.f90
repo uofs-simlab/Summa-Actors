@@ -9,6 +9,42 @@ public::writeDataToNetCDF
 public::writeBasinToNetCDF
 public::writeTimeToNetCDF
 
+! type var_dlength_ptr
+!   type(var_dlength), pointer
+! type(var_dlength)     forc_stat_all_grus
+! type(var_dlength)     prog_stat_all_grus
+! type(var_dlength)     diag_stat_all_grus
+! type(var_dlength)     flux_stat_all_grus
+! type(var_dlength)     indx_stat_all_grus
+! type(var_dlength)     bvar_stat_all_grus
+
+! type(var_i)           time_struct
+! type(var_d)           forc_struct
+! type(var_d)           attr_struct
+! type(var_i)           type_struct
+! type(var_i8)          id_struct
+
+! type(var_ilength)     indx_struct
+! type(var_dlength)     mpar_struct
+! type(var_dlength)     prog_struct
+! type(var_dlength)     diag_struct
+! type(var_dlength)     flux_struct
+
+! type(var_d)           bpar_struct
+! type(var_dlength)     bvar_struct
+
+! type(var_d)           dpar_struct
+! type(flagVec)         finalize_stats
+! type(var_i)           output_timesteps_all_grus
+
+
+
+! type(flagVec),     pointer, dimension(:,:), allocatable, public :: finalize_stats_all_grus
+! type(var_i),       pointer, dimension(:,:), allocatable, public :: output_timesteps_all_grus
+! type(var_dlength), pointer, dimension(:,:), allocatable, public :: bvar_stats_all_grus
+! type(var_dlength), pointer, dimension(:,:), allocatable, public :: bvar_struct_all_grus
+! type(var_i),       pointer, dimension(:,:), allocatable, public :: time_struct_all_grus
+
 contains
 
 ! Subroutine that writes data from the HRU actor to be written to netcdf
@@ -194,6 +230,11 @@ subroutine writeDataToNetCDF(handle_ncid,          &
     endif
   end do  ! (looping through structures)
 end subroutine writeDataToNetCDF
+
+! subroutine setOutputStructure(index_gru, index_timestep, 
+!   handle_finalize_stats, handle_output_timestep, handle_output_timestep, )
+
+! end subroutine setOutputStructure
 
 subroutine writeBasinToNetCDF(handle_ncid, index_gru, handle_finalize_stats, &
   handle_output_timestep, handle_bvar_stat, handle_bvar_struct, err) bind(C, name="writeBasinToNetCDF")
