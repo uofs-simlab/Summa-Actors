@@ -19,6 +19,7 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 module writeOutputFromOutputStructure_module
+  USE, intrinsic :: iso_c_binding
 
 ! NetCDF types
 USE netcdf
@@ -74,6 +75,7 @@ USE var_lookup, only: maxvarStat ! number of statistics
 
 implicit none
 private
+public::writeOutput
 public::writeParm
 public::writeData
 public::writeBasin
@@ -84,13 +86,105 @@ private::writeVector
 integer(i4b),parameter      :: maxSpectral=2              ! maximum number of spectral bands
 contains
 
-    ! **********************************************************************************************************
-    ! public subroutine writeParm: write model parameters
-    ! **********************************************************************************************************
+! **********************************************************************************************************
+! public subroutine writeParm: write model parameters
+! **********************************************************************************************************
+subroutine writeOutput(handle_ncid, num_steps, start_gru, max_gru, err) bind(C, name="writeOutput")
+  USE var_lookup,only:maxVarFreq                               ! # of available output frequencies
+  USE globalData,only:structInfo
+  USE globalData,only:bvarChild_map,forcChild_map,progChild_map,diagChild_map,fluxChild_map,indxChild_map             ! index of the child data structure: stats bvar
+  USE globalData,only:outputTimeStep
+  USE globalData,only:bvar_meta,time_meta,forc_meta,prog_meta,diag_meta,flux_meta,indx_meta
+  USE globalData,only:maxLayers
+  implicit none
+  ! dummy variables
+  type(c_ptr),intent(in), value        :: handle_ncid       ! ncid of the output file
+  integer(c_int),intent(in)            :: num_steps            ! number of steps to write
+  integer(c_int),intent(in)            :: start_gru            ! index of GRU we are currently writing for
+  integer(c_int),intent(in)            :: max_gru            ! index of HRU we are currently writing for
+  integer(c_int),intent(out)           :: err               ! Error code
+  ! local variables
+  type(var_i),pointer                  :: ncid
+  integer(i4b)                         :: iGRU              ! loop through GRUs
+  integer(i4b)                         :: iStep             ! loop through time steps
+  integer(i4b)                         :: iFreq             ! loop through output frequencies
+  integer(i4b)                         :: indxHRU=1         ! index of HRU to write
+  integer(i4b), dimension(maxVarFreq)  :: outputTimestepUpdate
+  integer(i4b), dimension(maxVarFreq)  :: stepCounter
+  character(LEN=256)                   :: message
+  character(LEN=256)                   :: cmessage
+  integer(i4b)                         :: iStruct
+  integer(i4b)                         :: numGRU
+  
+
+  ! Change the C pointer to a fortran pointer
+  call c_f_pointer(handle_ncid, ncid)
+  ! ****************************************************************************
+  ! *** write basin data
+  ! ****************************************************************************
+  do iGRU=start_gru, max_gru
+    stepCounter(:) = outputTimeStep(iGRU)%dat(:) ! We want to avoid updating outputTimeStep
+    do iStep=1, num_steps
+      call writeBasin(ncid,iGRU,stepCounter(:),iStep,bvar_meta, &
+              outputStructure(1)%bvarStat(1)%gru(iGRU)%hru(indxHRU)%var, &
+              outputStructure(1)%bvarStruct(1)%gru(iGRU)%hru(indxHRU)%var, bvarChild_map, err, cmessage)
+      
+      call writeTime(ncid,outputTimeStep(iGRU)%dat(:),iStep,time_meta, &
+              outputStructure(1)%timeStruct(1)%gru(iGRU)%hru(indxHRU)%var,err,cmessage)
+    end do ! istep
+  end do ! iGRU
+
+  ! ****************************************************************************
+  ! *** write data
+  ! ****************************************************************************
+  numGRU = max_gru-start_gru + 1 
+
+  do iStruct=1,size(structInfo)
+    select case(trim(structInfo(iStruct)%structName))
+      case('forc')
+        call writeData(ncid,outputTimeStep(start_gru)%dat(:),outputTimestepUpdate,maxLayers,num_steps,&
+                        start_gru, max_gru, numGRU, & 
+                        forc_meta,outputStructure(1)%forcStat(1),outputStructure(1)%forcStruct(1),'forc', &
+                        forcChild_map,outputStructure(1)%indxStruct(1),err,cmessage)
+      case('prog')
+        call writeData(ncid,outputTimeStep(start_gru)%dat(:),outputTimestepUpdate,maxLayers,num_steps,&
+                        start_gru, max_gru, numGRU, &
+                        prog_meta,outputStructure(1)%progStat(1),outputStructure(1)%progStruct(1),'prog', &
+                        progChild_map,outputStructure(1)%indxStruct(1),err,cmessage)
+      case('diag')
+        call writeData(ncid,outputTimeStep(start_gru)%dat(:),outputTimestepUpdate,maxLayers,num_steps,&
+                        start_gru, max_gru, numGRU, &
+                        diag_meta,outputStructure(1)%diagStat(1),outputStructure(1)%diagStruct(1),'diag', &
+                        diagChild_map,outputStructure(1)%indxStruct(1),err,cmessage)
+      case('flux')
+        call writeData(ncid,outputTimeStep(start_gru)%dat(:),outputTimestepUpdate,maxLayers,num_steps,&
+                        start_gru, max_gru, numGRU, &
+                        flux_meta,outputStructure(1)%fluxStat(1),outputStructure(1)%fluxStruct(1),'flux', &
+                        fluxChild_map,outputStructure(1)%indxStruct(1),err,cmessage)
+      case('indx')
+        call writeData(ncid,outputTimeStep(start_gru)%dat(:),outputTimestepUpdate,maxLayers,num_steps,&
+                        start_gru, max_gru, numGRU, &
+                        indx_meta,outputStructure(1)%indxStat(1),outputStructure(1)%indxStruct(1),'indx', &
+                        indxChild_map,outputStructure(1)%indxStruct(1),err,cmessage)
+    end select
+    if(err/=0)then; message=trim(message)//trim(cmessage)//'['//trim(structInfo(iStruct)%structName)//']'; return; endif
+  end do  ! (looping through structures)
+
+  do iFreq = 1,maxvarFreq
+    outputTimeStep(start_gru)%dat(iFreq) = outputTimeStep(start_gru)%dat(iFreq) + outputTimeStepUpdate(iFreq) 
+  end do ! ifreq
+
+end subroutine writeOutput
+
+
+! **********************************************************************************************************
+! public subroutine writeParm: write model parameters
+! **********************************************************************************************************
 subroutine writeParm(ncid,ispatial,struct,meta,err,message)
   USE data_types,only:var_info                    ! metadata info
   USE var_lookup,only:iLookStat                   ! index in statistics vector
   USE var_lookup,only:iLookFreq                   ! index in vector of model output frequencies
+  USE globalData,only:outputTimeStep              ! vector of model output time steps
   implicit none
 
   ! declare input variables

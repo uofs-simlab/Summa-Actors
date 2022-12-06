@@ -32,8 +32,9 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
     self->state.refGRU      = refGRU;
 
     // initialize counters 
-    self->state.timestep   = 1;     // Timestep of total simulation
-    self->state.forcingStep = 1;    // Index into the forcing file
+    self->state.timestep   = 1;  
+    self->state.forcingStep = 1;  
+    self->state.output_structure_step_index = 1;
     self->state.iFile = 1;
 
     // Get the settings for the HRU
@@ -112,6 +113,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
 
         [=](num_steps_before_write, int num_steps) {
             self->state.num_steps_until_write = num_steps;
+            self->state.output_structure_step_index = 1;
         },
 
         // Run HRU for a number of timesteps
@@ -164,22 +166,27 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
                     self->state.handle_finshTime,
                     self->state.handle_oldTime,
                     &err);
+                if (err != 0) {
+                    aout(self) << "Error: HRU_Actor - writeHRUToOutputStructure - HRU = " << self->state.indxHRU << 
+                        " - indxGRU = " << self->state.indxGRU << " - refGRU = "<< self->state.refGRU << std::endl;
+                    aout(self) << "Error = " << err << "\n";
+                    self->quit();
+                }
 
-                // Update counters for the fortran side           
-                // updateCounters(self->state.handle_timeStruct, self->state.handle_statCounter, self->state.handle_outputTimeStep,
-                //     self->state.handle_resetStats, self->state.handle_oldTime, self->state.handle_finalizeStats);
-                // model timestep
                 self->state.timestep++;
-                // forcing step
                 self->state.forcingStep++;
-                // HRU has finished
+                self->state.output_structure_step_index++;
+ 
                 if (self->state.timestep > self->state.num_steps) {
                     self->send(self, done_hru_v);
                     break;
                 }
 
             }
-            
+            // Our output structure is full
+            if (self->state.num_steps_until_write > 0) {
+                self->send(self->state.file_access_actor, write_output_v, self->state.indxGRU, self->state.indxHRU, self);
+            }
             self->state.hru_timing.updateEndPoint("total_duration");
         },
 

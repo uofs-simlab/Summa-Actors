@@ -158,6 +158,12 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
             self->send(hru, num_steps_before_write_v, self->state.num_output_steps);
         },
 
+        [=](write_output, int index_gru, int index_hru, caf::actor hru_actor) {
+            self->state.file_access_timing.updateStartPoint("write_duration");
+            // Hook up the write output routine
+            self->state.file_access_timing.updateEndPoint("write_duration");
+        },
+
         [=](write_output, int index_gru, int index_hru, caf::actor hru_actor,
             // statistic structures
             std::vector<std::vector<double>> forc_stat, std::vector<std::vector<double>> prog_stat, std::vector<std::vector<double>> diag_stat,

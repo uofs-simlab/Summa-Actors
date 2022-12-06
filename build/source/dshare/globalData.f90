@@ -308,7 +308,8 @@ MODULE globalData
   !!!!!!!!!!!!!!!!!!GLOBAL DATA STRUCTURES THAT ARE MANAGED BY FILEACCESSACTOR !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   type(var_forc),allocatable,save,public          :: forcingDataStruct(:)      ! forcingDataStruct(:)%var(:)%dataFromFile(:,:)
   type(dlength),allocatable,save,public           :: vecTime(:)
-  logical(lgt),allocatable,save,public            :: failedHRUs(:)             ! list of true and false values to indicate if an HRU has failed              
+  logical(lgt),allocatable,save,public            :: failedHRUs(:)             ! list of true and false values to indicate if an HRU has failed           
+  type(ilength),allocatable,save,public           :: outputTimeStep(:)  ! timestep in output files
   ! inital conditions
   type(init_cond),allocatable,save,public         :: init_cond_prog(:)   ! variable data for initial conditions
   type(init_cond),allocatable,save,public         :: init_cond_bvar(:)   ! variable data for initial conditions

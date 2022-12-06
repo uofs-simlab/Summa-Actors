@@ -13,8 +13,6 @@ module output_structure_module
   contains
   
 
-
-
 subroutine initOutputStructure(handle_forcFileInfo, maxSteps, num_gru, err) bind(C, name="initOutputStructure")
   USE globalData,only:time_meta,forc_meta,attr_meta,type_meta ! metadata structures
   USE globalData,only:prog_meta,diag_meta,flux_meta,id_meta   ! metadata structures
