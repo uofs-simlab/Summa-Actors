@@ -57,6 +57,13 @@ extern "C" {
             // misc
             int* flag, double* dt, int* dt_int_factor, int* err);
 
+      void writeHRUToOutputStructure(int* index_hru, int* index_gru, int* output_step, void* handle_forcStat,
+            void* handle_progStat, void* handle_diagStat, void* handle_fluxStat, void* handle_indxStat,
+            void* handle_bvarStat, void* handle_timeStruct, void* handle_forcStruct, void* handle_indxStruct,
+            void* handle_mparStruct, void* handle_progStruct, void* handle_diagStruct, void* handle_fluxStruct,
+            void* handle_bparStruct, void* handle_bvarStruct, void* handle_statCounter, void* handle_outputTimeStep,
+            void* handle_resetStats, void* handle_finalizeStats, void* handle_finshTime, void* handle_oldTime, int* err);
+
 
       void prepareOutput(int* model_timestep, void* handle_force_stat, void* handle_prog_stat, 
             void* handle_diag_stat, void* handle_flux_stat, void* handle_indx_stat,

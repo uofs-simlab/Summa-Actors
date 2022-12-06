@@ -77,6 +77,7 @@ struct hru_state {
     int         dt_init_factor = 1; // factor of dt_init (coupled_em)
     bool        printOutput;
     int         outputFrequency;
+    int         output_structure_step_index; // index of current time step in output structure
 
     // Julian Day variables
     double      fracJulDay;

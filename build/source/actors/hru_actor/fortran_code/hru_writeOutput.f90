@@ -98,42 +98,38 @@ subroutine initStatisticsFlags(handle_statCounter, handle_outputTimeStep, &
 
 end subroutine initStatisticsFlags
 
-
 subroutine writeHRUToOutputStructure(&
-                            indxHRU,            &
-                            indxGRU,            &
-                            modelTimeStep,      &
+                            indxHRU,                   &
+                            indxGRU,                   &
+                            outputStep,                & ! index into the output Struc
                             ! statistics variables
-                            forcStat,           & ! model forcing data
-                            progStat,           & ! model prognostic (state) variables
-                            diagStat,           & ! model diagnostic variables
-                            fluxStat,           & ! model fluxes
-                            indxStat,           & ! model indices
-                            bvarStat,           & ! basin-average variables
+                            handle_forcStat,           & ! model forcing data
+                            handle_progStat,           & ! model prognostic (state) variables
+                            handle_diagStat,           & ! model diagnostic variables
+                            handle_fluxStat,           & ! model fluxes
+                            handle_indxStat,           & ! model indices
+                            handle_bvarStat,           & ! basin-average variables
                             ! primary data structures (scalars)
-                            timeStruct,         & ! x%var(:)     -- model time data
-                            forcStruct,         & ! x%var(:)     -- model forcing data
-                            attrStruct,         & ! x%var(:)     -- local attributes for each HRU
-                            typeStruct,         & ! x%var(:)     -- local classification of soil veg etc. for each HRU
+                            handle_timeStruct,         & ! x%var(:)     -- model time data
+                            handle_forcStruct,         & ! x%var(:)     -- model forcing data
                             ! primary data structures (variable length vectors)
-                            indxStruct,         & ! x%var(:)%dat -- model indices
-                            mparStruct,         & ! x%var(:)%dat -- model parameters
-                            progStruct,         & ! x%var(:)%dat -- model prognostic (state) variables
-                            diagStruct,         & ! x%var(:)%dat -- model diagnostic variables
-                            fluxStruct,         & ! x%var(:)%dat -- model fluxes
+                            handle_indxStruct,         & ! x%var(:)%dat -- model indices
+                            handle_mparStruct,         & ! x%var(:)%dat -- model parameters
+                            handle_progStruct,         & ! x%var(:)%dat -- model prognostic (state) variables
+                            handle_diagStruct,         & ! x%var(:)%dat -- model diagnostic variables
+                            handle_fluxStruct,         & ! x%var(:)%dat -- model fluxes
                             ! basin-average structures
-                            bparStruct,         & ! x%var(:)     -- basin-average parameters
-                            bvarStruct,         & ! x%var(:)%dat -- basin-average variables
+                            handle_bparStruct,         & ! x%var(:)     -- basin-average parameters
+                            handle_bvarStruct,         & ! x%var(:)%dat -- basin-average variables
                             ! local HRU data
-                            statCounter,        & ! x%var(:)
-                            outputTimeStep,     & ! x%var(:)
-                            resetStats,         & ! x%var(:)
-                            finalizeStats,      & ! x%var(:)
-                            finshTime,          & ! x%var(:)    -- end time for the model simulation
-                            oldTime,            & ! x%var(:)    -- time for the previous model time step
-                            outputStep,         & ! index into the output Struc
+                            handle_statCounter,        & ! x%var(:)
+                            handle_outputTimeStep,     & ! x%var(:)
+                            handle_resetStats,         & ! x%var(:)
+                            handle_finalizeStats,      & ! x%var(:)
+                            handle_finshTime,          & ! x%var(:)    -- end time for the model simulation
+                            handle_oldTime,            & ! x%var(:)    -- time for the previous model time step
                             ! run time variables
-                            err, message)
+                            err) bind(C, name="writeHRUToOutputStructure") 
   USE nrtype
   USE globalData,only:structInfo
   USE globalData,only:startWrite,endWrite
@@ -158,62 +154,101 @@ subroutine writeHRUToOutputStructure(&
   USE output_structure_module,only:outputStructure
   USE netcdf_util_module,only:nc_file_close                   ! close netcdf file
   USE netcdf_util_module,only:nc_file_open                    ! open netcdf file
-  USE var_lookup,only:maxvarFreq                ! maximum number of output files
+  USE var_lookup,only:maxvarFreq                              ! maximum number of output files
 
   implicit none
-  integer(i4b),intent(in)                  :: indxHRU         ! index of hru in GRU
-  integer(i4b),intent(in)                  :: indxGRU         ! index of the GRU
-  integer(i4b),intent(in)                  :: modelTimeStep   ! time step index
-  ! statistics variables 
-  type(var_dlength),intent(inout)          :: forcStat        ! model forcing data
-  type(var_dlength),intent(inout)          :: progStat        ! model prognostic (state) variables
-  type(var_dlength),intent(inout)          :: diagStat        ! model diagnostic variables
-  type(var_dlength),intent(inout)          :: fluxStat        ! model fluxes
-  type(var_dlength),intent(inout)          :: indxStat        ! model indices
-  type(var_dlength),intent(inout)          :: bvarStat        ! basin-average variabl
+  integer(c_int),intent(in)             :: indxHRU               ! index of hru in GRU
+  integer(c_int),intent(in)             :: indxGRU               ! index of the GRU
+  integer(c_int),intent(in)             :: outputStep            ! index into the output Struc
+
+  ! statistics variables
+  type(c_ptr),intent(in),value          :: handle_forcStat       ! model forcing data
+  type(c_ptr),intent(in),value          :: handle_progStat       ! model prognostic (state) variables
+  type(c_ptr),intent(in),value          :: handle_diagStat       ! model diagnostic variables
+  type(c_ptr),intent(in),value          :: handle_fluxStat       ! model fluxes
+  type(c_ptr),intent(in),value          :: handle_indxStat       ! model indices
+  type(c_ptr),intent(in),value          :: handle_bvarStat       ! basin-average variables
   ! primary data structures (scalars)
-  type(var_i),intent(inout)                :: timeStruct      ! model time data
-  type(var_d),intent(inout)                :: forcStruct      ! model forcing data
-  type(var_d),intent(inout)                :: attrStruct      ! local attributes for each HRU
-  type(var_i),intent(inout)                :: typeStruct      ! local classification of soil veg etc. for each HRU
+  type(c_ptr),intent(in),value          :: handle_timeStruct     ! x%var(:)     -- model time data
+  type(c_ptr),intent(in),value          :: handle_forcStruct     ! x%var(:)     -- model forcing data
   ! primary data structures (variable length vectors)
-  type(var_ilength),intent(inout)          :: indxStruct      ! model indices
-  type(var_dlength),intent(inout)          :: mparStruct      ! model parameters
-  type(var_dlength),intent(inout)          :: progStruct      ! model prognostic (state) variables
-  type(var_dlength),intent(inout)          :: diagStruct      ! model diagnostic variables
-  type(var_dlength),intent(inout)          :: fluxStruct      ! model fluxes
+  type(c_ptr),intent(in),value          :: handle_indxStruct     ! x%var(:)%dat -- model indices
+  type(c_ptr),intent(in),value          :: handle_mparStruct     ! x%var(:)%dat -- model parameters
+  type(c_ptr),intent(in),value          :: handle_progStruct     ! x%var(:)%dat -- model prognostic (state) variables
+  type(c_ptr),intent(in),value          :: handle_diagStruct     ! x%var(:)%dat -- model diagnostic variables
+  type(c_ptr),intent(in),value          :: handle_fluxStruct     ! x%var(:)%dat -- model fluxes
   ! basin-average structures
-  type(var_d),intent(inout)                :: bparStruct      ! basin-average parameters
-  type(var_dlength),intent(inout)          :: bvarStruct      ! basin-average variables
+  type(c_ptr),intent(in),value          :: handle_bparStruct     ! x%var(:)     -- basin-average parameters
+  type(c_ptr),intent(in),value          :: handle_bvarStruct     ! x%var(:)%dat -- basin-average variables
   ! local HRU data
-  type(var_i),intent(inout)                :: statCounter     ! time counter for stats
-  type(var_i),intent(inout)                :: outputTimeStep  ! timestep in output files
-  type(flagVec),intent(inout)              :: resetStats      ! flags to reset statistics
-  type(flagVec),intent(inout)              :: finalizeStats   ! flags to finalize statistics
-  type(var_i),intent(inout)                :: finshTime       ! end time for the model simulation
-  type(var_i),intent(inout)                :: oldTime         !
-  integer(i4b),intent(in)                  :: outputStep      ! index into the outputStructure
-  ! run time variables
-  integer(i4b),intent(out)                 :: err
-  character(*),intent(out)                 :: message 
+  type(c_ptr),intent(in),value          :: handle_statCounter    ! x%var(:)
+  type(c_ptr),intent(in),value          :: handle_outputTimeStep ! x%var(:)
+  type(c_ptr),intent(in),value          :: handle_resetStats     ! x%var(:)
+  type(c_ptr),intent(in),value          :: handle_finalizeStats  ! x%var(:)
+  type(c_ptr),intent(in),value          :: handle_finshTime      ! x%var(:)    -- end time for the model simulation
+  type(c_ptr),intent(in),value          :: handle_oldTime        ! x%var(:)    -- time for the previous model time step
+  integer(c_int),intent(out)            :: err
+
+  ! local pointers
+  ! statistics variables 
+  type(var_dlength), pointer            :: forcStat        ! model forcing data
+  type(var_dlength), pointer            :: progStat        ! model prognostic (state) variables
+  type(var_dlength), pointer            :: diagStat        ! model diagnostic variables
+  type(var_dlength), pointer            :: fluxStat        ! model fluxes
+  type(var_dlength), pointer            :: indxStat        ! model indices
+  type(var_dlength), pointer            :: bvarStat        ! basin-average variabl
+  ! primary data structures (scalars)
+  type(var_i),pointer                   :: timeStruct      ! model time data
+  type(var_d),pointer                   :: forcStruct      ! model forcing data
+  ! primary data structures (variable length vectors)
+  type(var_ilength),pointer             :: indxStruct      ! model indices
+  type(var_dlength),pointer             :: mparStruct      ! model parameters
+  type(var_dlength),pointer             :: progStruct      ! model prognostic (state) variables
+  type(var_dlength),pointer             :: diagStruct      ! model diagnostic variables
+  type(var_dlength),pointer             :: fluxStruct      ! model fluxes
+  ! basin-average structures
+  type(var_d),pointer                   :: bparStruct      ! basin-average parameters
+  type(var_dlength),pointer             :: bvarStruct      ! basin-average variables
+  ! local HRU data
+  type(var_i),pointer                   :: statCounter     ! time counter for stats
+  type(var_i),pointer                   :: outputTimeStep  ! timestep in output files
+  type(flagVec),pointer                 :: resetStats      ! flags to reset statistics
+  type(flagVec),pointer                 :: finalizeStats   ! flags to finalize statistics
+  type(var_i),pointer                   :: finshTime       ! end time for the model simulation
+  type(var_i),pointer                   :: oldTime         !
 
   ! local variables
-  character(len=256)                       :: cmessage
-  logical(lgt)                             :: defNewOutputFile=.false.
-  logical(lgt)                             :: printRestart=.false.
-  logical(lgt)                             :: printProgress=.false.
-  character(len=256)                       :: restartFile       ! restart file name
-  character(len=256)                       :: timeString        ! portion of restart file name that contains the write-out time
-  integer(i4b)                             :: iStruct           ! index of model structure
-  integer(i4b)                             :: nGRU
-  integer(i4b)                             :: nHRU
-  integer(i4b)                             :: iFreq             ! index of the output frequency
-  integer(i4b)                             :: iGRU              ! Temporary index for GRU        
-  integer(i4b)                             :: i 
-  integer(i4b)                             :: j  
-  nGRU = 1
-  nHRU = 1
-  iGRU = 1
+  character(len=256)                    :: cmessage
+  character(len=256)                    :: message 
+  logical(lgt)                          :: defNewOutputFile=.false.
+  logical(lgt)                          :: printRestart=.false.
+  logical(lgt)                          :: printProgress=.false.
+  character(len=256)                    :: restartFile       ! restart file name
+  character(len=256)                    :: timeString        ! portion of restart file name that contains the write-out time
+  integer(i4b)                          :: iStruct           ! index of model structure
+  integer(i4b)                          :: iFreq             ! index of the output frequency
+  ! convert the C pointers to Fortran pointers
+  call c_f_pointer(handle_forcStat, forcStat)
+  call c_f_pointer(handle_progStat, progStat)
+  call c_f_pointer(handle_diagStat, diagStat)
+  call c_f_pointer(handle_fluxStat, fluxStat)
+  call c_f_pointer(handle_indxStat, indxStat)
+  call c_f_pointer(handle_bvarStat, bvarStat)
+  call c_f_pointer(handle_timeStruct, timeStruct)
+  call c_f_pointer(handle_forcStruct, forcStruct)
+  call c_f_pointer(handle_indxStruct, indxStruct)
+  call c_f_pointer(handle_mparStruct, mparStruct)
+  call c_f_pointer(handle_progStruct, progStruct)
+  call c_f_pointer(handle_diagStruct, diagStruct)
+  call c_f_pointer(handle_fluxStruct, fluxStruct)
+  call c_f_pointer(handle_bparStruct, bparStruct)
+  call c_f_pointer(handle_bvarStruct, bvarStruct)
+  call c_f_pointer(handle_statCounter, statCounter)
+  call c_f_pointer(handle_outputTimeStep, outputTimeStep)
+  call c_f_pointer(handle_resetStats, resetStats)
+  call c_f_pointer(handle_finalizeStats, finalizeStats)
+  call c_f_pointer(handle_finshTime, finshTime)
+  call c_f_pointer(handle_oldTime, oldTime)
 
   err=0; message='summa_manageOutputFiles/'
   ! identify the start of the writing

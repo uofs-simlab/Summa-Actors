@@ -131,13 +131,43 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
                 }
 
                 self->state.num_steps_until_write--;
-                err = Run_HRU(self); // Simulate a Timestep
 
-                getAndSendOutput(self);
+                err = Run_HRU(self); // Simulate a Timestep
+                if (err != 0) {
+                    aout(self) << "Error: HRU_Actor - Run_HRU - HRU = " << self->state.indxHRU << 
+                        " - indxGRU = " << self->state.indxGRU << " - refGRU = "<< self->state.refGRU << std::endl;
+                    aout(self) << "Error = " << err << "\n";
+                    self->quit();
+                }
+
+                writeHRUToOutputStructure(&self->state.indxHRU, &self->state.indxGRU, 
+                    &self->state.output_structure_step_index,
+                    self->state.handle_forcStat,
+                    self->state.handle_progStat,
+                    self->state.handle_diagStat,
+                    self->state.handle_fluxStat,
+                    self->state.handle_indxStat,
+                    self->state.handle_bvarStat,
+                    self->state.handle_timeStruct,
+                    self->state.handle_forcStruct,
+                    self->state.handle_indxStruct,
+                    self->state.handle_mparStruct,
+                    self->state.handle_progStruct,
+                    self->state.handle_diagStruct,
+                    self->state.handle_fluxStruct,
+                    self->state.handle_bparStruct,
+                    self->state.handle_bvarStruct,
+                    self->state.handle_statCounter,
+                    self->state.handle_outputTimeStep,
+                    self->state.handle_resetStats,
+                    self->state.handle_finalizeStats,
+                    self->state.handle_finshTime,
+                    self->state.handle_oldTime,
+                    &err);
 
                 // Update counters for the fortran side           
-                updateCounters(self->state.handle_timeStruct, self->state.handle_statCounter, self->state.handle_outputTimeStep,
-                    self->state.handle_resetStats, self->state.handle_oldTime, self->state.handle_finalizeStats);
+                // updateCounters(self->state.handle_timeStruct, self->state.handle_statCounter, self->state.handle_outputTimeStep,
+                //     self->state.handle_resetStats, self->state.handle_oldTime, self->state.handle_finalizeStats);
                 // model timestep
                 self->state.timestep++;
                 // forcing step
