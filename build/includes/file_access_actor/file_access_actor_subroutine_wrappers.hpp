@@ -10,7 +10,7 @@ extern "C" {
   void def_output(void* handle_ncid, int* startGRU, int* numGRU, int* numHRU, int* err);
 
   void initOutputStructure(void* handle_forcFileInfo, int* max_steps, int* numGRU, int* err);
-
+  void deallocateOutputStructure(int* err);
   
   // Attributes Files- called inside initalizeFileAccessActor
   void allocateAttributeStructures(int* index_gru, int* index_hru, void* handle_attr_struct, 
@@ -39,7 +39,6 @@ extern "C" {
   void closeInitCondFile(int* init_cond_ncid, int* err);
   void readInitCond_prog(int* init_cond_ncid, int* start_gru, int* num_gru, int* err);
   void readInitCond_bvar(int* init_cond_ncid, int* start_gru, int* num_gru, int* err);
-  // void readInitCond_Fortran(int* start_gru, int* num_gru, int* err);
 
   void updateFailed(int* indxHRU);
 
