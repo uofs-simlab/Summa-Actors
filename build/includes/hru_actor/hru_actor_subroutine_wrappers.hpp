@@ -14,6 +14,10 @@ extern "C" {
             void* bvarStruct,
             // local HRU data 
             void* startTime, void* finshTime, void* refTime, void* oldTime, int* err);
+
+      // Initalize statistics flags
+      void initStatisticsFlags(void* handle_statCounter, void* handle_outputTimeStep, void* handle_resetStats,
+            void* handle_finalizeStats, int* err);
     
       void setupHRUParam( int* indxGRU, int* indxHRU,
             // primary data structures (scalars)

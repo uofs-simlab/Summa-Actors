@@ -52,6 +52,10 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
         self->quit();
     }
 
+    // Initialize flags taht are used for the output 
+    initStatisticsFlags(self->state.handle_statCounter, self->state.handle_outputTimeStep, 
+        self->state.handle_resetStats, self->state.handle_finalizeStats, &self->state.err);
+
 
     self->send(self->state.file_access_actor, get_num_output_steps_v, self);
 
@@ -332,6 +336,9 @@ int Run_HRU(stateful_actor<hru_state>* self) {
     self->state.hru_timing.updateEndPoint("run_physics_duration");
 
     self->state.hru_timing.updateStartPoint("write_output_duration");
+    
+
+
     prepareOutput(&self->state.timestep,
         self->state.handle_forcStat,
         self->state.handle_progStat,
