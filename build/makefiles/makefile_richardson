@@ -1,5 +1,5 @@
 #### parent directory of the 'build' directory ####
-ROOT_DIR = /u1/kck540/Summa-Sundials/Summa-Actors
+ROOT_DIR = /u1/kck540/Summa-Projects/Summa-Actors-Main
 
 #### Compilers ####
 FC = gfortran # Fortran
@@ -14,10 +14,10 @@ ACTORS_LIBRARIES = -L/usr/lib -L/usr/local/lib -L$(ROOT_DIR)/bin -lcaf_core -lca
 
 
 # Production runs
-FLAGS_NOAH = -g -O0 -ffree-form -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
-FLAGS_COMM = -g -O0 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
-FLAGS_SUMMA = -g -O0 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
-FLAGS_ACTORS = -g -O0 -Wfatal-errors -std=c++17
+FLAGS_NOAH = -g -O3 -ffree-form -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
+FLAGS_COMM = -g -O3 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
+FLAGS_SUMMA = -g -O3 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
+FLAGS_ACTORS = -g -O3 -Wfatal-errors -std=c++17
 
 # Debug runs
 # FLAGS_NOAH = -g -O0 -ffree-form -ffree-line-length-none -fmax-errors=0 -fbacktrace -Wno-unused -Wno-unused-dummy-argument -fPIC
@@ -161,10 +161,12 @@ INTERFACE = $(patsubst %, $(ACTORS_DIR)/global/%, $(SUMMA_INTERFACE))
 
 
 SUMMA_FILEACCESS_INTERFACE = \
+		output_structure.f90 \
 		cppwrap_fileAccess.f90 \
 		read_attribute.f90 \
 		read_forcing.f90 \
 		read_param.f90 \
+		read_initcond.f90 \
 		write_to_netcdf.f90
 
 FILEACCESS_INTERFACE = $(patsubst %, $(FILE_ACCESS_DIR)/%, $(SUMMA_FILEACCESS_INTERFACE))
@@ -195,6 +197,7 @@ SUMMA_PRELIM= \
 		sunGeomtry.f90 \
 		convE2Temp.f90 \
 		allocspaceActors.f90 \
+		alloc_fileAccess.f90 \
 		checkStruc.f90 \
 		childStruc.f90 \
 		ffile_info.f90 \
@@ -295,9 +298,6 @@ BATCH_CONTAINER = $(SOURCE_DIR)/summa_actor/batch/batch_container.cpp
 CLIENT = $(SOURCE_DIR)/summa_actor/client/client.cpp
 CLIENT_CONTAINER = $(SOURCE_DIR)/summa_actor/client/client_container.cpp
 
-CLIENT_BATCH = $(SOURCE_DIR)/summa_actor/batch_client.cpp
-CLIENT_BATCH_CONTAINERS = $(SOURCE_DIR)/summa_actor/batch_client_containers.cpp
-
 GRU_ACTOR_INCLUDES = -I$(INCLUDE_DIR)/gru_actor
 GRU_ACTOR = $(SOURCE_DIR)/gru_actor/gru_actor.cpp
 
@@ -308,7 +308,7 @@ GRUinfo = $(SOURCE_DIR)/job_actor/GRUinfo.cpp
 FILE_ACCESS_ACTOR_INCLUDES = -I$(INCLUDE_DIR)/file_access_actor
 FILE_ACCESS_ACTOR = $(SOURCE_DIR)/file_access_actor/cpp_code/file_access_actor.cpp
 FORCING_FILE_INFO = $(SOURCE_DIR)/file_access_actor/cpp_code/forcing_file_info.cpp
-OUTPUT_MANAGER = $(SOURCE_DIR)/file_access_actor/cpp_code/output_manager.cpp
+OUTPUT_CONTAINER = $(SOURCE_DIR)/file_access_actor/cpp_code/output_container.cpp
 
 HRU_ACTOR_INCLUDES = -I$(INCLUDE_DIR)/hru_actor
 HRU_ACTOR = $(SOURCE_DIR)/hru_actor/cpp_code/hru_actor.cpp
@@ -373,7 +373,7 @@ compile_hru_actor:
 	$(CC) $(FLAGS_ACTORS) -c $(HRU_ACTOR) $(HRU_ACTOR_INCLUDES) $(GLOBAL_INCLUDES) $(ACTORS_INCLUDES) $(SUMMA_ACTOR_INCLUDES)
 
 compile_file_access_actor:
-	$(CC) $(FLAGS_ACTORS) -c $(FILE_ACCESS_ACTOR) $(FORCING_FILE_INFO) $(OUTPUT_MANAGER) \
+	$(CC) $(FLAGS_ACTORS) -c $(OUTPUT_CONTAINER) $(FILE_ACCESS_ACTOR) $(FORCING_FILE_INFO) $(OUTPUT_MANAGER) \
 	$(FILE_ACCESS_ACTOR_INCLUDES) $(GLOBAL_INCLUDES) $(ACTORS_INCLUDES) $(SUMMA_ACTOR_INCLUDES) 
 
 compile_job_actor:

@@ -1,5 +1,4 @@
 #include "file_access_actor.hpp"
-#include "output_manager.hpp"
 #include "forcing_file_info.hpp"
 #include "file_access_actor_subroutine_wrappers.hpp"
 #include "fortran_data_types.hpp"
@@ -36,10 +35,8 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
         
     initalizeFileAccessActor(self);
 
-    if (self->state.num_steps < self->state.file_access_actor_settings.num_timesteps_in_output_buffer) {
-        self->state.num_output_steps = self->state.num_steps;
-        self->state.file_access_actor_settings.num_timesteps_in_output_buffer = self->state.num_steps;
-    }
+
+
 
     // Setup output container
     initArrayOfOuputPartitions(self->state.output_partitions,
@@ -322,8 +319,12 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
         self->quit();
         return;
     }
-
     aout(self) << "Simluations Steps: " << self->state.num_steps << "\n";
+    // Check that the number of timesteps in the output buffer is not greater than the number of timesteps in the simulation
+    if (self->state.num_steps < self->state.file_access_actor_settings.num_timesteps_in_output_buffer) {
+        self->state.num_output_steps = self->state.num_steps;
+        self->state.file_access_actor_settings.num_timesteps_in_output_buffer = self->state.num_steps;
+    }
 
     read_pinit_C(&err);
     if (err != 0) {
@@ -349,6 +350,20 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
     if (err != 0) {
         aout(self) << "ERROR: Create_OutputFile\n";
         std::string function = "def_output";
+        self->send(self->state.parent, file_access_actor_err_v, function);
+        self->quit();
+        return;
+    }
+
+    // Initalize the output Structure
+    aout(self) << "Initalizing Output Structure" << std::endl;
+    initOutputStructure(self->state.handle_forcing_file_info, 
+        &self->state.file_access_actor_settings.num_timesteps_in_output_buffer, 
+        &self->state.num_gru, &self->state.err);
+
+    if (self->state.err == 1) {
+        aout(self) << "ERROR: Init_OutputStruct\n";
+        std::string function = "Init_OutputStruct";
         self->send(self->state.parent, file_access_actor_err_v, function);
         self->quit();
         return;
