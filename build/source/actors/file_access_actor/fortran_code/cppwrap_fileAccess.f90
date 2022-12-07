@@ -137,8 +137,8 @@ subroutine FileAccessActor_DeallocateStructures(handle_forcFileInfo, handle_ncid
   deallocate(forcFileInfo)
   deallocate(ncid)
   deallocate(failedHRUs)
-  deallocate(forcingDataStruct)
-  deallocate(vectime)
+  ! deallocate(forcingDataStruct)
+  ! deallocate(vectime)
   deallocate(init_cond_prog)
   if (allocated(init_cond_bvar))then; deallocate(init_cond_bvar); endif;
 end subroutine FileAccessActor_DeallocateStructures

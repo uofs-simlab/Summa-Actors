@@ -200,7 +200,7 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
         [=](deallocate_structures) {
             aout(self) << "Deallocating Structure" << std::endl;
             FileAccessActor_DeallocateStructures(self->state.handle_forcing_file_info, self->state.handle_ncid);
-            deallocateOutputStructure(&self->state.err);
+            // deallocateOutputStructure(&self->state.err);
             aout(self) << "\n________________FILE_ACCESS_ACTOR TIMING INFO RESULTS________________\n";
             aout(self) << "Total Read Duration = " << self->state.file_access_timing.getDuration("read_duration").value_or(-1.0) << " Seconds\n";
             aout(self) << "Total Write Duration = " << self->state.file_access_timing.getDuration("write_duration").value_or(-1.0) << " Seconds\n";

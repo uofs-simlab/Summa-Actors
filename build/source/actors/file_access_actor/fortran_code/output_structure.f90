@@ -55,6 +55,9 @@ subroutine initOutputStructure(handle_forcFileInfo, maxSteps, num_gru, err) bind
   ! Allocate structure to hold output files
   if (.not.allocated(outputStructure))then
     allocate(outputStructure(1))
+  else
+    print*, "Already Allocated"
+    return;
   end if
 
   ! Statistics Structures
