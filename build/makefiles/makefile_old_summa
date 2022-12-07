@@ -12,18 +12,17 @@ LIBRARIES = -L/usr/lib -L/usr/local/lib -lnetcdff -lopenblas
 ACTORS_INCLUDES = -I/usr/include -I/usr/local/include
 ACTORS_LIBRARIES = -L/usr/lib -L/usr/local/lib -L/Summa-Actors/bin -lcaf_core -lcaf_io -lsumma -lopenblas -lnetcdff
 
-
 # Production runs
-FLAGS_NOAH = -O3 -ffree-form -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
-FLAGS_COMM = -O3 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
-FLAGS_SUMMA = -O3 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
-FLAGS_ACTORS = -O3 -Wfatal-errors -std=c++17
+FLAGS_NOAH = -g -O3 -ffree-form -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
+FLAGS_COMM = -g -O3 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
+FLAGS_SUMMA = -g -O3 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
+FLAGS_ACTORS = -g -O3 -Wfatal-errors -std=c++17
 
 # Debug runs
-FLAGS_NOAH = -g -O0 -ffree-form -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
-FLAGS_COMM = -g -O0 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
-FLAGS_SUMMA = -g -O0 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors
-FLAGS_ACTORS = -g -O0 -Wfatal-errors -std=c++17
+# FLAGS_NOAH = -g -O0 -ffree-form -ffree-line-length-none -fmax-errors=0 -fbacktrace -Wno-unused -Wno-unused-dummy-argument -fPIC
+# FLAGS_COMM = -g -O0 -Wall -ffree-line-length-none -fmax-errors=0 -fbacktrace -fcheck=bounds -fPIC
+# FLAGS_SUMMA = -g -O0 -Wall -ffree-line-length-none -fmax-errors=0 -fbacktrace -fcheck=bounds -fPIC
+# FLAGS_ACTORS = -g -O0 -Wall -std=c++17
 
 
 
@@ -161,11 +160,13 @@ INTERFACE = $(patsubst %, $(ACTORS_DIR)/global/%, $(SUMMA_INTERFACE))
 
 
 SUMMA_FILEACCESS_INTERFACE = \
+		output_structure.f90 \
 		cppwrap_fileAccess.f90 \
 		read_attribute.f90 \
 		read_forcing.f90 \
 		read_param.f90 \
 		read_initcond.f90 \
+		writeOutputFromOutputStructure.f90 \
 		write_to_netcdf.f90
 
 FILEACCESS_INTERFACE = $(patsubst %, $(FILE_ACCESS_DIR)/%, $(SUMMA_FILEACCESS_INTERFACE))
@@ -179,6 +180,8 @@ SUMMA_HRU_INTERFACE = \
 		cppwrap_hru.f90 \
 		hru_actor.f90 \
 		init_hru_actor.f90 \
+		outputStrucWrite.f90 \
+		hru_writeOutput.f90
 
 
 HRU_INTERFACE = $(patsubst %, $(HRU_ACTOR_DIR)/%, $(SUMMA_HRU_INTERFACE))
@@ -196,6 +199,7 @@ SUMMA_PRELIM= \
 		sunGeomtry.f90 \
 		convE2Temp.f90 \
 		allocspaceActors.f90 \
+		alloc_fileAccess.f90 \
 		checkStruc.f90 \
 		childStruc.f90 \
 		ffile_info.f90 \
@@ -274,8 +278,8 @@ DRIVER = $(patsubst %, $(DRIVER_DIR)/%, $(SUMMA_DRIVER))
 ######################################## Assemble C++ Files ########################################
 ####################################################################################################
 
-INCLUDE_DIR = /Summa-Actors/build/includes
-SOURCE_DIR = /Summa-Actors/build/source/actors
+INCLUDE_DIR = $(ROOT_DIR)/build/includes
+SOURCE_DIR = $(ROOT_DIR)/build/source/actors
 
 
 GLOBAL_INCLUDES = -I$(INCLUDE_DIR)/global
@@ -361,7 +365,7 @@ clean_fortran:
 ###################################################################################################################
 ################################################ COMPILE SUMMA-C++ ################################################
 ###################################################################################################################
-compile_globals: 
+compile_globals:
 	$(CC) $(FLAGS_ACTORS) -c $(GLOBAL) $(TIMEINFO) $(AUXILARY) $(SETTINGS_FILES) $(GLOBAL_INCLUDES) $(SUMMA_ACTOR_INCLUDES)
 
 compile_gru_actor:
@@ -371,7 +375,7 @@ compile_hru_actor:
 	$(CC) $(FLAGS_ACTORS) -c $(HRU_ACTOR) $(HRU_ACTOR_INCLUDES) $(GLOBAL_INCLUDES) $(ACTORS_INCLUDES) $(SUMMA_ACTOR_INCLUDES)
 
 compile_file_access_actor:
-	$(CC) $(FLAGS_ACTORS) -c $(OUTPUT_CONTAINER) $(FILE_ACCESS_ACTOR) $(FORCING_FILE_INFO) \
+	$(CC) $(FLAGS_ACTORS) -c $(OUTPUT_CONTAINER) $(FILE_ACCESS_ACTOR) $(FORCING_FILE_INFO) $(OUTPUT_MANAGER) \
 	$(FILE_ACCESS_ACTOR_INCLUDES) $(GLOBAL_INCLUDES) $(ACTORS_INCLUDES) $(SUMMA_ACTOR_INCLUDES) 
 
 compile_job_actor:
@@ -393,7 +397,7 @@ compile_main:
 	$(CC) $(FLAGS_ACTORS) -c $(MAIN) $(GLOBAL_INCLUDES) $(SUMMA_ACTOR_INCLUDES) $(JOB_ACTOR_INCLUDES)
 
 link_cpp:
-	$(CC) $(FLAGS_ACTORS) -Wl,-rpath='/Summa-Actors/bin:/usr/local/lib' -o summaMain *.o $(ACTORS_LIBRARIES)
+	$(CC) $(FLAGS_ACTORS) -Wl,-rpath='$(ROOT_DIR)/bin:/usr/local/lib' -o summaMain *.o $(ACTORS_LIBRARIES)
 	mv summaMain $(ROOT_DIR)/bin
 
 clean_cpp:
@@ -414,7 +418,4 @@ actors_testLink:
 
 clean_lib:
 	rm *.so
-
-
-
 
