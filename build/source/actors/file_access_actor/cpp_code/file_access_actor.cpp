@@ -158,7 +158,6 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
 
         [=](write_output, int index_gru, int index_hru, caf::actor hru_actor) {
             self->state.file_access_timing.updateStartPoint("write_duration");
-            aout(self) << "Writing Output for GRU: " << index_gru << " HRU: " << index_hru << std::endl;
             // We need to handle the partitioning of the output data
             std::optional<int> partition_index = addReadyToWriteHRU(self->state.output_partitions, hru_actor, index_gru, index_hru);
             if (partition_index.has_value()) {
@@ -175,7 +174,6 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
                     self->send(hru_output_info->hru_actor, run_hru_v);
                 }
             }
-            aout(self) << "Finished Writing Output for GRU: " << index_gru << " HRU: " << index_hru << std::endl;
             self->state.file_access_timing.updateEndPoint("write_duration");
         },
 
