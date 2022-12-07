@@ -86,33 +86,19 @@ struct output_partition {
     std::vector<std::shared_ptr<hru_output_info>> hru_info_and_data;
 };
 
-std::optional<int> addReadyToWriteHRU(std::vector<std::shared_ptr<output_partition>>& output_partitions, 
-    caf::actor hru_actor, int gru_index, int hru_index);
+
 
 // Take an unintialized vector of output partitions and initialize it
 void initArrayOfOuputPartitions(std::vector<std::shared_ptr<output_partition>>& output_partitions, 
     int num_partitions, int num_gru, int num_timesteps,  int simulation_timesteps_remaining);
 
-// Take a timestep of HRU data and add it to the output structure
-// If we need to write to a file then return the partition_index
-std::optional<int> addHRUOutput(std::vector<std::shared_ptr<output_partition>>& output_partitions, 
-     caf::actor hru_actor, int gru_index, int hru_index,
-     std::shared_ptr<hru_output_handles>& timestep_output);
+// Add a HRU that is ready to write to the output structure
+std::optional<int> addReadyToWriteHRU(std::vector<std::shared_ptr<output_partition>>& output_partitions, 
+    caf::actor hru_actor, int gru_index, int hru_index);
+
 
 // find which partition the HRU belongs to
 int findPatritionIndex(int grus_per_partition, int gru_index, int num_partitions);
-
-// Find a specific GRU in a partition given the index for the simulation
-int findGRUIndexInPartition(int gru_index, int start_gru);
-
-// Test if a partition in the output structure is full
-bool isPartitionFull(std::shared_ptr<output_partition> &output_partition);
-
-// Get the data for the HRUs from a partition
-std::vector<std::vector<std::shared_ptr<hru_output_handles>>>  getOutputHandlesFromPartition(int partition_index, std::vector<std::shared_ptr<output_partition>>& output_partitions);
-
-// After wrting to a file, clear the data from the partition
-void clearOutputPartition(std::shared_ptr<output_partition> &output_partition);
 
 // After writing to a file, update the number of timesteps remaining in the simulation
 void updateSimulationTimestepsRemaining(std::shared_ptr<output_partition>& output_partition);
