@@ -184,7 +184,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
 
             }
             // Our output structure is full
-            if (self->state.num_steps_until_write > 0) {
+            if (self->state.num_steps_until_write <= 0) {
                 self->send(self->state.file_access_actor, write_output_v, self->state.indxGRU, self->state.indxHRU, self);
             }
             self->state.hru_timing.updateEndPoint("total_duration");
@@ -372,42 +372,42 @@ int Run_HRU(stateful_actor<hru_state>* self) {
     }
     self->state.hru_timing.updateEndPoint("run_physics_duration");
 
-    self->state.hru_timing.updateStartPoint("write_output_duration");
+    // self->state.hru_timing.updateStartPoint("write_output_duration");
     
 
 
-    prepareOutput(&self->state.timestep,
-        self->state.handle_forcStat,
-        self->state.handle_progStat,
-        self->state.handle_diagStat,
-        self->state.handle_fluxStat,
-        self->state.handle_indxStat,
-        self->state.handle_bvarStat,
-        self->state.handle_timeStruct,
-        self->state.handle_forcStruct,
-        self->state.handle_attrStruct,
-        self->state.handle_typeStruct,
-        self->state.handle_indxStruct,
-        self->state.handle_mparStruct,
-        self->state.handle_progStruct,
-        self->state.handle_diagStruct,
-        self->state.handle_fluxStruct,
-        self->state.handle_bparStruct,
-        self->state.handle_bvarStruct,
-        self->state.handle_statCounter,
-        self->state.handle_outputTimeStep,
-        self->state.handle_resetStats,
-        self->state.handle_finalizeStats,
-        self->state.handle_finshTime,
-        self->state.handle_oldTime,
-        &self->state.err);
-    if (self->state.err != 0) {
-        aout(self) << "Error: WriteOutput - HRU = " << self->state.indxHRU << 
-            " - indxGRU = " << self->state.indxGRU << " - refGRU = " << self->state.refGRU <<
-            " - Timestep = " << self->state.timestep << std::endl;
-        return 30;
-    }
-    self->state.hru_timing.updateEndPoint("write_output_duration");
+    // prepareOutput(&self->state.timestep,
+    //     self->state.handle_forcStat,
+    //     self->state.handle_progStat,
+    //     self->state.handle_diagStat,
+    //     self->state.handle_fluxStat,
+    //     self->state.handle_indxStat,
+    //     self->state.handle_bvarStat,
+    //     self->state.handle_timeStruct,
+    //     self->state.handle_forcStruct,
+    //     self->state.handle_attrStruct,
+    //     self->state.handle_typeStruct,
+    //     self->state.handle_indxStruct,
+    //     self->state.handle_mparStruct,
+    //     self->state.handle_progStruct,
+    //     self->state.handle_diagStruct,
+    //     self->state.handle_fluxStruct,
+    //     self->state.handle_bparStruct,
+    //     self->state.handle_bvarStruct,
+    //     self->state.handle_statCounter,
+    //     self->state.handle_outputTimeStep,
+    //     self->state.handle_resetStats,
+    //     self->state.handle_finalizeStats,
+    //     self->state.handle_finshTime,
+    //     self->state.handle_oldTime,
+    //     &self->state.err);
+    // if (self->state.err != 0) {
+    //     aout(self) << "Error: WriteOutput - HRU = " << self->state.indxHRU << 
+    //         " - indxGRU = " << self->state.indxGRU << " - refGRU = " << self->state.refGRU <<
+    //         " - Timestep = " << self->state.timestep << std::endl;
+    //     return 30;
+    // }
+    // self->state.hru_timing.updateEndPoint("write_output_duration");
 
     return 0;      
 }

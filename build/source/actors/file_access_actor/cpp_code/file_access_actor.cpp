@@ -36,8 +36,6 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
     initalizeFileAccessActor(self);
 
 
-
-
     // Setup output container
     initArrayOfOuputPartitions(self->state.output_partitions,
         self->state.file_access_actor_settings.num_partitions_in_output_buffer,
@@ -160,111 +158,128 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
 
         [=](write_output, int index_gru, int index_hru, caf::actor hru_actor) {
             self->state.file_access_timing.updateStartPoint("write_duration");
-            // Hook up the write output routine
-            self->state.file_access_timing.updateEndPoint("write_duration");
-        },
-
-        [=](write_output, int index_gru, int index_hru, caf::actor hru_actor,
-            // statistic structures
-            std::vector<std::vector<double>> forc_stat, std::vector<std::vector<double>> prog_stat, std::vector<std::vector<double>> diag_stat,
-            std::vector<std::vector<double>> flux_stat, std::vector<std::vector<double>> indx_stat, std::vector<std::vector<double>> bvar_stat,
-            // primary data structures (scalars)
-            std::vector<int> time_struct, std::vector<double> forc_struct, std::vector<double> attr_struct,
-            std::vector<int> type_struct, std::vector<long int> id_struct,  
-            // primary data structures (variable length vectors)
-            std::vector<std::vector<int>> indx_struct, std::vector<std::vector<double>> mpar_struct, std::vector<std::vector<double>> prog_struct,
-            std::vector<std::vector<double>> diag_struct, std::vector<std::vector<double>> flux_struct,
-             // basin-average structures
-            std::vector<double> bpar_struct, std::vector<std::vector<double>> bvar_struct,
-            // ancillary data structures
-            std::vector<double> dpar_struct, std::vector<int> finalize_stats, std::vector<int> output_timestep ) {
-            
-            self->state.file_access_timing.updateStartPoint("write_duration");
-
-
-            std::shared_ptr<hru_output_handles> hru_output = std::make_shared<hru_output_handles>();
-            
-            int err = 0;
-            // hru information
-            // statistic structures
-            set_var_dlength(forc_stat, hru_output->handle_forc_stat);
-            set_var_dlength(prog_stat, hru_output->handle_prog_stat);
-            set_var_dlength(diag_stat, hru_output->handle_diag_stat);
-            set_var_dlength(flux_stat, hru_output->handle_flux_stat);
-            set_var_dlength(indx_stat, hru_output->handle_indx_stat);
-            set_var_dlength(bvar_stat, hru_output->handle_bvar_stat);
-            // primary data structures (scalars)
-            set_var_i(time_struct, hru_output->handle_time_struct);
-            set_var_d(forc_struct, hru_output->handle_forc_struct);
-            set_var_d(attr_struct, hru_output->handle_attr_struct);
-            set_var_i(type_struct, hru_output->handle_type_struct);
-            set_var_i8(id_struct,  hru_output->handle_id_struct);
-            // primary data structures (variable length vectors)
-            set_var_ilength(indx_struct, hru_output->handle_indx_struct);
-            set_var_dlength(mpar_struct, hru_output->handle_mpar_struct);
-            set_var_dlength(prog_struct, hru_output->handle_prog_struct);
-            set_var_dlength(diag_struct, hru_output->handle_diag_struct);
-            set_var_dlength(flux_struct, hru_output->handle_flux_struct);
-            // basin-average structures
-            set_var_d(bpar_struct, hru_output->handle_bpar_struct);
-            set_var_dlength(bvar_struct, hru_output->handle_bvar_struct);
-            // ancillary data structures
-            set_var_d(dpar_struct, hru_output->handle_dpar_struct);
-            set_flagVec(finalize_stats, hru_output->handle_finalize_stats);
-            set_var_i(output_timestep, hru_output->handle_output_timestep);
-
-            std::optional<int> partition_index;
-            partition_index = addHRUOutput(self->state.output_partitions, hru_actor, index_gru, index_hru, hru_output);
+            aout(self) << "Writing Output for GRU: " << index_gru << " HRU: " << index_hru << std::endl;
+            // We need to handle the partitioning of the output data
+            std::optional<int> partition_index = addReadyToWriteHRU(self->state.output_partitions, hru_actor, index_gru, index_hru);
             if (partition_index.has_value()) {
-                // We have a partition to write
-                std::vector<std::vector<std::shared_ptr<hru_output_handles>>> hru_output_from_vector = getOutputHandlesFromPartition(partition_index.value(), self->state.output_partitions); 
+                // We have a partition that is ready to write
+                int max_gru = self->state.output_partitions[partition_index.value()]->start_gru + self->state.output_partitions[partition_index.value()]->num_gru -1;
+                writeOutput(self->state.handle_ncid, &self->state.output_partitions[partition_index.value()]->num_timesteps,
+                    &self->state.output_partitions[partition_index.value()]->start_gru, &max_gru, &self->state.err);
                 
-                for (int hru = 0; hru < self->state.output_partitions[partition_index.value()]->hru_info_and_data.size(); hru++) {
-                    for(int timestep = 0; timestep < self->state.output_partitions[partition_index.value()]->hru_info_and_data[hru]->output_data.size(); timestep++) {
-
-                        writeBasinToNetCDF(self->state.handle_ncid, &self->state.output_partitions[partition_index.value()]->hru_info_and_data[hru]->index_gru,
-                            hru_output_from_vector[hru][timestep]->handle_finalize_stats, 
-                            hru_output_from_vector[hru][timestep]->handle_output_timestep, 
-                            hru_output_from_vector[hru][timestep]->handle_bvar_stat,
-                            hru_output_from_vector[hru][timestep]->handle_bvar_struct, &err);
-
-                        writeTimeToNetCDF(self->state.handle_ncid,
-                            hru_output_from_vector[hru][timestep]->handle_finalize_stats, 
-                            hru_output_from_vector[hru][timestep]->handle_output_timestep, 
-                            hru_output_from_vector[hru][timestep]->handle_time_struct, &err);
-
-                        writeDataToNetCDF(self->state.handle_ncid, &self->state.output_partitions[partition_index.value()]->hru_info_and_data[hru]->index_gru, 
-                            &self->state.output_partitions[partition_index.value()]->hru_info_and_data[hru]->index_hru,
-                            hru_output_from_vector[hru][timestep]->handle_finalize_stats, 
-                            hru_output_from_vector[hru][timestep]->handle_forc_stat, 
-                            hru_output_from_vector[hru][timestep]->handle_forc_struct,
-                            hru_output_from_vector[hru][timestep]->handle_prog_stat, 
-                            hru_output_from_vector[hru][timestep]->handle_prog_struct, 
-                            hru_output_from_vector[hru][timestep]->handle_diag_stat, 
-                            hru_output_from_vector[hru][timestep]->handle_diag_struct, 
-                            hru_output_from_vector[hru][timestep]->handle_flux_stat, 
-                            hru_output_from_vector[hru][timestep]->handle_flux_struct,
-                            hru_output_from_vector[hru][timestep]->handle_indx_stat, 
-                            hru_output_from_vector[hru][timestep]->handle_indx_struct, 
-                            hru_output_from_vector[hru][timestep]->handle_output_timestep,
-                            &err);
-                    }
-                }
-                
-                clearOutputPartition(self->state.output_partitions[partition_index.value()]);
                 updateSimulationTimestepsRemaining(self->state.output_partitions[partition_index.value()]);
                 updateNumTimeForPartition(self->state.output_partitions[partition_index.value()]);                 
-
-                // Send all HRUs in the partition the next set of timesteps to compute
+                resetReadyToWrite(self->state.output_partitions[partition_index.value()]);
                 for (auto hru_output_info : self->state.output_partitions[partition_index.value()]->hru_info_and_data) {
                     self->send(hru_output_info->hru_actor, num_steps_before_write_v, self->state.output_partitions[partition_index.value()]->num_timesteps);
                     self->send(hru_output_info->hru_actor, run_hru_v);
                 }
             }
-
+            aout(self) << "Finished Writing Output for GRU: " << index_gru << " HRU: " << index_hru << std::endl;
             self->state.file_access_timing.updateEndPoint("write_duration");
-        
         },
+
+        // [=](write_output, int index_gru, int index_hru, caf::actor hru_actor,
+            // statistic structures
+            // std::vector<std::vector<double>> forc_stat, std::vector<std::vector<double>> prog_stat, std::vector<std::vector<double>> diag_stat,
+            // std::vector<std::vector<double>> flux_stat, std::vector<std::vector<double>> indx_stat, std::vector<std::vector<double>> bvar_stat,
+            // // primary data structures (scalars)
+            // std::vector<int> time_struct, std::vector<double> forc_struct, std::vector<double> attr_struct,
+            // std::vector<int> type_struct, std::vector<long int> id_struct,  
+            // // primary data structures (variable length vectors)
+            // std::vector<std::vector<int>> indx_struct, std::vector<std::vector<double>> mpar_struct, std::vector<std::vector<double>> prog_struct,
+            // std::vector<std::vector<double>> diag_struct, std::vector<std::vector<double>> flux_struct,
+            //  // basin-average structures
+            // std::vector<double> bpar_struct, std::vector<std::vector<double>> bvar_struct,
+            // // ancillary data structures
+            // std::vector<double> dpar_struct, std::vector<int> finalize_stats, std::vector<int> output_timestep ) {
+            
+            // self->state.file_access_timing.updateStartPoint("write_duration");
+
+
+            // std::shared_ptr<hru_output_handles> hru_output = std::make_shared<hru_output_handles>();
+            
+            // int err = 0;
+            // // hru information
+            // // statistic structures
+            // set_var_dlength(forc_stat, hru_output->handle_forc_stat);
+            // set_var_dlength(prog_stat, hru_output->handle_prog_stat);
+            // set_var_dlength(diag_stat, hru_output->handle_diag_stat);
+            // set_var_dlength(flux_stat, hru_output->handle_flux_stat);
+            // set_var_dlength(indx_stat, hru_output->handle_indx_stat);
+            // set_var_dlength(bvar_stat, hru_output->handle_bvar_stat);
+            // // primary data structures (scalars)
+            // set_var_i(time_struct, hru_output->handle_time_struct);
+            // set_var_d(forc_struct, hru_output->handle_forc_struct);
+            // set_var_d(attr_struct, hru_output->handle_attr_struct);
+            // set_var_i(type_struct, hru_output->handle_type_struct);
+            // set_var_i8(id_struct,  hru_output->handle_id_struct);
+            // // primary data structures (variable length vectors)
+            // set_var_ilength(indx_struct, hru_output->handle_indx_struct);
+            // set_var_dlength(mpar_struct, hru_output->handle_mpar_struct);
+            // set_var_dlength(prog_struct, hru_output->handle_prog_struct);
+            // set_var_dlength(diag_struct, hru_output->handle_diag_struct);
+            // set_var_dlength(flux_struct, hru_output->handle_flux_struct);
+            // // basin-average structures
+            // set_var_d(bpar_struct, hru_output->handle_bpar_struct);
+            // set_var_dlength(bvar_struct, hru_output->handle_bvar_struct);
+            // // ancillary data structures
+            // set_var_d(dpar_struct, hru_output->handle_dpar_struct);
+            // set_flagVec(finalize_stats, hru_output->handle_finalize_stats);
+            // set_var_i(output_timestep, hru_output->handle_output_timestep);
+
+            // std::optional<int> partition_index;
+            // partition_index = addHRUOutput(self->state.output_partitions, hru_actor, index_gru, index_hru, hru_output);
+            // if (partition_index.has_value()) {
+            //     // We have a partition to write
+            //     std::vector<std::vector<std::shared_ptr<hru_output_handles>>> hru_output_from_vector = getOutputHandlesFromPartition(partition_index.value(), self->state.output_partitions); 
+                
+            //     for (int hru = 0; hru < self->state.output_partitions[partition_index.value()]->hru_info_and_data.size(); hru++) {
+            //         for(int timestep = 0; timestep < self->state.output_partitions[partition_index.value()]->hru_info_and_data[hru]->output_data.size(); timestep++) {
+
+            //             writeBasinToNetCDF(self->state.handle_ncid, &self->state.output_partitions[partition_index.value()]->hru_info_and_data[hru]->index_gru,
+            //                 hru_output_from_vector[hru][timestep]->handle_finalize_stats, 
+            //                 hru_output_from_vector[hru][timestep]->handle_output_timestep, 
+            //                 hru_output_from_vector[hru][timestep]->handle_bvar_stat,
+            //                 hru_output_from_vector[hru][timestep]->handle_bvar_struct, &err);
+
+            //             writeTimeToNetCDF(self->state.handle_ncid,
+            //                 hru_output_from_vector[hru][timestep]->handle_finalize_stats, 
+            //                 hru_output_from_vector[hru][timestep]->handle_output_timestep, 
+            //                 hru_output_from_vector[hru][timestep]->handle_time_struct, &err);
+
+            //             writeDataToNetCDF(self->state.handle_ncid, &self->state.output_partitions[partition_index.value()]->hru_info_and_data[hru]->index_gru, 
+            //                 &self->state.output_partitions[partition_index.value()]->hru_info_and_data[hru]->index_hru,
+            //                 hru_output_from_vector[hru][timestep]->handle_finalize_stats, 
+            //                 hru_output_from_vector[hru][timestep]->handle_forc_stat, 
+            //                 hru_output_from_vector[hru][timestep]->handle_forc_struct,
+            //                 hru_output_from_vector[hru][timestep]->handle_prog_stat, 
+            //                 hru_output_from_vector[hru][timestep]->handle_prog_struct, 
+            //                 hru_output_from_vector[hru][timestep]->handle_diag_stat, 
+            //                 hru_output_from_vector[hru][timestep]->handle_diag_struct, 
+            //                 hru_output_from_vector[hru][timestep]->handle_flux_stat, 
+            //                 hru_output_from_vector[hru][timestep]->handle_flux_struct,
+            //                 hru_output_from_vector[hru][timestep]->handle_indx_stat, 
+            //                 hru_output_from_vector[hru][timestep]->handle_indx_struct, 
+            //                 hru_output_from_vector[hru][timestep]->handle_output_timestep,
+            //                 &err);
+            //         }
+            //     }
+                
+            //     clearOutputPartition(self->state.output_partitions[partition_index.value()]);
+            //     updateSimulationTimestepsRemaining(self->state.output_partitions[partition_index.value()]);
+            //     updateNumTimeForPartition(self->state.output_partitions[partition_index.value()]);                 
+
+            //     // Send all HRUs in the partition the next set of timesteps to compute
+            //     for (auto hru_output_info : self->state.output_partitions[partition_index.value()]->hru_info_and_data) {
+            //         self->send(hru_output_info->hru_actor, num_steps_before_write_v, self->state.output_partitions[partition_index.value()]->num_timesteps);
+            //         self->send(hru_output_info->hru_actor, run_hru_v);
+            //     }
+            // }
+
+            // self->state.file_access_timing.updateEndPoint("write_duration");
+        
+        // },
 
         [=](run_failure, int indxGRU) {
             int listIndex;

@@ -11,6 +11,7 @@ extern "C" {
 
   void initOutputStructure(void* handle_forcFileInfo, int* max_steps, int* numGRU, int* err);
   void deallocateOutputStructure(int* err);
+  void writeOutput(void* handle_ncid, int* num_steps, int* start_gru, int* max_gru, int* err);
   
   // Attributes Files- called inside initalizeFileAccessActor
   void allocateAttributeStructures(int* index_gru, int* index_hru, void* handle_attr_struct, 

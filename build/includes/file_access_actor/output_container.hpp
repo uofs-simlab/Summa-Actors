@@ -72,18 +72,22 @@ struct hru_output_info {
     caf::actor hru_actor;
     int index_hru;
     int index_gru;
-    std::vector<std::shared_ptr<hru_output_handles>> output_data;
+    bool ready_to_write;
 };
 
 
 struct output_partition {
     int start_gru;
-    int num_gru;            // x dimension
-    int num_timesteps;      // y dimension
+    int num_gru;            
+    int num_timesteps;     
     int simulation_timesteps_remaining;
+    int grus_ready_to_write;
     // 2D matrix of output handles
     std::vector<std::shared_ptr<hru_output_info>> hru_info_and_data;
 };
+
+std::optional<int> addReadyToWriteHRU(std::vector<std::shared_ptr<output_partition>>& output_partitions, 
+    caf::actor hru_actor, int gru_index, int hru_index);
 
 // Take an unintialized vector of output partitions and initialize it
 void initArrayOfOuputPartitions(std::vector<std::shared_ptr<output_partition>>& output_partitions, 
@@ -117,7 +121,7 @@ void updateSimulationTimestepsRemaining(std::shared_ptr<output_partition>& outpu
 // the number of timesteps in the output file
 void updateNumTimeForPartition(std::shared_ptr<output_partition> &output_partition);
 
-
+void resetReadyToWrite(std::shared_ptr<output_partition> &output_partition);
 
 
 
