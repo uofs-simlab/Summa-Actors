@@ -35,6 +35,9 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
         
     initalizeFileAccessActor(self);
 
+    if (self->state.file_access_actor_settings.num_partitions_in_output_buffer > num_gru) {
+        self->state.file_access_actor_settings.num_partitions_in_output_buffer = num_gru;
+    }
 
     // Setup output container
     initArrayOfOuputPartitions(self->state.output_partitions,

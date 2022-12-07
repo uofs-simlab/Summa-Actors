@@ -249,37 +249,38 @@ subroutine deallocateOutputStructure(err) bind(C, name="deallocateOutputStructur
 
   err = 0
   ! Time
-  call deallocateData_output(outputStructure(1)%timeStruct(1));    deallocate(outputStructure(1)%timeStruct)
-  ! Forc
-  call deallocateData_output(outputStructure(1)%forcStat(1));       deallocate(outputStructure(1)%forcStat)
-  call deallocateData_output(outputStructure(1)%forcStruct(1));     deallocate(outputStructure(1)%forcStruct)
-  ! prog
-  call deallocateData_output(outputStructure(1)%progStat(1));       deallocate(outputStructure(1)%progStat)
-  call deallocateData_output(outputStructure(1)%progStruct(1));     deallocate(outputStructure(1)%progStruct)
-  ! diag
-  call deallocateData_output(outputStructure(1)%diagStat(1));       deallocate(outputStructure(1)%diagStat)
-  call deallocateData_output(outputStructure(1)%diagStruct(1));     deallocate(outputStructure(1)%diagStruct)
-  ! flux
-  call deallocateData_output(outputStructure(1)%fluxStat(1));       deallocate(outputStructure(1)%fluxStat)
-  call deallocateData_output(outputStructure(1)%fluxStruct(1));     deallocate(outputStructure(1)%fluxStruct)
-  ! indx
-  call deallocateData_output(outputStructure(1)%indxStat(1));       deallocate(outputStructure(1)%indxStat)
-  call deallocateData_output(outputStructure(1)%indxStruct(1));     deallocate(outputStructure(1)%indxStruct)
-  ! bvar
-  call deallocateData_output(outputStructure(1)%bvarStat(1));       deallocate(outputStructure(1)%bvarStat)
-  call deallocateData_output(outputStructure(1)%bvarStruct(1));     deallocate(outputStructure(1)%bvarStruct)
-  ! id
-  call deallocateData_output(outputStructure(1)%idStruct(1));       deallocate(outputStructure(1)%idStruct)
-  ! attr
-  call deallocateData_output(outputStructure(1)%attrStruct(1));     deallocate(outputStructure(1)%attrStruct)
-  ! type
-  call deallocateData_output(outputStructure(1)%typeStruct(1));     deallocate(outputStructure(1)%typeStruct)
-  ! mpar
-  call deallocateData_output(outputStructure(1)%mparStruct(1));     deallocate(outputStructure(1)%mparStruct)
-  ! bpar
-  call deallocateData_output(outputStructure(1)%bparStruct(1));     deallocate(outputStructure(1)%bparStruct)
-  ! finalize stats
-  call deallocateData_output(outputStructure(1)%finalizeStats(1));  deallocate(outputStructure(1)%finalizeStats)
+  deallocate(outputStructure)
+  ! call deallocateData_output(outputStructure(1)%timeStruct(1));    deallocate(outputStructure(1)%timeStruct)
+  ! ! Forc
+  ! call deallocateData_output(outputStructure(1)%forcStat(1));       deallocate(outputStructure(1)%forcStat)
+  ! call deallocateData_output(outputStructure(1)%forcStruct(1));     deallocate(outputStructure(1)%forcStruct)
+  ! ! prog
+  ! call deallocateData_output(outputStructure(1)%progStat(1));       deallocate(outputStructure(1)%progStat)
+  ! call deallocateData_output(outputStructure(1)%progStruct(1));     deallocate(outputStructure(1)%progStruct)
+  ! ! diag
+  ! call deallocateData_output(outputStructure(1)%diagStat(1));       deallocate(outputStructure(1)%diagStat)
+  ! call deallocateData_output(outputStructure(1)%diagStruct(1));     deallocate(outputStructure(1)%diagStruct)
+  ! ! flux
+  ! call deallocateData_output(outputStructure(1)%fluxStat(1));       deallocate(outputStructure(1)%fluxStat)
+  ! call deallocateData_output(outputStructure(1)%fluxStruct(1));     deallocate(outputStructure(1)%fluxStruct)
+  ! ! indx
+  ! call deallocateData_output(outputStructure(1)%indxStat(1));       deallocate(outputStructure(1)%indxStat)
+  ! call deallocateData_output(outputStructure(1)%indxStruct(1));     deallocate(outputStructure(1)%indxStruct)
+  ! ! bvar
+  ! call deallocateData_output(outputStructure(1)%bvarStat(1));       deallocate(outputStructure(1)%bvarStat)
+  ! call deallocateData_output(outputStructure(1)%bvarStruct(1));     deallocate(outputStructure(1)%bvarStruct)
+  ! ! id
+  ! call deallocateData_output(outputStructure(1)%idStruct(1));       deallocate(outputStructure(1)%idStruct)
+  ! ! attr
+  ! call deallocateData_output(outputStructure(1)%attrStruct(1));     deallocate(outputStructure(1)%attrStruct)
+  ! ! type
+  ! call deallocateData_output(outputStructure(1)%typeStruct(1));     deallocate(outputStructure(1)%typeStruct)
+  ! ! mpar
+  ! call deallocateData_output(outputStructure(1)%mparStruct(1));     deallocate(outputStructure(1)%mparStruct)
+  ! ! bpar
+  ! call deallocateData_output(outputStructure(1)%bparStruct(1));     deallocate(outputStructure(1)%bparStruct)
+  ! ! finalize stats
+  ! call deallocateData_output(outputStructure(1)%finalizeStats(1));  deallocate(outputStructure(1)%finalizeStats)
 
 end subroutine deallocateOutputStructure
 
