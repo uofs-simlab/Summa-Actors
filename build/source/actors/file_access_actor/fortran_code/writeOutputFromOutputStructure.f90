@@ -323,7 +323,8 @@ subroutine writeData(ncid,outputTimestep,outputTimestepUpdate,maxLayers,nSteps, 
           stepCounter = stepCounter+1
           timeVec(stepCounter) = outputStructure(1)%forcStruct(1)%gru(verifiedGRUIndex)%hru(1)%var(iVar)%tim(iStep)
         end do ! iStep
-
+        print*, "stepCounter", stepCounter
+        print*, "outputTimestep(iFreq)", outputTimestep(iFreq)
         err = nf90_put_var(ncid%var(iFreq),ncVarID,timeVec(1:stepCounter),start=(/outputTimestep(iFreq)/),count=(/stepCounter/))
         call netcdf_err(err,message); if (err/=0)then; print*, "err"; return; endif
         ! save the value of the number of steps to update outputTimestep at the end of the function

@@ -281,10 +281,18 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
     initOutputStructure(self->state.handle_forcing_file_info, 
         &self->state.file_access_actor_settings.num_timesteps_in_output_buffer, 
         &self->state.num_gru, &self->state.err);
-
     if (self->state.err == 1) {
         aout(self) << "ERROR: Init_OutputStruct\n";
         std::string function = "Init_OutputStruct";
+        self->send(self->state.parent, file_access_actor_err_v, function);
+        self->quit();
+        return;
+    }
+
+    initOutputTimeStep(&self->state.num_gru, &self->state.err);
+    if (self->state.err == 1) {
+        aout(self) << "ERROR: Init_OutputTimeStep\n";
+        std::string function = "Init_OutputTimeStep";
         self->send(self->state.parent, file_access_actor_err_v, function);
         self->quit();
         return;

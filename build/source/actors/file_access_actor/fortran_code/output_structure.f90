@@ -3,6 +3,7 @@ module output_structure_module
   USE data_types,only:summa_output_type
   USE, intrinsic :: iso_c_binding
   implicit none
+  public::initOutputTimeStep
   public::initOutputStructure
   public::deallocateOutputStructure
   public::deallocateData_output
@@ -11,7 +12,26 @@ module output_structure_module
   type(summa_output_type),allocatable,save,public :: outputStructure(:) ! summa_OutputStructure(iFile)%struc%var(:)%dat(nTimeSteps) 
   
   contains
-  
+
+subroutine initOutputTimeStep(num_gru, err) bind(C, name="initOutputTimeStep") 
+  USE globalData,only:outputTimeStep
+  USE var_lookup,only:maxvarFreq                ! maximum number of output files
+  implicit none
+  integer(c_int), intent(in)  :: num_gru
+  integer(c_int), intent(out) :: err
+  ! local variables
+  integer(i4b)                :: iGRU
+
+  ! initalize outputTimeStep - keeps track of the step the GRU is writing for
+  if (.not.allocated(outputTimeStep))then
+    allocate(outputTimeStep(num_gru))
+    do iGRU = 1, num_gru
+      allocate(outputTimeStep(iGRU)%dat(maxVarFreq))
+      outputTimeStep(iGRU)%dat(:) = 1
+    end do
+  end if
+
+end subroutine initOutputTimeStep
 
 subroutine initOutputStructure(handle_forcFileInfo, maxSteps, num_gru, err) bind(C, name="initOutputStructure")
   USE globalData,only:time_meta,forc_meta,attr_meta,type_meta ! metadata structures

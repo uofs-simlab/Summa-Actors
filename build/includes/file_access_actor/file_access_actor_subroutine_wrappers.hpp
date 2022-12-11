@@ -9,10 +9,12 @@ extern "C" {
   void initFailedHRUTracker(int* numGRU);
   void def_output(void* handle_ncid, int* startGRU, int* numGRU, int* numHRU, int* err);
 
+  // OutputStructure and Output functions
   void initOutputStructure(void* handle_forcFileInfo, int* max_steps, int* numGRU, int* err);
   void deallocateOutputStructure(int* err);
   void writeOutput(void* handle_ncid, int* num_steps, int* start_gru, int* max_gru, int* err);
-  
+  void initOutputTimeStep(int* num_gru, int* err);
+
   // Attributes Files- called inside initalizeFileAccessActor
   void allocateAttributeStructures(int* index_gru, int* index_hru, void* handle_attr_struct, 
       void* handle_type_struct, void* handle_id_struct, int* err);

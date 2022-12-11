@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 
-set(PARENT_DIR /Summa-Actors)
-set(EXEC_DIR ${PARENT_DIR}/bin)
+set(PARENT_DIR ../../)
+set(EXEC_DIR ${PARENT_DIR}../bin)
 
 set(EXEC_NAME summa_actors)
 
@@ -279,12 +279,12 @@ add_executable(${EXEC_NAME}
         ${CAF_INCLUDES}
         ${netCDF_INCLUDES}
         ${LAPACK_INCLUDES}
-        "/Summa-Actors/build/includes/global"
-        "/Summa-Actors/build/includes/summa_actor"
-        "/Summa-Actors/build/includes/gru_actor"
-        "/Summa-Actors/build/includes/job_actor"
-        "/Summa-Actors/build/includes/file_access_actor"
-        "/Summa-Actors/build/includes/hru_actor")
+        "${PARENT_DIR}/build/includes/global"
+        "${PARENT_DIR}/build/includes/summa_actor"
+        "${PARENT_DIR}/build/includes/gru_actor"
+        "${PARENT_DIR}/build/includes/job_actor"
+        "${PARENT_DIR}/build/includes/file_access_actor"
+        "${PARENT_DIR}/build/includes/hru_actor")
     target_link_libraries( ${EXEC_NAME}
        ${CAF_LIBRARIES}
        ${netCDF_LIBRARIES}
