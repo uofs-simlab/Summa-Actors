@@ -232,9 +232,11 @@ add_library(SUMMA_COMM OBJECT
         -g -O3 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors)
     target_include_directories(SUMMA_COMM PRIVATE
         "/usr/include"
+        "$ENV{EBROOTNETCDFMINFORTRAN}/include"
         ${netCDF_INCLUDES}
         ${LAPACK_INCLUDES})
     target_link_libraries(SUMMA_COMM PUBLIC
+        "$ENV{EBROOTNETCDFMINFORTRAN}/lib64"
         ${netCDF_LIBRARIES}
         ${LAPACK_LIBRARIES}
         SUMMA_NOAHMP)
@@ -249,9 +251,11 @@ target_compile_options(summa PRIVATE
         -g -O3 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors)
 target_include_directories(summa PUBLIC
         "/usr/include"
+        "$ENV{EBROOTNETCDFMINFORTRAN}/include"
         ${netCDF_INCLUDES}
         ${LAPACK_INCLUDES})
 target_link_libraries(summa PUBLIC
+        "$ENV{EBROOTNETCDFMINFORTRAN}/lib64"
         ${netCDF_LIBRARIES}
         ${LAPACK_LIBRARIES}
         SUMMA_COMM

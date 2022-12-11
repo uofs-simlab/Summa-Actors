@@ -121,7 +121,6 @@ subroutine writeParm(ncid,ispatial,struct,meta,err,message)
         class is (var_d)
           err = nf90_put_var(ncid%var(iLookFreq%timestep),meta(iVar)%ncVarID(iLookFreq%timestep),(/struct%var(iVar)/),start=(/iSpatial/),count=(/1/))
         class is (var_dlength)
-          print*, "Param size", size(struct%var(iVar)%dat)
           err = nf90_put_var(ncid%var(iLookFreq%timestep),meta(iVar)%ncVarID(iLookFreq%timestep),(/struct%var(iVar)%dat/),start=(/iSpatial,1/),count=(/1,size(struct%var(iVar)%dat)/))
         class default; err=20; message=trim(message)//'unknown variable type (with HRU)'; return
       end select
