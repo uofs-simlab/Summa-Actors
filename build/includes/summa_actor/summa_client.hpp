@@ -30,6 +30,7 @@ struct summa_client_state {
     std::vector<std::tuple<caf::actor, std::string>> backup_servers_list;
 
     Batch current_batch;
+    bool saved_batch = false;
 
     Summa_Actor_Settings summa_actor_settings;
     File_Access_Actor_Settings file_access_actor_settings;

@@ -54,7 +54,8 @@ behavior summa_server(stateful_actor<summa_server_state>* self) {
             std::optional<Client> client = self->state.client_container.getClient(client_actor.address());
             if (client.has_value()) {
                 aout(self) << "Client is already connected\n";
-                aout(self) << "Checking if client has batch\n";
+                aout(self) << "Updating " << hostname << " with current backup servers\n";
+                self->send(client.value().getActor(), update_backup_server_list_v, self->state.backup_servers_list);
                 std::optional<Batch> batch = client.value().getBatch();
                 if (batch.has_value()) {
                     return;
@@ -94,7 +95,16 @@ behavior summa_server(stateful_actor<summa_server_state>* self) {
         [=](connect_as_backup, actor backup_server, std::string hostname) {
             aout(self) << "Received Connection Request From a backup server " << hostname <<  "\n";
             self->monitor(backup_server);
-            self->state.backup_servers_list.push_back(std::make_tuple(backup_server, hostname));
+            // Check if the backup server is already connected
+            auto backup_server_iterator = find(self->state.backup_servers_list.begin(), self->state.backup_servers_list.end(), std::make_tuple(backup_server, hostname));
+
+            if (backup_server_iterator != self->state.backup_servers_list.end()) {
+                aout(self) << "Backup Server is already connected\n";
+            } else {
+                aout(self) << "Adding Backup Server to list\n";
+                self->state.backup_servers_list.push_back(std::make_tuple(backup_server, hostname));
+            }
+            
             self->send(backup_server, connect_as_backup_v); // confirm connection with sender
             // Now we need to send the backup actor our current state
             self->send(backup_server, update_with_current_state_v, self->state.batch_container, self->state.client_container);

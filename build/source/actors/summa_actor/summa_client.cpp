@@ -32,7 +32,7 @@ behavior summa_client_init(stateful_actor<summa_client_state>* self) {
 
  
 behavior summa_client(stateful_actor<summa_client_state>* self) {
-    
+
     self->state.running = true;
     self->send(self->state.current_server_actor, connect_to_server_v, self, self->state.hostname);
     return {
@@ -66,6 +66,10 @@ behavior summa_client(stateful_actor<summa_client_state>* self) {
                     if(actor_cast<actor>(server) == server_actor ) {
                         aout(self) << "Found Match\n";
                         self->state.current_server = server;
+                        if (self->state.saved_batch) {
+                            self->state.saved_batch = false;
+                            self->send(self->state.current_server_actor, done_batch_v, self, self->state.current_batch);
+                        }
                     }
                 }
                 self->state.servers.clear();
@@ -110,10 +114,10 @@ behavior summa_client(stateful_actor<summa_client_state>* self) {
             self->state.current_batch.updateWriteTime(write_time);
 
             if(self->state.current_server == nullptr) {
-                aout(self) << "Maybe We Should not Send this\n";
+                aout(self) << "Saving batch until we find a new lead server\n";
+                self->state.saved_batch = true;
             } else {
                 self->send(self->state.current_server_actor, done_batch_v, self, self->state.current_batch);
-
             }
         },
 

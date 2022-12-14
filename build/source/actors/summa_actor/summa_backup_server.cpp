@@ -116,6 +116,7 @@ behavior summa_backup_server(stateful_actor<summa_server_state>* self, const act
         // We have a new backup server that was added to the server
         [=](update_backup_server_list, std::vector<std::tuple<caf::actor, std::string>> backup_servers) {
             aout(self) << "Received the backup server list from the lead server\n";
+            aout(self) << "Backup Server List = " << backup_servers << std::endl;
             self->state.backup_servers_list = backup_servers;
         },
         
