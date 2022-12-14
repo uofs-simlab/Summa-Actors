@@ -32,6 +32,7 @@ behavior summa_client_init(stateful_actor<summa_client_state>* self) {
 
  
 behavior summa_client(stateful_actor<summa_client_state>* self) {
+    
     self->state.running = true;
     self->send(self->state.current_server_actor, connect_to_server_v, self, self->state.hostname);
     return {

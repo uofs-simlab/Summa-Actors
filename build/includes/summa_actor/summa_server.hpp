@@ -69,7 +69,16 @@ void checkForIdleClients(stateful_actor<summa_server_state>* self);
 
 void notifyBackupServersOfRemovedClient(stateful_actor<summa_server_state>* self, Client client);
 
+// Finds the batch the lost client was working on and reassigns it to another client if available
+// If no client is available then the batch is added back to the list to be reassigned later
+void resolveLostClient(stateful_actor<summa_server_state>* self, Client client);
+
+// Removes the backup server from the list of backup servers
+// All connected actors are then notified of the change
+void resolveLostBackupServer(stateful_actor<summa_server_state>* self, const down_msg& dm);
+
 // Convience function to keep code clean - just does what you think it does
 void printRemainingBatches(stateful_actor<summa_server_state>* self);
+
 
 } // namespace caf

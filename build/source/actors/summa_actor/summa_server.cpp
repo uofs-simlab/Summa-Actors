@@ -11,17 +11,9 @@ behavior summa_server_init(stateful_actor<summa_server_state>* self, Distributed
         aout(self) << "Lost Connection With A Connected Actor\n";
         std::optional<Client> client = self->state.client_container.getClient(dm.source);
         if (client.has_value()) {
-            aout(self) << "Lost Client: " << client.value().getHostname() << "\n";
-            std::optional<Batch> batch = client.value().getBatch();
-            self->state.batch_container.setBatchUnassigned(batch.value());
-            self->state.client_container.removeClient(client.value());
-            notifyBackupServersOfRemovedClient(self, client.value());
-            checkForIdleClients(self);
-
+            resolveLostClient(self, client.value());
         } else {
-            aout(self) << "Lost Backup Server\n";
-            findAndRemoveLostBackupServer(self, dm.source);
-            sendAllBackupServersList(self);
+            resolveLostBackupServer(self, dm);
         }
     });
     
@@ -46,7 +38,7 @@ behavior summa_server_init(stateful_actor<summa_server_state>* self, Distributed
 }
 
 behavior summa_server(stateful_actor<summa_server_state>* self) {
-
+    self->state.current_server_actor = self;
     aout(self) << "Server is Running \n";
 
     return {
@@ -225,6 +217,8 @@ void checkForIdleClients(stateful_actor<summa_server_state>* self) {
                 self->send(backup_server_actor, new_assigned_batch_v, client.value().getActor(), new_batch.value());
             }
         }
+    } else {
+        aout(self) << "No idle clients found, batch will be added to the back of the list\n";
     }
 }
 
@@ -235,4 +229,19 @@ void notifyBackupServersOfRemovedClient(stateful_actor<summa_server_state>* self
     }
 }
 
+void resolveLostClient(stateful_actor<summa_server_state>* self, Client client) {
+    aout(self) << "Lost Client: " << client.getHostname() << "\n";
+    std::optional<Batch> batch = client.getBatch();
+    self->state.batch_container.setBatchUnassigned(batch.value());
+    self->state.client_container.removeClient(client);
+    notifyBackupServersOfRemovedClient(self, client);
+    checkForIdleClients(self);
+}
+
+void resolveLostBackupServer(stateful_actor<summa_server_state>* self, const down_msg& dm) {
+    aout(self) << "Lost Backup Server\n";
+    findAndRemoveLostBackupServer(self, dm.source);
+    sendAllBackupServersList(self);
+}
+ 
 } // end namespace
