@@ -27,6 +27,7 @@ behavior summa_backup_server_init(stateful_actor<summa_server_state>* self, Dist
 
     self->set_down_handler([=](const down_msg& dm){
         if (self->state.current_server_actor == self) {
+            aout(self) << "\n ******DOWN HANDLER CALLED******\n";
             aout(self) << "Lost Connection With A Connected Actor\n";
             std::optional<Client> client = self->state.client_container.getClient(dm.source);
             if (client.has_value()) {
@@ -93,7 +94,7 @@ void connecting_backup(stateful_actor<summa_server_state>* self, const std::stri
 
 
 behavior summa_backup_server(stateful_actor<summa_server_state>* self, const actor& server_actor) {
-    aout(self) << "summa backup server has started\n";
+    aout(self) << "\nsumma backup server has started\n";
     self->send(server_actor, connect_as_backup_v, self, self->state.hostname);
 
     return {
@@ -103,52 +104,52 @@ behavior summa_backup_server(stateful_actor<summa_server_state>* self, const act
         },
 
         [=](connect_as_backup) {
-            aout(self) << "We are now connected to the lead server\n";
+            aout(self) << "\nWe are now connected to the lead server\n";
         },
 
         // get the list of batches and clients from the lead server
         [=](update_with_current_state, Batch_Container& batch_container, Client_Container& client_container) {
-            aout(self) << "Received the containers from the lead server\n";
+            aout(self) << "\nReceived the containers from the lead server\n";
             self->state.batch_container = batch_container;
             self->state.client_container = client_container;
         },
 
         // We have a new backup server that was added to the server
         [=](update_backup_server_list, std::vector<std::tuple<caf::actor, std::string>> backup_servers) {
-            aout(self) << "Received the backup server list from the lead server\n";
+            aout(self) << "\nReceived the backup server list from the lead server\n";
             aout(self) << "Backup Server List = " << backup_servers << std::endl;
             self->state.backup_servers_list = backup_servers;
         },
         
         // New Client has been received
         [=](new_client, caf::actor client_actor, std::string hostname) {
-            aout(self) << "Received a new client from the lead server\n";
+            aout(self) << "\nReceived a new client from the lead server\n";
             self->monitor(client_actor);
             self->state.client_container.addClient(client_actor, hostname);
         },
 
         // Lead server had client removed
         [=](client_removed, Client& client) {
-            aout(self) << "Received a client removed message from the lead server\n";
+            aout(self) << "\nReceived a client removed message from the lead server\n";
             self->state.client_container.removeClient(client);
         },
 
         // Client finished a batch and the lead server has sent an update
         [=](done_batch, actor client_actor, Batch& batch) {
-            aout(self) << "Batch: " << batch.getBatchID() << " is done\n";
+            aout(self) << "\nBatch: " << batch.getBatchID() << " is done\n";
             self->state.batch_container.updateBatch_success(batch);
         },
 
         // Client has been assigned new batch by the lead server
         [=](new_assigned_batch, actor client_actor, Batch& batch) {
-            aout(self) << "New Batch: " << batch.getBatchID() << " has been assigned\n";
+            aout(self) << "\nNew Batch: " << batch.getBatchID() << " has been assigned\n";
             self->state.batch_container.setBatchAssigned(batch);
             self->state.client_container.setBatchForClient(client_actor, batch);
         },
 
         // Lead server has no more batches to distribute
         [=](no_more_batches, actor client_actor) {
-            aout(self) << "No more batches to distribute\n";
+            aout(self) << "\nNo more batches to distribute\n";
             self->state.client_container.setBatchForClient(client_actor, {});
         },
 

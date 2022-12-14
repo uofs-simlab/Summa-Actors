@@ -8,6 +8,7 @@ behavior summa_server_init(stateful_actor<summa_server_state>* self, Distributed
 
     aout(self) << "Summa Server has Started \n";
     self->set_down_handler([=](const down_msg& dm) {
+        aout(self) << "\n\n ********** DOWN HANDLER ********** \n";
         aout(self) << "Lost Connection With A Connected Actor\n";
         std::optional<Client> client = self->state.client_container.getClient(dm.source);
         if (client.has_value()) {
@@ -49,7 +50,7 @@ behavior summa_server(stateful_actor<summa_server_state>* self) {
 
         // A message from a client requesting to connect
         [=](connect_to_server, actor client_actor, std::string hostname) {
-            aout(self) << "Actor trying to connect with hostname " << hostname << "\n";
+            aout(self) << "\nActor trying to connect with hostname " << hostname << "\n";
             // Check if the client is already connected
             std::optional<Client> client = self->state.client_container.getClient(client_actor.address());
             if (client.has_value()) {
@@ -93,7 +94,7 @@ behavior summa_server(stateful_actor<summa_server_state>* self) {
         },
 
         [=](connect_as_backup, actor backup_server, std::string hostname) {
-            aout(self) << "Received Connection Request From a backup server " << hostname <<  "\n";
+            aout(self) << "\nReceived Connection Request From a backup server " << hostname <<  "\n";
             self->monitor(backup_server);
             // Check if the backup server is already connected
             auto backup_server_iterator = find(self->state.backup_servers_list.begin(), self->state.backup_servers_list.end(), std::make_tuple(backup_server, hostname));
@@ -104,7 +105,7 @@ behavior summa_server(stateful_actor<summa_server_state>* self) {
                 aout(self) << "Adding Backup Server to list\n";
                 self->state.backup_servers_list.push_back(std::make_tuple(backup_server, hostname));
             }
-            
+
             self->send(backup_server, connect_as_backup_v); // confirm connection with sender
             // Now we need to send the backup actor our current state
             self->send(backup_server, update_with_current_state_v, self->state.batch_container, self->state.client_container);
@@ -112,7 +113,7 @@ behavior summa_server(stateful_actor<summa_server_state>* self) {
         }, 
 
         [=](done_batch, actor client_actor, Batch& batch) {
-            aout(self) << "Received Completed Batch From Client\n";
+            aout(self) << "\nReceived Completed Batch From Client\n";
             aout(self) << batch.toString() << "\n\n";\
             Client client = self->state.client_container.getClient(client_actor.address()).value();
 
