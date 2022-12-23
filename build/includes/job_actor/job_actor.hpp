@@ -20,7 +20,7 @@ struct job_state {
 
     // Variables for GRU monitoring
     int dt_init_start_factor = 1;   // Initial Factor for dt_init (coupled_em)
-    int max_run_attempts = 3;         // Max number of attemtps to solve a GRU
+    int max_run_attempts = 1;         // Max number of attemtps to solve a GRU
     std::vector<GRUinfo*> gru_list;  // List of all GRUs under this job actor
     int num_gru_done = 0;             // The number of GRUs that have completed
     int gru_init = 0;                // Number of GRUs initalized 

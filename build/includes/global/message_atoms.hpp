@@ -6,6 +6,20 @@
 #include "client/client_container.hpp"
 #include <vector>
 #include "settings_functions.hpp"
+#include "caf/all.hpp"
+
+enum class hru_error : uint8_t {
+    run_physics_unhandleable = 1,
+    run_physics_infeasible_state = 2,
+};
+
+std::string to_string(hru_error err);
+bool from_string(caf::string_view in, hru_error& out);
+bool from_integer(uint8_t in, hru_error& out);
+template<class Inspector>
+bool inspect(Inspector& f, hru_error& x) {
+    return caf::default_enum_inspect(f, x);
+}
 
 CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     // Sender: job_actor 
@@ -187,5 +201,10 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
 
     CAF_ADD_TYPE_ID(summa, (std::optional<caf::strong_actor_ptr>))
 
+    // error types
+    CAF_ADD_TYPE_ID(summa, (hru_error))
+
 
 CAF_END_TYPE_ID_BLOCK(summa)
+
+CAF_ERROR_CODE_ENUM(hru_error)

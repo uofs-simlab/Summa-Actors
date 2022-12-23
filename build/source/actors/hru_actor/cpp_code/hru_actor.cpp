@@ -139,6 +139,11 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
                     aout(self) << "Error: HRU_Actor - Run_HRU - HRU = " << self->state.indxHRU << 
                         " - indxGRU = " << self->state.indxGRU << " - refGRU = "<< self->state.refGRU << std::endl;
                     aout(self) << "Error = " << err << "\n";
+
+                    self->send(self->state.parent, run_failure_v, self, self->state.indxGRU, err);
+                    // self->quit(hru_error::run_hru_unhandleable);
+                    // caf::exit_reason
+                    // self->down_msg(hru_error::run_physics_unhandleable);
                     self->quit();
                 }
 
@@ -375,6 +380,7 @@ int Run_HRU(stateful_actor<hru_state>* self) {
 
     return 0;      
 }
+
 
 void printOutput(stateful_actor<hru_state>* self) {
         aout(self) << self->state.refGRU << " - Timestep = " << self->state.timestep << std::endl;

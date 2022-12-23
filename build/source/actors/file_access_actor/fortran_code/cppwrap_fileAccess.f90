@@ -10,14 +10,15 @@ module cppwrap_fileAccess
 
 
   implicit none
+  public::read_pinit_C
+  public::read_vegitationTables
+  public::FileAccessActor_DeallocateStructures
   public::initFailedHRUTracker
   
   contains
 
 
-! Read in the inital parameters, from the txt files that are give to summa as input
-! LocalParamInfo.txt
-! BasinParamInfo.txt
+! Read in the inital parameters, from the txt files that are give to summa as input LocalParamInfo.txt BasinParamInfo.txt
 subroutine read_pinit_C(err) bind(C, name='read_pinit_C')
   USE globalData,only:localParFallback                        ! local column default parameters
   USE globalData,only:basinParFallback                        ! basin-average default parameters

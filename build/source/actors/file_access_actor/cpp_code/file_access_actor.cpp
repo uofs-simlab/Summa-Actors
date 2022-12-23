@@ -15,7 +15,7 @@ namespace caf {
 behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gru, int num_gru, 
     File_Access_Actor_Settings file_access_actor_settings, actor parent) {
     aout(self) << "\n----------File_Access_Actor Started----------\n";
-
+    
     // Set Up timing Info we wish to track
     self->state.file_access_timing = TimingInfo();
     self->state.file_access_timing.addTimePoint("read_duration");

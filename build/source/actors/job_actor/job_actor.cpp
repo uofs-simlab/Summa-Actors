@@ -18,6 +18,22 @@ behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru,
     File_Access_Actor_Settings file_access_actor_settings, Job_Actor_Settings job_actor_settings, 
     HRU_Actor_Settings hru_actor_settings, caf::actor parent) {
 
+    self->set_down_handler([=](const down_msg& dm) {
+        aout(self) << "\n\n ********** DOWN HANDLER ********** \n";
+        aout(self) << "Lost Connection With A Connected Actor\n";
+        aout(self) << "Reason: " << to_string(dm.reason) << "\n";
+    });
+
+    self->set_error_handler([=](const error& err) {
+        aout(self) << "\n\n ********** ERROR HANDLER ********** \n";
+        aout(self) << "Error: " << to_string(err) << "\n";
+    });
+
+    self->set_exit_handler([=](const exit_msg& em) {
+        aout(self) << "\n\n ********** EXIT HANDLER ********** \n";
+        aout(self) << "Exit Reason: " << to_string(em.reason) << "\n";
+    });
+
     // Timing Information
     self->state.job_timing = TimingInfo();
     self->state.job_timing.addTimePoint("total_duration");
@@ -118,20 +134,21 @@ behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru,
         },
 
         [=](run_failure, caf::actor actorRef, int indx_gru, int err) {
+            
             aout(self) << "GRU:" << self->state.gru_list[indx_gru - 1]->getRefGRU()
                 << "indx_gru = " << indx_gru << "Failed \n"
                 << "Will have to wait until all GRUs are done before it can be re-tried\n";
             
             self->state.num_gru_failed++;
-            self->state.num_gru_done++;
             self->state.gru_list[indx_gru - 1]->updateFailed();
 
             // Let the file_access_actor know this actor failed
             self->send(self->state.file_access_actor, run_failure_v, indx_gru);
 
             // check if we are the last hru to complete
-            if (self->state.num_gru_done >= self->state.num_gru) {
-                restartFailures(self);
+            if (self->state.num_gru_done + self->state.num_gru_failed >= self->state.num_gru) {
+                // restartFailures(self);
+                self->quit();
             }
         },
 
@@ -244,6 +261,8 @@ void restartFailures(stateful_actor<job_state>* self) {
     self->state.num_gru = self->state.num_gru_failed;
     self->state.num_gru_failed = 0;
     self->state.num_gru_done = 0;
+
+
     for(auto gru : self->state.gru_list) {
         if (gru->isFailed() && !gru->isMaxAttemptsReached()) {
             gru->updateFailed();
@@ -254,6 +273,13 @@ void restartFailures(stateful_actor<job_state>* self) {
             gru->updateGRU(newGRU);
             gru->updateCurrentAttempt();
             self->send(gru->getActor(), dt_init_factor_v, gru->getDt_init());
+        } else {
+            // Max attempts reached, so we are done with this GRU
+            self->state.gru_list[gru->getIndxGRU() - 1]->doneRun(-1, -1, -1, -1, -1);
+            if (self->state.job_actor_settings.output_csv) {
+                self->state.gru_list[gru->getIndxGRU() - 1]->writeSuccess(self->state.success_output_file, self->state.hostname);            
+            }
+            self->state.num_gru_done++;
         }
     }
 }
