@@ -9,7 +9,7 @@ SET (CMAKE_Fortran_COMPILER  gfortran)
 include(FortranCInterface)
 FortranCInterface_VERIFY(CXX)
 
-option(SUNDIALS "Use SUNDIALS" OFF)
+option(SUNDIALS "Use SUNDIALS" ON)
 
 if (SUNDIALS)
     set(ACTORS_DIR ${PARENT_DIR}/build/source/actors)
@@ -243,11 +243,11 @@ if (SUNDIALS)
         ${NOAHMP}
         ${NRUTIL})
         target_compile_options(SUMMA_NOAHMP PRIVATE
-            -g -O3 -ffree-form -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors)
+            -g -O0 -ffree-form -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors)
     add_library(SUMMA_COMM OBJECT
         ${COMM_ALL})
         target_compile_options(SUMMA_COMM PRIVATE
-            -g -O3 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors)
+            -g -O0 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors)
         target_include_directories(SUMMA_COMM PRIVATE
             "/usr/include"
             # "$ENV{EBROOTNETCDFMINFORTRAN}/include"
@@ -273,7 +273,7 @@ if (SUNDIALS)
     add_library(summa SHARED
         ${SUMMA_ALL})
     target_compile_options(summa PRIVATE
-            -g -O3 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors)
+            -g -O0 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors)
     target_include_directories(summa PUBLIC
             "/usr/include"
             "${DIR_SUNDIALS}/include"
@@ -294,7 +294,7 @@ if (SUNDIALS)
             SUMMA_NOAHMP
             -lnetcdff)
 
-    set(CMAKE_CXX_FLAGS "-g -O3 -Wfatal-errors -std=c++17")
+    set(CMAKE_CXX_FLAGS "-g -O0 -Wfatal-errors -std=c++17")
 
 
 
