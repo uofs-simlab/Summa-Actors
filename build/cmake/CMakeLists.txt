@@ -94,7 +94,6 @@ if (SUNDIALS)
         ${SUMMA_ENGINE_DIR}/systemSolvSundials.f90
         ${SUMMA_ENGINE_DIR}/varSubstep.f90
         ${SUMMA_ENGINE_DIR}/varSubstepSundials.f90
-        ${SUMMA_ENGINE_DIR}/varSubstep.f90
         ${SUMMA_ENGINE_DIR}/opSplittin.f90
         ${ENGINE_DIR}/sundials/coupled_em.f90)
     
