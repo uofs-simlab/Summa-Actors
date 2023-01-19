@@ -135,7 +135,6 @@ subroutine coupled_em(&
   USE tempAdjust_module,only:tempAdjust      ! adjust snow temperature associated with new snowfall
   USE snwDensify_module,only:snwDensify      ! snow densification (compaction and cavitation)
   USE var_derive_module,only:calcHeight      ! module to calculate height at layer interfaces and layer mid-point
-  USE computSnowDepth_module,only:computSnowDepth
   ! look-up values for the numerical method
   implicit none
   ! model control
@@ -230,9 +229,6 @@ subroutine coupled_em(&
   logical(lgt), parameter              :: printBalance=.false.   ! flag to print the balance checks
   real(dp), allocatable                :: liqSnowInit(:)         ! volumetric liquid water conetnt of snow at the start of the time step
   real(dp), allocatable                :: liqSoilInit(:)         ! soil moisture at the start of the time step
-  ! sundials addition
-  logical(lgt)                         :: sundials=.false.
-  logical(lgt)                         :: tooMuchSublim          ! flag to denote that there was too much sublimation in a given time step
 
   
   ! ----------------------------------------------------------------------------------------------------------------------------------------------
@@ -937,208 +933,121 @@ subroutine coupled_em(&
 
     end if  ! (if computing the vegetation flux)
 
-    !********** SUNDIALS ADDITION *****************
-    if (sundials) then
-      call computSnowDepth(&
-                      dt_sub,                                       & ! intent(in)
-                      nSnow,                                        & ! intent(in)
-                      scalarSnowSublimation,                        & ! intent(in)
-                      mLayerVolFracLiq,                             & ! intent(inout)
-                      mLayerVolFracIce,                             & ! intent(inout)
-                      prog_data%var(iLookPROG%mLayerTemp)%dat,      & ! intent(in)
-                      diag_data%var(iLookDIAG%mLayerMeltFreeze)%dat,& ! intent(in)
-                      mpar_data,                                    & ! intent(in)
-                      ! output
-                      tooMuchSublim,                                & ! intent(out): flag to denote that there was too much sublimation in a given time step
-                      mLayerDepth,                                  & ! intent(inout)
-                      ! error control
-                      err,message)                                    ! intent(out):   error control
-      if(err/=0)then
-        err=55
-        print*, "computSnowDepth", message
-        return
-      end if
+    ! * compute change in ice content of the top snow layer due to sublimation...
+    ! ---------------------------------------------------------------------------
+    ! NOTE: this is done BEFORE densification
+    if(nSnow > 0)then ! snow layers exist
 
-      ! process the flag for too much sublimation
-      if(tooMuchSublim)then
+      ! try to remove ice from the top layer
+      iSnow=1
+
+      ! save the mass of liquid water (kg m-2)
+      massLiquid = mLayerDepth(iSnow)*mLayerVolFracLiq(iSnow)*iden_water
+
+      ! add/remove the depth of snow gained/lost by frost/sublimation (m)
+      ! NOTE: assume constant density
+      mLayerDepth(iSnow) = mLayerDepth(iSnow) + dt_sub*scalarSnowSublimation/(mLayerVolFracIce(iSnow)*iden_ice)
+
+      ! check that we did not remove the entire layer
+      if(mLayerDepth(iSnow) < verySmall)then
         stepFailure  = .true.
         doLayerMerge = .true.
+        dt_sub      = max(dtSave/2._dp, minstep)
+        cycle substeps
       else
+        stepFailure  = .false.
         doLayerMerge = .false.
       endif
 
-      ! handle special case of the step failure
-      ! NOTE: need to revert back to the previous state vector that we were happy with and reduce the time step
-      if(stepFailure)then
-        ! halve step
-        dt_sub = dtSave/2._rkind
-        ! check that the step is not tiny
-        if(dt_sub < minstep)then
-          print*,ixSolution
-          print*, 'dtSave, dt_sub', dtSave, dt_sub
-          message=trim(message)//'length of the coupled step is below the minimum step length'
-          err=20
-          return
-        endif
-        
-        ! try again
-        cycle substeps
-      endif
+      ! update the volumetric fraction of liquid water
+      mLayerVolFracLiq(iSnow) = massLiquid / (mLayerDepth(iSnow)*iden_water)
 
-      ! end associate sublime
+    ! no snow
+    else
 
-      ! update coordinate variables
-      call calcHeight(&
-          ! input/output: data structures
-          indx_data,   & ! intent(in): layer type
-          prog_data,   & ! intent(inout): model variables for a local HRU
-          ! output: error control
-          err,cmessage)
-      if(err/=0)then
-        err=20
-        message=trim(message)//trim(cmessage)
-        return
+      ! no snow: check that sublimation is zero
+      if(abs(scalarSnowSublimation) > verySmall)then
+        message=trim(message)//'sublimation of snow has been computed when no snow exists'
+        print*, message
+        err=20; return
       end if
-    
-      ! recompute snow depth and SWE
-      if(nSnow > 0)then
-        prog_data%var(iLookPROG%scalarSnowDepth)%dat(1) = sum(  prog_data%var(iLookPROG%mLayerDepth)%dat(1:nSnow))
-        prog_data%var(iLookPROG%scalarSWE)%dat(1)       = sum( (prog_data%var(iLookPROG%mLayerVolFracLiq)%dat(1:nSnow)*iden_water + &
-                                                            prog_data%var(iLookPROG%mLayerVolFracIce)%dat(1:nSnow)*iden_ice) &
-                                                          * prog_data%var(iLookPROG%mLayerDepth)%dat(1:nSnow) )
-      end if
-  
-      ! increment fluxes
-      dt_wght = dt_sub/data_step ! define weight applied to each sub-step
-      do iVar=1,size(averageFlux_meta)
-        flux_mean%var(iVar)%dat(:) = flux_mean%var(iVar)%dat(:) + flux_data%var(averageFlux_meta(iVar)%ixParent)%dat(:)*dt_wght
-      end do
-  
-      ! increment change in storage associated with the surface melt pond (kg m-2)
-      if(nSnow==0) sfcMeltPond = sfcMeltPond + prog_data%var(iLookPROG%scalarSfcMeltPond)%dat(1)
-  
-      ! increment soil compression (kg m-2)
-      totalSoilCompress = totalSoilCompress + diag_data%var(iLookDIAG%scalarSoilCompress)%dat(1) ! total soil compression over whole layer (kg m-2)
-      !********** END SUNDIALS ADDITION *****************
-    else ! Non - Sundials version
-      ! * compute change in ice content of the top snow layer due to sublimation...
-      ! ---------------------------------------------------------------------------
-      ! NOTE: this is done BEFORE densification
-      if(nSnow > 0)then ! snow layers exist
 
-        ! try to remove ice from the top layer
-        iSnow=1
-  
-        ! save the mass of liquid water (kg m-2)
-        massLiquid = mLayerDepth(iSnow)*mLayerVolFracLiq(iSnow)*iden_water
-  
-        ! add/remove the depth of snow gained/lost by frost/sublimation (m)
-        ! NOTE: assume constant density
-        mLayerDepth(iSnow) = mLayerDepth(iSnow) + dt_sub*scalarSnowSublimation/(mLayerVolFracIce(iSnow)*iden_ice)
-  
-        ! check that we did not remove the entire layer
-        if(mLayerDepth(iSnow) < verySmall)then
-          stepFailure  = .true.
-          doLayerMerge = .true.
-          dt_sub      = max(dtSave/2._dp, minstep)
-          cycle substeps
-        else
-          stepFailure  = .false.
-          doLayerMerge = .false.
-        endif
-  
-        ! update the volumetric fraction of liquid water
-        mLayerVolFracLiq(iSnow) = massLiquid / (mLayerDepth(iSnow)*iden_water)
-  
-      ! no snow
-      else
-  
-        ! no snow: check that sublimation is zero
-        if(abs(scalarSnowSublimation) > verySmall)then
-          message=trim(message)//'sublimation of snow has been computed when no snow exists'
-          print*, message
-          err=20; return
-        end if
-  
-      end if  ! (if snow layers exist)
-  
-      ! end associate sublime
-  
-      ! *** account for compaction and cavitation in the snowpack...
-      ! ------------------------------------------------------------
-      if(nSnow>0)then
-        call snwDensify(&
-                      ! intent(in): variables
-                      dt_sub,                                                 & ! intent(in): time step (s)
-                      indx_data%var(iLookINDEX%nSnow)%dat(1),                 & ! intent(in): number of snow layers
-                      prog_data%var(iLookPROG%mLayerTemp)%dat(1:nSnow),       & ! intent(in): temperature of each layer (K)
-                      diag_data%var(iLookDIAG%mLayerMeltFreeze)%dat(1:nSnow), & ! intent(in): volumetric melt in each layer (kg m-3)
-                      ! intent(in): parameters
-                      mpar_data%var(iLookPARAM%densScalGrowth)%dat(1),        & ! intent(in): density scaling factor for grain growth (kg-1 m3)
-                      mpar_data%var(iLookPARAM%tempScalGrowth)%dat(1),        & ! intent(in): temperature scaling factor for grain growth (K-1)
-                      mpar_data%var(iLookPARAM%grainGrowthRate)%dat(1),       & ! intent(in): rate of grain growth (s-1)
-                      mpar_data%var(iLookPARAM%densScalOvrbdn)%dat(1),        & ! intent(in): density scaling factor for overburden pressure (kg-1 m3)
-                      mpar_data%var(iLookPARAM%tempScalOvrbdn)%dat(1),        & ! intent(in): temperature scaling factor for overburden pressure (K-1)
-                      mpar_data%var(iLookPARAM%baseViscosity)%dat(1),         & ! intent(in): viscosity coefficient at T=T_frz and snow density=0 (kg m-2 s)
-                      ! intent(inout): state variables
-                      prog_data%var(iLookPROG%mLayerDepth)%dat(1:nSnow),      & ! intent(inout): depth of each layer (m)
-                      prog_data%var(iLookPROG%mLayerVolFracLiq)%dat(1:nSnow), & ! intent(inout):  volumetric fraction of liquid water after itertations (-)
-                      prog_data%var(iLookPROG%mLayerVolFracIce)%dat(1:nSnow), & ! intent(inout):  volumetric fraction of ice after itertations (-)
-                      ! output: error control
-                      err,cmessage)                     ! intent(out): error control
-        if(err/=0)then
-          err=55
-          message=trim(message)//trim(cmessage)
-          print*, message
-          return
-        end if
+    end if  ! (if snow layers exist)
 
-      end if  ! if snow layers exist
-  
-      ! update coordinate variables
-      call calcHeight(&
-                    ! input/output: data structures
-                    indx_data,   & ! intent(in): layer type
-                    prog_data,   & ! intent(inout): model variables for a local HRU
+    ! end associate sublime
+
+    ! *** account for compaction and cavitation in the snowpack...
+    ! ------------------------------------------------------------
+    if(nSnow>0)then
+      call snwDensify(&
+                    ! intent(in): variables
+                    dt_sub,                                                 & ! intent(in): time step (s)
+                    indx_data%var(iLookINDEX%nSnow)%dat(1),                 & ! intent(in): number of snow layers
+                    prog_data%var(iLookPROG%mLayerTemp)%dat(1:nSnow),       & ! intent(in): temperature of each layer (K)
+                    diag_data%var(iLookDIAG%mLayerMeltFreeze)%dat(1:nSnow), & ! intent(in): volumetric melt in each layer (kg m-3)
+                    ! intent(in): parameters
+                    mpar_data%var(iLookPARAM%densScalGrowth)%dat(1),        & ! intent(in): density scaling factor for grain growth (kg-1 m3)
+                    mpar_data%var(iLookPARAM%tempScalGrowth)%dat(1),        & ! intent(in): temperature scaling factor for grain growth (K-1)
+                    mpar_data%var(iLookPARAM%grainGrowthRate)%dat(1),       & ! intent(in): rate of grain growth (s-1)
+                    mpar_data%var(iLookPARAM%densScalOvrbdn)%dat(1),        & ! intent(in): density scaling factor for overburden pressure (kg-1 m3)
+                    mpar_data%var(iLookPARAM%tempScalOvrbdn)%dat(1),        & ! intent(in): temperature scaling factor for overburden pressure (K-1)
+                    mpar_data%var(iLookPARAM%baseViscosity)%dat(1),         & ! intent(in): viscosity coefficient at T=T_frz and snow density=0 (kg m-2 s)
+                    ! intent(inout): state variables
+                    prog_data%var(iLookPROG%mLayerDepth)%dat(1:nSnow),      & ! intent(inout): depth of each layer (m)
+                    prog_data%var(iLookPROG%mLayerVolFracLiq)%dat(1:nSnow), & ! intent(inout):  volumetric fraction of liquid water after itertations (-)
+                    prog_data%var(iLookPROG%mLayerVolFracIce)%dat(1:nSnow), & ! intent(inout):  volumetric fraction of ice after itertations (-)
                     ! output: error control
-                    err,cmessage)
+                    err,cmessage)                     ! intent(out): error control
       if(err/=0)then
-        err=20
+        err=55
         message=trim(message)//trim(cmessage)
         print*, message
         return
       end if
-  
-      ! recompute snow depth and SWE
-      if(nSnow > 0)then
-        prog_data%var(iLookPROG%scalarSnowDepth)%dat(1) = sum(  prog_data%var(iLookPROG%mLayerDepth)%dat(1:nSnow))
-        prog_data%var(iLookPROG%scalarSWE)%dat(1)       = sum( (prog_data%var(iLookPROG%mLayerVolFracLiq)%dat(1:nSnow)*iden_water + &
-                                                              prog_data%var(iLookPROG%mLayerVolFracIce)%dat(1:nSnow)*iden_ice) &
-                                                            * prog_data%var(iLookPROG%mLayerDepth)%dat(1:nSnow) )
-      end if
-  
-      ! increment fluxes
-      dt_wght = dt_sub/data_step ! define weight applied to each sub-step
-      do iVar=1,size(averageFlux_meta)
-        flux_mean%var(iVar)%dat(:) = flux_mean%var(iVar)%dat(:) + flux_data%var(averageFlux_meta(iVar)%ixParent)%dat(:)*dt_wght
-      end do
-  
-      ! increment change in storage associated with the surface melt pond (kg m-2)
-      if(nSnow==0) sfcMeltPond = sfcMeltPond + prog_data%var(iLookPROG%scalarSfcMeltPond)%dat(1)
-  
-      ! increment soil compression (kg m-2)
-      totalSoilCompress = totalSoilCompress + diag_data%var(iLookDIAG%scalarSoilCompress)%dat(1) ! total soil compression over whole layer (kg m-2)
 
-    end if ! sundials
+    end if  ! if snow layers exist
+
+    ! update coordinate variables
+    call calcHeight(&
+                  ! input/output: data structures
+                  indx_data,   & ! intent(in): layer type
+                  prog_data,   & ! intent(inout): model variables for a local HRU
+                  ! output: error control
+                  err,cmessage)
+    if(err/=0)then
+      err=20
+      message=trim(message)//trim(cmessage)
+      print*, message
+      return
+    end if
+
+    ! recompute snow depth and SWE
+    if(nSnow > 0)then
+      prog_data%var(iLookPROG%scalarSnowDepth)%dat(1) = sum(  prog_data%var(iLookPROG%mLayerDepth)%dat(1:nSnow))
+      prog_data%var(iLookPROG%scalarSWE)%dat(1)       = sum( (prog_data%var(iLookPROG%mLayerVolFracLiq)%dat(1:nSnow)*iden_water + &
+                                                            prog_data%var(iLookPROG%mLayerVolFracIce)%dat(1:nSnow)*iden_ice) &
+                                                          * prog_data%var(iLookPROG%mLayerDepth)%dat(1:nSnow) )
+    end if
+
+    ! increment fluxes
+    dt_wght = dt_sub/data_step ! define weight applied to each sub-step
+    do iVar=1,size(averageFlux_meta)
+      flux_mean%var(iVar)%dat(:) = flux_mean%var(iVar)%dat(:) + flux_data%var(averageFlux_meta(iVar)%ixParent)%dat(:)*dt_wght
+    end do
+
+    ! increment change in storage associated with the surface melt pond (kg m-2)
+    if(nSnow==0) sfcMeltPond = sfcMeltPond + prog_data%var(iLookPROG%scalarSfcMeltPond)%dat(1)
+
+    ! increment soil compression (kg m-2)
+    totalSoilCompress = totalSoilCompress + diag_data%var(iLookDIAG%scalarSoilCompress)%dat(1) ! total soil compression over whole layer (kg m-2)
+
     end associate sublime
 
 
     ! ****************************************************************************************************
     ! *** END MAIN SOLVER ********************************************************************************
     ! ****************************************************************************************************
-    ! if (ixSolution == 2)then
-    !   print*, "opSplittin used"
-    ! endif
+
     ! increment sub-step
     dt_solv = dt_solv + dt_sub
 
@@ -1151,7 +1060,7 @@ subroutine coupled_em(&
 
     ! check that we have completed the sub-step
     if(dt_solv >= data_step-verySmall) then
-    exit substeps
+      exit substeps
     endif
 
     ! adjust length of the sub-step (make sure that we don't exceed the step)

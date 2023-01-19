@@ -9,7 +9,7 @@ SET (CMAKE_Fortran_COMPILER  gfortran)
 include(FortranCInterface)
 FortranCInterface_VERIFY(CXX)
 
-option(SUNDIALS "Use SUNDIALS" ON)
+option(SUNDIALS "Use SUNDIALS" OFF)
 
 if (SUNDIALS)
     set(ACTORS_DIR ${PARENT_DIR}/build/source/actors)
@@ -349,26 +349,27 @@ else()
     set(GRU_ACTOR_DIR ${ACTORS_DIR}/gru_actor)
     set(SUMMA_DSHARE_DIR ${PARENT_DIR}/build/summa/build/source/dshare)
     set(SUMMA_ENGINE_DIR ${PARENT_DIR}/build/summa/build/source/engine)
+    set(SUMMA_NOAHMP_DIR ${PARENT_DIR}/build/summa/build/source/noah-mp)
 
     set(NRUTIL
-        ${ENGINE_DIR}/nrtype.f90
-        ${ENGINE_DIR}/f2008funcs.f90
-        ${ENGINE_DIR}/nr_utility.f90)
+        ${SUMMA_ENGINE_DIR}/nrtype.f90
+        ${SUMMA_ENGINE_DIR}/f2008funcs.f90
+        ${SUMMA_ENGINE_DIR}/nr_utility.f90)
 
     set(NRPROC
-        ${ENGINE_DIR}/expIntegral.f90
-        ${ENGINE_DIR}/spline_int.f90)
+        ${SUMMA_ENGINE_DIR}/expIntegral.f90
+        ${SUMMA_ENGINE_DIR}/spline_int.f90)
 
     SET(HOOKUP
         ${HOOKUP_DIR}/ascii_util.f90
         ${HOOKUP_DIR}/summaActors_FileManager.f90)
 
     SET(DATAMS 
-        ${DSHARE_DIR}/multiconst.f90
+        ${SUMMA_DSHARE_DIR}/multiconst.f90
         ${DSHARE_DIR}/var_lookup.f90
         ${DSHARE_DIR}/data_types.f90
         ${DSHARE_DIR}/globalData.f90
-        ${DSHARE_DIR}/flxMapping.f90)
+        ${SUMMA_DSHARE_DIR}/flxMapping.f90)
 
     SET(DEPENDS_ON_FILEMANAGER
         ${SUMMA_DSHARE_DIR}/get_ixname.f90
@@ -376,16 +377,15 @@ else()
         ${DSHARE_DIR}/outpt_stat.f90)
 
     SET(UTILMS
-        ${ENGINE_DIR}/time_utils.f90
+        ${SUMMA_ENGINE_DIR}/time_utils.f90
         ${ENGINE_DIR}/mDecisions.f90
-        ${ENGINE_DIR}/snow_utils.f90
-        ${ENGINE_DIR}/soil_utils.f90
-        ${ENGINE_DIR}/updatState.f90
-        ${ENGINE_DIR}/matrixOper.f90)
+        ${SUMMA_ENGINE_DIR}/snow_utils.f90
+        ${SUMMA_ENGINE_DIR}/soil_utils.f90
+        ${SUMMA_ENGINE_DIR}/updatState.f90
+        ${SUMMA_ENGINE_DIR}/matrixOper.f90)
 
     set(SOLVER
         ${ENGINE_DIR}/vegPhenlgy.f90
-        ${ENGINE_DIR}/sundials/computSnowDepth.f90
         ${SUMMA_ENGINE_DIR}/diagn_evar.f90
         ${SUMMA_ENGINE_DIR}/stomResist.f90
         ${SUMMA_ENGINE_DIR}/groundwatr.f90
@@ -435,25 +435,25 @@ else()
         ${GRU_ACTOR_DIR}/gru_actor.f90)
 
     set(PRELIM
-        ${ENGINE_DIR}/conv_funcs.f90
-        ${ENGINE_DIR}/sunGeomtry.f90
-        ${ENGINE_DIR}/convE2Temp.f90
+        ${SUMMA_ENGINE_DIR}/conv_funcs.f90
+        ${SUMMA_ENGINE_DIR}/sunGeomtry.f90
+        ${SUMMA_ENGINE_DIR}/convE2Temp.f90
         ${ENGINE_DIR}/allocspaceActors.f90
         ${ENGINE_DIR}/alloc_fileAccess.f90
         ${ENGINE_DIR}/checkStruc.f90
-        ${ENGINE_DIR}/childStruc.f90
+        ${SUMMA_ENGINE_DIR}/childStruc.f90
         ${ENGINE_DIR}/ffile_info.f90
         ${ENGINE_DIR}/read_dimension.f90
         ${ENGINE_DIR}/read_pinit.f90
-        ${ENGINE_DIR}/pOverwrite.f90
-        ${ENGINE_DIR}/paramCheck.f90
+        ${SUMMA_ENGINE_DIR}/pOverwrite.f90
+        ${SUMMA_ENGINE_DIR}/paramCheck.f90
         ${ENGINE_DIR}/check_icondActors.f90)
 
     set(NOAHMP
-        ${NOAHMP_DIR}/module_model_constants.F
-        ${NOAHMP_DIR}/module_sf_noahutl.F
-        ${NOAHMP_DIR}/module_sf_noahlsm.F
-        ${NOAHMP_DIR}/module_sf_noahmplsm.F)
+        ${SUMMA_NOAHMP_DIR}/module_model_constants.F
+        ${SUMMA_NOAHMP_DIR}/module_sf_noahutl.F
+        ${SUMMA_NOAHMP_DIR}/module_sf_noahlsm.F
+        ${SUMMA_NOAHMP_DIR}/module_sf_noahmplsm.F)
 
     set(MODRUN
         ${SUMMA_ENGINE_DIR}/indexState.f90
@@ -549,12 +549,12 @@ else()
         ${NOAHMP}
         ${NRUTIL})
         target_compile_options(SUMMA_NOAHMP PRIVATE
-            -g -O3 -ffree-form -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors)
+            -g -O0 -ffree-form -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors)
 
     add_library(SUMMA_COMM OBJECT
         ${COMM_ALL})
         target_compile_options(SUMMA_COMM PRIVATE
-            -g -O3 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors)
+            -g -O0 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors)
         target_include_directories(SUMMA_COMM PRIVATE
             "/usr/include"
             # "$ENV{EBROOTNETCDFMINFORTRAN}/include"
@@ -573,7 +573,7 @@ else()
     add_library(summa SHARED
         ${SUMMA_ALL})
     target_compile_options(summa PRIVATE
-            -g -O3 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors)
+            -g -O0 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors)
     target_include_directories(summa PUBLIC
             "/usr/include"
             # "$ENV{EBROOTNETCDFMINFORTRAN}/include"
@@ -587,7 +587,7 @@ else()
             SUMMA_NOAHMP
             -lnetcdff)
 
-    set(CMAKE_CXX_FLAGS "-g -O3 -Wfatal-errors -std=c++17")
+    set(CMAKE_CXX_FLAGS "-g -O0 -Wfatal-errors -std=c++17")
 
 
 
