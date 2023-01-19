@@ -374,7 +374,7 @@ else()
     SET(DEPENDS_ON_FILEMANAGER
         ${SUMMA_DSHARE_DIR}/get_ixname.f90
         ${SUMMA_DSHARE_DIR}/popMetadat.f90
-        ${DSHARE_DIR}/outpt_stat.f90)
+        ${SUMMA_DSHARE_DIR}/outpt_stat.f90)
 
     SET(UTILMS
         ${SUMMA_ENGINE_DIR}/time_utils.f90
