@@ -546,6 +546,7 @@ subroutine updateVarsSundials(&
 
         ! case of energy state OR coupled solution (or adjusting the temperature)
         elseif(do_adjustTemp .or. ( (isNrgState .or. isCoupled) ) )then
+        print*, 'Before mLayerVolFracLiqTrial', mLayerVolFracLiqTrial
 
           ! identify domain type
           select case(ixDomainType)
@@ -638,6 +639,7 @@ subroutine updateVarsSundials(&
           endif
 
         endif  ! if energy state or solution is coupled
+        print*, 'After mLayerVolFracLiqTrial', mLayerVolFracLiqTrial
 
         ! -----
         ! ------------------------

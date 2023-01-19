@@ -25,6 +25,7 @@ if (SUNDIALS)
     set(GRU_ACTOR_DIR ${ACTORS_DIR}/gru_actor)
     set(SUMMA_DSHARE_DIR ${PARENT_DIR}/build/summa-sundials/build/source/dshare)
     set(SUMMA_ENGINE_DIR ${PARENT_DIR}/build/summa-sundials/build/source/engine)
+    set(SUMMA_NOAHMP_DIR ${PARENT_DIR}/build/summa-sundials/build/source/noah-mp)
 
     set(DIR_SUNDIALS /usr/local/sundials)
 
@@ -34,7 +35,7 @@ if (SUNDIALS)
         ${SUMMA_ENGINE_DIR}/nr_utility.f90)
     
     set(NRPROC
-        ${ENGINE_DIR}/expIntegral.f90
+        ${SUMMA_ENGINE_DIR}/expIntegral.f90
         ${SUMMA_ENGINE_DIR}/spline_int.f90)
     
     SET(HOOKUP
@@ -42,7 +43,7 @@ if (SUNDIALS)
         ${HOOKUP_DIR}/summaActors_FileManager.f90)
     
     SET(DATAMS
-        ${DSHARE_DIR}/multiconst.f90
+        ${SUMMA_DSHARE_DIR}/multiconst.f90
         ${SUMMA_DSHARE_DIR}/var_lookup.f90
         ${DSHARE_DIR}/data_types.f90
         ${DSHARE_DIR}/globalData.f90
@@ -141,10 +142,10 @@ if (SUNDIALS)
         ${ENGINE_DIR}/check_icondActors.f90)
     
     set(NOAHMP
-        ${NOAHMP_DIR}/module_model_constants.F
-        ${NOAHMP_DIR}/module_sf_noahutl.F
-        ${NOAHMP_DIR}/module_sf_noahlsm.F
-        ${NOAHMP_DIR}/module_sf_noahmplsm.F)
+        ${SUMMA_NOAHMP_DIR}/module_model_constants.F
+        ${SUMMA_NOAHMP_DIR}/module_sf_noahutl.F
+        ${SUMMA_NOAHMP_DIR}/module_sf_noahlsm.F
+        ${SUMMA_NOAHMP_DIR}/module_sf_noahmplsm.F)
     
     set(MODRUN
         ${SUMMA_ENGINE_DIR}/indexState.f90

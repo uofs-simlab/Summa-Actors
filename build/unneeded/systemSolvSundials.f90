@@ -343,7 +343,7 @@ subroutine systemSolvSundials(&
     ! try to accelerate solution for energy
     if(ixCasNrg/=integerMissing) stateVecTrial(ixCasNrg) = stateVecInit(ixCasNrg) + (airtemp - stateVecInit(ixCasNrg))*tempAccelerate
     if(ixVegNrg/=integerMissing) stateVecTrial(ixVegNrg) = stateVecInit(ixVegNrg) + (airtemp - stateVecInit(ixVegNrg))*tempAccelerate
-
+    
     ! compute H_T at the beginning of the data step
     call t2enthalpy_T(&
                     ! input: data structures

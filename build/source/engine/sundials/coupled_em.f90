@@ -866,6 +866,7 @@ subroutine coupled_em(&
       print*, message
       return
     end if
+    ! print*, 'prog_data%var(iLookPROG%mLayerVolFracLiq)%dat()', prog_data%var(iLookPROG%mLayerVolFracLiq)%dat(1:nSoil)
   
 
     ! process the flag for too much melt
@@ -1036,6 +1037,7 @@ subroutine coupled_em(&
     dt_sub = min(data_step - dt_solv, dt_sub)
 
   end do  substeps ! (sub-step loop)
+
 
   ! *** add snowfall to the snowpack...
   ! -----------------------------------
