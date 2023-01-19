@@ -47,15 +47,15 @@ if (SUNDIALS)
         ${SUMMA_DSHARE_DIR}/var_lookup.f90
         ${DSHARE_DIR}/data_types.f90
         ${DSHARE_DIR}/globalData.f90
-        ${DSHARE_DIR}/flxMapping.f90)
+        ${SUMMA_DSHARE_DIR}/flxMapping.f90)
     
     SET(DEPENDS_ON_FILEMANAGER
         ${SUMMA_DSHARE_DIR}/get_ixname.f90
         ${SUMMA_DSHARE_DIR}/popMetadat.f90
-        ${DSHARE_DIR}/outpt_stat.f90)
+        ${SUMMA_DSHARE_DIR}/outpt_stat.f90)
     
     SET(UTILMS
-        ${ENGINE_DIR}/time_utils.f90
+        ${SUMMA_ENGINE_DIR}/time_utils.f90
         ${ENGINE_DIR}/sundials/mDecisions.f90
         ${SUMMA_ENGINE_DIR}/snow_utils.f90
         ${SUMMA_ENGINE_DIR}/soil_utils.f90
@@ -127,18 +127,18 @@ if (SUNDIALS)
     #     ${GRU_ACTOR_DIR}/gru_actor.f90)
 
     set(PRELIM
-        ${ENGINE_DIR}/conv_funcs.f90
-        ${ENGINE_DIR}/sunGeomtry.f90
+        ${SUMMA_ENGINE_DIR}/conv_funcs.f90
+        ${SUMMA_ENGINE_DIR}/sunGeomtry.f90
         ${SUMMA_ENGINE_DIR}/convE2Temp.f90
         ${ENGINE_DIR}/allocspaceActors.f90
         ${ENGINE_DIR}/alloc_fileAccess.f90
-        ${ENGINE_DIR}/checkStruc.f90
-        ${ENGINE_DIR}/childStruc.f90
+        ${SUMMA_ENGINE_DIR}/checkStruc.f90
+        ${SUMMA_ENGINE_DIR}/childStruc.f90
         ${ENGINE_DIR}/ffile_info.f90
         ${ENGINE_DIR}/read_dimension.f90
         ${ENGINE_DIR}/read_pinit.f90
-        ${ENGINE_DIR}/pOverwrite.f90
-        ${ENGINE_DIR}/paramCheck.f90
+        ${SUMMA_ENGINE_DIR}/pOverwrite.f90
+        ${SUMMA_ENGINE_DIR}/paramCheck.f90
         ${ENGINE_DIR}/check_icondActors.f90)
     
     set(NOAHMP
