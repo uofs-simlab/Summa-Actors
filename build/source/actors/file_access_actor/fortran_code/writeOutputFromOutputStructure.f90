@@ -422,7 +422,6 @@ subroutine writeVector(ncid, outputTimestep, maxLayers, nSteps, minGRU, maxGRU, 
   USE data_types,only:var_info                       ! metadata type
   USE var_lookup,only:iLookIndex                     ! index into index structure
   USE var_lookup,only:iLookVarType                   ! index into type structure
-
   implicit none
   type(var_i)   ,intent(in)             :: ncid                    ! fileid
   integer(i4b)  ,intent(inout)          :: outputTimestep(:)       ! output time step
@@ -490,18 +489,12 @@ subroutine writeVector(ncid, outputTimestep, maxLayers, nSteps, minGRU, maxGRU, 
       ! get the data vectors
       select type (dat)
           class is (gru_hru_time_doubleVec)
-            ! do iStep = 1, nSteps
               if(.not.outputStructure(1)%finalizeStats(1)%gru(iGRU)%hru(1)%tim(iStep)%dat(iFreq)) cycle
-              ! stepCounter = stepCounter + 1
               realArray(gruCounter,1:datLength) = dat%gru(iGRU)%hru(1)%var(iVar)%tim(iStep)%dat(:)
-            ! end do
 
           class is (gru_hru_time_intVec)
-            ! do iStep = 1, nSteps
               if(.not.outputStructure(1)%finalizeStats(1)%gru(iGRU)%hru(1)%tim(iStep)%dat(iFreq)) cycle
-              ! stepCounter = stepCounter + 1
               intArray(gruCounter,1:datLength) = dat%gru(iGRU)%hru(1)%var(iVar)%tim(iStep)%dat(:)
-            ! end do
           class default; err=20; message=trim(message)//'data must not be scalarv and either of type gru_hru_doubleVec or gru_hru_intVec'; return
       end select
 
@@ -516,6 +509,7 @@ subroutine writeVector(ncid, outputTimestep, maxLayers, nSteps, minGRU, maxGRU, 
         case(iLookVarType%ifcSoil); maxLength = nSoil+1
         case default; cycle
       end select ! vartype
+      gruCounter = gruCounter + 1
     end do ! iGRU
 
    ! write the data vectors
