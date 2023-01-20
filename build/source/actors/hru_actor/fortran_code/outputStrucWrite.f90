@@ -77,10 +77,10 @@ public::writeRestart
 integer(i4b),parameter      :: maxSpectral=2              ! maximum number of spectral bands
 contains
 
- ! **********************************************************************************************************
- ! public subroutine writeParm: write model parameters
- ! **********************************************************************************************************
-  subroutine writeParm(indxGRU,indxHRU,ispatial,struct,meta,structName,err,message)
+! **********************************************************************************************************
+! public subroutine writeParm: write model parameters
+! **********************************************************************************************************
+subroutine writeParm(indxGRU,indxHRU,ispatial,struct,meta,structName,err,message)
   ! USE globalData,only:ncid                      ! netcdf file ids
   USE data_types,only:var_info                    ! metadata info
   USE var_lookup,only:iLookStat                   ! index in statistics vector
@@ -363,10 +363,12 @@ subroutine writeBasin(indxGRU,indxHRU,iStep,finalizeStats,&
 
     case (iLookVarType%scalarv)
       outputStructure(1)%bvarStat(1)%gru(indxGRU)%hru(indxHRU)%var(map(iVar))%tim(iStep)%dat(iFreq) = stat(map(iVar))%dat(iFreq)
-
+      print*, "iFreq" , iFreq
+      print*, "outputStructure(1)%bvarStat(1)%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep)%dat(iFreq)", outputStructure(1)%bvarStat(1)%gru(indxGRU)%hru(indxHRU)%var(map(iVar))%tim(iStep)%dat(iFreq)
     case (iLookVarType%routing)
      if (iFreq==1 .and. outputTimestep(iFreq)==1) then
       outputStructure(1)%bvarStruct(1)%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep)%dat(iFreq) = dat(iVar)%dat(iFreq)
+      print*, "outputStructure(1)%bvarStruct(1)%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep)%dat(iFreq)", outputStructure(1)%bvarStruct(1)%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep)%dat(iFreq)
      end if
 
     case default

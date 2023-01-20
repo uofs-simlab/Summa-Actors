@@ -48,6 +48,7 @@ USE var_lookup,only:iLookDIAG                 ! named variables for local column
 USE var_lookup,only:iLookPROG                 ! named variables for local column model prognostic variables
 USE var_lookup,only:iLookINDEX                ! named variables for local column index variables
 USE var_lookup,only:iLookFreq                 ! named variables for the frequency structure
+USE var_lookup,only:iLookBVAR                 ! named variables for basin parameters
 USE get_ixname_module,only:get_freqName       ! get name of frequency from frequency index
 
 
@@ -265,6 +266,12 @@ subroutine writeHRUToOutputStructure(&
 
  ! If we do not do this looping we segfault - I am not sure why
   outputStructure(1)%finalizeStats(1)%gru(indxGRU)%hru(indxHRU)%tim(outputStep)%dat(:) = finalizeStats%dat(:)
+  print*, ""
+  print*, "indxGRU" , indxGRU
+  print*, "averageRoutedRunoff", bvarStruct%var(iLookBVAR%averageRoutedRunoff)%dat(1)
+  print*, "outputStep", outputStep
+  print*, ""
+
  ! ****************************************************************************
  ! *** calculate output statistics
  ! ****************************************************************************

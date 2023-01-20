@@ -125,20 +125,24 @@ subroutine writeOutput(handle_ncid, num_steps, start_gru, max_gru, err) bind(C, 
   do iGRU=start_gru, max_gru
     stepCounter(:) = outputTimeStep(iGRU)%dat(:) ! We want to avoid updating outputTimeStep
     do iStep=1, num_steps
-      call writeBasin(ncid,iGRU,stepCounter(:),iStep,bvar_meta, &
-              outputStructure(1)%bvarStat(1)%gru(iGRU)%hru(indxHRU)%var, &
-              outputStructure(1)%bvarStruct(1)%gru(iGRU)%hru(indxHRU)%var, bvarChild_map, err, cmessage)
-      
       call writeTime(ncid,outputTimeStep(iGRU)%dat(:),iStep,time_meta, &
               outputStructure(1)%timeStruct(1)%gru(iGRU)%hru(indxHRU)%var,err,cmessage)
     end do ! istep
   end do ! iGRU
 
+
+  numGRU = max_gru-start_gru + 1
+  ! ****************************************************************************
+  ! *** write basin data
+  ! ****************************************************************************
+  call writeBasin(ncid,outputTimeStep(start_gru)%dat(:),outputTimeStepUpdate,num_steps,&
+                  start_gru, max_gru, numGRU, &
+                  bvar_meta,outputStructure(1)%bvarStat(1),outputStructure(1)%bvarStruct(1), &
+                  bvarChild_map,err,cmessage)
+
   ! ****************************************************************************
   ! *** write data
   ! ****************************************************************************
-  numGRU = max_gru-start_gru + 1 
-
   do iStruct=1,size(structInfo)
     select case(trim(structInfo(iStruct)%structName))
       case('forc')
@@ -169,6 +173,7 @@ subroutine writeOutput(handle_ncid, num_steps, start_gru, max_gru, err) bind(C, 
     end select
     if(err/=0)then; message=trim(message)//trim(cmessage)//'['//trim(structInfo(iStruct)%structName)//']'; return; endif
   end do  ! (looping through structures)
+
 
   do iFreq = 1,maxvarFreq
     outputTimeStep(start_gru)%dat(iFreq) = outputTimeStep(start_gru)%dat(iFreq) + outputTimeStepUpdate(iFreq) 
@@ -300,6 +305,7 @@ subroutine writeData(ncid,outputTimestep,outputTimestepUpdate,maxLayers,nSteps, 
     do iVar = 1,size(meta)
       stepCounter = 0
 
+      ! Todo: wrap this in a function
       if (meta(iVar)%varName=='time' .and. structName == 'forc')then
         ! get variable index
         err = nf90_inq_varid(ncid%var(iFreq),trim(meta(iVar)%varName),ncVarID)
@@ -394,6 +400,7 @@ subroutine writeScalar(ncid, outputTimestep, outputTimestepUpdate, nSteps, minGR
           if(.not.outputStructure(1)%finalizeStats(1)%gru(iGRU)%hru(1)%tim(iStep)%dat(iFreq)) cycle
           stepCounter = stepCounter + 1
           realVec(gruCounter, stepCounter) = stat%gru(iGRU)%hru(1)%var(map(iVar))%tim(iStep)%dat(iFreq)
+          outputTimeStepUpdate(iFreq) = stepCounter
         end do ! iStep
       end do ! iGRU  
     
@@ -401,7 +408,9 @@ subroutine writeScalar(ncid, outputTimestep, outputTimestepUpdate, nSteps, minGR
       if (outputTimeStepUpdate(iFreq) /= stepCounter ) then
         print*, "ERROR Missmatch in Steps - stat doubleVec"
         print*, "   outputTimeStepUpdate(iFreq) = ", outputTimeStepUpdate(iFreq)
+        print*, "   outputTimeStepUpdate", outputTimeStepUpdate
         print*, "   stepCounter = ", stepCounter
+        print*, "   iFreq = ", iFreq
         return
       endif
     class default; err=20; message=trim(message)//'stats must be scalarv and of type gru_hru_doubleVec'; return
@@ -530,7 +539,9 @@ end subroutine
 ! **************************************************************************************
 ! public subroutine writeBasin: write basin-average variables
 ! **************************************************************************************
-subroutine writeBasin(ncid,iGRU,outputTimestep,iStep,meta,stat,dat,map,err,message)
+subroutine writeBasin(ncid,outputTimestep,outputTimestepUpdate,nSteps,&
+                      minGRU, maxGRU, numGRU, &
+                      meta,stat,dat,map,err,message)
   USE data_types,only:var_info                       ! metadata type
   USE var_lookup,only:maxVarStat                     ! index into stats structure
   USE var_lookup,only:iLookVarType                   ! index into type structure
@@ -541,12 +552,15 @@ subroutine writeBasin(ncid,iGRU,outputTimestep,iStep,meta,stat,dat,map,err,messa
 
   ! declare dummy variables
   type(var_i)   ,intent(in)     :: ncid              ! file ids
-  integer(i4b)  ,intent(in)     :: iGRU              ! GRU index
   integer(i4b)  ,intent(inout)  :: outputTimestep(:) ! output time step
-  integer(i4b)  ,intent(in)     :: iStep            ! number of steps in forcing file
+  integer(i4b)  ,intent(inout)  :: outputTimestepUpdate(:) ! number of HRUs in the run domain
+  integer(i4b)  ,intent(in)     :: nSteps            ! number of timeSteps
+  integer(i4b)  ,intent(in)     :: minGRU            ! minGRU index to write
+  integer(i4b)  ,intent(in)     :: maxGRU            ! maxGRU index to write - probably not needed
+  integer(i4b)  ,intent(in)     :: numGRU            ! number of GRUs to write
   type(var_info),intent(in)     :: meta(:)           ! meta data
-  type(time_dlength),intent(in) :: stat(:)           ! stats data
-  type(time_dlength),intent(in) :: dat(:)            ! timestep data
+  class(*)      ,intent(in)     :: stat              ! stats data
+  class(*)      ,intent(in)     :: dat               ! timestep data
   integer(i4b)  ,intent(in)     :: map(:)            ! map into stats child struct
   integer(i4b)  ,intent(out)    :: err               ! error code
   character(*)  ,intent(out)    :: message           ! error message
@@ -564,7 +578,7 @@ subroutine writeBasin(ncid,iGRU,outputTimestep,iStep,meta,stat,dat,map,err,messa
     if(.not.outFreq(iFreq)) cycle
 
     ! check that we have finalized statistics for a given frequency
-    if(.not.outputStructure(1)%finalizeStats(1)%gru(1)%hru(1)%tim(iStep)%dat(iFreq)) cycle
+    ! if(.not.outputStructure(1)%finalizeStats(1)%gru(1)%hru(1)%tim(iStep)%dat(iFreq)) cycle
 
     ! loop through model variables
     do iVar = 1,size(meta)
@@ -579,11 +593,14 @@ subroutine writeBasin(ncid,iGRU,outputTimestep,iStep,meta,stat,dat,map,err,messa
       select case (meta(iVar)%varType)
 
         case (iLookVarType%scalarv)
-          err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),(/stat(map(iVar))%tim(iStep)%dat(iFreq)/),start=(/iGRU,outputTimestep(iFreq)/),count=(/1,1/))
+          call writeScalar(ncid, outputTimeStep, outputTimeStepUpdate, nSteps, &
+                           minGRU, maxGRU, numGRU, iFreq, iVar, meta, stat, map, &
+                           err, message)
+          ! err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),(/stat(map(iVar))%tim(iStep)%dat(iFreq)/),start=(/iGRU,outputTimestep(iFreq)/),count=(/1,1/))
 
         case (iLookVarType%routing)
           if (iFreq==1 .and. outputTimestep(iFreq)==1) then
-            err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),(/dat(iVar)%tim(iStep)%dat/),start=(/1/),count=(/1000/))
+            ! err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),(/dat(iVar)%tim(iStep)%dat/),start=(/1/),count=(/1000/))
           end if
         case default
           err=40; message=trim(message)//"unknownVariableType[name='"//trim(meta(iVar)%varName)//"';type='"//trim(get_varTypeName(meta(iVar)%varType))//    "']"; return
@@ -593,7 +610,7 @@ subroutine writeBasin(ncid,iGRU,outputTimestep,iStep,meta,stat,dat,map,err,messa
       if (err.ne.0) message=trim(message)//trim(meta(iVar)%varName)//'_'//trim(get_statName(iStat))
       call netcdf_err(err,message); if (err/=0) return
     end do ! iVar
-    outputTimeStep(iFreq) = outputTimeStep(iFreq) + 1
+    ! outputTimeStep(iFreq) = outputTimeStep(iFreq) + 1
   end do ! iFreq
 
 end subroutine writeBasin
@@ -602,48 +619,48 @@ end subroutine writeBasin
     ! public subroutine writeTime: write current time to all files
     ! **************************************************************************************
 subroutine writeTime(ncid,outputTimestep,iStep,meta,dat,err,message)
-USE data_types,only:var_info                       ! metadata type
-USE var_lookup,only:iLookStat                      ! index into stat structure
-implicit none
+  USE data_types,only:var_info                       ! metadata type
+  USE var_lookup,only:iLookStat                      ! index into stat structure
+  implicit none
 
-! declare dummy variables
-type(var_i)   ,intent(in)     :: ncid              ! file ids
-integer(i4b)  ,intent(inout)  :: outputTimestep(:) ! output time step
-integer(i4b)  ,intent(in)     :: iStep
-type(var_info),intent(in)     :: meta(:)           ! meta data
-type(time_i)  ,intent(in)     :: dat(:)            ! timestep data
-integer(i4b)  ,intent(out)    :: err               ! error code
-character(*)  ,intent(out)    :: message           ! error message
-! local variables
-integer(i4b)                  :: iVar              ! variable index
-integer(i4b)                  :: iFreq             ! frequency index
-integer(i4b)                  :: ncVarID           ! used only for time
-! initialize error control
-err=0;message="f-writeTime/"
-! loop through output frequencies
-do iFreq=1,maxvarFreq
+  ! declare dummy variables
+  type(var_i)   ,intent(in)     :: ncid              ! file ids
+  integer(i4b)  ,intent(inout)  :: outputTimestep(:) ! output time step
+  integer(i4b)  ,intent(in)     :: iStep
+  type(var_info),intent(in)     :: meta(:)           ! meta data
+  type(time_i)  ,intent(in)     :: dat(:)            ! timestep data
+  integer(i4b)  ,intent(out)    :: err               ! error code
+  character(*)  ,intent(out)    :: message           ! error message
+  ! local variables
+  integer(i4b)                  :: iVar              ! variable index
+  integer(i4b)                  :: iFreq             ! frequency index
+  integer(i4b)                  :: ncVarID           ! used only for time
+  ! initialize error control
+  err=0;message="f-writeTime/"
+  ! loop through output frequencies
+  do iFreq=1,maxvarFreq
 
-  ! check that we have finalized statistics for a given frequency
-  if(.not.outputStructure(1)%finalizeStats(1)%gru(1)%hru(1)%tim(iStep)%dat(iFreq)) cycle
+    ! check that we have finalized statistics for a given frequency
+    if(.not.outputStructure(1)%finalizeStats(1)%gru(1)%hru(1)%tim(iStep)%dat(iFreq)) cycle
 
-  ! loop through model variables
-  do iVar = 1,size(meta)
+    ! loop through model variables
+    do iVar = 1,size(meta)
 
-    ! check instantaneous
-  if (meta(iVar)%statIndex(iFreq)/=iLookStat%inst) cycle
-    print*, "Time Data", dat(iVar)%tim(iStep)
-      ! get variable id in file
-    err = nf90_inq_varid(ncid%var(iFreq),trim(meta(iVar)%varName),ncVarID)
-    if (err/=0) message=trim(message)//trim(meta(iVar)%varName); call netcdf_err(err,message)
-    if (err/=0) then; err=20; return; end if
+      ! check instantaneous
+    if (meta(iVar)%statIndex(iFreq)/=iLookStat%inst) cycle
+      print*, "Time Data", dat(iVar)%tim(iStep)
+        ! get variable id in file
+      err = nf90_inq_varid(ncid%var(iFreq),trim(meta(iVar)%varName),ncVarID)
+      if (err/=0) message=trim(message)//trim(meta(iVar)%varName); call netcdf_err(err,message)
+      if (err/=0) then; err=20; return; end if
 
-    ! add to file
-    err = nf90_put_var(ncid%var(iFreq),ncVarID,(/dat(iVar)%tim(iStep)/),start=(/outputTimestep(iFreq)/),count=(/1/))
-    if (err/=0) message=trim(message)//trim(meta(iVar)%varName);call netcdf_err(err,message)
-    if (err/=0) then; err=20; return; end if
+      ! add to file
+      err = nf90_put_var(ncid%var(iFreq),ncVarID,(/dat(iVar)%tim(iStep)/),start=(/outputTimestep(iFreq)/),count=(/1/))
+      if (err/=0) message=trim(message)//trim(meta(iVar)%varName);call netcdf_err(err,message)
+      if (err/=0) then; err=20; return; end if
 
-  end do ! iVar
-end do ! iFreq
+    end do ! iVar
+  end do ! iFreq
 
 
 end subroutine writeTime

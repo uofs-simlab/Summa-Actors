@@ -3,47 +3,15 @@ USE, intrinsic :: iso_c_binding
 USE nrtype
 USE data_types
 
+!TODO: This module is only used for writeParamToNetCDF the others are not.
+
+
 implicit none
 public::writeParamToNetCDF
 public::writeDataToNetCDF
 public::writeBasinToNetCDF
 public::writeTimeToNetCDF
 
-! type var_dlength_ptr
-!   type(var_dlength), pointer
-! type(var_dlength)     forc_stat_all_grus
-! type(var_dlength)     prog_stat_all_grus
-! type(var_dlength)     diag_stat_all_grus
-! type(var_dlength)     flux_stat_all_grus
-! type(var_dlength)     indx_stat_all_grus
-! type(var_dlength)     bvar_stat_all_grus
-
-! type(var_i)           time_struct
-! type(var_d)           forc_struct
-! type(var_d)           attr_struct
-! type(var_i)           type_struct
-! type(var_i8)          id_struct
-
-! type(var_ilength)     indx_struct
-! type(var_dlength)     mpar_struct
-! type(var_dlength)     prog_struct
-! type(var_dlength)     diag_struct
-! type(var_dlength)     flux_struct
-
-! type(var_d)           bpar_struct
-! type(var_dlength)     bvar_struct
-
-! type(var_d)           dpar_struct
-! type(flagVec)         finalize_stats
-! type(var_i)           output_timesteps_all_grus
-
-
-
-! type(flagVec),     pointer, dimension(:,:), allocatable, public :: finalize_stats_all_grus
-! type(var_i),       pointer, dimension(:,:), allocatable, public :: output_timesteps_all_grus
-! type(var_dlength), pointer, dimension(:,:), allocatable, public :: bvar_stats_all_grus
-! type(var_dlength), pointer, dimension(:,:), allocatable, public :: bvar_struct_all_grus
-! type(var_i),       pointer, dimension(:,:), allocatable, public :: time_struct_all_grus
 
 contains
 
