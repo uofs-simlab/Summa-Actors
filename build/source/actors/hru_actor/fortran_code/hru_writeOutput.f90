@@ -266,11 +266,6 @@ subroutine writeHRUToOutputStructure(&
 
  ! If we do not do this looping we segfault - I am not sure why
   outputStructure(1)%finalizeStats(1)%gru(indxGRU)%hru(indxHRU)%tim(outputStep)%dat(:) = finalizeStats%dat(:)
-  print*, ""
-  print*, "indxGRU" , indxGRU
-  print*, "averageRoutedRunoff", bvarStruct%var(iLookBVAR%averageRoutedRunoff)%dat(1)
-  print*, "outputStep", outputStep
-  print*, ""
 
  ! ****************************************************************************
  ! *** calculate output statistics

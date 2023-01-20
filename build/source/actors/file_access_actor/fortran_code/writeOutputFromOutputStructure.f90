@@ -354,7 +354,6 @@ subroutine writeData(ncid,outputTimestep,outputTimestepUpdate,maxLayers,nSteps, 
       call netcdf_err(err,message); if (err/=0) return
 
     end do ! iVar
-    ! outputTimeStep(iFreq) = outputTimeStep(iFreq) + outputTimeStepUpdateVal(iFreq) 
   end do ! iFreq
 
 end subroutine writeData
@@ -577,9 +576,6 @@ subroutine writeBasin(ncid,outputTimestep,outputTimestepUpdate,nSteps,&
     ! skip frequencies that are not needed
     if(.not.outFreq(iFreq)) cycle
 
-    ! check that we have finalized statistics for a given frequency
-    ! if(.not.outputStructure(1)%finalizeStats(1)%gru(1)%hru(1)%tim(iStep)%dat(iFreq)) cycle
-
     ! loop through model variables
     do iVar = 1,size(meta)
 
@@ -596,7 +592,6 @@ subroutine writeBasin(ncid,outputTimestep,outputTimestepUpdate,nSteps,&
           call writeScalar(ncid, outputTimeStep, outputTimeStepUpdate, nSteps, &
                            minGRU, maxGRU, numGRU, iFreq, iVar, meta, stat, map, &
                            err, message)
-          ! err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),(/stat(map(iVar))%tim(iStep)%dat(iFreq)/),start=(/iGRU,outputTimestep(iFreq)/),count=(/1,1/))
 
         case (iLookVarType%routing)
           if (iFreq==1 .and. outputTimestep(iFreq)==1) then
@@ -610,7 +605,6 @@ subroutine writeBasin(ncid,outputTimestep,outputTimestepUpdate,nSteps,&
       if (err.ne.0) message=trim(message)//trim(meta(iVar)%varName)//'_'//trim(get_statName(iStat))
       call netcdf_err(err,message); if (err/=0) return
     end do ! iVar
-    ! outputTimeStep(iFreq) = outputTimeStep(iFreq) + 1
   end do ! iFreq
 
 end subroutine writeBasin
