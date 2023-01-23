@@ -294,7 +294,7 @@ if (SUNDIALS)
             SUMMA_NOAHMP
             -lnetcdff)
 
-    set(CMAKE_CXX_FLAGS "-g -O0 -Wfatal-errors -std=c++17")
+    set(CMAKE_CXX_FLAGS "-g -O3 -Wfatal-errors -std=c++17")
 
 
 
