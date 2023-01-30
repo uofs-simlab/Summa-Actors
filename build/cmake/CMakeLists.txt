@@ -14,7 +14,7 @@ option(SUNDIALS "Use SUNDIALS" ON)
 
 ######### SET THE PATHS TO THE SUNDIALS LIBRARIES AND INCLUDE FILES #########
 #############################################################################
-set(DIR_SUNDIALS /usr/local/sundials)
+set(DIR_SUNDIALS "/home/kklenk/projects/rpp-kshook/CompHydCore/SummaSundials/sundials/sundials/instdir")
 #############################################################################
 
 # Set default build type to Release
@@ -42,20 +42,18 @@ endif()
 
 
 # Packages that are required by both sundials and non-sundials builds
-find_package(CAF REQUIRED)
-find_package(netCDF REQUIRED)
-find_package(LAPACK REQUIRED)
+
 
 # Set include directories
 if (CMAKE_BUILD_TYPE MATCHES Cluster OR CMAKE_BUILD_TYPE MATCHES Cluster_Debug)
 
-    execute_process(COMMAND module load gcc/9.3.0)
-    execute_process(COMMAND module load netcdf-fortran)
-    execute_process(COMMAND module load openblas)
-    execute_process(COMMAND module load caf)
+    find_package(CAF REQUIRED)
+    find_package(netCDF REQUIRED)
+    find_package(LAPACK REQUIRED)
 
     if(SUNDIALS)
-        set(CMAKE_INSTALL_RPATH "${DIR_SUNDIALS}/lib64")
+        link_directories(${DIR_SUNDIALS}/lib64)
+        set(CMAKE_BUILD_RPATH "${DIR_SUNDIALS}/lib64")
         set(SUMMA_INCLUDES 
             "$ENV{EBROOTNETCDFMINFORTRAN}/include"
             "${DIR_SUNDIALS}/include"
@@ -64,18 +62,19 @@ if (CMAKE_BUILD_TYPE MATCHES Cluster OR CMAKE_BUILD_TYPE MATCHES Cluster_Debug)
             ${LAPACK_INCLUDES})
         
         set(SUMMA_LIBS
-            "$ENV{EBROOTNETCDFMINFORTRAN}/lib64"
             -lsundials_fnvecmanyvector_mod 
             -lsundials_fida_mod 
             -lsundials_fnvecserial_mod 
             -lsundials_fsunlinsoldense_mod 
             -lsundials_fsunmatrixdense_mod 
+            -lnetcdff
             ${netCDF_LIBRARIES}
             ${LAPACK_LIBRARIES}
             SUMMA_NOAHMP)
 
-        set(SUMMA_ACTORS_INCLUDES ${CAF_INCLUDES}
-            ${netCDF_INCLUDES}
+        set(SUMMA_ACTORS_INCLUDES 
+            ${CAF_INCLUDES}
+            "$ENV{EBROOTNETCDFMINFORTRAN}/include"
             ${LAPACK_INCLUDES}
             "${DIR_SUNDIALS}/include"
             "${PARENT_DIR}/build/includes/global"
@@ -107,14 +106,14 @@ if (CMAKE_BUILD_TYPE MATCHES Cluster OR CMAKE_BUILD_TYPE MATCHES Cluster_Debug)
             ${LAPACK_INCLUDES})
         
         set(SUMMA_LIBS
-            "$ENV{EBROOTNETCDFMINFORTRAN}/lib64"
+            -lnetcdff
             ${netCDF_LIBRARIES}
             ${LAPACK_LIBRARIES}
             SUMMA_NOAHMP)
         
         set(SUMMA_ACTORS_INCLUDES
             ${CAF_INCLUDES}
-            ${netCDF_INCLUDES}
+            "$ENV{EBROOTNETCDFMINFORTRAN}/include"
             ${LAPACK_INCLUDES}
             "${PARENT_DIR}/build/includes/global"
             "${PARENT_DIR}/build/includes/summa_actor"
@@ -137,8 +136,11 @@ if (CMAKE_BUILD_TYPE MATCHES Cluster OR CMAKE_BUILD_TYPE MATCHES Cluster_Debug)
 
 
 else()
-
+    find_package(CAF REQUIRED)
+    find_package(netCDF REQUIRED)
+    find_package(LAPACK REQUIRED)
     if(SUNDIALS)
+        link_directories(${DIR_SUNDIALS}/lib)
         set(CMAKE_BUILD_RPATH "${DIR_SUNDIALS}/lib:/usr/local/lib")
         set(SUMMA_INCLUDES
             "/usr/include"
@@ -219,8 +221,6 @@ else()
 endif()
 
 if (SUNDIALS)
-    link_directories(${DIR_SUNDIALS}/lib)
-
     set(ACTORS_DIR ${PARENT_DIR}/build/source/actors)
     set(DRIVER_DIR ${PARENT_DIR}/build/source/driver)
     set(DSHARE_DIR ${PARENT_DIR}/build/source/dshare)
