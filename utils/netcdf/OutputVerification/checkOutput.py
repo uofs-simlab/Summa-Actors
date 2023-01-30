@@ -80,15 +80,15 @@ def get_output_vars(model_output_file):
 
 
 
-num_hru = 10
+num_hru = 125
 print("Checking output for", num_hru, "HRUs")
-dataset_1 = "/scratch/kck540/Summa_Sundials/non-actors/SummaOriginal_G000001-000010_timestep.nc"
-dataset_2 = "/scratch/kck540/Summa_Sundials/actors/SummaActorsGRU1-10_timestep.nc"
+dataset_1 = "/home/kklenk/scratch/Sundials_non_Actors_Output/netcdf/Summa-Sundials-_G112001-112125_timestep.nc"
+dataset_2 = "/home/kklenk/scratch/Sundials_Actors_Output/netcdf/Summa-Actors-Sundials-GRU112001-500_timestep.nc"
 
 # dataset_1 = "/scratch/kck540/Summa_Sundials/non-actors/SummaOriginal-BE_G000001-000002_timestep.nc"
 # dataset_2 = "/scratch/kck540/Summa_Sundials/actors/SummaActors-BEGRU1-2_timestep.nc"
 
-model_output_file = "/gladwell/kck540/Summa_Distributed_Settings/Summa_Settings/outputControl.txt"
+model_output_file = "/home/kklenk/projects/rpp-kshook/kklenk/Sundials_Settings/outputControl.txt"
 
 output_vars = get_output_vars(model_output_file)
 verify_data(dataset_1, dataset_2, num_hru, output_vars)

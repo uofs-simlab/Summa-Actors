@@ -28,7 +28,7 @@ def seffCommand(jobId, numJobs, gru_per_job):
         raise Exception("Something went wrong")
 
     csvFile = open(output_csv_name, 'w')
-    header = ["startHRU", "numHRU", "#-CPU", "CPU Efficiency", "Wall-Clock Time", "Memory Used", "Status"]
+    header = ["startHRU", "numHRU", "#-CPU", "CPU Efficiency", "Wall-Clock Time", "CPU-Utilized", "Memory Used", "Status"]
 
     writer = csv.writer(csvFile)
 
@@ -55,6 +55,10 @@ def seffCommand(jobId, numJobs, gru_per_job):
                 wallClock = line.decode().split(" ")[-1]
                 wallClock = wallClock.strip()
             
+            if b'CPU Utilized: ' in line:
+                cpuUtilized = line.decode().split(" ")[-1]
+                cpuUtilized = cpuUtilized.strip()
+            
             if b'Memory Utilized:' in line:
                 memory = line.decode().split(" ")[2]
                 memory = memory.strip()
@@ -66,6 +70,7 @@ def seffCommand(jobId, numJobs, gru_per_job):
         rowData.append(cores)
         rowData.append(effeciency)
         rowData.append(wallClock)
+        rowData.append(cpuUtilized)
         rowData.append(memory)
         rowData.append(status)
         writer.writerow(rowData)

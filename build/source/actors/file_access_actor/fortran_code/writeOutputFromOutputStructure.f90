@@ -603,9 +603,9 @@ subroutine writeBasin(ncid,outputTimestep,outputTimestepUpdate,nSteps,&
 
 end subroutine writeBasin
 
-    ! **************************************************************************************
-    ! public subroutine writeTime: write current time to all files
-    ! **************************************************************************************
+! **************************************************************************************
+! public subroutine writeTime: write current time to all files
+! **************************************************************************************
 subroutine writeTime(ncid,outputTimestep,iStep,meta,dat,err,message)
   USE data_types,only:var_info                       ! metadata type
   USE var_lookup,only:iLookStat                      ! index into stat structure
