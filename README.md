@@ -21,27 +21,30 @@ SummaActors is set up with the following sub-directoies, we will consider the to
  First clone Summa-Actors to your workstation. Then cd into `build/` and clone `summa` or `summa-sundials` into Summa-Actor's build directory. 
 
 ## Compiling Summa-Actors
-The best way to compile SUMMA-Actors is with `cmake`. The `CMakeLists.txt` is found in `build/cmake/` When compiling Summa-Actors there are two options, compiling with the sundials library and compiling without. Which compilation instructions to use are deffined by the following line inside the cmake file:
-    
-    option(SUNDIALS "Use SUNDIALS" ON)
+To compile SUMMA-Actors, use `cmake` with the `CMakeLists.txt` located in `build/cmake/`. You have the option to compile with or without the sundials library, definded by the line `option(SUNDIALS "Use SUNDIALS" ON)` in the `CMakeLists.txt` file. If set to `ON`, it compiles with sundials. If set to `OFF`, it compiles without sundials.
 
-ON compiles with Sundials, OFF compiles without sundials.
+If compiling with sundials make sure to install the `sundials IDA solver version 6.3.0` before attempting to compile SUMMA-Actors. Once installed specifiy the instalation directory of sundials by modifying the line `set(DIR_SUNDIALS "/path/to/sundials/libs")` in the `CMakeLists.txt` file.
 
-Summa-Actors has the following dependencies:
+Before compiling, make sure to install the following dependencies:
  * g++
  * gfortran
  * [NetCDF-Fortran](https://github.com/Unidata/netcdf-fortran)
  * [OpenBLAS](https://github.com/xianyi/OpenBLAS)
  * [C++ Actor Framework](https://github.com/actor-framework/actor-framework)
 
-Once the following libraries have been installed and the proper Sundials setting is set use complete the following:
+Here are the steps to compile SUMMA-Actors:
  - cd into `build/cmake/`
- - create another build directory
+ - create a build directory within the `build/cmake/` directory
  - cd into `build/cmake/build`
  - run `cmake ..`
- - run `make`
- - a `summa_actors` executable should have been created inside the `bin/` directory
+ - run `make -j`
+ - The `summa_actors` executable is created in the `bin/` directory.
 
+SUMMA-Actors supports four build types: Debug, Cluster, Release, and Cluster_Debug. The default build type is Release. You can set the build type by using the `-DCMAKE_BUILD_TYPE=build_type` option, where `build_typ`e is one of the four options listed above. To compile with the Cluster build type, make sure to load the following modules with `module load` before compiling when working on clusters:
+ - gcc/9.3.0
+ - netcdf-fortran
+ - openblas
+ - caf
 
 ## Running SUMMA-Actors
 Running SUMMA-Actors is done with the following command:
