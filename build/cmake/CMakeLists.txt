@@ -10,7 +10,7 @@ SET (CMAKE_Fortran_COMPILER  gfortran)
 include(FortranCInterface)
 FortranCInterface_VERIFY(CXX)
 
-option(SUNDIALS "Use SUNDIALS" ON)
+option(SUNDIALS "Use SUNDIALS" OFF)
 
 ######### SET THE PATHS TO THE SUNDIALS LIBRARIES AND INCLUDE FILES #########
 #############################################################################
@@ -52,6 +52,7 @@ if (CMAKE_BUILD_TYPE MATCHES Cluster OR CMAKE_BUILD_TYPE MATCHES Cluster_Debug)
     find_package(LAPACK REQUIRED)
 
     if(SUNDIALS)
+        # Compiling Summa-Sundials on a Cluster
         link_directories(${DIR_SUNDIALS}/lib64)
         set(CMAKE_BUILD_RPATH "${DIR_SUNDIALS}/lib64")
         set(SUMMA_INCLUDES 
@@ -100,6 +101,7 @@ if (CMAKE_BUILD_TYPE MATCHES Cluster OR CMAKE_BUILD_TYPE MATCHES Cluster_Debug)
 
 
     else()
+        # Building Summa without sundials on a cluster
         set(SUMMA_INCLUDES 
             "$ENV{EBROOTNETCDFMINFORTRAN}/include"
             ${netCDF_INCLUDES}
@@ -134,12 +136,13 @@ if (CMAKE_BUILD_TYPE MATCHES Cluster OR CMAKE_BUILD_TYPE MATCHES Cluster_Debug)
 
     endif()
 
-
 else()
+
     find_package(CAF REQUIRED)
     find_package(netCDF REQUIRED)
     find_package(LAPACK REQUIRED)
     if(SUNDIALS)
+        # Building Summa with sundials on local machine
         link_directories(${DIR_SUNDIALS}/lib)
         set(CMAKE_BUILD_RPATH "${DIR_SUNDIALS}/lib:/usr/local/lib")
         set(SUMMA_INCLUDES
@@ -185,6 +188,7 @@ else()
     
 
     else()
+        # Building Summa-Actors on local machine without sundials 
         set(SUMMA_INCLUDES
             "/usr/include"
             ${netCDF_INCLUDES}
@@ -216,8 +220,6 @@ else()
             -lnetcdff)
     
     endif()
-
-
 endif()
 
 if (SUNDIALS)
@@ -675,47 +677,25 @@ else()
     set(MAIN
         ${ACTORS_DIR}/main.cpp)
 
-
+    ####################### START OF COMPILATION ###########################################
+    # Build NOAH_MP Object
     add_library(SUMMA_NOAHMP OBJECT
         ${NOAHMP}
         ${NRUTIL})
         target_compile_options(SUMMA_NOAHMP PRIVATE ${SUMMA_NOAHMP_OPTIONS})
-
+    # Build SUMMA_COMM Object
     add_library(SUMMA_COMM OBJECT
         ${COMM_ALL})
-        target_compile_options(SUMMA_COMM PRIVATE ${SUMMA_ALL_OPTIONS}})
-        target_include_directories(SUMMA_COMM PRIVATE
-            "/usr/include"
-            # "$ENV{EBROOTNETCDFMINFORTRAN}/include"
-            ${netCDF_INCLUDES}
-            ${LAPACK_INCLUDES})
-        target_link_libraries(SUMMA_COMM PUBLIC
-            # "$ENV{EBROOTNETCDFMINFORTRAN}/lib64"
-            ${netCDF_LIBRARIES}
-            ${LAPACK_LIBRARIES}
-            SUMMA_NOAHMP)
-
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${EXEC_DIR})
-
-
-
+        target_compile_options(SUMMA_COMM PRIVATE ${SUMMA_ALL_OPTIONS})
+        target_include_directories(SUMMA_COMM PRIVATE ${SUMMA_INCLUDES})
+        target_link_libraries(SUMMA_COMM PUBLIC ${SUMMA_LIBS})
+    # Build SUMMA Shared Library
     add_library(summa SHARED
         ${SUMMA_ALL})
     target_compile_options(summa PRIVATE ${SUMMA_ALL_OPTIONS})
-    target_include_directories(summa PUBLIC
-            "/usr/include"
-            # "$ENV{EBROOTNETCDFMINFORTRAN}/include"
-            ${netCDF_INCLUDES}
-            ${LAPACK_INCLUDES})
-    target_link_libraries(summa PUBLIC
-            # "$ENV{EBROOTNETCDFMINFORTRAN}/lib64"
-            ${netCDF_LIBRARIES}
-            ${LAPACK_LIBRARIES}
-            SUMMA_COMM
-            SUMMA_NOAHMP
-            -lnetcdff)
+    target_include_directories(summa PUBLIC ${SUMMA_INCLUDES})
+    target_link_libraries(summa PUBLIC ${SUMMA_LIBS} SUMMA_COMM)
 
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${EXEC_DIR})
 
     add_executable(${EXEC_NAME}
         ${ACTORS_GLOBAL}
@@ -728,22 +708,6 @@ else()
         ${SUMMA_SERVER}
         ${MAIN})
         set_property(TARGET ${EXEC_NAME} PROPERTY LINKER_LANGUAGE Fortran)
-        target_include_directories(${EXEC_NAME} PUBLIC
-            ${CAF_INCLUDES}
-            ${netCDF_INCLUDES}
-            ${LAPACK_INCLUDES}
-            "${PARENT_DIR}/build/includes/global"
-            "${PARENT_DIR}/build/includes/summa_actor"
-            "${PARENT_DIR}/build/includes/gru_actor"
-            "${PARENT_DIR}/build/includes/job_actor"
-            "${PARENT_DIR}/build/includes/file_access_actor"
-            "${PARENT_DIR}/build/includes/hru_actor")
-        target_link_libraries( ${EXEC_NAME}
-        ${CAF_LIBRARIES}
-        ${netCDF_LIBRARIES}
-        ${LAPACK_LIBRARIES}
-        -lcaf_core
-        -lcaf_io
-        summa
-        -lnetcdff)
+        target_include_directories(${EXEC_NAME} PUBLIC ${SUMMA_ACTORS_INCLUDES})
+        target_link_libraries( ${EXEC_NAME} ${SUMMA_ACTORS_LIBS})
 endif()
