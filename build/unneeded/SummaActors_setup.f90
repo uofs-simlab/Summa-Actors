@@ -149,8 +149,22 @@ subroutine setupHRUParam(&
    type(zLookup),pointer                    :: lookupStruct         ! default model parameters
    type(var_i),pointer                      :: startTime            ! start time for the model simulation
    type(var_i),pointer                      :: oldTime              ! time for the previous model time step
-   character(len=256)                       :: message            ! error message
-   character(len=256)                       :: cmessage           ! error message of downwind routine
+   character(len=256)                       :: message              ! error message
+   character(len=256)                       :: cmessage             ! error message of downwind routine
+   integer(i4b),dimension(8)                :: function1start       ! start time for the function
+   integer(i4b),dimension(8)                :: function1end         ! end time for the function
+   integer(i4b)                             :: function1elapsed     ! elapsed time for the function
+   integer(i4b),dimension(8)                :: function2start       ! start time for the function
+   integer(i4b),dimension(8)                :: function2end         ! end time for the function
+   integer(i4b)                             :: function2elapsed     ! elapsed time for the function
+   integer(i4b),dimension(8)                :: function3start       ! start time for the function
+   integer(i4b),dimension(8)                :: function3end         ! end time for the function
+   integer(i4b)                             :: function3elapsed     ! elapsed time for the function
+   integer(i4b),dimension(8)                :: function4start       ! start time for the function
+   integer(i4b),dimension(8)                :: function4end         ! end time for the function
+   integer(i4b)                             :: function4elapsed     ! elapsed time for the function
+
+   
    ! ---------------------------------------------------------------------------------------
    ! initialize error control
    err=0; message='setupHRUParam/'
@@ -206,6 +220,7 @@ subroutine setupHRUParam(&
    ! *** compute derived model variables that are pretty much constant for the basin as a whole
    ! *****************************************************************************
    ! calculate the fraction of runoff in future time steps
+   call date_and_time(values=function1start)
    call fracFuture(bparStruct%var,    &  ! vector of basin-average model parameters
                    bvarStruct,        &  ! data structure of basin-average variables
                    err,cmessage)                   ! error control
@@ -214,23 +229,37 @@ subroutine setupHRUParam(&
       print*, message
       return
    endif
+   call date_and_time(values=function1end)
+   function1elapsed = elapsedSec(function1start, function1end)
+   print*, 'fracFuture: ', function1elapsed
+
 
    ! check that the parameters are consistent
+   call date_and_time(values=function2start)
    call paramCheck(mparStruct,err,cmessage)
    if(err/=0)then
       message=trim(message)//trim(cmessage)
       print*, message
       return
    endif
+   call date_and_time(values=function2end)
+   function2elapsed = elapsedSec(function2start, function2end)
+   print*, 'paramCheck: ', function2elapsed
+
 
    ! calculate a look-up table for the temperature-enthalpy conversion
+   call date_and_time(values=function3start)
    call E2T_lookup(mparStruct,err,cmessage)
    if(err/=0)then
       message=trim(message)//trim(cmessage)
       print*, message
       return
    endif
-   
+   call date_and_time(values=function3end)
+   function3elapsed = elapsedSec(function3start, function3end)
+   print*, 'E2T_lookup: ', function3elapsed
+
+
    ! calculate a lookup table to compute enthalpy from temperature
    call T2E_lookup(gru_struc(indxGRU)%hruInfo(1)%nSoil,   &   ! intent(in):    number of soil layers
                    mparStruct,        &   ! intent(in):    parameter data structure

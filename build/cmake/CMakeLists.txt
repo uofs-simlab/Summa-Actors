@@ -189,6 +189,7 @@ else()
 
     else()
         # Building Summa-Actors on local machine without sundials 
+        set(CMAKE_BUILD_RPATH "/usr/local/lib")
         set(SUMMA_INCLUDES
             "/usr/include"
             ${netCDF_INCLUDES}
@@ -327,6 +328,8 @@ if (SUNDIALS)
 
     set(HRU_INTERFACE
         ${HRU_ACTOR_DIR}/fortran_code/cppwrap_hru.f90
+        ${HRU_ACTOR_DIR}/fortran_code/model_run.f90
+        ${HRU_ACTOR_DIR}/fortran_code/setup_hru.f90
         ${HRU_ACTOR_DIR}/fortran_code/hru_actor.f90
         ${HRU_ACTOR_DIR}/fortran_code/init_hru_actor.f90
         ${HRU_ACTOR_DIR}/fortran_code/outputStrucWrite.f90
@@ -380,9 +383,7 @@ if (SUNDIALS)
         ${DRIVER_DIR}/summaActors_type.f90
         ${DRIVER_DIR}/summaActors_util.f90
         ${DRIVER_DIR}/summaActors_globalData.f90
-        ${DRIVER_DIR}/SummaActors_setup.f90
         ${DRIVER_DIR}/summaActors_restart.f90
-        ${DRIVER_DIR}/SummaActors_modelRun.f90
         ${DRIVER_DIR}/summaActors_alarms.f90)
 
     set(COMM_ALL
@@ -563,6 +564,8 @@ else()
 
     set(HRU_INTERFACE
         ${HRU_ACTOR_DIR}/fortran_code/cppwrap_hru.f90
+        ${HRU_ACTOR_DIR}/fortran_code/model_run.f90
+        ${HRU_ACTOR_DIR}/fortran_code/setup_hru.f90
         ${HRU_ACTOR_DIR}/fortran_code/hru_actor.f90
         ${HRU_ACTOR_DIR}/fortran_code/init_hru_actor.f90
         ${HRU_ACTOR_DIR}/fortran_code/outputStrucWrite.f90
@@ -618,9 +621,7 @@ else()
         ${DRIVER_DIR}/summaActors_type.f90
         ${DRIVER_DIR}/summaActors_util.f90
         ${DRIVER_DIR}/summaActors_globalData.f90
-        ${DRIVER_DIR}/SummaActors_setup.f90
         ${DRIVER_DIR}/summaActors_restart.f90
-        ${DRIVER_DIR}/SummaActors_modelRun.f90
         ${DRIVER_DIR}/summaActors_alarms.f90)
 
     set(COMM_ALL
