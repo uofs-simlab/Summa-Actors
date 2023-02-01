@@ -27,11 +27,11 @@ set(CMAKE_CONFIGURATION_TYPES Debug Release Cluster Cluster_Debug)
 
 # Set compiler flags
 if(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES Cluster_Debug)
-  message("Debug build.")
-  add_definitions(-DDEBUG)
-  set(SUMMA_NOAHMP_OPTIONS -g -O0 -ffree-form -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors)
-  set(SUMMA_ALL_OPTIONS -g -O0 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors)
-  set(CMAKE_CXX_FLAGS "-g -O0 -Wfatal-errors -std=c++17")
+    message("Debug build.")
+    add_definitions(-DDEBUG)
+    set(SUMMA_NOAHMP_OPTIONS -g -O0 -ffree-form -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors)
+    set(SUMMA_ALL_OPTIONS -g -O0 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors)
+    set(CMAKE_CXX_FLAGS "-g -O0 -Wfatal-errors -std=c++17")
 else()
     message("Release build.")
     add_definitions(-DNDEBUG)
@@ -327,9 +327,9 @@ if (SUNDIALS)
         ${JOB_ACTOR_DIR}/job_actor.f90)
 
     set(HRU_INTERFACE
-        ${HRU_ACTOR_DIR}/fortran_code/cppwrap_hru.f90
         ${HRU_ACTOR_DIR}/fortran_code/model_run.f90
         ${HRU_ACTOR_DIR}/fortran_code/setup_hru.f90
+        ${HRU_ACTOR_DIR}/fortran_code/restart.f90
         ${HRU_ACTOR_DIR}/fortran_code/hru_actor.f90
         ${HRU_ACTOR_DIR}/fortran_code/init_hru_actor.f90
         ${HRU_ACTOR_DIR}/fortran_code/outputStrucWrite.f90
@@ -383,7 +383,6 @@ if (SUNDIALS)
         ${DRIVER_DIR}/summaActors_type.f90
         ${DRIVER_DIR}/summaActors_util.f90
         ${DRIVER_DIR}/summaActors_globalData.f90
-        ${DRIVER_DIR}/summaActors_restart.f90
         ${DRIVER_DIR}/summaActors_alarms.f90)
 
     set(COMM_ALL
@@ -454,12 +453,7 @@ if (SUNDIALS)
     target_include_directories(summa PUBLIC ${SUMMA_INCLUDES})
     target_link_libraries(summa PUBLIC ${SUMMA_LIBS} SUMMA_COMM)
 
-
-
-
-
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${EXEC_DIR})
-
+    # Build Summa-Actors executable
     add_executable(${EXEC_NAME}
         ${ACTORS_GLOBAL}
         ${HRU_ACTOR}
@@ -563,9 +557,9 @@ else()
         ${JOB_ACTOR_DIR}/job_actor.f90)
 
     set(HRU_INTERFACE
-        ${HRU_ACTOR_DIR}/fortran_code/cppwrap_hru.f90
         ${HRU_ACTOR_DIR}/fortran_code/model_run.f90
         ${HRU_ACTOR_DIR}/fortran_code/setup_hru.f90
+        ${HRU_ACTOR_DIR}/fortran_code/restart.f90
         ${HRU_ACTOR_DIR}/fortran_code/hru_actor.f90
         ${HRU_ACTOR_DIR}/fortran_code/init_hru_actor.f90
         ${HRU_ACTOR_DIR}/fortran_code/outputStrucWrite.f90
@@ -621,7 +615,6 @@ else()
         ${DRIVER_DIR}/summaActors_type.f90
         ${DRIVER_DIR}/summaActors_util.f90
         ${DRIVER_DIR}/summaActors_globalData.f90
-        ${DRIVER_DIR}/summaActors_restart.f90
         ${DRIVER_DIR}/summaActors_alarms.f90)
 
     set(COMM_ALL
@@ -696,8 +689,7 @@ else()
     target_compile_options(summa PRIVATE ${SUMMA_ALL_OPTIONS})
     target_include_directories(summa PUBLIC ${SUMMA_INCLUDES})
     target_link_libraries(summa PUBLIC ${SUMMA_LIBS} SUMMA_COMM)
-
-
+    # Build SUMMA Executable
     add_executable(${EXEC_NAME}
         ${ACTORS_GLOBAL}
         ${HRU_ACTOR}
