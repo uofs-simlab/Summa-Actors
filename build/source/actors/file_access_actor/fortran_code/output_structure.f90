@@ -181,67 +181,68 @@ subroutine initOutputStructure(handle_forcFileInfo, maxSteps, num_gru, err) bind
           select case(trim(structInfo(iStruct)%structName))    
             case('time')
               call alloc_outputStruc(time_meta,outputStructure(1)%timeStruct(1)%gru(iGRU)%hru(iHRU), &
-                                      maxSteps,err=err,message=message)     ! model forcing data
+                                      nSteps=maxSteps,err=err,message=message)     ! model forcing data
             case('forc')
               ! Structure
               call alloc_outputStruc(forc_meta,outputStructure(1)%forcStruct(1)%gru(iGRU)%hru(iHRU), &
-                                      maxSteps,nSnow,nSoil,err,message);    ! model forcing data
+                                      nSteps=maxSteps,nSnow=nSnow,nSoil=nSoil,err=err,message=message);    ! model forcing data
               ! Statistics
               call alloc_outputStruc(statForc_meta(:)%var_info,outputStructure(1)%forcStat(1)%gru(iGRU)%hru(iHRU), &
-                                      maxSteps,nSnow,nSoil,err,message);    ! model forcing data
+                                      nSteps=maxSteps,nSnow=nSnow,nSoil=nSoil,err=err,message=message);    ! model forcing data
             case('attr')
               call alloc_outputStruc(attr_meta,outputStructure(1)%attrStruct(1)%gru(iGRU)%hru(iHRU), &
-                                      maxSteps,nSnow,nSoil,err,message);    ! local attributes for each HRU
+                                      nSteps=maxSteps,nSnow=nSnow,nSoil=nSoil,err=err,message=message);    ! local attributes for each HRU
             case('type')
               call alloc_outputStruc(type_meta,outputStructure(1)%typeStruct(1)%gru(iGRU)%hru(iHRU), &
-                                      maxSteps,nSnow,nSoil,err,message);    ! classification of soil veg etc.
+                                      nSteps=maxSteps,nSnow=nSnow,nSoil=nSoil,err=err,message=message);    ! classification of soil veg etc.
             case('id'  )
               call alloc_outputStruc(id_meta,outputStructure(1)%idStruct(1)%gru(iGRU)%hru(iHRU), &
-                                      maxSteps,nSnow,nSoil,err,message);        ! local values of hru gru IDs
+                                      nSteps=maxSteps,nSnow=nSnow,nSoil=nSoil,err=err,message=message);        ! local values of hru gru IDs
             case('mpar') ! model parameters
               call alloc_outputStruc(mpar_meta,outputStructure(1)%mparStruct(1)%gru(iGRU)%hru(iHRU), &
-                                      maxSteps,nSnow,nSoil,err,message); 
+                                      nSteps=maxSteps,nSnow=nSnow,nSoil=nSoil,err=err,message=message); 
 
               call alloc_outputStruc(mpar_meta, outputStructure(1)%dparStruct(1)%gru(iGRU)%hru(iHRU), &
-                                      maxSteps,err=err,message=message)
+                                      nSteps=maxSteps,err=err,message=message)
             case('indx')
               ! Structure
               call alloc_outputStruc(indx_meta,outputStructure(1)%indxStruct(1)%gru(iGRU)%hru(iHRU), &
-                                      maxSteps,nSnow,nSoil,err,message);    ! model variables
+                                      nSteps=maxSteps,nSnow=nSnow,nSoil=nSoil,err=err,str_name='indx',message=message);    ! model variables
               ! Statistics
               call alloc_outputStruc(statIndx_meta(:)%var_info,outputStructure(1)%indxStat(1)%gru(iGRU)%hru(1), &
-                                      maxSteps,nSnow,nSoil,err,message);    ! index vars
+                                      nSteps=maxSteps,nSnow=nSnow,nSoil=nSoil,err=err,message=message);    ! index vars
             case('prog')
               ! Structure
               call alloc_outputStruc(prog_meta,outputStructure(1)%progStruct(1)%gru(iGRU)%hru(iHRU), &
-                                      maxSteps,nSnow,nSoil,err,message);    ! model prognostic (state) variables
+                                      nSteps=maxSteps,nSnow=nSnow,nSoil=nSoil,err=err,message=message);    ! model prognostic (state) variables
               ! Statistics
               call alloc_outputStruc(statProg_meta(:)%var_info,outputStructure(1)%progStat(1)%gru(iGRU)%hru(iHRU), &
-                                      maxSteps,nSnow,nSoil,err,message);    ! model prognostic 
+                                      nSteps=maxSteps,nSnow=nSnow,nSoil=nSoil,err=err,message=message);    ! model prognostic 
             case('diag')
               ! Structure
               call alloc_outputStruc(diag_meta,outputStructure(1)%diagStruct(1)%gru(iGRU)%hru(iHRU), &
-                                      maxSteps,nSnow,nSoil,err,message);    ! model diagnostic variables
+                                      nSteps=maxSteps,nSnow=nSnow,nSoil=nSoil,err=err,message=message);    ! model diagnostic variables
+              print*
               ! Statistics
               call alloc_outputStruc(statDiag_meta(:)%var_info,outputStructure(1)%diagStat(1)%gru(iGRU)%hru(iHRU), &
-                                      maxSteps,nSnow,nSoil,err,message);    ! model diagnostic
+                                      nSteps=maxSteps,nSnow=nSnow,nSoil=nSoil,err=err,message=message);    ! model diagnostic
             case('flux')
               ! Structure
               call alloc_outputStruc(flux_meta,outputStructure(1)%fluxStruct(1)%gru(iGRU)%hru(iHRU), &
-                                      maxSteps,nSnow,nSoil,err,message);    ! model fluxes
+                                      nSteps=maxSteps,nSnow=nSnow,nSoil=nSoil,err=err,message=message);    ! model fluxes
               ! Statistics
               call alloc_outputStruc(statFlux_meta(:)%var_info,outputStructure(1)%fluxStat(1)%gru(iGRU)%hru(iHRU), &
-                                      maxSteps,nSnow,nSoil,err,message);    ! model fluxes
+                                      nSteps=maxSteps,nSnow=nSnow,nSoil=nSoil,err=err,message=message);    ! model fluxes
             case('bpar')
               call alloc_outputStruc(bpar_meta,outputStructure(1)%bparStruct(1)%gru(iGRU), &
-                                      maxSteps,nSnow=0,nSoil=0,err=err,message=message);  ! basin-average params 
+                                      nSteps=maxSteps,nSnow=0,nSoil=0,err=err,message=message);  ! basin-average params 
             case('bvar')
               ! Structure
               call alloc_outputStruc(bvar_meta,outputStructure(1)%bvarStruct(1)%gru(iGRU)%hru(iHRU), &
-                                      maxSteps,nSnow=0,nSoil=0,err=err,message=message);  ! basin-average variables
+                                      nSteps=maxSteps,nSnow=0,nSoil=0,err=err,message=message);  ! basin-average variables
               ! Statistics
               call alloc_outputStruc(statBvar_meta(:)%var_info,outputStructure(1)%bvarStat(1)%gru(iGRU)%hru(iHRU), &
-                                      maxSteps,nSnow=0,nSoil=0,err=err,message=message);  ! basin-average variables
+                                      nSteps=maxSteps,nSnow=0,nSoil=0,err=err,message=message);  ! basin-average variables
             case('deriv');  cycle
             case('lookup'); cycle
             case default; err=20; message='unable to find structure name: '//trim(structInfo(iStruct)%structName)
@@ -250,7 +251,7 @@ subroutine initOutputStructure(handle_forcFileInfo, maxSteps, num_gru, err) bind
         ! check errors
         if(err/=0)then
           message=trim(message)//'initOutputStruc.f90 - [structure =  '//trim(structInfo(iStruct)%structName)//']'
-          print*, "message"
+          print*, "Problem with structure: ", trim(structInfo(iStruct)%structName)
           return
         endif
       end do  ! looping through data structures
