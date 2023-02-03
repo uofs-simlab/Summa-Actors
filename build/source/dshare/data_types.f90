@@ -63,10 +63,6 @@ MODULE data_types
   real(rkind), dimension (:,:), allocatable   :: dataFromFile
  end type forcingFileData
 
- type,public :: outputData
-  real(rkind), dimension(:,:), allocatable    :: outputToFile
- end type outputData
- 
  type,public :: var_forc
   type(forcingFileData), allocatable   :: var(:)       ! var(:)%dataFromFile(:,:)
   character(len=256)                   :: refTimeString
