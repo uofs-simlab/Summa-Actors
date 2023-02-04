@@ -1,0 +1,15 @@
+# Define the stages of the CI pipeline
+stages:
+  - build
+  - test
+
+# Define the build job
+build:
+  stage: build
+  script:
+    - echo "Building program"
+    - cd build/cmake
+    - mkdir build
+    - cd build
+    - cmake ..
+    - make
