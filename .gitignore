@@ -2,6 +2,7 @@ bin/summa_actors
 build/cmake/build
 build/summa
 build/summa-sundials
+build/.vscode
 .vscode/settings.json
 .DS_Store
 laugh_tests
