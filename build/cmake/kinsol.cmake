@@ -113,7 +113,6 @@ function(compile_with_kinsol PARENT_DIR, DIR_SUNDIALS)
         ${SUMMA_ENGINE_DIR}/computResid.f90
         ${SUMMA_ENGINE_DIR}/computJacob.f90
         ${SUMMA_ENGINE_DIR}/eval8summa.f90
-        ${SUMMA_ENGINE_DIR}/summaSolve.f90
         ${SUMMA_ENGINE_DIR}/systemSolv.f90
         ${SUMMA_ENGINE_DIR}/varSubstep.f90
         ${SUMMA_ENGINE_DIR}/opSplittin.f90
