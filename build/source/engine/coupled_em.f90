@@ -879,6 +879,7 @@ subroutine coupled_em(&
         print*,ixSolution
         print*, 'dtSave, dt_sub', dtSave, dt_sub
         message=trim(message)//'length of the coupled step is below the minimum step length'
+        print*, message
         err=20; return
       endif
 
