@@ -1,4 +1,36 @@
-function compile_summa_original()
+function (compile_summa_original PARENT_DIR, DIR_SUNDIALS)
+    set(SUMMA_INCLUDES 
+        "$ENV{EBROOTNETCDFMINFORTRAN}/include"
+        ${netCDF_INCLUDES}
+        ${LAPACK_INCLUDES})
+
+    set(SUMMA_LIBS
+        -lnetcdff
+        ${netCDF_LIBRARIES}
+        ${LAPACK_LIBRARIES}
+        SUMMA_NOAHMP)
+
+    set(SUMMA_ACTORS_INCLUDES
+        ${CAF_INCLUDES}
+        "$ENV{EBROOTNETCDFMINFORTRAN}/include"
+        ${LAPACK_INCLUDES}
+        "${PARENT_DIR}/build/includes/global"
+        "${PARENT_DIR}/build/includes/summa_actor"
+        "${PARENT_DIR}/build/includes/gru_actor"
+        "${PARENT_DIR}/build/includes/job_actor"
+        "${PARENT_DIR}/build/includes/file_access_actor"
+        "${PARENT_DIR}/build/includes/hru_actor")
+
+    set(SUMMA_ACTORS_LIBS   
+        ${CAF_LIBRARIES}
+        ${netCDF_LIBRARIES}
+        ${LAPACK_LIBRARIES}
+        -lcaf_core
+        -lcaf_io
+        summa
+        -lnetcdff)
+
+
     set(ACTORS_DIR ${PARENT_DIR}/build/source/actors)
     set(DRIVER_DIR ${PARENT_DIR}/build/source/driver)
     set(DSHARE_DIR ${PARENT_DIR}/build/source/dshare)

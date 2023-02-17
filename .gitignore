@@ -8,3 +8,5 @@ build/.vscode
 laugh_tests
 build/summa_sundials
 build/summa_original
+build/source/testing/containers/output_container/main
+bin/submission_script.sh

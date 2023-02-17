@@ -11,6 +11,7 @@
 #include <string>
 #include <bits/stdc++.h>
 #include <unistd.h>
+#include <sys/stat.h>
 #include <iostream>
 #include "json.hpp"
 #include <optional>
@@ -105,6 +106,13 @@ void run_server(actor_system& system, const config& cfg, Distributed_Settings di
 void caf_main(actor_system& sys, const config& cfg) {
     scoped_actor self{sys};
     int err;
+    struct stat file_to_check;
+    // Check if config file exists
+    if (stat(cfg.config_file.c_str(), &file_to_check) != 0) {
+        aout(self) << "Config File Path Does Not Exist\n";
+        aout(self) << "EXAMPLE: ./summa_actors -g 1 -n 10 -c location/of/config \n";
+        return;
+    }
 
     Distributed_Settings distributed_settings = readDistributedSettings(cfg.config_file);
     Summa_Actor_Settings summa_actor_settings = readSummaActorSettings(cfg.config_file);

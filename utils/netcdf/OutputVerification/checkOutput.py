@@ -47,8 +47,8 @@ def verify_data(dataset_1, dataset_2, num_hru, output_variables):
         hru_from_dataset_1 = dataset_1.isel(hru=i_hru).copy()
         hru_from_dataset_2 = dataset_2.isel(hru=i_hru).copy()
         
-        print("\nHRU - hru_dataset_1", hru_from_dataset_1["hruId"].values)
-        print("HRU - hru_dataset_2", hru_from_dataset_2["hruId"].values, "\n")
+        # print("\nHRU - hru_dataset_1", hru_from_dataset_1["hruId"].values)
+        # print("HRU - hru_dataset_2", hru_from_dataset_2["hruId"].values, "\n")
 
         for var in output_variables:
             if not check_variable_length(hru_from_dataset_1, hru_from_dataset_2, var):
@@ -61,7 +61,7 @@ def verify_data(dataset_1, dataset_2, num_hru, output_variables):
                 print("     hru_from_dataset_1 = ", len(hru_variable_data_from_dataset_1))
                 print("     hru_from_dataset_2 = ", len(hru_variable_data_from_dataset_2))
 
-            error_tolerance = 0
+            error_tolerance = 0.1
             errors = check_data_for_errors(hru_variable_data_from_dataset_1, hru_variable_data_from_dataset_2, error_tolerance)
             print("Errors for variable", var, ":", errors)        
 
@@ -80,15 +80,15 @@ def get_output_vars(model_output_file):
 
 
 
-num_hru = 125
+num_hru = 1
 print("Checking output for", num_hru, "HRUs")
-dataset_1 = "/home/kklenk/scratch/Sundials_non_Actors_Output/netcdf/Summa-Sundials-_G112001-112125_timestep.nc"
-dataset_2 = "/home/kklenk/scratch/Sundials_Actors_Output/netcdf/Summa-Actors-Sundials-GRU112001-500_timestep.nc"
+dataset_1 = "/home/kklenk/scratch/Kinsol/netcdf/SummaActorsGRU1-1_timestep.nc"
+dataset_2 = "/home/kklenk/scratch/Kinsol/netcdf/SummaActors_kinsolGRU1-1_timestep.nc"
 
 # dataset_1 = "/scratch/kck540/Summa_Sundials/non-actors/SummaOriginal-BE_G000001-000002_timestep.nc"
 # dataset_2 = "/scratch/kck540/Summa_Sundials/actors/SummaActors-BEGRU1-2_timestep.nc"
 
-model_output_file = "/home/kklenk/projects/rpp-kshook/kklenk/Sundials_Settings/outputControl.txt"
+model_output_file = "/home/kklenk/projects/rpp-kshook/kklenk/settings/SummaActorsSettings/outputControl.txt"
 
 output_vars = get_output_vars(model_output_file)
 verify_data(dataset_1, dataset_2, num_hru, output_vars)

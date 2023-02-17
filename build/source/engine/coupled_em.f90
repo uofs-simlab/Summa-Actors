@@ -1051,7 +1051,6 @@ subroutine coupled_em(&
 
     ! increment sub-step
     dt_solv = dt_solv + dt_sub
-
     ! save the time step to initialize the subsequent step
     if(dt_solv<data_step .or. nsub==1) dt_init = dt_sub
 
