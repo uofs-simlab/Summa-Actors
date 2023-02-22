@@ -3,6 +3,8 @@
 #####################################################################
 function(compile_with_kinsol PARENT_DIR, DIR_SUNDIALS)
     find_package(LAPACK REQUIRED)
+    set(EXEC_NAME summa_kinsol)
+
 
     message("DIR_SUNDIALS: ${DIR_SUNDIALS}")
     # Building Summa with sundials on local machine
@@ -122,6 +124,7 @@ function(compile_with_kinsol PARENT_DIR, DIR_SUNDIALS)
 
     SET(DATAMS 
         ${SUMMA_DSHARE_DIR}/multiconst.f90
+        ${DSHARE_DIR}/csv_file.f90
         ${DSHARE_DIR}/var_lookup.f90
         ${DSHARE_DIR}/data_types.f90
         ${DSHARE_DIR}/globalData.f90

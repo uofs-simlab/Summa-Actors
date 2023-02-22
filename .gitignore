@@ -11,3 +11,11 @@ build/summa_original
 build/source/testing/containers/output_container/main
 bin/submission_script.sh
 build/summa_kinsol
+bin/summa_kinsol
+build/flibs-0.9/
+build/cmake/build_be/
+build/cmake/build_kinsol/
+bin/data_be.csv
+bin/data_kinsol.csv
+bin/submission_copern.sh
+bin/summa_be

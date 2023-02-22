@@ -1,4 +1,6 @@
 function (compile_summa_original PARENT_DIR, DIR_SUNDIALS)
+    set(EXEC_NAME summa_be)
+
     set(SUMMA_INCLUDES 
         "$ENV{EBROOTNETCDFMINFORTRAN}/include"
         ${netCDF_INCLUDES}
@@ -42,9 +44,9 @@ function (compile_summa_original PARENT_DIR, DIR_SUNDIALS)
     set(JOB_ACTOR_DIR ${ACTORS_DIR}/job_actor)
     set(HRU_ACTOR_DIR ${ACTORS_DIR}/hru_actor)
     set(GRU_ACTOR_DIR ${ACTORS_DIR}/gru_actor)
-    set(SUMMA_DSHARE_DIR ${PARENT_DIR}/build/summa/build/source/dshare)
-    set(SUMMA_ENGINE_DIR ${PARENT_DIR}/build/summa/build/source/engine)
-    set(SUMMA_NOAHMP_DIR ${PARENT_DIR}/build/summa/build/source/noah-mp)
+    set(SUMMA_DSHARE_DIR ${PARENT_DIR}/build/summa_original/build/source/dshare)
+    set(SUMMA_ENGINE_DIR ${PARENT_DIR}/build/summa_original/build/source/engine)
+    set(SUMMA_NOAHMP_DIR ${PARENT_DIR}/build/summa_original/build/source/noah-mp)
 
     set(NRUTIL
         ${SUMMA_ENGINE_DIR}/nrtype.f90
@@ -61,6 +63,7 @@ function (compile_summa_original PARENT_DIR, DIR_SUNDIALS)
 
     SET(DATAMS 
         ${SUMMA_DSHARE_DIR}/multiconst.f90
+        ${DSHARE_DIR}/csv_file.f90
         ${DSHARE_DIR}/var_lookup.f90
         ${DSHARE_DIR}/data_types.f90
         ${DSHARE_DIR}/globalData.f90
