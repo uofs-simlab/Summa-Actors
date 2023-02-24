@@ -22,12 +22,10 @@ include(ida.cmake)
 # When compiling Summa-Actors each configuration can be compiled in a Cluster or Debug mode,
 # which is set by the CMAKE_BUILD_TYPE variable. The default is Release, non-cluster mode.
 
-
-
 ######### SET THE PATHS TO THE SUNDIALS LIBRARIES AND INCLUDE FILES #########
 #############################################################################
-set(DIR_SUNDIALS "/globalhome/kck540/HPC/Libraries/sundials/instdir")
-# set(DIR_SUNDIALS "/home/kklenk/projects/rpp-kshook/CompHydCore/SummaSundials/sundials/sundials/instdir")
+# set(DIR_SUNDIALS "/globalhome/kck540/HPC/Libraries/sundials/instdir")
+set(DIR_SUNDIALS "/home/kklenk/projects/rpp-kshook/CompHydCore/SummaSundials/sundials/sundials/instdir")
 #set(DIR_SUNDIALS "/usr/local/sundials")
 #############################################################################
 
@@ -37,7 +35,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 # Add options for build type
-set(CMAKE_CONFIGURATION_TYPES Debug Release Cluster Cluster_Debug Kinsol Kinsol_Debug)
+set(CMAKE_CONFIGURATION_TYPES Debug Release Cluster Cluster_Debug Kinsol Kinsol_Debug IDA IDA_DEBUG)
 
 # Set compiler flags
 if(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES Cluster_Debug OR CMAKE_BUILD_TYPE MATCHES Kinsol_Debug)
@@ -66,6 +64,15 @@ if (CMAKE_BUILD_TYPE MATCHES Cluster OR CMAKE_BUILD_TYPE MATCHES Cluster_Debug)
     message("\nBuilding Cluster\n")
 
     compile_summa_original(PARENT_DIR, ${DIR_SUNDIALS})
+
+elseif(CMAKE_BUILD_TYPE MATCHES IDA OR CMAKE_BUILD_TYPE MATCHES IDA_DEBUG)
+    find_package(CAF REQUIRED)
+    find_package(netCDF REQUIRED)
+    find_package(LAPACK REQUIRED)
+    message("\nBuilding IDA\n")
+
+    compile_with_ida(PARENT_DIR, ${DIR_SUNDIALS})
+
 
 elseif(CMAKE_BUILD_TYPE MATCHES Kinsol OR CMAKE_BUILD_TYPE MATCHES Kinsol_Debug)
     message("\nBuilding Kinsol\n")

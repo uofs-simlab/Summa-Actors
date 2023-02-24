@@ -1,7 +1,56 @@
-function(compile_with_ida)
+function(compile_with_ida PARENT_DIR, DIR_SUNDIALS)
+    find_package(LAPACK REQUIRED)
+    set(EXEC_NAME summa_sundials)
 
-
+    link_directories(${DIR_SUNDIALS}/lib64)
+    set(CMAKE_BUILD_RPATH "${DIR_SUNDIALS}/lib64")
+    set(SUMMA_INCLUDES 
+        "$ENV{EBROOTNETCDFMINFORTRAN}/include"
+        "${DIR_SUNDIALS}/include"
+        "${DIR_SUNDIALS}/fortran"
+        ${netCDF_INCLUDES}
+        ${LAPACK_INCLUDES})
     
+    set(SUMMA_LIBS
+        -lsundials_fnvecmanyvector_mod 
+        -lsundials_fida_mod 
+        -lsundials_fnvecserial_mod 
+        -lsundials_fsunlinsoldense_mod 
+        -lsundials_fsunmatrixdense_mod 
+        -lnetcdff
+        -lopenblas
+        ${netCDF_LIBRARIES}
+        ${LAPACK_LIBRARIES}
+        SUMMA_NOAHMP)
+    
+    set(SUMMA_ACTORS_INCLUDES 
+        ${CAF_INCLUDES}
+        "$ENV{EBROOTNETCDFMINFORTRAN}/include"
+        ${LAPACK_INCLUDES}
+        "${DIR_SUNDIALS}/include"
+        "${PARENT_DIR}/build/includes/global"
+        "${PARENT_DIR}/build/includes/summa_actor"
+        "${PARENT_DIR}/build/includes/gru_actor"
+        "${PARENT_DIR}/build/includes/job_actor"
+        "${PARENT_DIR}/build/includes/file_access_actor"
+        "${PARENT_DIR}/build/includes/hru_actor")
+
+    set(SUMMA_ACTORS_LIBS   
+        ${CAF_LIBRARIES}
+        ${netCDF_LIBRARIES}
+        ${LAPACK_LIBRARIES}
+        -lopenblas
+        -lcaf_core
+        -lcaf_io
+        summa
+        -lnetcdff
+        -lsundials_fnvecmanyvector_mod 
+        -lsundials_fida_mod 
+        -lsundials_fnvecserial_mod 
+        -lsundials_fsunlinsoldense_mod 
+        -lsundials_fsunmatrixdense_mod)
+
+
     set(ACTORS_DIR ${PARENT_DIR}/build/source/actors)
     set(DRIVER_DIR ${PARENT_DIR}/build/source/driver)
     set(DSHARE_DIR ${PARENT_DIR}/build/source/dshare)
