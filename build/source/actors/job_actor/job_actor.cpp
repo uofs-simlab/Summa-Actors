@@ -237,7 +237,6 @@ std::vector<serializable_netcdf_gru_actor_info> getGruNetcdfInfo(int max_run_att
 }
 
 void handleGRUError(stateful_actor<job_state>* self, const error& err, caf::actor src) {
-    aout(self) << "Handling HRU Error: " << to_string(err) << "\n";
 
     // Find the GRU that failed
     for(auto GRU : self->state.gru_container.gru_list) {
@@ -245,18 +244,18 @@ void handleGRUError(stateful_actor<job_state>* self, const error& err, caf::acto
             GRU->setFailed();
             GRU->decrementAttemptsLeft();
             self->state.gru_container.num_gru_done++;
-            self->state.num_gru_failed++;
+            self->state.gru_container.num_gru_failed++;
             self->send(self->state.file_access_actor, run_failure_v, GRU->getLocalGRUIndex());
             
             // Check if we have finished all active GRUs
-            if (self->state.gru_container.num_gru_done == self->state.gru_container.num_gru_in_run_domain) {
+            if (self->state.gru_container.num_gru_done >= self->state.gru_container.num_gru_in_run_domain) {
                 // Check for failures
                 if(self->state.gru_container.num_gru_failed == 0 || self->state.max_run_attempts == 1) {
-                //TODO: RENAME DEALLOCATE_STURCTURES this is more of a finalize
-                std::vector<serializable_netcdf_gru_actor_info> netcdf_gru_info = getGruNetcdfInfo(
-                                                                                        self->state.max_run_attempts,
-                                                                                        self->state.gru_container.gru_list);
-                self->send(self->state.file_access_actor, deallocate_structures_v, netcdf_gru_info);
+                    //TODO: RENAME DEALLOCATE_STURCTURES this is more of a finalize
+                    std::vector<serializable_netcdf_gru_actor_info> netcdf_gru_info = getGruNetcdfInfo(
+                                                                                            self->state.max_run_attempts,
+                                                                                            self->state.gru_container.gru_list);
+                    self->send(self->state.file_access_actor, deallocate_structures_v, netcdf_gru_info);
                 
                 } else {
                 // TODO: Handle failures
