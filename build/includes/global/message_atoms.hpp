@@ -6,6 +6,7 @@
 #include "client/client_container.hpp"
 #include <vector>
 #include "settings_functions.hpp"
+#include "global.hpp"
 #include "caf/all.hpp"
 
 enum class hru_error : uint8_t {
@@ -13,11 +14,25 @@ enum class hru_error : uint8_t {
     run_physics_infeasible_state = 2,
 };
 
+enum class file_access_error : uint8_t {
+    writing_error = 1,
+};
+
+// HRU Errors
 std::string to_string(hru_error err);
 bool from_string(caf::string_view in, hru_error& out);
 bool from_integer(uint8_t in, hru_error& out);
 template<class Inspector>
 bool inspect(Inspector& f, hru_error& x) {
+    return caf::default_enum_inspect(f, x);
+}
+
+// File Access Actor
+std::string to_string(file_access_error err);
+bool from_string(caf::string_view in, file_access_error& out);
+bool from_integer(uint8_t in, file_access_error& out);
+template<class Inspector>
+bool inspect(Inspector& f, file_access_error& x) {
     return caf::default_enum_inspect(f, x);
 }
 
@@ -185,6 +200,7 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     CAF_ADD_TYPE_ID(summa, (File_Access_Actor_Settings))
     CAF_ADD_TYPE_ID(summa, (Job_Actor_Settings))
     CAF_ADD_TYPE_ID(summa, (HRU_Actor_Settings))
+    CAF_ADD_TYPE_ID(summa, (serializable_netcdf_gru_actor_info))
 
     // Class Types
     CAF_ADD_TYPE_ID(summa, (Client))
@@ -198,13 +214,17 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     CAF_ADD_TYPE_ID(summa, (std::vector<double>))
     CAF_ADD_TYPE_ID(summa, (std::vector<long int>))
     CAF_ADD_TYPE_ID(summa, (std::vector<std::tuple<caf::actor, std::string>>))
+    CAF_ADD_TYPE_ID(summa, (std::vector<serializable_netcdf_gru_actor_info>))
 
     CAF_ADD_TYPE_ID(summa, (std::optional<caf::strong_actor_ptr>))
 
     // error types
     CAF_ADD_TYPE_ID(summa, (hru_error))
 
+    CAF_ADD_TYPE_ID(summa, (file_access_error))
+
 
 CAF_END_TYPE_ID_BLOCK(summa)
 
 CAF_ERROR_CODE_ENUM(hru_error)
+CAF_ERROR_CODE_ENUM(file_access_error)

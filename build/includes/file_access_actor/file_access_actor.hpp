@@ -7,9 +7,22 @@
 #include "settings_functions.hpp"
 #include "fortran_data_types.hpp"
 #include "auxilary.hpp"
+#include "global.hpp"
 
 
 // class Output_Container;
+
+struct netcdf_gru_actor_info {
+    int run_time_var_id;
+    int init_duration_var_id;
+    int forcing_duration_var_id;
+    int run_physics_duration_var_id;
+    int write_output_duration_var_id;
+    
+    int state_var_id; // The success of the GRU 1 = pass, 0 = fail
+    int num_attempts_var_id;
+};
+
 
 namespace caf {
 
@@ -19,6 +32,8 @@ struct file_access_state {
     caf::actor parent; 
     int start_gru;
     int num_gru;
+
+    netcdf_gru_actor_info gru_actor_stats;
 
     // std::vector<hru_output_handles> vector_of_output_handles;
 

@@ -78,7 +78,8 @@ struct hru_output_info {
 
 struct output_partition {
     int start_gru;
-    int num_gru;            
+    int num_gru;
+    int num_active_gru;            
     int num_timesteps;     
     int simulation_timesteps_remaining;
     int grus_ready_to_write;
@@ -109,38 +110,9 @@ void updateNumTimeForPartition(std::shared_ptr<output_partition> &output_partiti
 
 void resetReadyToWrite(std::shared_ptr<output_partition> &output_partition);
 
-
-
-
-
-
-
-
-
-
-// This class holds the output for the HRUs as a buffer so 
-// we can write more data at once
-class Output_Container {
-    private:
-        // Matrix charactieristics
-        int max_steps; // maximum number of steps we can hold for an HRU before writing
-        int max_hrus; // maximum number of hrus we can hold for the structure
-
-        std::vector<std::vector<hru_output_handles>> hru_output_handles_vector; // Pointers to HRU output data
-
-    public:
-        Output_Container(int max_hrus, int max_steps);
-        ~Output_Container();
-
-        // insertes output from an HRU into hru_output_handles
-        void insertOutput(int hru_index, hru_output_handles hru_output);
-
-        bool isFull(int hru_index);
-
-        // returns the matrix of hru_outputs for writing
-        std::vector<std::vector<hru_output_handles>> getAllHRUOutput();
-
-        void clearAll();
-
-
-};
+/*
+ * Reduce the number of GRUs the partition is waiting on to write to file by 1
+ * Check if the partition is ready to write to file and return the partition index if it is
+*/
+std::optional<int> updatePartitionWithFailedHRU(std::vector<std::shared_ptr<output_partition>>& output_partitions, 
+    int local_gru_index);

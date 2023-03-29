@@ -8,32 +8,23 @@ function(compile_with_kinsol PARENT_DIR, DIR_SUNDIALS)
 
     message("DIR_SUNDIALS: ${DIR_SUNDIALS}")
     # Building Summa with sundials on local machine
-    # link_directories(${DIR_SUNDIALS}/lib)
-    # set(CMAKE_BUILD_RPATH "${DIR_SUNDIALS}/lib:/usr/local/lib")
-    # set(SUMMA_INCLUDES
-    #     "/usr/include"
-    #     "${DIR_SUNDIALS}/include"
-    #     "${DIR_SUNDIALS}/fortran"
-    #     ${netCDF_INCLUDES}
-    #     ${LAPACK_INCLUDES})
-    link_directories(${DIR_SUNDIALS}/lib64)
-    set(CMAKE_BUILD_RPATH "${DIR_SUNDIALS}/lib64")
-    set(SUMMA_INCLUDES 
-        "$ENV{EBROOTNETCDFMINFORTRAN}/include"
+    link_directories(${DIR_SUNDIALS}/lib)
+    set(CMAKE_BUILD_RPATH "${DIR_SUNDIALS}/lib:/usr/local/lib")
+    set(SUMMA_INCLUDES
+        "/usr/include"
         "${DIR_SUNDIALS}/include"
         "${DIR_SUNDIALS}/fortran"
         ${netCDF_INCLUDES}
         ${LAPACK_INCLUDES})
+    # link_directories(${DIR_SUNDIALS}/lib64)
+    # set(CMAKE_BUILD_RPATH "${DIR_SUNDIALS}/lib64")
+    # set(SUMMA_INCLUDES 
+    #     "$ENV{EBROOTNETCDFMINFORTRAN}/include"
+    #     "${DIR_SUNDIALS}/include"
+    #     "${DIR_SUNDIALS}/fortran"
+    #     ${netCDF_INCLUDES}
+    #     ${LAPACK_INCLUDES})
 
-    # set(SUMMA_LIBS
-    #     -lsundials_fkinsol_mod
-    #     -lsundials_fnvecserial_mod 
-    #     -lsundials_fsunmatrixdense_mod 
-    #     -lsundials_fsunlinsoldense_mod 
-    #     -lsundials_fsunnonlinsolnewton_mod
-    #     -lnetcdff
-    #     -lopenblas
-    #     SUMMA_NOAHMP)
     set(SUMMA_LIBS
         -lsundials_fkinsol_mod
         -lsundials_fnvecserial_mod 
@@ -41,48 +32,44 @@ function(compile_with_kinsol PARENT_DIR, DIR_SUNDIALS)
         -lsundials_fsunlinsoldense_mod 
         -lsundials_fsunnonlinsolnewton_mod
         -lnetcdff
-        ${netCDF_LIBRARIES}
-        ${LAPACK_LIBRARIES}
+        -lopenblas
         SUMMA_NOAHMP)
-    
-    #  set(SUMMA_ACTORS_INCLUDES 
-    #         ${CAF_INCLUDES}
-    #         "$ENV{EBROOTNETCDFMINFORTRAN}/include"
-    #         ${LAPACK_INCLUDES}
-    #         "${DIR_SUNDIALS}/include"
-    #         "${PARENT_DIR}/build/includes/global"
-    #         "${PARENT_DIR}/build/includes/summa_actor"
-    #         "${PARENT_DIR}/build/includes/gru_actor"
-    #         "${PARENT_DIR}/build/includes/job_actor"
-    #         "${PARENT_DIR}/build/includes/file_access_actor"
-    #         "${PARENT_DIR}/build/includes/hru_actor")
-    set(SUMMA_ACTORS_INCLUDES 
-        ${CAF_INCLUDES}
-        "$ENV{EBROOTNETCDFMINFORTRAN}/include"
-        ${LAPACK_INCLUDES}
-        "${DIR_SUNDIALS}/include"
-        "${PARENT_DIR}/build/includes/global"
-        "${PARENT_DIR}/build/includes/summa_actor"
-        "${PARENT_DIR}/build/includes/gru_actor"
-        "${PARENT_DIR}/build/includes/job_actor"
-        "${PARENT_DIR}/build/includes/file_access_actor"
-        "${PARENT_DIR}/build/includes/hru_actor")
-    
-    # set(SUMMA_ACTORS_LIBS   
-    #     -lopenblas
-    #     -lcaf_core
-    #     -lcaf_io
-    #     summa
-    #     -lnetcdff
+    # set(SUMMA_LIBS
     #     -lsundials_fkinsol_mod
     #     -lsundials_fnvecserial_mod 
     #     -lsundials_fsunmatrixdense_mod 
     #     -lsundials_fsunlinsoldense_mod 
-    #     -lsundials_fsunnonlinsolnewton_mod)
+    #     -lsundials_fsunnonlinsolnewton_mod
+    #     -lnetcdff
+    #     ${netCDF_LIBRARIES}
+    #     ${LAPACK_LIBRARIES}
+    #     SUMMA_NOAHMP)
+    
+     set(SUMMA_ACTORS_INCLUDES 
+            ${CAF_INCLUDES}
+            "$ENV{EBROOTNETCDFMINFORTRAN}/include"
+            ${LAPACK_INCLUDES}
+            "${DIR_SUNDIALS}/include"
+            "${PARENT_DIR}/build/includes/global"
+            "${PARENT_DIR}/build/includes/summa_actor"
+            "${PARENT_DIR}/build/includes/gru_actor"
+            "${PARENT_DIR}/build/includes/job_actor"
+            "${PARENT_DIR}/build/includes/file_access_actor"
+            "${PARENT_DIR}/build/includes/hru_actor")
+    # set(SUMMA_ACTORS_INCLUDES 
+    #     ${CAF_INCLUDES}
+    #     "$ENV{EBROOTNETCDFMINFORTRAN}/include"
+    #     ${LAPACK_INCLUDES}
+    #     "${DIR_SUNDIALS}/include"
+    #     "${PARENT_DIR}/build/includes/global"
+    #     "${PARENT_DIR}/build/includes/summa_actor"
+    #     "${PARENT_DIR}/build/includes/gru_actor"
+    #     "${PARENT_DIR}/build/includes/job_actor"
+    #     "${PARENT_DIR}/build/includes/file_access_actor"
+    #     "${PARENT_DIR}/build/includes/hru_actor")
+    
     set(SUMMA_ACTORS_LIBS   
-        ${CAF_LIBRARIES}
-        ${netCDF_LIBRARIES}
-        ${LAPACK_LIBRARIES}
+        -lopenblas
         -lcaf_core
         -lcaf_io
         summa
@@ -92,6 +79,19 @@ function(compile_with_kinsol PARENT_DIR, DIR_SUNDIALS)
         -lsundials_fsunmatrixdense_mod 
         -lsundials_fsunlinsoldense_mod 
         -lsundials_fsunnonlinsolnewton_mod)
+    # set(SUMMA_ACTORS_LIBS   
+    #     ${CAF_LIBRARIES}
+    #     ${netCDF_LIBRARIES}
+    #     ${LAPACK_LIBRARIES}
+    #     -lcaf_core
+    #     -lcaf_io
+    #     summa
+    #     -lnetcdff
+    #     -lsundials_fkinsol_mod
+    #     -lsundials_fnvecserial_mod 
+    #     -lsundials_fsunmatrixdense_mod 
+    #     -lsundials_fsunlinsoldense_mod 
+    #     -lsundials_fsunnonlinsolnewton_mod)
 
 
     set(ACTORS_DIR ${PARENT_DIR}/build/source/actors)

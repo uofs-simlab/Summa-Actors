@@ -11,6 +11,7 @@ void initArrayOfOuputPartitions(std::vector<std::shared_ptr<output_partition>>& 
         output_partitions.push_back(std::make_shared<output_partition>());
         output_partitions[i]->start_gru = start_gru_counter;
         output_partitions[i]->num_gru = num_gru_per_partition;
+        output_partitions[i]->num_active_gru = num_gru_per_partition;
         output_partitions[i]->num_timesteps = num_timesteps;
         output_partitions[i]->simulation_timesteps_remaining = simulation_timesteps_remaining;
         output_partitions[i]->grus_ready_to_write = 0;
@@ -24,6 +25,7 @@ void initArrayOfOuputPartitions(std::vector<std::shared_ptr<output_partition>>& 
     output_partitions.push_back(std::make_shared<output_partition>());
     output_partitions[num_partitions - 1]->start_gru = start_gru_counter;
     output_partitions[num_partitions - 1]->num_gru = num_gru_run_domain - start_gru_counter + 1;
+    output_partitions[num_partitions - 1]->num_active_gru = num_gru_run_domain - start_gru_counter + 1;
     output_partitions[num_partitions - 1]->num_timesteps = num_timesteps;
     output_partitions[num_partitions - 1]->simulation_timesteps_remaining = simulation_timesteps_remaining;
     output_partitions[num_partitions - 1]->grus_ready_to_write = 0;
@@ -45,7 +47,7 @@ std::optional<int> addReadyToWriteHRU(std::vector<std::shared_ptr<output_partiti
     output_partitions[partition_index]->hru_info_and_data[gru_index_in_partition]->ready_to_write = true;
     output_partitions[partition_index]->grus_ready_to_write += 1;
     // If all grus are ready to write then return the partition index
-    if (output_partitions[partition_index]->grus_ready_to_write == output_partitions[partition_index]->num_gru) {
+    if (output_partitions[partition_index]->grus_ready_to_write == output_partitions[partition_index]->num_active_gru) {
         return partition_index;
     }
     else {
@@ -85,67 +87,19 @@ void updateNumTimeForPartition(std::shared_ptr<output_partition> &output_partiti
     }
 }
 
+std::optional<int> updatePartitionWithFailedHRU(std::vector<std::shared_ptr<output_partition>>& output_partitions, 
+    int local_gru_index) {
+    int partition_index = findPatritionIndex(output_partitions[0]->num_gru, local_gru_index, output_partitions.size());
+    output_partitions[partition_index]->num_active_gru -= 1;    
 
-
-
-
-
-Output_Container::Output_Container(int max_hrus, int max_steps) {
-    this->max_hrus = max_hrus;
-    this->max_steps = max_steps;
-    for (int i = 0; i < max_hrus; i++) {
-        std::vector<hru_output_handles> hru_output_handles;
-        this->hru_output_handles_vector.push_back(hru_output_handles);
+    // Check if the partition is now ready to write
+    if (output_partitions[partition_index]->grus_ready_to_write == output_partitions[partition_index]->num_active_gru) {
+        return partition_index;
     }
-    
-}
-
-Output_Container::~Output_Container(){};
-
-void Output_Container::insertOutput(int hru_index, hru_output_handles hru_output) {
-    // adjust hru_index to be 0 based
-    hru_index = hru_index - 1;
-    try {
-        if (hru_index < 0 || hru_index >= this->max_hrus)
-        throw "HRU index out of bounds";
-            
-        if (this->hru_output_handles_vector[hru_index].size() < this->max_steps)
-            this->hru_output_handles_vector[hru_index].push_back(hru_output);
-        else
-            throw "HRU output buffer full";
-
-    } catch (const char* msg) {
-        std::cerr << msg << std::endl;
+    else {
+        return {};
     }
-}
 
 
-bool Output_Container::isFull(int hru_index) {
-    // adjust hru_index to be 0 based
-    hru_index = hru_index - 1;
-    try {
-        if (hru_index < 0 || hru_index >= this->max_hrus)
-        throw "HRU index out of bounds";
-            
-        if (this->hru_output_handles_vector[hru_index].size() == this->max_steps)
-            return true;
-        else
-            return false;
-
-    } catch (const char* msg) {
-        std::cerr << msg << std::endl;
-    }
-    return false;
-}
-
-std::vector<std::vector<hru_output_handles>> Output_Container::getAllHRUOutput() {
-    return this->hru_output_handles_vector;
-}
-
-
-void Output_Container::clearAll() {
-    for (int i = 0; i < this->max_hrus; i++) {
-        this->hru_output_handles_vector[i].clear();
-    }
 }
 

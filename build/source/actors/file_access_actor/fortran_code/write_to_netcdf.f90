@@ -11,7 +11,7 @@ public::writeParamToNetCDF
 public::writeDataToNetCDF
 public::writeBasinToNetCDF
 public::writeTimeToNetCDF
-
+public::writeGRUStatistics
 
 contains
 
@@ -281,5 +281,63 @@ subroutine writeTimeToNetCDF(handle_ncid, handle_finalize_stats, handle_output_t
   endif 
 
 end subroutine writeTimeToNetCDF
+
+subroutine writeGRUStatistics(handle_ncid,      &
+                              gru_var_ids,      &
+                              gru_stats_vector, &
+                              num_gru,          &
+                              err) bind(C, name="WriteGRUStatistics")
+  USE data_types,only:var_i,netcdf_gru_actor_info,serializable_netcdf_gru_actor_info
+  USE var_lookup, only: maxvarFreq ! number of output frequencies
+  USE netcdf
+  implicit none
+  ! Dummy Variables
+  type(c_ptr), intent(in), value                      :: handle_ncid
+  type(netcdf_gru_actor_info),intent(in)              :: gru_var_ids
+  type(serializable_netcdf_gru_actor_info),intent(in) :: gru_stats_vector(num_gru)
+  integer(c_int), intent(in)                          :: num_gru
+  integer(c_int), intent(out)                         :: err
+  
+  ! Local Variables
+  type(var_i), pointer                                :: ncid
+  real(c_double), dimension(num_gru)                  :: run_time_array
+  real(c_double), dimension(num_gru)                  :: init_time_array
+  real(c_double), dimension(num_gru)                  :: forcing_time_array
+  real(c_double), dimension(num_gru)                  :: run_physics_time_array
+  real(c_double), dimension(num_gru)                  :: write_output_time_array
+
+  integer(c_int), dimension(num_gru)                  :: successful_array
+  integer(c_int), dimension(num_gru)                  :: num_attempts_array
+
+  integer(c_int)                                      :: i
+  integer(c_int)                                      :: iFreq         
+  ! ---------------------------------------------------------------------------------------
+  ! * Convert From C++ to Fortran
+  call c_f_pointer(handle_ncid, ncid)
+
+  ! Assemble fortran arrays
+  do i=1,num_gru
+    run_time_array(i) = gru_stats_vector(i)%run_time
+    init_time_array(i) = gru_stats_vector(i)%init_duration
+    forcing_time_array(i) = gru_stats_vector(i)%forcing_duration
+    run_physics_time_array(i) = gru_stats_vector(i)%run_physics_duration
+    write_output_time_array(i) = gru_stats_vector(i)%write_output_duration
+    successful_array(i) = gru_stats_vector(i)%successful
+    num_attempts_array(i) = gru_stats_vector(i)%num_attempts
+  end do
+
+  ! Write to NetCDF
+  do iFreq=1, maxvarFreq
+    err = nf90_put_var(ncid%var(iFreq), gru_var_ids%run_time_var_id, run_time_array)
+    err = nf90_put_var(ncid%var(iFreq), gru_var_ids%init_duration_var_id, init_time_array)
+    err = nf90_put_var(ncid%var(iFreq), gru_var_ids%forcing_duration_var_id, forcing_time_array)
+    err = nf90_put_var(ncid%var(iFreq), gru_var_ids%run_physics_duration_var_id, run_physics_time_array)
+    err = nf90_put_var(ncid%var(iFreq), gru_var_ids%write_output_duration_var_id, write_output_time_array)
+    err = nf90_put_var(ncid%var(iFreq), gru_var_ids%state_var_id, successful_array)
+    err = nf90_put_var(ncid%var(iFreq), gru_var_ids%num_attempts_var_id, num_attempts_array)
+  end do
+
+end subroutine writeGRUStatistics
+
 
 end module write_to_netcdf_module

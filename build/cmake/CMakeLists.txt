@@ -25,8 +25,8 @@ include(ida.cmake)
 ######### SET THE PATHS TO THE SUNDIALS LIBRARIES AND INCLUDE FILES #########
 #############################################################################
 # set(DIR_SUNDIALS "/globalhome/kck540/HPC/Libraries/sundials/instdir")
-set(DIR_SUNDIALS "/home/kklenk/projects/rpp-kshook/CompHydCore/SummaSundials/sundials/sundials/instdir")
-#set(DIR_SUNDIALS "/usr/local/sundials")
+# set(DIR_SUNDIALS "/home/kklenk/projects/rpp-kshook/CompHydCore/SummaSundials/sundials/sundials/instdir")
+set(DIR_SUNDIALS "/usr/local/sundials-6.3.0")
 #############################################################################
 
 # Set default build type to Release
