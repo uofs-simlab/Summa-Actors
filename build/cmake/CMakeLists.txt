@@ -24,9 +24,9 @@ include(ida.cmake)
 
 ######### SET THE PATHS TO THE SUNDIALS LIBRARIES AND INCLUDE FILES #########
 #############################################################################
-# set(DIR_SUNDIALS "/globalhome/kck540/HPC/Libraries/sundials/instdir")
+set(DIR_SUNDIALS "/globalhome/kck540/HPC/Libraries/sundials/instdir")
 # set(DIR_SUNDIALS "/home/kklenk/projects/rpp-kshook/CompHydCore/SummaSundials/sundials/sundials/instdir")
-set(DIR_SUNDIALS "/usr/local/sundials-6.3.0")
+# set(DIR_SUNDIALS "/usr/local/sundials-6.3.0")
 #############################################################################
 
 # Set default build type to Release
@@ -35,10 +35,10 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 # Add options for build type
-set(CMAKE_CONFIGURATION_TYPES Debug Release Cluster Cluster_Debug Kinsol Kinsol_Debug IDA IDA_DEBUG)
-
+set(CMAKE_CONFIGURATION_TYPES Debug Release Cluster Cluster_Debug Kinsol Kinsol_Debug Kinsol_Cluster IDA IDA_DEBUG)
+message("Build type: ${CMAKE_BUILD_TYPE}")
 # Set compiler flags
-if(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES Cluster_Debug OR CMAKE_BUILD_TYPE MATCHES Kinsol_Debug)
+if(CMAKE_BUILD_TYPE STREQUAL Debug OR CMAKE_BUILD_TYPE STREQUAL Cluster_Debug OR CMAKE_BUILD_TYPE STREQUAL Kinsol_Debug)
     message("Debug build.")
     add_definitions(-DDEBUG)
     set(SUMMA_NOAHMP_OPTIONS -g -O0 -ffree-form -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors)
@@ -56,7 +56,7 @@ endif()
 
 
 # Set include directories
-if (CMAKE_BUILD_TYPE MATCHES Cluster OR CMAKE_BUILD_TYPE MATCHES Cluster_Debug)
+if (CMAKE_BUILD_TYPE STREQUAL Cluster OR CMAKE_BUILD_TYPE STREQUAL Cluster_Debug)
 
     find_package(CAF REQUIRED)
     find_package(netCDF REQUIRED)
@@ -65,7 +65,7 @@ if (CMAKE_BUILD_TYPE MATCHES Cluster OR CMAKE_BUILD_TYPE MATCHES Cluster_Debug)
 
     compile_summa_original(PARENT_DIR, ${DIR_SUNDIALS})
 
-elseif(CMAKE_BUILD_TYPE MATCHES IDA OR CMAKE_BUILD_TYPE MATCHES IDA_DEBUG)
+elseif(CMAKE_BUILD_TYPE STREQUAL IDA OR CMAKE_BUILD_TYPE STREQUAL IDA_DEBUG)
     find_package(CAF REQUIRED)
     find_package(netCDF REQUIRED)
     find_package(LAPACK REQUIRED)
@@ -74,7 +74,7 @@ elseif(CMAKE_BUILD_TYPE MATCHES IDA OR CMAKE_BUILD_TYPE MATCHES IDA_DEBUG)
     compile_with_ida(PARENT_DIR, ${DIR_SUNDIALS})
 
 
-elseif(CMAKE_BUILD_TYPE MATCHES Kinsol OR CMAKE_BUILD_TYPE MATCHES Kinsol_Debug)
+elseif(CMAKE_BUILD_TYPE STREQUAL Kinsol OR CMAKE_BUILD_TYPE STREQUAL Kinsol_Debug OR CMAKE_BUILD_TYPE STREQUAL Kinsol_Cluster)
     message("\nBuilding Kinsol\n")
     compile_with_kinsol(PARENT_DIR, ${DIR_SUNDIALS})
 
