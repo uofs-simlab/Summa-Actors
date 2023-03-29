@@ -21,10 +21,6 @@ behavior summa_backup_server_init(stateful_actor<summa_server_state>* self, Dist
     self->state.job_actor_settings = job_actor_settings;
     self->state.hru_actor_settings = hru_actor_settings;
 
-    self->state.csv_file_path = self->state.job_actor_settings.csv_path;
-    self->state.csv_file_path += self->state.csv_output_name;
-
-
     self->set_down_handler([=](const down_msg& dm){
         if (self->state.current_server_actor == self) {
             aout(self) << "\n ******DOWN HANDLER CALLED******\n";

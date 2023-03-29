@@ -80,8 +80,6 @@ behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru,
         return {}; // Failure
     }
 
-    // initCsvOutputFile(self);
-
     // Spawn the file_access_actor. This will return the number of forcing files we are working with
     self->state.file_access_actor = self->spawn(file_access_actor, self->state.start_gru, self->state.num_gru, 
         self->state.file_access_actor_settings, self);

@@ -35,10 +35,11 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 # Add options for build type
-set(CMAKE_CONFIGURATION_TYPES Debug Release Cluster Cluster_Debug Kinsol Kinsol_Debug Kinsol_Cluster IDA IDA_DEBUG)
+set(CMAKE_CONFIGURATION_TYPES Debug Release Cluster Cluster_Debug Kinsol Kinsol_Debug Kinsol_Cluster Kinsol_Cluster_Debug IDA IDA_DEBUG)
 message("Build type: ${CMAKE_BUILD_TYPE}")
 # Set compiler flags
-if(CMAKE_BUILD_TYPE STREQUAL Debug OR CMAKE_BUILD_TYPE STREQUAL Cluster_Debug OR CMAKE_BUILD_TYPE STREQUAL Kinsol_Debug)
+if(CMAKE_BUILD_TYPE STREQUAL Debug OR CMAKE_BUILD_TYPE STREQUAL Cluster_Debug OR CMAKE_BUILD_TYPE STREQUAL Kinsol_Debug OR 
+    CMAKE_BUILD_TYPE STREQUAL Kinsol_Cluster_Debug)
     message("Debug build.")
     add_definitions(-DDEBUG)
     set(SUMMA_NOAHMP_OPTIONS -g -O0 -ffree-form -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors)
@@ -74,7 +75,8 @@ elseif(CMAKE_BUILD_TYPE STREQUAL IDA OR CMAKE_BUILD_TYPE STREQUAL IDA_DEBUG)
     compile_with_ida(PARENT_DIR, ${DIR_SUNDIALS})
 
 
-elseif(CMAKE_BUILD_TYPE STREQUAL Kinsol OR CMAKE_BUILD_TYPE STREQUAL Kinsol_Debug OR CMAKE_BUILD_TYPE STREQUAL Kinsol_Cluster)
+elseif(CMAKE_BUILD_TYPE STREQUAL Kinsol OR CMAKE_BUILD_TYPE STREQUAL Kinsol_Debug OR 
+       CMAKE_BUILD_TYPE STREQUAL Kinsol_Cluster OR CMAKE_BUILD_TYPE STREQUAL Kinsol_Cluster_Debug)
     message("\nBuilding Kinsol\n")
     compile_with_kinsol(PARENT_DIR, ${DIR_SUNDIALS})
 

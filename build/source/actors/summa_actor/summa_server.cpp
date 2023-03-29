@@ -30,10 +30,6 @@ behavior summa_server_init(stateful_actor<summa_server_state>* self, Distributed
             self->state.distributed_settings.num_hru_per_batch);
     
     // self->state.batch_container.printBatches();
-    self->state.csv_file_path = self->state.job_actor_settings.csv_path;
-    self->state.csv_file_path += self->state.csv_output_name;
-    initializeCSVOutput(self->state.csv_file_path);
-
     return summa_server(self);
 
 }

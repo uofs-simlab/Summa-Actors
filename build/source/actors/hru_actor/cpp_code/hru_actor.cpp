@@ -142,15 +142,6 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
                         " - indxGRU = " << self->state.indxGRU << " - refGRU = "<< self->state.refGRU << std::endl;
                     aout(self) << "Error = " << err << "\n";
 
-                    self->send(self->state.parent, run_failure_v, self, self->state.indxGRU, err);
-                    // self->quit(hru_error::run_hru_unhandleable);
-                    // caf::exit_reason
-                    // self->down_msg();
-                    self->quit();
-                }
-
-
-                if (self->state.timestep == 543 && self->state.indxGRU == 2) {
                     self->send(self->state.parent, hru_error::run_physics_unhandleable, self);
                     self->quit();
                     return;
@@ -184,7 +175,9 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
                     aout(self) << "Error: HRU_Actor - writeHRUToOutputStructure - HRU = " << self->state.indxHRU << 
                         " - indxGRU = " << self->state.indxGRU << " - refGRU = "<< self->state.refGRU << std::endl;
                     aout(self) << "Error = " << err << "\n";
+                    self->send(self->state.parent, hru_error::run_physics_unhandleable, self);
                     self->quit();
+                    return;
                 }
 
                 self->state.timestep++;

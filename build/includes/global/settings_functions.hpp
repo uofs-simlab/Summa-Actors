@@ -83,17 +83,12 @@ File_Access_Actor_Settings readFileAccessActorSettings(std::string json_settings
 
 struct Job_Actor_Settings {
     std::string file_manager_path;
-    int output_structure_size;
-    bool output_csv;
-    std::string csv_path;
 };
 
 template<class Inspector>
 bool inspect(Inspector& inspector, Job_Actor_Settings& job_actor_settings) {
     return inspector.object(job_actor_settings).fields(
-                inspector.field("file_manager_path", job_actor_settings.file_manager_path),
-                inspector.field("output_csv",        job_actor_settings.output_csv),
-                inspector.field("csv_path",          job_actor_settings.csv_path));
+                inspector.field("file_manager_path", job_actor_settings.file_manager_path));
 }
 
 Job_Actor_Settings readJobActorSettings(std::string json_settings_file);

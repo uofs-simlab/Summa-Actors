@@ -96,13 +96,6 @@ Job_Actor_Settings readJobActorSettings(std::string json_settings_file) {
     job_actor_settings.file_manager_path = getSettings(json_settings_file, parent_key,
         "file_manager_path", job_actor_settings.file_manager_path).value_or("");
 
-    job_actor_settings.output_csv = getSettings(json_settings_file, parent_key,
-        "output_csv", job_actor_settings.output_csv).value_or(false);
-
-    job_actor_settings.csv_path = getSettings(json_settings_file, parent_key, 
-        "csv_path", job_actor_settings.csv_path).value_or("");
-
-
     return job_actor_settings;
 }
 
@@ -144,8 +137,6 @@ void check_settings_from_json(Distributed_Settings &distributed_settings,
 
     std::cout << "************ JOB_ACTOR_SETTINGS ************\n";
     std::cout << job_actor_settings.file_manager_path << "\n";
-    std::cout << job_actor_settings.output_csv << "\n";
-    std::cout << job_actor_settings.csv_path << "\n\n\n";
 
     std::cout << "************ HRU_ACTOR_SETTINGS ************\n";
     std::cout << hru_actor_settings.print_output << "\n";
