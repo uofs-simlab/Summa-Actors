@@ -4,6 +4,7 @@
 #include "message_atoms.hpp"
 #include "hru_actor_subroutine_wrappers.hpp"
 #include "serialize_data_structure.hpp"
+#include <thread>
 
 
 namespace caf {
@@ -36,6 +37,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
     self->state.forcingStep = 1;  
     self->state.output_structure_step_index = 1;
     self->state.iFile = 1;
+    
 
     // Get the settings for the HRU
     self->state.hru_actor_settings = hru_actor_settings;
@@ -143,8 +145,15 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
                     self->send(self->state.parent, run_failure_v, self, self->state.indxGRU, err);
                     // self->quit(hru_error::run_hru_unhandleable);
                     // caf::exit_reason
-                    // self->down_msg(hru_error::run_physics_unhandleable);
+                    // self->down_msg();
                     self->quit();
+                }
+
+
+                if (self->state.timestep == 543 && self->state.indxGRU == 2) {
+                    self->send(self->state.parent, hru_error::run_physics_unhandleable);
+                    self->quit();
+                    return;
                 }
 
                 writeHRUToOutputStructure(&self->state.indxHRU, &self->state.indxGRU, 

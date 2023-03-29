@@ -19,3 +19,7 @@ bin/data_be.csv
 bin/data_kinsol.csv
 bin/submission_copern.sh
 bin/summa_be
+bin/data_kinsol_state_vec.csv
+bin/state.png
+bin/plot_resuduial.py
+bin/summa_sundials

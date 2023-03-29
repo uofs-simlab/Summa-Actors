@@ -3,7 +3,6 @@
 #include "file_access_actor_subroutine_wrappers.hpp"
 #include "fortran_data_types.hpp"
 #include "message_atoms.hpp"
-#include "global.hpp"
 #include "json.hpp"
 #include "auxilary.hpp"
 
@@ -36,6 +35,7 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
     initalizeFileAccessActor(self);
 
     if (self->state.file_access_actor_settings.num_partitions_in_output_buffer > num_gru) {
+        // Prevents a division with a remainder
         self->state.file_access_actor_settings.num_partitions_in_output_buffer = num_gru;
     }
 
@@ -197,7 +197,12 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
             resetFailedArray();
         },
 
-        [=](deallocate_structures) {
+        [=](deallocate_structures, std::vector<serializable_netcdf_gru_actor_info> &netcdf_gru_info) {
+            int num_gru = netcdf_gru_info.size();
+            WriteGRUStatistics(self->state.handle_ncid, &self->state.gru_actor_stats, 
+                    netcdf_gru_info.data(), &num_gru, &self->state.err);
+
+
             aout(self) << "Deallocating Structure" << std::endl;
             FileAccessActor_DeallocateStructures(self->state.handle_forcing_file_info, self->state.handle_ncid);
             // deallocateOutputStructure(&self->state.err);
@@ -267,7 +272,8 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
 
     initFailedHRUTracker(&self->state.num_gru);
 
-    def_output(self->state.handle_ncid, &self->state.start_gru, &self->state.num_gru, &self->state.num_gru, &err);
+    def_output(self->state.handle_ncid, &self->state.start_gru, &self->state.num_gru, 
+               &self->state.num_gru, &self->state.gru_actor_stats, &err);
     if (err != 0) {
         aout(self) << "ERROR: Create_OutputFile\n";
         std::string function = "def_output";
@@ -305,7 +311,8 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
     // read in the inital conditions for the grus/hrus
     readInitConditions(self);
     
-    self->send(self->state.parent, done_file_access_actor_init_v);
+    // Inital Files Have Been Loaded - Send Message to Job_Actor to Start Simulation
+    self->send(self->state.parent, init_gru_v);
     // initalize the forcingFile array
     self->state.filesLoaded = 0;
     for (int i = 1; i <= self->state.numFiles; i++) {

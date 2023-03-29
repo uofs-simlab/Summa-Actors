@@ -21,7 +21,7 @@
 module def_output_module
 
 USE, intrinsic :: iso_c_binding
-USE data_types,only:var_i 
+USE data_types,only:var_i,netcdf_gru_actor_info
 USE netcdf
 USE netcdf_util_module,only:netcdf_err        ! netcdf error handling function
 USE netcdf_util_module,only:nc_file_close     ! close NetCDF files
@@ -72,7 +72,7 @@ contains
  ! **********************************************************************************************************
  ! public subroutine def_output: define model output file
  ! **********************************************************************************************************
-subroutine def_output(handle_ncid,startGRU,nGRU,nHRU,err) bind(C, name='def_output')
+subroutine def_output(handle_ncid,startGRU,nGRU,nHRU,actor_info,err) bind(C, name='def_output')
   USE globalData,only:structInfo                               ! information on the data structures
   USE globalData,only:forc_meta,attr_meta,type_meta            ! metaData structures
   USE globalData,only:prog_meta,diag_meta,flux_meta,deriv_meta ! metaData structures
@@ -95,11 +95,12 @@ subroutine def_output(handle_ncid,startGRU,nGRU,nHRU,err) bind(C, name='def_outp
   ! ---------------------------------------------------------------------------------------
   ! * variables from C++
   ! ---------------------------------------------------------------------------------------
-  type(c_ptr),intent(in), value        :: handle_ncid       ! ncid of the output file
-  integer(c_int),intent(in)            :: startGRU          ! startGRU for the entire job (for file creation)
-  integer(c_int),intent(in)            :: nGRU                          ! number of GRUs
-  integer(c_int),intent(in)            :: nHRU                          ! number of HRUs
-  integer(c_int),intent(out)           :: err                           ! error code
+  type(c_ptr),intent(in), value          :: handle_ncid       ! ncid of the output file
+  integer(c_int),intent(in)              :: startGRU          ! startGRU for the entire job (for file creation)
+  integer(c_int),intent(in)              :: nGRU              ! number of GRUs
+  integer(c_int),intent(in)              :: nHRU              ! number of HRUs
+  type(netcdf_gru_actor_info),intent(out):: actor_info        ! netcdf actor information 
+  integer(c_int),intent(out)             :: err               ! error code
   ! ---------------------------------------------------------------------------------------
   ! * Fortran Variables For Conversion
   ! ---------------------------------------------------------------------------------------
@@ -153,6 +154,9 @@ subroutine def_output(handle_ncid,startGRU,nGRU,nHRU,err) bind(C, name='def_outp
     end if
     endif
   end do
+
+
+
 
   ! create initial file
   ! each file will have a master name with a frequency appended at the end:
@@ -214,6 +218,21 @@ subroutine def_output(handle_ncid,startGRU,nGRU,nHRU,err) bind(C, name='def_outp
     end do ! iStruct
     ! write HRU dimension and ID for each output file
     call write_hru_info(ncid%var(iFreq), err, cmessage) 
+    if(err/=0) then 
+      message=trim(message)//trim(cmessage)
+      print*, message
+      return
+    end if
+
+    ! define timing variables for actors code
+    ! TODO: Add attributes to these variables
+    err = nf90_def_var(ncid%var(iFreq),"run_time",outputPrecision,(/gru_DimID/),actor_info%run_time_var_id)
+    err = nf90_def_var(ncid%var(iFreq),"init_duration",outputPrecision,(/gru_DimID/),actor_info%init_duration_var_id)
+    err = nf90_def_var(ncid%var(iFreq),"forcing_duration",outputPrecision,(/gru_DimID/),actor_info%forcing_duration_var_id)
+    err = nf90_def_var(ncid%var(iFreq),"run_physics_duration",outputPrecision,(/gru_DimID/),actor_info%run_physics_duration_var_id)
+    err = nf90_def_var(ncid%var(iFreq),"write_output_duration",outputPrecision,(/gru_DimID/),actor_info%write_output_duration_var_id)
+    err = nf90_def_var(ncid%var(iFreq),"successful",nf90_int,(/gru_DimID/),actor_info%state_var_id)
+    err = nf90_def_var(ncid%var(iFreq),"num_attempts",nf90_int,(/gru_DimID/),actor_info%num_attempts_var_id)
     if(err/=0) then 
       message=trim(message)//trim(cmessage)
       print*, message

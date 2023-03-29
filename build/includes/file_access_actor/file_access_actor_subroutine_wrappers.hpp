@@ -1,4 +1,5 @@
 #pragma once
+#include "file_access_actor.hpp"
 
 extern "C" {
   // initalizeFileAccessActor
@@ -7,7 +8,8 @@ extern "C" {
   void read_pinit_C(int* err);
   void read_vegitationTables(int* err);
   void initFailedHRUTracker(int* numGRU);
-  void def_output(void* handle_ncid, int* startGRU, int* numGRU, int* numHRU, int* err);
+  void def_output(void* handle_ncid, int* startGRU, int* numGRU, int* numHRU, 
+       netcdf_gru_actor_info* actor_info, int* err);
 
   // OutputStructure and Output functions
   void initOutputStructure(void* handle_forcFileInfo, int* max_steps, int* numGRU, int* err);
@@ -72,6 +74,11 @@ extern "C" {
 
   void writeTimeToNetCDF(void* handle_ncid, void* handle_finalize_stats, void* handle_output_timestep,
     void* handle_time_struct, int* err);
+
+  void WriteGRUStatistics(void* handle_ncid, netcdf_gru_actor_info* actor_info,
+    serializable_netcdf_gru_actor_info* gru_stats_vector, int* num_gru, int* err);
+
+  
 
 
 

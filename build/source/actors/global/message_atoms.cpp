@@ -1,11 +1,7 @@
 #include "caf/all.hpp"
 #include "message_atoms.hpp"
 
-// enum class hru_error : uint8_t {
-//     run_physics_unhandleable = 1,
-//     run_physics_infeasible_state = 2,
-// };
-
+// HRU Errors
 std::string to_string(hru_error err) {
     switch(err) {
         case hru_error::run_physics_unhandleable:
@@ -42,3 +38,30 @@ bool from_integer(uint8_t in, hru_error& out) {
     }
 }
 
+// File Access Error
+std::string to_string(file_access_error err) {
+    switch(err) {
+        case file_access_error::writing_error:
+            return "writing_error";
+        default:
+            return "unknown";
+    }
+}
+
+bool from_string(caf::string_view in, file_access_error& out) {
+    if (in == "writing_error") {
+        out = file_access_error::writing_error;
+        return true;
+    }
+    return false;
+}
+
+bool from_integer(uint8_t in, file_access_error& out) {
+    switch(in) {
+        case 1:
+            out = file_access_error::writing_error;
+            return true;
+        default:
+            return false;
+    }
+}

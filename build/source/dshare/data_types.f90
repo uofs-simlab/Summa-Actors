@@ -19,6 +19,8 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 MODULE data_types
+  USE, intrinsic :: iso_c_binding
+
  ! used to define model data structures
  USE nrtype, integerMissing=>nr_integerMissing
  USE var_lookup,only:maxvarFreq
@@ -73,6 +75,29 @@ MODULE data_types
   real(rkind)                          :: refJulDay_data 
   integer(i4b)                         :: nTimeSteps    ! Number of Timesteps in the file
  end type var_forc
+
+  ! ***********************************************************************************************************
+  ! Define GRU_Actor var_id structure
+  ! ***********************************************************************************************************
+  type,public,bind(C) :: netcdf_gru_actor_info
+    integer(C_INT) :: run_time_var_id
+    integer(C_INT) :: init_duration_var_id
+    integer(C_INT) :: forcing_duration_var_id
+    integer(C_INT) :: run_physics_duration_var_id
+    integer(C_INT) :: write_output_duration_var_id
+    integer(C_INT) :: state_var_id
+    integer(C_INT) :: num_attempts_var_id
+  end type netcdf_gru_actor_info
+
+  type,public,bind(C) :: serializable_netcdf_gru_actor_info
+    real(C_DOUBLE) :: run_time
+    real(C_DOUBLE) :: init_duration
+    real(C_DOUBLE) :: forcing_duration
+    real(C_DOUBLE) :: run_physics_duration
+    real(C_DOUBLE) :: write_output_duration
+    integer(C_INT) :: successful
+    integer(C_INT) :: num_attempts
+  end type serializable_netcdf_gru_actor_info
 
  ! ***********************************************************************************************************
  ! Define metadata on model parameters
