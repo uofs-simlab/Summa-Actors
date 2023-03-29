@@ -47,6 +47,8 @@ class GRU {
 
     // Getters
     int getGlobalGRUIndex();
+    int getLocalGRUIndex();
+    caf::actor getGRUActor();
 
     double getRunTime();
     double getInitDuration();
@@ -66,6 +68,9 @@ class GRU {
     void setWriteOutputDuration(double write_output_duration);
 
     void setSuccess();
+    void setFailed();
+
+    void decrementAttemptsLeft();
 
 };
 

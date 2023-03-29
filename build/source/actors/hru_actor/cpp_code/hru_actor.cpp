@@ -151,7 +151,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
 
 
                 if (self->state.timestep == 543 && self->state.indxGRU == 2) {
-                    self->send(self->state.parent, hru_error::run_physics_unhandleable);
+                    self->send(self->state.parent, hru_error::run_physics_unhandleable, self);
                     self->quit();
                     return;
                 }

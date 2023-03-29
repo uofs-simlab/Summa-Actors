@@ -20,6 +20,14 @@ int GRU::getGlobalGRUIndex() {
   return this->global_gru_index;
 }
 
+int GRU::getLocalGRUIndex() {
+  return this->local_gru_index;
+}
+
+caf::actor GRU::getGRUActor() {
+  return this->gru_actor;
+}
+
 double GRU::getRunTime() {
   return this->run_time;
 }
@@ -69,6 +77,13 @@ void GRU::setSuccess() {
   this->state = gru_state::succeeded;
 }
 
+void GRU::setFailed() {
+  this->state = gru_state::failed;
+}
+
+void GRU::decrementAttemptsLeft() {
+  this->attempts_left--;
+}
 
 
 

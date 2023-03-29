@@ -43,7 +43,6 @@ struct job_state {
     // Timing Variables
     TimingInfo job_timing;
     
-
     std::string hostname;
 
     // Output File Names for Timings
@@ -64,8 +63,9 @@ behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru,
     File_Access_Actor_Settings file_access_actor_settings, Job_Actor_Settings job_actor_settings, 
     HRU_Actor_Settings hru_actor_settings, actor parent);
 
-void initCsvOutputFile(stateful_actor<job_state>* self);
-
+/*
+ * Start all of the GRU actors and set up their container class
+*/
 void initGRUs(stateful_actor<job_state>* self);
 
 /**
@@ -73,9 +73,6 @@ void initGRUs(stateful_actor<job_state>* self);
 */
 std::vector<serializable_netcdf_gru_actor_info> getGruNetcdfInfo(int max_run_attempts, std::vector<GRU*> &gru_list);
 
-// Initalize the GRU objects and their actors
-void runGRUs(stateful_actor<job_state>* self);
-
-void restartFailures(stateful_actor<job_state>* self);
+void handleGRUError(stateful_actor<job_state>* self, const error& err, caf::actor src);
 
 } // end namespace
