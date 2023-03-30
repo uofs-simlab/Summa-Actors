@@ -222,7 +222,6 @@ subroutine initOutputStructure(handle_forcFileInfo, maxSteps, num_gru, err) bind
               ! Structure
               call alloc_outputStruc(diag_meta,outputStructure(1)%diagStruct(1)%gru(iGRU)%hru(iHRU), &
                                       nSteps=maxSteps,nSnow=nSnow,nSoil=nSoil,err=err,message=message);    ! model diagnostic variables
-              print*
               ! Statistics
               call alloc_outputStruc(statDiag_meta(:)%var_info,outputStructure(1)%diagStat(1)%gru(iGRU)%hru(iHRU), &
                                       nSteps=maxSteps,nSnow=nSnow,nSoil=nSoil,err=err,message=message);    ! model diagnostic
