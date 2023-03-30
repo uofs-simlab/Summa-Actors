@@ -5,10 +5,8 @@ function(compile_with_kinsol PARENT_DIR, DIR_SUNDIALS)
     find_package(LAPACK REQUIRED)
     set(EXEC_NAME summa_kinsol)
 
-
-    message("DIR_SUNDIALS: ${DIR_SUNDIALS}")
-    # Building Summa with sundials on local machine
-    if (CMAKE_BUILD_TYPE STREQUAL Kinsol_Cluster OR CMAKE_BUILD_TYPE STREQUAL Kinsol_Cluster_Debug)
+    # Set Includes and Libs for Summa-Actors
+    if (CMAKE_BUILD_TYPE MATCHES Cluster)
         link_directories(${DIR_SUNDIALS}/lib64)
         set(CMAKE_BUILD_RPATH "${DIR_SUNDIALS}/lib64")
         set(SUMMA_INCLUDES 
