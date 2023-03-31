@@ -25,9 +25,6 @@ struct hru_state {
 
     // Variables for forcing structures
 	int stepsInCurrentFFile;
-	int forcingFileStep;
-	int currentForcingFile = 1;
-
     int num_steps_until_write;
 
     // statistics structures
@@ -88,7 +85,6 @@ struct hru_state {
     HRU_Actor_Settings hru_actor_settings;
     // error control
     int         err = 0;			        
-    TimingInfo hru_timing;
     
     ~hru_state() {
         // statistics structures

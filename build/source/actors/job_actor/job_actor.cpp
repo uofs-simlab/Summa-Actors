@@ -9,6 +9,8 @@
 #include "gru_actor.hpp"
 
 using json = nlohmann::json;
+using chrono_time = std::chrono::time_point<std::chrono::system_clock>;
+
 
 namespace caf {
 
@@ -30,7 +32,7 @@ behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru,
     
 
     // Timing Information
-    self->state.job_timing = TimingInfo();
+    self->state.job_timing = TimingInfo(); 
     self->state.job_timing.addTimePoint("total_duration");
     self->state.job_timing.updateStartPoint("total_duration");
 
@@ -93,25 +95,22 @@ behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru,
             initGRUs(self);
         },
 
-        [=](done_hru, int local_gru_index, double total_duration, 
-            double init_duration, double forcing_duration, 
-            double run_physics_duration, double write_output_duration) {
-            
+        [=](done_hru, int local_gru_index) {
+          chrono_time end_point = std::chrono::high_resolution_clock::now();
+          double total_duration = std::chrono::duration_cast<std::chrono::seconds>(end_point - 
+                                    self->state.gru_container.gru_start_time).count();
+
           aout(self) << "\nJob_Actor: GRU Finished: \n" <<
                         "          global_gru_index = " << 
                         self->state.gru_container.gru_list[local_gru_index-1]->getGlobalGRUIndex() << "\n" <<
                         "          local_gru_index = " << local_gru_index << "\n" <<
-                        "          total_duration = " << total_duration << "\n" <<
-                        "          init_duration = " << init_duration << "\n" <<
-                        "          forcing_duration = " << forcing_duration << "\n" <<
-                        "          run_physics_duration = " << run_physics_duration << "\n" <<
-                        "          write_output_duration = " << write_output_duration << "\n\n";
+                        "          total_duration = " << total_duration << "\n\n";
           // Update Timing
           self->state.gru_container.gru_list[local_gru_index-1]->setRunTime(total_duration);
-          self->state.gru_container.gru_list[local_gru_index-1]->setInitDuration(init_duration);
-          self->state.gru_container.gru_list[local_gru_index-1]->setForcingDuration(forcing_duration);
-          self->state.gru_container.gru_list[local_gru_index-1]->setRunPhysicsDuration(run_physics_duration);
-          self->state.gru_container.gru_list[local_gru_index-1]->setWriteOutputDuration(write_output_duration);
+          self->state.gru_container.gru_list[local_gru_index-1]->setInitDuration(-1);
+          self->state.gru_container.gru_list[local_gru_index-1]->setForcingDuration(-1);
+          self->state.gru_container.gru_list[local_gru_index-1]->setRunPhysicsDuration(-1);
+          self->state.gru_container.gru_list[local_gru_index-1]->setWriteOutputDuration(-1);
 
           self->state.gru_container.gru_list[local_gru_index-1]->setSuccess();
 
@@ -177,24 +176,12 @@ behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru,
                     read_duration, write_duration);
             self->quit();
         },
-
-        // [=](file_access_actor_err, std::string function) {
-        //     aout(self) << "Failure in File Access Actor in function: " << function << "\n";
-        //     if (function == "def_output") {
-        //         aout(self) << "Error with the output file, will try creating it agian\n";
-        //         std::this_thread::sleep_for(std::chrono::seconds(5));
-        //         self->state.file_access_actor = self->spawn(file_access_actor, self->state.start_gru, self->state.num_gru, 
-        //            self->state.file_access_actor_settings, self);
-        //     } else {
-        //         aout(self) << "Letting Parent Know we are quitting\n";
-        //         self->send(self->state.parent, err_v);
-        //         self->quit();
-        //     }
-        // }
     };
 }
 
 void initGRUs(stateful_actor<job_state>* self) {
+  self->state.gru_container.gru_start_time = std::chrono::high_resolution_clock::now();
+  
   for(int i = 0; i < self->state.gru_container.num_gru_in_run_domain; i++) {
       // Spawn the GRU Actor
       auto global_gru_index = self->state.gru_container.gru_list.size() + self->state.start_gru;
@@ -220,6 +207,7 @@ std::vector<serializable_netcdf_gru_actor_info> getGruNetcdfInfo(int max_run_att
 
     std::vector<serializable_netcdf_gru_actor_info> gru_netcdf_info;
     for(auto gru : gru_list) {
+
         serializable_netcdf_gru_actor_info gru_info;
         gru_info.run_time = gru->getRunTime();
         gru_info.init_duration = gru->getInitDuration();

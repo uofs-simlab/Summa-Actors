@@ -19,7 +19,6 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
     self->state.file_access_timing = TimingInfo();
     self->state.file_access_timing.addTimePoint("read_duration");
     self->state.file_access_timing.addTimePoint("write_duration");
-
     self->state.file_access_actor_settings = file_access_actor_settings;
 
     self->state.parent = parent;
@@ -329,6 +328,7 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
 }
 
 void readAttributes(stateful_actor<file_access_state>* self) {
+
     int err = 0;
     openAttributeFile(&self->state.attribute_ncid, &err);
     
@@ -366,6 +366,7 @@ void readAttributes(stateful_actor<file_access_state>* self) {
 }
 
 void readParameters(stateful_actor<file_access_state>* self) {
+
     int err = 0;
     int index_hru = 1;
 
@@ -431,7 +432,6 @@ void readParameters(stateful_actor<file_access_state>* self) {
         delete_handle_var_d(handle_bpar_struct);
     }
     closeParamFile(&self->state.param_ncid, &err);
-
 }
 
 

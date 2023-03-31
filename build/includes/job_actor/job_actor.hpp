@@ -9,9 +9,11 @@
 #include "global.hpp"
 
 namespace caf {
+using chrono_time = std::chrono::time_point<std::chrono::system_clock>;
 
 struct GRU_Container {
     std::vector<GRU*> gru_list;
+    chrono_time gru_start_time; // Vector of start times for each GRU
     int num_gru_done = 0; 
     int num_gru_failed = 0; // number of grus that are waiting to be restarted
     int num_gru_in_run_domain = 0; // number of grus we are currently solving for
@@ -29,9 +31,9 @@ struct job_state {
     int max_run_attempts = 1;         // Max number of attemtps to solve a GRU
 
 
-    std::vector<GRU*> gru_list;
 
     GRU_Container gru_container;
+
 
 
     // Variables for GRU monitoring
