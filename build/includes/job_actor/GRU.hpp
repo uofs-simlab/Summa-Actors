@@ -17,6 +17,10 @@ auto success = [](const gru_state& state) -> int {
     return(state == gru_state::succeeded) ? 1 : 0;
 };
 
+/**
+ * Class that holds information about the running GRUs. This class is held by the job actor
+ * The GRU/HRU actors that carry out the simulation are held by the GRU class 
+*/
 class GRU {
   private:
     int global_gru_index; // The index of the GRU in the netcdf file
@@ -72,71 +76,4 @@ class GRU {
 
     void decrementAttemptsLeft();
 
-};
-
-
-
-class GRUinfo {
-    private:
-        int refGRU; // This will be the same as the refGRU
-        int indxGRU;
-        caf::actor GRU;
-
-        // Variable to update
-        int dt_init;
-
-        // Completed Information
-        int currentAttempt;
-        int maxAttempts;
-        bool completed;
-        bool failed;
-
-        // Timing information for the GRU
-        double runTime;
-        double initDuration;
-        double forcingDuration;
-        double runPhysicsDuration;
-        double writeOutputDuration;
-
-        public:
-            
-            // Constructor
-            GRUinfo(int refGRU, int indxGRU, caf::actor gru, int dt_init, int maxAttempts);
-
-            // Deconstructor
-            ~GRUinfo();
-
-
-            int getRefGRU();
-
-            int getIndxGRU();
-
-            int getDt_init();
-
-            caf::actor getActor();
-
-            void updateGRU(caf::actor gru);
-
-            void updateFailed();
-
-            void updateCompletedToTrue();
-
-            void updateDt_init();
-
-            void updateCurrentAttempt();
-
-            bool isMaxAttemptsReached();
-
-            bool isFailed();
-
-            bool isCompleted();
-
-            void doneRun(double runTime, double initDuration, double forcingDuration,
-                double runPhysicsDuration, double writeOutputDuration);
-
-            void writeSuccess(std::string fileName, std::string hostname);
-
-            void writeFail(std::string fileName);
-
-            void printOutput();
 };

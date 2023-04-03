@@ -303,7 +303,7 @@ function(compile_with_kinsol PARENT_DIR, DIR_SUNDIALS)
 
     set(JOB_ACTOR
         ${ACTORS_DIR}/job_actor/job_actor.cpp
-        ${ACTORS_DIR}/job_actor/GRUinfo.cpp)
+        ${ACTORS_DIR}/job_actor/GRU.cpp)
 
     set(MAIN
         ${ACTORS_DIR}/main.cpp)

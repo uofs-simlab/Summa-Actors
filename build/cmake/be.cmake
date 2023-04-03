@@ -45,7 +45,8 @@ function (compile_with_be PARENT_DIR)
             -lopenblas
             SUMMA_NOAHMP)
 
-        set(SUMMA_ACTORS_INCLUDES 
+        set(SUMMA_ACTORS_INCLUDES
+            "/usr/local/actor-framework/debug/include"
             ${CAF_INCLUDES}
             ${LAPACK_INCLUDES}
             "${PARENT_DIR}/build/includes/global"
@@ -55,6 +56,7 @@ function (compile_with_be PARENT_DIR)
             "${PARENT_DIR}/build/includes/file_access_actor"
             "${PARENT_DIR}/build/includes/hru_actor")
         
+        link_directories("/usr/local/actor-framework/debug/lib")
         set(SUMMA_ACTORS_LIBS   
             -lopenblas
             -lcaf_core
@@ -262,7 +264,7 @@ function (compile_with_be PARENT_DIR)
 
     set(JOB_ACTOR
         ${ACTORS_DIR}/job_actor/job_actor.cpp
-        ${ACTORS_DIR}/job_actor/GRUinfo.cpp)
+        ${ACTORS_DIR}/job_actor/GRU.cpp)
 
     set(MAIN
         ${ACTORS_DIR}/main.cpp)
@@ -273,16 +275,19 @@ function (compile_with_be PARENT_DIR)
         ${NOAHMP}
         ${NRUTIL})
         target_compile_options(SUMMA_NOAHMP PRIVATE ${SUMMA_NOAHMP_OPTIONS})
+        target_link_options(SUMMA_NOAHMP PRIVATE ${SUMMA_NOAHMP_OPTIONS})
     # Build SUMMA_COMM Object
     add_library(SUMMA_COMM OBJECT
         ${COMM_ALL})
         target_compile_options(SUMMA_COMM PRIVATE ${SUMMA_ALL_OPTIONS})
+        target_link_options(SUMMA_COMM PRIVATE ${SUMMA_ALL_OPTIONS})
         target_include_directories(SUMMA_COMM PRIVATE ${SUMMA_INCLUDES})
         target_link_libraries(SUMMA_COMM PUBLIC ${SUMMA_LIBS})
     # Build SUMMA Shared Library
     add_library(summa SHARED
         ${SUMMA_ALL})
     target_compile_options(summa PRIVATE ${SUMMA_ALL_OPTIONS})
+    target_link_options(summa PRIVATE ${SUMMA_ALL_OPTIONS})
     target_include_directories(summa PUBLIC ${SUMMA_INCLUDES})
     target_link_libraries(summa PUBLIC ${SUMMA_LIBS} SUMMA_COMM)
     # Build SUMMA Executable

@@ -1,7 +1,7 @@
 #pragma once
 #include "caf/all.hpp"
 #include "caf/io/all.hpp"
-#include "GRUinfo.hpp"
+#include "GRU.hpp"
 #include "timing_info.hpp"
 #include "settings_functions.hpp"
 #include <unistd.h>
@@ -38,7 +38,6 @@ struct job_state {
 
     // Variables for GRU monitoring
     int dt_init_start_factor = 1;   // Initial Factor for dt_init (coupled_em)
-    // std::vector<GRUinfo*> gru_list;  // List of all GRUs under this job actor
     int num_gru_done = 0;             // The number of GRUs that have completed
     int num_gru_failed = 0;           // Number of GRUs that have failed
 
