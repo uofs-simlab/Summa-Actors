@@ -1,105 +1,180 @@
 #include "output_container.hpp"
 
 
-
-void initArrayOfOuputPartitions(std::vector<std::shared_ptr<output_partition>>& output_partitions, 
-    int num_partitions, int num_gru_run_domain, int num_timesteps,  int simulation_timesteps_remaining) {
-
-    int start_gru_counter = 1;
-    int num_gru_per_partition = std::round(num_gru_run_domain / num_partitions);
-    for (int i = 0; i < num_partitions - 1; i++) {
-        output_partitions.push_back(std::make_shared<output_partition>());
-        output_partitions[i]->start_gru = start_gru_counter;
-        output_partitions[i]->num_gru = num_gru_per_partition;
-        output_partitions[i]->num_active_gru = num_gru_per_partition;
-        output_partitions[i]->num_timesteps = num_timesteps;
-        output_partitions[i]->simulation_timesteps_remaining = simulation_timesteps_remaining;
-        output_partitions[i]->grus_ready_to_write = 0;
-        for (int a = 0; a < num_gru_per_partition; a++) {
-            output_partitions[i]->hru_info_and_data.push_back(std::make_shared<hru_output_info>());
-        }
-
-        start_gru_counter += num_gru_per_partition;
-    }
-    // The last partition may not easily divide with the number of GRUs
-    output_partitions.push_back(std::make_shared<output_partition>());
-    output_partitions[num_partitions - 1]->start_gru = start_gru_counter;
-    output_partitions[num_partitions - 1]->num_gru = num_gru_run_domain - start_gru_counter + 1;
-    output_partitions[num_partitions - 1]->num_active_gru = num_gru_run_domain - start_gru_counter + 1;
-    output_partitions[num_partitions - 1]->num_timesteps = num_timesteps;
-    output_partitions[num_partitions - 1]->simulation_timesteps_remaining = simulation_timesteps_remaining;
-    output_partitions[num_partitions - 1]->grus_ready_to_write = 0;
-    for (int a = 0; a < num_gru_run_domain - start_gru_counter + 1; a++) {
-        output_partitions[num_partitions - 1]->hru_info_and_data.push_back(std::make_shared<hru_output_info>());
-    }
+//###################################################################
+// Output_Partition
+//###################################################################
+Output_Partition::Output_Partition(int start_local_gru_index, int num_local_grus, int num_timesteps_simulation, int num_stored_timesteps) {
+    this->start_local_gru_index = start_local_gru_index;
+    this->num_local_grus = num_local_grus;
+    this->num_timesteps_simulation = num_timesteps_simulation;
+    this->num_stored_timesteps = num_stored_timesteps;
 
 }
 
-std::optional<int> addReadyToWriteHRU(std::vector<std::shared_ptr<output_partition>>& output_partitions, 
-    caf::actor hru_actor, int gru_index, int hru_index) {
+Output_Partition::~Output_Partition() {
+    // TODO Auto-generated destructor stub
+}
+
+void Output_Partition::setGRUReadyToWrite(caf::actor gru_actor) {
+    this->ready_to_write_list.push_back(gru_actor);
+}
+
+bool Output_Partition::isReadyToWrite() {
+    return (this->ready_to_write_list.size() + this->failed_gru_index_list.size()) 
+        == this->num_local_grus;
+}
+
+int Output_Partition::getMaxGRUIndex() {
+    return this->start_local_gru_index + this->num_local_grus - 1;
+}
+
+int Output_Partition::getNumStoredTimesteps() {
+    return this->num_stored_timesteps;
+}
+
+int Output_Partition::getStartGRUIndex() {
+    return this->start_local_gru_index;
+}
+
+void Output_Partition::updateTimeSteps() {
     
-    int partition_index = findPatritionIndex(output_partitions[0]->num_gru, gru_index, output_partitions.size());
-    int gru_index_in_partition = gru_index - output_partitions[partition_index]->start_gru;
+    // Update the number of timesteps remaining in the simulation
+    this->num_timesteps_simulation -= this->num_stored_timesteps;
+    
+    // Reset the number of timesteps to store for the next run
+    if (this->num_timesteps_simulation < this->num_stored_timesteps) {
+        this->num_stored_timesteps = this->num_timesteps_simulation;
+    }
 
-    output_partitions[partition_index]->hru_info_and_data[gru_index_in_partition]->hru_actor = hru_actor;
-    output_partitions[partition_index]->hru_info_and_data[gru_index_in_partition]->index_hru = hru_index;
-    output_partitions[partition_index]->hru_info_and_data[gru_index_in_partition]->index_gru = gru_index;
-    output_partitions[partition_index]->hru_info_and_data[gru_index_in_partition]->ready_to_write = true;
-    output_partitions[partition_index]->grus_ready_to_write += 1;
-    // If all grus are ready to write then return the partition index
-    if (output_partitions[partition_index]->grus_ready_to_write == output_partitions[partition_index]->num_active_gru) {
+}
+
+std::vector<caf::actor> Output_Partition::getReadyToWriteList() {
+    return this->ready_to_write_list;
+}
+
+void Output_Partition::resetReadyToWriteList() {
+    this->ready_to_write_list.clear();
+}
+
+void Output_Partition::addFailedGRUIndex(int local_gru_index) {
+    this->failed_gru_index_list.push_back(local_gru_index);
+}
+
+int Output_Partition::getNumActiveGRUs() {
+    return this->num_local_grus - this->failed_gru_index_list.size();
+}
+
+int Output_Partition::getNumLocalGRUs() {
+    return this->num_local_grus;
+}
+
+int Output_Partition::getRemainingTimesteps() {
+    return this->num_timesteps_simulation;
+}
+
+std::vector<int> Output_Partition::getFailedGRUIndexList() {
+    return this->failed_gru_index_list;
+}
+
+
+//###################################################################
+// Output_Container
+//###################################################################
+
+Output_Container::Output_Container(int num_partitions, int num_grus, int num_stored_timesteps, int num_timesteps_simulation) {
+    this->num_grus = num_grus;
+    this->num_timesteps_simulation = num_timesteps_simulation;
+    this->num_stored_timesteps = num_stored_timesteps;
+
+    // Set the number of partitions - avoiding division with a remainder
+    if (num_partitions > num_grus) {
+        this->num_partitions = num_grus;
+    } else {
+        this->num_partitions = num_partitions;
+    }
+
+    // Initialize the output partitions
+    int start_gru_counter = 1;
+    this->num_grus_per_partition = std::round(num_grus / num_partitions);
+    for (int i = 0; i < num_partitions - 1; i++) {
+        this->output_partitions.push_back(new Output_Partition(start_gru_counter, this->num_grus_per_partition, num_timesteps_simulation, num_stored_timesteps));
+        start_gru_counter += this->num_grus_per_partition;
+    }
+    // The last partition will have the remainder of the GRUs
+    this->output_partitions.push_back(new Output_Partition(start_gru_counter, num_grus - start_gru_counter + 1, num_timesteps_simulation, num_stored_timesteps));
+}
+
+Output_Container::~Output_Container() {
+
+    for (int i = 0; i < this->num_partitions; i++) {
+        delete this->output_partitions[i];
+    }
+}
+
+Output_Partition* Output_Container::getOutputPartition(int local_gru_index) {
+    int partition_index = this->findPartition(local_gru_index);
+    return this->output_partitions[partition_index];
+}
+
+int Output_Container::findPartition(int local_gru_index) {
+    // If we are not rerunning failed GRUs, then the partition index can be found within a block of GRUs
+    if (!this->rerunning_failed_hrus) {
+        int partition_index = (local_gru_index - 1) / this->num_grus_per_partition;
+        // correct the value if too large (more than the number of partitions)
+        if (partition_index > this->num_partitions - 1) {
+            partition_index = this->num_partitions - 1;
+        }
         return partition_index;
-    }
-    else {
-        return {};
+    } else {
+        // If we are rerunning failed GRUs, they may not be grouped in blocks, so we need to use the failed GRU index list
+        std::vector<int>::iterator it = std::find(this->failed_gru_index_list.begin(), this->failed_gru_index_list.end(), local_gru_index);
+        if (it != this->failed_gru_index_list.end()) {
+            return std::distance(this->failed_gru_index_list.begin(), it);
+        } else {
+            throw std::runtime_error("GRU index not found in failed GRU index list");
+        }
     }
 
+ 
 }
 
-int findPatritionIndex(int grus_per_partition, int gru_index, int num_partitions) {
-    int partition_index;
-
-    partition_index = (gru_index - 1) / grus_per_partition;
-    // The last partion will not be the same size as the others in some cases
-    // So we have to correct the value
-    if (partition_index >= num_partitions) {
-        partition_index = num_partitions - 1;
-    }
-
-    return partition_index;
+int Output_Container::getNumPartitions() {
+    return this->num_partitions;
 }
 
-void resetReadyToWrite(std::shared_ptr<output_partition>& output_partition) {
-    for (auto &hru_info_and_data : output_partition->hru_info_and_data) {
-        hru_info_and_data->ready_to_write = false;
-    }
-    output_partition->grus_ready_to_write = 0;
+std::vector<int> Output_Container::getFailedGRUIndexList() {
+    return this->failed_gru_index_list;
 }
 
+void Output_Container::reconstruct() {
 
-void updateSimulationTimestepsRemaining(std::shared_ptr<output_partition>& output_partition) {
-    output_partition->simulation_timesteps_remaining -= output_partition->num_timesteps;
+    this->failed_gru_index_list;
+
+    // Loop over all partitions getting the failed GRU index list
+    for (int i = 0; i < this->num_partitions; i++) {
+        std::vector<int> partition_failed_gru_index_list = this->output_partitions[i]->getFailedGRUIndexList();
+        failed_gru_index_list.insert(
+            failed_gru_index_list.end(), 
+            partition_failed_gru_index_list.begin(), 
+            partition_failed_gru_index_list.end());
+        delete this->output_partitions[i];
+    }
+    this->output_partitions.clear();
+
+    std::sort(this->failed_gru_index_list.begin(), this->failed_gru_index_list.end());
+    // Reconstruct the output partitions
+    this->num_partitions = failed_gru_index_list.size();
+    this->num_grus = failed_gru_index_list.size();
+    this->num_grus_per_partition = 1;
+    for (int i = 0; i < failed_gru_index_list.size(); i++){
+        this->output_partitions.push_back(new 
+            Output_Partition(failed_gru_index_list[i], 1, 
+                            this->num_timesteps_simulation, 
+                            this->num_stored_timesteps));
+    }
+
+    this->rerunning_failed_hrus = true;
 }
 
-void updateNumTimeForPartition(std::shared_ptr<output_partition> &output_partition) {
-    if (output_partition->simulation_timesteps_remaining < output_partition->num_timesteps) {
-        output_partition->num_timesteps = output_partition->simulation_timesteps_remaining;
-    }
-}
-
-std::optional<int> updatePartitionWithFailedHRU(std::vector<std::shared_ptr<output_partition>>& output_partitions, 
-    int local_gru_index) {
-    int partition_index = findPatritionIndex(output_partitions[0]->num_gru, local_gru_index, output_partitions.size());
-    output_partitions[partition_index]->num_active_gru -= 1;    
-
-    // Check if the partition is now ready to write
-    if (output_partitions[partition_index]->grus_ready_to_write == output_partitions[partition_index]->num_active_gru) {
-        return partition_index;
-    }
-    else {
-        return {};
-    }
-
-
-}
 

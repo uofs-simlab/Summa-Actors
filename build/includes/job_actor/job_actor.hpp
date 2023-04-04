@@ -17,6 +17,7 @@ struct GRU_Container {
     int num_gru_done = 0; 
     int num_gru_failed = 0; // number of grus that are waiting to be restarted
     int num_gru_in_run_domain = 0; // number of grus we are currently solving for
+    int run_attempts_left = 1; // current run attempt for all grus
 };
 
 struct job_state {
@@ -45,11 +46,6 @@ struct job_state {
     TimingInfo job_timing;
     
     std::string hostname;
-
-    // Output File Names for Timings
-    std::string success_output_file;
-    std::string failed_output_file = "failedHRU";
-    std::string file_access_actor_stats = "fileAccessActor.csv";
 
     // settings for all child actors (save in case we need to recover)
     File_Access_Actor_Settings file_access_actor_settings;

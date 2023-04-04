@@ -95,6 +95,9 @@ Job_Actor_Settings readJobActorSettings(std::string json_settings_file) {
     std::string parent_key = "Job_Actor";
     job_actor_settings.file_manager_path = getSettings(json_settings_file, parent_key,
         "file_manager_path", job_actor_settings.file_manager_path).value_or("");
+    
+    job_actor_settings.max_run_attempts = getSettings(json_settings_file, parent_key,
+        "max_run_attempts", job_actor_settings.max_run_attempts).value_or(1);
 
     return job_actor_settings;
 }
@@ -109,6 +112,9 @@ HRU_Actor_Settings readHRUActorSettings(std::string json_settings_file) {
 
     hru_actor_settings.output_frequency = getSettings(json_settings_file, parent_key,
         "output_frequency", hru_actor_settings.output_frequency).value_or(250);
+
+    hru_actor_settings.dt_init_factor = getSettings(json_settings_file, parent_key,
+        "dt_init_factor", hru_actor_settings.dt_init_factor).value_or(1);
 
     return hru_actor_settings;
 }

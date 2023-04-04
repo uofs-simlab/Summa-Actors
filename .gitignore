@@ -23,3 +23,4 @@ bin/data_kinsol_state_vec.csv
 bin/plot_resuduial.py
 bin/state.png
 bin/submission_script_array.sh
+build/source/testing/containers/output_container/out.txt

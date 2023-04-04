@@ -56,6 +56,10 @@ gru_state GRU::getStatus() {
   return this->state;
 }
 
+bool GRU::isFailed() {
+  return this->state == gru_state::failed;
+}
+
 // Setters
 void GRU::setRunTime(double run_time) {
   this->run_time = run_time;
@@ -76,11 +80,17 @@ void GRU::setWriteOutputDuration(double write_output_duration) {
 void GRU::setSuccess() {
   this->state = gru_state::succeeded;
 }
-
 void GRU::setFailed() {
   this->state = gru_state::failed;
+}
+void GRU::setRunning() {
+  this->state = gru_state::running;
 }
 
 void GRU::decrementAttemptsLeft() {
   this->attempts_left--;
+}
+
+void GRU::setGRUActor(caf::actor gru_actor) {
+  this->gru_actor = gru_actor;
 }

@@ -33,17 +33,12 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
         
     initalizeFileAccessActor(self);
 
-    if (self->state.file_access_actor_settings.num_partitions_in_output_buffer > num_gru) {
-        // Prevents a division with a remainder
-        self->state.file_access_actor_settings.num_partitions_in_output_buffer = num_gru;
-    }
-
-    // Setup output container
-    initArrayOfOuputPartitions(self->state.output_partitions,
+    // Set up the output container
+    self->state.output_container = new Output_Container(
         self->state.file_access_actor_settings.num_partitions_in_output_buffer,
         self->state.num_gru,
         self->state.file_access_actor_settings.num_timesteps_in_output_buffer,
-        self->state.num_steps);
+        self->state.num_steps); 
 
     return {
         [=](write_param, int index_gru, int index_hru, std::vector<double> attr_struct, 
@@ -160,45 +155,69 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
 
         [=](write_output, int index_gru, int index_hru, caf::actor hru_actor) {
             self->state.file_access_timing.updateStartPoint("write_duration");
-            // We need to handle the partitioning of the output data
-            std::optional<int> partition_index = addReadyToWriteHRU(self->state.output_partitions, hru_actor, index_gru, index_hru);
-            if (partition_index.has_value()) {
-                // We have a partition that is ready to write
-                int max_gru = self->state.output_partitions[partition_index.value()]->start_gru + self->state.output_partitions[partition_index.value()]->num_gru -1;
-                writeOutput(self->state.handle_ncid, &self->state.output_partitions[partition_index.value()]->num_timesteps,
-                    &self->state.output_partitions[partition_index.value()]->start_gru, &max_gru, &self->state.err);
+
+            Output_Partition *output_partition = self->state.output_container->getOutputPartition(index_gru);
+
+            output_partition->setGRUReadyToWrite(hru_actor);
+        
+    
+            if (output_partition->isReadyToWrite()) {
+                int num_timesteps_to_write = output_partition->getNumStoredTimesteps();
+                int start_gru = output_partition->getStartGRUIndex();
+                int max_gru = output_partition->getMaxGRUIndex();
                 
-                updateSimulationTimestepsRemaining(self->state.output_partitions[partition_index.value()]);
-                updateNumTimeForPartition(self->state.output_partitions[partition_index.value()]);                 
-                resetReadyToWrite(self->state.output_partitions[partition_index.value()]);
-                for (auto hru_output_info : self->state.output_partitions[partition_index.value()]->hru_info_and_data) {
-                    self->send(hru_output_info->hru_actor, num_steps_before_write_v, self->state.output_partitions[partition_index.value()]->num_timesteps);
-                    self->send(hru_output_info->hru_actor, run_hru_v);
+                writeOutput(self->state.handle_ncid, &num_timesteps_to_write,
+                    &start_gru, &max_gru, &self->state.err);
+                
+                output_partition->updateTimeSteps();
+
+                int num_steps_before_next_write = output_partition->getNumStoredTimesteps();
+
+                std::vector<caf::actor> hrus_to_update = output_partition->getReadyToWriteList();
+                
+                for (int i = 0; i < hrus_to_update.size(); i++) {
+                    self->send(hrus_to_update[i], num_steps_before_write_v, num_steps_before_next_write);
+                    self->send(hrus_to_update[i], run_hru_v);
                 }
+            
+                output_partition->resetReadyToWriteList();
             }
+
             self->state.file_access_timing.updateEndPoint("write_duration");
         },
 
+        [=](restart_failures) {
+            self->state.output_container->reconstruct();
+        },
+
         [=](run_failure, int local_gru_index) {
+            Output_Partition *output_partition = self->state.output_container->getOutputPartition(local_gru_index);
             
-            std::optional<int> partition_index = updatePartitionWithFailedHRU(self->state.output_partitions, local_gru_index);
-            
-            if (partition_index.has_value() && self->state.output_partitions[partition_index.value()]->num_gru < 0) {
-                self->state.file_access_timing.updateStartPoint("write_duration");
+            output_partition->addFailedGRUIndex(local_gru_index);
+
+            int active_grus = output_partition->getNumActiveGRUs();
+
+            if (output_partition->isReadyToWrite() && active_grus > 0) {
+                int num_timesteps_to_write = output_partition->getNumStoredTimesteps();
+                int start_gru = output_partition->getMaxGRUIndex();
+                int max_gru = output_partition->getStartGRUIndex();
                 
-                // We have a partition that is ready to write
-                int max_gru = self->state.output_partitions[partition_index.value()]->start_gru + self->state.output_partitions[partition_index.value()]->num_gru -1;
-                writeOutput(self->state.handle_ncid, &self->state.output_partitions[partition_index.value()]->num_timesteps,
-                    &self->state.output_partitions[partition_index.value()]->start_gru, &max_gru, &self->state.err);
+                writeOutput(self->state.handle_ncid, &num_timesteps_to_write,
+                    &start_gru, &max_gru, &self->state.err);
                 
-                updateSimulationTimestepsRemaining(self->state.output_partitions[partition_index.value()]);
-                updateNumTimeForPartition(self->state.output_partitions[partition_index.value()]);                 
-                resetReadyToWrite(self->state.output_partitions[partition_index.value()]);
-                for (auto hru_output_info : self->state.output_partitions[partition_index.value()]->hru_info_and_data) {
-                    self->send(hru_output_info->hru_actor, num_steps_before_write_v, self->state.output_partitions[partition_index.value()]->num_timesteps);
-                    self->send(hru_output_info->hru_actor, run_hru_v);
+                output_partition->updateTimeSteps();
+
+                int num_steps_before_next_write = output_partition->getNumStoredTimesteps();
+
+                std::vector<caf::actor> hrus_to_update = output_partition->getReadyToWriteList();
+                
+                for (int i = 0; i < hrus_to_update.size(); i++) {
+                    self->send(hrus_to_update[i], num_steps_before_write_v, num_steps_before_next_write);
+                    self->send(hrus_to_update[i], run_hru_v);
                 }
-                self->state.file_access_timing.updateEndPoint("write_duration");
+            
+                output_partition->resetReadyToWriteList();
+            
             }
           
         },
@@ -208,6 +227,10 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
             int num_gru = netcdf_gru_info.size();
             WriteGRUStatistics(self->state.handle_ncid, &self->state.gru_actor_stats, 
                     netcdf_gru_info.data(), &num_gru, &self->state.err);
+
+            
+            // call output_container deconstructor
+            self->state.output_container->~Output_Container();
 
 
             aout(self) << "Deallocating Structure" << std::endl;

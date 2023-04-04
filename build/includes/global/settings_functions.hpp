@@ -83,12 +83,14 @@ File_Access_Actor_Settings readFileAccessActorSettings(std::string json_settings
 
 struct Job_Actor_Settings {
     std::string file_manager_path;
+    int max_run_attempts; // maximum number of times to attempt to run each HRU in a job
 };
 
 template<class Inspector>
 bool inspect(Inspector& inspector, Job_Actor_Settings& job_actor_settings) {
     return inspector.object(job_actor_settings).fields(
-                inspector.field("file_manager_path", job_actor_settings.file_manager_path));
+                inspector.field("file_manager_path", job_actor_settings.file_manager_path),
+                inspector.field("max_run_attempts",  job_actor_settings.max_run_attempts));
 }
 
 Job_Actor_Settings readJobActorSettings(std::string json_settings_file);
@@ -100,13 +102,15 @@ Job_Actor_Settings readJobActorSettings(std::string json_settings_file);
 struct HRU_Actor_Settings {
     bool print_output;
     int output_frequency;
+    int dt_init_factor; // factor to multiply the initial timestep by
 };
 
 template<class Inspector>
 bool inspect(Inspector& inspector, HRU_Actor_Settings& hru_actor_settings) {
     return inspector.object(hru_actor_settings).fields(
                 inspector.field("print_output",     hru_actor_settings.print_output),
-                inspector.field("output_frequency", hru_actor_settings.output_frequency));
+                inspector.field("output_frequency", hru_actor_settings.output_frequency),
+                inspector.field("dt_init_factor",   hru_actor_settings.dt_init_factor));
 }
 
 HRU_Actor_Settings readHRUActorSettings(std::string json_settings_file);

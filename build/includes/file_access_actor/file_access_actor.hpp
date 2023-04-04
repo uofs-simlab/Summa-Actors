@@ -47,9 +47,13 @@ struct file_access_state {
     int err;
     int num_output_steps;
 
+    Output_Container* output_container;
+    // std::vector<int> failed_gru_index_list;
+    
+
     // Output_Container *output_container;
     std::vector<std::shared_ptr<output_partition>> output_partitions;
-
+    std::vector<std::shared_ptr<output_partition>> output_partitions_for_reruns;
 
 
     File_Access_Actor_Settings file_access_actor_settings;

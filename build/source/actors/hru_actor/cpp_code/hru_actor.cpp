@@ -26,6 +26,8 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
     self->state.iFile             = 1;
     // Get the settings for the HRU
     self->state.hru_actor_settings = hru_actor_settings;
+    self->state.dt_init_factor = hru_actor_settings.dt_init_factor;
+
 
     initHRU(&self->state.indxGRU, &self->state.num_steps, self->state.handle_lookupStruct, self->state.handle_forcStat,
         self->state.handle_progStat, self->state.handle_diagStat, self->state.handle_fluxStat, self->state.handle_indxStat, 
@@ -195,7 +197,6 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
 
         [=](dt_init_factor, int dt_init_factor) {
             aout(self) << "Recieved New dt_init_factor to attempt on next run \n";
-            self->state.dt_init_factor = dt_init_factor;
         },
     };
 }

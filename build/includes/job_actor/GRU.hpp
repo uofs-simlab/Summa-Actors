@@ -63,6 +63,8 @@ class GRU {
     double getAttemptsLeft();
     gru_state getStatus();
 
+    bool isFailed();
+
 
     // Setters
     void setRunTime(double run_time);
@@ -73,7 +75,10 @@ class GRU {
 
     void setSuccess();
     void setFailed();
+    void setRunning();
 
     void decrementAttemptsLeft();
+
+    void setGRUActor(caf::actor gru_actor);
 
 };
