@@ -407,9 +407,9 @@ subroutine writeScalar(ncid, outputTimestep, outputTimestepUpdate, nSteps, minGR
       if (outputTimeStepUpdate(iFreq) /= stepCounter ) then
         print*, "ERROR Missmatch in Steps - stat doubleVec"
         print*, "   outputTimeStepUpdate(iFreq) = ", outputTimeStepUpdate(iFreq)
-        print*, "   outputTimeStepUpdate", outputTimeStepUpdate
         print*, "   stepCounter = ", stepCounter
         print*, "   iFreq = ", iFreq
+
         return
       endif
     class default; err=20; message=trim(message)//'stats must be scalarv and of type gru_hru_doubleVec'; return

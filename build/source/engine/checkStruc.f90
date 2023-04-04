@@ -89,7 +89,10 @@ contains
   ! check that the length of the lookup structure matches the number of variables in the data structure
   call split_line(longString,words,err,cmessage) ! convert the long character string to a vector of "words"
   if(err/=0)then; message=trim(message)//trim(cmessage); return; end if
-  if(size(words)/=structInfo(iStruct)%nVar)then; err=20; message=trim(message)//'unexpected number of elements'; return; end if
+  if(size(words)/=structInfo(iStruct)%nVar)then; err=20; message=trim(message)//'unexpected number of elements'; 
+    print*, 'size(words) = ', size(words)
+    print*, 'structInfo(iStruct)%nVar = ', structInfo(iStruct)%nVar
+  return; end if
   ! check that the elements in the lookup structure are sequential integers (1,2,3,...,n)
   do ix=1,structInfo(iStruct)%nVar
    read(words(ix),*) ixTest  ! convert character to integer; store in ixTest

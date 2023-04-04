@@ -17,7 +17,9 @@
 class Output_Partition {
   private:
     int start_local_gru_index; // The index of the first GRU in the partition
+    int end_local_gru_index; // The index of the last GRU in the partition
     int num_local_grus; // The number of GRUs in the partition
+    int num_active_grus; // The number of GRUs that have not failed
     int num_timesteps_simulation; // The number of timesteps in the simulation
     int num_stored_timesteps; // The number of timesteps held within the partition
 

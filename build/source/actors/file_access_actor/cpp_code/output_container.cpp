@@ -9,6 +9,8 @@ Output_Partition::Output_Partition(int start_local_gru_index, int num_local_grus
     this->num_local_grus = num_local_grus;
     this->num_timesteps_simulation = num_timesteps_simulation;
     this->num_stored_timesteps = num_stored_timesteps;
+    this->end_local_gru_index = start_local_gru_index + num_local_grus - 1;
+    this->num_active_grus = num_local_grus;
 
 }
 
@@ -21,12 +23,11 @@ void Output_Partition::setGRUReadyToWrite(caf::actor gru_actor) {
 }
 
 bool Output_Partition::isReadyToWrite() {
-    return (this->ready_to_write_list.size() + this->failed_gru_index_list.size()) 
-        == this->num_local_grus;
+    return this->ready_to_write_list.size() == this->num_active_grus;
 }
 
 int Output_Partition::getMaxGRUIndex() {
-    return this->start_local_gru_index + this->num_local_grus - 1;
+    return this->end_local_gru_index;
 }
 
 int Output_Partition::getNumStoredTimesteps() {
@@ -58,11 +59,22 @@ void Output_Partition::resetReadyToWriteList() {
 }
 
 void Output_Partition::addFailedGRUIndex(int local_gru_index) {
+
+    // Special case where the failing GRU is the last or first GRU in the partition
+    // This will affect writing of output if a failed GRU is the last or first GRU
+    if (local_gru_index == this->end_local_gru_index) {
+        this->end_local_gru_index -= 1;
+    } else if (local_gru_index == this->start_local_gru_index) {
+        this->start_local_gru_index += 1;
+    }
+
+    this->num_active_grus -= 1;
+
     this->failed_gru_index_list.push_back(local_gru_index);
 }
 
 int Output_Partition::getNumActiveGRUs() {
-    return this->num_local_grus - this->failed_gru_index_list.size();
+    return this->num_active_grus;
 }
 
 int Output_Partition::getNumLocalGRUs() {
