@@ -1,39 +1,62 @@
+# Kyle Klenk, (kyle.klenk@usask.ca)
+# This file will summarize the files that are outputed by summa
 import os
 import re
 import sys
+import csv
 
-summaryFile = '_log_summaryActors.txt'
-ext = ".out"
-
-if len(sys.argv) == 1:
-	sys.exit('Error: no input folder specified')
-
-else:
-
-	folder = sys.argv[1]
-
-def determine_output(folder,file):
+def get_job_stats(folder,file):
 	outFile = open(folder + file, 'r')
 	print(outFile)
-	try:
-		lines = outFile.readlines()
-	except UnicodeDecodeError:
-		outFile.close()
-		outFile = open(folder + file, encoding = "ISO-8859-1")
-		lines = outFile.readlines()
-	counter = 1
+	
+	lines = outFile.readlines()
+
+
+	start_hru = int(''.join(filter(str.isdigit, file)))
+	
+	
+	max_lines_to_read = 40
+	lines_read_counter = 1
+	max_items_looking_for = 3
+	items_found = 0
+	row_data = [start_hru, -99, -99, -99]
+	
 	for line in reversed(lines):
-		if counter > 30:
-			return -1
-		else:
-			if "Hours" in line:
-				hours = re.findall("\d+\.\d+", line)
-				return hours
-			counter += 1
+		if lines_read_counter > max_lines_to_read:
+			return row_data
 		
+		elif items_found == max_items_looking_for:
+			return row_data
+		
+		elif "Hours" in line:
+			hours = re.findall("\d+\.\d+", line)
+			row_data[1] = hours[0]
+			lines_read_counter += 1
+
+		elif "Total Read Duration" in line:
+			seconds = re.findall("\d+\.\d+", line)
+			row_data[2] = seconds[0]
+			lines_read_counter += 1
+		
+		elif "Total Write Duration" in line:
+			seconds = re.findall("\d+\.\d+", line)
+			row_data[3] = seconds[0]
+			lines_read_counter += 1
+
+		else:
+			lines_read_counter += 1
+
+output_file = '_log_summaryActors.csv'
+ext = ".txt"
+
+# Check command line args
+if len(sys.argv) == 1:
+	sys.exit('Error: no input folder specified')
+else:
+	folder = sys.argv[1]
 
 try:
-	os.remove(folder + "/" + summaryFile)
+	os.remove(folder + "/" + output_file)
 except OSError:
 	pass
 
@@ -44,20 +67,26 @@ for file in os.listdir(folder):
 
 files.sort()
 
+
 total_success = []
 
 computation_time = []
 
-with open(folder + '/' + summaryFile, "w") as sf:
-	sf.write('Summarizing log files in ' + folder + '\n \n')
-	sf.write('Log files' + '\n')
+csv_file = open(folder + '/' + output_file, "w")
+writer = csv.writer(csv_file)
+csv_header = ["start_hru", "job_duration", "read_duration", "write_duration"]
+writer.writerow(csv_header)
 
-	for file in files:
-		value = determine_output(folder, file)
-		if value == -1:
-			sf.write("{} - Still Running or Failed\n".format(file))
-		else:
-			sf.write("{} - Success after {} hours \n".format(file, value[0]))
+for file in files:
+	row_data = get_job_stats(folder, file)
+	if row_data is None:
+		start_hru = int(''.join(filter(str.isdigit, file)))
+		row_data = [start_hru, -99, -99, -99]
+
+	writer.writerow(row_data)
+
+csv_file.close()
+
 
 
 
