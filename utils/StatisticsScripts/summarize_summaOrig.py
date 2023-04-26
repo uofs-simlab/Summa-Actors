@@ -5,6 +5,9 @@ import re
 import sys
 import csv
 
+output_file = '_log_summaryOriginal.csv'
+ext = ".out"
+
 
 def get_job_stats(folder, file):
     outFile = open(folder + file, 'r')
@@ -51,8 +54,7 @@ def get_job_stats(folder, file):
         else:
             lines_read_counter += 1
 
-output_file = '_log_summaryOriginal.csv'
-ext = ".txt"
+
 
 # Check command line args
 if len(sys.argv) == 1:

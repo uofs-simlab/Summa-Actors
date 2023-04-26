@@ -42,7 +42,7 @@ def seffCommand(jobId, numJobs, gru_per_job):
         cmdString = "seff {}_{}".format(jobId, i)
         cmd = subprocess.Popen(cmdString, shell=True, stdout=subprocess.PIPE)
         for line in cmd.stdout:
-            if b'Cores per node:' in line:
+            if b'Cores:' in line:
                 cores = line.decode().split(" ")[-1]
                 cores = cores.strip()
             
@@ -78,13 +78,13 @@ def seffCommand(jobId, numJobs, gru_per_job):
     csvFile.close()
             
 jobId = argv[1]
-print(jobId)
+print("jobID =", jobId)
 
 numJobs = argv[2]
-print(numJobs)
+print("Number of Jobs =", numJobs)
 
 gru_per_job = argv[3]
-print(gru_per_job)
+print("GRUs per job =", gru_per_job)
 
 seffCommand(jobId, int(numJobs), int(gru_per_job))
 

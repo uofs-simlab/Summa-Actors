@@ -35,11 +35,28 @@ def cpuEfficiency(data_set_1, data_set_2):
         df2_stat.append(cpu_e)
     print("Average CPU Efficiency for data_set_2 =", sum(df2_stat) / len(df1_stat))
 
+def wins_losses(data_set_1, data_set_2):
+    df1 = pd.DataFrame(data_set_1)
+    df2 = pd.DataFrame(data_set_2)
+
+    wins_d1 = 0
+    wins_d2 = 0
+
+    for i in range(0,len(df1["Wall-Clock Time"].values)):
+        if df1["Wall-Clock Time"].values[i] > df2["Wall-Clock Time"].values[i]:
+            wins_d1 += 1
+        else:
+            wins_d2 += 1
+
+    print("Winds DataSet 1 = ", wins_d1)
+    print("Winds DataSet 2 = ", wins_d2)
 
 
-data_set_actors = pd.read_csv("/home/kklenk/projects/rpp-kshook/kklenk/SummaActorsOutput/Jul-13-2022/SummaActors_jobStats_63221110.csv")
-data_set_original = pd.read_csv("/home/kklenk/projects/rpp-kshook/kklenk/SummaOriginalOuput/Jul-09-2022/SummaOriginal_jobStats_63155456.csv")
 
-wallClockTime(data_set_actors, data_set_original)
+data_set_actors = pd.read_csv("/home/kklenk/scratch/Single_CPU_TEST/actors_attempt_1/SummaActors_jobStats_5175342.csv")
+data_set_original = pd.read_csv("/home/kklenk/scratch/Single_CPU_TEST/non-actors_attempt_1/SummaOriginal_jobStats_5201937.csv")
+
+# wallClockTime(data_set_actors, data_set_original)
 print("")
 cpuEfficiency(data_set_actors, data_set_original)
+# wins_losses(data_set_actors, data_set_original)

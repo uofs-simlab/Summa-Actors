@@ -47,7 +47,7 @@ def get_job_stats(folder,file):
 			lines_read_counter += 1
 
 output_file = '_log_summaryActors.csv'
-ext = ".txt"
+ext = ".out"
 
 # Check command line args
 if len(sys.argv) == 1:
