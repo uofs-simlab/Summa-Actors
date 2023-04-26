@@ -155,7 +155,7 @@ void caf_main(actor_system& sys, const config& cfg) {
                 "fileManger is set with the \"-c\" option\n";
             aout(self) << "EXAMPLE: ./summaMain -g 1 -n 10 -c location/of/config \n";
             return;
-        }       
+        }
 
         auto summa = sys.spawn(summa_actor, cfg.startGRU, cfg.countGRU, summa_actor_settings, 
             file_access_actor_settings, job_actor_settings, hru_actor_settings, self);

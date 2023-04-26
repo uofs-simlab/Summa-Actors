@@ -50,39 +50,44 @@ SUMMA-Actors supports four build types: Debug, Cluster, Release, and Cluster_Deb
 Running SUMMA-Actors is done with the following command:
     ./summa_actor -g startGRU -n numGRU -c path_to_config_file
 
+If you are running SUMMA-Actors on a cluster, you will need to specify the number of threads when not using whole nodes.
+  This can be done with the --caf.scheduler.max-threads option
+    ./summa_actor -g startGRU -n numGRU -c path_to_config_file --caf.scheduler.max-threads $SLURM_CPUS_PER_TASK
+
 The values for -g and -n are integers where -c is the full path to the configuraiton file for summa actors.
 
 The configuration file is a json file. The contents of the JSON file are below:
 
-  {
+{
     "Distributed_Settings": {
         "distributed_mode": false,
-        "servers_list": [{"hostname": "simlab01"}, {"hostname": "simlab05"}],
+        "servers_list": [{"hostname": "cnic-giws-cpu-19001-04"}, {"hostname": "cnic-giws-utl-19002"}, {"hostname": "cnic-giws-utl-19003"}],
         "port": 4444,
-        "total_hru_count": 517315,
-        "num_hru_per_batch": 1000
-    },
-
-    "Summa_Actor": {
-      "max_gru_per_job": 500
-    },
-
-    "File_Access_Actor": {
-      "num_partitions_in_output_buffer": 4,
-      "num_timesteps_in_output_buffer": 500
+        "total_hru_count": 800,
+        "num_hru_per_batch": 50
     },
   
-    "Job_Actor": {
-      "file_manager_path": "/gladwell/kck540/Sundials_Settings/fileManager_actors.txt",
-      "output_csv": false,
-      "csv_path": ""
+    "Summa_Actor": {
+        "max_gru_per_job": 4000
     },
-
+  
+    "File_Access_Actor": {
+      "num_partitions_in_output_buffer": 8,
+      "num_timesteps_in_output_buffer": 500
+    },
+    
+    "Job_Actor": {
+        "file_manager_path": "/scratch/gwf/gwf_cmt/kck540/Summa-Actors/settings/file_manager_actors.txt",
+        "max_run_attempts": 3
+    },
+  
     "HRU_Actor": {
-      "print_output": true,
-      "output_frequency": 1000
+        "print_output": true,
+        "output_frequency": 100000,
+        "dt_init_factor": 1
     }
-  }
+}
+
 
 The settings above should work for most use cases, some of the feautures we want to automate such as max_gru_per_job. However, the only field that you should have to adjust is the `file_manager_path`. This is the path to the file that manages the complete configuration of the SUMMA simulation. The summa confiuration files are explained in more depth in the follwoing (documentation)[https://summa.readthedocs.io/en/latest/input_output/SUMMA_input/]
 
