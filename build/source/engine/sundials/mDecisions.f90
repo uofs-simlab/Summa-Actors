@@ -403,12 +403,16 @@ subroutine mDecisions(num_steps,err) bind(C, name='mDecisions')
       err=10; message=trim(message)//"unknown numerical method [option="//trim(model_decisions(iLookDECISIONS%num_method)%cDecision)//"]"; return
   end select
 
-  ! how to compute heat capacity in energy equation
+  ! how to compute heat capacity in energy equation, choice enthalpyFD has better coincidence of energy conservation with sundials tolerance.
   select case(trim(model_decisions(iLookDECISIONS%howHeatCap)%cDecision))
-    case('enthalpyFD'); model_decisions(iLookDECISIONS%howHeatCap)%iDecision = enthalpyFD        ! enthalpyFD
-    case('closedForm'); model_decisions(iLookDECISIONS%howHeatCap)%iDecision = closedForm        ! closedForm
+    case('enthalpyFD'); model_decisions(iLookDECISIONS%howHeatCap)%iDecision = enthalpyFD        ! heat capacity using enthalpy
+    case('closedForm'); model_decisions(iLookDECISIONS%howHeatCap)%iDecision = closedForm        ! heat capacity using closed form, not using enthalpy
     case default
-      err=10; message=trim(message)//"unknown Cp computation [option="//trim(model_decisions(iLookDECISIONS%howHeatCap)%cDecision)//"]"; return
+      if (trim(model_decisions(iLookDECISIONS%num_method)%cDecision)=='itertive')then
+        model_decisions(iLookDECISIONS%howHeatCap)%iDecision = closedForm ! included for backwards compatibility
+      else
+        err=10; message=trim(message)//"unknown Cp computation [option="//trim(model_decisions(iLookDECISIONS%howHeatCap)%cDecision)//"]"; return
+      endif
   end select
 
   ! identify the method used to calculate flux derivatives

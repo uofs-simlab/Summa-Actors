@@ -29,8 +29,8 @@ USE globalData,only:urbanVegCategory    ! vegetation category for urban areas
 ! provide access to the derived types to define the data structures
 USE data_types,only:&
                     var_i,            & ! data vector (i4b)
-                    var_d,            & ! data vector (dp)
-                    var_dlength,      & ! data vector with variable length dimension (dp)
+                    var_d,            & ! data vector (rkind)
+                    var_dlength,      & ! data vector with variable length dimension (rkind)
                     model_options       ! defines the model decisions
 
 ! named variables defining elements in the data structures
@@ -56,8 +56,8 @@ implicit none
 private
 public::vegPhenlgy
 ! algorithmic parameters
-real(dp),parameter     :: valueMissing=-9999._dp  ! missing value, used when diagnostic or state variables are undefined
-real(dp),parameter     :: verySmall=1.e-6_dp      ! used as an additive constant to check if substantial difference among real numbers
+real(rkind),parameter     :: valueMissing=-9999._rkind  ! missing value, used when diagnostic or state variables are undefined
+real(rkind),parameter     :: verySmall=1.e-6_rkind      ! used as an additive constant to check if substantial difference among real numbers
 contains
 
 
@@ -93,16 +93,16 @@ contains
  type(var_dlength),intent(inout) :: diag_data           ! diagnostic variables for a local HRU
  ! output
  logical(lgt),intent(out)        :: computeVegFlux      ! flag to indicate if we are computing fluxes over vegetation (.false. means veg is buried with snow)
- real(dp),intent(out)            :: canopyDepth         ! canopy depth (m)
- real(dp),intent(out)            :: exposedVAI          ! exposed vegetation area index (LAI + SAI)
- real(dp),intent(inout)          :: fracJulDay
+ real(rkind),intent(out)         :: canopyDepth         ! canopy depth (m)
+ real(rkind),intent(out)         :: exposedVAI          ! exposed vegetation area index (LAI + SAI)
+ real(rkind),intent(inout)       :: fracJulday
  integer(i4b),intent(inout)      :: yearLength
  integer(i4b),intent(out)        :: err                 ! error code
  character(*),intent(out)        :: message             ! error message
  ! -------------------------------------------------------------------------------------------------
  ! local
- real(dp)                 :: notUsed_heightCanopyTop    ! height of the top of the canopy layer (m)
- real(dp)                 :: heightAboveSnow            ! height top of canopy is above the snow surface (m)
+ real(rkind)                     :: notUsed_heightCanopyTop    ! height of the top of the canopy layer (m)
+ real(rkind)                     :: heightAboveSnow            ! height top of canopy is above the snow surface (m)
  ! initialize error control
  err=0; message="vegPhenlgy/"
  ! ----------------------------------------------------------------------------------------------------------------------------------
@@ -183,7 +183,7 @@ contains
   heightAboveSnow = heightCanopyTop - scalarSnowDepth     ! height top of canopy is above the snow surface (m)
 
   ! determine if need to include vegetation in the energy flux routines
-  computeVegFlux  = (exposedVAI > 0.05_dp .and. heightAboveSnow > 0.05_dp)
+  computeVegFlux  = (exposedVAI > 0.05_rkind .and. heightAboveSnow > 0.05_rkind)
   !write(*,'(a,1x,i2,1x,L1,1x,10(f12.5,1x))') 'vegTypeIndex, computeVegFlux, heightCanopyTop, heightAboveSnow, scalarSnowDepth = ', &
   !                                            vegTypeIndex, computeVegFlux, heightCanopyTop, heightAboveSnow, scalarSnowDepth
 

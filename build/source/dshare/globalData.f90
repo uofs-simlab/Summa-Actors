@@ -37,12 +37,10 @@ MODULE globalData
   USE data_types,only:extended_info   ! extended metadata for variables in each model structure
   USE data_types,only:struct_info     ! summary information on all data structures
   USE data_types,only:var_i           ! vector of integers
-  USE data_types,only:var_dlength
-  USE data_types,only:var_dlength_array
-  USE data_types,only:var_forc
-  USE data_types,only:dlength
-  USE data_types,only:ilength
-  USE data_types,only:init_cond
+  USE data_types,only:var_forc        ! for Actors
+  USE data_types,only:dlength         ! for Actors
+  USE data_types,only:ilength         ! for Actors
+  USE data_types,only:init_cond       ! for Actors
 
   ! number of variables in each data structure
   USE var_lookup,only:maxvarTime      ! time:                     maximum number variables
@@ -60,15 +58,13 @@ MODULE globalData
   USE var_lookup,only:maxvarBpar      ! basin-average parameters: maximum number variables
   USE var_lookup,only:maxvarDecisions ! maximum number of decisions
   USE var_lookup,only:maxvarFreq      ! maximum number of output files
-  USE var_lookup,only:maxvarLookup
+  USE var_lookup,only:maxvarLookup    ! maximum number of variables in the lookup
   implicit none
   private
 
   ! ----------------------------------------------------------------------------------------------------------------
   ! * part 1: parameters that are fixed across multiple instantiations
   ! ----------------------------------------------------------------------------------------------------------------
-
-  ! define missing values                      ! master summa data type
 
   ! define missing values
   real(rkind),parameter,public                :: quadMissing    = nr_quadMissing    ! (from nrtype) missing quadruple precision number
@@ -79,7 +75,6 @@ MODULE globalData
   integer(i4b),parameter,public               :: iRunModeFull=1          ! named variable defining running mode as full run (all GRUs)
   integer(i4b),parameter,public               :: iRunModeGRU=2           ! named variable defining running mode as GRU-parallelization run (GRU subset)
   integer(i4b),parameter,public               :: iRunModeHRU=3           ! named variable defining running mode as single-HRU run (ONE HRU)
-
 
   ! define progress modes
   integer(i4b),parameter,public               :: ixProgress_im=1000      ! named variable to print progress once per month
@@ -98,8 +93,6 @@ MODULE globalData
   ! define output file frequency
   integer(i4b),parameter,public               :: noNewFiles=1001         ! no new output files
   integer(i4b),parameter,public               :: newFileEveryOct1=1002   ! create a new file on Oct 1 every year (start of the USA water year)
-  ! =======-------
-  type(var_dlength),pointer,public            :: fluxStructLateralFlow(:)   !  model fluxes
 
   ! define named variables for "yes" and "no"
   integer(i4b),parameter,public               :: no=0                    ! .false.
@@ -125,11 +118,11 @@ MODULE globalData
   integer(i4b),parameter,public               :: iname_watAquifer=3006   ! named variable defining the water storage in the aquifer
 
   ! define named variables to describe the form and structure of the band-diagonal matrices used in the numerical solver
-  ! NOTE: This indexing scheme provides the matrix structure expected by lapack. Specifically, lapack requires kl extra rows for additional storage.
+  ! NOTE: This indexing scheme provides the matrix structure expected by lapack and sundials. Specifically, they require kl extra rows for additional storage.
   !       Consequently, all indices are offset by kl and the total number of bands for storage is 2*kl+ku+1 instead of kl+ku+1.
   integer(i4b),parameter,public               :: nRHS=1                  ! number of unknown variables on the RHS of the linear system A.X=B
-  integer(i4b),parameter,public               :: ku=3                    ! number of super-diagonal bands
-  integer(i4b),parameter,public               :: kl=4                    ! number of sub-diagonal bands
+  integer(i4b),parameter,public               :: ku=3                    ! number of super-diagonal bands, ku>=3 to accommodate coupled layer above
+  integer(i4b),parameter,public               :: kl=4                    ! number of sub-diagonal bands, kl>=4 to accommodate vegetation
   integer(i4b),parameter,public               :: ixDiag=kl+ku+1          ! index for the diagonal band
   integer(i4b),parameter,public               :: nBands=2*kl+ku+1        ! length of the leading dimension of the band diagonal matrix
 
@@ -142,11 +135,11 @@ MODULE globalData
   integer(i4b),parameter,public               :: iJac2=20                ! last layer of the Jacobian to print
 
   ! define limit checks
-  real(rkind),parameter,public                :: verySmall=tiny(1.0_dp)  ! a very small number
-  real(rkind),parameter,public                :: veryBig=1.e+20_dp       ! a very big number
+  real(rkind),parameter,public                :: verySmall=tiny(1.0_rkind) ! a very small number
+  real(rkind),parameter,public                :: veryBig=1.e+20_rkind)     ! a very big number
 
   ! define algorithmic control parameters
-  real(rkind),parameter,public                :: dx = 1.e-8_dp           ! finite difference increment
+  real(rkind),parameter,public                :: dx = 1.e-8_rkind)      ! finite difference increment
 
   ! define summary information on all data structures
   integer(i4b),parameter                      :: nStruct=14              ! number of data structures
@@ -164,7 +157,7 @@ MODULE globalData
                    struct_info('diag',  'DIAG' , maxvarDiag ), &        ! the diagnostic variable data structure
                    struct_info('flux',  'FLUX' , maxvarFlux ), &        ! the flux data structure
                    struct_info('deriv', 'DERIV', maxvarDeriv), &        ! the model derivative data structure
-                   struct_info('lookup', 'LOOKUP',maxvarLookup) /)
+                   struct_info('lookup','LOOKUP',maxvarLookup)  /)      ! the lookup table data structure
   ! fixed model decisions
   logical(lgt)          , parameter, public   :: overwriteRSMIN=.false.  ! flag to overwrite RSMIN
   integer(i4b)          , parameter, public   :: maxSoilLayers=10000     ! Maximum Number of Soil Layers
@@ -173,7 +166,7 @@ MODULE globalData
   ! * part 2: globally constant variables/structures that require initialization
   ! ----------------------------------------------------------------------------------------------------------------
 
-  ! define Indian bread (NaN)
+ ! define Not-a-Number (NaN)
   real(rkind),save,public                        :: dNaN
 
   ! define default parameter values and parameter bounds
@@ -258,17 +251,17 @@ MODULE globalData
   integer(i4b),save,public                       :: nHRUrun                     ! number of HRUs in the run domain
   integer(i4b),save,public                       :: nGRUrun                     ! number of GRUs in the run domain
   real(rkind),save,public                        :: data_step                   ! length of the time_step
-  real(rkind),save,public                        :: dJulianStart                ! julian day of start time of simulation
-  real(rkind),save,public                        :: dJulianFinsh                ! julian day of end time of simulation
   real(rkind),save,public                        :: refJulday                   ! reference time in fractional julian days
   real(rkind),save,public                        :: refJulday_data              ! reference time in fractional julian days (data files)
+  real(rkind),save,public                        :: dJulianStart                ! julian day of start time of simulation
+  real(rkind),save,public                        :: dJulianFinsh                ! julian day of end time of simulation
   integer(i4b),save,public                       :: nHRUfile                    ! number of HRUs in the file
   integer(i4b),save,public                       :: urbanVegCategory            ! vegetation category for urban areas
   logical(lgt),save,public                       :: doJacobian=.false.          ! flag to compute the Jacobian
   logical(lgt),save,public                       :: globalPrintFlag=.false.     ! flag to compute the Jacobian
   integer(i4b),save,public                       :: chunksize=1024              ! chunk size for the netcdf read/write
   integer(i4b),save,public                       :: outputPrecision=nf90_double ! variable type
-  integer(i4b),save,public                    :: outputCompressionLevel=4             ! output netcdf file deflate level: 0-9. 0 is no compression.
+  integer(i4b),save,public                       :: outputCompressionLevel=4    ! output netcdf file deflate level: 0-9. 0 is no compression.
 
   ! define result from the time calls
   integer(i4b),dimension(8),save,public          :: startInit,endInit       ! date/time for the start and end of the initialization
@@ -277,8 +270,6 @@ MODULE globalData
   integer(i4b),dimension(8),save,public          :: startRead,endRead       ! date/time for the start and end of the data read
   integer(i4b),dimension(8),save,public          :: startWrite,endWrite     ! date/time for the start and end of the stats/write
   integer(i4b),dimension(8),save,public          :: startPhysics,endPhysics ! date/time for the start and end of the physics
-
-
 
  ! define elapsed time
   real(rkind),save,public                        :: elapsedInit             ! elapsed time for the initialization
@@ -294,33 +285,34 @@ MODULE globalData
   type(var_i),save,public                        :: refTime                 ! reference time for the model simulation
   type(var_i),save,public                        :: oldTime                 ! time for the previous model time step
 
-
   ! output file information
-  logical(lgt),dimension(maxvarFreq),save,public  :: outFreq              ! true if the output frequency is desired
-  integer(i4b),dimension(maxvarFreq),save,public  :: ncid                 ! netcdf output file id
+  logical(lgt),dimension(maxvarFreq),save,public :: outFreq                 ! true if the output frequency is desired
+  integer(i4b),dimension(maxvarFreq),save,public :: ncid                    ! netcdf output file id
 
- 
   ! look-up values for the choice of the time zone information (formerly in modelDecisions module)
   integer(i4b),parameter,public                  :: ncTime=1                ! time zone information from NetCDF file (timeOffset = longitude/15. - ncTimeOffset)
   integer(i4b),parameter,public                  :: utcTime=2               ! all times in UTC (timeOffset = longitude/15. hours)
   integer(i4b),parameter,public                  :: localTime=3             ! all times local (timeOffset = 0)
 
-
+  ! start_ACTORS
   !!!!!!!!!!!!!!!!!!GLOBAL DATA STRUCTURES THAT ARE MANAGED BY FILEACCESSACTOR !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  type(var_forc),allocatable,save,public          :: forcingDataStruct(:)      ! forcingDataStruct(:)%var(:)%dataFromFile(:,:)
+  type(var_forc),allocatable,save,public          :: forcingDataStruct(:)   ! forcingDataStruct(:)%var(:)%dataFromFile(:,:)
   type(dlength),allocatable,save,public           :: vecTime(:)
-  logical(lgt),allocatable,save,public            :: failedHRUs(:)             ! list of true and false values to indicate if an HRU has failed           
-  type(ilength),allocatable,save,public           :: outputTimeStep(:)  ! timestep in output files
+  logical(lgt),allocatable,save,public            :: failedHRUs(:)          ! list of true and false values to indicate if an HRU has failed
+  type(ilength),allocatable,save,public           :: outputTimeStep(:)      ! timestep in output files
   ! inital conditions
-  type(init_cond),allocatable,save,public         :: init_cond_prog(:)   ! variable data for initial conditions
-  type(init_cond),allocatable,save,public         :: init_cond_bvar(:)   ! variable data for initial conditions
+  type(init_cond),allocatable,save,public         :: init_cond_prog(:)      ! variable data for initial conditions
+  type(init_cond),allocatable,save,public         :: init_cond_bvar(:)      ! variable data for initial conditions
   !!!!!!!!!!!!!!!!!!GLOBAL DATA STRUCTURES THAT ARE MANAGED BY FILEACCESSACTOR !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  ! end_ACTORS
 
   ! define fixed dimensions
-  integer(i4b),parameter,public                   :: nBand=2          ! number of spectral bands
-  integer(i4b),parameter,public                   :: nTimeDelay=2000  ! number of hours in the time delay histogram (default: ~1 season = 24*365/4)
+  integer(i4b),parameter,public                   :: nBand=2                ! number of spectral bands
+  integer(i4b),parameter,public                   :: nTimeDelay=2000        ! number of time steps in the time delay histogram (default: ~1 season = 24*365/4)
 
+  ! printing step frequency
+  integer(i4b),parameter,public                   :: print_step_freq = 1000
 
-  character(len=1024),public,save                 :: fname                         ! temporary filename
+  character(len=1024),public,save                 :: fname                  ! temporary filename
 
 END MODULE globalData
