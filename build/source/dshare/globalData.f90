@@ -37,11 +37,12 @@ MODULE globalData
   USE data_types,only:extended_info   ! extended metadata for variables in each model structure
   USE data_types,only:struct_info     ! summary information on all data structures
   USE data_types,only:var_i           ! vector of integers
+#ifdef ACTORS_ACTIVE
   USE data_types,only:var_forc        ! for Actors
   USE data_types,only:dlength         ! for Actors
   USE data_types,only:ilength         ! for Actors
   USE data_types,only:init_cond       ! for Actors
-
+#endif
   ! number of variables in each data structure
   USE var_lookup,only:maxvarTime      ! time:                     maximum number variables
   USE var_lookup,only:maxvarForc      ! forcing data:             maximum number variables
@@ -136,10 +137,10 @@ MODULE globalData
 
   ! define limit checks
   real(rkind),parameter,public                :: verySmall=tiny(1.0_rkind) ! a very small number
-  real(rkind),parameter,public                :: veryBig=1.e+20_rkind)     ! a very big number
+  real(rkind),parameter,public                :: veryBig=1.e+20_rkind      ! a very big number
 
   ! define algorithmic control parameters
-  real(rkind),parameter,public                :: dx = 1.e-8_rkind)      ! finite difference increment
+  real(rkind),parameter,public                :: dx = 1.e-8_rkind       ! finite difference increment
 
   ! define summary information on all data structures
   integer(i4b),parameter                      :: nStruct=14              ! number of data structures
@@ -294,17 +295,35 @@ MODULE globalData
   integer(i4b),parameter,public                  :: utcTime=2               ! all times in UTC (timeOffset = longitude/15. hours)
   integer(i4b),parameter,public                  :: localTime=3             ! all times local (timeOffset = 0)
 
-  ! start_ACTORS
-  !!!!!!!!!!!!!!!!!!GLOBAL DATA STRUCTURES THAT ARE MANAGED BY FILEACCESSACTOR !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  type(var_forc),allocatable,save,public          :: forcingDataStruct(:)   ! forcingDataStruct(:)%var(:)%dataFromFile(:,:)
-  type(dlength),allocatable,save,public           :: vecTime(:)
-  logical(lgt),allocatable,save,public            :: failedHRUs(:)          ! list of true and false values to indicate if an HRU has failed
-  type(ilength),allocatable,save,public           :: outputTimeStep(:)      ! timestep in output files
-  ! inital conditions
-  type(init_cond),allocatable,save,public         :: init_cond_prog(:)      ! variable data for initial conditions
-  type(init_cond),allocatable,save,public         :: init_cond_bvar(:)      ! variable data for initial conditions
-  !!!!!!!!!!!!!!!!!!GLOBAL DATA STRUCTURES THAT ARE MANAGED BY FILEACCESSACTOR !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  ! end_ACTORS
+#ifdef ACTORS_ACTIVE
+  ! global data structures are managed by FileAccessActor
+  type(var_forc),allocatable,save,public         :: forcingDataStruct(:)    ! forcingDataStruct(:)%var(:)%dataFromFile(:,:)
+  type(dlength),allocatable,save,public          :: vecTime(:)
+  logical(lgt),allocatable,save,public           :: failedHRUs(:)           ! list of true and false values to indicate if an HRU has failed
+  type(ilength),allocatable,save,public          :: outputTimeStep(:)       ! timestep in output files
+
+  ! inital conditions for Actors
+  type(init_cond),allocatable,save,public        :: init_cond_prog(:)       ! variable data for initial conditions
+  type(init_cond),allocatable,save,public        :: init_cond_bvar(:)       ! variable data for initial conditions
+#else
+  ! define metadata for model forcing datafile non-Actors
+  type(file_info),save,public,allocatable        :: forcFileInfo(:)         ! file info for model forcing data
+
+  ! define indices in the forcing data files non-Actors
+  integer(i4b),save,public                       :: iFile=1                    ! index of current forcing file from forcing file list
+  integer(i4b),save,public                       :: forcingStep=integerMissing ! index of current time step in current forcing file
+  integer(i4b),save,public                       :: forcNcid=integerMissing    ! netcdf id for current netcdf forcing file
+
+  ! define controls on model output non-Actors
+  integer(i4b),dimension(maxvarFreq),save,public :: statCounter=0           ! time counter for stats
+  integer(i4b),dimension(maxvarFreq),save,public :: outputTimeStep=0        ! timestep in output files
+  logical(lgt),dimension(maxvarFreq),save,public :: resetStats=.true.       ! flags to reset statistics
+
+  ! define common variables non-Actors
+  real(rkind),save,public                        :: fracJulday              ! fractional julian days since the start of year
+  real(rkind),save,public                        :: tmZoneOffsetFracDay     ! time zone offset in fractional days
+  integer(i4b),save,public                       :: yearLength              ! number of days in the current year
+#endif
 
   ! define fixed dimensions
   integer(i4b),parameter,public                   :: nBand=2                ! number of spectral bands

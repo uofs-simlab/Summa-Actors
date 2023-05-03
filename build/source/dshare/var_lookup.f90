@@ -20,7 +20,9 @@
 
 MODULE var_lookup
  ! defines named variables used to index array elements
+#ifdef ACTORS_ACTIVE
  USE, intrinsic :: iso_c_binding
+#endif
  USE nrtype, integerMissing=>nr_integerMissing
  implicit none
  private
@@ -764,7 +766,11 @@ MODULE var_lookup
  ! (13) structure for looking up the type of a model variable (this is only needed for backward
  ! compatability, and should be removed eventually)
  ! ***********************************************************************************************************
+#ifdef ACTORS_ACTIVE
  type, public, bind(C) :: iLook_varType
+#else
+ type, public :: iLook_varType
+#endif
   integer(i4b)    :: scalarv   = integerMissing ! scalar variables
   integer(i4b)    :: wLength   = integerMissing ! # spectral bands
   integer(i4b)    :: midSnow   = integerMissing ! mid-layer snow variables
@@ -810,7 +816,6 @@ MODULE var_lookup
   integer(i4b)    :: enthalpy    = integerMissing ! enthalpy (J m-3)
   integer(i4b)    :: deriv2      = integerMissing ! second derivatives of the interpolating function
  endtype iLook_vLookup
-
 
  ! ***********************************************************************************************************
  ! (X) define data structures and maximum number of variables of each type
