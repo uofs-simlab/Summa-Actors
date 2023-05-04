@@ -26,7 +26,7 @@ subroutine writeParamToNetCDF(handle_ncid,    &
                           err) bind(C, name="writeParamToNetCDF")
   USE globalData,only:attr_meta,type_meta,mpar_meta,bpar_meta ! meta structures
   USE globalData,only:gru_struc
-  USE writeOutput_module,only:writeParm 
+  USE modelwrite_module,only:writeParm 
   USE globalData,only:structInfo                              ! information on the data structures
   implicit none
   ! dummy variables
@@ -104,8 +104,8 @@ subroutine writeDataToNetCDF(handle_ncid,          &
   USE globalData, only:forcChild_map, progChild_map, diagChild_map, fluxChild_map, indxChild_map
   USE globalData,only:maxLayers                               ! maximum number of layers
   USE globalData,only:structInfo
-  USE writeOutput_module,only:writeParm 
-  USE writeOutput_module,only:writeData
+  USE modelwrite_module,only:writeParm 
+  USE modelwrite_module,only:writeData
 
   implicit none
   ! dummy variables
@@ -206,7 +206,7 @@ end subroutine writeDataToNetCDF
 
 subroutine writeBasinToNetCDF(handle_ncid, index_gru, handle_finalize_stats, &
   handle_output_timestep, handle_bvar_stat, handle_bvar_struct, err) bind(C, name="writeBasinToNetCDF")
-  USE writeOutput_module,only:writeBasin
+  USE modelwrite_module,only:writeBasin
   USE globalData,only:bvar_meta                 ! metadata on basin-average variables
   USE globalData,only:bvarChild_map             ! index of the child data structure: stats bvar
  
@@ -250,7 +250,7 @@ end subroutine writeBasinToNetCDF
 
 subroutine writeTimeToNetCDF(handle_ncid, handle_finalize_stats, handle_output_timestep, &
     handle_time_struct, err) bind(C, name="writeTimeToNetCDF")
-  USE writeOutput_module,only:writeTime
+  USE modelwrite_module,only:writeTime
   USE globalData,only:time_meta
 
   implicit none
