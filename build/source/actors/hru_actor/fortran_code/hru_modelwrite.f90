@@ -19,7 +19,7 @@
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ! Module contains subroutines for writing to the global output strucutre
-module outputStrucWrite_module
+module hru_modelwrite_module
 
 ! NetCDF types
 USE netcdf
@@ -100,7 +100,7 @@ subroutine writeParm(indxGRU,indxHRU,ispatial,struct,meta,structName,err,message
   integer(i4b)                :: iVar             ! loop through variables
 
   ! initialize error control
-  err=0;message="outputStrucWrite.f90-writeParm/"
+  err=0;message="hru_modelwrite.f90-writeParm/"
 
   ! loop through local column model parameters
   do iVar = 1,size(meta)
@@ -194,7 +194,7 @@ subroutine writeData(indxGRU,indxHRU,iStep,structName,finalizeStats, &
   integer(i4b),parameter           :: ixInteger=1001    ! named variable for integer
   integer(i4b),parameter           :: ixReal=1002       ! named variable for real
   ! initialize error control
-  err=0;message="outputStrucWrite.f90-writeData/"
+  err=0;message="hru_modelwrite.f90-writeData/"
 
   ! loop through output frequencies
   do iFreq=1,maxvarFreq
@@ -338,7 +338,7 @@ subroutine writeBasin(indxGRU,indxHRU,iStep,finalizeStats,&
  integer(i4b)                  :: iStat             ! statistics index
  integer(i4b)                  :: iFreq             ! frequency index
  ! initialize error control
- err=0;message="outputStrucWrite.f90-writeBasin/"
+ err=0;message="hru_modelwrite.f90-writeBasin/"
 
  ! loop through output frequencies
  do iFreq=1,maxvarFreq
@@ -402,7 +402,7 @@ subroutine writeTime(indxGRU,indxHRU,iStep,finalizeStats,meta,dat,err,message)
  integer(i4b)                  :: iVar              ! variable index
  integer(i4b)                  :: iFreq             ! frequency index
  ! initialize error control
- err=0;message="outputStrucWrite.f90-writeTime/"
+ err=0;message="hru_modelwrite.f90-writeTime/"
 
  ! loop through output frequencies
  do iFreq=1,maxvarFreq
@@ -699,4 +699,4 @@ subroutine writeRestart(filename,         & ! intent(in): name of restart file
 
 end subroutine writeRestart
 
-end module outputStrucWrite_module
+end module hru_modelwrite_module

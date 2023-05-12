@@ -226,7 +226,7 @@ void Initialize_HRU(stateful_actor<hru_state>* self) {
         return;
     }
             
-    Restart(&self->state.indxGRU, 
+    summa_readRestart(&self->state.indxGRU, 
             &self->state.indxHRU, 
             self->state.handle_indxStruct, 
             self->state.handle_mparStruct, 
@@ -236,7 +236,7 @@ void Initialize_HRU(stateful_actor<hru_state>* self) {
             self->state.handle_bvarStruct, 
             &self->state.dt_init, &self->state.err);
     if (self->state.err != 0) {
-        aout(self) << "Error: HRU_Actor - Restart - HRU = " << self->state.indxHRU <<
+        aout(self) << "Error: HRU_Actor - summa_readRestart - HRU = " << self->state.indxHRU <<
         " - indxGRU = " << self->state.indxGRU << " - refGRU = " << self->state.refGRU << std::endl;
         self->quit();
         return;

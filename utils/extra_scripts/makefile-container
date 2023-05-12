@@ -163,7 +163,7 @@ SUMMA_PRELIM= \
 		checkStruc.f90 \
 		childStruc.f90 \
 		ffile_info.f90 \
-		read_attribute.f90 \
+		read_attrb.f90 \
 		read_pinit.f90 \
 		pOverwrite.f90 \
 		read_paramActors.f90 \
@@ -186,7 +186,7 @@ SUMMA_MODRUN = \
 		getVectorz.f90 \
 		updateVars.f90 \
 		var_derive.f90 \
-		read_forcingActors.f90 \
+		read_forceActors.f90 \
 		access_forcing.f90\
 		access_write.f90 \
 		derivforce.f90 \
@@ -206,7 +206,7 @@ MODRUN = $(patsubst %, $(ENGINE_DIR)/%, $(SUMMA_MODRUN))
 SUMMA_NETCDF = \
 		netcdf_util.f90 \
 		def_output.f90 \
-		outputStrucWrite.f90 \
+		hru_modelwrite.f90 \
 		writeOutput.f90	\
 		read_icondActors.f90
 NETCDF = $(patsubst %, $(NETCDF_DIR)/%, $(SUMMA_NETCDF))

@@ -18,7 +18,7 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-module model_run
+module summa_modelRun
 ! calls the model physics
 USE,intrinsic :: iso_c_binding
 
@@ -427,4 +427,4 @@ subroutine runPhysics(&
 
 end subroutine runPhysics
 
-end module model_run
+end module summa_modelRun

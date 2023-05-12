@@ -93,7 +93,7 @@ subroutine setupHRUParam(&
   use time_utils_module,only:elapsedSec                       ! calculate the elapsed time
   USE mDecisions_module,only:mDecisions                       ! module to read model decisions
   USE ffile_info_module,only:ffile_info                       ! module to read information on forcing datafile
-  ! USE read_attribute_module,only:read_attribute               ! module to read local attributes
+  ! USE read_attrb_module,only:read_attrb               ! module to read local attributes
   USE paramCheck_module,only:paramCheck                       ! module to check consistency of model parameters
   USE pOverwrite_module,only:pOverwrite                       ! module to overwrite default parameter values with info from the Noah tables
   USE ConvE2Temp_module,only:E2T_lookup                       ! module to calculate a look-up table for the temperature-enthalpy conversion
@@ -215,6 +215,13 @@ subroutine setupHRUParam(&
   ! calculate a look-up table for the temperature-enthalpy conversion
   call E2T_lookup(mparStruct,err,cmessage)
   if(err/=0)then;message=trim(message)//trim(cmessage);print*, message;return;endif
+
+  ! calculate a lookup table to compute enthalpy from temperature
+  call T2E_lookup(gru_struc(indxGRU)%hruInfo(1)%nSoil,   &   ! intent(in):    number of soil layers
+                  mparStruct,        &   ! intent(in):    parameter data structure
+                  lookupStruct,      &   ! intent(inout): lookup table data structure
+                  err,cmessage)                              ! intent(out):   error control
+  if(err/=0)then; message=trim(message)//trim(cmessage);print*,message;return;endif
 
   ! overwrite the vegetation height
   HVT(typeStruct%var(iLookTYPE%vegTypeIndex)) = mparStruct%var(iLookPARAM%heightCanopyTop)%dat(1)

@@ -60,7 +60,7 @@ subroutine read_forcingFile(handle_forcFileInfo, iFile, stepsInFile, startGRU, n
     call c_f_pointer(handle_forcFileInfo, forcFileInfo)
 
     ! Start Procedure here
-    err=0; message="read_forcing.f90 - read_forcingFile/"
+    err=0; message="read_force.f90 - read_forcingFile/"
    
     nFiles=size(forcFileInfo%ffile_list(:))
     

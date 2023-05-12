@@ -28,10 +28,22 @@ can remove sundials folder shouldn't need with SUNDIALS_ACTIVE
 /derivforce.f90 -- remove with ACTORS_ACTIVE tmZoneOffsetFracDay needs to be variable not global
 /ffile_info.f90 -- very different, call this ffile_infoActors?
 /mDecisions.f90 -- remove shouldn't need the non-sundials version
-/read_dimension.-- part of read_attrb, - very different, actors doesn't use rest of read_attribute which was cut, maybe better, but then this and the other changes in it should be applied to all versions! and I don't see it called anywhere in Actors ... removed BUT SHOULD IT JUST REPLACE THE SUMMA read_dimension?
+/read_dimension.-- remove, part of read_attrb, - some deallocation changes, use this in all (not actually used in actors, ??)
+
  - also Actors assumes don't have aspect variable .. why?
 /read_pinit.f90 -- remove
 /vegPhenlgy.f90 -- remove with ACTORS_ACTIVE needs fracJulDay, yearLength
+
+SUMMA_FILEACCESS_INTERFACE = \
+		output_structure.f90 \
+		cppwrap_fileAccess.f90 \
+		read_attrb.f90 \
+		read_force.f90 \
+		read_param.f90 \
+		read_icondFromStructure.f90 \
+ARE THESE ALL SORT OF REPEATS?? DO WE EVEN USE ALL OF THEM? specifically read_icondFromStructure ... what is that ... do we call its
+Can we give them the same names as the regular summa files if they are repeats, so we know to change them??
+
 
 
 changed calls in run_oneHRU so can use (modded) currently in actors /derivforce.f90 /coupled_em.f90 /vegPhenlgy.f90 as is

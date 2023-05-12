@@ -1,4 +1,4 @@
-module read_attribute_module
+module read_attrb_module
 USE, intrinsic :: iso_c_binding
 USE nrtype
 
@@ -38,7 +38,7 @@ subroutine allocateAttributeStructures(index_gru, index_hru, & ! indexes into gr
   call c_f_pointer(handle_type_struct, type_struct)
   call c_f_pointer(handle_id_struct,   id_struct)
   ! Start subroutine
-  err=0; message="read_attribute.f90 - allocateAttributeStructures"
+  err=0; message="read_attrb.f90 - allocateAttributeStructures"
 
   nSnow = gru_struc(index_gru)%hruInfo(index_hru)%nSnow
   nSoil = gru_struc(index_gru)%hruInfo(index_hru)%nSoil
@@ -65,7 +65,7 @@ subroutine openAttributeFile(attr_ncid, err) bind(C, name="openAttributeFile")
   character(len=256)                        :: message       ! error message
   character(len=256)                        :: attrFile           ! attributes file name
 
-  err=0; message="read_attribute.f90 - openAttributesFile"
+  err=0; message="read_attrb.f90 - openAttributesFile"
   attrFile = trim(SETTINGS_PATH)//trim(LOCAL_ATTRIBUTES)
 
   call nc_file_open(trim(attrFile),nf90_noWrite,attr_ncid,err,message)
@@ -87,7 +87,7 @@ subroutine getNumVarAttr(attr_ncid, num_var, err) bind(C, name="getNumVarAttr")
 
   ! local variables
   character(len=256)                        :: message       ! error message
-  err=0; message="read_attribute.f90 - getNumVar"
+  err=0; message="read_attrb.f90 - getNumVar"
   ! get number of variables total in netcdf file
   err = nf90_inquire(attr_ncid,nvariables=num_var)
   call netcdf_err(err,message)
@@ -105,7 +105,7 @@ subroutine closeAttributeFile(attr_ncid, err) bind(C, name="closeAttributeFile")
   integer(c_int),intent(out)        :: err
   ! local variables
   character(len=256)                :: message
-  err=0; message="read_attribute.f90 - closeAttributeFile"
+  err=0; message="read_attrb.f90 - closeAttributeFile"
 
   call nc_file_close(attr_ncid,err,message)
   if (err/=0)then
@@ -177,7 +177,7 @@ subroutine readAttributeFromNetCDF(ncid, index_gru, index_hru, num_var, &
   call c_f_pointer(handle_type_struct, type_struct)
   call c_f_pointer(handle_id_struct,   id_struct)
 
-  err=0; message="read_attribute_file_access_actor - read_attribute.f90"
+  err=0; message="read_attrb_file_access_actor - read_attrb.f90"
 
   attr_file= trim(SETTINGS_PATH)//trim(LOCAL_ATTRIBUTES)
 
@@ -353,4 +353,4 @@ subroutine readAttributeFromNetCDF(ncid, index_gru, index_hru, num_var, &
   deallocate(checkId)
   deallocate(checkAttr)
 end subroutine readAttributeFromNetCDF
-end module read_attribute_module
+end module read_attrb_module

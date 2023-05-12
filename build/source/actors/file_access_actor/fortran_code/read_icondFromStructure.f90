@@ -1,4 +1,4 @@
-module read_initcond_module
+module read_icondFromStructure_module
 USE, intrinsic :: iso_c_binding
 USE nrtype
 
@@ -59,7 +59,7 @@ subroutine closeInitCondFile(init_cond_ncid,err) bind(C, name="closeInitCondFile
   ! local variables
   character(len=256)                  :: message
   ! --------------------------------------------------------------------------------------------------------
-  err=0; message="read_initcond.f90 - closeInitCondFile/"
+  err=0; message="read_icondFromStructure.f90 - closeInitCondFile/"
 
   call nc_file_close(init_cond_ncid,err,message)
   if (err/=0) then
@@ -113,7 +113,7 @@ subroutine readInitCond_prog(init_cond_ncid, start_gru, num_gru, err) bind(C, na
   character(len=32),parameter            :: ifcTotoDimName='ifcToto'  ! dimension name for layered varaiables
   ! --------------------------------------------------------------------------------------------------------
 
-  err=0; message="read_initcond.f90 - readInitCond_prog"
+  err=0; message="read_icondFromStructure.f90 - readInitCond_prog"
   
   ! get number of HRUs in file
   err = nf90_inq_dimid(init_cond_ncid,"hru",dimID);
@@ -216,7 +216,7 @@ subroutine readInitCond_bvar(init_cond_ncid, start_gru, num_gru, err) bind(C, na
   character(len=32),parameter            :: tdhDimName    ='tdh'      ! dimension name for time-delay basin variables
 
   ! --------------------------------------------------------------------------------------------------------
-  err = 0; message="read_initcond.f90 - readInitCond_bvar/"
+  err = 0; message="read_icondFromStructure.f90 - readInitCond_bvar/"
   if(restartFileType/=singleHRU)then
     ! get dimension of time delay histogram (TDH) from initial conditions file
     err = nf90_inq_dimid(init_cond_ncid,"tdh",dimID);
@@ -277,4 +277,4 @@ end subroutine readInitCond_bvar
 
 
 
-end module read_initcond_module
+end module read_icondFromStructure_module

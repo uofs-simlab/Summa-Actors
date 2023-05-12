@@ -32,8 +32,8 @@ extern "C" {
             double* upArea, int* err);
 
   
-  // Setup Restart File if this option has been chosen 
-	void Restart(
+  // Setup summa_readRestart File if this option has been chosen 
+	void summa_readRestart(
             int* indxGRU, int* indxHRU,
             // primary data structures (variable length vectors) 
             void* indxStruct, void* mparStruct, void* progStruct, void* diagStruct, void* fluxStruct, 
