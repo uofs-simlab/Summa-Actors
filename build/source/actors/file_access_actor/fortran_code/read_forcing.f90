@@ -155,12 +155,12 @@ subroutine openForcingFile(forcFileInfo,iFile,infile,ncId,err,message)
     USE netcdf_util_module,only:nc_file_open                ! open netcdf file
     USE time_utils_module,only:fracDay                      ! compute fractional day
     USE time_utils_module,only:extractTime                  ! extract time info from units string
-    USE time_utils_module,only:compJulday                   ! convert calendar date to julian day
+    USE time_utils_module,only:compJulDay                   ! convert calendar date to julian day
     !USE globalData,only:tmZoneOffsetFracDay                ! time zone offset in fractional days
     USE globalData,only:ncTime                              ! time zone information from NetCDF file (timeOffset = longitude/15. - ncTimeOffset)
     USE globalData,only:utcTime                             ! all times in UTC (timeOffset = longitude/15. hours)
     USE globalData,only:localTime                           ! all times local (timeOffset = 0)
-    USE globalData,only:refJulday_data
+    USE globalData,only:refJulDay_data
     USE summafilemanager,only:NC_TIME_ZONE
     ! dummy variables
     type(file_info),intent(inout)     :: forcFileInfo(:)
@@ -209,7 +209,7 @@ subroutine openForcingFile(forcFileInfo,iFile,infile,ncId,err,message)
     end select ! (option time zone option)
    
     call compjulday(iyyy,im,id,ih,imin,dsec,                & ! output = year, month, day, hour, minute, second
-                    refJulday_data,err,cmessage)              ! output = julian day (fraction of day) + error control
+                    refJulDay_data,err,cmessage)              ! output = julian day (fraction of day) + error control
     if(err/=0)then; message=trim(message)//trim(cmessage); return; end if
    
     ! get the time multiplier needed to convert time to units of days

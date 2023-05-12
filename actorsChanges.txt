@@ -1,5 +1,6 @@
 driver
-/summaActors_alarms.f90 -- remove/summaActors_globalData.-- could combine and remove, renamed for now
+/summaActors_alarms.f90 -- remove
+/summaActors_globalData.-- could combine and remove, renamed for now
 /summaActors_type.f90   -- could combine and remove, renamed for now, adds a new function, but don't use both
 /summaActors_util.f90   -- could combine and remove, renamed for now, adds a new function, but don't use both
 /summaversion.inc       -- remove
@@ -10,25 +11,27 @@ dshare
 /csv_file_2d.f90 -- remove?? not seeing it used anywhere?
 /csv_file.f90   -- remove?? IS this only in kinsol? do we need?
 /data_types.f90 -- has a lot
-/globalData.f90 -- remove with ACTORS_ACTIVE adds forcing stuff and tmZoneOffsetFracDay, fracJulday, yearLength not as global
+/globalData.f90 -- remove with ACTORS_ACTIVE adds forcing stuff and tmZoneOffsetFracDay, fracJulDay, yearLength not as global
 /varLookup.f90  -- remove with ACTORS_ACTIVE uses a iso_c binding call
 
 
 engine
 can remove sundials folder shouldn't need with SUNDIALS_ACTIVE
-/sundials/coupled_em.f90 -- remove with ACTORS_ACTIVE needs fracJulday, yearLength
+/sundials/coupled_em.f90 -- remove with ACTORS_ACTIVE needs fracJulDay, yearLength
 /sundials/mDecisions.f90 -- remove with ACTORS_ACTIVE called with iso_c binding
 /sundials/t2enthalpy.f90 -- remove
 /alloc_fileAccess.f90 -- new
 /allocspace[Actors].f90 -- this is a replacement, rename, and see how changes CHECK IF NECESSARY!
 /check_icondActors.f90-- could combine and remove, renamed for now, adds a new function, but don't use both
-/checkStruc.f90 -- remove/coupled_em.f90 -- remove shouldn't need the non-sundials version
+/checkStruc.f90 -- remove
+/coupled_em.f90 -- remove shouldn't need the non-sundials version
 /derivforce.f90 -- remove with ACTORS_ACTIVE tmZoneOffsetFracDay needs to be variable not global
 /ffile_info.f90 -- very different, call this ffile_infoActors?
 /mDecisions.f90 -- remove shouldn't need the non-sundials version
 /read_dimension.-- part of read_attrb, - very different, actors doesn't use rest of read_attribute which was cut, maybe better, but then this and the other changes in it should be applied to all versions! and I don't see it called anywhere in Actors ... removed BUT SHOULD IT JUST REPLACE THE SUMMA read_dimension?
  - also Actors assumes don't have aspect variable .. why?
-/read_pinit.f90 -- remove/vegPhenlgy.f90 -- remove with ACTORS_ACTIVE needs fracJulday, yearLength
+/read_pinit.f90 -- remove
+/vegPhenlgy.f90 -- remove with ACTORS_ACTIVE needs fracJulDay, yearLength
 
 
 changed calls in run_oneHRU so can use (modded) currently in actors /derivforce.f90 /coupled_em.f90 /vegPhenlgy.f90 as is
@@ -49,7 +52,8 @@ netcdf
 /def_output.f90   -- has a lot ... use Kyle's? Hard to tell which is Actors specific and which is just changed
 /netcdf_util.f90  -- remove
 /read_icondActors.-- has a lot ... could combine and remove, renamed for now,
-/writeOutput.f90  -- part of modelwrite.f90 -- renamed to modelwrite so can replace, and then IS THIS VERSION BETTER can we change the other version and put a few compiler directives in?/writeRestart.f90 -- remove, same in modelwrite, part of it
+/writeOutput.f90  -- part of modelwrite.f90 -- renamed to modelwrite so can replace, and then IS THIS VERSION BETTER can we change the other version and put a few compiler directives in?
+/writeRestart.f90 -- remove, same in modelwrite, part of it
 
 
 

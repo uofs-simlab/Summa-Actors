@@ -27,7 +27,7 @@ subroutine getFirstTimestep(iFile, iRead, err) bind(C, name="getFirstTimestep")
   USE globalData,only:vecTime                   ! time structure for forcing 
   USE globalData,only:dJulianStart              ! julian day of start time of simulation
   USE globalData,only:data_step                 ! length of the data step (s)
-  USE globalData,only:refJulday_data            ! reference time for data files (fractional julian days)
+  USE globalData,only:refJulDay_data            ! reference time for data files (fractional julian days)
    
   USE multiconst,only:secprday                  ! number of seconds in a day
   
@@ -48,10 +48,10 @@ subroutine getFirstTimestep(iFile, iRead, err) bind(C, name="getFirstTimestep")
 
   ! get time vector & convert units based on offset and data step
   timeVal(1) = vecTime(iFile)%dat(1)
-  fileTime = arth(0,1,forcingDataStruct(iFile)%nTimeSteps) * data_step/secprday + refJulday_data &
+  fileTime = arth(0,1,forcingDataStruct(iFile)%nTimeSteps) * data_step/secprday + refJulDay_data &
               + timeVal(1)/forcingDataStruct(iFile)%convTime2Days
 
-  ! find difference of fileTime from currentJulday
+  ! find difference of fileTime from currentJulDay
   diffTime=abs(fileTime-dJulianStart)
   
   if(any(diffTime < verySmall))then
@@ -112,7 +112,7 @@ subroutine readForcingHRU(indxGRU, iStep, iRead, handle_timeStruct, handle_forcS
   ! global Data
   USE globalData,only:data_step                 ! length of the data step (s)
   USE globalData,only:dJulianStart              ! julian day of start time of simulation
-  USE globalData,only:refJulday_data            ! reference time for data files (fractional julian days)
+  USE globalData,only:refJulDay_data            ! reference time for data files (fractional julian days)
   USE globalData,only:integerMissing            ! integer missing value
   USE globalData,only:vecTime
   USE globalData,only:forcingDataStruct
@@ -134,7 +134,7 @@ subroutine readForcingHRU(indxGRU, iStep, iRead, handle_timeStruct, handle_forcS
   ! local variables
   type(var_i),pointer                     :: timeStruct       !  model time data
   type(var_d),pointer                     :: forcStruct       !  model forcing data
-  real(dp)                                :: currentJulday    ! Julian day of current time step
+  real(dp)                                :: currentJulDay    ! Julian day of current time step
   real(dp)                                :: dataJulDay       ! julian day of current forcing data step being read
   ! Counters
   integer(i4b)                            :: iline            ! loop through lines in the file
@@ -162,8 +162,8 @@ subroutine readForcingHRU(indxGRU, iStep, iRead, handle_timeStruct, handle_forcS
   currentJulDay = dJulianStart + (data_step*real(iStep-1,dp))/secprday
 
   timeStruct%var(:) = integerMissing
-  dataJulDay = vecTime(iFile)%dat(iRead)/forcingDataStruct(iFile)%convTime2Days + refJulday_data
- if(abs(currentJulday - dataJulDay) > verySmall)then
+  dataJulDay = vecTime(iFile)%dat(iRead)/forcingDataStruct(iFile)%convTime2Days + refJulDay_data
+ if(abs(currentJulDay - dataJulDay) > verySmall)then
     write(message,'(a,f18.8,a,f18.8)') trim(message)//'date for time step: ',dataJulDay,' differs from the expected date: ',currentJulDay
     print*, message
     err=40
@@ -223,10 +223,10 @@ end subroutine readForcingHRU
 ! This is part 2: from the reading of forcing - separated it so we could call from C++
 subroutine computeTimeForcingHRU(handle_timeStruct, handle_forcStruct, fracJulDay, yearLength, err) bind(C, name="computeTimeForcingHRU")
   USE var_lookup,only:iLookTIME,iLookFORCE
-  USE time_utils_module,only:compJulday         ! convert calendar date to julian day
+  USE time_utils_module,only:compJulDay         ! convert calendar date to julian day
   USE data_types,only:var_i,var_d
   USE multiconst,only:secprday                  ! number of seconds in a day
-  USE globalData,only:refJulday                 ! reference time (fractional julian days)
+  USE globalData,only:refJulDay                 ! reference time (fractional julian days)
 
   implicit none
   type(c_ptr),intent(in),value        :: handle_timeStruct     ! vector of time data for a given time step
@@ -238,7 +238,7 @@ subroutine computeTimeForcingHRU(handle_timeStruct, handle_forcStruct, fracJulDa
   type(var_i),pointer                 :: timeStruct       !  model time data
   type(var_d),pointer                 :: forcStruct       !  model forcing data
   real(dp)                            :: startJulDay      ! julian day at the start of the year
-  real(dp)                            :: currentJulday    ! Julian day of current time step
+  real(dp)                            :: currentJulDay    ! Julian day of current time step
   character(len=256)                  :: message          ! error message for downwind routine
   character(len=256)                  :: cmessage         ! error message for downwind routine
   logical(lgt),parameter              :: checkTime=.false.  ! flag to check the time
@@ -263,13 +263,13 @@ subroutine computeTimeForcingHRU(handle_timeStruct, handle_forcStruct, fracJulDa
                   timeStruct%var(iLookTIME%id),             & ! input  = day
                   timeStruct%var(iLookTIME%ih),             & ! input  = hour
                   timeStruct%var(iLookTIME%imin),0._dp,     & ! input  = minute/second
-                  currentJulday,err,cmessage)            ! output = julian day (fraction of day) + error control
+                  currentJulDay,err,cmessage)            ! output = julian day (fraction of day) + error control
   if(err/=0)then; message=trim(message)//trim(cmessage); return; end if
   ! compute the time since the start of the year (in fractional days)
-  fracJulDay = currentJulday - startJulDay
+  fracJulDay = currentJulDay - startJulDay
   ! set timing of current forcing vector (in seconds since reference day)
   ! NOTE: It is a bit silly to have time information for each HRU and GRU
-  forcStruct%var(iLookFORCE%time) = (currentJulday-refJulday)*secprday
+  forcStruct%var(iLookFORCE%time) = (currentJulDay-refJulDay)*secprday
 
   ! compute the number of days in the current year
   yearLength = 365

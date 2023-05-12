@@ -103,7 +103,7 @@ subroutine runPhysics(&
               ! run time variables
               computeVegFlux,      & ! flag to indicate if we are computing fluxes over vegetation
               dt_init,             & ! used to initialize the length of the sub-step for each HRU
-              dt_init_factor,      & ! Used to adjust the length of the timestep in the event of a failure
+              dt_init_factor,      & ! used to adjust the length of the timestep in the event of a failure
               err) bind(C, name='RunPhysics')
   ! ---------------------------------------------------------------------------------------
   ! * desired modules
@@ -142,13 +142,13 @@ subroutine runPhysics(&
   type(c_ptr), intent(in), value           :: handle_fluxStruct             ! model fluxes
   ! basin-average structures
   type(c_ptr),intent(in),  value           :: handle_bvarStruct             ! basin-average variables
-  type(c_ptr),intent(in),  value           :: handle_lookupStruct
-  real(c_double),intent(inout)             :: fracJulDay
+  type(c_ptr),intent(in),  value           :: handle_lookupStruct           ! enthalpy lookup structures
+  real(c_double),intent(inout)             :: fracJulDay                    ! fractional julian days since the start of year
   real(c_double),intent(inout)             :: tmZoneOffsetFracDay 
-  integer(c_int),intent(inout)             :: yearLength
+  integer(c_int),intent(inout)             :: yearLength                    ! number of days in the current year
   integer(c_int),intent(inout)             :: computeVegFlux         ! flag to indicate if we are computing fluxes over vegetation
-  real(c_double),intent(inout)             :: dt_init
-  integer(c_int),intent(in)                :: dt_init_factor         ! Used to adjust the length of the timestep in the event of a failure
+  real(c_double),intent(inout)             :: dt_init                ! used to initialize the length of the sub-step for each HRU
+  integer(c_int),intent(in)                :: dt_init_factor         ! used to adjust the length of the timestep in the event of a failure
   integer(c_int),intent(inout)             :: err                    ! error code
   ! ---------------------------------------------------------------------------------------
   ! FORTRAN POINTERS
@@ -208,6 +208,9 @@ subroutine runPhysics(&
       ! get vegetation phenology
       ! (compute the exposed LAI and SAI and whether veg is buried by snow)
       call vegPhenlgy(&
+                      ! model control
+                      fracJulDay,                     & ! intent(in):    fractional julian days since the start of year
+                      yearLength,                     & ! intent(in):    number of days in the current year
                       ! input/output: data structures
                       model_decisions,                & ! intent(in):    model decisions
                       typeStruct,                     & ! intent(in):    type of vegetation and soil
@@ -219,8 +222,6 @@ subroutine runPhysics(&
                       computeVegFluxFlag,             & ! intent(out): flag to indicate if we are computing fluxes over vegetation (.false. means veg is buried with snow)
                       notUsed_canopyDepth,            & ! intent(out): NOT USED: canopy depth (m)
                       notUsed_exposedVAI,             & ! intent(out): NOT USED: exposed vegetation area index (m2 m-2)
-                      fracJulDay,                     &
-                      yearLength,                     &
                       err,cmessage)                     ! intent(out): error control
       if(err/=0)then
         message=trim(message)//trim(cmessage)
@@ -325,7 +326,7 @@ subroutine runPhysics(&
         progStruct,         & ! data structure of model prognostic variables
         diagStruct,         & ! data structure of model diagnostic variables
         fluxStruct,         & ! data structure of model fluxes
-        tmZoneOffsetFracDay,& 
+        tmZoneOffsetFracDay,& ! time zone offset in fractional days
         err,cmessage)       ! error control
   if(err/=0)then
     err=20
@@ -344,6 +345,8 @@ subroutine runPhysics(&
                   dt_init,            & ! intent(inout): initial time step
                   dt_init_factor,     & ! Used to adjust the length of the timestep in the event of a failure
                   computeVegFluxFlag, & ! intent(inout): flag to indicate if we are computing fluxes over vegetation
+                   fracJulDay,        & ! intent(in):    fractional julian days since the start of year
+                   yearLength,        & ! intent(in):    number of days in the current year
                   ! data structures (input)
                   typeStruct,         & ! intent(in):    local classification of soil veg etc. for each HRU
                   attrStruct,         & ! intent(in):    local attributes for each HRU
@@ -356,8 +359,6 @@ subroutine runPhysics(&
                   progStruct,         & ! intent(inout): model prognostic variables for a local HRU
                   diagStruct,         & ! intent(inout): model diagnostic variables for a local HRU
                   fluxStruct,         & ! intent(inout): model fluxes for a local HRU
-                  fracJulDay,         &
-                  yearLength,         &
                   ! error control
                   err,cmessage)       ! intent(out): error control
   if(err/=0)then; err=20; message=trim(message)//trim(cmessage); return; endif 

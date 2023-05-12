@@ -34,11 +34,10 @@ Before compiling, make sure to install the following dependencies:
 
 Here are the steps to compile SUMMA-Actors:
  - cd into `build/{$YOUR_SUMMA_DIR}/build/cmake`
- - create a build directory within the `build/cmake/` directory
- - cd into `build/cmake/build`
- - run `cmake ..`
- - run `make -j`
- - The `summa_actors` executable is created in the `bin/` directory.
+ - change the build type in file `build.cluster.bash` to one of the above containing Cluster and Actors
+ - run `./build.cluster.bash` 
+ - or if you are not using a cluster, you can do the same on the `build.mac.bash` if you have installed the Actors Framework
+- The `summa_actors` executable is created in the `bin/` directory.
 
 SUMMA-Actors supports four build types: Debug, Cluster, Release, and Cluster_Debug. The default build type is Release. You can set the build type by using the `-DCMAKE_BUILD_TYPE=build_type` option, where `build_type` is one of the four options listed above. To compile with the Cluster build type, make sure to load the following modules with `module load` before compiling when working on clusters:
  - gcc/9.3.0
