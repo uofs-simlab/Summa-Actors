@@ -4,7 +4,7 @@
 extern "C" {
   // initalizeFileAccessActor
   void ffile_info(int* indxGRU, void* forcFileInfo, int* numFiles, int* err);
-  void mDecisions(int* numSteps, int* err);
+  void mDecisions_C(int* numSteps, int* err);
   void read_pinit_C(int* err);
   void read_vegitationTables(int* err);
   void initFailedHRUTracker(int* numGRU);

@@ -10,12 +10,30 @@ module cppwrap_fileAccess
 
 
   implicit none
+  public::mDecisions_C
   public::read_pinit_C
   public::read_vegitationTables
   public::FileAccessActor_DeallocateStructures
   public::initFailedHRUTracker
   
   contains
+
+subroutine mDecisions_C(num_steps, err) bind(C, name='mDecisions_C')
+  USE mDecisions_module,only:mDecisions                       ! module to read model decisions
+  
+  ! Read in number of Time Steps after the call to mDecisions
+  USE globalData,only:numtim                 ! number of time steps in the simulation
+
+  implicit none
+  integer(c_int),intent(out)        :: num_steps
+  integer(c_int),intent(out)        :: err                ! error code
+  character(len=256)                :: message            ! error message
+
+  call mDecisions(err,message)
+  if(err/=0)then; print*, char(27),'[33m',message,char(27),'[0m'; return; endif
+
+  num_steps = numtim
+end subroutine mDecisions_C
 
 
 ! Read in the inital parameters, from the txt files that are give to summa as input LocalParamInfo.txt BasinParamInfo.txt
