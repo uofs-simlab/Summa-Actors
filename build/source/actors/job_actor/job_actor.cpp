@@ -199,6 +199,19 @@ behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru,
                     read_duration, write_duration);
             self->quit();
         },
+
+
+
+        [=](file_access_actor_err, const std::string& err) {
+            aout(self) << "\n\033[31mJob_Actor: Error Handling for File_Access_Actor error: " <<
+                err << " not implemented\033[0m\n";
+            self->quit();
+        }
+
+
+
+
+
     };
 }
 
