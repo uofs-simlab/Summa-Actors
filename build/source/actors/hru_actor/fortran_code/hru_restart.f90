@@ -45,11 +45,11 @@ USE var_lookup,only:iLookDECISIONS                          ! look-up values for
 ! safety: set private unless specified otherwise
 implicit none
 private
-public::Restart
+public::summa_readRestart
 contains
 
 ! read restart data and reset the model state
-subroutine Restart(&
+subroutine summa_readRestart(&
                 indxGRU,    & ! index of GRU in gru_struc
                 indxHRU,    & ! index of HRU in gru_struc
                 ! primary data structures (variable length vectors)
@@ -61,7 +61,7 @@ subroutine Restart(&
                 ! basin-average structures
                 handle_bvarStruct, & ! x%var(:)%dat        -- basin-average variables
                 dt_init,    & ! used to initialize the length of the sub-step for each HRU
-                err) bind(C,name='Restart')
+                err) bind(C,name='summa_readRestart')
   ! ---------------------------------------------------------------------------------------
   ! * desired modules
   ! ---------------------------------------------------------------------------------------
@@ -240,7 +240,7 @@ subroutine Restart(&
   ! *** finalize
   ! *****************************************************************************
 
-end subroutine Restart
+end subroutine summa_readRestart
 
 end module summa_restart
 

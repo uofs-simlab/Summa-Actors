@@ -18,7 +18,7 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-module writeOutput_module
+module modelwrite_module
 
 ! NetCDF types
 USE netcdf
@@ -76,6 +76,7 @@ public::writeParm
 public::writeData
 public::writeBasin
 public::writeTime
+!public::writeRestart !Actors does not use
 
 ! define dimension lengths
 integer(i4b),parameter      :: maxSpectral=2              ! maximum number of spectral bands
@@ -188,26 +189,26 @@ subroutine writeData(ncid, finalize_stats, output_timestep, max_layers, index_gr
   integer(i4b)                       :: dataType          ! type of data
   integer(i4b),parameter             :: ixInteger=1001    ! named variable for integer
   integer(i4b),parameter             :: ixReal=1002       ! named variable for real
-  
+
   err=0;message="writeOutput.f90 - writeDataNew/"
 
   ! loop through output frequencies
   do iFreq=1,maxvarFreq
     if(.not.outFreq(iFreq)) cycle ! check if frequency is desired (timestep, day, month, year)
-    
+
     if(.not.finalize_stats(iFreq)) cycle ! check we have statistics for a frequency
-    
+
     do iVar = 1,size(meta)
       ! handle time
       if (meta(iVar)%varName=='time' .and. struct_name == 'forc')then
-        
+
         ! get variable index
         err = nf90_inq_varid(ncid%var(iFreq),trim(meta(iVar)%varName),ncVarID)
         call netcdf_err(err,message)
         if (err/=0) then
           print*, message
           return
-        endif 
+        endif
 
         select type(dat)
           class is(var_d)
@@ -224,20 +225,20 @@ subroutine writeData(ncid, finalize_stats, output_timestep, max_layers, index_gr
               print*, message
               return
         end select
-        
+
         call netcdf_err(err,message)
         if (err/=0) then
           print*, message
           return
         endif
-      endif 
+      endif
 
       ! define the statistics index
       iStat = meta(iVar)%statIndex(iFreq)
 
       ! check that the variable is desired
       if (iStat==integerMissing.or.trim(meta(iVar)%varName)=='unknown') cycle
-      
+
       ! check if we are writing a vector or a scalar
       if(meta(iVar)%varType==iLookVarType%scalarv) then
         select type(stat)
@@ -247,7 +248,7 @@ subroutine writeData(ncid, finalize_stats, output_timestep, max_layers, index_gr
             if (err/=0) then
               print*, message
               return
-            endif 
+            endif
           class default
             err=20
             message=trim(message)//'stats must be scalarv and of type var_dlength'
@@ -350,7 +351,7 @@ subroutine writeBasin(ncid,iGRU,finalizeStats,outputTimestep,meta,stat,dat,map,e
   ! declare dummy variables
   type(var_i),   intent(in)     :: ncid              ! file ids
   integer(i4b),  intent(in)     :: iGRU              ! GRU index
-  logical(lgt),  intent(in)     :: finalizeStats(:)    
+  logical(lgt),  intent(in)     :: finalizeStats(:)
   integer(i4b),  intent(inout)  :: outputTimestep(:) ! output time step
   type(var_info),intent(in)     :: meta(:)           ! meta data
   type(dlength),intent(in)      :: stat(:)           ! stats data
@@ -454,5 +455,5 @@ end do ! iFreq
 
 end subroutine writeTime
 
-   
-end module writeOutput_module
+
+end module modelwrite_module

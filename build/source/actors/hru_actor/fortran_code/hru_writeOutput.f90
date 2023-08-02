@@ -146,10 +146,10 @@ subroutine writeHRUToOutputStructure(&
 
   USE globalData,only:forc_meta,attr_meta,type_meta           ! metaData structures
   USE output_stats,only:calcStats                             ! module for compiling output statistics
-  USE outputStrucWrite_module,only:writeData,writeBasin       ! module to write model output
-  USE outputStrucWrite_module,only:writeTime                  ! module to write model time
-  USE outputStrucWrite_module,only:writeRestart               ! module to write model Restart
-  USE outputStrucWrite_module,only:writeParm                  ! module to write model parameters
+  USE hru_modelwrite_module,only:writeData,writeBasin       ! module to write model output
+  USE hru_modelwrite_module,only:writeTime                  ! module to write model time
+  USE hru_modelwrite_module,only:writeRestart               ! module to write model summa_readRestart
+  USE hru_modelwrite_module,only:writeParm                  ! module to write model parameters
   USE time_utils_module,only:elapsedSec                       ! calculate the elapsed time
   USE globalData,only:elapsedWrite                            ! elapsed time to write data
   USE output_structure_module,only:outputStructure

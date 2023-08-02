@@ -43,7 +43,7 @@ subroutine allocateParamStructures(index_gru, index_hru, handle_dpar_struct, &
   call c_f_pointer(handle_mpar_struct, mpar_struct)
   call c_f_pointer(handle_bpar_struct, bpar_struct)
   ! start of subroutine
-  err=0; message="read_attribute.f90 - allocateAttributeStructures"
+  err=0; message="read_attrb.f90 - allocateAttributeStructures"
 
   nSnow = gru_struc(index_gru)%hruInfo(index_hru)%nSnow
   nSoil = gru_struc(index_gru)%hruInfo(index_hru)%nSoil

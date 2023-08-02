@@ -18,7 +18,7 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-module read_dimension_module
+module read_attrb_module
 USE, intrinsic :: iso_c_binding
 USE nrtype
 implicit none
@@ -224,4 +224,4 @@ subroutine read_dimension(numGRUs,numHRUs,startGRU,err) bind(C, name="readDimens
 
 end subroutine read_dimension
 
-end module read_dimension_module
+end module read_attrb_module
