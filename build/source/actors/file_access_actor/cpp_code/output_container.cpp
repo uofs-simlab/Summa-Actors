@@ -108,13 +108,13 @@ Output_Container::Output_Container(int num_partitions, int num_grus, int num_sto
 
     // Initialize the output partitions
     int start_gru_counter = 1;
-    this->num_grus_per_partition = std::round(num_grus / num_partitions);
+    this->num_grus_per_partition = std::round(this->num_grus / this->num_partitions);
     for (int i = 0; i < num_partitions - 1; i++) {
-        this->output_partitions.push_back(new Output_Partition(start_gru_counter, this->num_grus_per_partition, num_timesteps_simulation, num_stored_timesteps));
+        this->output_partitions.push_back(new Output_Partition(start_gru_counter, this->num_grus_per_partition, this->num_timesteps_simulation, this->num_stored_timesteps));
         start_gru_counter += this->num_grus_per_partition;
     }
     // The last partition will have the remainder of the GRUs
-    this->output_partitions.push_back(new Output_Partition(start_gru_counter, num_grus - start_gru_counter + 1, num_timesteps_simulation, num_stored_timesteps));
+    this->output_partitions.push_back(new Output_Partition(start_gru_counter, this->num_grus - start_gru_counter + 1, this->num_timesteps_simulation, this->num_stored_timesteps));
 }
 
 Output_Container::~Output_Container() {
