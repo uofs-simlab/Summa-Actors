@@ -117,9 +117,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
                 err = Run_HRU(self); // Simulate a Timestep
 
                 if (err != 0) {
-                    aout(self) << "Error: HRU_Actor - Run_HRU - HRU = " << self->state.indxHRU << 
-                        " - indxGRU = " << self->state.indxGRU << " - refGRU = "<< self->state.refGRU << std::endl;
-                    aout(self) << "Error = " << err << "\n";
+                    // We should have already printed the error to the screen if we get here
 
                     self->send(self->state.parent, hru_error::run_physics_unhandleable, self);
                     self->quit();
@@ -326,10 +324,12 @@ int Run_HRU(stateful_actor<hru_state>* self) {
         &self->state.dt_init, 
         &self->state.dt_init_factor,
         &self->state.err);
+
     if (self->state.err != 0) {
-        aout(self) << "Error: RunPhysics - HRU = " << self->state.indxHRU << 
-            " - indxGRU = " << self->state.indxGRU << " - refGRU = " << self->state.refGRU <<
-            " - Timestep = " << self->state.timestep << std::endl;
+        aout(self) << "\033[1;31mError: RunPhysics - HRU = " << self->state.indxHRU 
+                   << " - indxGRU = " << self->state.indxGRU 
+                   << " - refGRU = " << self->state.refGRU 
+                   << " - Timestep = " << self->state.timestep << "\033[0m" << std::endl;
         self->quit();
         return 20;
     }

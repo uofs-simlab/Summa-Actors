@@ -236,7 +236,7 @@ subroutine read_icond(&
   do iVar = 1,size(prog_meta)
 
     ! skip variables that are computed later
-    if(prog_meta(iVar)%varName=='scalarCanopyWat'           .or. &
+    if(prog_meta(iVar)%varName=='scalarCanopyWat'          .or. &
       prog_meta(iVar)%varName=='spectralSnowAlbedoDiffuse' .or. &
       prog_meta(iVar)%varName=='scalarSurfaceTemp'         .or. &
       prog_meta(iVar)%varName=='mLayerVolFracWat'          .or. &
@@ -276,7 +276,12 @@ subroutine read_icond(&
 
     ! fix the snow albedo
     if(progData%var(iLookPROG%scalarSnowAlbedo)%dat(1) < 0._dp)then
-    progData%var(iLookPROG%scalarSnowAlbedo)%dat(1) = mparData%var(iLookPARAM%albedoMax)%dat(1)
+      progData%var(iLookPROG%scalarSnowAlbedo)%dat(1) = mparData%var(iLookPARAM%albedoMax)%dat(1)
+    endif
+
+    ! make sure canopy water is positive
+    if(progData%var(iLookPROG%scalarCanopyliq)%dat(1) < 0.0001_rkind)then
+      progData%var(iLookPROG%scalarCanopyliq)%dat(1) = 0.0001_rkind
     endif
 
     ! initialize the spectral albedo

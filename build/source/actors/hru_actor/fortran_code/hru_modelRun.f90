@@ -223,11 +223,8 @@ subroutine runPhysics(&
                       notUsed_canopyDepth,            & ! intent(out): NOT USED: canopy depth (m)
                       notUsed_exposedVAI,             & ! intent(out): NOT USED: exposed vegetation area index (m2 m-2)
                       err,cmessage)                     ! intent(out): error control
-      if(err/=0)then
-        message=trim(message)//trim(cmessage)
-        print*, message
-        return
-      endif
+      if(err/=0)then;message=trim(message)//trim(cmessage); print*, char(27),'[33m',message,char(27),'[0m'; return; endif
+
     
       ! save the flag for computing the vegetation fluxes
       if(computeVegFluxFlag)      computeVegFlux = yes
@@ -278,11 +275,8 @@ subroutine runPhysics(&
 
   ! get height at bottom of each soil layer, negative downwards (used in Noah MP)
   allocate(zSoilReverseSign(nSoil),stat=err)
-  if(err/=0)then
-    message=trim(message)//'problem allocating space for zSoilReverseSign'
-    print*, message
-    err=20; return
-  endif
+  if(err/=0)then; message=trim(message)//'problem allocating space for zSoilReverseSign'; print*, char(27),'[33m',message,char(27),'[0m'; return; endif
+
   zSoilReverseSign(:) = -progStruct%var(iLookPROG%iLayerHeight)%dat(nSnow+1:nLayers)
  
   ! populate parameters in Noah-MP modules
@@ -297,11 +291,7 @@ subroutine runPhysics(&
 
   ! deallocate height at bottom of each soil layer(used in Noah MP)
   deallocate(zSoilReverseSign,stat=err)
-  if(err/=0)then
-    message=trim(message)//'problem deallocating space for zSoilReverseSign'
-    print*, message
-    err=20; return
-  endif
+  if(err/=0)then;message=trim(message)//'problem deallocating space for zSoilReverseSign'; print*, char(27),'[33m',message,char(27),'[0m'; return; endif
  
 
   ! overwrite the minimum resistance
@@ -328,12 +318,7 @@ subroutine runPhysics(&
         fluxStruct,         & ! data structure of model fluxes
         tmZoneOffsetFracDay,& ! time zone offset in fractional days
         err,cmessage)       ! error control
-  if(err/=0)then
-    err=20
-    message=trim(message)//trim(cmessage)
-    print*, message
-    return 
-  endif
+  if(err/=0)then;err=20; message=trim(message)//cmessage; print*, char(27),'[33m',message,char(27),'[0m'; return; endif
  
   ! initialize the number of flux calls
   diagStruct%var(iLookDIAG%numFluxCalls)%dat(1) = 0._dp
@@ -361,7 +346,7 @@ subroutine runPhysics(&
                   fluxStruct,         & ! intent(inout): model fluxes for a local HRU
                   ! error control
                   err,cmessage)       ! intent(out): error control
-  if(err/=0)then; err=20; message=trim(message)//trim(cmessage); return; endif 
+  if(err/=0)then; err=20; message=trim(message)//trim(cmessage); print*, char(27),'[33m',message,char(27),'[0m'; return; endif;
 
 
   !************************************* End of run_oneHRU *****************************************
@@ -395,7 +380,7 @@ subroutine runPhysics(&
   ! compute water balance for the basin aquifer
   if(model_decisions(iLookDECISIONS%spatial_gw)%iDecision == singleBasin)then
     message=trim(message)//'multi_driver/bigBucket groundwater code not transferred from old code base yet'
-    err=20; return
+    err=20; print*, char(27),'[33m',message,char(27),'[0m'; return
   end if
 
   ! calculate total runoff depending on whether aquifer is connected
@@ -417,7 +402,7 @@ subroutine runPhysics(&
                   bvarStruct%var(iLookBVAR%averageInstantRunoff)%dat(1),           &  ! intent(out): instantaneous runoff (m s-1)
                   bvarStruct%var(iLookBVAR%averageRoutedRunoff)%dat(1),            &  ! intent(out): routed runoff (m s-1)
                   err,message)                                                                  ! intent(out): error control
-  if(err/=0)then; err=20; message=trim(message)//trim(cmessage); return; endif
+  if(err/=0)then; err=20; message=trim(message)//trim(cmessage); print*, char(27),'[33m',message,char(27),'[0m'; return; endif;
   end associate
  
   !************************************* End of run_oneGRU *****************************************
