@@ -35,6 +35,11 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
         self->state.handle_progStruct, self->state.handle_diagStruct, self->state.handle_fluxStruct,
         self->state.handle_bvarStruct, self->state.handle_startTime, self->state.handle_finshTime, 
         self->state.handle_refTime,self->state.handle_oldTime, &self->state.err);
+
+
+
+
+        
     if (self->state.err != 0) {
         aout(self) << "Error: HRU_Actor - Initialize - HRU = " << self->state.indxHRU << 
             " - indxGRU = " << self->state.indxGRU << " - refGRU = "<< self->state.refGRU << std::endl;

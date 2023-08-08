@@ -72,9 +72,9 @@ behavior summa_actor(stateful_actor<summa_actor_state>* self, int startGRU, int 
 				aout(self) << "\n________________SUMMA_ACTOR TIMING INFO________________\n"
 						   << "Total Duration = " << self->state.summa_actor_timing.getDuration("total_duration").value_or(-1.0) << " Seconds\n"
 						   << "Total Duration = " << self->state.summa_actor_timing.getDuration("total_duration").value_or(-1.0) / 60 << " Minutes\n"
-						   << "Total Duration = " << (self->state.summa_actor_timing.getDuration("total_duration").value_or(-1.0) / 60) / 60 << " Hours\n\n"
-						   << "Total Read Duration = " << total_read_duration  << "Seconds"
-						   << "Total Write Duration = " << total_write_duration << "Seconds"
+						   << "Total Duration = " << (self->state.summa_actor_timing.getDuration("total_duration").value_or(-1.0) / 60) / 60 << " Hours\n"
+						   << "Total Read Duration = " << total_read_duration  << "Seconds\n"
+						   << "Total Write Duration = " << total_write_duration << "Seconds\n"
 						   << "___________________Program Finished__________________\n"; 
 
 
@@ -85,7 +85,6 @@ behavior summa_actor(stateful_actor<summa_actor_state>* self, int startGRU, int 
 						   total_write_duration);		
 
 			} else {
-				// spawn a new job
 				spawnJob(self);
 			}
 		},

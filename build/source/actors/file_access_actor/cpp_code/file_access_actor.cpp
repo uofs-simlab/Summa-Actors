@@ -269,7 +269,7 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
     // save model decisions as named integers
     mDecisions_C(&self->state.num_steps, &err); 
     if (err != 0) {
-        aout(self) << "\033[31mFile_Access_Actor: Error in mDecisions\033[0m\n";
+        aout(self) << "ERROR: File_Access_Actor in mDecisions\n";
         std::string function = "mDecisions";
         self->send(self->state.parent, file_access_actor_err_v, function);
         self->quit();

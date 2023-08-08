@@ -109,8 +109,8 @@ void caf_main(actor_system& sys, const config& cfg) {
     struct stat file_to_check;
     // Check if config file exists
     if (stat(cfg.config_file.c_str(), &file_to_check) != 0) {
-        aout(self) << "Config File Path Does Not Exist\n";
-        aout(self) << "EXAMPLE: ./summa_actors -g 1 -n 10 -c location/of/config \n";
+        aout(self) << "Config File Path Does Not Exist\n"
+                   << "EXAMPLE: ./summa_actors -g 1 -n 10 -c location/of/config \n";
         return;
     }
 
@@ -122,43 +122,59 @@ void caf_main(actor_system& sys, const config& cfg) {
     
     aout(self) << "Printing Settings For SUMMA Simulation\n";
     check_settings_from_json(distributed_settings,
-                            summa_actor_settings, 
-                            file_access_actor_settings, 
-                            job_actor_settings,
-                            hru_actor_settings);
+                             summa_actor_settings, 
+                             file_access_actor_settings, 
+                             job_actor_settings,
+                             hru_actor_settings);
 
     if (distributed_settings.distributed_mode) {
         // only command line arguments needed are config_file and server-mode
         if (cfg.server_mode) {
-            run_server(sys, cfg, distributed_settings, summa_actor_settings, 
-                file_access_actor_settings, job_actor_settings, hru_actor_settings);
+            run_server(sys, 
+                       cfg, 
+                       distributed_settings, 
+                       summa_actor_settings, 
+                       file_access_actor_settings, 
+                       job_actor_settings, 
+                       hru_actor_settings);
         } else {
-            run_client(sys, cfg, distributed_settings);
+            run_client(sys, 
+                       cfg, 
+                       distributed_settings);
         }
 
     } else {
         // Configure command line arguments
         if (cfg.startGRU == -1) {
-            aout(self) << "Starting GRU was not defined!! " << 
-                "startGRU is set with the \"-g\" option\n";
-            aout(self) << "EXAMPLE: ./summaMain -g 1 -n 10 -c location/of/config \n";
+            aout(self) << "Starting GRU was not defined!! " 
+                       << "startGRU is set with the \"-g\" option\n"
+                       << "EXAMPLE: ./summaMain -g 1 -n 10 -c location/of/config \n";
             return;
         }
         if (cfg.countGRU == -1) {
-            aout(self) << "Number of GRUs was not defined!! " <<
-                "countGRU is set with the \"-n\" option\n";
-            aout(self) << "EXAMPLE: ./summaMain -g 1 -n 10 -c location/of/config \n";
+            aout(self) << "Number of GRUs was not defined!! "
+                       << "countGRU is set with the \"-n\" option\n"
+                       << "EXAMPLE: ./summaMain -g 1 -n 10 -c location/of/config \n";
             return;
         }
         if (cfg.config_file == "") {
-            aout(self) << "File Manager was not defined!! " << 
-                "fileManger is set with the \"-c\" option\n";
-            aout(self) << "EXAMPLE: ./summaMain -g 1 -n 10 -c location/of/config \n";
+            aout(self) << "File Manager was not defined!! "
+                       << "fileManger is set with the \"-c\" option\n"
+                       << "EXAMPLE: ./summaMain -g 1 -n 10 -c location/of/config \n";
             return;
         }
 
-        auto summa = sys.spawn(summa_actor, cfg.startGRU, cfg.countGRU, summa_actor_settings, 
-            file_access_actor_settings, job_actor_settings, hru_actor_settings, self);
+        std::pair<int, char**> openCARP_args_cstyle = cfg.c_args_remainder();
+
+
+        auto summa = sys.spawn(summa_actor, 
+                               cfg.startGRU, 
+                               cfg.countGRU, 
+                               summa_actor_settings, 
+                               file_access_actor_settings, 
+                               job_actor_settings, 
+                               hru_actor_settings, 
+                               self);
     }
     
 }

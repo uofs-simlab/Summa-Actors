@@ -30,7 +30,7 @@ subroutine mDecisions_C(num_steps, err) bind(C, name='mDecisions_C')
   character(len=256)                :: message            ! error message
 
   call mDecisions(err,message)
-  if(err/=0)then; print*, char(27),'[33m',message,char(27),'[0m'; return; endif
+  if(err/=0)then; print*,message; return; endif
 
   num_steps = numtim
 end subroutine mDecisions_C

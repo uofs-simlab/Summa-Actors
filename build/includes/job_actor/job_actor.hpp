@@ -12,7 +12,10 @@ namespace caf {
 using chrono_time = std::chrono::time_point<std::chrono::system_clock>;
 
 struct GRU_Container {
+    
     std::vector<GRU*> gru_list;
+
+
     chrono_time gru_start_time; // Vector of start times for each GRU
     int num_gru_done = 0; 
     int num_gru_failed = 0; // number of grus that are waiting to be restarted
