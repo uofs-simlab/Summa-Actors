@@ -29,33 +29,76 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
     self->state.dt_init_factor = hru_actor_settings.dt_init_factor;
 
 
-    initHRU(&self->state.indxGRU, &self->state.num_steps, self->state.handle_lookupStruct, self->state.handle_forcStat,
-        self->state.handle_progStat, self->state.handle_diagStat, self->state.handle_fluxStat, self->state.handle_indxStat, 
-        self->state.handle_bvarStat, self->state.handle_timeStruct, self->state.handle_forcStruct, self->state.handle_indxStruct,
-        self->state.handle_progStruct, self->state.handle_diagStruct, self->state.handle_fluxStruct,
-        self->state.handle_bvarStruct, self->state.handle_startTime, self->state.handle_finshTime, 
-        self->state.handle_refTime,self->state.handle_oldTime, &self->state.err);
-
-
-
+    initHRU(&self->state.indxGRU, 
+            &self->state.num_steps, 
+            self->state.handle_lookupStruct, 
+            self->state.handle_forcStat,
+            self->state.handle_progStat, 
+            self->state.handle_diagStat, 
+            self->state.handle_fluxStat, 
+            self->state.handle_indxStat, 
+            self->state.handle_bvarStat, 
+            self->state.handle_timeStruct, 
+            self->state.handle_forcStruct, 
+            self->state.handle_indxStruct,
+            self->state.handle_progStruct, 
+            self->state.handle_diagStruct, 
+            self->state.handle_fluxStruct,
+            self->state.handle_bvarStruct, 
+            self->state.handle_startTime, 
+            self->state.handle_finshTime, 
+            self->state.handle_refTime,
+            self->state.handle_oldTime, 
+            &self->state.err);
 
         
     if (self->state.err != 0) {
-        aout(self) << "Error: HRU_Actor - Initialize - HRU = " << self->state.indxHRU << 
-            " - indxGRU = " << self->state.indxGRU << " - refGRU = "<< self->state.refGRU << std::endl;
-        aout(self) << "Error = " << self->state.err << "\n";
+        aout(self) << "Error: HRU_Actor - Initialize - HRU = " << self->state.indxHRU  
+                   << " - indxGRU = " << self->state.indxGRU 
+                   << " - refGRU = "<< self->state.refGRU
+                   << "\nError Code = " << self->state.err << "\n";
         self->quit();
     }
 
-    // Initialize flags taht are used for the output 
-    initStatisticsFlags(self->state.handle_statCounter, self->state.handle_outputTimeStep, 
-        self->state.handle_resetStats, self->state.handle_finalizeStats, &self->state.err);
+    // Initialize flags that are used for the output 
+    initStatisticsFlags(self->state.handle_statCounter, 
+                        self->state.handle_outputTimeStep, 
+                        self->state.handle_resetStats, 
+                        self->state.handle_finalizeStats, 
+                        &self->state.err);
 
+    // Get the number of timesteps requried until needing to write
+    self->request(self->state.file_access_actor, 
+                  caf::infinite,
+                  get_num_output_steps_v)
+                  .await([=](int num_steps){
+                    self->state.num_steps_until_write = num_steps;
+                    self->state.output_structure_step_index = 1;
+                  });
 
-    self->send(self->state.file_access_actor, get_num_output_steps_v, self);
+    // Get the attributes and parameters for the HRU
+    self->request(self->state.file_access_actor,
+                  caf::infinite,
+                  get_attributes_params_v,
+                  self->state.indxGRU)
+                  .await([=](std::tuple<std::vector<double>,
+                                        std::vector<int>,
+                                        std::vector<long int>, 
+                                        std::vector<double>, 
+                                        std::vector<double>, 
+                                        std::vector<std::vector<double>>> attr_and_params) {
+                                int err = 0;
+                                set_var_d(std::get<0>(attr_and_params), self->state.handle_attrStruct);
+                                set_var_i(std::get<1>(attr_and_params), self->state.handle_typeStruct);
+                                set_var_i8(std::get<2>(attr_and_params), self->state.handle_idStruct);
+                                set_var_d(std::get<3>(attr_and_params), self->state.handle_bparStruct);
+                                set_var_d(std::get<4>(attr_and_params), self->state.handle_dparStruct);
+                                set_var_dlength(std::get<5>(attr_and_params), self->state.handle_mparStruct);
 
-    // Get attributes
-    self->send(self->state.file_access_actor, get_attributes_params_v, self->state.indxGRU, self);
+                                Initialize_HRU(self);
+
+                                self->send(self, start_hru_v); 
+                  });
 
 
     return {
@@ -70,33 +113,21 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
             std::vector<double> bpar_struct_array = get_var_d(self->state.handle_bparStruct);
 
             // ask file_access_actor to write parameters
-            self->send(self->state.file_access_actor, write_param_v, 
-                self->state.indxGRU, self->state.indxHRU, attr_struct_array,
-                type_struct_array, mpar_struct_array, bpar_struct_array);
+            self->send(self->state.file_access_actor, 
+                       write_param_v, 
+                       self->state.indxGRU, 
+                       self->state.indxHRU, 
+                       attr_struct_array,
+                       type_struct_array, 
+                       mpar_struct_array, 
+                       bpar_struct_array);
             
             // ask file_access_actor for forcing data
-            self->send(self->state.file_access_actor, access_forcing_v, self->state.iFile, self);
-            
+            self->send(self->state.file_access_actor,
+                       access_forcing_v, 
+                       self->state.iFile, 
+                       self);
         },
-
-        // Starts the HRU and tells it to ask for data from the file_access_actor
-        [=](get_attributes_params, std::vector<double> attr_struct, std::vector<int> type_struct, 
-            std::vector<long int> id_struct, std::vector<double> bpar_struct, 
-            std::vector<double> dpar_struct, std::vector<std::vector<double>> mpar_struct) {
-            
-            int err = 0;
-            set_var_d(attr_struct, self->state.handle_attrStruct);
-            set_var_i(type_struct, self->state.handle_typeStruct);
-            set_var_i8(id_struct, self->state.handle_idStruct);
-            set_var_d(bpar_struct, self->state.handle_bparStruct);
-            set_var_d(dpar_struct, self->state.handle_dparStruct);
-            set_var_dlength(mpar_struct, self->state.handle_mparStruct);
-
-            Initialize_HRU(self);
-
-            self->send(self, start_hru_v);
-        },
-
         [=](num_steps_before_write, int num_steps) {
             self->state.num_steps_until_write = num_steps;
             self->state.output_structure_step_index = 1;
@@ -129,34 +160,35 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
                     return;
                 }
 
-                writeHRUToOutputStructure(&self->state.indxHRU, &self->state.indxGRU, 
-                    &self->state.output_structure_step_index,
-                    self->state.handle_forcStat,
-                    self->state.handle_progStat,
-                    self->state.handle_diagStat,
-                    self->state.handle_fluxStat,
-                    self->state.handle_indxStat,
-                    self->state.handle_bvarStat,
-                    self->state.handle_timeStruct,
-                    self->state.handle_forcStruct,
-                    self->state.handle_indxStruct,
-                    self->state.handle_mparStruct,
-                    self->state.handle_progStruct,
-                    self->state.handle_diagStruct,
-                    self->state.handle_fluxStruct,
-                    self->state.handle_bparStruct,
-                    self->state.handle_bvarStruct,
-                    self->state.handle_statCounter,
-                    self->state.handle_outputTimeStep,
-                    self->state.handle_resetStats,
-                    self->state.handle_finalizeStats,
-                    self->state.handle_finshTime,
-                    self->state.handle_oldTime,
-                    &err);
+                writeHRUToOutputStructure(&self->state.indxHRU, 
+                                          &self->state.indxGRU, 
+                                          &self->state.output_structure_step_index,
+                                          self->state.handle_forcStat,
+                                          self->state.handle_progStat,
+                                          self->state.handle_diagStat,
+                                          self->state.handle_fluxStat,
+                                          self->state.handle_indxStat,
+                                          self->state.handle_bvarStat,
+                                          self->state.handle_timeStruct,
+                                          self->state.handle_forcStruct,
+                                          self->state.handle_indxStruct,
+                                          self->state.handle_mparStruct,
+                                          self->state.handle_progStruct,
+                                          self->state.handle_diagStruct,
+                                          self->state.handle_fluxStruct,
+                                          self->state.handle_bparStruct,
+                                          self->state.handle_bvarStruct,
+                                          self->state.handle_statCounter,
+                                          self->state.handle_outputTimeStep,
+                                          self->state.handle_resetStats,
+                                          self->state.handle_finalizeStats,
+                                          self->state.handle_finshTime,
+                                          self->state.handle_oldTime,
+                                          &err);
                 if (err != 0) {
-                    aout(self) << "Error: HRU_Actor - writeHRUToOutputStructure - HRU = " << self->state.indxHRU << 
-                        " - indxGRU = " << self->state.indxGRU << " - refGRU = "<< self->state.refGRU << std::endl;
-                    aout(self) << "Error = " << err << "\n";
+                    aout(self) << "Error: HRU_Actor - writeHRUToOutputStructure - HRU = " << self->state.indxHRU
+                               << " - indxGRU = " << self->state.indxGRU << " - refGRU = " << self->state.refGRU
+                               << "\nError = " << err << "\n";
                     self->send(self->state.parent, hru_error::run_physics_unhandleable, self);
                     self->quit();
                     return;

@@ -216,6 +216,13 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     CAF_ADD_TYPE_ID(summa, (std::vector<std::tuple<caf::actor, std::string>>))
     CAF_ADD_TYPE_ID(summa, (std::vector<serializable_netcdf_gru_actor_info>))
 
+    CAF_ADD_TYPE_ID(summa, (std::tuple<std::vector<double>, 
+                                       std::vector<int>, 
+                                       std::vector<long int>, 
+                                       std::vector<double>, 
+                                       std::vector<double>, 
+                                       std::vector<std::vector<double>>>))
+
     CAF_ADD_TYPE_ID(summa, (std::optional<caf::strong_actor_ptr>))
 
     // error types

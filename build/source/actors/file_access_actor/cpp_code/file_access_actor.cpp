@@ -132,8 +132,9 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
             }
         },
 
-        [=] (get_attributes_params, int index_gru, caf::actor actor_to_respond) {
+        [=] (get_attributes_params, int index_gru) {
             // From Attributes File
+
             std::vector<double> attr_struct_to_send = self->state.attr_structs_for_hrus[index_gru-1];
             std::vector<int> type_struct_to_send = self->state.type_structs_for_hrus[index_gru-1];
             std::vector<long int> id_struct_to_send = self->state.id_structs_for_hrus[index_gru-1];
@@ -143,15 +144,15 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
             std::vector<double> dpar_struct_to_send = self->state.dpar_structs_for_hrus[index_gru-1];
             std::vector<std::vector<double>> mpar_struct_to_send = self->state.mpar_structs_for_hrus[index_gru-1];
 
-            self->send(actor_to_respond, get_attributes_params_v, attr_struct_to_send,
-                type_struct_to_send, id_struct_to_send, bpar_struct_to_send, 
-                dpar_struct_to_send, mpar_struct_to_send);
-            
+            return std::make_tuple(attr_struct_to_send, 
+                                   type_struct_to_send, 
+                                   id_struct_to_send, 
+                                   bpar_struct_to_send, 
+                                   dpar_struct_to_send, 
+                                   mpar_struct_to_send);
         },
 
-        [=] (get_num_output_steps, caf::actor hru) {
-            self->send(hru, num_steps_before_write_v, self->state.num_output_steps);
-        },
+        [=] (get_num_output_steps) { return self->state.num_output_steps; },
 
         [=](write_output, int index_gru, int index_hru, caf::actor hru_actor) {
             self->state.file_access_timing.updateStartPoint("write_duration");

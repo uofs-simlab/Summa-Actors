@@ -77,8 +77,10 @@ behavior job_actor(stateful_actor<job_state>* self,
 
     // Spawn the file_access_actor. This will return the number of forcing files we are working with
     self->state.file_access_actor = self->spawn(file_access_actor, 
-                                                self->state.start_gru, self->state.num_gru, 
-                                                self->state.file_access_actor_settings, self);
+                                                self->state.start_gru, 
+                                                self->state.num_gru, 
+                                                self->state.file_access_actor_settings, 
+                                                self);
 
 
     aout(self) << "Job Actor Initalized \n";
@@ -86,32 +88,32 @@ behavior job_actor(stateful_actor<job_state>* self,
     return {
 
         [=](init_gru) {
-              auto& gru_container = self->state.gru_container;
+          auto& gru_container = self->state.gru_container;
 
-              gru_container.gru_start_time = std::chrono::high_resolution_clock::now();
-              gru_container.run_attempts_left = self->state.max_run_attempts;
-              gru_container.run_attempts_left--;
+          gru_container.gru_start_time = std::chrono::high_resolution_clock::now();
+          gru_container.run_attempts_left = self->state.max_run_attempts;
+          gru_container.run_attempts_left--;
 
 
-              // Spawn the GRUs
-              for(int i = 0; i < self->state.gru_container.num_gru_in_run_domain; i++) {
-                auto global_gru_index = self->state.gru_container.gru_list.size() + self->state.start_gru;
-                auto local_gru_index = self->state.gru_container.gru_list.size() + 1; // Fortran reference starts at 1
+          // Spawn the GRUs
+          for(int i = 0; i < gru_container.num_gru_in_run_domain; i++) {
+            auto global_gru_index = gru_container.gru_list.size() + self->state.start_gru;
+            auto local_gru_index = gru_container.gru_list.size() + 1; // Fortran reference starts at 1
 
-                auto gru = self->spawn(hru_actor, 
-                                       global_gru_index,
-                                       local_gru_index,               
-                                       self->state.hru_actor_settings,                                
-                                       self->state.file_access_actor, 
-                                       self);
+            auto gru = self->spawn(hru_actor, 
+                                    global_gru_index,
+                                    local_gru_index,               
+                                    self->state.hru_actor_settings,                                
+                                    self->state.file_access_actor, 
+                                    self);
 
-                // Create the GRU object (Job uses this to keep track of GRU status)
-                self->state.gru_container.gru_list.push_back(new GRU(global_gru_index, 
-                                                                     local_gru_index, 
-                                                                     gru, 
-                                                                     self->state.dt_init_start_factor, 
-                                                                     self->state.max_run_attempts));    
-              }
+            // Create the GRU object (Job uses this to keep track of GRU status)
+            gru_container.gru_list.push_back(new GRU(global_gru_index, 
+                                                                  local_gru_index, 
+                                                                  gru, 
+                                                                  self->state.dt_init_start_factor, 
+                                                                  self->state.max_run_attempts));    
+          }
         }, // end init_gru
 
         [=](done_hru, int local_gru_index) {
