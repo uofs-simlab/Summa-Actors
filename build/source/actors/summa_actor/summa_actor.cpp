@@ -37,42 +37,52 @@ behavior summa_actor(stateful_actor<summa_actor_state>* self, int startGRU, int 
 
 	return {
 		[=](done_job, int numFailed, double job_duration, double read_duration, double write_duration) {
+			auto& timing_info = self->state.timing_info_for_jobs;
+
+
 			self->state.numFailed += numFailed;
 
-			self->state.timing_info_for_jobs.job_duration.push_back(job_duration);
-			self->state.timing_info_for_jobs.job_read_duration.push_back(read_duration);
-			self->state.timing_info_for_jobs.job_write_duration.push_back(write_duration);
+			timing_info.job_duration.push_back(job_duration);
+			timing_info.job_read_duration.push_back(read_duration);
+			timing_info.job_write_duration.push_back(write_duration);
 
 			if (self->state.numGRU <= 0) {
 				self->state.summa_actor_timing.updateEndPoint("total_duration");
 
-				for (std::vector<int>::size_type i = 0; i < self->state.timing_info_for_jobs.job_duration.size(); i++) {
-					aout(self) << "\n________________Job " << i + 1 << " Info_______________\n";
-					aout(self) << "Job Duration = " << self->state.timing_info_for_jobs.job_duration[i] << "\n";
-					aout(self) << "Job Read Duration = " << self->state.timing_info_for_jobs.job_read_duration[i] << "\n";
-					aout(self) << "Job Write Duration = " << self->state.timing_info_for_jobs.job_write_duration[i] << "\n";
+
+
+				for (size_t i = 0; i < timing_info.job_duration.size(); ++i) {
+					
+   				 	 
+    				aout(self) << "\n________________Job " << ++i << " Info_____________\n"
+               				   << "Job Duration = " << timing_info.job_duration[i] << "\n"
+               				   << "Job Read Duration = " << timing_info.job_read_duration[i - 1] << "\n"
+               				   << "Job Write Duration = " << timing_info.job_write_duration[i - 1] << "\n"
+							   << "_____________________________________________________\n\n";
 				}
 
 
+				double total_read_duration = std::accumulate(timing_info.job_read_duration.begin(),
+															 timing_info.job_read_duration.end(),
+															 0.0);
+				double total_write_duration = std::accumulate(timing_info.job_write_duration.begin(),
+															  timing_info.job_write_duration.end(),
+															  0.0);
 				
-				aout(self) << "\n________________SUMMA_ACTOR TIMING INFO________________\n";
-				aout(self) << "Total Duration = " << self->state.summa_actor_timing.getDuration("total_duration").value_or(-1.0) << " Seconds\n";
-				aout(self) << "Total Duration = " << self->state.summa_actor_timing.getDuration("total_duration").value_or(-1.0) / 60 << " Minutes\n";
-				aout(self) << "Total Duration = " << (self->state.summa_actor_timing.getDuration("total_duration").value_or(-1.0) / 60) / 60 << " Hours\n\n";
-				double total_read_duration = std::accumulate(self->state.timing_info_for_jobs.job_read_duration.begin(),
-																		self->state.timing_info_for_jobs.job_read_duration.end(),
-																		0.0);
-				aout(self) << "Total Read Duration = " << total_read_duration  << "Seconds \n";
-				double total_write_duration = std::accumulate(self->state.timing_info_for_jobs.job_write_duration.begin(),
-																		self->state.timing_info_for_jobs.job_write_duration.end(),
-																		0.0);
-				aout(self) << "Total Write Duration = " << total_write_duration << "Seconds \n";
-				aout(self) << "Program Finished \n";
+				aout(self) << "\n________________SUMMA_ACTOR TIMING INFO________________\n"
+						   << "Total Duration = " << self->state.summa_actor_timing.getDuration("total_duration").value_or(-1.0) << " Seconds\n"
+						   << "Total Duration = " << self->state.summa_actor_timing.getDuration("total_duration").value_or(-1.0) / 60 << " Minutes\n"
+						   << "Total Duration = " << (self->state.summa_actor_timing.getDuration("total_duration").value_or(-1.0) / 60) / 60 << " Hours\n\n"
+						   << "Total Read Duration = " << total_read_duration  << "Seconds"
+						   << "Total Write Duration = " << total_write_duration << "Seconds"
+						   << "___________________Program Finished__________________\n"; 
+
+
 
 				self->send(self->state.parent, done_batch_v, 
-					self->state.summa_actor_timing.getDuration("total_duration").value_or(-1.0), 
-					total_read_duration,
-					total_write_duration);		
+						   self->state.summa_actor_timing.getDuration("total_duration").value_or(-1.0), 
+						   total_read_duration,
+						   total_write_duration);		
 
 			} else {
 				// spawn a new job
@@ -94,8 +104,8 @@ void spawnJob(stateful_actor<summa_actor_state>* self) {
 		// spawn the job actor
 		aout(self) << "\n Starting Job with startGRU = " << self->state.startGRU << "\n";
 		self->state.currentJob = self->spawn(job_actor, self->state.startGRU, self->state.summa_actor_settings.max_gru_per_job, 
-			self->state.file_access_actor_settings, self->state.job_actor_settings, 
-			self->state.hru_actor_settings, self);
+											 self->state.file_access_actor_settings, self->state.job_actor_settings, 
+											 self->state.hru_actor_settings, self);
 		
 		// Update GRU count
 		self->state.numGRU = self->state.numGRU - self->state.summa_actor_settings.max_gru_per_job;
@@ -104,8 +114,8 @@ void spawnJob(stateful_actor<summa_actor_state>* self) {
 	} else {
 
 		self->state.currentJob = self->spawn(job_actor, self->state.startGRU, self->state.numGRU, 
-			self->state.file_access_actor_settings, self->state.job_actor_settings, 
-			self->state.hru_actor_settings, self);
+										     self->state.file_access_actor_settings, self->state.job_actor_settings, 
+											 self->state.hru_actor_settings, self);
 		self->state.numGRU = 0;
 	}
 }
