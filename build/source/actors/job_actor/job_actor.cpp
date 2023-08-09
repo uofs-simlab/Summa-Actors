@@ -113,7 +113,7 @@ behavior job_actor(stateful_actor<job_state>* self,
                                                      gru, 
                                                      self->state.dt_init_start_factor, 
                                                      self->state.hru_actor_settings.rel_tol,
-                                                      self->state.hru_actor_settings.abs_tol,
+                                                     self->state.hru_actor_settings.abs_tol,
                                                      self->state.max_run_attempts));    
           }
         }, // end init_gru
@@ -185,6 +185,12 @@ behavior job_actor(stateful_actor<job_state>* self,
             
             std::vector<serializable_netcdf_gru_actor_info> 
                 netcdf_gru_info = getGruNetcdfInfo(self->state.max_run_attempts,self->state.gru_container.gru_list);
+              
+              
+            
+            self->state.num_gru_failed = std::count_if(netcdf_gru_info.begin(), netcdf_gru_info.end(), [](auto& gru_info) {
+                  return !gru_info.successful;
+              });
 
             self->request(self->state.file_access_actor, 
                           infinite,
