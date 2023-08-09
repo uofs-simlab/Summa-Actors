@@ -46,7 +46,6 @@ behavior gru_actor(stateful_actor<gru_state_test>* self, int global_gru_index, i
 
     };
 
-
 }
 
 
@@ -54,7 +53,7 @@ behavior gru_actor(stateful_actor<gru_state_test>* self, int global_gru_index, i
 
 void caf_main(actor_system& sys) {
     scoped_actor self{sys};
-    int num_actors = 10000;
+    int num_actors = 100000;
 
     auto gru_list = std::vector<actor>{};
     auto container_list = std::vector<GRU*>{};
