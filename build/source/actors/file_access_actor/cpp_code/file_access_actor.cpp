@@ -241,11 +241,9 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
             aout(self) << "Total Read Duration = " << self->state.file_access_timing.getDuration("read_duration").value_or(-1.0) << " Seconds\n";
             aout(self) << "Total Write Duration = " << self->state.file_access_timing.getDuration("write_duration").value_or(-1.0) << " Seconds\n";
             
-            self->send(self->state.parent, 
-                file_access_actor_done_v, 
-                self->state.file_access_timing.getDuration("read_duration").value_or(-1.0), 
-                self->state.file_access_timing.getDuration("write_duration").value_or(-1.0));
             self->quit();
+            return std::make_tuple(self->state.file_access_timing.getDuration("read_duration").value_or(-1.0), 
+                                   self->state.file_access_timing.getDuration("write_duration").value_or(-1.0));
         },
 
     };
@@ -262,7 +260,7 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
     if (err != 0) {
         aout(self) << "Error: ffile_info_C - File_Access_Actor \n";
         std::string function = "ffile_info_C";
-        self->send(self->state.parent, file_access_actor_err_v, function);
+        self->send(self->state.parent, file_access_error::unhandleable_error, self);
         self->quit();
         return;
     }
@@ -272,7 +270,7 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
     if (err != 0) {
         aout(self) << "ERROR: File_Access_Actor in mDecisions\n";
         std::string function = "mDecisions";
-        self->send(self->state.parent, file_access_actor_err_v, function);
+        self->send(self->state.parent, file_access_error::unhandleable_error, self);
         self->quit();
         return;
     }
@@ -287,7 +285,7 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
     if (err != 0) {
         aout(self) << "ERROR: read_pinit_C\n";
         std::string function = "read_pinit_C";
-        self->send(self->state.parent, file_access_actor_err_v, function);
+        self->send(self->state.parent, file_access_error::unhandleable_error, self);
         self->quit();
         return;
     }
@@ -296,7 +294,7 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
     if (err != 0) {
         aout(self) << "ERROR: read_vegitationTables\n";
         std::string function = "read_vegitationTables";
-        self->send(self->state.parent, file_access_actor_err_v, function);
+        self->send(self->state.parent, file_access_error::unhandleable_error, self);
         self->quit();
         return;
     }
@@ -308,7 +306,7 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
     if (err != 0) {
         aout(self) << "ERROR: Create_OutputFile\n";
         std::string function = "def_output";
-        self->send(self->state.parent, file_access_actor_err_v, function);
+        self->send(self->state.parent, file_access_error::unhandleable_error, self);
         self->quit();
         return;
     }
@@ -321,7 +319,7 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
     if (self->state.err != 0) {
         aout(self) << "ERROR: Init_OutputStruct\n";
         std::string function = "Init_OutputStruct";
-        self->send(self->state.parent, file_access_actor_err_v, function);
+        self->send(self->state.parent, file_access_error::unhandleable_error, self);
         self->quit();
         return;
     }
@@ -330,7 +328,7 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
     if (self->state.err != 0) {
         aout(self) << "ERROR: Init_OutputTimeStep\n";
         std::string function = "Init_OutputTimeStep";
-        self->send(self->state.parent, file_access_actor_err_v, function);
+        self->send(self->state.parent, file_access_error::unhandleable_error, self);
         self->quit();
         return;
     }

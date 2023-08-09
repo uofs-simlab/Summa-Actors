@@ -16,6 +16,7 @@ enum class hru_error : uint8_t {
 
 enum class file_access_error : uint8_t {
     writing_error = 1,
+    unhandleable_error = 2,
 };
 
 // HRU Errors
@@ -73,18 +74,6 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     // Reciever:
     // Summary:
     CAF_ADD_ATOM(summa, run_failure)
-    // Sender:
-    // Reciever:
-    // Summary:
-    CAF_ADD_ATOM(summa, done_file_access_actor_init)
-    // Sender:
-    // Reciever:
-    // Summary:
-    CAF_ADD_ATOM(summa, file_access_actor_done)
-    // Sender:
-    // Reciever:
-    // Summary:
-    CAF_ADD_ATOM(summa, file_access_actor_err)
     // Sender:
     // Reciever:
     // Summary:
@@ -193,6 +182,10 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     // Reciever:
     // Summary:
     CAF_ADD_ATOM(summa, get_num_output_steps)
+    // Sender:
+    // Reciever:
+    // Summary:
+    CAF_ADD_ATOM(summa, finalize)
     
     // Struct Types
     CAF_ADD_TYPE_ID(summa, (Distributed_Settings))
@@ -216,12 +209,16 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     CAF_ADD_TYPE_ID(summa, (std::vector<std::tuple<caf::actor, std::string>>))
     CAF_ADD_TYPE_ID(summa, (std::vector<serializable_netcdf_gru_actor_info>))
 
+    // GRU Parameter/Attribute Vectors
     CAF_ADD_TYPE_ID(summa, (std::tuple<std::vector<double>, 
                                        std::vector<int>, 
                                        std::vector<long int>, 
                                        std::vector<double>, 
                                        std::vector<double>, 
                                        std::vector<std::vector<double>>>))
+    
+    // File_Access_Actor Read/Write times
+    CAF_ADD_TYPE_ID(summa, (std::tuple<double, double>))
 
     CAF_ADD_TYPE_ID(summa, (std::optional<caf::strong_actor_ptr>))
 

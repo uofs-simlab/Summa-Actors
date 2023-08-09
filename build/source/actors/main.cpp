@@ -72,8 +72,8 @@ void run_client(actor_system& system, const config& cfg, Distributed_Settings di
 }
 
 void run_server(actor_system& system, const config& cfg, Distributed_Settings distributed_settings, 
-    Summa_Actor_Settings summa_actor_settings, File_Access_Actor_Settings file_access_actor_settings,
-    Job_Actor_Settings job_actor_settings, HRU_Actor_Settings hru_actor_settings) {
+                Summa_Actor_Settings summa_actor_settings, File_Access_Actor_Settings file_access_actor_settings,
+                Job_Actor_Settings job_actor_settings, HRU_Actor_Settings hru_actor_settings) {
     scoped_actor self{system};
     int err;
 
@@ -85,18 +85,23 @@ void run_server(actor_system& system, const config& cfg, Distributed_Settings di
     // Check if we have are the backup server
     if (cfg.backup_server) {          
         auto server = system.spawn(summa_backup_server_init,
-            distributed_settings,summa_actor_settings,file_access_actor_settings,
-            job_actor_settings,hru_actor_settings);
+                                   distributed_settings,
+                                   summa_actor_settings,
+                                   file_access_actor_settings,
+                                   job_actor_settings,
+                                   hru_actor_settings);
+
         publish_server(server, distributed_settings.port);
         connect_client(server, distributed_settings.servers_list[0], distributed_settings.port);
-        // self->send(server, connect_as_backup_v);
 
     } else {     
-        auto server = system.spawn(summa_server_init, distributed_settings,
-                               summa_actor_settings, 
-                               file_access_actor_settings, 
-                               job_actor_settings, 
-                               hru_actor_settings);                   
+        auto server = system.spawn(summa_server_init, 
+                                   distributed_settings,
+                                   summa_actor_settings, 
+                                   file_access_actor_settings, 
+                                   job_actor_settings, 
+                                   hru_actor_settings);  
+                 
         publish_server(server, distributed_settings.port);
     }
 
@@ -163,9 +168,6 @@ void caf_main(actor_system& sys, const config& cfg) {
                        << "EXAMPLE: ./summaMain -g 1 -n 10 -c location/of/config \n";
             return;
         }
-
-        std::pair<int, char**> openCARP_args_cstyle = cfg.c_args_remainder();
-
 
         auto summa = sys.spawn(summa_actor, 
                                cfg.startGRU, 

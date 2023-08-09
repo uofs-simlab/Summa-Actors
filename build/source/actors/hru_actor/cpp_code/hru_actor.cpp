@@ -97,8 +97,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
 
                                 Initialize_HRU(self);
 
-                                self->send(self, start_hru_v); 
-                  });
+                                self->send(self, start_hru_v); });
 
 
     return {

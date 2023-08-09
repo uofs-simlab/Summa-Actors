@@ -54,10 +54,10 @@ behavior summa_actor(stateful_actor<summa_actor_state>* self, int startGRU, int 
 				for (size_t i = 0; i < timing_info.job_duration.size(); ++i) {
 					
    				 	 
-    				aout(self) << "\n________________Job " << ++i << " Info_____________\n"
+    				aout(self) << "\n________________Job " << i + 1 << " Info_____________\n"
                				   << "Job Duration = " << timing_info.job_duration[i] << "\n"
-               				   << "Job Read Duration = " << timing_info.job_read_duration[i - 1] << "\n"
-               				   << "Job Write Duration = " << timing_info.job_write_duration[i - 1] << "\n"
+               				   << "Job Read Duration = " << timing_info.job_read_duration[i] << "\n"
+               				   << "Job Write Duration = " << timing_info.job_write_duration[i] << "\n"
 							   << "_____________________________________________________\n\n";
 				}
 
