@@ -21,6 +21,8 @@ struct netcdf_gru_actor_info {
     
     int state_var_id; // The success of the GRU 1 = pass, 0 = fail
     int num_attempts_var_id;
+    int rel_tol_var_id;
+    int abs_tol_var_id;
 };
 
 

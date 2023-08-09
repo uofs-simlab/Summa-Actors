@@ -87,6 +87,8 @@ MODULE data_types
     integer(C_INT) :: write_output_duration_var_id
     integer(C_INT) :: state_var_id
     integer(C_INT) :: num_attempts_var_id
+    integer(C_INT) :: rel_tol_var_id
+    integer(C_INT) :: abs_tol_var_id
   end type netcdf_gru_actor_info
 
   type,public,bind(C) :: serializable_netcdf_gru_actor_info
@@ -97,6 +99,8 @@ MODULE data_types
     real(C_DOUBLE) :: write_output_duration
     integer(C_INT) :: successful
     integer(C_INT) :: num_attempts
+    real(C_DOUBLE) :: rel_tol
+    real(C_DOUBLE) :: abs_tol
   end type serializable_netcdf_gru_actor_info
 
   ! ***********************************************************************************************************

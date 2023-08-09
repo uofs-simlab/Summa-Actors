@@ -233,11 +233,9 @@ subroutine def_output(handle_ncid,startGRU,nGRU,nHRU,actor_info,err) bind(C, nam
     err = nf90_def_var(ncid%var(iFreq),"write_output_duration",outputPrecision,(/gru_DimID/),actor_info%write_output_duration_var_id)
     err = nf90_def_var(ncid%var(iFreq),"successful",nf90_int,(/gru_DimID/),actor_info%state_var_id)
     err = nf90_def_var(ncid%var(iFreq),"num_attempts",nf90_int,(/gru_DimID/),actor_info%num_attempts_var_id)
-    if(err/=0) then 
-      message=trim(message)//trim(cmessage)
-      print*, message
-      return
-    end if
+    err = nf90_def_var(ncid%var(iFreq),"rel_tol",outputPrecision,(/gru_DimID/),actor_info%rel_tol_var_id)
+    err = nf90_def_var(ncid%var(iFreq),"abs_tol",outputPrecision,(/gru_DimID/),actor_info%abs_tol_var_id)
+    if(err/=0) then; message=trim(message)//trim(cmessage); print*, message; return; end if
 
   end do
 end subroutine def_output

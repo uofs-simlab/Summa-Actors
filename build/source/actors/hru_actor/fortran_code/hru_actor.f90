@@ -14,6 +14,7 @@ public::getFirstTimestep
 public::setTimeZoneOffset
 public::prepareOutput
 public::updateCounters
+public::setIDATolerances
 
 real(dp),parameter  :: verySmall=1e-3_rkind      ! tiny number
 real(dp),parameter  :: smallOffset=1.e-8_rkind   ! small offset (units=days) to force ih=0 at the start of the day
@@ -548,5 +549,27 @@ subroutine updateCounters(handle_timeStruct, handle_statCounter, handle_outputTi
 
  elapsedWrite = elapsedWrite + elapsedSec(startWrite, endWrite)
 end subroutine updateCounters
+
+! Set the HRU's relative and absolute tolerances
+subroutine setIDATolerances(handle_mparStruct, rtol, atol) bind(C, name="setIDATolerances")
+  USE data_types,only:var_dlength
+  USE var_lookup,only:iLookPARAM
+
+  implicit none
+
+  type(c_ptr), intent(in), value           :: handle_mparStruct !  model parameters
+  real(c_double),intent(in)               :: rtol              ! relative tolerance
+  real(c_double),intent(in)               :: atol              ! absolute tolerance
+  ! local variables
+  type(var_dlength),pointer                :: mparStruct        ! model parameters
+
+  call c_f_pointer(handle_mparStruct, mparStruct)
+
+  mparStruct%var(iLookPARAM%relErrTol_ida)%dat(1) = rtol
+  mparStruct%var(iLookPARAM%absErrTol_ida)%dat(1) = atol
+
+
+
+end subroutine setIDATolerances
 
 end module hru_actor

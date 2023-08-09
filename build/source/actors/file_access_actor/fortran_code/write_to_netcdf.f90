@@ -305,7 +305,8 @@ subroutine writeGRUStatistics(handle_ncid,      &
   real(c_double), dimension(num_gru)                  :: forcing_time_array
   real(c_double), dimension(num_gru)                  :: run_physics_time_array
   real(c_double), dimension(num_gru)                  :: write_output_time_array
-
+  real(c_double), dimension(num_gru)                  :: rel_tol_array
+  real(c_double), dimension(num_gru)                  :: abs_tol_array
   integer(c_int), dimension(num_gru)                  :: successful_array
   integer(c_int), dimension(num_gru)                  :: num_attempts_array
 
@@ -322,6 +323,8 @@ subroutine writeGRUStatistics(handle_ncid,      &
     forcing_time_array(i) = gru_stats_vector(i)%forcing_duration
     run_physics_time_array(i) = gru_stats_vector(i)%run_physics_duration
     write_output_time_array(i) = gru_stats_vector(i)%write_output_duration
+    rel_tol_array(i) = gru_stats_vector(i)%rel_tol
+    abs_tol_array(i) = gru_stats_vector(i)%abs_tol
     successful_array(i) = gru_stats_vector(i)%successful
     num_attempts_array(i) = gru_stats_vector(i)%num_attempts
   end do
@@ -335,6 +338,8 @@ subroutine writeGRUStatistics(handle_ncid,      &
     err = nf90_put_var(ncid%var(iFreq), gru_var_ids%write_output_duration_var_id, write_output_time_array)
     err = nf90_put_var(ncid%var(iFreq), gru_var_ids%state_var_id, successful_array)
     err = nf90_put_var(ncid%var(iFreq), gru_var_ids%num_attempts_var_id, num_attempts_array)
+    err = nf90_put_var(ncid%var(iFreq), gru_var_ids%rel_tol_var_id, rel_tol_array)
+    err = nf90_put_var(ncid%var(iFreq), gru_var_ids%abs_tol_var_id, abs_tol_array)
   end do
 
 end subroutine writeGRUStatistics

@@ -88,5 +88,6 @@ extern "C" {
       void computeTimeForcingHRU(void* handle_timeStruct, void* handle_forcStruct, double* fracJulDay, 
                               int* yearLength, int* err);
 
+      void setIDATolerances(void* handle_mparStruct, double* relTol, double* absTol);
 
 }

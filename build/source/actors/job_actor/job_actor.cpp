@@ -112,6 +112,8 @@ behavior job_actor(stateful_actor<job_state>* self,
                                                      local_gru_index, 
                                                      gru, 
                                                      self->state.dt_init_start_factor, 
+                                                     self->state.hru_actor_settings.rel_tol,
+                                                      self->state.hru_actor_settings.abs_tol,
                                                      self->state.max_run_attempts));    
           }
         }, // end init_gru
@@ -169,11 +171,11 @@ behavior job_actor(stateful_actor<job_state>* self,
               auto global_gru_index = GRU->getGlobalGRUIndex();
               auto local_gru_index = GRU->getLocalGRUIndex();
               auto gru_actor = self->spawn(hru_actor, 
-                                            global_gru_index, 
-                                            local_gru_index, 
-                                            self->state.hru_actor_settings,
-                                            self->state.file_access_actor, 
-                                            self);
+                                           global_gru_index, 
+                                           local_gru_index, 
+                                           self->state.hru_actor_settings,
+                                           self->state.file_access_actor, 
+                                           self);
               self->state.gru_container.gru_list[local_gru_index-1]->setGRUActor(gru_actor);
             }
           }
@@ -186,7 +188,7 @@ behavior job_actor(stateful_actor<job_state>* self,
 
             self->request(self->state.file_access_actor, 
                           infinite,
-                          deallocate_structures_v, netcdf_gru_info)
+                          finalize_v, netcdf_gru_info)
               .await(
                 [=](std::tuple<double, double> read_write_duration) {
                 
@@ -258,6 +260,8 @@ std::vector<serializable_netcdf_gru_actor_info> getGruNetcdfInfo(int max_run_att
         
         gru_info.num_attempts = max_run_attempts - gru->getAttemptsLeft() + 1;
         gru_info.successful = success(gru->getStatus());
+        gru_info.rel_tol = gru->getRelTol();
+        gru_info.abs_tol = gru->getAbsTol();
 
         gru_netcdf_info.push_back(gru_info);
 

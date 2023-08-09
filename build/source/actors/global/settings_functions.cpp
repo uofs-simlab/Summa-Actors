@@ -116,6 +116,12 @@ HRU_Actor_Settings readHRUActorSettings(std::string json_settings_file) {
     hru_actor_settings.dt_init_factor = getSettings(json_settings_file, parent_key,
         "dt_init_factor", hru_actor_settings.dt_init_factor).value_or(1);
 
+    hru_actor_settings.rel_tol = getSettings(json_settings_file, parent_key,
+        "rel_tol", hru_actor_settings.rel_tol).value_or(1e-6);
+
+    hru_actor_settings.abs_tol = getSettings(json_settings_file, parent_key,
+        "abs_tol", hru_actor_settings.abs_tol).value_or(1e-6);
+
     return hru_actor_settings;
 }
 

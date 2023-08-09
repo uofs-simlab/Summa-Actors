@@ -29,6 +29,8 @@ class GRU {
 
     // Modifyable Parameters
     int dt_init_factor; // The initial dt for the GRU
+    double rel_tol; // The relative tolerance for the GRU
+    double abs_tol; // The absolute tolerance for the GRU
 
     // Status Information
     int attempts_left; // The number of attempts left for the GRU to succeed
@@ -44,7 +46,8 @@ class GRU {
     
   public:
     // Constructor
-    GRU(int global_gru_index, int local_gru_index, caf::actor gru_actor, int dt_init_factor, int max_attempts);
+    GRU(int global_gru_index, int local_gru_index, caf::actor gru_actor, int dt_init_factor, 
+        double rel_tol, double abs_tol, int max_attempts);
 
     // Deconstructor
     ~GRU();
@@ -60,10 +63,14 @@ class GRU {
     double getRunPhysicsDuration();
     double getWriteOutputDuration();
 
+    double getRelTol();
+    double getAbsTol();
+
     double getAttemptsLeft();
     gru_state getStatus();
 
     bool isFailed();
+
 
 
     // Setters
@@ -72,6 +79,9 @@ class GRU {
     void setForcingDuration(double forcing_duration);
     void setRunPhysicsDuration(double run_physics_duration);
     void setWriteOutputDuration(double write_output_duration);
+
+    void setRelTol(double rel_tol);
+    void setAbsTol(double abs_tol);
 
     void setSuccess();
     void setFailed();

@@ -57,10 +57,11 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
             set_var_d(bpar_struct, params->handle_bpar_struct);
             // write the populated data to netCDF
             writeParamToNetCDF(self->state.handle_ncid, &index_gru, &index_hru, 
-                params->handle_attr_struct, 
-                params->handle_type_struct, 
-                params->handle_mpar_struct, 
-                params->handle_bpar_struct, &err);
+                               params->handle_attr_struct, 
+                               params->handle_type_struct, 
+                               params->handle_mpar_struct, 
+                               params->handle_bpar_struct, 
+                               &err);
         
 
             self->state.file_access_timing.updateEndPoint("write_duration");
@@ -224,10 +225,13 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
         },
 
 
-        [=](deallocate_structures, std::vector<serializable_netcdf_gru_actor_info> &netcdf_gru_info) {
+        [=](finalize, std::vector<serializable_netcdf_gru_actor_info> &netcdf_gru_info) {
             int num_gru = netcdf_gru_info.size();
-            WriteGRUStatistics(self->state.handle_ncid, &self->state.gru_actor_stats, 
-                    netcdf_gru_info.data(), &num_gru, &self->state.err);
+            WriteGRUStatistics(self->state.handle_ncid, 
+                               &self->state.gru_actor_stats, 
+                               netcdf_gru_info.data(), 
+                               &num_gru, 
+                               &self->state.err);
 
             
             // call output_container deconstructor

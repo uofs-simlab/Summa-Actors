@@ -10,7 +10,9 @@
 namespace caf {
 
 behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
-    HRU_Actor_Settings hru_actor_settings, caf::actor file_access_actor, caf::actor parent) {
+                   HRU_Actor_Settings hru_actor_settings, 
+                   caf::actor file_access_actor, 
+                   caf::actor parent) {
     
     // Actor References
     self->state.file_access_actor = file_access_actor;
@@ -241,40 +243,50 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
 void Initialize_HRU(stateful_actor<hru_state>* self) {
 
     setupHRUParam(&self->state.indxHRU, 
-            &self->state.indxGRU,
-            self->state.handle_attrStruct, 
-            self->state.handle_typeStruct, 
-            self->state.handle_idStruct,
-            self->state.handle_mparStruct, 
-            self->state.handle_bparStruct, 
-            self->state.handle_bvarStruct,
-            self->state.handle_dparStruct, 
-            self->state.handle_lookupStruct,
-            self->state.handle_startTime, 
-            self->state.handle_oldTime,
-            &self->state.upArea, &self->state.err);
+                  &self->state.indxGRU,
+                  self->state.handle_attrStruct, 
+                  self->state.handle_typeStruct, 
+                  self->state.handle_idStruct,
+                  self->state.handle_mparStruct, 
+                  self->state.handle_bparStruct, 
+                  self->state.handle_bvarStruct,
+                  self->state.handle_dparStruct, 
+                  self->state.handle_lookupStruct,
+                  self->state.handle_startTime, 
+                  self->state.handle_oldTime,
+                  &self->state.upArea, 
+                  &self->state.err);
     if (self->state.err != 0) {
-        aout(self) << "Error: HRU_Actor - SetupHRUParam - HRU = " << self->state.indxHRU <<
-        " - indxGRU = " << self->state.indxGRU << " - refGRU = " << self->state.refGRU << std::endl;
+        aout(self) << "Error: HRU_Actor - SetupHRUParam - HRU = " << self->state.indxHRU
+                   << " - indxGRU = " << self->state.indxGRU 
+                   << " - refGRU = " << self->state.refGRU << "\n";
         self->quit();
         return;
     }
             
     summa_readRestart(&self->state.indxGRU, 
-            &self->state.indxHRU, 
-            self->state.handle_indxStruct, 
-            self->state.handle_mparStruct, 
-            self->state.handle_progStruct,
-            self->state.handle_diagStruct, 
-            self->state.handle_fluxStruct, 
-            self->state.handle_bvarStruct, 
-            &self->state.dt_init, &self->state.err);
+                      &self->state.indxHRU, 
+                      self->state.handle_indxStruct, 
+                      self->state.handle_mparStruct, 
+                      self->state.handle_progStruct,
+                      self->state.handle_diagStruct, 
+                      self->state.handle_fluxStruct, 
+                      self->state.handle_bvarStruct, 
+                      &self->state.dt_init, 
+                      &self->state.err);
     if (self->state.err != 0) {
-        aout(self) << "Error: HRU_Actor - summa_readRestart - HRU = " << self->state.indxHRU <<
-        " - indxGRU = " << self->state.indxGRU << " - refGRU = " << self->state.refGRU << std::endl;
+        aout(self) << "Error: HRU_Actor - summa_readRestart - HRU = " << self->state.indxHRU
+                   << " - indxGRU = " << self->state.indxGRU 
+                   << " - refGRU = " << self->state.refGRU << "\n";
         self->quit();
         return;
     }
+
+
+    // Set HRU Tolerances
+    setIDATolerances(self->state.handle_mparStruct, 
+                     &self->state.hru_actor_settings.rel_tol, 
+                     &self->state.hru_actor_settings.abs_tol);
             
 }
 
