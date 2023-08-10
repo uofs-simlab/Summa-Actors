@@ -1,12 +1,54 @@
 module job_actor
-    USE, intrinsic :: iso_c_binding
+  USE, intrinsic :: iso_c_binding
     
     
-    implicit none
-    public::allocateTimeStructure
-    public::deallocateJobActor
+  implicit none
+  public::job_init_fortran
+  public::allocateTimeStructure
+  public::deallocateJobActor
 
     contains
+
+subroutine job_init_fortran(file_manager, start_gru, num_gru,&
+                            num_hru, err) bind(C, name="job_init_fortran")
+  USE summaFileManager,only:summa_SetTimesDirsAndFiles       ! sets directories and filenames
+  USE summa_globalData,only:summa_defineGlobalData           ! used to define global summa data structures
+  
+  USE cppwrap_auxiliary,only:c_f_string           ! Convert C String to Fortran String
+  
+  ! Variables that were set by getCommandArguments()
+  USE globalData,only: startGRU          ! index of the starting GRU for parallelization run
+
+  
+  implicit none
+
+  ! dummy variables
+  character(kind=c_char,len=1),intent(in)   :: file_manager
+  integer(c_int),intent(in)                 :: start_gru
+  integer(c_int),intent(in)                 :: num_gru
+  integer(c_int),intent(in)                 :: num_hru
+  integer(c_int),intent(out)                :: err
+
+  ! local variables
+  character(len=256)                        :: summaFileManagerIn
+  character(len=256)                        :: message
+
+  ! Convert C Variables to Fortran Variables
+  call c_f_string(file_manager, summaFileManagerIn, 256)
+  summaFileManagerIn = trim(summaFileManagerIn)
+
+
+  ! Set variables that were previosuly set by getCommandArguments()
+  startGRU=start_gru
+
+  call summa_SetTimesDirsAndFiles(summaFileManagerIn,err,message)
+  if(err/=0)then; print*, message; return; endif
+
+  call summa_defineGlobalData(err, message)
+  if(err/=0)then; print*, message; return; endif
+
+end subroutine job_init_fortran
+
 
 subroutine allocateTimeStructure(err) bind(C, name="allocateTimeStructure")
     USE globalData,only:startTime,finshTime,refTime,oldTime

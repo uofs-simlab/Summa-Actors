@@ -60,11 +60,12 @@ behavior job_actor(stateful_actor<job_state>* self,
     
     // Initalize global variables calling Fortran Routines
     int err = 0;
-    setTimesDirsAndFiles(self->state.job_actor_settings.file_manager_path.c_str(), &err);
-    if (err != 0) { aout(self) << "\nERROR: Job_Actor - setTimesDirsAndFiles\n"; return {}; }
 
-    defineGlobalData(&self->state.start_gru, &err);
-    if (err != 0) { aout(self) << "\nERROR: Job_Actor - defineGlobalData\n"; return {}; }
+    job_init_fortran(self->state.job_actor_settings.file_manager_path.c_str(),
+                     &self->state.start_gru,
+                     &self->state.num_gru,
+                     &self->state.num_hru,
+                     &err);
 
     readDimension(&self->state.num_gru, &self->state.num_hru, &self->state.start_gru, &err);
     if (err != 0) { aout(self) << "\nERROR: Job_Actor - readDimension\n"; return {}; }

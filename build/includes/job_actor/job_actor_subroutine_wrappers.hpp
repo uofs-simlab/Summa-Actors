@@ -1,9 +1,11 @@
 #pragma once
 
 extern "C" {
-    void setTimesDirsAndFiles(char const* file_manager, int* err);
-
-    void defineGlobalData(int* start_gru_index, int* err);
+    void job_init_fortran(char const* file_manager,
+                          int* start_gru_index, 
+                          int* num_gru, 
+                          int* num_hru, 
+                          int* err);
 
     void readDimension(int* num_gru, int* num_hru, int* start_gru_index, int* err);
 
