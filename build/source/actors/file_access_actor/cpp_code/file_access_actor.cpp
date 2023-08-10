@@ -288,7 +288,6 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
     read_pinit_C(&err);
     if (err != 0) {
         aout(self) << "ERROR: read_pinit_C\n";
-        std::string function = "read_pinit_C";
         self->send(self->state.parent, file_access_error::unhandleable_error, self);
         self->quit();
         return;
@@ -297,7 +296,6 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
     read_vegitationTables(&err);
     if (err != 0) {
         aout(self) << "ERROR: read_vegitationTables\n";
-        std::string function = "read_vegitationTables";
         self->send(self->state.parent, file_access_error::unhandleable_error, self);
         self->quit();
         return;
@@ -309,20 +307,16 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
                &self->state.num_gru, &self->state.gru_actor_stats, &err);
     if (err != 0) {
         aout(self) << "ERROR: Create_OutputFile\n";
-        std::string function = "def_output";
         self->send(self->state.parent, file_access_error::unhandleable_error, self);
         self->quit();
         return;
     }
 
-    // Initalize the output Structure
-    aout(self) << "Initalizing Output Structure" << std::endl;
     initOutputStructure(self->state.handle_forcing_file_info, 
-        &self->state.file_access_actor_settings.num_timesteps_in_output_buffer, 
-        &self->state.num_gru, &self->state.err);
+                        &self->state.file_access_actor_settings.num_timesteps_in_output_buffer, 
+                        &self->state.num_gru, &self->state.err);
     if (self->state.err != 0) {
         aout(self) << "ERROR: Init_OutputStruct\n";
-        std::string function = "Init_OutputStruct";
         self->send(self->state.parent, file_access_error::unhandleable_error, self);
         self->quit();
         return;
@@ -331,7 +325,6 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
     initOutputTimeStep(&self->state.num_gru, &self->state.err);
     if (self->state.err != 0) {
         aout(self) << "ERROR: Init_OutputTimeStep\n";
-        std::string function = "Init_OutputTimeStep";
         self->send(self->state.parent, file_access_error::unhandleable_error, self);
         self->quit();
         return;
