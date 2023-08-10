@@ -171,11 +171,7 @@ subroutine def_output(handle_ncid,startGRU,nGRU,nHRU,actor_info,err) bind(C, nam
     fstring = get_freqName(iFreq)
     fname   = trim(fileout)//'_'//trim(fstring)//'.nc'
     call ini_create(nGRU,nHRU,gru_struc(1)%hruInfo(1)%nSoil,trim(fname),ncid%var(iFreq),err,cmessage)
-    if(err/=0)then
-      message=trim(message)//trim(cmessage)
-      print*, message
-      return
-    end if
+    if(err/=0)then; message=trim(message)//trim(cmessage); print*, message; return; end if
 
     ! define model decisions
     do iVar = 1,size(model_decisions)
