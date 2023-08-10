@@ -69,7 +69,7 @@ subroutine summa_readRestart(&
   USE nrtype                                                  ! variable types, etc.
   ! functions and subroutines
   USE time_utils_module,only:elapsedSec                       ! calculate the elapsed time
-  USE read_icond_gru_hru_module,only:read_icond               ! module to read initial conditions
+  USE read_icond_actors_module,only:read_icond               ! module to read initial conditions
   USE check_icond4chm_module,only:check_icond4chm             ! module to check initial conditions
   USE var_derive_module,only:calcHeight                       ! module to calculate height at layer interfaces and layer mid-point
   USE var_derive_module,only:v_shortcut                       ! module to calculate "short-cut" variables

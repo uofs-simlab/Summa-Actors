@@ -61,20 +61,21 @@ behavior job_actor(stateful_actor<job_state>* self,
     // Initalize global variables calling Fortran Routines
     int err = 0;
 
+
+    /*
+    Calls: 
+      - summa_SetTimesDirsAndFiles()
+      - summa_defineGlobalData()
+      - read_icond_nlayers()
+      - Allocates time structures
+    */
     job_init_fortran(self->state.job_actor_settings.file_manager_path.c_str(),
                      &self->state.start_gru,
                      &self->state.num_gru,
                      &self->state.num_hru,
                      &err);
-
-    readDimension(&self->state.num_gru, &self->state.num_hru, &self->state.start_gru, &err);
-    if (err != 0) { aout(self) << "\nERROR: Job_Actor - readDimension\n"; return {}; }
+    if (err != 0) { aout(self) << "\nERROR: Job_Actor - job_init_fortran\n"; return {}; }
     
-    readIcondNLayers(&self->state.num_gru, &err);
-    if (err != 0) { aout(self) << "\nERROR: Job_Actor - readIcondNLayers\n"; return {};}
-    
-    allocateTimeStructure(&err);
-    if (err != 0) { aout(self) << "\nERROR: Job_Actor - allocateTimeStructure\n"; return {}; }
 
     // Spawn the file_access_actor. This will return the number of forcing files we are working with
     self->state.file_access_actor = self->spawn(file_access_actor, 

@@ -18,7 +18,7 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-module read_icond_gru_hru_module
+module read_icond_actors_module
 USE, intrinsic :: iso_c_binding
 USE nrtype
 USE netcdf
@@ -37,7 +37,7 @@ contains
  ! ************************************************************************************************
  ! public subroutine read_icond_nlayers: read model initial conditions file for number of snow/soil layers
  ! ************************************************************************************************
-subroutine read_icond_nlayers(nGRU,err) bind(C, name="readIcondNLayers")
+subroutine read_icond_nlayers(iconFile,nGRU,indx_meta,err,message)
   ! --------------------------------------------------------------------------------------------------------
   ! modules
   USE nrtype
@@ -48,21 +48,16 @@ subroutine read_icond_nlayers(nGRU,err) bind(C, name="readIcondNLayers")
   USE netcdf_util_module,only:netcdf_err                ! netcdf error handling
   USE data_types,only:gru_hru_intVec                    ! actual data
   USE data_types,only:var_info                          ! metadata
-
-  USE globalData,only:indx_meta
-  
-  ! file paths
-  USE summaFileManager,only:STATE_PATH                        ! optional path to state/init. condition files (defaults to SETTINGS_PATH)
-  USE summaFileManager,only:SETTINGS_PATH                     ! define path to settings files (e.g., parameters, soil and veg. tables)
-  USE summaFileManager,only:MODEL_INITCOND                    ! name of model initial conditions file
-
   implicit none
 
   ! --------------------------------------------------------------------------------------------------------
   ! variable declarations
   ! dummies
-  integer(c_int)        ,intent(in)     :: nGRU           ! total # of GRUs in run domain
-  integer(c_int)        ,intent(out)    :: err            ! error code
+  character(*)        ,intent(in)     :: iconFile       ! name of input (restart) file
+  integer(i4b)        ,intent(in)     :: nGRU           ! total # of GRUs in run domain
+  type(var_info)      ,intent(in)     :: indx_meta(:)   ! metadata
+  integer(i4b)        ,intent(out)    :: err            ! error code
+  character(*)        ,intent(out)    :: message        ! returned error message
 
   ! locals
   integer(i4b)                        :: ncID                       ! netcdf file id
@@ -72,24 +67,13 @@ subroutine read_icond_nlayers(nGRU,err) bind(C, name="readIcondNLayers")
   integer(i4b)                        :: iGRU, iHRU                 ! loop indexes
   integer(i4b)                        :: iHRU_global                ! index of HRU in the netcdf file
   integer(i4b),allocatable            :: snowData(:)                ! number of snow layers in all HRUs
-  integer(i4b),allocatable            :: soilData(:)                ! number of soil layers in all HRUs
-  
-  character(len=256)                  :: iconFile          ! restart file name
-
-  
-  character(len=256)                  :: message        ! returned error message
+  integer(i4b),allocatable            :: soilData(:)                ! number of soil layers in all HRUs  
   character(len=256)                  :: cmessage                   ! downstream error message
 
   ! --------------------------------------------------------------------------------------------------------
   ! initialize error message
   err=0
   message = 'read_icond_nlayers/'
-
-  if(STATE_PATH == '') then
-      iconFile = trim(SETTINGS_PATH)//trim(MODEL_INITCOND)
-  else
-      iconFile = trim(STATE_PATH)//trim(MODEL_INITCOND)
-  endif
 
   ! open netcdf file
   call nc_file_open(iconFile,nf90_nowrite,ncid,err,cmessage);
@@ -357,4 +341,4 @@ subroutine read_icond(&
 
 end subroutine read_icond
 
-end module read_icond_gru_hru_module
+end module read_icond_actors_module

@@ -18,19 +18,17 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-module read_attrb_module
-USE, intrinsic :: iso_c_binding
+module read_attrb_actors_module
 USE nrtype
 implicit none
 private
 public::read_dimension
-! public::read_attribute
 contains
 
 ! ************************************************************************************************
 ! public subroutine read_dimension: read HRU and GRU dimension information on local attributes
 ! ************************************************************************************************
-subroutine read_dimension(numGRUs,numHRUs,startGRU,err) bind(C, name="readDimension")
+subroutine read_dimension(attrFile,numGRUs,numHRUs,startGRU,err)
 
   USE netcdf
   USE netcdf_util_module,only:nc_file_open                   ! open netcdf file
@@ -39,22 +37,18 @@ subroutine read_dimension(numGRUs,numHRUs,startGRU,err) bind(C, name="readDimens
   ! provide access to global data
   USE globalData,only:gru_struc                              ! gru->hru mapping structure
   USE globalData,only:index_map                              ! hru->gru mapping structure
-  ! file paths for attribute file
-  USE summaFileManager,only:SETTINGS_PATH                     ! define path to settings files (e.g., parameters, soil and veg. tables)
-  USE summaFileManager,only:LOCAL_ATTRIBUTES                  ! name of model initial attributes file
 
 
   implicit none
 
   ! Dummy Variables
-  
-  integer(c_int),intent(in)              :: numGRUs            ! number of GRUs for the run domain
-  integer(c_int),intent(out)             :: numHRUs            ! number of HRUs for the run domain (value filled in this subroutine)
-  integer(c_int),intent(in)              :: startGRU           ! Index of the starting GRU
-  integer(c_int),intent(out)             :: err                ! error code
+  character(*),intent(in)                :: attrFile           ! name of attributed file
+  integer(i4b),intent(in)                :: numGRUs            ! number of GRUs for the run domain
+  integer(i4b),intent(out)               :: numHRUs            ! number of HRUs for the run domain (value filled in this subroutine)
+  integer(i4b),intent(in)                :: startGRU           ! Index of the starting GRU
+  integer(i4b),intent(out)               :: err                ! error code
   
   ! Local Variables
-  character(len=256)                     :: attrFile           ! name of attributed file
   integer(i4b)                           :: fileGRU            ! number of GRUs in the input file
   integer(i4b)                           :: fileHRU            ! number of HRUs in the input file
   integer(i4b)                           :: iHRU               ! HRU couinting index
@@ -73,7 +67,6 @@ subroutine read_dimension(numGRUs,numHRUs,startGRU,err) bind(C, name="readDimens
   character(len=256)                     :: cmessage           ! error message for downwind routine
 
   err=0; message="read_dimension/"
-  attrFile = trim(SETTINGS_PATH)//trim(LOCAL_ATTRIBUTES)
 
   ! open nc file
   call nc_file_open(trim(attrFile),nf90_noWrite,ncID,err,cmessage)
@@ -224,4 +217,4 @@ subroutine read_dimension(numGRUs,numHRUs,startGRU,err) bind(C, name="readDimens
 
 end subroutine read_dimension
 
-end module read_attrb_module
+end module read_attrb_actors_module

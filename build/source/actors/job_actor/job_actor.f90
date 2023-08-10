@@ -1,36 +1,64 @@
 module job_actor
   USE, intrinsic :: iso_c_binding
+  
+  ! global data
+  USE globalData,only:integerMissing      ! missing integer value
+  USE globalData,only:realMissing         ! missing double precision value
     
     
   implicit none
   public::job_init_fortran
-  public::allocateTimeStructure
   public::deallocateJobActor
 
     contains
 
 subroutine job_init_fortran(file_manager, start_gru, num_gru,&
                             num_hru, err) bind(C, name="job_init_fortran")
+  USE nrtype  ! variable types, etc.
+  
   USE summaFileManager,only:summa_SetTimesDirsAndFiles       ! sets directories and filenames
   USE summa_globalData,only:summa_defineGlobalData           ! used to define global summa data structures
   
   USE cppwrap_auxiliary,only:c_f_string           ! Convert C String to Fortran String
   
+  ! provide access to file paths
+  USE summaFileManager,only:SETTINGS_PATH                     ! define path to settings files (e.g., parameters, soil and veg. tables)
+  USE summaFileManager,only:STATE_PATH                        ! optional path to state/init. condition files (defaults to SETTINGS_PATH)
+  USE summaFileManager,only:MODEL_INITCOND                    ! name of model initial conditions file
+  USE summaFileManager,only:LOCAL_ATTRIBUTES                  ! name of model initial attributes file
+  
+  ! subroutines and functions: read dimensions (NOTE: NetCDF)
+  USE read_attrb_actors_module,only:read_dimension              ! module to read dimensions of GRU and HRU
+  USE read_icond_actors_module,only:read_icond_nlayers               ! module to read initial condition dimensions
+
+  USE globalData,only:indx_meta                     ! metadata structures
+  USE globalData,only:startTime,finshTime,refTime,oldTime
+  USE allocspace_module,only:allocLocal
+  USE globalData,only:time_meta
+
   ! Variables that were set by getCommandArguments()
   USE globalData,only: startGRU          ! index of the starting GRU for parallelization run
-
+  USE globalData,only: checkHRU          ! index of the HRU for a single HRU run
+  USE globalData,only: iRunMode          ! define the current running mode    
+  USE globalData,only:iRunModeFull, iRunModeGRU, iRunModeHRU  ! define the running modes
   
   implicit none
 
   ! dummy variables
   character(kind=c_char,len=1),intent(in)   :: file_manager
   integer(c_int),intent(in)                 :: start_gru
-  integer(c_int),intent(in)                 :: num_gru
-  integer(c_int),intent(in)                 :: num_hru
+  integer(c_int),intent(inout)              :: num_gru
+  integer(c_int),intent(inout)              :: num_hru
   integer(c_int),intent(out)                :: err
 
   ! local variables
   character(len=256)                        :: summaFileManagerIn
+  character(len=256)                        :: restartFile        ! restart file name
+  character(len=256)                        :: attrFile           ! attributes file name
+  integer(i4b)                              :: fileGRU            ! [used for filenames] number of GRUs in the input file
+  integer(i4b)                              :: fileHRU            ! [used for filenames] number of HRUs in the input file
+
+  
   character(len=256)                        :: message
 
   ! Convert C Variables to Fortran Variables
@@ -40,32 +68,49 @@ subroutine job_init_fortran(file_manager, start_gru, num_gru,&
 
   ! Set variables that were previosuly set by getCommandArguments()
   startGRU=start_gru
+  iRunMode=iRunModeFull
+  checkHRU=integerMissing
 
   call summa_SetTimesDirsAndFiles(summaFileManagerIn,err,message)
-  if(err/=0)then; print*, message; return; endif
+  if(err/=0)then; print*, trim(message); return; endif
 
   call summa_defineGlobalData(err, message)
-  if(err/=0)then; print*, message; return; endif
+  if(err/=0)then; print*, trim(message); return; endif
+  
+  ! *****************************************************************************
+  ! *** read the number of GRUs and HRUs
+  ! *****************************************************************************
+  ! obtain the HRU and GRU dimensions in the LocalAttribute file
+  attrFile = trim(SETTINGS_PATH)//trim(LOCAL_ATTRIBUTES)
+  select case (iRunMode)
+    case(iRunModeFull); call read_dimension(attrFile,num_gru,num_hru,start_gru,err)
+    case(iRunModeGRU ); err=20; message='iRunModeGRU not implemented for Actors Code'
+    case(iRunModeHRU ); err=20; message='iRunModeHRU not implemented for Actors Code'
+  end select
+  if(err/=0)then; print*, trim(message); return; endif
+
+  ! *****************************************************************************
+  ! *** read the number of snow and soil layers
+  ! *****************************************************************************
+  ! set restart filename and read the number of snow and soil layers from the initial conditions (restart) file
+  if(STATE_PATH == '') then
+    restartFile = trim(SETTINGS_PATH)//trim(MODEL_INITCOND)
+  else
+    restartFile = trim(STATE_PATH)//trim(MODEL_INITCOND)
+  endif
+  call read_icond_nlayers(trim(restartFile),num_gru,indx_meta,err,message)
+  if(err/=0)then; print*, trim(message); return; endif
+
+
+  ! Allocate the time structures
+  call allocLocal(time_meta, startTime, err=err, message=message)
+  call allocLocal(time_meta, finshTime, err=err, message=message)
+  call allocLocal(time_meta, refTime,   err=err, message=message)
+  call allocLocal(time_meta, oldTime,   err=err, message=message)
+  if(err/=0)then; print*, trim(message); return; endif
 
 end subroutine job_init_fortran
 
-
-subroutine allocateTimeStructure(err) bind(C, name="allocateTimeStructure")
-    USE globalData,only:startTime,finshTime,refTime,oldTime
-    USE allocspace_module,only:allocLocal
-    USE globalData,only:time_meta
-
-    implicit none
-    ! dummy variables
-    integer(c_int),intent(inout)      :: err
-    ! local variables
-    character(len=256)              :: cmessage
-
-    call allocLocal(time_meta, startTime, err=err, message=cmessage)
-    call allocLocal(time_meta, finshTime, err=err, message=cmessage)
-    call allocLocal(time_meta, refTime,   err=err, message=cmessage)
-    call allocLocal(time_meta, oldTime,   err=err, message=cmessage)
-end subroutine
 
 subroutine deallocateJobActor(err) bind(C, name="deallocateJobActor")
     USE globalData,only:structInfo                              ! information on the data structures
