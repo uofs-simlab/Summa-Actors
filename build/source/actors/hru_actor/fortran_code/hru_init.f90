@@ -177,7 +177,7 @@ contains
 
   ! ---------------------------------------------------------------------------------------
   ! initialize error control
-  err=0; message='summaActors_initialize/'
+  err=0; message='hru_init/'
 
   ! initialize the start of the initialization
   call date_and_time(values=startInit)
@@ -233,7 +233,7 @@ contains
     case('flux'); call allocLocal(flux_meta,fluxStruct,nSnow,nSoil,err,cmessage);    ! model fluxes
     case('bpar'); cycle ! set by file_access_actor
     case('bvar'); call allocLocal(bvar_meta,bvarStruct,nSnow=0,nSoil=0,err=err,message=cmessage);  ! basin-average variables
-    case('lookup'); call allocLocal(lookup_meta,lookupStruct,err=err,message=cmessage)   ! basin-average variables
+    case('lookup'); cycle ! allocated in t2enthalpy.f90
     case('deriv'); cycle
     case default; err=20; message='unable to find structure name: '//trim(structInfo(iStruct)%structName)
   end select

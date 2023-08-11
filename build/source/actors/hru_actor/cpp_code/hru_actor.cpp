@@ -303,12 +303,13 @@ int Run_HRU(stateful_actor<hru_state>* self) {
                    &self->state.iFile,
                    &self->state.err);
     if (self->state.err != 0) {
-        aout(self) << "Error: HRU_Actor - ReadForcingHRU - HRU = " << self->state.indxHRU <<
-        " - indxGRU = " << self->state.indxGRU << " - refGRU = " << self->state.refGRU << std::endl;
-        aout(self) << "Forcing Step = " << self->state.forcingStep << std::endl;
-        aout(self) << "Timestep = " << self->state.timestep << std::endl;
-        aout(self) << "iFile = " << self->state.iFile << std::endl;
-        aout(self) << "Steps in Forcing File = " << self->state.stepsInCurrentFFile << std::endl;
+        aout(self) << "Error---HRU_Actor: ReadForcingHRU\n" 
+                   << "     IndxGRU = " << self->state.indxGRU << "\n"
+                   << "     RefGRU = " << self->state.refGRU << "\n"
+                   << "     Forcing Step = " << self->state.forcingStep << "\n"
+                   << "     Timestep = " << self->state.timestep << "\n"
+                   << "     iFile = " << self->state.iFile << "\n"
+                   << "     Steps in Forcing File = " << self->state.stepsInCurrentFFile << "\n";
         self->quit();
         return -1;
     }
@@ -319,26 +320,15 @@ int Run_HRU(stateful_actor<hru_state>* self) {
                           &self->state.yearLength,
                           &self->state.err);
     if (self->state.err != 0) {
-        aout(self) << "Error: HRU_Actor - ComputeTimeForcingHRU - HRU = " << self->state.indxHRU <<
-        " - indxGRU = " << self->state.indxGRU << " - refGRU = " << self->state.refGRU << std::endl;
-        aout(self) << "Forcing Step = " << self->state.forcingStep << std::endl;
-        aout(self) << "Timestep = " << self->state.timestep << std::endl;
-        aout(self) << "iFile = " << self->state.iFile << std::endl;
-        aout(self) << "Steps in Forcing File = " << self->state.stepsInCurrentFFile << std::endl;
+        aout(self) << "Error---HRU_Actor - ComputeTimeForcingHRU\n"
+                   << "     IndxGRU = " << self->state.indxGRU << "\n"
+                   << "     RefGRU = " << self->state.refGRU << "\n"
+                   << "     Forcing Step = " << self->state.forcingStep << "\n"
+                   << "     Timestep = " << self->state.timestep << "\n"
+                   << "     iFile = " << self->state.iFile << "\n"
+                   << "     Steps in Forcing File = " << self->state.stepsInCurrentFFile << "\n";
         self->quit();
         return -1;
-    }
-
-    if (self->state.err != 0) { 
-        aout(self) << "*********************************************************\n";
-        aout(self) << "Error: Forcing - HRU = " << self->state.indxHRU <<
-        " - indxGRU = " << self->state.indxGRU << " - refGRU = " << self->state.refGRU <<
-        " - Timestep = " << self->state.timestep << "\n" <<
-        "   iFile = "  << self->state.iFile << "\n" <<
-        "   forcing step" << self->state.forcingStep << "\n" <<
-        "   numSteps in forcing file" << self->state.stepsInCurrentFFile << "\n";
-        aout(self) << "*********************************************************\n";
-        return 10;
     }
 
     if (self->state.hru_actor_settings.print_output && 
@@ -374,10 +364,10 @@ int Run_HRU(stateful_actor<hru_state>* self) {
         &self->state.err);
 
     if (self->state.err != 0) {
-        aout(self) << "\033[1;31mError: RunPhysics - HRU = " << self->state.indxHRU 
-                   << " - indxGRU = " << self->state.indxGRU 
-                   << " - refGRU = " << self->state.refGRU 
-                   << " - Timestep = " << self->state.timestep << "\033[0m" << std::endl;
+        aout(self) << "Error---RunPhysics:\n"
+                   << "     IndxGRU = " << self->state.indxGRU 
+                   << "     RefGRU = " << self->state.refGRU 
+                   << "     Timestep = " << self->state.timestep <<  "\n";
         self->quit();
         return 20;
     }
@@ -387,7 +377,7 @@ int Run_HRU(stateful_actor<hru_state>* self) {
 
 
 void printOutput(stateful_actor<hru_state>* self) {
-        aout(self) << self->state.refGRU << " - Timestep = " << self->state.timestep << std::endl;
+        aout(self) << self->state.refGRU << " - Timestep = " << self->state.timestep << "\n";
 }
 
 }

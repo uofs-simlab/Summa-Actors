@@ -1,15 +1,45 @@
 module output_structure_module
   USE nrtype
-  USE data_types,only:summa_output_type
-  USE data_types,only:var_time_dlength
-  USE data_types,only:var_time_ilength
-  USE data_types,only:var_time_i
-  USE data_types,only:var_time_d
-  USE data_types,only:var_time_i8
-  USE data_types,only:var_i8
-  USE data_types,only:var_d
-  USE data_types,only:var_i
-  USE data_types,only:var_dlength
+  ! USE data_types,only:summa_output_type
+  USE data_types,only:&
+                      ! final data vectors
+                      dlength,             & ! var%dat
+                      ilength,             & ! var%dat
+                      ! no spatial dimension
+                      var_i,               & ! x%var(:)            (i4b)
+                      var_i8,              & ! x%var(:)            integer(8)
+                      var_d,               & ! x%var(:)            (rkind)
+                      var_flagVec,         & ! x%var(:)%dat        (logical)
+                      var_ilength,         & ! x%var(:)%dat        (i4b)
+                      var_dlength,         & ! x%var(:)%dat        (rkind)
+                      ! gru dimension
+                      gru_int,             & ! x%gru(:)%var(:)     (i4b)
+                      gru_int8,            & ! x%gru(:)%var(:)     integer(8)
+                      gru_double,          & ! x%gru(:)%var(:)     (rkind)
+                      gru_intVec,          & ! x%gru(:)%var(:)%dat (i4b)
+                      gru_doubleVec,       & ! x%gru(:)%var(:)%dat (rkind)
+                      ! gru+hru dimension
+                      gru_hru_int,         & ! x%gru(:)%hru(:)%var(:)     (i4b)
+                      gru_hru_int8,        & ! x%gru(:)%hru(:)%var(:)     integer(8)
+                      gru_hru_double,      & ! x%gru(:)%hru(:)%var(:)     (rkind)
+                      gru_hru_intVec,      & ! x%gru(:)%hru(:)%var(:)%dat (i4b)
+                      gru_hru_doubleVec,   & ! x%gru(:)%hru(:)%var(:)%dat (rkind)
+                      ! gru+hru+z dimension
+                      gru_hru_z_vLookup,   & ! x%gru(:)%hru(:)%z(:)%var(:)%lookup (rkind)
+                      ! structures that hold the time dimension
+                      var_time_i8,         & ! x%var(:)%tim(:)     integer(8)
+                      var_time_i,          & ! x%var(:)%tim(:)     (i4b)
+                      var_time_d,          & ! x%var(:)%tim(:)     (rkind)
+                      var_time_ilength,    & ! x%var(:)%tim(:)     (i4b)
+                      var_time_dlength,    & ! x%var(:)%tim(:)     (rkind)
+                      gru_hru_time_doublevec, & ! x%gru(:)%hru(:)%var(:)%tim(:)%dat (rkind)
+                      gru_hru_time_int,    &  ! x%gru(:)%hru(:)%var(:)%tim(:)     (i4b)
+                      gru_hru_time_double, &  ! x%gru(:)%hru(:)%var(:)%tim(:)     (rkind)
+                      gru_hru_time_intvec, &  ! x%gru(:)%hru(:)%var(:)%tim(:)%dat (i4b)
+                      gru_hru_time_flagvec
+
+
+
   USE data_types,only:var_info
   USE globalData,only:integerMissing
   USE globalData,only:nBand                 ! number of spectral bands
@@ -27,6 +57,42 @@ module output_structure_module
   public::allocateDat_rkind
   public::allocateDat_int
   private::is_var_desired
+
+  type, public :: summa_output_type
+    ! define the statistics structures
+    type(gru_hru_time_doubleVec),allocatable          :: forcStat(:)                   ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model forcing data
+    type(gru_hru_time_doubleVec),allocatable          :: progStat(:)                   ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model prognostic (state) variables
+    type(gru_hru_time_doubleVec),allocatable          :: diagStat(:)                   ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model diagnostic variables
+    type(gru_hru_time_doubleVec),allocatable          :: fluxStat(:)                   ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model fluxes
+    type(gru_hru_time_doubleVec),allocatable          :: indxStat(:)                   ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model indices
+    type(gru_hru_time_doubleVec),allocatable          :: bvarStat(:)                   ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- basin-average variabl
+
+    ! define the primary data structures (scalars)
+    type(gru_hru_time_int),allocatable                :: timeStruct(:)                 ! x%gru(:)%hru(:)%var(:)%tim(:)     -- model time data
+    type(gru_hru_time_double),allocatable             :: forcStruct(:)                 ! x%gru(:)%hru(:)%var(:)%tim(:)     -- model forcing data
+    type(gru_hru_double),allocatable                  :: attrStruct(:)                 ! x%gru(:)%hru(:)%var(:)            -- local attributes for each HRU, DOES NOT CHANGE OVER TIMESTEPS
+    type(gru_hru_int),allocatable                     :: typeStruct(:)                 ! x%gru(:)%hru(:)%var(:)%tim(:)     -- local classification of soil veg etc. for each HRU, DOES NOT CHANGE OVER TIMESTEPS
+    type(gru_hru_int8),allocatable                    :: idStruct(:)                   ! x%gru(:)%hru(:)%var(:)
+
+    ! define the primary data structures (variable length vectors)
+    type(gru_hru_time_intVec),allocatable             :: indxStruct(:)                 ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model indices
+    type(gru_hru_doubleVec),allocatable               :: mparStruct(:)                 ! x%gru(:)%hru(:)%var(:)%dat        -- model parameters, DOES NOT CHANGE OVER TIMESTEPS TODO: MAYBE
+    type(gru_hru_time_doubleVec),allocatable          :: progStruct(:)                 ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model prognostic (state) variables
+    type(gru_hru_time_doubleVec),allocatable          :: diagStruct(:)                 ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model diagnostic variables
+    type(gru_hru_time_doubleVec),allocatable          :: fluxStruct(:)                 ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model fluxes
+
+    ! define the basin-average structures
+    type(gru_double),allocatable                      :: bparStruct(:)                 ! x%gru(:)%var(:)                   -- basin-average parameters, DOES NOT CHANGE OVER TIMESTEPS
+    type(gru_hru_time_doubleVec),allocatable          :: bvarStruct(:)                 ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- basin-average variables
+
+    ! define the ancillary data structures
+    type(gru_hru_double),allocatable                  :: dparStruct(:)                 ! x%gru(:)%hru(:)%var(:)
+
+    ! finalize stats structure
+    type(gru_hru_time_flagVec),allocatable            :: finalizeStats(:)              ! x%gru(:)%hru(:)%tim(:)%dat -- flags on when to write to file
+
+    integer(i4b)                                      :: nTimeSteps
+  end type summa_output_type  
   
   
   type(summa_output_type),allocatable,save,public :: outputStructure(:) ! summa_OutputStructure(iFile)%struc%var(:)%dat(nTimeSteps) 

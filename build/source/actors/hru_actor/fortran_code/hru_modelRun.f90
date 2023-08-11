@@ -57,7 +57,6 @@ USE var_lookup,only:iLookINDEX             ! look-up values for local column ind
 USE var_lookup,only:iLookPROG              ! look-up values for local column model prognostic (state) variables
 USE var_lookup,only:iLookPARAM             ! look-up values for local column model parameters
 USE var_lookup,only:iLookDECISIONS         ! look-up values for model decisions
-USE summa4chm_util,only:handle_err
 
 ! Noah-MP parameters
 USE NOAHMP_VEG_PARAMETERS,only:SAIM,LAIM   ! 2-d tables for stem area index and leaf area index (vegType,month)
@@ -392,10 +391,9 @@ subroutine runPhysics(&
     bvarStruct%var(iLookBVAR%basin__TotalRunoff)%dat(1) = bvarStruct%var(iLookBVAR%basin__SurfaceRunoff)%dat(1) + bvarStruct%var(iLookBVAR%basin__ColumnOutflow)%dat(1)/totalArea + bvarStruct%var(iLookBVAR%basin__SoilDrainage)%dat(1)
   endif
 
-  call qOverland(&
-                  ! input
+  call qOverland(&! input
                   model_decisions(iLookDECISIONS%subRouting)%iDecision,            &  ! intent(in): index for routing method
-                  bvarStruct%var(iLookBVAR%basin__TotalRunoff)%dat(1),            &  ! intent(in): total runoff to the channel from all active components (m s-1)
+                  bvarStruct%var(iLookBVAR%basin__TotalRunoff)%dat(1),             &  ! intent(in): total runoff to the channel from all active components (m s-1)
                   bvarStruct%var(iLookBVAR%routingFractionFuture)%dat,             &  ! intent(in): fraction of runoff in future time steps (m s-1)
                   bvarStruct%var(iLookBVAR%routingRunoffFuture)%dat,               &  ! intent(in): runoff in future time steps (m s-1)
                   ! output
@@ -406,9 +404,6 @@ subroutine runPhysics(&
   end associate
  
   !************************************* End of run_oneGRU *****************************************
- 
-  ! check errors
-  call handle_err(err, cmessage)
 
 end subroutine runPhysics
 
