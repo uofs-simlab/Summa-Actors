@@ -75,7 +75,7 @@ USE var_lookup, only: maxvarStat ! number of statistics
 
 implicit none
 private
-public::writeOutput
+public::writeOutput_fortran
 public::writeParm
 public::writeData
 public::writeBasin
@@ -89,7 +89,7 @@ contains
 ! **********************************************************************************************************
 ! public subroutine writeParm: write model parameters
 ! **********************************************************************************************************
-subroutine writeOutput(handle_ncid, num_steps, start_gru, max_gru, err) bind(C, name="writeOutput")
+subroutine writeOutput_fortran(handle_ncid, num_steps, start_gru, max_gru, err) bind(C, name="writeOutput_fortran")
   USE var_lookup,only:maxVarFreq                               ! # of available output frequencies
   USE globalData,only:structInfo
   USE globalData,only:bvarChild_map,forcChild_map,progChild_map,diagChild_map,fluxChild_map,indxChild_map             ! index of the child data structure: stats bvar
@@ -179,7 +179,7 @@ subroutine writeOutput(handle_ncid, num_steps, start_gru, max_gru, err) bind(C, 
     outputTimeStep(start_gru)%dat(iFreq) = outputTimeStep(start_gru)%dat(iFreq) + outputTimeStepUpdate(iFreq) 
   end do ! ifreq
 
-end subroutine writeOutput
+end subroutine writeOutput_fortran
 
 
 ! **********************************************************************************************************
@@ -380,9 +380,9 @@ subroutine writeScalar(ncid, outputTimestep, outputTimestepUpdate, nSteps, minGR
   character(*)  ,intent(inout)      :: message
 
   ! local variables
-  integer(i4b)                      :: gruCounter             ! counter for the realVecs
-  integer(i4b)                      :: iStep                  ! counter for looping over nSteps
-  integer(i4b)                      :: stepCounter            ! counter for the realVec
+  integer(i4b)                      :: gruCounter=0             ! counter for the realVecs
+  integer(i4b)                      :: iStep=1                  ! counter for looping over nSteps
+  integer(i4b)                      :: stepCounter=0            ! counter for the realVec
   integer(i4b)                      :: iGRU
   ! output array
   real(rkind)                       :: realVec(numGRU, nSteps)! real vector for all HRUs in the run domain
@@ -401,16 +401,19 @@ subroutine writeScalar(ncid, outputTimestep, outputTimestepUpdate, nSteps, minGR
           realVec(gruCounter, stepCounter) = stat%gru(iGRU)%hru(1)%var(map(iVar))%tim(iStep)%dat(iFreq)
           outputTimeStepUpdate(iFreq) = stepCounter
         end do ! iStep
-      end do ! iGRU  
-    
-      err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),realVec(1:gruCounter, 1:stepCounter),start=(/minGRU,outputTimestep(iFreq)/),count=(/numGRU,stepCounter/))
+      end do ! iGRU 
+
       if (outputTimeStepUpdate(iFreq) /= stepCounter ) then
         print*, "ERROR Missmatch in Steps - stat doubleVec"
         print*, "   outputTimeStepUpdate(iFreq) = ", outputTimeStepUpdate(iFreq)
         print*, "   stepCounter = ", stepCounter
         print*, "   iFreq = ", iFreq
-
+        print*, "   minGRU = ", minGRU
+        print*, "   maxGRU = ", maxGRU
+        err = 20
         return
+
+      err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),realVec(1:gruCounter, 1:stepCounter),start=(/minGRU,outputTimestep(iFreq)/),count=(/numGRU,stepCounter/))
       endif
     class default; err=20; message=trim(message)//'stats must be scalarv and of type gru_hru_doubleVec'; return
   end select  ! stat

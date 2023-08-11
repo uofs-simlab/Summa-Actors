@@ -108,6 +108,9 @@ void readInitConditions(stateful_actor<file_access_state>* self);
 
 void initalizeOutputHandles(stateful_actor<file_access_state>* self);
 
+/* Setup and call the fortran routine that writes the output */
+void writeOutput(stateful_actor<file_access_state>* self, Output_Partition* partition);
+
 void deallocateOutputHandles(stateful_actor<file_access_state>* self);
  
 } // end namespace

@@ -84,7 +84,7 @@ subroutine writeParamToNetCDF(handle_ncid,    &
 
 end subroutine writeParamToNetCDF
 
-subroutine writeDataToNetCDF(handle_ncid,          &
+subroutine writeDataToNetCDF(handle_ncid,           &
                              index_gru,             &
                              index_hru,             &
                              handle_finalize_stats, & 
@@ -198,11 +198,6 @@ subroutine writeDataToNetCDF(handle_ncid,          &
     endif
   end do  ! (looping through structures)
 end subroutine writeDataToNetCDF
-
-! subroutine setOutputStructure(index_gru, index_timestep, 
-!   handle_finalize_stats, handle_output_timestep, handle_output_timestep, )
-
-! end subroutine setOutputStructure
 
 subroutine writeBasinToNetCDF(handle_ncid, index_gru, handle_finalize_stats, &
   handle_output_timestep, handle_bvar_stat, handle_bvar_struct, err) bind(C, name="writeBasinToNetCDF")

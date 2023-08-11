@@ -14,7 +14,7 @@ extern "C" {
   // OutputStructure and Output functions
   void initOutputStructure(void* handle_forcFileInfo, int* max_steps, int* numGRU, int* err);
   void deallocateOutputStructure(int* err);
-  void writeOutput(void* handle_ncid, int* num_steps, int* start_gru, int* max_gru, int* err);
+  void writeOutput_fortran(void* handle_ncid, int* num_steps, int* start_gru, int* max_gru, int* err);
   void initOutputTimeStep(int* num_gru, int* err);
 
   // Attributes Files- called inside initalizeFileAccessActor

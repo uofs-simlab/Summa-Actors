@@ -30,7 +30,6 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
 
     self->state.num_output_steps = self->state.file_access_actor_settings.num_timesteps_in_output_buffer;
 
-        
     initalizeFileAccessActor(self);
 
     // Set up the output container
@@ -162,27 +161,8 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
 
             output_partition->setGRUReadyToWrite(hru_actor);
         
-    
             if (output_partition->isReadyToWrite()) {
-                int num_timesteps_to_write = output_partition->getNumStoredTimesteps();
-                int start_gru = output_partition->getStartGRUIndex();
-                int max_gru = output_partition->getMaxGRUIndex();
-                
-                writeOutput(self->state.handle_ncid, &num_timesteps_to_write,
-                    &start_gru, &max_gru, &self->state.err);
-                
-                output_partition->updateTimeSteps();
-
-                int num_steps_before_next_write = output_partition->getNumStoredTimesteps();
-
-                std::vector<caf::actor> hrus_to_update = output_partition->getReadyToWriteList();
-                
-                for (int i = 0; i < hrus_to_update.size(); i++) {
-                    self->send(hrus_to_update[i], num_steps_before_write_v, num_steps_before_next_write);
-                    self->send(hrus_to_update[i], run_hru_v);
-                }
-            
-                output_partition->resetReadyToWriteList();
+                writeOutput(self, output_partition);
             }
 
             self->state.file_access_timing.updateEndPoint("write_duration");
@@ -193,35 +173,16 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
         },
 
         [=](run_failure, int local_gru_index) {
+            self->state.file_access_timing.updateStartPoint("write_duration");
+
             Output_Partition *output_partition = self->state.output_container->getOutputPartition(local_gru_index);
             
             output_partition->addFailedGRUIndex(local_gru_index);
 
-            int active_grus = output_partition->getNumActiveGRUs();
-
-            if (output_partition->isReadyToWrite() && active_grus > 0) {
-                int num_timesteps_to_write = output_partition->getNumStoredTimesteps();
-                int start_gru = output_partition->getMaxGRUIndex();
-                int max_gru = output_partition->getStartGRUIndex();
-                
-                writeOutput(self->state.handle_ncid, &num_timesteps_to_write,
-                    &start_gru, &max_gru, &self->state.err);
-                
-                output_partition->updateTimeSteps();
-
-                int num_steps_before_next_write = output_partition->getNumStoredTimesteps();
-
-                std::vector<caf::actor> hrus_to_update = output_partition->getReadyToWriteList();
-                
-                for (int i = 0; i < hrus_to_update.size(); i++) {
-                    self->send(hrus_to_update[i], num_steps_before_write_v, num_steps_before_next_write);
-                    self->send(hrus_to_update[i], run_hru_v);
-                }
-            
-                output_partition->resetReadyToWriteList();
-            
+            if (output_partition->isReadyToWrite()) {
+                writeOutput(self, output_partition);
             }
-          
+            self->state.file_access_timing.updateEndPoint("write_duration");
         },
 
 
@@ -263,7 +224,6 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
         self->state.handle_forcing_file_info, &self->state.numFiles, &err);
     if (err != 0) {
         aout(self) << "Error: ffile_info_C - File_Access_Actor \n";
-        std::string function = "ffile_info_C";
         self->send(self->state.parent, file_access_error::unhandleable_error, self);
         self->quit();
         return;
@@ -273,7 +233,6 @@ void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
     mDecisions_C(&self->state.num_steps, &err); 
     if (err != 0) {
         aout(self) << "ERROR: File_Access_Actor in mDecisions\n";
-        std::string function = "mDecisions";
         self->send(self->state.parent, file_access_error::unhandleable_error, self);
         self->quit();
         return;
@@ -453,6 +412,28 @@ void readParameters(stateful_actor<file_access_state>* self) {
     closeParamFile(&self->state.param_ncid, &err);
 }
 
+void writeOutput(stateful_actor<file_access_state>* self, Output_Partition* partition) {
+                
+    int num_timesteps_to_write = partition->getNumStoredTimesteps();
+    int start_gru = partition->getStartGRUIndex();
+    int max_gru = partition->getMaxGRUIndex();
+    
+    writeOutput_fortran(self->state.handle_ncid, &num_timesteps_to_write,
+        &start_gru, &max_gru, &self->state.err);
+    
+    partition->updateTimeSteps();
+
+    int num_steps_before_next_write = partition->getNumStoredTimesteps();
+
+    std::vector<caf::actor> hrus_to_update = partition->getReadyToWriteList();
+    
+    for (int i = 0; i < hrus_to_update.size(); i++) {
+        self->send(hrus_to_update[i], num_steps_before_write_v, num_steps_before_next_write);
+        self->send(hrus_to_update[i], run_hru_v);
+    }
+
+    partition->resetReadyToWriteList();
+}
 
 void readInitConditions(stateful_actor<file_access_state>* self) {
     int err;
