@@ -131,27 +131,25 @@ void check_settings_from_json(Distributed_Settings &distributed_settings,
     Summa_Actor_Settings &summa_actor_settings, File_Access_Actor_Settings &file_access_actor_settings, 
     Job_Actor_Settings &job_actor_settings, HRU_Actor_Settings &hru_actor_settings) {
 
-    std::cout << "************ DISTRIBUTED_SETTINGS ************\n";
-    std::cout << distributed_settings.distributed_mode << "\n";
+    std::cout << "************ DISTRIBUTED_SETTINGS ************\n"
+              << distributed_settings.distributed_mode << "\n";
     for (auto& host : distributed_settings.servers_list) {
         std::cout << host << "\n";
     }
-    std::cout << distributed_settings.port << "\n";
-    std::cout << distributed_settings.total_hru_count << "\n";
-    std::cout << distributed_settings.num_hru_per_batch << "\n";
-
-    std::cout << "************ SUMMA_ACTOR_SETTINGS ************\n";
-    std::cout << summa_actor_settings.max_gru_per_job << "\n\n\n";
-
-    std::cout << "************ FILE_ACCESS_ACTOR_SETTINGS ************\n";
-    std::cout << file_access_actor_settings.num_partitions_in_output_buffer << "\n";
-    std::cout << file_access_actor_settings.num_timesteps_in_output_buffer << "\n\n\n";
-
-    std::cout << "************ JOB_ACTOR_SETTINGS ************\n";
-    std::cout << job_actor_settings.file_manager_path << "\n";
-
-    std::cout << "************ HRU_ACTOR_SETTINGS ************\n";
-    std::cout << hru_actor_settings.print_output << "\n";
-    std::cout << hru_actor_settings.output_frequency << "\n\n\n"; 
+    std::cout << distributed_settings.port << "\n"
+              << distributed_settings.total_hru_count << "\n"
+              << distributed_settings.num_hru_per_batch << "\n"
+              << "************ SUMMA_ACTOR_SETTINGS ************\n"
+              << summa_actor_settings.max_gru_per_job << "\n\n\n"
+              << "************ FILE_ACCESS_ACTOR_SETTINGS ************\n"
+              << file_access_actor_settings.num_partitions_in_output_buffer << "\n"
+              << file_access_actor_settings.num_timesteps_in_output_buffer << "\n\n\n"
+              << "************ JOB_ACTOR_SETTINGS ************\n"
+              << job_actor_settings.file_manager_path << "\n"
+              << "************ HRU_ACTOR_SETTINGS ************\n"
+              << hru_actor_settings.print_output << "\n"
+              << hru_actor_settings.output_frequency << "\n"
+              << "rel_tol: " << hru_actor_settings.rel_tol << "\n"
+              << "abs_tol: " << hru_actor_settings.abs_tol << "\n\n\n"; 
 
 }
