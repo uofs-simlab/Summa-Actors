@@ -18,8 +18,7 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-module ffile_info_module
-USE, intrinsic :: iso_c_binding
+module ffile_info_actors_module
 USE nrtype
 USE netcdf
 USE data_types
@@ -38,7 +37,7 @@ contains
  ! ************************************************************************************************
  ! public subroutine ffile_info: read information on model forcing files
  ! ************************************************************************************************
-subroutine ffile_info(indxGRU,handle_forcFileInfo,num_forcing_files,err) bind(C, name='ffile_info')
+subroutine ffile_info(indxGRU,forcFileInfo,num_forcing_files,err,message)
   ! used to read metadata on the forcing data file
   USE ascii_util_module,only:file_open
   USE ascii_util_module,only:linewidth
@@ -61,42 +60,41 @@ subroutine ffile_info(indxGRU,handle_forcFileInfo,num_forcing_files,err) bind(C,
 
   implicit none
   ! define input & output
-  integer(c_int),intent(in)            :: indxGRU          
-  type(c_ptr), intent(in), value       :: handle_forcFileInfo
-  integer(c_int),intent(out)           :: num_forcing_files
-  integer(c_int),intent(out)           :: err              ! error code
+  integer(i4b),intent(in)                  :: indxGRU          
+  type(file_info_array),pointer,intent(in) :: forcFileInfo
+  integer(i4b),intent(out)                 :: num_forcing_files
+  integer(i4b),intent(out)                 :: err              ! error code
+  character(*),intent(inout)               :: message          ! error message
   ! define local variables
-  type(file_info_array),pointer        :: forcFileInfo
+
   ! netcdf file i/o related
-  integer(i4b)                         :: ncid             ! netcdf file id
-  integer(i4b)                         :: mode             ! netCDF file open mode
-  integer(i4b)                         :: dimId            ! netcdf dimension id
-  character(LEN=nf90_max_name)         :: varName          ! character array of netcdf variable name
-  integer(i4b)                         :: iNC              ! index of a variable in netcdf file
-  integer(i4b)                         :: nvar             ! number of variables in netcdf local attribute file
+  integer(i4b)                             :: ncid             ! netcdf file id
+  integer(i4b)                             :: mode             ! netCDF file open mode
+  integer(i4b)                             :: dimId            ! netcdf dimension id
+  character(LEN=nf90_max_name)             :: varName          ! character array of netcdf variable name
+  integer(i4b)                             :: iNC              ! index of a variable in netcdf file
+  integer(i4b)                             :: nvar             ! number of variables in netcdf local attribute file
   ! the rest
-  character(LEN=linewidth),allocatable :: dataLines(:)     ! vector of lines of information (non-comment lines)
-  character(len=256)                   :: message         ! error message for downwind routine
-  character(len=256)                   :: cmessage         ! error message for downwind routine
-  character(LEN=256)                   :: infile           ! input filename
-  integer(i4b)                         :: unt              ! file unit (free unit output from file_open)
-  integer(i4b)                         :: ivar             ! index of model variable
-  integer(i4b)                         :: iFile            ! counter for forcing files
-  integer(i4b)                         :: nFile            ! number of forcing files in forcing file list
-  integer(i4b)                         :: totalFiles       ! total number of forcing files defiend in the forcing file list
-  integer(i4b)                         :: startIndx        ! total number of forcing files defiend in the forcing file list
-  integer(i4b)                         :: file_nHRU        ! number of HRUs in current forcing file
-  integer(i4b)                         :: nForcing         ! number of forcing variables
-  real(dp)                             :: dataStep_iFile   ! data step for a given forcing data file
-  logical(lgt)                         :: xist             ! .TRUE. if the file exists
+  character(LEN=linewidth),allocatable     :: dataLines(:)     ! vector of lines of information (non-comment lines)
+  character(len=256)                       :: cmessage         ! error message for downwind routine
+  character(LEN=256)                       :: infile           ! input filename
+  integer(i4b)                             :: unt              ! file unit (free unit output from file_open)
+  integer(i4b)                             :: ivar             ! index of model variable
+  integer(i4b)                             :: iFile            ! counter for forcing files
+  integer(i4b)                             :: nFile            ! number of forcing files in forcing file list
+  integer(i4b)                             :: totalFiles       ! total number of forcing files defiend in the forcing file list
+  integer(i4b)                             :: startIndx        ! total number of forcing files defiend in the forcing file list
+  integer(i4b)                             :: file_nHRU        ! number of HRUs in current forcing file
+  integer(i4b)                             :: nForcing         ! number of forcing variables
+  real(dp)                                 :: dataStep_iFile   ! data step for a given forcing data file
+  logical(lgt)                             :: xist             ! .TRUE. if the file exists
   ! Time Variables
-  type(var_i)                          :: startTime
-  type(var_i)                          :: forcingStart
-  type(var_i)                          :: finishTime
-  real(rkind)                          :: dsec,dsec_tz
-  integer(i4b)                         :: ffinfo_index
+  type(var_i)                              :: startTime
+  type(var_i)                              :: forcingStart
+  type(var_i)                              :: finishTime
+  real(rkind)                              :: dsec,dsec_tz
+  integer(i4b)                             :: ffinfo_index
   
-  call c_f_pointer(handle_forcFileInfo, forcFileInfo)
   ! Start procedure here
   err=0; message="ffile_info/"
   ! ------------------------------------------------------------------------------------------------------------------
@@ -369,7 +367,7 @@ subroutine setHRUID(ncid,indxGRU,varName,inFile,err,message)
   USE netCDF
   implicit none
   integer(i4b),intent(in)                           :: ncid
-  integer(c_int),intent(in)                         :: indxGRU
+  integer(i4b),intent(in)                           :: indxGRU
   character(*),intent(in)                           :: varName
   character(*),intent(in)                           :: inFile       ! file that populated dataLines
   integer(i4b),intent(out)                          :: err
@@ -399,4 +397,4 @@ subroutine setHRUID(ncid,indxGRU,varName,inFile,err,message)
 
 end subroutine
 
-end module ffile_info_module
+end module ffile_info_actors_module

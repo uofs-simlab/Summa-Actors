@@ -10,73 +10,92 @@ module cppwrap_fileAccess
 
 
   implicit none
-  public::mDecisions_C
-  public::read_pinit_C
-  public::read_vegitationTables
+  public::fileAccessActor_init_fortran
   public::FileAccessActor_DeallocateStructures
-  public::initFailedHRUTracker
   
   contains
 
-subroutine mDecisions_C(num_steps, err) bind(C, name='mDecisions_C')
+! Call the fortran routines that read data in and are associtated with the forcing structure
+subroutine fileAccessActor_init_fortran(& ! Variables for forcing
+                                        handle_forcFileInfo,&
+                                        num_forcing_files,&
+                                        num_timesteps,&
+                                        num_timesteps_output_buffer,&
+                                        ! Variables for output
+                                        handle_output_ncid,&
+                                        start_gru,&  
+                                        num_gru,&
+                                        num_hru,&
+                                        actor_stats,&
+                                        err) bind(C, name="fileAccessActor_init_fortran")
+  USE ffile_info_actors_module,only:ffile_info
   USE mDecisions_module,only:mDecisions                       ! module to read model decisions
-  
-  ! Read in number of Time Steps after the call to mDecisions
-  USE globalData,only:numtim                 ! number of time steps in the simulation
+  USE read_pinit_module,only:read_pinit                       ! module to read initial model parameter values
+  USE SummaActors_setup,only:SOIL_VEG_GEN_PARM
+  USE module_sf_noahmplsm,only:read_mp_veg_parameters         ! module to read NOAH vegetation tables
+  USE def_output_actors_module,only:def_output                ! module to define output variables
+  USE output_structure_module,only:initOutputStructure        ! module to initialize output structure
+  USE output_structure_module,only:initOutputTimeStep         ! module to initialize output timestep structure (tracks GRUs timestep for output)
 
-  implicit none
-  integer(c_int),intent(out)        :: num_steps
-  integer(c_int),intent(out)        :: err                ! error code
-  character(len=256)                :: message            ! error message
-
-  call mDecisions(err,message)
-  if(err/=0)then; print*,message; return; endif
-
-  num_steps = numtim
-end subroutine mDecisions_C
-
-
-! Read in the inital parameters, from the txt files that are give to summa as input LocalParamInfo.txt BasinParamInfo.txt
-subroutine read_pinit_C(err) bind(C, name='read_pinit_C')
   USE globalData,only:localParFallback                        ! local column default parameters
   USE globalData,only:basinParFallback                        ! basin-average default parameters
   USE summaFileManager,only:LOCALPARAM_INFO,BASINPARAM_INFO   ! files defining the default values and constraints for model parameters
   USE globalData,only:mpar_meta,bpar_meta                     ! parameter metadata structures
-  USE read_pinit_module,only:read_pinit                       ! module to read initial model parameter values
-
-  
-  implicit none
-  integer(c_int),intent(inout)        :: err                ! Error Code
-
-  character(LEN=256)                  :: message           ! error message of downwind routine
-  character(LEN=256)                  :: cmessage           ! error message of downwind routine
-
-
- ! *****************************************************************************
- ! *** read default model parameters
- ! *****************************************************************************
-
- ! read default values and constraints for model parameters (local column)
- call read_pinit(LOCALPARAM_INFO,.TRUE., mpar_meta,localParFallback,err,cmessage)
- if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
-
- ! read default values and constraints for model parameters (basin-average)
- call read_pinit(BASINPARAM_INFO,.FALSE.,bpar_meta,basinParFallback,err,cmessage)
- if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
-end subroutine read_pinit_C
-
-subroutine read_vegitationTables(err) bind(C, name="read_vegitationTables")
-  USE SummaActors_setup,only:SOIL_VEG_GEN_PARM
-  USE module_sf_noahmplsm,only:read_mp_veg_parameters         ! module to read NOAH vegetation tables
   USE summaFileManager,only:SETTINGS_PATH                     ! define path to settings files (e.g., parameters, soil and veg. tables)
   USE summaFileManager,only:GENPARM,VEGPARM,SOILPARM,MPTABLE  ! files defining the noah tables
   USE globalData,only:model_decisions                         ! model decision structure
   USE var_lookup,only:iLookDECISIONS                          ! look-up values for model decisions
 
+  USE globalData,only:failedHRUs                              ! Flag for file access actor to know which GRUs have failed
+
+
+  USE globalData,only:numtim                 ! number of time steps in the simulation
+
   implicit none
+
+  type(c_ptr), intent(in), value         :: handle_forcFileInfo
+  integer(c_int),intent(out)             :: num_forcing_files
+  integer(c_int),intent(out)             :: num_timesteps
+  integer(c_int),intent(in)              :: num_timesteps_output_buffer
+  type(c_ptr),intent(in), value          :: handle_output_ncid
+  integer(c_int),intent(out)             :: start_gru
+  integer(c_int),intent(out)             :: num_gru
+  integer(c_int),intent(out)             :: num_hru
+  type(netcdf_gru_actor_info),intent(out):: actor_stats        ! netcdf actor information 
+  integer(c_int),intent(out)             :: err
+
+
+  ! local Variables
+  type(file_info_array),pointer          :: forcFileInfo
+  type(var_i),pointer                    :: output_ncid                        ! id of output file
+  integer(i4b)                           :: indxGRU=1
+  character(len=256)                     :: message         ! error message for downwind routine
+
+  err=0; message="fileAccessActor_init_fortran/"
+
+  call c_f_pointer(handle_forcFileInfo, forcFileInfo)
+  call c_f_pointer(handle_output_ncid, output_ncid)
+
+  ! Get the initial forcing file information
+  call ffile_info(indxGRU, forcFileInfo, num_forcing_files, err, message)
+  if(err/=0)then; print*, trim(message); return; endif
+
+  ! Get and save the model decisions as integers
+  call mDecisions(err,message)
+  if(err/=0)then; print*,trim(message); return; endif
+  num_timesteps = numtim
+
+  ! *****************************************************************************
+  ! *** read default model parameters
+  ! *****************************************************************************
+  ! read default values and constraints for model parameters (local column)
+  call read_pinit(LOCALPARAM_INFO,.TRUE., mpar_meta,localParFallback,err,message)
+  if(err/=0)then; print*,trim(message); return; endif
+
+  ! read default values and constraints for model parameters (basin-average)
+  call read_pinit(BASINPARAM_INFO,.FALSE.,bpar_meta,basinParFallback,err,message)
+  if(err/=0)then; print*,trim(message); return; endif
   
-  integer(c_int),intent(inout)              :: err                        ! Error Code
-  err = 0
 
  ! read Noah soil and vegetation tables
   call soil_veg_gen_parm(trim(SETTINGS_PATH)//trim(VEGPARM),      & ! filename for vegetation table
@@ -84,26 +103,42 @@ subroutine read_vegitationTables(err) bind(C, name="read_vegitationTables")
       trim(SETTINGS_PATH)//trim(GENPARM),                         & ! filename for general table
       trim(model_decisions(iLookDECISIONS%vegeParTbl)%cDecision), & ! classification system used for vegetation
       trim(model_decisions(iLookDECISIONS%soilCatTbl)%cDecision))   ! classification system used for soils
+  if(err/=0)then; print*,trim(message); return; endif
 
   ! read Noah-MP vegetation tables
   call read_mp_veg_parameters(trim(SETTINGS_PATH)//trim(MPTABLE),                       & ! filename for Noah-MP table
        trim(model_decisions(iLookDECISIONS%vegeParTbl)%cDecision)) ! classification system used for vegetation
-  
-end subroutine
+  if(err/=0)then; print*,trim(message); return; endif
 
-! allocate the failedHRU logical array and intialize it with all false values
-subroutine initFailedHRUTracker(numGRU) bind(C, name="initFailedHRUTracker")
-  USE globalData,only:failedHRUs
-  implicit none
-  integer(c_int), intent(in)        :: numGRU
-
+  ! *****************************************************************************
+  ! *** Initalize failed HRU tracker
+  ! *****************************************************************************
   if (allocated(failedHRUs))then; deallocate(failedHRUs); endif;
-  allocate(failedHRUs(numGRU))
-
+  allocate(failedHRUs(num_gru), stat=err)
+  if(err/=0)then; print*,trim(message); return; endif
   failedHRUs(:) = .false.
 
+  ! *****************************************************************************
+  ! *** Define Output Files
+  ! *****************************************************************************
+  call def_output(output_ncid,start_gru,num_gru,num_hru,actor_stats,err,message)
+  if(err/=0)then; print*,trim(message); return; endif
 
-end subroutine
+  ! *****************************************************************************
+  ! *** Initialize output structure
+  ! *****************************************************************************
+  call initOutputStructure(forcFileInfo, num_timesteps_output_buffer, num_gru, err)
+  if(err/=0)then; print*,trim(message); return; endif
+
+  ! *****************************************************************************
+  ! *** Initialize output time step
+  ! *****************************************************************************
+  call initOutputTimeStep(num_gru, err)
+  if(err/=0)then; print*,trim(message); return; endif
+
+end subroutine fileAccessActor_init_fortran
+
+
 
 subroutine updateFailed(indxHRU) bind(C, name="updateFailed")
   USE globalData,only:failedHRUs

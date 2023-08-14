@@ -18,9 +18,8 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-module def_output_module
+module def_output_actors_module
 
-USE, intrinsic :: iso_c_binding
 USE data_types,only:var_i,netcdf_gru_actor_info
 USE netcdf
 USE netcdf_util_module,only:netcdf_err        ! netcdf error handling function
@@ -72,7 +71,7 @@ contains
  ! **********************************************************************************************************
  ! public subroutine def_output: define model output file
  ! **********************************************************************************************************
-subroutine def_output(handle_ncid,startGRU,nGRU,nHRU,actor_info,err) bind(C, name='def_output')
+subroutine def_output(ncid,startGRU,nGRU,nHRU,actor_info,err,message)
   USE globalData,only:structInfo                               ! information on the data structures
   USE globalData,only:forc_meta,attr_meta,type_meta            ! metaData structures
   USE globalData,only:prog_meta,diag_meta,flux_meta,deriv_meta ! metaData structures
@@ -93,22 +92,19 @@ subroutine def_output(handle_ncid,startGRU,nGRU,nHRU,actor_info,err) bind(C, nam
   USE globalData,only:outputTimeStep              ! output time step
 
   ! ---------------------------------------------------------------------------------------
-  ! * variables from C++
+  ! * Dummy Variables
   ! ---------------------------------------------------------------------------------------
-  type(c_ptr),intent(in), value          :: handle_ncid       ! ncid of the output file
-  integer(c_int),intent(in)              :: startGRU          ! startGRU for the entire job (for file creation)
-  integer(c_int),intent(in)              :: nGRU              ! number of GRUs
-  integer(c_int),intent(in)              :: nHRU              ! number of HRUs
+  type(var_i),pointer                    :: ncid              ! id of output file
+  integer(i4b),intent(in)                :: startGRU          ! startGRU for the entire job (for file creation)
+  integer(i4b),intent(in)                :: nGRU              ! number of GRUs
+  integer(i4b),intent(in)                :: nHRU              ! number of HRUs
   type(netcdf_gru_actor_info),intent(out):: actor_info        ! netcdf actor information 
-  integer(c_int),intent(out)             :: err               ! error code
-  ! ---------------------------------------------------------------------------------------
-  ! * Fortran Variables For Conversion
-  ! ---------------------------------------------------------------------------------------
-  type(var_i),pointer                  :: ncid                        ! id of output file
+  character(*),intent(out)               :: message           ! error message
+  integer(i4b),intent(out)               :: err               ! error code
+
   ! ---------------------------------------------------------------------------------------
   ! * Local Subroutine Variables
   ! ---------------------------------------------------------------------------------------
-  character(len=256)                   :: message                       ! error message
   integer(i4b)                         :: ivar                          ! loop through model decisions
   integer(i4b)                         :: iFreq                         ! loop through output frequencies
   integer(i4b)                         :: iStruct                       ! loop through structure types
@@ -117,10 +113,6 @@ subroutine def_output(handle_ncid,startGRU,nGRU,nHRU,actor_info,err) bind(C, nam
   integer(i4b)                         :: iGRU
   character(LEN=256)                   :: startGRUString    ! String Variable to convert startGRU
   character(LEN=256)                   :: numGRUString      ! String Varaible to convert numGRU
-  ! ---------------------------------------------------------------------------------------
-  ! * Convert From C++ to Fortran
-  ! ---------------------------------------------------------------------------------------
-  call c_f_pointer(handle_ncid, ncid)
 
 
   ! initialize errors
@@ -543,4 +535,4 @@ subroutine ini_create(nGRU,nHRU,nSoil,infile,ncid,err,message)
 
  end subroutine
 
-end module def_output_module
+end module def_output_actors_module

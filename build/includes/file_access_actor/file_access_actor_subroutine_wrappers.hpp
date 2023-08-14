@@ -3,19 +3,22 @@
 
 extern "C" {
   // initalizeFileAccessActor
-  void ffile_info(int* indxGRU, void* forcFileInfo, int* numFiles, int* err);
-  void mDecisions_C(int* numSteps, int* err);
-  void read_pinit_C(int* err);
-  void read_vegitationTables(int* err);
-  void initFailedHRUTracker(int* numGRU);
-  void def_output(void* handle_ncid, int* startGRU, int* numGRU, int* numHRU, 
-       netcdf_gru_actor_info* actor_info, int* err);
+  void fileAccessActor_init_fortran(void* handle_forcing_file_info, 
+                               int* num_forcing_files, 
+                               int* num_timesteps,
+                               int* num_timesteps_output_buffer,
+                               void* handle_output_ncid, 
+                               int* startGRU,
+                               int* numGRU, 
+                               int* numHRU,
+                               netcdf_gru_actor_info* actor_info,
+                               int* err);
 
   // OutputStructure and Output functions
-  void initOutputStructure(void* handle_forcFileInfo, int* max_steps, int* numGRU, int* err);
+  // void initOutputStructure(void* handle_forcFileInfo, int* max_steps, int* numGRU, int* err);
   void deallocateOutputStructure(int* err);
   void writeOutput_fortran(void* handle_ncid, int* num_steps, int* start_gru, int* max_gru, int* err);
-  void initOutputTimeStep(int* num_gru, int* err);
+  // void initOutputTimeStep(int* num_gru, int* err);
 
   // Attributes Files- called inside initalizeFileAccessActor
   void allocateAttributeStructures(int* index_gru, int* index_hru, void* handle_attr_struct, 

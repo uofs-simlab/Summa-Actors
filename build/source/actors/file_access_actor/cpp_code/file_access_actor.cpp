@@ -30,7 +30,40 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
 
     self->state.num_output_steps = self->state.file_access_actor_settings.num_timesteps_in_output_buffer;
 
-    initalizeFileAccessActor(self);
+
+    fileAccessActor_init_fortran(self->state.handle_forcing_file_info, 
+                                 &self->state.numFiles,
+                                 &self->state.num_steps,
+                                 &self->state.file_access_actor_settings.num_timesteps_in_output_buffer, 
+                                 self->state.handle_ncid,
+                                 &self->state.start_gru, 
+                                 &self->state.num_gru, 
+                                 &self->state.num_gru, // Filler for num_hrus
+                                 &self->state.gru_actor_stats,
+                                 &self->state.err);
+
+    aout(self) << "Simluations Steps: " << self->state.num_steps << "\n";
+
+    // Read in the attribute and parameter information for the HRUs to request
+    readAttributes(self);
+    readParameters(self);
+
+    // read in the inital conditions for the grus/hrus
+    readInitConditions(self);
+    
+    // Inital Files Have Been Loaded - Send Message to Job_Actor to Start Simulation
+    self->send(self->state.parent, init_gru_v);
+    // initalize the forcingFile array
+    self->state.filesLoaded = 0;
+    for (int i = 1; i <= self->state.numFiles; i++) {
+        self->state.forcing_file_list.push_back(Forcing_File_Info(i));
+    }
+
+    // Check that the number of timesteps in the output buffer is not greater than the number of timesteps in the simulation
+    if (self->state.num_steps < self->state.file_access_actor_settings.num_timesteps_in_output_buffer) {
+        self->state.num_output_steps = self->state.num_steps;
+        self->state.file_access_actor_settings.num_timesteps_in_output_buffer = self->state.num_steps;
+    }
 
     // Set up the output container
     self->state.output_container = new Output_Container(
@@ -214,96 +247,6 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
     };
 }
 
-
-void initalizeFileAccessActor(stateful_actor<file_access_state>* self) {
-    int indx = 1;
-    int err = 0;
-    
-    // read information on model forcing files
-    ffile_info(&indx, 
-        self->state.handle_forcing_file_info, &self->state.numFiles, &err);
-    if (err != 0) {
-        aout(self) << "Error: ffile_info_C - File_Access_Actor \n";
-        self->send(self->state.parent, file_access_error::unhandleable_error, self);
-        self->quit();
-        return;
-    }
-
-    // save model decisions as named integers
-    mDecisions_C(&self->state.num_steps, &err); 
-    if (err != 0) {
-        aout(self) << "ERROR: File_Access_Actor in mDecisions\n";
-        self->send(self->state.parent, file_access_error::unhandleable_error, self);
-        self->quit();
-        return;
-    }
-    aout(self) << "Simluations Steps: " << self->state.num_steps << "\n";
-    // Check that the number of timesteps in the output buffer is not greater than the number of timesteps in the simulation
-    if (self->state.num_steps < self->state.file_access_actor_settings.num_timesteps_in_output_buffer) {
-        self->state.num_output_steps = self->state.num_steps;
-        self->state.file_access_actor_settings.num_timesteps_in_output_buffer = self->state.num_steps;
-    }
-
-    read_pinit_C(&err);
-    if (err != 0) {
-        aout(self) << "ERROR: read_pinit_C\n";
-        self->send(self->state.parent, file_access_error::unhandleable_error, self);
-        self->quit();
-        return;
-    }
-    
-    read_vegitationTables(&err);
-    if (err != 0) {
-        aout(self) << "ERROR: read_vegitationTables\n";
-        self->send(self->state.parent, file_access_error::unhandleable_error, self);
-        self->quit();
-        return;
-    }
-
-    initFailedHRUTracker(&self->state.num_gru);
-
-    def_output(self->state.handle_ncid, &self->state.start_gru, &self->state.num_gru, 
-               &self->state.num_gru, &self->state.gru_actor_stats, &err);
-    if (err != 0) {
-        aout(self) << "ERROR: Create_OutputFile\n";
-        self->send(self->state.parent, file_access_error::unhandleable_error, self);
-        self->quit();
-        return;
-    }
-
-    initOutputStructure(self->state.handle_forcing_file_info, 
-                        &self->state.file_access_actor_settings.num_timesteps_in_output_buffer, 
-                        &self->state.num_gru, &self->state.err);
-    if (self->state.err != 0) {
-        aout(self) << "ERROR: Init_OutputStruct\n";
-        self->send(self->state.parent, file_access_error::unhandleable_error, self);
-        self->quit();
-        return;
-    }
-
-    initOutputTimeStep(&self->state.num_gru, &self->state.err);
-    if (self->state.err != 0) {
-        aout(self) << "ERROR: Init_OutputTimeStep\n";
-        self->send(self->state.parent, file_access_error::unhandleable_error, self);
-        self->quit();
-        return;
-    }
-
-    // Read in the attribute and parameter information for the HRUs to request
-    readAttributes(self);
-    readParameters(self);
-
-    // read in the inital conditions for the grus/hrus
-    readInitConditions(self);
-    
-    // Inital Files Have Been Loaded - Send Message to Job_Actor to Start Simulation
-    self->send(self->state.parent, init_gru_v);
-    // initalize the forcingFile array
-    self->state.filesLoaded = 0;
-    for (int i = 1; i <= self->state.numFiles; i++) {
-        self->state.forcing_file_list.push_back(Forcing_File_Info(i));
-    }
-}
 
 void readAttributes(stateful_actor<file_access_state>* self) {
 

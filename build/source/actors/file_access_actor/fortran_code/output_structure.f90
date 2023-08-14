@@ -99,12 +99,12 @@ module output_structure_module
   
   contains
 
-subroutine initOutputTimeStep(num_gru, err) bind(C, name="initOutputTimeStep") 
+subroutine initOutputTimeStep(num_gru, err)
   USE globalData,only:outputTimeStep
   USE var_lookup,only:maxvarFreq                ! maximum number of output files
   implicit none
-  integer(c_int), intent(in)  :: num_gru
-  integer(c_int), intent(out) :: err
+  integer(i4b), intent(in)  :: num_gru
+  integer(i4b), intent(out) :: err
   ! local variables
   integer(i4b)                :: iGRU
 
@@ -119,7 +119,7 @@ subroutine initOutputTimeStep(num_gru, err) bind(C, name="initOutputTimeStep")
 
 end subroutine initOutputTimeStep
 
-subroutine initOutputStructure(handle_forcFileInfo, maxSteps, num_gru, err) bind(C, name="initOutputStructure")
+subroutine initOutputStructure(forcFileInfo, maxSteps, num_gru, err)
   USE globalData,only:time_meta,forc_meta,attr_meta,type_meta ! metadata structures
   USE globalData,only:prog_meta,diag_meta,flux_meta,id_meta   ! metadata structures
   USE globalData,only:mpar_meta,indx_meta                     ! metadata structures
@@ -137,13 +137,12 @@ subroutine initOutputStructure(handle_forcFileInfo, maxSteps, num_gru, err) bind
   USE var_lookup,only:maxvarFreq                ! maximum number of output files
   
   implicit none
-  type(c_ptr), intent(in), value        :: handle_forcFileInfo
-  integer(c_int), intent(in)            :: maxSteps
-  integer(c_int), intent(in)            :: num_gru
-  integer(c_int), intent(out)           :: err 
+  type(file_info_array),intent(in)      :: forcFileInfo
+  integer(i4b), intent(in)              :: maxSteps
+  integer(i4b), intent(in)              :: num_gru
+  integer(i4b), intent(out)             :: err 
 
   ! local variables
-  type(file_info_array), pointer        :: forcFileInfo
 
   integer(i4b)                          :: nVars
   integer(i4b)                          :: iGRU
@@ -155,7 +154,6 @@ subroutine initOutputStructure(handle_forcFileInfo, maxSteps, num_gru, err) bind
   character(len=256)                    :: message
   integer(i4b)                          :: num_hru
 
-  call c_f_pointer(handle_forcFileInfo, forcFileInfo)
 
   ! Allocate structure to hold output files
   if (.not.allocated(outputStructure))then
