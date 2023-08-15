@@ -282,11 +282,22 @@ void Initialize_HRU(stateful_actor<hru_state>* self) {
         return;
     }
 
-
     // Set HRU Tolerances
     setIDATolerances(self->state.handle_mparStruct, 
-                     &self->state.hru_actor_settings.rel_tol, 
-                     &self->state.hru_actor_settings.abs_tol);
+                     &self->state.hru_actor_settings.relTolTempCas,
+                     &self->state.hru_actor_settings.absTolTempCas,
+                     &self->state.hru_actor_settings.relTolTempVeg,
+                     &self->state.hru_actor_settings.absTolTempVeg,
+                     &self->state.hru_actor_settings.relTolWatVeg,
+                     &self->state.hru_actor_settings.absTolWatVeg,
+                     &self->state.hru_actor_settings.relTolTempSoilSnow,
+                     &self->state.hru_actor_settings.absTolTempSoilSnow,
+                     &self->state.hru_actor_settings.relTolWatSnow,
+                     &self->state.hru_actor_settings.absTolWatSnow,
+                     &self->state.hru_actor_settings.relTolMatric,
+                     &self->state.hru_actor_settings.absTolMatric,
+                     &self->state.hru_actor_settings.relTolAquifr,
+                     &self->state.hru_actor_settings.absTolAquifr);
             
 }
 

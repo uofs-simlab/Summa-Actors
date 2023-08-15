@@ -88,6 +88,20 @@ extern "C" {
       void computeTimeForcingHRU(void* handle_timeStruct, void* handle_forcStruct, double* fracJulDay, 
                               int* yearLength, int* err);
 
-      void setIDATolerances(void* handle_mparStruct, double* relTol, double* absTol);
+      void setIDATolerances(void* handle_mparStruct, 
+                            double* relTolTempCas,
+                            double* absTolTempCas,
+                            double* relTolTempVeg,
+                            double* absTolTempVeg,
+                            double* relTolWatVeg,
+                            double* absTolWatVeg,
+                            double* relTolTempSoilSnow,
+                            double* absTolTempSoilSnow,
+                            double* relTolWatSnow,
+                            double* absTolWatSnow,
+                            double* relTolMatric,
+                            double* absTolMatric,
+                            double* relTolAquifr,
+                            double* absTolAquifr);
 
 }

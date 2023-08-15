@@ -92,7 +92,6 @@ subroutine setupHRUParam(&
   ! subroutines and functions
   use time_utils_module,only:elapsedSec                       ! calculate the elapsed time
   USE mDecisions_module,only:mDecisions                       ! module to read model decisions
-  USE ffile_info_module,only:ffile_info                       ! module to read information on forcing datafile
   ! USE read_attrb_module,only:read_attrb               ! module to read local attributes
   USE paramCheck_module,only:paramCheck                       ! module to check consistency of model parameters
   USE pOverwrite_module,only:pOverwrite                       ! module to overwrite default parameter values with info from the Noah tables

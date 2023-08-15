@@ -116,11 +116,76 @@ HRU_Actor_Settings readHRUActorSettings(std::string json_settings_file) {
     hru_actor_settings.dt_init_factor = getSettings(json_settings_file, parent_key,
         "dt_init_factor", hru_actor_settings.dt_init_factor).value_or(1);
 
+
+    /*
+    Set Tolerances
+    ---------------
+    We can use rel_tol and abs_tol to set the tolerances for all the state variables.
+    If we set rel_tol and abs_tol in the config.json file then we just don't include 
+    the other tolerance values and they will be set to the value of rtol and atol.
+    */
     hru_actor_settings.rel_tol = getSettings(json_settings_file, parent_key,
-        "rel_tol", hru_actor_settings.rel_tol).value_or(1e-6);
+        "rel_tol", hru_actor_settings.rel_tol).value_or(-9999);
 
     hru_actor_settings.abs_tol = getSettings(json_settings_file, parent_key,
-        "abs_tol", hru_actor_settings.abs_tol).value_or(1e-6);
+        "abs_tol", hru_actor_settings.abs_tol).value_or(-9999);
+
+    double local_rtol;
+    double local_atol;
+
+    if (hru_actor_settings.rel_tol > 0) {
+        local_rtol = hru_actor_settings.rel_tol;
+    } else {
+        local_rtol = 1e-6;
+    }
+
+    if (hru_actor_settings.abs_tol > 0) {
+        local_atol = hru_actor_settings.abs_tol;
+    } else {
+        local_atol = 1e-6;
+    }
+
+    hru_actor_settings.relTolTempCas = getSettings(json_settings_file, parent_key,
+        "relTolTempCas", hru_actor_settings.relTolTempCas).value_or(local_rtol);
+
+    hru_actor_settings.absTolTempCas = getSettings(json_settings_file, parent_key,
+        "absTolTempCas", hru_actor_settings.absTolTempCas).value_or(local_atol);
+
+    hru_actor_settings.relTolTempVeg = getSettings(json_settings_file, parent_key,
+        "relTolTempVeg", hru_actor_settings.relTolTempVeg).value_or(local_rtol);
+
+    hru_actor_settings.absTolTempVeg = getSettings(json_settings_file, parent_key,
+        "absTolTempVeg", hru_actor_settings.absTolTempVeg).value_or(local_atol);
+
+    hru_actor_settings.relTolWatVeg = getSettings(json_settings_file, parent_key,
+        "relTolWatVeg", hru_actor_settings.relTolWatVeg).value_or(local_rtol);
+
+    hru_actor_settings.absTolWatVeg = getSettings(json_settings_file, parent_key,
+        "absTolWatVeg", hru_actor_settings.absTolWatVeg).value_or(local_atol);
+
+    hru_actor_settings.relTolTempSoilSnow = getSettings(json_settings_file, parent_key,
+        "relTolTempSoilSnow", hru_actor_settings.relTolTempSoilSnow).value_or(local_rtol);
+
+    hru_actor_settings.absTolTempSoilSnow = getSettings(json_settings_file, parent_key,
+        "absTolTempSoilSnow", hru_actor_settings.absTolTempSoilSnow).value_or(local_atol);
+
+    hru_actor_settings.relTolWatSnow = getSettings(json_settings_file, parent_key,
+        "relTolWatSnow", hru_actor_settings.relTolWatSnow).value_or(local_rtol);
+
+    hru_actor_settings.absTolWatSnow = getSettings(json_settings_file, parent_key,
+        "absTolWatSnow", hru_actor_settings.absTolWatSnow).value_or(local_atol);
+
+    hru_actor_settings.relTolMatric = getSettings(json_settings_file, parent_key,
+        "relTolMatric", hru_actor_settings.relTolMatric).value_or(local_rtol);
+
+    hru_actor_settings.absTolMatric = getSettings(json_settings_file, parent_key,
+        "absTolMatric", hru_actor_settings.absTolMatric).value_or(local_atol);
+
+    hru_actor_settings.relTolAquifr = getSettings(json_settings_file, parent_key,
+        "relTolAquifr", hru_actor_settings.relTolAquifr).value_or(local_rtol);
+
+    hru_actor_settings.absTolAquifr = getSettings(json_settings_file, parent_key,
+        "absTolAquifr", hru_actor_settings.absTolAquifr).value_or(local_atol);
 
     return hru_actor_settings;
 }
@@ -149,7 +214,21 @@ void check_settings_from_json(Distributed_Settings &distributed_settings,
               << "************ HRU_ACTOR_SETTINGS ************\n"
               << hru_actor_settings.print_output << "\n"
               << hru_actor_settings.output_frequency << "\n"
-              << "rel_tol: " << hru_actor_settings.rel_tol << "\n"
-              << "abs_tol: " << hru_actor_settings.abs_tol << "\n\n\n"; 
+              << "rel_tol: "            << hru_actor_settings.rel_tol << "\n"
+              << "abs_tol: "            << hru_actor_settings.abs_tol << "\n"
+              << "relTolTempCas: "      << hru_actor_settings.relTolTempCas << "\n"
+              << "absTolTempCas: "      << hru_actor_settings.absTolTempCas << "\n"
+              << "relTolTempVeg: "      << hru_actor_settings.relTolTempVeg << "\n"
+              << "absTolTempVeg: "      << hru_actor_settings.absTolTempVeg << "\n"
+              << "relTolWatVeg: "       << hru_actor_settings.relTolWatVeg << "\n"
+              << "absTolWatVeg: "       << hru_actor_settings.absTolWatVeg << "\n"
+              << "relTolTempSoilSnow: " << hru_actor_settings.relTolTempSoilSnow << "\n"
+              << "absTolTempSoilSnow: " << hru_actor_settings.absTolTempSoilSnow << "\n"
+              << "relTolWatSnow: "      << hru_actor_settings.relTolWatSnow << "\n"
+              << "absTolWatSnow: "      << hru_actor_settings.absTolWatSnow << "\n"
+              << "relTolMatric: "       << hru_actor_settings.relTolMatric << "\n"
+              << "absTolMatric: "       << hru_actor_settings.absTolMatric << "\n"
+              << "relTolAquifr: "       << hru_actor_settings.relTolAquifr << "\n"
+              << "absTolAquifr: "       << hru_actor_settings.absTolAquifr << "\n\n\n";
 
 }

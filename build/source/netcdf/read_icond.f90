@@ -264,7 +264,7 @@ subroutine read_icond(&
     endif
 
     ! make sure canopy water is positive
-    if(progData%var(iLookPROG%scalarCanopyliq)%dat(1) < 0.0001_rkind)then
+    if(progData%var(iLookPROG%scalarCanopyWat)%dat(1) < 0.0001_rkind)then
       progData%var(iLookPROG%scalarCanopyliq)%dat(1) = 0.0001_rkind
     endif
 
