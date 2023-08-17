@@ -25,7 +25,7 @@ extern "C" {
             // primary data structures (scalars)
             void* attrStruct, void* typeStruct, void* idStruct,
             // primary data structures (variable length vectors)
-            void* mparStruct, void* bparStruct, void* bvarStruct, void* dparStruct,
+            void* indexStruct, void* mparStruct, void* progStruct, void* bparStruct, void* bvarStruct, void* dparStruct,
             // lookup tables
             void* lookupStruct,
             // local HRU data

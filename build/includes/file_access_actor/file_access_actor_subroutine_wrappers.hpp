@@ -15,32 +15,8 @@ extern "C" {
                                int* err);
 
   // OutputStructure and Output functions
-  // void initOutputStructure(void* handle_forcFileInfo, int* max_steps, int* numGRU, int* err);
   void deallocateOutputStructure(int* err);
   void writeOutput_fortran(void* handle_ncid, int* num_steps, int* start_gru, int* max_gru, int* err);
-  // void initOutputTimeStep(int* num_gru, int* err);
-
-  // Attributes Files- called inside initalizeFileAccessActor
-  void allocateAttributeStructures(int* index_gru, int* index_hru, void* handle_attr_struct, 
-      void* handle_type_struct, void* handle_id_struct, int* err);
-  void openAttributeFile(int* att_ncid, int* err);
-  void getNumVarAttr(int* attr_ncid, int* num_var_attr, int* err);
-  void closeAttributeFile(int* attr_ncid, int* err);
-  void readAttributeFromNetCDF(int* attr_ncid, int* index_gru, int* index_hru, int* num_var,
-    void* attr_array, void* type_array, void* id_array, int* err);
-  
-  // Parameters File - called inside initalizeFileAccessActor
-  void allocateParamStructures(int* index_gru, int* index_hru, void* handle_dpar_struct,
-      void* handle_mpar_struct, void* handle_bpar_struct, int* err);
-  void openParamFile(int* param_ncid, bool* param_file_exists, int* err);
-  void getNumVarParam(int* param_ncid, int* num_var_param, int* err);
-  void closeParamFile(int* param_ncid, int* err);
-  void getParamSizes(int* dpar_array_size, int* bpar_array_size, int* type_array_size);
-  void overwriteParam(int* index_gru, int* index_hru,
-    void* handle_type_struct, void* handle_dpar_struct, void* handle_mpar_struct, 
-    void* handle_bpar_struct, int* err);
-  void readParamFromNetCDF(int* param_ncid, int* index_gru, int* index_hru, int* start_index_gru,
-    int* num_var_param, void* handle_mpar_struct, void* _handle_bpar_struct, int* err);
 
   // Set up global initial conditions
   void openInitCondFile(int* init_cond_ncid, int* err);

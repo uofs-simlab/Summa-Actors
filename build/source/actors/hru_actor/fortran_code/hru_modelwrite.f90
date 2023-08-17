@@ -116,17 +116,17 @@ subroutine writeParm(indxGRU,indxHRU,ispatial,struct,meta,structName,err,message
       select type (struct)
         class is (var_i)
         if (structName == "type")then
-          outputStructure(1)%typeStruct(1)%gru(indxGRU)%hru(indxHRU)%var(iVar) = struct%var(iVar)
+          outputStructure(1)%typeStruct%gru(indxGRU)%hru(indxHRU)%var(iVar) = struct%var(iVar)
         end if
         class is (var_i8)
         
         class is (var_d)
         if (structName == "attr")then
-          outputStructure(1)%attrStruct(1)%gru(indxGRU)%hru(indxHRU)%var(iVar) = struct%var(iVar)
+          outputStructure(1)%attrStruct%gru(indxGRU)%hru(indxHRU)%var(iVar) = struct%var(iVar)
         end if
         class is (var_dlength)
         if (structName == "mpar")then
-          outputStructure(1)%mparStruct(1)%gru(indxGRU)%hru(indxHRU)%var(iVar) = struct%var(iVar)
+          outputStructure(1)%mparStruct%gru(indxGRU)%hru(indxHRU)%var(iVar) = struct%var(iVar)
         end if
         
         class default; err=20; message=trim(message)//'unknown variable type (with HRU)'; return
@@ -138,7 +138,7 @@ subroutine writeParm(indxGRU,indxHRU,ispatial,struct,meta,structName,err,message
       select type (struct)
         class is (var_d)
         if (structName == "bpar")then
-          outputStructure(1)%bparStruct(1)%gru(indxGRU)%var(iVar) = struct%var(iVar) ! this will overwrite data
+          outputStructure(1)%bparStruct%gru(indxGRU)%var(iVar) = struct%var(iVar) ! this will overwrite data
           print*, "bpar"
         end if
         class is (var_i8)
