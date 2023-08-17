@@ -45,8 +45,8 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
     aout(self) << "Simluations Steps: " << self->state.num_steps << "\n";
 
     // Read in the attribute and parameter information for the HRUs to request
-    readAttributes(self);
-    readParameters(self);
+    // readAttributes(self);
+    // readParameters(self);
 
     // read in the inital conditions for the grus/hrus
     readInitConditions(self);

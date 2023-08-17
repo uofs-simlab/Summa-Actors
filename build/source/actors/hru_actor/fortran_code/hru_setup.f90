@@ -49,9 +49,7 @@ USE globalData,only:urbanVegCategory                        ! vegetation categor
 USE globalData,only:mpar_meta,bpar_meta                     ! parameter metadata structures
 
 ! named variables to define the decisions for snow layers
-USE mDecisions_module,only:&
-  sameRulesAllLayers, & ! SNTHERM option: same combination/sub-dividion rules applied to all layers
-  rulesDependLayerIndex ! CLM option: combination/sub-dividion rules depend on layer index
+
 
 ! named variables to define LAI decisions
 USE mDecisions_module,only:&
@@ -89,10 +87,10 @@ subroutine setupHRUParam(&
   ! * desired modules
   ! ---------------------------------------------------------------------------------------
   USE nrtype                                                  ! variable types, etc.
+  USE output_structure_module,only:outputStructure
   ! subroutines and functions
   use time_utils_module,only:elapsedSec                       ! calculate the elapsed time
   USE mDecisions_module,only:mDecisions                       ! module to read model decisions
-  ! USE read_attrb_module,only:read_attrb               ! module to read local attributes
   USE paramCheck_module,only:paramCheck                       ! module to check consistency of model parameters
   USE pOverwrite_module,only:pOverwrite                       ! module to overwrite default parameter values with info from the Noah tables
   USE ConvE2Temp_module,only:E2T_lookup                       ! module to calculate a look-up table for the temperature-enthalpy conversion
@@ -169,34 +167,21 @@ subroutine setupHRUParam(&
   
   oldTime%var(:) = startTime%var(:)
 
-  ! get the maximum number of snow layers
-  select case(model_decisions(iLookDECISIONS%snowLayers)%iDecision)
-    case(sameRulesAllLayers);    maxSnowLayers = 100
-    case(rulesDependLayerIndex); maxSnowLayers = 5
-    case default; err=20; 
-        message=trim(message)//'unable to identify option to combine/sub-divide snow layers'
-        print*, message
-        return
-  end select ! (option to combine/sub-divide snow layers)
+  ! Copy the attrStruct
+  attrStruct%var(:) = outputStructure(1)%attrStruct(1)%gru(indxGRU)%hru(indxHRU)%var(:)
+  ! Copy the typeStruct
+  typeStruct%var(:) = outputStructure(1)%typeStruct(1)%gru(indxGRU)%hru(indxHRU)%var(:)
+  ! Copy the idStruct
+  idStruct%var(:) = outputStructure(1)%idStruct(1)%gru(indxGRU)%hru(indxHRU)%var(:)
 
-  ! get the maximum number of layers
-  maxLayers = gru_struc(1)%hruInfo(1)%nSoil + maxSnowLayers
+  ! Copy the mparStruct
+  mparStruct%var(:) = outputStructure(1)%mparStruct(1)%gru(indxGRU)%hru(indxHRU)%var(:)
+  ! Copy the bparStruct
+  bparStruct%var(:) = outputStructure(1)%bparStruct(1)%gru(indxGRU)%var(:)
+  ! Copy the dparStruct
+  dparStruct%var(:) = outputStructure(1)%dparStruct(1)%gru(indxGRU)%hru(indxHRU)%var(:)
 
-  ! define monthly fraction of green vegetation
-  greenVegFrac_monthly = (/0.01_dp, 0.02_dp, 0.03_dp, 0.07_dp, 0.50_dp, 0.90_dp, 0.95_dp, 0.96_dp, 0.65_dp, 0.24_dp, 0.11_dp, 0.02_dp/)
 
-  ! define urban vegetation category
-  select case(trim(model_decisions(iLookDECISIONS%vegeParTbl)%cDecision))
-    case('USGS');                     urbanVegCategory =    1
-    case('MODIFIED_IGBP_MODIS_NOAH'); urbanVegCategory =   13
-    case('plumberCABLE');             urbanVegCategory = -999
-    case('plumberCHTESSEL');          urbanVegCategory = -999
-    case('plumberSUMMA');             urbanVegCategory = -999
-    case default
-      message=trim(message)//'unable to identify vegetation category'
-      print*, message
-      return
-  end select
 
   ! *****************************************************************************
   ! *** compute derived model variables that are pretty much constant for the basin as a whole

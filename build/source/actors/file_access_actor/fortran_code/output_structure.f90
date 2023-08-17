@@ -71,7 +71,7 @@ module output_structure_module
     type(gru_hru_time_int),allocatable                :: timeStruct(:)                 ! x%gru(:)%hru(:)%var(:)%tim(:)     -- model time data
     type(gru_hru_time_double),allocatable             :: forcStruct(:)                 ! x%gru(:)%hru(:)%var(:)%tim(:)     -- model forcing data
     type(gru_hru_double),allocatable                  :: attrStruct(:)                 ! x%gru(:)%hru(:)%var(:)            -- local attributes for each HRU, DOES NOT CHANGE OVER TIMESTEPS
-    type(gru_hru_int),allocatable                     :: typeStruct(:)                 ! x%gru(:)%hru(:)%var(:)%tim(:)     -- local classification of soil veg etc. for each HRU, DOES NOT CHANGE OVER TIMESTEPS
+    type(gru_hru_int),allocatable                     :: typeStruct(:)                 ! x%gru(:)%hru(:)%var(:)            -- local classification of soil veg etc. for each HRU, DOES NOT CHANGE OVER TIMESTEPS
     type(gru_hru_int8),allocatable                    :: idStruct(:)                   ! x%gru(:)%hru(:)%var(:)
 
     ! define the primary data structures (variable length vectors)
@@ -95,7 +95,7 @@ module output_structure_module
   end type summa_output_type  
   
   
-  type(summa_output_type),allocatable,save,public :: outputStructure(:) ! summa_OutputStructure(iFile)%struc%var(:)%dat(nTimeSteps) 
+  type(summa_output_type),allocatable,save,public :: outputStructure(:) ! summa_OutputStructure(1)%struc%var(:)%dat(nTimeSteps) 
   
   contains
 
@@ -132,9 +132,11 @@ subroutine initOutputStructure(forcFileInfo, maxSteps, num_gru, err)
   USE globalData,only:statBvar_meta                           ! child metadata for stats
   USE globalData,only:gru_struc
   USE globalData,only:structInfo                              ! information on the data structures
-  USE multiconst,only:secprday               ! number of seconds in a day
+  USE multiconst,only:secprday                                ! number of seconds in a day
   USE data_types,only:file_info_array
-  USE var_lookup,only:maxvarFreq                ! maximum number of output files
+  USE var_lookup,only:maxvarFreq                              ! maximum number of output files
+
+  USE allocspace_module,only:allocGlobal                      ! module to allocate space for global data structures
   
   implicit none
   type(file_info_array),intent(in)      :: forcFileInfo
@@ -273,20 +275,14 @@ subroutine initOutputStructure(forcFileInfo, maxSteps, num_gru, err)
               call alloc_outputStruc(statForc_meta(:)%var_info,outputStructure(1)%forcStat(1)%gru(iGRU)%hru(iHRU), &
                                       nSteps=maxSteps,nSnow=nSnow,nSoil=nSoil,err=err,message=message);    ! model forcing data
             case('attr')
-              call alloc_outputStruc(attr_meta,outputStructure(1)%attrStruct(1)%gru(iGRU)%hru(iHRU), &
-                                      nSteps=maxSteps,nSnow=nSnow,nSoil=nSoil,err=err,message=message);    ! local attributes for each HRU
+              call allocGlobal(attr_meta, outputStructure(1)%attrStruct(1)%gru(iGRU)%hru(iHRU), err, message)
             case('type')
-              call alloc_outputStruc(type_meta,outputStructure(1)%typeStruct(1)%gru(iGRU)%hru(iHRU), &
-                                      nSteps=maxSteps,nSnow=nSnow,nSoil=nSoil,err=err,message=message);    ! classification of soil veg etc.
+              call allocGlobal(type_meta, outputStructure(1)%typeStruct(1), err, message)
             case('id'  )
-              call alloc_outputStruc(id_meta,outputStructure(1)%idStruct(1)%gru(iGRU)%hru(iHRU), &
-                                      nSteps=maxSteps,nSnow=nSnow,nSoil=nSoil,err=err,message=message);        ! local values of hru gru IDs
+              call allocGlobal(id_meta, outputStructure(1)%idStruct(1), err, message)
             case('mpar') ! model parameters
-              call alloc_outputStruc(mpar_meta,outputStructure(1)%mparStruct(1)%gru(iGRU)%hru(iHRU), &
-                                      nSteps=maxSteps,nSnow=nSnow,nSoil=nSoil,err=err,message=message); 
-
-              call alloc_outputStruc(mpar_meta, outputStructure(1)%dparStruct(1)%gru(iGRU)%hru(iHRU), &
-                                      nSteps=maxSteps,err=err,message=message)
+              call allocGlobal(mpar_meta,outputStructure(1)%mparStruct(1),err,message); 
+              call allocGlobal(mpar_meta,outputStructure(1)%dparStruct(1),err,message);
             case('indx')
               ! Structure
               call alloc_outputStruc(indx_meta,outputStructure(1)%indxStruct(1)%gru(iGRU)%hru(iHRU), &
@@ -316,8 +312,7 @@ subroutine initOutputStructure(forcFileInfo, maxSteps, num_gru, err)
               call alloc_outputStruc(statFlux_meta(:)%var_info,outputStructure(1)%fluxStat(1)%gru(iGRU)%hru(iHRU), &
                                       nSteps=maxSteps,nSnow=nSnow,nSoil=nSoil,err=err,message=message);    ! model fluxes
             case('bpar')
-              call alloc_outputStruc(bpar_meta,outputStructure(1)%bparStruct(1)%gru(iGRU), &
-                                      nSteps=maxSteps,nSnow=0,nSoil=0,err=err,message=message);  ! basin-average params 
+              call allocGlobal(bpar_meta,outputStructure(1)%bparStruct(1),err,message);  ! basin-average params 
             case('bvar')
               ! Structure
               call alloc_outputStruc(bvar_meta,outputStructure(1)%bvarStruct(1)%gru(iGRU)%hru(iHRU), &
