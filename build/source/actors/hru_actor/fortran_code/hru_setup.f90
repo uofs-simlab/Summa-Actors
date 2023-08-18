@@ -195,12 +195,14 @@ subroutine setupHRUParam(&
   do ivar=1, size(outputStructure(1)%bvarStruct_init%gru(indxGRU)%var(:))
     bvarStruct%var(ivar)%dat(:) = outputStructure(1)%bvarStruct_init%gru(indxGRU)%var(ivar)%dat(:)
   enddo
-  ! Copy the lookup Struct
-  do i_z=1, size(outputStructure(1)%lookupStruct%gru(indxGRU)%hru(indxHRU)%z(:))
-    do iVar=1, size(outputStructure(1)%lookupStruct%gru(indxGRU)%hru(indxHRU)%z(i_z)%var(:))
-      lookupStruct%z(i_z)%var(ivar)%lookup(:) = outputStructure(1)%lookupStruct%gru(indxGRU)%hru(indxHRU)%z(i_z)%var(iVar)%lookup(:)
+  ! Copy the lookup Struct if its allocated
+  if (allocated(outputStructure(1)%lookupStruct%gru(indxGRU)%hru(indxHRU)%z)) then
+    do i_z=1, size(outputStructure(1)%lookupStruct%gru(indxGRU)%hru(indxHRU)%z(:))
+      do iVar=1, size(outputStructure(1)%lookupStruct%gru(indxGRU)%hru(indxHRU)%z(i_z)%var(:))
+        lookupStruct%z(i_z)%var(ivar)%lookup(:) = outputStructure(1)%lookupStruct%gru(indxGRU)%hru(indxHRU)%z(i_z)%var(iVar)%lookup(:)
+      end do
     end do
-  end do
+  endif
   ! Copy the progStruct_init
   do ivar=1, size(outputStructure(1)%progStruct_init%gru(indxGRU)%hru(indxHRU)%var(:))
     progStruct%var(ivar)%dat(:) = outputStructure(1)%progStruct_init%gru(indxGRU)%hru(indxHRU)%var(ivar)%dat(:)

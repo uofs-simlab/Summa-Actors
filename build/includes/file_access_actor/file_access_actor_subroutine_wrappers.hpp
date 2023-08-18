@@ -18,12 +18,6 @@ extern "C" {
   void deallocateOutputStructure(int* err);
   void writeOutput_fortran(void* handle_ncid, int* num_steps, int* start_gru, int* max_gru, int* err);
 
-  // Set up global initial conditions
-  void openInitCondFile(int* init_cond_ncid, int* err);
-  void closeInitCondFile(int* init_cond_ncid, int* err);
-  void readInitCond_prog(int* init_cond_ncid, int* start_gru, int* num_gru, int* err);
-  void readInitCond_bvar(int* init_cond_ncid, int* start_gru, int* num_gru, int* err);
-
   void updateFailed(int* indxHRU);
 
   void resetFailedArray();

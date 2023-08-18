@@ -94,8 +94,6 @@ struct file_access_state {
 behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU, int numGRU, 
    File_Access_Actor_Settings file_access_actor_settings, actor parent);
 
-// Read in the inital conditions for all the HRUs that are in the run-domain
-void readInitConditions(stateful_actor<file_access_state>* self);
 
 void initalizeOutputHandles(stateful_actor<file_access_state>* self);
 

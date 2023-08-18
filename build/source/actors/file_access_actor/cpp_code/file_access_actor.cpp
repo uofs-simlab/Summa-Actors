@@ -44,9 +44,6 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
 
     aout(self) << "Simluations Steps: " << self->state.num_steps << "\n";
 
-
-    // read in the inital conditions for the grus/hrus
-    readInitConditions(self);
     
     // Inital Files Have Been Loaded - Send Message to Job_Actor to Start Simulation
     self->send(self->state.parent, init_gru_v);
@@ -265,14 +262,6 @@ void writeOutput(stateful_actor<file_access_state>* self, Output_Partition* part
     }
 
     partition->resetReadyToWriteList();
-}
-
-void readInitConditions(stateful_actor<file_access_state>* self) {
-    int err;
-    openInitCondFile(&self->state.init_cond_ncid, &err);
-    readInitCond_prog(&self->state.init_cond_ncid, &self->state.start_gru, &self->state.num_gru, &err);
-    readInitCond_bvar(&self->state.init_cond_ncid, &self->state.start_gru, &self->state.num_gru, &err);
-    closeInitCondFile(&self->state.init_cond_ncid, &err); 
 }
 
 } // end namespace
