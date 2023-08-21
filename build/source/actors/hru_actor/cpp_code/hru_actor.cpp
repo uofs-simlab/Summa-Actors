@@ -41,12 +41,18 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
             self->state.handle_indxStat, 
             self->state.handle_bvarStat, 
             self->state.handle_timeStruct, 
-            self->state.handle_forcStruct, 
+            self->state.handle_forcStruct,
+            self->state.handle_attrStruct,
+            self->state.handle_typeStruct,
+            self->state.handle_idStruct,
             self->state.handle_indxStruct,
+            self->state.handle_mparStruct,
             self->state.handle_progStruct, 
             self->state.handle_diagStruct, 
             self->state.handle_fluxStruct,
+            self->state.handle_bparStruct,
             self->state.handle_bvarStruct, 
+            self->state.handle_dparStruct,
             self->state.handle_startTime, 
             self->state.handle_finshTime, 
             self->state.handle_refTime,
@@ -76,30 +82,34 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
                   .await([=](int num_steps){
                     self->state.num_steps_until_write = num_steps;
                     self->state.output_structure_step_index = 1;
+                    Initialize_HRU(self);
+                    self->send(self, start_hru_v);
                   });
 
-    // Get the attributes and parameters for the HRU
-    self->request(self->state.file_access_actor,
-                  caf::infinite,
-                  get_attributes_params_v,
-                  self->state.indxGRU)
-                  .await([=](std::tuple<std::vector<double>,
-                                        std::vector<int>,
-                                        std::vector<long int>, 
-                                        std::vector<double>, 
-                                        std::vector<double>, 
-                                        std::vector<std::vector<double>>> attr_and_params) {
-                                int err = 0;
-                                set_var_d(std::get<0>(attr_and_params), self->state.handle_attrStruct);
-                                set_var_i(std::get<1>(attr_and_params), self->state.handle_typeStruct);
-                                set_var_i8(std::get<2>(attr_and_params), self->state.handle_idStruct);
-                                set_var_d(std::get<3>(attr_and_params), self->state.handle_bparStruct);
-                                set_var_d(std::get<4>(attr_and_params), self->state.handle_dparStruct);
-                                set_var_dlength(std::get<5>(attr_and_params), self->state.handle_mparStruct);
 
-                                Initialize_HRU(self);
 
-                                self->send(self, start_hru_v); });
+    // // Get the attributes and parameters for the HRU
+    // self->request(self->state.file_access_actor,
+    //               caf::infinite,
+    //               get_attributes_params_v,
+    //               self->state.indxGRU)
+    //               .await([=](std::tuple<std::vector<double>,
+    //                                     std::vector<int>,
+    //                                     std::vector<long int>, 
+    //                                     std::vector<double>, 
+    //                                     std::vector<double>, 
+    //                                     std::vector<std::vector<double>>> attr_and_params) {
+    //                             int err = 0;
+    //                             set_var_d(std::get<0>(attr_and_params), self->state.handle_attrStruct);
+    //                             set_var_i(std::get<1>(attr_and_params), self->state.handle_typeStruct);
+    //                             set_var_i8(std::get<2>(attr_and_params), self->state.handle_idStruct);
+    //                             set_var_d(std::get<3>(attr_and_params), self->state.handle_bparStruct);
+    //                             set_var_d(std::get<4>(attr_and_params), self->state.handle_dparStruct);
+    //                             set_var_dlength(std::get<5>(attr_and_params), self->state.handle_mparStruct);
+
+    //                             Initialize_HRU(self);
+
+    //                             self->send(self, start_hru_v); });
 
 
     return {
@@ -242,12 +252,14 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
 
 void Initialize_HRU(stateful_actor<hru_state>* self) {
 
-    setupHRUParam(&self->state.indxHRU, 
-                  &self->state.indxGRU,
+    setupHRUParam(&self->state.indxGRU,
+                  &self->state.indxHRU, 
                   self->state.handle_attrStruct, 
                   self->state.handle_typeStruct, 
                   self->state.handle_idStruct,
-                  self->state.handle_mparStruct, 
+                  self->state.handle_indxStruct,
+                  self->state.handle_mparStruct,
+                  self->state.handle_progStruct, 
                   self->state.handle_bparStruct, 
                   self->state.handle_bvarStruct,
                   self->state.handle_dparStruct, 

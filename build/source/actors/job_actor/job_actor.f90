@@ -28,8 +28,8 @@ subroutine job_init_fortran(file_manager, start_gru, num_gru,&
   USE summaFileManager,only:LOCAL_ATTRIBUTES                  ! name of model initial attributes file
   
   ! subroutines and functions: read dimensions (NOTE: NetCDF)
-  USE read_attrb_actors_module,only:read_dimension              ! module to read dimensions of GRU and HRU
-  USE read_icond_actors_module,only:read_icond_nlayers               ! module to read initial condition dimensions
+  USE read_attrb_module,only:read_dimension              ! module to read dimensions of GRU and HRU
+  USE read_icond_module,only:read_icond_nlayers               ! module to read initial condition dimensions
 
   USE globalData,only:indx_meta                     ! metadata structures
   USE globalData,only:startTime,finshTime,refTime,oldTime
@@ -46,7 +46,7 @@ subroutine job_init_fortran(file_manager, start_gru, num_gru,&
 
   ! dummy variables
   character(kind=c_char,len=1),intent(in)   :: file_manager
-  integer(c_int),intent(in)                 :: start_gru
+  integer(c_int),intent(inout)              :: start_gru
   integer(c_int),intent(inout)              :: num_gru
   integer(c_int),intent(inout)              :: num_hru
   integer(c_int),intent(out)                :: err
@@ -68,7 +68,7 @@ subroutine job_init_fortran(file_manager, start_gru, num_gru,&
 
   ! Set variables that were previosuly set by getCommandArguments()
   startGRU=start_gru
-  iRunMode=iRunModeFull
+  iRunMode=iRunModeGRU
   checkHRU=integerMissing
 
   call summa_SetTimesDirsAndFiles(summaFileManagerIn,err,message)
@@ -83,8 +83,8 @@ subroutine job_init_fortran(file_manager, start_gru, num_gru,&
   ! obtain the HRU and GRU dimensions in the LocalAttribute file
   attrFile = trim(SETTINGS_PATH)//trim(LOCAL_ATTRIBUTES)
   select case (iRunMode)
-    case(iRunModeFull); call read_dimension(attrFile,num_gru,num_hru,start_gru,err)
-    case(iRunModeGRU ); err=20; message='iRunModeGRU not implemented for Actors Code'
+    case(iRunModeFull); err=20; message='iRunModeFull not implemented for Actors Code'
+    case(iRunModeGRU ); call read_dimension(trim(attrFile),fileGRU,fileHRU,num_gru,num_hru,err,message,startGRU=start_gru)
     case(iRunModeHRU ); err=20; message='iRunModeHRU not implemented for Actors Code'
   end select
   if(err/=0)then; print*, trim(message); return; endif

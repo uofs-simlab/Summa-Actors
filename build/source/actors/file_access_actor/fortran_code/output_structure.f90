@@ -13,6 +13,7 @@ module output_structure_module
                       var_ilength,         & ! x%var(:)%dat        (i4b)
                       var_dlength,         & ! x%var(:)%dat        (rkind)
                       ! gru dimension
+                      gru_d,               & ! x%gru(:)%var(:)     (rkind)  
                       gru_int,             & ! x%gru(:)%var(:)     (i4b)
                       gru_int8,            & ! x%gru(:)%var(:)     integer(8)
                       gru_double,          & ! x%gru(:)%var(:)     (rkind)
@@ -59,43 +60,50 @@ module output_structure_module
   private::is_var_desired
 
   type, public :: summa_output_type
+    type(gru_hru_z_vLookup)                          :: lookupStruct                   ! x%gru(:)%hru(:)%z(:)%var(:)%lookup(:) -- lookup tables
+
     ! define the statistics structures
-    type(gru_hru_time_doubleVec),allocatable          :: forcStat(:)                   ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model forcing data
-    type(gru_hru_time_doubleVec),allocatable          :: progStat(:)                   ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model prognostic (state) variables
-    type(gru_hru_time_doubleVec),allocatable          :: diagStat(:)                   ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model diagnostic variables
-    type(gru_hru_time_doubleVec),allocatable          :: fluxStat(:)                   ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model fluxes
-    type(gru_hru_time_doubleVec),allocatable          :: indxStat(:)                   ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model indices
-    type(gru_hru_time_doubleVec),allocatable          :: bvarStat(:)                   ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- basin-average variabl
+    type(gru_hru_time_doubleVec)                      :: forcStat                      ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model forcing data
+    type(gru_hru_time_doubleVec)                      :: progStat                      ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model prognostic (state) variables
+    type(gru_hru_time_doubleVec)                      :: diagStat                      ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model diagnostic variables
+    type(gru_hru_time_doubleVec)                      :: fluxStat                      ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model fluxes
+    type(gru_hru_time_doubleVec)                      :: indxStat                      ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model indices
+    type(gru_hru_time_doubleVec)                      :: bvarStat                      ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- basin-average variabl
 
     ! define the primary data structures (scalars)
-    type(gru_hru_time_int),allocatable                :: timeStruct(:)                 ! x%gru(:)%hru(:)%var(:)%tim(:)     -- model time data
-    type(gru_hru_time_double),allocatable             :: forcStruct(:)                 ! x%gru(:)%hru(:)%var(:)%tim(:)     -- model forcing data
-    type(gru_hru_double),allocatable                  :: attrStruct(:)                 ! x%gru(:)%hru(:)%var(:)            -- local attributes for each HRU, DOES NOT CHANGE OVER TIMESTEPS
-    type(gru_hru_int),allocatable                     :: typeStruct(:)                 ! x%gru(:)%hru(:)%var(:)%tim(:)     -- local classification of soil veg etc. for each HRU, DOES NOT CHANGE OVER TIMESTEPS
-    type(gru_hru_int8),allocatable                    :: idStruct(:)                   ! x%gru(:)%hru(:)%var(:)
+    type(gru_hru_time_int)                            :: timeStruct                    ! x%gru(:)%hru(:)%var(:)%tim(:)     -- model time data
+    type(gru_hru_time_double)                         :: forcStruct                    ! x%gru(:)%hru(:)%var(:)%tim(:)     -- model forcing data
+    type(gru_hru_double)                              :: attrStruct                    ! x%gru(:)%hru(:)%var(:)            -- local attributes for each HRU, DOES NOT CHANGE OVER TIMESTEPS
+    type(gru_hru_int)                                 :: typeStruct                    ! x%gru(:)%hru(:)%var(:)            -- local classification of soil veg etc. for each HRU, DOES NOT CHANGE OVER TIMESTEPS
+    type(gru_hru_int8)                                :: idStruct                      ! x%gru(:)%hru(:)%var(:)
 
     ! define the primary data structures (variable length vectors)
-    type(gru_hru_time_intVec),allocatable             :: indxStruct(:)                 ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model indices
-    type(gru_hru_doubleVec),allocatable               :: mparStruct(:)                 ! x%gru(:)%hru(:)%var(:)%dat        -- model parameters, DOES NOT CHANGE OVER TIMESTEPS TODO: MAYBE
-    type(gru_hru_time_doubleVec),allocatable          :: progStruct(:)                 ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model prognostic (state) variables
-    type(gru_hru_time_doubleVec),allocatable          :: diagStruct(:)                 ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model diagnostic variables
-    type(gru_hru_time_doubleVec),allocatable          :: fluxStruct(:)                 ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model fluxes
+    type(gru_hru_time_intVec)                         :: indxStruct                    ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model indices
+    type(gru_hru_intVec)                              :: indxStruct_init               ! x%gru(:)%hru(:)%var(:)%dat        -- model indices
+    type(gru_hru_doubleVec)                           :: mparStruct                    ! x%gru(:)%hru(:)%var(:)%dat        -- model parameters, DOES NOT CHANGE OVER TIMESTEPS TODO: MAYBE
+    type(gru_hru_time_doubleVec)                      :: progStruct                    ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model prognostic (state) variables
+    type(gru_hru_doubleVec)                           :: progStruct_init               ! x%gru(:)%hru(:)%var(:)%dat        -- model prognostic (state) variables
+    type(gru_hru_time_doubleVec)                      :: diagStruct                    ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model diagnostic variables
+    type(gru_hru_time_doubleVec)                      :: fluxStruct                    ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model fluxes
 
     ! define the basin-average structures
-    type(gru_double),allocatable                      :: bparStruct(:)                 ! x%gru(:)%var(:)                   -- basin-average parameters, DOES NOT CHANGE OVER TIMESTEPS
-    type(gru_hru_time_doubleVec),allocatable          :: bvarStruct(:)                 ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- basin-average variables
-
+    type(gru_double)                                  :: bparStruct                    ! x%gru(:)%var(:)                   -- basin-average parameters, DOES NOT CHANGE OVER TIMESTEPS
+    type(gru_hru_time_doubleVec)                      :: bvarStruct                    ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- basin-average variables
+    type(gru_doubleVec)                               :: bvarStruct_init               ! x%gru(:)%hru(:)%var(:)%dat        -- basin-average variables
     ! define the ancillary data structures
-    type(gru_hru_double),allocatable                  :: dparStruct(:)                 ! x%gru(:)%hru(:)%var(:)
+    type(gru_hru_double)                              :: dparStruct                    ! x%gru(:)%hru(:)%var(:)
 
     ! finalize stats structure
-    type(gru_hru_time_flagVec),allocatable            :: finalizeStats(:)              ! x%gru(:)%hru(:)%tim(:)%dat -- flags on when to write to file
+    type(gru_hru_time_flagVec)                        :: finalizeStats                 ! x%gru(:)%hru(:)%tim(:)%dat -- flags on when to write to file
+
+
+    type(gru_d)                                       :: upArea
 
     integer(i4b)                                      :: nTimeSteps
   end type summa_output_type  
   
   
-  type(summa_output_type),allocatable,save,public :: outputStructure(:) ! summa_OutputStructure(iFile)%struc%var(:)%dat(nTimeSteps) 
+  type(summa_output_type),allocatable,save,public :: outputStructure(:) ! summa_OutputStructure(1)%struc%var(:)%dat(nTimeSteps) 
   
   contains
 
@@ -124,6 +132,7 @@ subroutine initOutputStructure(forcFileInfo, maxSteps, num_gru, err)
   USE globalData,only:prog_meta,diag_meta,flux_meta,id_meta   ! metadata structures
   USE globalData,only:mpar_meta,indx_meta                     ! metadata structures
   USE globalData,only:bpar_meta,bvar_meta                     ! metadata structures
+  USE globalData,only:lookup_meta
   USE globalData,only:statForc_meta                           ! child metadata for stats
   USE globalData,only:statProg_meta                           ! child metadata for stats
   USE globalData,only:statDiag_meta                           ! child metadata for stats
@@ -132,9 +141,11 @@ subroutine initOutputStructure(forcFileInfo, maxSteps, num_gru, err)
   USE globalData,only:statBvar_meta                           ! child metadata for stats
   USE globalData,only:gru_struc
   USE globalData,only:structInfo                              ! information on the data structures
-  USE multiconst,only:secprday               ! number of seconds in a day
+  USE multiconst,only:secprday                                ! number of seconds in a day
   USE data_types,only:file_info_array
-  USE var_lookup,only:maxvarFreq                ! maximum number of output files
+  USE var_lookup,only:maxvarFreq                              ! maximum number of output files
+
+  USE allocspace_module,only:allocGlobal                      ! module to allocate space for global data structures
   
   implicit none
   type(file_info_array),intent(in)      :: forcFileInfo
@@ -159,97 +170,92 @@ subroutine initOutputStructure(forcFileInfo, maxSteps, num_gru, err)
   if (.not.allocated(outputStructure))then
     allocate(outputStructure(1))
   else
-    print*, "Already Allocated"
-    return;
+    print*, "Already Allocated"; return;
   end if
 
+  ! LookupStructure
+
   ! Statistics Structures
-  allocate(outputStructure(1)%forcStat(1))
-  allocate(outputStructure(1)%progStat(1))
-  allocate(outputStructure(1)%diagStat(1))
-  allocate(outputStructure(1)%fluxStat(1))
-  allocate(outputStructure(1)%indxStat(1))
-  allocate(outputStructure(1)%bvarStat(1))
-  allocate(outputStructure(1)%forcStat(1)%gru(num_gru))
-  allocate(outputStructure(1)%progStat(1)%gru(num_gru))
-  allocate(outputStructure(1)%diagStat(1)%gru(num_gru))
-  allocate(outputStructure(1)%fluxStat(1)%gru(num_gru))
-  allocate(outputStructure(1)%indxStat(1)%gru(num_gru))
-  allocate(outputStructure(1)%bvarStat(1)%gru(num_gru))
-
+  allocate(outputStructure(1)%forcStat%gru(num_gru))
+  allocate(outputStructure(1)%progStat%gru(num_gru))
+  allocate(outputStructure(1)%diagStat%gru(num_gru))
+  allocate(outputStructure(1)%fluxStat%gru(num_gru))
+  allocate(outputStructure(1)%indxStat%gru(num_gru))
+  allocate(outputStructure(1)%bvarStat%gru(num_gru))
   ! Primary Data Structures (scalars)
-  allocate(outputStructure(1)%timeStruct(1))
-  allocate(outputStructure(1)%forcStruct(1))
-  allocate(outputStructure(1)%attrStruct(1))
-  allocate(outputStructure(1)%typeStruct(1))
-  allocate(outputStructure(1)%idStruct(1))
-  allocate(outputStructure(1)%timeStruct(1)%gru(num_gru))
-  allocate(outputStructure(1)%forcStruct(1)%gru(num_gru))
-  allocate(outputStructure(1)%attrStruct(1)%gru(num_gru))
-  allocate(outputStructure(1)%typeStruct(1)%gru(num_gru))
-  allocate(outputStructure(1)%idStruct(1)%gru(num_gru))
-  
+  allocate(outputStructure(1)%timeStruct%gru(num_gru))
+  allocate(outputStructure(1)%forcStruct%gru(num_gru))
   ! Primary Data Structures (variable length vectors)
-  allocate(outputStructure(1)%indxStruct(1))
-  allocate(outputStructure(1)%mparStruct(1))
-  allocate(outputStructure(1)%progStruct(1))
-  allocate(outputStructure(1)%diagStruct(1))
-  allocate(outputStructure(1)%fluxStruct(1))
-  allocate(outputStructure(1)%indxStruct(1)%gru(num_gru))
-  allocate(outputStructure(1)%mparStruct(1)%gru(num_gru))
-  allocate(outputStructure(1)%progStruct(1)%gru(num_gru))
-  allocate(outputStructure(1)%diagStruct(1)%gru(num_gru))
-  allocate(outputStructure(1)%fluxStruct(1)%gru(num_gru))
-
+  allocate(outputStructure(1)%indxStruct%gru(num_gru))
+  allocate(outputStructure(1)%progStruct%gru(num_gru))
+  allocate(outputStructure(1)%diagStruct%gru(num_gru))
+  allocate(outputStructure(1)%fluxStruct%gru(num_gru))
   ! Basin-Average structures
-  allocate(outputStructure(1)%bparStruct(1))
-  allocate(outputStructure(1)%bvarStruct(1))
-  allocate(outputStructure(1)%bparStruct(1)%gru(num_gru))
-  allocate(outputStructure(1)%bvarStruct(1)%gru(num_gru))
-
-  ! define the ancillary data structures
-  allocate(outputStructure(1)%dparStruct(1))
-  allocate(outputStructure(1)%dparStruct(1)%gru(num_gru))
-
+  allocate(outputStructure(1)%bvarStruct%gru(num_gru))
   ! Finalize Stats for writing
-  allocate(outputStructure(1)%finalizeStats(1))
-  allocate(outputStructure(1)%finalizeStats(1)%gru(num_gru))
+  allocate(outputStructure(1)%finalizeStats%gru(num_gru))
+  ! Extras
+  allocate(outputStructure(1)%upArea%gru(num_gru))
   
   
   do iGRU = 1, num_gru
     num_hru = gru_struc(iGRU)%hruCount
     ! Statistics Structures
-    allocate(outputStructure(1)%forcStat(1)%gru(iGRU)%hru(num_hru))
-    allocate(outputStructure(1)%progStat(1)%gru(iGRU)%hru(num_hru))
-    allocate(outputStructure(1)%diagStat(1)%gru(iGRU)%hru(num_hru))
-    allocate(outputStructure(1)%fluxStat(1)%gru(iGRU)%hru(num_hru))
-    allocate(outputStructure(1)%indxStat(1)%gru(iGRU)%hru(num_hru))
-    allocate(outputStructure(1)%bvarStat(1)%gru(iGRU)%hru(num_hru))
+    allocate(outputStructure(1)%forcStat%gru(iGRU)%hru(num_hru))
+    allocate(outputStructure(1)%progStat%gru(iGRU)%hru(num_hru))
+    allocate(outputStructure(1)%diagStat%gru(iGRU)%hru(num_hru))
+    allocate(outputStructure(1)%fluxStat%gru(iGRU)%hru(num_hru))
+    allocate(outputStructure(1)%indxStat%gru(iGRU)%hru(num_hru))
+    allocate(outputStructure(1)%bvarStat%gru(iGRU)%hru(num_hru))
 
     ! Primary Data Structures (scalars)
-    allocate(outputStructure(1)%timeStruct(1)%gru(iGRU)%hru(num_hru))
-    allocate(outputStructure(1)%forcStruct(1)%gru(iGRU)%hru(num_hru))
-    allocate(outputStructure(1)%attrStruct(1)%gru(iGRU)%hru(num_hru))
-    allocate(outputStructure(1)%typeStruct(1)%gru(iGRU)%hru(num_hru))
-    allocate(outputStructure(1)%idStruct(1)%gru(iGRU)%hru(num_hru))
-  
+    allocate(outputStructure(1)%timeStruct%gru(iGRU)%hru(num_hru))
+    allocate(outputStructure(1)%forcStruct%gru(iGRU)%hru(num_hru))
+
     ! Primary Data Structures (variable length vectors)
-    allocate(outputStructure(1)%indxStruct(1)%gru(iGRU)%hru(num_hru))
-    allocate(outputStructure(1)%mparStruct(1)%gru(iGRU)%hru(num_hru))
-    allocate(outputStructure(1)%progStruct(1)%gru(iGRU)%hru(num_hru))
-    allocate(outputStructure(1)%diagStruct(1)%gru(iGRU)%hru(num_hru))
-    allocate(outputStructure(1)%fluxStruct(1)%gru(iGRU)%hru(num_hru))
+    allocate(outputStructure(1)%indxStruct%gru(iGRU)%hru(num_hru))
+    allocate(outputStructure(1)%progStruct%gru(iGRU)%hru(num_hru))
+    allocate(outputStructure(1)%diagStruct%gru(iGRU)%hru(num_hru))
+    allocate(outputStructure(1)%fluxStruct%gru(iGRU)%hru(num_hru))
   
     ! Basin-Average structures
-    allocate(outputStructure(1)%bvarStruct(1)%gru(iGRU)%hru(num_hru))
+    allocate(outputStructure(1)%bvarStruct%gru(iGRU)%hru(num_hru))
+
 
    ! define the ancillary data structures
-    allocate(outputStructure(1)%dparStruct(1)%gru(iGRU)%hru(num_hru))
 
     ! Finalize Stats for writing
-    allocate(outputStructure(1)%finalizeStats(1)%gru(iGRU)%hru(num_hru))
+    allocate(outputStructure(1)%finalizeStats%gru(iGRU)%hru(num_hru))
+
+    allocate(outputStructure(1)%upArea%gru(iGRU)%hru(num_hru))
 
   end do
+
+
+  ! Allocate variables that do not require time
+  do iStruct=1,size(structInfo)
+    select case(trim(structInfo(iStruct)%structName))
+    case('time'); cycle;
+    case('forc'); cycle;
+    case('attr'); call allocGlobal(attr_meta,  outputStructure(1)%attrStruct,  err, message)
+    case('type'); call allocGlobal(type_meta,  outputStructure(1)%typeStruct,  err, message)
+    case('id'  ); call allocGlobal(id_meta,    outputStructure(1)%idStruct,    err, message)
+    case('mpar'); call allocGlobal(mpar_meta,  outputStructure(1)%mparStruct,  err, message); 
+    case('indx'); call allocGlobal(indx_meta,  outputStructure(1)%indxStruct_init, err, message);
+    case('prog'); call allocGlobal(prog_meta,  outputStructure(1)%progStruct_init, err, message);
+    case('diag'); cycle;
+    case('flux'); cycle;
+    case('bpar'); call allocGlobal(bpar_meta,outputStructure(1)%bparStruct    ,err, message);  ! basin-average params 
+    case('bvar'); call allocGlobal(bvar_meta,outputStructure(1)%bvarStruct_init,err,message);  ! basin-average variables
+    case('deriv'); cycle;
+    case('lookup'); call allocGlobal(lookup_meta,outputStructure(1)%lookupStruct,err, message);
+    end select
+  end do
+  
+
+  call allocGlobal(mpar_meta,outputStructure(1)%dparStruct,err,message);
+
+
 
   do iGRU=1,num_gru
     do iHRU=1,gru_struc(iGRU)%hruCount
@@ -263,70 +269,58 @@ subroutine initOutputStructure(forcFileInfo, maxSteps, num_gru, err)
         ! allocate space structures
           select case(trim(structInfo(iStruct)%structName))    
             case('time')
-              call alloc_outputStruc(time_meta,outputStructure(1)%timeStruct(1)%gru(iGRU)%hru(iHRU), &
+              call alloc_outputStruc(time_meta,outputStructure(1)%timeStruct%gru(iGRU)%hru(iHRU), &
                                       nSteps=maxSteps,err=err,message=message)     ! model forcing data
             case('forc')
               ! Structure
-              call alloc_outputStruc(forc_meta,outputStructure(1)%forcStruct(1)%gru(iGRU)%hru(iHRU), &
+              call alloc_outputStruc(forc_meta,outputStructure(1)%forcStruct%gru(iGRU)%hru(iHRU), &
                                       nSteps=maxSteps,nSnow=nSnow,nSoil=nSoil,err=err,message=message);    ! model forcing data
               ! Statistics
-              call alloc_outputStruc(statForc_meta(:)%var_info,outputStructure(1)%forcStat(1)%gru(iGRU)%hru(iHRU), &
+              call alloc_outputStruc(statForc_meta(:)%var_info,outputStructure(1)%forcStat%gru(iGRU)%hru(iHRU), &
                                       nSteps=maxSteps,nSnow=nSnow,nSoil=nSoil,err=err,message=message);    ! model forcing data
-            case('attr')
-              call alloc_outputStruc(attr_meta,outputStructure(1)%attrStruct(1)%gru(iGRU)%hru(iHRU), &
-                                      nSteps=maxSteps,nSnow=nSnow,nSoil=nSoil,err=err,message=message);    ! local attributes for each HRU
-            case('type')
-              call alloc_outputStruc(type_meta,outputStructure(1)%typeStruct(1)%gru(iGRU)%hru(iHRU), &
-                                      nSteps=maxSteps,nSnow=nSnow,nSoil=nSoil,err=err,message=message);    ! classification of soil veg etc.
-            case('id'  )
-              call alloc_outputStruc(id_meta,outputStructure(1)%idStruct(1)%gru(iGRU)%hru(iHRU), &
-                                      nSteps=maxSteps,nSnow=nSnow,nSoil=nSoil,err=err,message=message);        ! local values of hru gru IDs
-            case('mpar') ! model parameters
-              call alloc_outputStruc(mpar_meta,outputStructure(1)%mparStruct(1)%gru(iGRU)%hru(iHRU), &
-                                      nSteps=maxSteps,nSnow=nSnow,nSoil=nSoil,err=err,message=message); 
-
-              call alloc_outputStruc(mpar_meta, outputStructure(1)%dparStruct(1)%gru(iGRU)%hru(iHRU), &
-                                      nSteps=maxSteps,err=err,message=message)
+            case('attr'); cycle;
+              ! call allocGlobal(attr_meta, outputStructure(1)%attrStruct(1)%gru(iGRU)%hru(iHRU), err, message)
+            case('type'); cycle;
+            case('id'  ); cycle;
+            case('mpar'); cycle;
             case('indx')
               ! Structure
-              call alloc_outputStruc(indx_meta,outputStructure(1)%indxStruct(1)%gru(iGRU)%hru(iHRU), &
+              call alloc_outputStruc(indx_meta,outputStructure(1)%indxStruct%gru(iGRU)%hru(iHRU), &
                                       nSteps=maxSteps,nSnow=nSnow,nSoil=nSoil,err=err,str_name='indx',message=message);    ! model variables
               ! Statistics
-              call alloc_outputStruc(statIndx_meta(:)%var_info,outputStructure(1)%indxStat(1)%gru(iGRU)%hru(1), &
+              call alloc_outputStruc(statIndx_meta(:)%var_info,outputStructure(1)%indxStat%gru(iGRU)%hru(1), &
                                       nSteps=maxSteps,nSnow=nSnow,nSoil=nSoil,err=err,message=message);    ! index vars
             case('prog')
               ! Structure
-              call alloc_outputStruc(prog_meta,outputStructure(1)%progStruct(1)%gru(iGRU)%hru(iHRU), &
+              call alloc_outputStruc(prog_meta,outputStructure(1)%progStruct%gru(iGRU)%hru(iHRU), &
                                       nSteps=maxSteps,nSnow=nSnow,nSoil=nSoil,err=err,message=message);    ! model prognostic (state) variables
               ! Statistics
-              call alloc_outputStruc(statProg_meta(:)%var_info,outputStructure(1)%progStat(1)%gru(iGRU)%hru(iHRU), &
+              call alloc_outputStruc(statProg_meta(:)%var_info,outputStructure(1)%progStat%gru(iGRU)%hru(iHRU), &
                                       nSteps=maxSteps,nSnow=nSnow,nSoil=nSoil,err=err,message=message);    ! model prognostic 
             case('diag')
               ! Structure
-              call alloc_outputStruc(diag_meta,outputStructure(1)%diagStruct(1)%gru(iGRU)%hru(iHRU), &
+              call alloc_outputStruc(diag_meta,outputStructure(1)%diagStruct%gru(iGRU)%hru(iHRU), &
                                       nSteps=maxSteps,nSnow=nSnow,nSoil=nSoil,err=err,message=message);    ! model diagnostic variables
               ! Statistics
-              call alloc_outputStruc(statDiag_meta(:)%var_info,outputStructure(1)%diagStat(1)%gru(iGRU)%hru(iHRU), &
+              call alloc_outputStruc(statDiag_meta(:)%var_info,outputStructure(1)%diagStat%gru(iGRU)%hru(iHRU), &
                                       nSteps=maxSteps,nSnow=nSnow,nSoil=nSoil,err=err,message=message);    ! model diagnostic
             case('flux')
               ! Structure
-              call alloc_outputStruc(flux_meta,outputStructure(1)%fluxStruct(1)%gru(iGRU)%hru(iHRU), &
+              call alloc_outputStruc(flux_meta,outputStructure(1)%fluxStruct%gru(iGRU)%hru(iHRU), &
                                       nSteps=maxSteps,nSnow=nSnow,nSoil=nSoil,err=err,message=message);    ! model fluxes
               ! Statistics
-              call alloc_outputStruc(statFlux_meta(:)%var_info,outputStructure(1)%fluxStat(1)%gru(iGRU)%hru(iHRU), &
+              call alloc_outputStruc(statFlux_meta(:)%var_info,outputStructure(1)%fluxStat%gru(iGRU)%hru(iHRU), &
                                       nSteps=maxSteps,nSnow=nSnow,nSoil=nSoil,err=err,message=message);    ! model fluxes
-            case('bpar')
-              call alloc_outputStruc(bpar_meta,outputStructure(1)%bparStruct(1)%gru(iGRU), &
-                                      nSteps=maxSteps,nSnow=0,nSoil=0,err=err,message=message);  ! basin-average params 
+            case('bpar'); cycle;
             case('bvar')
               ! Structure
-              call alloc_outputStruc(bvar_meta,outputStructure(1)%bvarStruct(1)%gru(iGRU)%hru(iHRU), &
+              call alloc_outputStruc(bvar_meta,outputStructure(1)%bvarStruct%gru(iGRU)%hru(iHRU), &
                                       nSteps=maxSteps,nSnow=0,nSoil=0,err=err,message=message);  ! basin-average variables
               ! Statistics
-              call alloc_outputStruc(statBvar_meta(:)%var_info,outputStructure(1)%bvarStat(1)%gru(iGRU)%hru(iHRU), &
+              call alloc_outputStruc(statBvar_meta(:)%var_info,outputStructure(1)%bvarStat%gru(iGRU)%hru(iHRU), &
                                       nSteps=maxSteps,nSnow=0,nSoil=0,err=err,message=message);  ! basin-average variables
             case('deriv');  cycle
-            case('lookup'); cycle
+            case('lookup'); cycle  ! lookup tables
             case default; err=20; message='unable to find structure name: '//trim(structInfo(iStruct)%structName)
         end select
 
@@ -339,12 +333,13 @@ subroutine initOutputStructure(forcFileInfo, maxSteps, num_gru, err)
       end do  ! looping through data structures
     
       ! Finalize stats structure for writing to output file
-      allocate(outputStructure(1)%finalizeStats(1)%gru(iGRU)%hru(iHRU)%tim(maxSteps))
+      allocate(outputStructure(1)%finalizeStats%gru(iGRU)%hru(iHRU)%tim(maxSteps))
       do iStep = 1, maxSteps
-        allocate(outputStructure(1)%finalizeStats(1)%gru(iGRU)%hru(iHRU)%tim(iStep)%dat(1:maxVarFreq))
+        allocate(outputStructure(1)%finalizeStats%gru(iGRU)%hru(iHRU)%tim(iStep)%dat(1:maxVarFreq))
       end do ! timeSteps
     end do ! Looping through GRUs
   end do
+
 
 
 end subroutine initOutputStructure

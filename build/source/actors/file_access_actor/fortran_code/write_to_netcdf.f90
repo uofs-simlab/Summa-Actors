@@ -8,9 +8,6 @@ USE data_types
 
 implicit none
 public::writeParamToNetCDF
-public::writeDataToNetCDF
-public::writeBasinToNetCDF
-public::writeTimeToNetCDF
 public::writeGRUStatistics
 
 contains
@@ -199,83 +196,6 @@ subroutine writeDataToNetCDF(handle_ncid,           &
   end do  ! (looping through structures)
 end subroutine writeDataToNetCDF
 
-subroutine writeBasinToNetCDF(handle_ncid, index_gru, handle_finalize_stats, &
-  handle_output_timestep, handle_bvar_stat, handle_bvar_struct, err) bind(C, name="writeBasinToNetCDF")
-  USE modelwrite_module,only:writeBasin
-  USE globalData,only:bvar_meta                 ! metadata on basin-average variables
-  USE globalData,only:bvarChild_map             ! index of the child data structure: stats bvar
- 
-  implicit none
-  ! dummy variables
-  type(c_ptr),    intent(in), value  :: handle_ncid
-  integer(c_int), intent(in)         :: index_gru
-  type(c_ptr),    intent(in), value  :: handle_finalize_stats
-  type(c_ptr),    intent(in), value  :: handle_output_timestep
-  type(c_ptr),    intent(in), value  :: handle_bvar_stat
-  type(c_ptr),    intent(in), value  :: handle_bvar_struct
-  integer(c_int), intent(out)        :: err
-  ! local pointers for dummy variables
-  type(var_i), pointer               :: ncid
-  type(flagVec), pointer             :: finalize_stats
-  type(var_i),pointer                :: output_timestep
-  type(var_dlength),pointer          :: bvar_stat
-  type(var_dlength),pointer          :: bvar_struct
-  ! local Variables
-  character(len=256)                 :: message
-  ! ---------------------------------------------------------------------------------------
-  ! * Convert From C++ to Fortran
-  ! ---------------------------------------------------------------------------------------
-  call c_f_pointer(handle_ncid, ncid)
-  call c_f_pointer(handle_finalize_stats, finalize_stats)
-  call c_f_pointer(handle_output_timestep, output_timestep)
-  call c_f_pointer(handle_bvar_stat, bvar_stat)
-  call c_f_pointer(handle_bvar_struct, bvar_struct)
-  message="file_access_actor.f90 - writeBasinToNetCDF"
-
-
-  call writeBasin(ncid,index_gru,finalize_stats%dat(:),output_timestep%var(:),&
-      bvar_meta, bvar_stat%var, bvar_struct%var, bvarChild_map, err, message)
-  if(err/=0)then 
-    message=trim(message)//'[bvar]'
-    print*, message
-    return
-  endif 
-
-end subroutine writeBasinToNetCDF
-
-subroutine writeTimeToNetCDF(handle_ncid, handle_finalize_stats, handle_output_timestep, &
-    handle_time_struct, err) bind(C, name="writeTimeToNetCDF")
-  USE modelwrite_module,only:writeTime
-  USE globalData,only:time_meta
-
-  implicit none
-  type(c_ptr), intent(in), value :: handle_ncid
-  type(c_ptr), intent(in), value :: handle_finalize_stats
-  type(c_ptr), intent(in), value :: handle_output_timestep
-  type(c_ptr), intent(in), value :: handle_time_struct
-  integer(c_int), intent(out)    :: err
-
-  type(var_i), pointer           :: ncid
-  type(flagVec), pointer         :: finalize_stats
-  type(var_i),pointer            :: output_timestep
-  type(var_i),pointer            :: time_struct
-  character(len=256)             :: message
-
-  call c_f_pointer(handle_ncid, ncid)
-  call c_f_pointer(handle_finalize_stats, finalize_stats)
-  call c_f_pointer(handle_output_timestep, output_timestep)
-  call c_f_pointer(handle_time_struct, time_struct)
-  message="file_access_actor.f90 - writeTimeToNetCDF"
-
-  call writeTime(ncid, finalize_stats%dat(:),output_timestep%var(:),&
-      time_meta, time_struct%var,err,message)
-  if(err/=0)then 
-    message=trim(message)//'writeTime'
-    print*, message
-    return
-  endif 
-
-end subroutine writeTimeToNetCDF
 
 subroutine writeGRUStatistics(handle_ncid,      &
                               gru_var_ids,      &

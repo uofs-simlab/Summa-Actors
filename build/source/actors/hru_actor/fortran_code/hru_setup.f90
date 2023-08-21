@@ -49,9 +49,7 @@ USE globalData,only:urbanVegCategory                        ! vegetation categor
 USE globalData,only:mpar_meta,bpar_meta                     ! parameter metadata structures
 
 ! named variables to define the decisions for snow layers
-USE mDecisions_module,only:&
-  sameRulesAllLayers, & ! SNTHERM option: same combination/sub-dividion rules applied to all layers
-  rulesDependLayerIndex ! CLM option: combination/sub-dividion rules depend on layer index
+
 
 ! named variables to define LAI decisions
 USE mDecisions_module,only:&
@@ -74,7 +72,9 @@ subroutine setupHRUParam(&
                   handle_typeStruct,              & ! local classification of soil veg etc. for each HRU
                   handle_idStruct,                & ! local classification of soil veg etc. for each HRU
                   ! primary data structures (variable length vectors)
+                  handle_indxStruct,              & ! model indices
                   handle_mparStruct,              & ! model parameters
+                  handle_progStruct,              & ! model prognostic (state) variables
                   handle_bparStruct,              & ! basin-average parameters
                   handle_bvarStruct,              & ! basin-average variables
                   handle_dparStruct,              & ! default model parameters
@@ -89,10 +89,10 @@ subroutine setupHRUParam(&
   ! * desired modules
   ! ---------------------------------------------------------------------------------------
   USE nrtype                                                  ! variable types, etc.
+  USE output_structure_module,only:outputStructure
   ! subroutines and functions
   use time_utils_module,only:elapsedSec                       ! calculate the elapsed time
   USE mDecisions_module,only:mDecisions                       ! module to read model decisions
-  ! USE read_attrb_module,only:read_attrb               ! module to read local attributes
   USE paramCheck_module,only:paramCheck                       ! module to check consistency of model parameters
   USE pOverwrite_module,only:pOverwrite                       ! module to overwrite default parameter values with info from the Noah tables
   USE ConvE2Temp_module,only:E2T_lookup                       ! module to calculate a look-up table for the temperature-enthalpy conversion
@@ -125,7 +125,9 @@ subroutine setupHRUParam(&
   type(c_ptr), intent(in), value           :: handle_attrStruct    ! local attributes for each HRU
   type(c_ptr), intent(in), value           :: handle_typeStruct    ! local classification of soil veg etc. for each HRU
   type(c_ptr), intent(in), value           :: handle_idStruct      !  
+  type(c_ptr), intent(in), value           :: handle_indxStruct !  model indices
   type(c_ptr), intent(in), value           :: handle_mparStruct    ! model parameters
+  type(c_ptr), intent(in), value           :: handle_progStruct    !  model prognostic (state) variables
   type(c_ptr), intent(in), value           :: handle_bparStruct    ! basin-average parameters
   type(c_ptr), intent(in), value           :: handle_bvarStruct    ! basin-average variables
   type(c_ptr), intent(in), value           :: handle_dparStruct    ! default model parameters
@@ -139,13 +141,18 @@ subroutine setupHRUParam(&
   type(var_d),pointer                      :: attrStruct           ! local attributes for each HRU
   type(var_i),pointer                      :: typeStruct           ! local classification of soil veg etc. for each HRU
   type(var_i8),pointer                     :: idStruct             !
+  type(var_ilength),pointer                :: indxStruct           ! model indices
   type(var_dlength),pointer                :: mparStruct           ! model parameters
+  type(var_dlength),pointer                :: progStruct           ! model prognostic (state) variables
   type(var_d),pointer                      :: bparStruct           ! basin-average parameters
   type(var_dlength),pointer                :: bvarStruct           ! basin-average variables
   type(var_d),pointer                      :: dparStruct           ! default model parameters
   type(zLookup),pointer                    :: lookupStruct         ! default model parameters
   type(var_i),pointer                      :: startTime            ! start time for the model simulation
   type(var_i),pointer                      :: oldTime              ! time for the previous model time step
+
+  integer(i4b)                             :: ivar                 ! loop counter
+  integer(i4b)                             :: i_z                  ! loop counter
   character(len=256)                       :: message              ! error message
   character(len=256)                       :: cmessage             ! error message of downwind routine
    
@@ -157,7 +164,9 @@ subroutine setupHRUParam(&
   call c_f_pointer(handle_attrStruct, attrStruct)
   call c_f_pointer(handle_typeStruct, typeStruct)
   call c_f_pointer(handle_idStruct, idStruct)
+  call c_f_pointer(handle_indxStruct, indxStruct)
   call c_f_pointer(handle_mparStruct, mparStruct)
+  call c_f_pointer(handle_progStruct, progStruct)
   call c_f_pointer(handle_bparStruct, bparStruct)
   call c_f_pointer(handle_bvarStruct, bvarStruct)
   call c_f_pointer(handle_dparStruct, dparStruct)
@@ -169,81 +178,39 @@ subroutine setupHRUParam(&
   
   oldTime%var(:) = startTime%var(:)
 
-  ! get the maximum number of snow layers
-  select case(model_decisions(iLookDECISIONS%snowLayers)%iDecision)
-    case(sameRulesAllLayers);    maxSnowLayers = 100
-    case(rulesDependLayerIndex); maxSnowLayers = 5
-    case default; err=20; 
-        message=trim(message)//'unable to identify option to combine/sub-divide snow layers'
-        print*, message
-        return
-  end select ! (option to combine/sub-divide snow layers)
+  ! Copy the attrStruct
+  attrStruct%var(:) = outputStructure(1)%attrStruct%gru(indxGRU)%hru(indxHRU)%var(:)
+  ! Copy the typeStruct
+  typeStruct%var(:) = outputStructure(1)%typeStruct%gru(indxGRU)%hru(indxHRU)%var(:)
+  ! Copy the idStruct
+  idStruct%var(:) = outputStructure(1)%idStruct%gru(indxGRU)%hru(indxHRU)%var(:)
 
-  ! get the maximum number of layers
-  maxLayers = gru_struc(1)%hruInfo(1)%nSoil + maxSnowLayers
-
-  ! define monthly fraction of green vegetation
-  greenVegFrac_monthly = (/0.01_dp, 0.02_dp, 0.03_dp, 0.07_dp, 0.50_dp, 0.90_dp, 0.95_dp, 0.96_dp, 0.65_dp, 0.24_dp, 0.11_dp, 0.02_dp/)
-
-  ! define urban vegetation category
-  select case(trim(model_decisions(iLookDECISIONS%vegeParTbl)%cDecision))
-    case('USGS');                     urbanVegCategory =    1
-    case('MODIFIED_IGBP_MODIS_NOAH'); urbanVegCategory =   13
-    case('plumberCABLE');             urbanVegCategory = -999
-    case('plumberCHTESSEL');          urbanVegCategory = -999
-    case('plumberSUMMA');             urbanVegCategory = -999
-    case default
-      message=trim(message)//'unable to identify vegetation category'
-      print*, message
-      return
-  end select
-
-  ! *****************************************************************************
-  ! *** compute derived model variables that are pretty much constant for the basin as a whole
-  ! *****************************************************************************
-  ! calculate the fraction of runoff in future time steps
-  call fracFuture(bparStruct%var,    &  ! vector of basin-average model parameters
-                  bvarStruct,        &  ! data structure of basin-average variables
-                  err,cmessage)                   ! error control
-  if(err/=0)then;message=trim(message)//trim(cmessage);print*,message;return;endif
-
-  ! check that the parameters are consistent
-  call paramCheck(mparStruct,err,cmessage)
-  if(err/=0)then;message=trim(message)//trim(cmessage);print*,message;return;endif
-
-  ! calculate a look-up table for the temperature-enthalpy conversion
-  call E2T_lookup(mparStruct,err,cmessage)
-  if(err/=0)then;message=trim(message)//trim(cmessage);print*, message;return;endif
-
-  ! calculate a lookup table to compute enthalpy from temperature
-  call T2E_lookup(gru_struc(indxGRU)%hruInfo(1)%nSoil,   &   ! intent(in):    number of soil layers
-                  mparStruct,        &   ! intent(in):    parameter data structure
-                  lookupStruct,      &   ! intent(inout): lookup table data structure
-                  err,cmessage)                              ! intent(out):   error control
-  if(err/=0)then; message=trim(message)//trim(cmessage);print*,message;return;endif
-
-  ! overwrite the vegetation height
-  HVT(typeStruct%var(iLookTYPE%vegTypeIndex)) = mparStruct%var(iLookPARAM%heightCanopyTop)%dat(1)
-  HVB(typeStruct%var(iLookTYPE%vegTypeIndex)) = mparStruct%var(iLookPARAM%heightCanopyBottom)%dat(1)
-
-  ! overwrite the tables for LAI and SAI
-  if(model_decisions(iLookDECISIONS%LAI_method)%iDecision == specified)then
-    SAIM(typeStruct%var(iLookTYPE%vegTypeIndex),:) = mparStruct%var(iLookPARAM%winterSAI)%dat(1)
-    LAIM(typeStruct%var(iLookTYPE%vegTypeIndex),:) = mparStruct%var(iLookPARAM%summerLAI)%dat(1)*greenVegFrac_monthly
+  ! Copy the mparStruct
+  mparStruct%var(:) = outputStructure(1)%mparStruct%gru(indxGRU)%hru(indxHRU)%var(:)
+  ! Copy the bparStruct
+  bparStruct%var(:) = outputStructure(1)%bparStruct%gru(indxGRU)%var(:)
+  ! Copy the dparStruct
+  dparStruct%var(:) = outputStructure(1)%dparStruct%gru(indxGRU)%hru(indxHRU)%var(:)
+  ! Copy the bvarStruct
+  do ivar=1, size(outputStructure(1)%bvarStruct_init%gru(indxGRU)%var(:))
+    bvarStruct%var(ivar)%dat(:) = outputStructure(1)%bvarStruct_init%gru(indxGRU)%var(ivar)%dat(:)
+  enddo
+  ! Copy the lookup Struct if its allocated
+  if (allocated(outputStructure(1)%lookupStruct%gru(indxGRU)%hru(indxHRU)%z)) then
+    do i_z=1, size(outputStructure(1)%lookupStruct%gru(indxGRU)%hru(indxHRU)%z(:))
+      do iVar=1, size(outputStructure(1)%lookupStruct%gru(indxGRU)%hru(indxHRU)%z(i_z)%var(:))
+        lookupStruct%z(i_z)%var(ivar)%lookup(:) = outputStructure(1)%lookupStruct%gru(indxGRU)%hru(indxHRU)%z(i_z)%var(iVar)%lookup(:)
+      end do
+    end do
   endif
-
-  ! compute total area of the upstream HRUS that flow into each HRU
-  upArea = 0._dp
-  ! Check if lateral flows exists within the HRU
-  if(typeStruct%var(iLookTYPE%downHRUindex)==typeStruct%var(iLookID%hruId))then
-    upArea = upArea + attrStruct%var(iLookATTR%HRUarea)
-  endif
-
-  ! identify the total basin area for a GRU (m2)
-  associate(totalArea => bvarStruct%var(iLookBVAR%basin__totalArea)%dat(1) )
-    totalArea = 0._dp
-    totalArea = totalArea + attrStruct%var(iLookATTR%HRUarea)
-  end associate
+  ! Copy the progStruct_init
+  do ivar=1, size(outputStructure(1)%progStruct_init%gru(indxGRU)%hru(indxHRU)%var(:))
+    progStruct%var(ivar)%dat(:) = outputStructure(1)%progStruct_init%gru(indxGRU)%hru(indxHRU)%var(ivar)%dat(:)
+  enddo
+  ! copy the indexStruct_init
+  do ivar=1, size(outputStructure(1)%indxStruct_init%gru(indxGRU)%hru(indxHRU)%var(:))
+    indxStruct%var(ivar)%dat(:) = outputStructure(1)%indxStruct_init%gru(indxGRU)%hru(indxHRU)%var(ivar)%dat(:)
+  enddo
 
 end subroutine setupHRUParam
 

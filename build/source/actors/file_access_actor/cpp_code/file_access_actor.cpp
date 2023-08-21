@@ -44,12 +44,6 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
 
     aout(self) << "Simluations Steps: " << self->state.num_steps << "\n";
 
-    // Read in the attribute and parameter information for the HRUs to request
-    readAttributes(self);
-    readParameters(self);
-
-    // read in the inital conditions for the grus/hrus
-    readInitConditions(self);
     
     // Inital Files Have Been Loaded - Send Message to Job_Actor to Start Simulation
     self->send(self->state.parent, init_gru_v);
@@ -66,11 +60,10 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
     }
 
     // Set up the output container
-    self->state.output_container = new Output_Container(
-        self->state.file_access_actor_settings.num_partitions_in_output_buffer,
-        self->state.num_gru,
-        self->state.file_access_actor_settings.num_timesteps_in_output_buffer,
-        self->state.num_steps); 
+    self->state.output_container = new Output_Container(self->state.file_access_actor_settings.num_partitions_in_output_buffer,
+                                                        self->state.num_gru,
+                                                        self->state.file_access_actor_settings.num_timesteps_in_output_buffer,
+                                                        self->state.num_steps); 
 
     return {
         [=](write_param, int index_gru, int index_hru, std::vector<double> attr_struct, 
@@ -248,113 +241,6 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
 }
 
 
-void readAttributes(stateful_actor<file_access_state>* self) {
-
-    int err = 0;
-    openAttributeFile(&self->state.attribute_ncid, &err);
-    
-    getNumVarAttr(&self->state.attribute_ncid, &self->state.num_var_in_attributes_file, &err);
-    
-    for (int index_gru = 1; index_gru < self->state.num_gru + 1; index_gru++) {
-
-        void* handle_attr_struct = new_handle_var_d();
-        void* handle_type_struct = new_handle_var_i();
-        void* handle_id_struct   = new_handle_var_i8();
-        int index_hru = 1;
-
-        allocateAttributeStructures(&index_gru, &index_hru, handle_attr_struct, handle_type_struct,
-            handle_id_struct, &err);
-
-        readAttributeFromNetCDF(&self->state.attribute_ncid, &index_gru, &index_hru,
-            &self->state.num_var_in_attributes_file, handle_attr_struct, handle_type_struct,
-            handle_id_struct, &err);
-        
-        // attr struct
-        std::vector<double> attr_struct_to_push = get_var_d(handle_attr_struct);
-        self->state.attr_structs_for_hrus.push_back(attr_struct_to_push);
-        delete_handle_var_d(handle_attr_struct);
-        // type struct
-        std::vector<int> type_struct_to_push = get_var_i(handle_type_struct);
-        self->state.type_structs_for_hrus.push_back(type_struct_to_push);
-        delete_handle_var_i(handle_type_struct);
-        // id struct
-        std::vector<long int> id_struct_to_push = get_var_i8(handle_id_struct);
-        self->state.id_structs_for_hrus.push_back(id_struct_to_push);
-        delete_handle_var_i8(handle_id_struct);
-    }
-
-    closeAttributeFile(&self->state.attribute_ncid, &err);
-}
-
-void readParameters(stateful_actor<file_access_state>* self) {
-
-    int err = 0;
-    int index_hru = 1;
-
-    openParamFile(&self->state.param_ncid, &self->state.param_file_exists, 
-        &err);
-
-    getParamSizes(&self->state.dpar_array_size, &self->state.bpar_array_size,
-        &self->state.type_array_size);
-    
-
-    if (self->state.param_file_exists) {
-        getNumVarParam(&self->state.param_ncid, &self->state.num_var_in_param_file,
-            &err);
-    } else {
-        self->state.num_var_in_param_file = self->state.type_array_size;
-    }
-
-    for (int index_gru = 1; index_gru < self->state.num_gru + 1; index_gru++) {
-
-        std::vector<double> dpar_array(self->state.dpar_array_size);
-        void* handle_type_struct = new_handle_var_i();
-        void* handle_dpar_struct = new_handle_var_d();
-        void* handle_mpar_struct = new_handle_var_dlength();      
-        void* handle_bpar_struct = new_handle_var_d();  
-        std::vector<double> bpar_array(self->state.dpar_array_size);        
-
-        allocateParamStructures(&index_gru, &index_hru, handle_dpar_struct, 
-            handle_mpar_struct, handle_bpar_struct, &err);
-
-        // need to convert attr_struct to FORTRAN format   
-        set_var_i(self->state.type_structs_for_hrus[index_gru-1], handle_type_struct); 
-    
-        overwriteParam(&index_gru, &index_hru, 
-            handle_type_struct,
-            handle_dpar_struct, 
-            handle_mpar_struct, 
-            handle_bpar_struct, 
-            &err);
-
-        if (self->state.param_file_exists) {
-            readParamFromNetCDF(&self->state.param_ncid, &index_gru, &index_hru,
-                &self->state.start_gru, 
-                &self->state.num_var_in_param_file, 
-                handle_mpar_struct, 
-                handle_bpar_struct,
-                &err);
-        }
-
-        // type_struct
-        delete_handle_var_i(handle_type_struct);
-        
-        // dpar_struct
-        std::vector<double> dpar_struct_to_push = get_var_d(handle_dpar_struct);
-        self->state.dpar_structs_for_hrus.push_back(dpar_struct_to_push);
-        delete_handle_var_d(handle_dpar_struct);
-        // mpar_struct
-        std::vector<std::vector<double>> mpar_struct_to_push = get_var_dlength(handle_mpar_struct);
-        self->state.mpar_structs_for_hrus.push_back(mpar_struct_to_push);
-        delete_handle_var_dlength(handle_mpar_struct);
-        // bpar_struct
-        std::vector<double> bpar_struct_to_push = get_var_d(handle_bpar_struct);
-        self->state.bpar_structs_for_hrus.push_back(bpar_struct_to_push);
-        delete_handle_var_d(handle_bpar_struct);
-    }
-    closeParamFile(&self->state.param_ncid, &err);
-}
-
 void writeOutput(stateful_actor<file_access_state>* self, Output_Partition* partition) {
                 
     int num_timesteps_to_write = partition->getNumStoredTimesteps();
@@ -376,14 +262,6 @@ void writeOutput(stateful_actor<file_access_state>* self, Output_Partition* part
     }
 
     partition->resetReadyToWriteList();
-}
-
-void readInitConditions(stateful_actor<file_access_state>* self) {
-    int err;
-    openInitCondFile(&self->state.init_cond_ncid, &err);
-    readInitCond_prog(&self->state.init_cond_ncid, &self->state.start_gru, &self->state.num_gru, &err);
-    readInitCond_bvar(&self->state.init_cond_ncid, &self->state.start_gru, &self->state.num_gru, &err);
-    closeInitCondFile(&self->state.init_cond_ncid, &err); 
 }
 
 } // end namespace

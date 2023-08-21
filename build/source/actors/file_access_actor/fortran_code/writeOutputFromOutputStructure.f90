@@ -126,7 +126,7 @@ subroutine writeOutput_fortran(handle_ncid, num_steps, start_gru, max_gru, err) 
     stepCounter(:) = outputTimeStep(iGRU)%dat(:) ! We want to avoid updating outputTimeStep
     do iStep=1, num_steps
       call writeTime(ncid,outputTimeStep(iGRU)%dat(:),iStep,time_meta, &
-              outputStructure(1)%timeStruct(1)%gru(iGRU)%hru(indxHRU)%var,err,cmessage)
+              outputStructure(1)%timeStruct%gru(iGRU)%hru(indxHRU)%var,err,cmessage)
     end do ! istep
   end do ! iGRU
 
@@ -137,7 +137,7 @@ subroutine writeOutput_fortran(handle_ncid, num_steps, start_gru, max_gru, err) 
   ! ****************************************************************************
   call writeBasin(ncid,outputTimeStep(start_gru)%dat(:),outputTimeStepUpdate,num_steps,&
                   start_gru, max_gru, numGRU, &
-                  bvar_meta,outputStructure(1)%bvarStat(1),outputStructure(1)%bvarStruct(1), &
+                  bvar_meta,outputStructure(1)%bvarStat,outputStructure(1)%bvarStruct, &
                   bvarChild_map,err,cmessage)
 
   ! ****************************************************************************
@@ -148,28 +148,28 @@ subroutine writeOutput_fortran(handle_ncid, num_steps, start_gru, max_gru, err) 
       case('forc')
         call writeData(ncid,outputTimeStep(start_gru)%dat(:),outputTimestepUpdate,maxLayers,num_steps,&
                         start_gru, max_gru, numGRU, & 
-                        forc_meta,outputStructure(1)%forcStat(1),outputStructure(1)%forcStruct(1),'forc', &
-                        forcChild_map,outputStructure(1)%indxStruct(1),err,cmessage)
+                        forc_meta,outputStructure(1)%forcStat,outputStructure(1)%forcStruct,'forc', &
+                        forcChild_map,outputStructure(1)%indxStruct,err,cmessage)
       case('prog')
         call writeData(ncid,outputTimeStep(start_gru)%dat(:),outputTimestepUpdate,maxLayers,num_steps,&
                         start_gru, max_gru, numGRU, &
-                        prog_meta,outputStructure(1)%progStat(1),outputStructure(1)%progStruct(1),'prog', &
-                        progChild_map,outputStructure(1)%indxStruct(1),err,cmessage)
+                        prog_meta,outputStructure(1)%progStat,outputStructure(1)%progStruct,'prog', &
+                        progChild_map,outputStructure(1)%indxStruct,err,cmessage)
       case('diag')
         call writeData(ncid,outputTimeStep(start_gru)%dat(:),outputTimestepUpdate,maxLayers,num_steps,&
                         start_gru, max_gru, numGRU, &
-                        diag_meta,outputStructure(1)%diagStat(1),outputStructure(1)%diagStruct(1),'diag', &
-                        diagChild_map,outputStructure(1)%indxStruct(1),err,cmessage)
+                        diag_meta,outputStructure(1)%diagStat,outputStructure(1)%diagStruct,'diag', &
+                        diagChild_map,outputStructure(1)%indxStruct,err,cmessage)
       case('flux')
         call writeData(ncid,outputTimeStep(start_gru)%dat(:),outputTimestepUpdate,maxLayers,num_steps,&
                         start_gru, max_gru, numGRU, &
-                        flux_meta,outputStructure(1)%fluxStat(1),outputStructure(1)%fluxStruct(1),'flux', &
-                        fluxChild_map,outputStructure(1)%indxStruct(1),err,cmessage)
+                        flux_meta,outputStructure(1)%fluxStat,outputStructure(1)%fluxStruct,'flux', &
+                        fluxChild_map,outputStructure(1)%indxStruct,err,cmessage)
       case('indx')
         call writeData(ncid,outputTimeStep(start_gru)%dat(:),outputTimestepUpdate,maxLayers,num_steps,&
                         start_gru, max_gru, numGRU, &
-                        indx_meta,outputStructure(1)%indxStat(1),outputStructure(1)%indxStruct(1),'indx', &
-                        indxChild_map,outputStructure(1)%indxStruct(1),err,cmessage)
+                        indx_meta,outputStructure(1)%indxStat,outputStructure(1)%indxStruct,'indx', &
+                        indxChild_map,outputStructure(1)%indxStruct,err,cmessage)
     end select
     if(err/=0)then; message=trim(message)//trim(cmessage)//'['//trim(structInfo(iStruct)%structName)//']'; return; endif
   end do  ! (looping through structures)
@@ -325,9 +325,9 @@ subroutine writeData(ncid,outputTimestep,outputTimestepUpdate,maxLayers,nSteps, 
 
         do iStep = 1, nSteps
           ! check if we want this timestep
-          if(.not.outputStructure(1)%finalizeStats(1)%gru(verifiedGRUIndex)%hru(1)%tim(iStep)%dat(iFreq)) cycle
+          if(.not.outputStructure(1)%finalizeStats%gru(verifiedGRUIndex)%hru(1)%tim(iStep)%dat(iFreq)) cycle
           stepCounter = stepCounter+1
-          timeVec(stepCounter) = outputStructure(1)%forcStruct(1)%gru(verifiedGRUIndex)%hru(1)%var(iVar)%tim(iStep)
+          timeVec(stepCounter) = outputStructure(1)%forcStruct%gru(verifiedGRUIndex)%hru(1)%var(iVar)%tim(iStep)
         end do ! iStep
         err = nf90_put_var(ncid%var(iFreq),ncVarID,timeVec(1:stepCounter),start=(/outputTimestep(iFreq)/),count=(/stepCounter/))
         call netcdf_err(err,message); if (err/=0)then; print*, "err"; return; endif
@@ -396,7 +396,7 @@ subroutine writeScalar(ncid, outputTimestep, outputTimestepUpdate, nSteps, minGR
         stepCounter = 0
         gruCounter = gruCounter + 1
         do iStep = 1, nSteps
-          if(.not.outputStructure(1)%finalizeStats(1)%gru(iGRU)%hru(1)%tim(iStep)%dat(iFreq)) cycle
+          if(.not.outputStructure(1)%finalizeStats%gru(iGRU)%hru(1)%tim(iStep)%dat(iFreq)) cycle
           stepCounter = stepCounter + 1
           realVec(gruCounter, stepCounter) = stat%gru(iGRU)%hru(1)%var(map(iVar))%tim(iStep)%dat(iFreq)
           outputTimeStepUpdate(iFreq) = stepCounter
@@ -412,9 +412,8 @@ subroutine writeScalar(ncid, outputTimestep, outputTimestepUpdate, nSteps, minGR
         print*, "   maxGRU = ", maxGRU
         err = 20
         return
-
-      err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),realVec(1:gruCounter, 1:stepCounter),start=(/minGRU,outputTimestep(iFreq)/),count=(/numGRU,stepCounter/))
       endif
+      err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),realVec(1:gruCounter, 1:stepCounter),start=(/minGRU,outputTimestep(iFreq)/),count=(/numGRU,stepCounter/))
     class default; err=20; message=trim(message)//'stats must be scalarv and of type gru_hru_doubleVec'; return
   end select  ! stat
 
@@ -492,11 +491,11 @@ subroutine writeVector(ncid, outputTimestep, maxLayers, nSteps, minGRU, maxGRU, 
       ! get the data vectors
       select type (dat)
           class is (gru_hru_time_doubleVec)
-              if(.not.outputStructure(1)%finalizeStats(1)%gru(iGRU)%hru(1)%tim(iStep)%dat(iFreq)) cycle
+              if(.not.outputStructure(1)%finalizeStats%gru(iGRU)%hru(1)%tim(iStep)%dat(iFreq)) cycle
               realArray(gruCounter,1:datLength) = dat%gru(iGRU)%hru(1)%var(iVar)%tim(iStep)%dat(:)
 
           class is (gru_hru_time_intVec)
-              if(.not.outputStructure(1)%finalizeStats(1)%gru(iGRU)%hru(1)%tim(iStep)%dat(iFreq)) cycle
+              if(.not.outputStructure(1)%finalizeStats%gru(iGRU)%hru(1)%tim(iStep)%dat(iFreq)) cycle
               intArray(gruCounter,1:datLength) = dat%gru(iGRU)%hru(1)%var(iVar)%tim(iStep)%dat(:)
           class default; err=20; message=trim(message)//'data must not be scalarv and either of type gru_hru_doubleVec or gru_hru_intVec'; return
       end select
@@ -567,6 +566,7 @@ subroutine writeBasin(ncid,outputTimestep,outputTimestepUpdate,nSteps,&
   ! initialize error control
   err=0;message="f-writeBasin/"
 
+
   ! loop through output frequencies
   do iFreq=1,maxvarFreq
 
@@ -632,7 +632,7 @@ subroutine writeTime(ncid,outputTimestep,iStep,meta,dat,err,message)
   do iFreq=1,maxvarFreq
 
     ! check that we have finalized statistics for a given frequency
-    if(.not.outputStructure(1)%finalizeStats(1)%gru(1)%hru(1)%tim(iStep)%dat(iFreq)) cycle
+    if(.not.outputStructure(1)%finalizeStats%gru(1)%hru(1)%tim(iStep)%dat(iFreq)) cycle
 
     ! loop through model variables
     do iVar = 1,size(meta)

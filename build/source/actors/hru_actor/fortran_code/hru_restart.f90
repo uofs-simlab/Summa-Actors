@@ -69,8 +69,8 @@ subroutine summa_readRestart(&
   USE nrtype                                                  ! variable types, etc.
   ! functions and subroutines
   USE time_utils_module,only:elapsedSec                       ! calculate the elapsed time
-  USE read_icond_actors_module,only:read_icond               ! module to read initial conditions
-  USE check_icond4chm_module,only:check_icond4chm             ! module to check initial conditions
+  ! USE read_icond_module,only:read_icond               ! module to read initial conditions
+  ! USE check_icond4chm_module,only:check_icond4chm             ! module to check initial conditions
   USE var_derive_module,only:calcHeight                       ! module to calculate height at layer interfaces and layer mid-point
   USE var_derive_module,only:v_shortcut                       ! module to calculate "short-cut" variables
   USE var_derive_module,only:rootDensty                       ! module to calculate the vertical distribution of roots
@@ -131,31 +131,6 @@ subroutine summa_readRestart(&
 
   ! initialize error control
   err=0; message='hru_actor_readRestart/'
-  nGRU = 1
-
-  ! *****************************************************************************
-  ! *** read/check initial conditions
-  ! *****************************************************************************
-  ! read initial conditions
-  call read_icond(&
-                  indxGRU,                       & ! intent(in):    index of GRU in gru_struc
-                  indxHRU,                       & ! intent(in):    index of HRU in gru_struc
-                  mparStruct,                    & ! intent(in):    model parameters
-                  progStruct,                    & ! intent(inout): model prognostic variables
-                  bvarStruct,                    & ! intent(inout): model basin (GRU) variables
-                  indxStruct,                    & ! intent(inout): model indices
-                  err,cmessage)                    ! intent(out):   error control
-  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
-
-  ! check initial conditions
-  call check_icond4chm(&
-                    indxGRU,                        & ! intent(in):   index of GRU in gru_struc
-                    indxHRU,                        & ! intent(in):   index of HRU in gru_struc           
-                    progStruct,                     & ! intent(in):   model prognostic (state) variables
-                    mparStruct,                     & ! intent(in):   model parameters
-                    indxStruct,                     & ! intent(in):   layer indexes
-                    err,cmessage)                   ! intent(out):   error control
-  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
 
 
   ! *****************************************************************************
