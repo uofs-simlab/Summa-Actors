@@ -85,7 +85,7 @@ behavior job_actor(stateful_actor<job_state>* self,
                                                 self);
 
 
-    aout(self) << "Job Actor Initalized \n";
+    aout(self) << "Job Actor Initialized \n";
 
     return {
 

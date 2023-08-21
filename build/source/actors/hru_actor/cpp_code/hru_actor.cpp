@@ -69,7 +69,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
                         self->state.handle_finalizeStats, 
                         &self->state.err);
 
-    // Get the number of timesteps requried until needing to write
+    // Get the number of timesteps required until needing to write
     self->request(self->state.file_access_actor, 
                   caf::infinite,
                   get_num_output_steps_v)
