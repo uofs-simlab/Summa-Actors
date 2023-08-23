@@ -13,9 +13,7 @@ enum class gru_state {
     succeeded
 };
 
-auto success = [](const gru_state& state) -> int {
-    return(state == gru_state::succeeded) ? 1 : 0;
-};
+int is_success(const gru_state& state);
 
 /**
  * Class that holds information about the running GRUs. This class is held by the job actor
