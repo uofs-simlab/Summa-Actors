@@ -267,7 +267,7 @@ std::vector<serializable_netcdf_gru_actor_info> getGruNetcdfInfo(int max_run_att
         gru_info.write_output_duration = gru->getWriteOutputDuration();
         
         gru_info.num_attempts = max_run_attempts - gru->getAttemptsLeft() + 1;
-        gru_info.successful = success(gru->getStatus());
+        gru_info.successful = is_success(gru->getStatus());
         gru_info.rel_tol = gru->getRelTol();
         gru_info.abs_tol = gru->getAbsTol();
 

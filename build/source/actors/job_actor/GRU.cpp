@@ -4,6 +4,11 @@
 #include <fstream>
 
 
+int is_success(const gru_state& state) {
+
+  return(state == gru_state::succeeded) ? 1 : 0;
+}
+
 
 GRU::GRU(int global_gru_index, int local_gru_index, caf::actor gru_actor, 
          int dt_init_factor, double rel_tol, double abs_tol, int max_attempt) {
