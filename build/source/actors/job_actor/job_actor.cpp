@@ -243,7 +243,10 @@ behavior job_actor(stateful_actor<job_state>* self,
 
               break;
             case type_id_v<file_access_error>:
-              aout(self) << "File Access Error: " << to_string(err) << "No Hanlding Implemented\n";
+              aout(self) << "File Access Error: " << to_string(err) << "No Handling Implemented\n";
+              for (auto GRU : self->state.gru_container.gru_list) {
+                self->send_exit(GRU->getGRUActor(), exit_reason::user_shutdown);
+              }
               self->quit();
               break;
             default:
