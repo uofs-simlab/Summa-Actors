@@ -460,9 +460,10 @@ MODULE data_types
     type(hru_z_vLookup),allocatable     :: gru(:)      ! gru(:)%hru(:)%z(:)%var(:)%lookup(:)
   endtype gru_hru_z_vLookup
 
-! define derived types used to simplify passing subroutine arguments
+
+ ! define derived types used to simplify passing subroutine arguments
  ! ** vegNrgFlux
-  type, public :: in_type_vegNrgFlux ! derived type for intent(in) arguments in vegNrgFlux call
+ type, public :: in_type_vegNrgFlux ! derived type for intent(in) arguments in vegNrgFlux call
   logical(lgt)             :: firstSubStep                      ! intent(in): flag to indicate if we are processing the first sub-step
   logical(lgt)             :: firstFluxCall                     ! intent(in): flag to indicate if we are processing the first flux call
   logical(lgt)             :: computeVegFlux                    ! intent(in): flag to indicate if we need to compute fluxes over vegetation
@@ -576,5 +577,112 @@ MODULE data_types
   character(:),allocatable :: cmessage                          ! intent(out):   error message
  end type out_type_snowLiqFlx
  ! ** end snowLiqFlx
+
+ ! ** soilLiqFlx
+ type, public :: in_type_soilLiqFlx ! derived type for intent(in) arguments in soilLiqFlx call
+  integer(i4b)             :: nSoil                             ! intent(in):    number of soil layers
+  logical(lgt)             :: firstSplitOper                    ! intent(in):    flag indicating first flux call in a splitting operation
+  logical(lgt)             :: scalarSolution                    ! intent(in):    flag to indicate the scalar solution
+  logical(lgt)             :: deriv_desired                     ! intent(in):    flag indicating if derivatives are desired
+  real(rkind), allocatable :: mLayerTempTrial(:)                ! intent(in):    trial temperature at the current iteration (K)
+  real(rkind), allocatable :: mLayerMatricHeadTrial(:)          ! intent(in):    matric potential (m)
+  real(rkind), allocatable :: mLayerMatricHeadLiqTrial(:)       ! intent(in):    liquid water matric potential (m)
+  real(rkind), allocatable :: mLayerVolFracLiqTrial(:)          ! intent(in):    volumetric fraction of liquid water (-)
+  real(rkind), allocatable :: mLayerVolFracIceTrial(:)          ! intent(in):    volumetric fraction of ice (-)
+  real(rkind), allocatable :: mLayerdTheta_dTk(:)               ! intent(in):    derivative in volumetric liquid water content w.r.t. temperature (K-1)
+  real(rkind), allocatable :: dPsiLiq_dTemp(:)                  ! intent(in):    derivative in liquid water matric potential w.r.t. temperature (m K-1)
+  real(rkind)              :: dCanopyTrans_dCanWat              ! intent(in):    derivative in canopy transpiration w.r.t. canopy total water content (s-1)
+  real(rkind)              :: dCanopyTrans_dTCanair             ! intent(in):    derivative in canopy transpiration w.r.t. canopy air temperature (kg m-2 s-1 K-1)
+  real(rkind)              :: dCanopyTrans_dTCanopy             ! intent(in):    derivative in canopy transpiration w.r.t. canopy temperature (kg m-2 s-1 K-1)
+  real(rkind)              :: dCanopyTrans_dTGround             ! intent(in):    derivative in canopy transpiration w.r.t. ground temperature (kg m-2 s-1 K-1)
+  real(rkind)              :: above_soilLiqFluxDeriv            ! intent(in):    derivative in layer above soil (canopy or snow) liquid flux w.r.t. liquid water
+  real(rkind)              :: above_soildLiq_dTk                ! intent(in):    derivative of layer above soil (canopy or snow) liquid flux w.r.t. temperature
+  real(rkind)              :: above_soilFracLiq                 ! intent(in):    fraction of liquid water layer above soil (canopy or snow) (-)
+  real(rkind)              :: scalarCanopyTranspiration         ! intent(in):    canopy transpiration (kg m-2 s-1)
+  real(rkind)              :: scalarGroundEvaporation           ! intent(in):    ground evaporation (kg m-2 s-1)
+  real(rkind)              :: scalarRainPlusMelt                ! intent(in):    rain plus melt (m s-1)
+ end type in_type_soilLiqFlx
+
+ type, public :: io_type_soilLiqFlx ! derived type for intent(inout) arguments in soilLiqFlx call
+  real(rkind)              :: scalarMaxInfilRate                ! intent(inout): maximum infiltration rate (m s-1)
+  real(rkind)              :: scalarInfilArea                   ! intent(inout): fraction of unfrozen area where water can infiltrate (-)
+  real(rkind)              :: scalarFrozenArea                  ! intent(inout): fraction of area that is considered impermeable due to soil ice (-)
+  real(rkind)              :: scalarSurfaceRunoff               ! intent(inout): surface runoff (m s-1)
+  real(rkind), allocatable :: mLayerdTheta_dPsi(:)              ! intent(inout): derivative in the soil water characteristic w.r.t. psi (m-1)
+  real(rkind), allocatable :: mLayerdPsi_dTheta(:)              ! intent(inout): derivative in the soil water characteristic w.r.t. theta (m)
+  real(rkind), allocatable :: dHydCond_dMatric(:)               ! intent(inout): derivative in hydraulic conductivity w.r.t matric head (s-1)
+  real(rkind)              :: scalarInfiltration                ! intent(inout): surface infiltration rate (m s-1) -- controls on infiltration only computed for iter==1
+  real(rkind), allocatable :: iLayerLiqFluxSoil(:)              ! intent(inout): liquid fluxes at layer interfaces (m s-1)
+  real(rkind), allocatable :: mLayerTranspire(:)                ! intent(inout): transpiration loss from each soil layer (m s-1)
+  real(rkind), allocatable :: mLayerHydCond(:)                  ! intent(inout): hydraulic conductivity in each layer (m s-1)
+  real(rkind), allocatable :: dq_dHydStateAbove(:)              ! intent(inout): derivatives in the flux w.r.t. matric head in the layer above (s-1)
+  real(rkind), allocatable :: dq_dHydStateBelow(:)              ! intent(inout): derivatives in the flux w.r.t. matric head in the layer below (s-1)
+  real(rkind), allocatable :: dq_dHydStateLayerSurfVec(:)       ! intent(inout): derivative in surface infiltration w.r.t. hydrology state in above soil snow or canopy and every soil layer  (m s-1 or s-1)
+  real(rkind), allocatable :: dq_dNrgStateAbove(:)              ! intent(inout): derivatives in the flux w.r.t. temperature in the layer above (m s-1 K-1)
+  real(rkind), allocatable :: dq_dNrgStateBelow(:)              ! intent(inout): derivatives in the flux w.r.t. temperature in the layer below (m s-1 K-1)
+  real(rkind), allocatable :: dq_dNrgStateLayerSurfVec(:)       ! intent(inout): derivative in surface infiltration w.r.t. energy state in above soil snow or canopy and every soil layer (m s-1 K-1)
+  real(rkind), allocatable :: mLayerdTrans_dTCanair(:)          ! intent(inout): derivatives in the soil layer transpiration flux w.r.t. canopy air temperature
+  real(rkind), allocatable :: mLayerdTrans_dTCanopy(:)          ! intent(inout): derivatives in the soil layer transpiration flux w.r.t. canopy temperature
+  real(rkind), allocatable :: mLayerdTrans_dTGround(:)          ! intent(inout): derivatives in the soil layer transpiration flux w.r.t. ground temperature
+  real(rkind), allocatable :: mLayerdTrans_dCanWat(:)           ! intent(inout): derivatives in the soil layer transpiration flux w.r.t. canopy total water  
+ end type io_type_soilLiqFlx
+
+ type, public :: out_type_soilLiqFlx ! derived type for intent(out) arguments in soilLiqFlx call
+  integer(i4b)             :: err                               ! intent(out):   error code
+  character(:),allocatable :: cmessage                          ! intent(out):   error message
+ end type out_type_soilLiqFlx
+ ! ** end soilLiqFlx
+
+ ! ** groundwatr
+ type, public :: in_type_groundwatr  ! derived type for intent(in) arguments in groundwatr call
+  integer(i4b)             :: nSnow                             ! intent(in):    number of snow layers
+  integer(i4b)             :: nSoil                             ! intent(in):    number of soil layers
+  integer(i4b)             :: nLayers                           ! intent(in):    total number of layers
+  logical(lgt)             :: firstFluxCall                     ! intent(in):    logical flag to compute index of the lowest saturated layer
+  real(rkind), allocatable :: mLayerdTheta_dPsi(:)              ! intent(in):    derivative in the soil water characteristic w.r.t. matric head in each layer (m-1)
+  real(rkind), allocatable :: mLayerMatricHeadLiqTrial(:)       ! intent(in):    liquid water matric potential (m)
+  real(rkind), allocatable :: mLayerVolFracLiqTrial(:)          ! intent(in):    volumetric fraction of liquid water (-)
+  real(rkind), allocatable :: mLayerVolFracIceTrial(:)          ! intent(in):    volumetric fraction of ice (-)
+ end type in_type_groundwatr
+
+ type, public :: io_type_groundwatr  ! derived type for intent(io) arguments in groundwatr call
+  integer(i4b)             :: ixSaturation                      ! intent(inout): index of lowest saturated layer (NOTE: only computed on the first iteration)
+ end type io_type_groundwatr
+
+ type, public :: out_type_groundwatr ! derived type for intent(out) arguments in groundwatr call
+  real(rkind), allocatable :: mLayerBaseflow(:)                 ! intent(out):   baseflow from each soil layer (m s-1)
+  real(rkind), allocatable :: dBaseflow_dMatric(:,:)            ! intent(out):   derivative in baseflow w.r.t. matric head (s-1)
+  integer(i4b)             :: err                               ! intent(out):   error code
+  character(:),allocatable :: cmessage                          ! intent(out):   error message
+ end type out_type_groundwatr
+ ! ** end groundwatr
+
+ ! ** bigAquifer
+ type, public :: in_type_bigAquifer  ! derived type for intent(in) arguments in bigAquifer call
+  real(rkind)              :: scalarAquiferStorageTrial         ! intent(in):    trial value of aquifer storage (m)
+  real(rkind)              :: scalarCanopyTranspiration         ! intent(in):    canopy transpiration (kg m-2 s-1)
+  real(rkind)              :: scalarSoilDrainage                ! intent(in):    soil drainage (m s-1)
+  real(rkind)              :: dCanopyTrans_dCanWat              ! intent(in):    derivative in canopy transpiration w.r.t. canopy total water content (s-1)
+  real(rkind)              :: dCanopyTrans_dTCanair             ! intent(in):    derivative in canopy transpiration w.r.t. canopy air temperature (kg m-2 s-1 K-1)
+  real(rkind)              :: dCanopyTrans_dTCanopy             ! intent(in):    derivative in canopy transpiration w.r.t. canopy temperature (kg m-2 s-1 K-1)
+  real(rkind)              :: dCanopyTrans_dTGround             ! intent(in):    derivative in canopy transpiration w.r.t. ground temperature (kg m-2 s-1 K-1)
+ end type in_type_bigAquifer
+
+ type, public :: io_type_bigAquifer  ! derived type for intent(inout) arguments in bigAquifer call
+  real(rkind)              :: dAquiferTrans_dTCanair            ! intent(inout): derivatives in the aquifer transpiration flux w.r.t. canopy air temperature
+  real(rkind)              :: dAquiferTrans_dTCanopy            ! intent(inout): derivatives in the aquifer transpiration flux w.r.t. canopy temperature
+  real(rkind)              :: dAquiferTrans_dTGround            ! intent(inout): derivatives in the aquifer transpiration flux w.r.t. ground temperature
+  real(rkind)              :: dAquiferTrans_dCanWat             ! intent(inout): derivatives in the aquifer transpiration flux w.r.t. canopy total water
+ end type io_type_bigAquifer
+
+ type, public :: out_type_bigAquifer  ! derived type for intent(out) arguments in bigAquifer call
+  real(rkind)              :: scalarAquiferTranspire            ! intent(out):   transpiration loss from the aquifer (m s-1)
+  real(rkind)              :: scalarAquiferRecharge             ! intent(out):   recharge to the aquifer (m s-1)
+  real(rkind)              :: scalarAquiferBaseflow             ! intent(out):   total baseflow from the aquifer (m s-1)
+  real(rkind)              :: dBaseflow_dAquifer                ! intent(out):   change in baseflow flux w.r.t. aquifer storage (s-1)
+  integer(i4b)             :: err                               ! intent(out):   error code
+  character(:),allocatable :: cmessage                          ! intent(out):   error message
+ end type out_type_bigAquifer
+ ! ** end bigAquifer
 END MODULE data_types
 
