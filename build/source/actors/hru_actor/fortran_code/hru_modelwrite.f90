@@ -116,17 +116,17 @@ subroutine writeParm(indxGRU,indxHRU,ispatial,struct,meta,structName,err,message
       select type (struct)
         class is (var_i)
         if (structName == "type")then
-          outputStructure(1)%typeStruct(1)%gru(indxGRU)%hru(indxHRU)%var(iVar) = struct%var(iVar)
+          outputStructure(1)%typeStruct%gru(indxGRU)%hru(indxHRU)%var(iVar) = struct%var(iVar)
         end if
         class is (var_i8)
         
         class is (var_d)
         if (structName == "attr")then
-          outputStructure(1)%attrStruct(1)%gru(indxGRU)%hru(indxHRU)%var(iVar) = struct%var(iVar)
+          outputStructure(1)%attrStruct%gru(indxGRU)%hru(indxHRU)%var(iVar) = struct%var(iVar)
         end if
         class is (var_dlength)
         if (structName == "mpar")then
-          outputStructure(1)%mparStruct(1)%gru(indxGRU)%hru(indxHRU)%var(iVar) = struct%var(iVar)
+          outputStructure(1)%mparStruct%gru(indxGRU)%hru(indxHRU)%var(iVar) = struct%var(iVar)
         end if
         
         class default; err=20; message=trim(message)//'unknown variable type (with HRU)'; return
@@ -138,7 +138,7 @@ subroutine writeParm(indxGRU,indxHRU,ispatial,struct,meta,structName,err,message
       select type (struct)
         class is (var_d)
         if (structName == "bpar")then
-          outputStructure(1)%bparStruct(1)%gru(indxGRU)%var(iVar) = struct%var(iVar) ! this will overwrite data
+          outputStructure(1)%bparStruct%gru(indxGRU)%var(iVar) = struct%var(iVar) ! this will overwrite data
           print*, "bpar"
         end if
         class is (var_i8)
@@ -213,7 +213,7 @@ subroutine writeData(indxGRU,indxHRU,iStep,structName,finalizeStats, &
         ! Write the time step values
         select type(dat)      ! forcStruc
           class is (var_d)    ! x%var(:)
-            outputStructure(1)%forcStruct(1)%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep) = dat%var(iVar)
+            outputStructure(1)%forcStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep) = dat%var(iVar)
           class default; err=20; message=trim(message)//'time variable must be of type var_d (forcing data structure)'; return
         end select
       end if  ! id time
@@ -230,15 +230,15 @@ subroutine writeData(indxGRU,indxHRU,iStep,structName,finalizeStats, &
           class is (var_dlength)
             select case(trim(structName))
             case('forc')
-              outputStructure(1)%forcStat(1)%gru(indxGRU)%hru(indxHRU)%var(map(iVar))%tim(iStep)%dat(iFreq) = stat%var(map(iVar))%dat(iFreq)
+              outputStructure(1)%forcStat%gru(indxGRU)%hru(indxHRU)%var(map(iVar))%tim(iStep)%dat(iFreq) = stat%var(map(iVar))%dat(iFreq)
             case('prog')
-              outputStructure(1)%progStat(1)%gru(indxGRU)%hru(indxHRU)%var(map(iVar))%tim(iStep)%dat(iFreq) = stat%var(map(iVar))%dat(iFreq)
+              outputStructure(1)%progStat%gru(indxGRU)%hru(indxHRU)%var(map(iVar))%tim(iStep)%dat(iFreq) = stat%var(map(iVar))%dat(iFreq)
             case('diag')
-              outputStructure(1)%diagStat(1)%gru(indxGRU)%hru(indxHRU)%var(map(iVar))%tim(iStep)%dat(iFreq) = stat%var(map(iVar))%dat(iFreq)
+              outputStructure(1)%diagStat%gru(indxGRU)%hru(indxHRU)%var(map(iVar))%tim(iStep)%dat(iFreq) = stat%var(map(iVar))%dat(iFreq)
             case('flux')
-              outputStructure(1)%fluxStat(1)%gru(indxGRU)%hru(indxHRU)%var(map(iVar))%tim(iStep)%dat(iFreq) = stat%var(map(iVar))%dat(iFreq)
+              outputStructure(1)%fluxStat%gru(indxGRU)%hru(indxHRU)%var(map(iVar))%tim(iStep)%dat(iFreq) = stat%var(map(iVar))%dat(iFreq)
             case('indx')
-              outputStructure(1)%indxStat(1)%gru(indxGRU)%hru(indxHRU)%var(map(iVar))%tim(iStep)%dat(iFreq) = stat%var(map(iVar))%dat(iFreq)
+              outputStructure(1)%indxStat%gru(indxGRU)%hru(indxHRU)%var(map(iVar))%tim(iStep)%dat(iFreq) = stat%var(map(iVar))%dat(iFreq)
             case default
               err=21; message=trim(message)//"Stats structure not found"; return
             end select
@@ -250,11 +250,11 @@ subroutine writeData(indxGRU,indxHRU,iStep,structName,finalizeStats, &
 
         ! get the model layers
         nSoil   = indx%var(iLookIndex%nSoil)%dat(1)
-        outputStructure(1)%indxStruct(1)%gru(indxGRU)%hru(indxHRU)%var(iLookIndex%nSoil)%tim(iStep)%dat(1) = nSoil
+        outputStructure(1)%indxStruct%gru(indxGRU)%hru(indxHRU)%var(iLookIndex%nSoil)%tim(iStep)%dat(1) = nSoil
         nSnow   = indx%var(iLookIndex%nSnow)%dat(1)
-        outputStructure(1)%indxStruct(1)%gru(indxGRU)%hru(indxHRU)%var(iLookIndex%nSnow)%tim(iStep)%dat(1) = nSnow
+        outputStructure(1)%indxStruct%gru(indxGRU)%hru(indxHRU)%var(iLookIndex%nSnow)%tim(iStep)%dat(1) = nSnow
         nLayers = indx%var(iLookIndex%nLayers)%dat(1)
-        outputStructure(1)%indxStruct(1)%gru(indxGRU)%hru(indxHRU)%var(iLookIndex%nLayers)%tim(iStep)%dat(1) = nLayers
+        outputStructure(1)%indxStruct%gru(indxGRU)%hru(indxHRU)%var(iLookIndex%nLayers)%tim(iStep)%dat(1) = nLayers
 
         ! get the length of each data vector
         select case (meta(iVar)%varType)
@@ -273,16 +273,16 @@ subroutine writeData(indxGRU,indxHRU,iStep,structName,finalizeStats, &
           class is (var_dlength)
             select case(trim(structName))
               case('prog')
-                outputStructure(1)%progStruct(1)%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep)%dat(:) = dat%var(iVar)%dat(:)
+                outputStructure(1)%progStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep)%dat(:) = dat%var(iVar)%dat(:)
               case('diag')
-                outputStructure(1)%diagStruct(1)%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep)%dat(:) = dat%var(iVar)%dat(:)
+                outputStructure(1)%diagStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep)%dat(:) = dat%var(iVar)%dat(:)
               case('flux')
-                outputStructure(1)%fluxStruct(1)%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep)%dat(:) = dat%var(iVar)%dat(:)
+                outputStructure(1)%fluxStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep)%dat(:) = dat%var(iVar)%dat(:)
               case default
                 err=21; message=trim(message)//'data structure not found for output'
             end select
           class is (var_ilength) 
-            outputStructure(1)%indxStruct(1)%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep)%dat(:) = dat%var(iVar)%dat(:)
+            outputStructure(1)%indxStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep)%dat(:) = dat%var(iVar)%dat(:)
           class default; err=20; message=trim(message)//'data must not be scalarv and either of type var_dlength or var_ilength'; return
         end select
 
@@ -362,10 +362,10 @@ subroutine writeBasin(indxGRU,indxHRU,iStep,finalizeStats,&
    select case (meta(iVar)%varType)
 
     case (iLookVarType%scalarv)
-      outputStructure(1)%bvarStat(1)%gru(indxGRU)%hru(indxHRU)%var(map(iVar))%tim(iStep)%dat(iFreq) = stat(map(iVar))%dat(iFreq)
+      outputStructure(1)%bvarStat%gru(indxGRU)%hru(indxHRU)%var(map(iVar))%tim(iStep)%dat(iFreq) = stat(map(iVar))%dat(iFreq)
     case (iLookVarType%routing)
      if (iFreq==1 .and. outputTimestep(iFreq)==1) then
-      outputStructure(1)%bvarStruct(1)%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep)%dat(iFreq) = dat(iVar)%dat(iFreq)
+      outputStructure(1)%bvarStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep)%dat(iFreq) = dat(iVar)%dat(iFreq)
      end if
 
     case default
@@ -417,7 +417,7 @@ subroutine writeTime(indxGRU,indxHRU,iStep,finalizeStats,meta,dat,err,message)
    if (meta(iVar)%statIndex(iFreq)/=iLookStat%inst) cycle
 
    ! add to outputStructure
-   outputStructure(1)%timeStruct(1)%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep) = dat(iVar)
+   outputStructure(1)%timeStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep) = dat(iVar)
    if (err/=0) message=trim(message)//trim(meta(iVar)%varName)
    if (err/=0) then; err=20; return; end if
 

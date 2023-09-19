@@ -265,7 +265,7 @@ subroutine writeHRUToOutputStructure(&
   if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
 
  ! If we do not do this looping we segfault - I am not sure why
-  outputStructure(1)%finalizeStats(1)%gru(indxGRU)%hru(indxHRU)%tim(outputStep)%dat(:) = finalizeStats%dat(:)
+  outputStructure(1)%finalizeStats%gru(indxGRU)%hru(indxHRU)%tim(outputStep)%dat(:) = finalizeStats%dat(:)
 
  ! ****************************************************************************
  ! *** calculate output statistics

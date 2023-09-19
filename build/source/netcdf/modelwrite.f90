@@ -205,32 +205,21 @@ subroutine writeData(ncid, finalize_stats, output_timestep, max_layers, index_gr
         ! get variable index
         err = nf90_inq_varid(ncid%var(iFreq),trim(meta(iVar)%varName),ncVarID)
         call netcdf_err(err,message)
-        if (err/=0) then
-          print*, message
-          return
+        if (err/=0) then; print*, message; return
         endif
 
         select type(dat)
           class is(var_d)
             err = nf90_put_var(ncid%var(iFreq),ncVarID,dat%var(iVar),start=(/output_timestep(iFreq)/))
             call netcdf_err(err,message)
-            if (err/=0) then
-              print*, message
-              return
-            endif
+            if (err/=0) then; print*, message; return; endif
             cycle
-            class default
-              err=20
-              message=trim(message)//'time variable must be of type var_dlength (forcing data structure)'
-              print*, message
-              return
+          class default
+            err=20;message=trim(message)//'time variable must be of type var_dlength (forcing data structure)';print*, message;return
         end select
 
         call netcdf_err(err,message)
-        if (err/=0) then
-          print*, message
-          return
-        endif
+        if (err/=0) then; print*, message;return;endif
       endif
 
       ! define the statistics index
@@ -245,17 +234,10 @@ subroutine writeData(ncid, finalize_stats, output_timestep, max_layers, index_gr
           class is (var_dlength)
             realVec(1) = stat%var(map(iVar))%dat(iFreq)
             err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),realVec,start=(/index_gru,output_timestep(iFreq)/),count=(/num_gru,1/))
-            if (err/=0) then
-              print*, message
-              return
-            endif
+            if (err/=0) then; print*, message; return; endif
           class default
-            err=20
-            message=trim(message)//'stats must be scalarv and of type var_dlength'
-            print*, message
-            return
+            err=20; message=trim(message)//'stats must be scalarv and of type var_dlength'; print*, message; return
         end select ! stat
-
       else
 
          ! Write the data
@@ -366,15 +348,19 @@ subroutine writeBasin(ncid,iGRU,finalizeStats,outputTimestep,meta,stat,dat,map,e
   ! initialize error control
   err=0;message="f-writeBasin/"
 
+  print*, "WE should see this"
+
   ! loop through output frequencies
   do iFreq=1,maxvarFreq
 
     ! skip frequencies that are not needed
+    print*, "Before outputFreq"
     if(.not.outFreq(iFreq)) cycle
-
+    print*, "After outputFreq"
     ! check that we have finalized statistics for a given frequency
+    print*, "Before stats"
     if(.not.finalizeStats(iFreq)) cycle
-
+    print*, "After stats"
     ! loop through model variables
     do iVar = 1,size(meta)
 
@@ -388,6 +374,7 @@ subroutine writeBasin(ncid,iGRU,finalizeStats,outputTimestep,meta,stat,dat,map,e
       select case (meta(iVar)%varType)
 
         case (iLookVarType%scalarv)
+          print*, "output", stat(map(iVar))%dat(iFreq)
           err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),(/stat(map(iVar))%dat(iFreq)/),start=(/iGRU,outputTimestep(iFreq)/),count=(/1,1/))
 
         case (iLookVarType%routing)

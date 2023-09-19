@@ -7,11 +7,13 @@ extern "C" {
             // Statistics Structures
             void* forcStat, void* progStat, void* diagStat, void* fluxStat, void* indxStat, void* bvarStat,
             // Primary Data Structures (scalars) 
-            void* timeStruct, void* forcStruct,
+            void* timeStruct, void* forcStruct, void* attrStruct, void* typeStruct, void* idStruct,
             // primary data structures (variable length vectors)
-            void* indxStruct, void* progStruct, void* diagStruct, void* fluxStruct,
+            void* indxStruct, void* mparStruct, void* progStruct, void* diagStruct, void* fluxStruct,
             // basin-average structures
-            void* bvarStruct,
+            void* bvarStruct, void* bparStruct,
+            // ancillary data structures
+            void* dparStruct,
             // local HRU data 
             void* startTime, void* finshTime, void* refTime, void* oldTime, int* err);
 
@@ -23,7 +25,7 @@ extern "C" {
             // primary data structures (scalars)
             void* attrStruct, void* typeStruct, void* idStruct,
             // primary data structures (variable length vectors)
-            void* mparStruct, void* bparStruct, void* bvarStruct, void* dparStruct,
+            void* indexStruct, void* mparStruct, void* progStruct, void* bparStruct, void* bvarStruct, void* dparStruct,
             // lookup tables
             void* lookupStruct,
             // local HRU data
@@ -88,5 +90,20 @@ extern "C" {
       void computeTimeForcingHRU(void* handle_timeStruct, void* handle_forcStruct, double* fracJulDay, 
                               int* yearLength, int* err);
 
+      void setIDATolerances(void* handle_mparStruct, 
+                            double* relTolTempCas,
+                            double* absTolTempCas,
+                            double* relTolTempVeg,
+                            double* absTolTempVeg,
+                            double* relTolWatVeg,
+                            double* absTolWatVeg,
+                            double* relTolTempSoilSnow,
+                            double* absTolTempSoilSnow,
+                            double* relTolWatSnow,
+                            double* absTolWatSnow,
+                            double* relTolMatric,
+                            double* absTolMatric,
+                            double* relTolAquifr,
+                            double* absTolAquifr);
 
 }

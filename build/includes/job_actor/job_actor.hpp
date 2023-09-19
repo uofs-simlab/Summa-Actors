@@ -11,6 +11,8 @@
 namespace caf {
 using chrono_time = std::chrono::time_point<std::chrono::system_clock>;
 
+
+// Holds information about the GRUs
 struct GRU_Container {
     std::vector<GRU*> gru_list;
     chrono_time gru_start_time; // Vector of start times for each GRU
@@ -55,21 +57,18 @@ struct job_state {
 };
 
 
+/** The Job Actor */
+behavior job_actor(stateful_actor<job_state>* self, 
+                   int start_gru, int num_gru, 
+                   File_Access_Actor_Settings file_access_actor_settings, 
+                   Job_Actor_Settings job_actor_settings, 
+                   HRU_Actor_Settings hru_actor_settings, 
+                   actor parent);
 
-behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru, 
-    File_Access_Actor_Settings file_access_actor_settings, Job_Actor_Settings job_actor_settings, 
-    HRU_Actor_Settings hru_actor_settings, actor parent);
 
-/*
- * Start all of the GRU actors and set up their container class
-*/
-void initGRUs(stateful_actor<job_state>* self);
+/** Get the information for the GRUs that will be written to the netcdf file */
+std::vector<serializable_netcdf_gru_actor_info> getGruNetcdfInfo(int max_run_attempts, 
+                                                                 std::vector<GRU*> &gru_list);
 
-/**
- * Get the information for the GRUs that will be written to the netcdf file
-*/
-std::vector<serializable_netcdf_gru_actor_info> getGruNetcdfInfo(int max_run_attempts, std::vector<GRU*> &gru_list);
-
-void handleGRUError(stateful_actor<job_state>* self, const error& err, caf::actor src);
-
+void handleGRUError(stateful_actor<job_state>* self, caf::actor src);
 } // end namespace

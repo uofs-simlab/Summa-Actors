@@ -55,13 +55,20 @@ contains
                         ! primary data structures (scalars)
                         handle_timeStruct,  & !  model time data
                         handle_forcStruct,  & !  model forcing data
+                        handle_attrStruct,  & !  model attribute data
+                        handle_typeStruct,  & !  model type data
+                        handle_idStruct,    & !  model id data
                         ! primary data structures (variable length vectors)
                         handle_indxStruct,  & !  model indices
+                        handle_mparStruct,  & !  model parameters
                         handle_progStruct,  & !  model prognostic (state) variables
                         handle_diagStruct,  & !  model diagnostic variables
                         handle_fluxStruct,  & !  model fluxes
                         ! basin-average structures
+                        handle_bparStruct,  & !  basin-average variables
                         handle_bvarStruct,  & !  basin-average variables
+                        ! ancillary data structures
+                        handle_dparStruct,  & !  default model parameters
                         ! local HRU data structures
                         handle_startTime,   & ! start time for the model simulation
                         handle_finshTime,   & ! end time for the model simulation
@@ -108,14 +115,20 @@ contains
   ! primary data structures (scalars)
   type(c_ptr), intent(in), value             :: handle_timeStruct !  model time data
   type(c_ptr), intent(in), value             :: handle_forcStruct !  model forcing data
+  type(c_ptr), intent(in), value             :: handle_attrStruct !  model attribute data
+  type(c_ptr), intent(in), value             :: handle_typeStruct !  model type data
+  type(c_ptr), intent(in), value             :: handle_idStruct !  model id data
   ! primary data structures (variable length vectors)
   type(c_ptr), intent(in), value             :: handle_indxStruct !  model indices
+  type(c_ptr), intent(in), value             :: handle_mparStruct !  model parameters
   type(c_ptr), intent(in), value             :: handle_progStruct !  model prognostic (state) variables
   type(c_ptr), intent(in), value             :: handle_diagStruct !  model diagnostic variables
   type(c_ptr), intent(in), value             :: handle_fluxStruct !  model fluxes
   ! basin-average structures
+  type(c_ptr), intent(in), value             :: handle_bparStruct !  basin-average variables
   type(c_ptr), intent(in), value             :: handle_bvarStruct !  basin-average variables
   ! ancillary data structures
+  type(c_ptr), intent(in), value             :: handle_dparStruct !  ancillary data structures 
   ! local hru data structures
   type(c_ptr), intent(in), value             :: handle_startTime  ! start time for the model simulation
   type(c_ptr), intent(in), value             :: handle_finshTime ! end time for the model simulation
@@ -125,23 +138,29 @@ contains
   ! ---------------------------------------------------------------------------------------
   ! * Fortran Variables For Conversion
   ! ---------------------------------------------------------------------------------------
-  type(zLookup),pointer                      :: lookupStruct               !  z(:)%var(:)%lookup(:) -- lookup tables
-  type(var_dlength),pointer                  :: forcStat                   !  model forcing data
-  type(var_dlength),pointer                  :: progStat                   !  model prognostic (state) variables
-  type(var_dlength),pointer                  :: diagStat                   !  model diagnostic variables
-  type(var_dlength),pointer                  :: fluxStat                   !  model fluxes
-  type(var_dlength),pointer                  :: indxStat                   !  model indices
-  type(var_dlength),pointer                  :: bvarStat                   !  basin-average variabl
+  type(zLookup),pointer                      :: lookupStruct               ! z(:)%var(:)%lookup(:) -- lookup tables
+  type(var_dlength),pointer                  :: forcStat                   ! model forcing data
+  type(var_dlength),pointer                  :: progStat                   ! model prognostic (state) variables
+  type(var_dlength),pointer                  :: diagStat                   ! model diagnostic variables
+  type(var_dlength),pointer                  :: fluxStat                   ! model fluxes
+  type(var_dlength),pointer                  :: indxStat                   ! model indices
+  type(var_dlength),pointer                  :: bvarStat                   ! basin-average variabl
   ! primary data structures (scalars)
-  type(var_i),pointer                        :: timeStruct                 !  model time data
-  type(var_d),pointer                        :: forcStruct                 !  model forcing data
+  type(var_i),pointer                        :: timeStruct                 ! model time data
+  type(var_d),pointer                        :: forcStruct                 ! model forcing data
+  type(var_d),pointer                        :: attrStruct                 ! model attribute data
+  type(var_i),pointer                        :: typeStruct                 ! model type data
+  type(var_i8),pointer                       :: idStruct                   ! model id data
   ! primary data structures (variable length vectors)
-  type(var_ilength),pointer                  :: indxStruct                 !  model indices
-  type(var_dlength),pointer                  :: progStruct                 !  model prognostic (state) variables
-  type(var_dlength),pointer                  :: diagStruct                 !  model diagnostic variables
-  type(var_dlength),pointer                  :: fluxStruct                 !  model fluxes
+  type(var_ilength),pointer                  :: indxStruct                 ! model indices
+  type(var_dlength),pointer                  :: mparStruct                 ! model parameters
+  type(var_dlength),pointer                  :: progStruct                 ! model prognostic (state) variables
+  type(var_dlength),pointer                  :: diagStruct                 ! model diagnostic variables
+  type(var_dlength),pointer                  :: fluxStruct                 ! model fluxes
   ! basin-average structures
-  type(var_dlength),pointer                  :: bvarStruct                 !  basin-average variables
+  type(var_d),pointer                        :: bparStruct                 ! basin-average variables
+  type(var_dlength),pointer                  :: bvarStruct                 ! basin-average variables
+  type(var_d),pointer                        :: dparStruct                 ! default model parameters
   ! local HRU data structures
   type(var_i),pointer                        :: startTime_hru              ! start time for the model simulation
   type(var_i),pointer                        :: finishTime_hru             ! end time for the model simulation
@@ -165,11 +184,17 @@ contains
   call c_f_pointer(handle_bvarStat,   bvarStat)
   call c_f_pointer(handle_timeStruct, timeStruct)
   call c_f_pointer(handle_forcStruct, forcStruct)
+  call c_f_pointer(handle_attrStruct, attrStruct)
+  call c_f_pointer(handle_typeStruct, typeStruct)
+  call c_f_pointer(handle_idStruct,   idStruct)
   call c_f_pointer(handle_indxStruct, indxStruct)
+  call c_f_pointer(handle_mparStruct, mparStruct)
   call c_f_pointer(handle_progStruct, progStruct)
   call c_f_pointer(handle_diagStruct, diagStruct)
   call c_f_pointer(handle_fluxStruct, fluxStruct)
+  call c_f_pointer(handle_bparStruct, bparStruct)
   call c_f_pointer(handle_bvarStruct, bvarStruct)
+  call c_f_pointer(handle_dparStruct, dparStruct)
   call c_f_pointer(handle_startTime,  startTime_hru)
   call c_f_pointer(handle_finshTime,  finishTime_hru)
   call c_f_pointer(handle_refTime,    refTime_hru)
@@ -177,7 +202,7 @@ contains
 
   ! ---------------------------------------------------------------------------------------
   ! initialize error control
-  err=0; message='summaActors_initialize/'
+  err=0; message='hru_init/'
 
   ! initialize the start of the initialization
   call date_and_time(values=startInit)
@@ -221,19 +246,19 @@ contains
   do iStruct=1,size(structInfo)
   ! allocate space  
   select case(trim(structInfo(iStruct)%structName))    
-    case('time'); call allocLocal(time_meta,timeStruct,err=err,message=cmessage)     ! model forcing data
+    case('time'); call allocLocal(time_meta,timeStruct,err=err,message=cmessage)     ! model time data
     case('forc'); call allocLocal(forc_meta,forcStruct,nSnow,nSoil,err,cmessage);    ! model forcing data
-    case('attr'); cycle ! set by file_access_actor  
-    case('type'); cycle ! set by file_access_actor
-    case('id'  ); cycle ! set by file_access_actor   
-    case('mpar'); cycle ! set by file_access_actor  
+    case('attr'); call allocLocal(attr_meta,attrStruct,nSnow,nSoil,err,cmessage);    ! model attribute data
+    case('type'); call allocLocal(type_meta,typeStruct,nSnow,nSoil,err,cmessage);    ! model type data
+    case('id'  ); call allocLocal(id_meta,idStruct,nSnow,nSoil,err,cmessage);        ! model id data
+    case('mpar'); call allocLocal(mpar_meta,mparStruct,nSnow,nSoil,err,cmessage);    ! model parameters  
     case('indx'); call allocLocal(indx_meta,indxStruct,nSnow,nSoil,err,cmessage);    ! model variables
     case('prog'); call allocLocal(prog_meta,progStruct,nSnow,nSoil,err,cmessage);    ! model prognostic (state) variables
     case('diag'); call allocLocal(diag_meta,diagStruct,nSnow,nSoil,err,cmessage);    ! model diagnostic variables
     case('flux'); call allocLocal(flux_meta,fluxStruct,nSnow,nSoil,err,cmessage);    ! model fluxes
-    case('bpar'); cycle ! set by file_access_actor
+    case('bpar'); call allocLocal(bpar_meta,bparStruct,nSnow=0,nSoil=0,err=err,message=cmessage);  ! basin-average variables
     case('bvar'); call allocLocal(bvar_meta,bvarStruct,nSnow=0,nSoil=0,err=err,message=cmessage);  ! basin-average variables
-    case('lookup'); call allocLocal(lookup_meta,lookupStruct,err=err,message=cmessage)   ! basin-average variables
+    case('lookup'); cycle ! allocated in t2enthalpy.f90
     case('deriv'); cycle
     case default; err=20; message='unable to find structure name: '//trim(structInfo(iStruct)%structName)
   end select
@@ -244,6 +269,12 @@ contains
     return
   endif
   end do  ! looping through data structures
+
+  ! allocate space for default model parameters
+	! NOTE: This is done here, rather than in the loop above, because dpar is not one of the "standard" data structures
+	call allocLocal(mpar_meta,dparStruct,nSnow,nSoil,err,cmessage);    ! default model parameters
+	if(err/=0)then; message=trim(message)//trim(cmessage)//' [problem allocating dparStruct]'; print*,message;return;endif
+	 
 
 
   ! *****************************************************************************

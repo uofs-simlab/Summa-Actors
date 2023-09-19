@@ -14,6 +14,7 @@ public::getFirstTimestep
 public::setTimeZoneOffset
 public::prepareOutput
 public::updateCounters
+public::setIDATolerances
 
 real(dp),parameter  :: verySmall=1e-3_rkind      ! tiny number
 real(dp),parameter  :: smallOffset=1.e-8_rkind   ! small offset (units=days) to force ih=0 at the start of the day
@@ -548,5 +549,66 @@ subroutine updateCounters(handle_timeStruct, handle_statCounter, handle_outputTi
 
  elapsedWrite = elapsedWrite + elapsedSec(startWrite, endWrite)
 end subroutine updateCounters
+
+! Set the HRU's relative and absolute tolerances
+subroutine setIDATolerances(handle_mparStruct,  &
+                            relTolTempCas,      &
+                            absTolTempCas,      &
+                            relTolTempVeg,      &
+                            absTolTempVeg,      &
+                            relTolWatVeg,       &
+                            absTolWatVeg,       &
+                            relTolTempSoilSnow, &
+                            absTolTempSoilSnow, &
+                            relTolWatSnow,      &
+                            absTolWatSnow,      &
+                            relTolMatric,       &
+                            absTolMatric,       &
+                            relTolAquifr,       &
+                            absTolAquifr) bind(C, name="setIDATolerances")
+  USE data_types,only:var_dlength
+  USE var_lookup,only:iLookPARAM
+
+  implicit none
+
+  type(c_ptr), intent(in), value          :: handle_mparStruct !  model parameters
+  real(c_double),intent(in)               :: relTolTempCas
+  real(c_double),intent(in)               :: absTolTempCas
+  real(c_double),intent(in)               :: relTolTempVeg
+  real(c_double),intent(in)               :: absTolTempVeg
+  real(c_double),intent(in)               :: relTolWatVeg
+  real(c_double),intent(in)               :: absTolWatVeg
+  real(c_double),intent(in)               :: relTolTempSoilSnow
+  real(c_double),intent(in)               :: absTolTempSoilSnow
+  real(c_double),intent(in)               :: relTolWatSnow
+  real(c_double),intent(in)               :: absTolWatSnow
+  real(c_double),intent(in)               :: relTolMatric
+  real(c_double),intent(in)               :: absTolMatric
+  real(c_double),intent(in)               :: relTolAquifr
+  real(c_double),intent(in)               :: absTolAquifr
+  ! local variables
+  type(var_dlength),pointer               :: mparStruct        ! model parameters
+
+  call c_f_pointer(handle_mparStruct, mparStruct)
+
+  mparStruct%var(iLookPARAM%relTolTempCas)%dat(1)       = relTolTempCas 
+  mparStruct%var(iLookPARAM%absTolTempCas)%dat(1)       = absTolTempCas
+  mparStruct%var(iLookPARAM%relTolTempVeg)%dat(1)       = relTolTempVeg
+  mparStruct%var(iLookPARAM%absTolTempVeg)%dat(1)       = absTolTempVeg
+  mparStruct%var(iLookPARAM%relTolWatVeg)%dat(1)        = relTolWatVeg
+  mparStruct%var(iLookPARAM%absTolWatVeg)%dat(1)        = absTolWatVeg
+  mparStruct%var(iLookPARAM%relTolTempSoilSnow)%dat(1)  = relTolTempSoilSnow
+  mparStruct%var(iLookPARAM%absTolTempSoilSnow)%dat(1)  = absTolTempSoilSnow
+  mparStruct%var(iLookPARAM%relTolWatSnow)%dat(1)       = relTolWatSnow
+  mparStruct%var(iLookPARAM%absTolWatSnow)%dat(1)       = absTolWatSnow
+  mparStruct%var(iLookPARAM%relTolMatric)%dat(1)        = relTolMatric
+  mparStruct%var(iLookPARAM%absTolMatric)%dat(1)        = absTolMatric
+  mparStruct%var(iLookPARAM%relTolAquifr)%dat(1)        = relTolAquifr
+  mparStruct%var(iLookPARAM%absTolAquifr)%dat(1)        = absTolAquifr
+
+
+
+
+end subroutine setIDATolerances
 
 end module hru_actor

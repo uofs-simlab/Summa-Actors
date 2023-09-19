@@ -21,6 +21,8 @@ struct netcdf_gru_actor_info {
     
     int state_var_id; // The success of the GRU 1 = pass, 0 = fail
     int num_attempts_var_id;
+    int rel_tol_var_id;
+    int abs_tol_var_id;
 };
 
 
@@ -92,19 +94,11 @@ struct file_access_state {
 behavior file_access_actor(stateful_actor<file_access_state>* self, int startGRU, int numGRU, 
    File_Access_Actor_Settings file_access_actor_settings, actor parent);
 
-// Call Fortran functions that require file access and intialize the ffile_info structure
-void initalizeFileAccessActor(stateful_actor<file_access_state>* self);
-
-// Read in the attributes for all HRUs that are in the run-domain
-void readAttributes(stateful_actor<file_access_state>* self); 
-
-// read in the parameters for all HRUs that are in the run-domain
-void readParameters(stateful_actor<file_access_state>* self);
-
-// Read in the inital conditions for all the HRUs that are in the run-domain
-void readInitConditions(stateful_actor<file_access_state>* self);
 
 void initalizeOutputHandles(stateful_actor<file_access_state>* self);
+
+/* Setup and call the fortran routine that writes the output */
+void writeOutput(stateful_actor<file_access_state>* self, Output_Partition* partition);
 
 void deallocateOutputHandles(stateful_actor<file_access_state>* self);
  
