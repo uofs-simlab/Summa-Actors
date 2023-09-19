@@ -42,7 +42,7 @@ def seffCommand(jobId, numJobs, gru_per_job):
         cmdString = "seff {}_{}".format(jobId, i)
         cmd = subprocess.Popen(cmdString, shell=True, stdout=subprocess.PIPE)
         for line in cmd.stdout:
-            if b'Cores:' in line:
+            if b'Cores' in line:
                 cores = line.decode().split(" ")[-1]
                 cores = cores.strip()
             
