@@ -3,6 +3,7 @@ from os.path import isfile, join
 from pathlib import Path
 import xarray as xr
 import numpy as np
+import sys
 
 
 def check_variable_length(hru_from_dataset_1, hru_from_dataset_2, variable):
@@ -61,7 +62,7 @@ def verify_data(dataset_1, dataset_2, num_hru, output_variables):
                 print("     hru_from_dataset_1 = ", len(hru_variable_data_from_dataset_1))
                 print("     hru_from_dataset_2 = ", len(hru_variable_data_from_dataset_2))
 
-            error_tolerance = 0.1
+            error_tolerance = 0.0
             errors = check_data_for_errors(hru_variable_data_from_dataset_1, hru_variable_data_from_dataset_2, error_tolerance)
             print("Errors for variable", var, ":", errors)        
 
@@ -80,15 +81,14 @@ def get_output_vars(model_output_file):
 
 
 
-num_hru = 125
+num_hru = 1
 print("Checking output for", num_hru, "HRUs")
-dataset_1 = "/home/kklenk/scratch/Single_CPU_TEST/actors/netcdf/SummaActorsGRU6126-125_day.nc"
-dataset_2 = "/home/kklenk/scratch/Single_CPU_TEST/non-actors/netcdf/SummaOriginal_G006126-006250_day.nc"
 
-# dataset_1 = "/scratch/kck540/Summa_Sundials/non-actors/SummaOriginal-BE_G000001-000002_timestep.nc"
-# dataset_2 = "/scratch/kck540/Summa_Sundials/actors/SummaActors-BEGRU1-2_timestep.nc"
 
-model_output_file = "/home/kklenk/scratch/Single_CPU_TEST/settings/outputControl.txt"
+dataset_1 = sys.argv[1]
+dataset_2 = sys.argv[2]
+
+model_output_file = "/project/gwf/gwf_cmt/kck540/domain_NorthAmerica/summa_actors_input/outputControl_state_vars.txt"
 
 output_vars = get_output_vars(model_output_file)
 verify_data(dataset_1, dataset_2, num_hru, output_vars)

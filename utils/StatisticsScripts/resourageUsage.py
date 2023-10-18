@@ -3,6 +3,8 @@ import csv
 from sys import argv
 '''
 This is a script that gets the resource usage of jobs and output the stats as a csv.
+
+Usage: python resourceUsage.py <jobId> <numJobs> <gru_per_job>
 '''
 
 '''
