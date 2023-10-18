@@ -14,9 +14,27 @@
 #include <sys/stat.h>
 #include <iostream>
 #include "json.hpp"
+#include <memory>
 #include <optional>
 
 using namespace caf;
+
+const std::string command_line_help = "Summa-Actors is in active development and some features may not be available.\n"
+    "Usage: summa_actors -m master_file [-g startGRU countGRU] [-c config_file] [-b backup_server] [-s server_mode]\n"
+    "Available options: \n"
+    "\t-m, --master:         Define path/name of master file (can be specified in config)\n"
+    "\t-g, --gru:            Run a subset of countGRU GRUs starting from index startGRU \n"
+    "\t-c, --config:         Path name of the config directory \n"
+    "\t-b, --backup-server:  Start backup server, requires a server and config_file \n"
+    "\t-s, --server-mode:    Enable server mode \n"
+    "\t-h, --help:           Print this help message \n"
+    "\nUnimplemented Options: \n"
+    "\t-n --newFile          Define frequency [noNewFiles,newFileEveryOct1] of new output files\n"
+    "\t-s --suffix           Add fileSuffix to the output files\n"
+    "\t-h --hru              Run a single HRU with index of iHRU\n"
+    "\t-r --restart          Define frequency [y,m,d,e,never] to write restart files\n"
+    "\t-p --progress         Define frequency [m,d,h,never] to print progress\n"
+    "\t-v --version          Display version information of the current build\n";
 
 
 /* Configuration class that handles the config and 
@@ -28,14 +46,18 @@ class config : public actor_system_config {
         std::string config_file = "";
         bool backup_server = false;
         bool server_mode = false;
+        std::string master_file = "";
+        bool help = false;
     
     config() {
         opt_group{custom_options_, "global"}
-            .add(startGRU, "gru,g", "Starting GRU Index")
-            .add(countGRU, "numGRU,n", "Total Number of GRUs")
-            .add(config_file, "config,c", "Path name of the config directory")
+            .add(master_file,   "master,m", "Path/name of master file")
+            .add(startGRU,      "gru,g", "Starting GRU Index")
+            .add(countGRU,      "countGRU,t", "Number of GRUs to run in subset")
+            .add(config_file,   "config,c", "Path name of the config directory")
             .add(backup_server, "backup-server,b", "flag to denote if the server starting is a backup server")
-            .add(server_mode, "server-mode,s", "enable server mode");
+            .add(server_mode,   "server-mode,s", "enable server mode")
+            .add(help,          "help,h", "Print this help message");
     }
 };
 
@@ -111,6 +133,17 @@ void run_server(actor_system& system, const config& cfg, Distributed_Settings di
 void caf_main(actor_system& sys, const config& cfg) {
     scoped_actor self{sys};
     int err;
+
+    aout(self) << "Starting SUMMA-Actors\n";
+    aout(self) << "Master File = " << cfg.master_file << "\n";
+    aout(self) << "Config File = " << cfg.config_file << "\n";
+    aout(self) << "Starting GRU = " << cfg.startGRU << "\n";
+    aout(self) << "Count GRU = " << cfg.countGRU << "\n";
+
+
+
+
+    return;
     struct stat file_to_check;
     // Check if config file exists
     if (stat(cfg.config_file.c_str(), &file_to_check) != 0) {
@@ -181,4 +214,38 @@ void caf_main(actor_system& sys, const config& cfg) {
     
 }
 
-CAF_MAIN(id_block::summa, io::middleman)
+int main(int argc, char** argv) {
+    // Parse command line arguments
+
+    // Look through the arguments for the -g flag, and prepend the option after the number with --countGRU
+    // for 
+
+    std::vector<std::string> args(argv, argv + argc);
+    for (auto it = args.begin(); it != args.end(); ++it) {
+        if (*it == "-g" && std::next(it) != args.end()) {
+            auto count_gru = std::find_if(std::next(it), args.end(), [](const std::string& arg) {
+                return std::isdigit(arg.front());
+            });
+            if (count_gru != args.end()) {
+                args.insert(std::next(count_gru), "-t");
+            }
+            break;
+        }
+    }
+    for (const auto& arg : args) {
+        std::cout << arg << " ";
+    }
+    std::cout << std::endl;
+
+    char** argv2 = new char*[args.size()];
+    for (int i = 0; i < args.size(); ++i) {
+        argv2[i] = new char[args[i].size() + 1];
+        strcpy(argv2[i], args[i].c_str());
+    }
+
+    argc = args.size();
+    exec_main_init_meta_objects<id_block::summa, io::middleman>();
+    caf::core::init_global_meta_objects(); 
+    return exec_main<>(caf_main, argc, argv2);
+
+}
