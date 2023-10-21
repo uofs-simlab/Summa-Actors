@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <thread>
 #include <optional>
 #include "json.hpp"
 #include <bits/stdc++.h>
@@ -139,12 +140,16 @@ HRU_Actor_Settings readHRUActorSettings(std::string json_settings_file);
 
 int checkFileExists(std::string file_path);
 
-// Read in the settings from JSON
+/**
+ * @brief Get the Settings from json
+ * Template function that can be used with retrieving any singular type from the settings file
+ */
 template <typename T>
 std::optional<T> getSettings(std::string json_settings_file, std::string key_1, std::string key_2, 
     T return_value) {
     json settings;
     std::ifstream settings_file(json_settings_file);
+    if (!settings_file.good()) return {};
     settings_file >> settings;
     settings_file.close();
     
@@ -178,3 +183,6 @@ std::optional<std::vector<std::string>> getSettingsArray(std::string json_settin
 void check_settings_from_json(Distributed_Settings &distributed_settings, 
     Summa_Actor_Settings &summa_actor_settings, File_Access_Actor_Settings &file_access_actor_settings, 
     Job_Actor_Settings &job_actor_settings, HRU_Actor_Settings &hru_actor_settings);
+
+// Output a default configuration file
+void generate_config_file();

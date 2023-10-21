@@ -24,7 +24,8 @@ const std::string command_line_help = "Summa-Actors is in active development and
     "Available options: \n"
     "\t-m, --master:         Define path/name of master file (can be specified in config)\n"
     "\t-g, --gru:            Run a subset of countGRU GRUs starting from index startGRU \n"
-    "\t-c, --config:         Path name of the config directory \n"
+    "\t-c, --config:         Path name of the Summa-Actors config file (optional but recommended)\n"
+    "\t    --gen-config:     Generate a config file \n"
     "\t-b, --backup-server:  Start backup server, requires a server and config_file \n"
     "\t-s, --server-mode:    Enable server mode \n"
     "\t-h, --help:           Print this help message \n"
@@ -41,12 +42,13 @@ const std::string command_line_help = "Summa-Actors is in active development and
 /  command line options for the actors program */
 class config : public actor_system_config {
     public:
-        int startGRU = -1;
+        int startGRU = -1;  
         int countGRU = -1;
+        std::string master_file = "";
         std::string config_file = "";
+        bool generate_config = false;
         bool backup_server = false;
         bool server_mode = false;
-        std::string master_file = "";
         bool help = false;
     
     config() {
@@ -55,6 +57,7 @@ class config : public actor_system_config {
             .add(startGRU,      "gru,g", "Starting GRU Index")
             .add(countGRU,      "countGRU,t", "Number of GRUs to run in subset")
             .add(config_file,   "config,c", "Path name of the config directory")
+            .add(generate_config, "gen-config", "Generate a config file")
             .add(backup_server, "backup-server,b", "flag to denote if the server starting is a backup server")
             .add(server_mode,   "server-mode,s", "enable server mode")
             .add(help,          "help,h", "Print this help message");
@@ -134,22 +137,17 @@ void caf_main(actor_system& sys, const config& cfg) {
     scoped_actor self{sys};
     int err;
 
-    aout(self) << "Starting SUMMA-Actors\n";
-    aout(self) << "Master File = " << cfg.master_file << "\n";
-    aout(self) << "Config File = " << cfg.config_file << "\n";
-    aout(self) << "Starting GRU = " << cfg.startGRU << "\n";
-    aout(self) << "Count GRU = " << cfg.countGRU << "\n";
-
-
-
-
-    return;
-    struct stat file_to_check;
-    // Check if config file exists
-    if (stat(cfg.config_file.c_str(), &file_to_check) != 0) {
-        aout(self) << "Config File Path Does Not Exist\n"
-                   << "EXAMPLE: ./summa_actors -g 1 -n 10 -c location/of/config \n";
+    if (cfg.generate_config) {
+        std::cout << "Generating Config File" << std::endl;
+        generate_config_file();
         return;
+    }
+
+    struct stat file_to_check;
+    if (stat(cfg.master_file.c_str(), &file_to_check) != 0 && cfg.master_file != "") { // Check if master file exists
+        aout(self) << "ERROR: Master File Path Does Not Exist\n" << command_line_help; return;
+    } else if (stat(cfg.config_file.c_str(), &file_to_check) != 0 && cfg.config_file != "") { // Check if config file exists
+        aout(self) << "ERROR: Config File Path Does Not Exist\n" << command_line_help; return;
     }
 
     Distributed_Settings distributed_settings = readDistributedSettings(cfg.config_file);
@@ -157,6 +155,12 @@ void caf_main(actor_system& sys, const config& cfg) {
     File_Access_Actor_Settings file_access_actor_settings = readFileAccessActorSettings(cfg.config_file);
     Job_Actor_Settings job_actor_settings = readJobActorSettings(cfg.config_file);
     HRU_Actor_Settings hru_actor_settings = readHRUActorSettings(cfg.config_file);
+
+    // -m setting overides config file
+    if (cfg.master_file != "") {
+        job_actor_settings.file_manager_path = cfg.master_file;
+    }
+    
     
     aout(self) << "Printing Settings For SUMMA Simulation\n";
     check_settings_from_json(distributed_settings,
@@ -182,25 +186,6 @@ void caf_main(actor_system& sys, const config& cfg) {
         }
 
     } else {
-        // Configure command line arguments
-        if (cfg.startGRU == -1) {
-            aout(self) << "Starting GRU was not defined!! " 
-                       << "startGRU is set with the \"-g\" option\n"
-                       << "EXAMPLE: ./summaMain -g 1 -n 10 -c location/of/config \n";
-            return;
-        }
-        if (cfg.countGRU == -1) {
-            aout(self) << "Number of GRUs was not defined!! "
-                       << "countGRU is set with the \"-n\" option\n"
-                       << "EXAMPLE: ./summaMain -g 1 -n 10 -c location/of/config \n";
-            return;
-        }
-        if (cfg.config_file == "") {
-            aout(self) << "File Manager was not defined!! "
-                       << "fileManger is set with the \"-c\" option\n"
-                       << "EXAMPLE: ./summaMain -g 1 -n 10 -c location/of/config \n";
-            return;
-        }
 
         auto summa = sys.spawn(summa_actor, 
                                cfg.startGRU, 
@@ -216,10 +201,8 @@ void caf_main(actor_system& sys, const config& cfg) {
 
 int main(int argc, char** argv) {
     // Parse command line arguments
-
-    // Look through the arguments for the -g flag, and prepend the option after the number with --countGRU
-    // for 
-
+    
+    // Insert -t for countGRU so CAF can differentiate the argument
     std::vector<std::string> args(argv, argv + argc);
     for (auto it = args.begin(); it != args.end(); ++it) {
         if (*it == "-g" && std::next(it) != args.end()) {
@@ -231,12 +214,11 @@ int main(int argc, char** argv) {
             }
             break;
         }
+        else if (*it == "-h" || *it == "--help") {
+            std::cout << command_line_help << std::endl;
+            return 0;
+        }
     }
-    for (const auto& arg : args) {
-        std::cout << arg << " ";
-    }
-    std::cout << std::endl;
-
     char** argv2 = new char*[args.size()];
     for (int i = 0; i < args.size(); ++i) {
         argv2[i] = new char[args[i].size() + 1];

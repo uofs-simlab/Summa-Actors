@@ -1,9 +1,19 @@
 #include "settings_functions.hpp"
 
-std::optional<std::vector<std::string>> getSettingsArray(std::string json_settings_file, 
-    std::string key_1, std::string key_2) {
+// Default Values
+int default_partition_count = std::thread::hardware_concurrency() / 2;
+int missing_value = -9999;
+int default_gru_per_job = 250;
+int default_output_frequency = 1000;
+int default_timesteps_output_buffer = 500;
+int default_dt_init_factor = 1;
+
+
+
+std::optional<std::vector<std::string>> getSettingsArray(std::string json_settings_file, std::string key_1, std::string key_2) {
     json settings;
     std::ifstream settings_file(json_settings_file);
+    if (!settings_file.good()) return {}; // return none in the optional
     settings_file >> settings;
     settings_file.close();
     std::vector<std::string> return_vector;
@@ -31,18 +41,6 @@ std::optional<std::vector<std::string>> getSettingsArray(std::string json_settin
         std::cout << key_2 << "\n";
         return {};
     }
-   
-}
-
-int checkFileExists(std::string file_path) {
-    std::ifstream file(file_path);
-    if (file.good()) {
-        file.close();
-        return 0;
-    } else {
-        file.close();
-        return -1;
-    }
 }
 
 Distributed_Settings readDistributedSettings(std::string json_settings_file) {
@@ -56,13 +54,13 @@ Distributed_Settings readDistributedSettings(std::string json_settings_file) {
         "servers_list").value_or(std::vector<std::string>());
 
     distributed_settings.port = getSettings(json_settings_file, parent_key,
-        "port", distributed_settings.port).value_or(-1);
+        "port", distributed_settings.port).value_or(missing_value);
 
     distributed_settings.total_hru_count = getSettings(json_settings_file, parent_key,
-        "total_hru_count", distributed_settings.total_hru_count).value_or(-1);
+        "total_hru_count", distributed_settings.total_hru_count).value_or(missing_value);
 
     distributed_settings.num_hru_per_batch = getSettings(json_settings_file, parent_key,
-        "num_hru_per_batch", distributed_settings.num_hru_per_batch).value_or(-1);
+        "num_hru_per_batch", distributed_settings.num_hru_per_batch).value_or(missing_value);
     
     return distributed_settings;
 }
@@ -82,9 +80,9 @@ File_Access_Actor_Settings readFileAccessActorSettings(std::string json_settings
     File_Access_Actor_Settings file_access_actor_settings;
     std::string parent_key = "File_Access_Actor";
     file_access_actor_settings.num_partitions_in_output_buffer = getSettings(json_settings_file, parent_key,
-        "num_partitions_in_output_buffer", file_access_actor_settings.num_partitions_in_output_buffer).value_or(1);
+        "num_partitions_in_output_buffer", file_access_actor_settings.num_partitions_in_output_buffer).value_or(default_partition_count);
     file_access_actor_settings.num_timesteps_in_output_buffer = getSettings(json_settings_file, parent_key,
-        "num_timesteps_in_output_buffer", file_access_actor_settings.num_timesteps_in_output_buffer).value_or(1);
+        "num_timesteps_in_output_buffer", file_access_actor_settings.num_timesteps_in_output_buffer).value_or(default_timesteps_output_buffer);
 
     return file_access_actor_settings;
 }
@@ -111,7 +109,7 @@ HRU_Actor_Settings readHRUActorSettings(std::string json_settings_file) {
         "print_output", hru_actor_settings.print_output).value_or(true);
 
     hru_actor_settings.output_frequency = getSettings(json_settings_file, parent_key,
-        "output_frequency", hru_actor_settings.output_frequency).value_or(250);
+        "output_frequency", hru_actor_settings.output_frequency).value_or(default_output_frequency);
 
     hru_actor_settings.dt_init_factor = getSettings(json_settings_file, parent_key,
         "dt_init_factor", hru_actor_settings.dt_init_factor).value_or(1);
@@ -125,10 +123,10 @@ HRU_Actor_Settings readHRUActorSettings(std::string json_settings_file) {
     the other tolerance values and they will be set to the value of rtol and atol.
     */
     hru_actor_settings.rel_tol = getSettings(json_settings_file, parent_key,
-        "rel_tol", hru_actor_settings.rel_tol).value_or(-9999);
+        "rel_tol", hru_actor_settings.rel_tol).value_or(missing_value);
 
     hru_actor_settings.abs_tol = getSettings(json_settings_file, parent_key,
-        "abs_tol", hru_actor_settings.abs_tol).value_or(-9999);
+        "abs_tol", hru_actor_settings.abs_tol).value_or(missing_value);
 
     double local_rtol;
     double local_atol;
@@ -231,4 +229,43 @@ void check_settings_from_json(Distributed_Settings &distributed_settings,
               << "relTolAquifr: "       << hru_actor_settings.relTolAquifr << "\n"
               << "absTolAquifr: "       << hru_actor_settings.absTolAquifr << "\n\n\n";
 
+}
+
+
+void generate_config_file() {
+    json config_file; 
+    config_file["Distributed_Settings"] = {
+        {"distributed_mode", false},
+        {"port", missing_value},
+        {"total_hru_count", missing_value},
+        {"num_hru_per_batch", missing_value},
+        {"servers_list", {
+            {{"hostname", "host_1"}},
+            {{"hostname", "host_2"}},
+            {{"hostname", "host_3"}}
+        }}
+    };
+
+    config_file["Summa_Actor"] = {
+        {"max_gru_per_job", default_gru_per_job}
+    };
+    config_file["File_Access_Actor"] = {
+        {"num_partitions_in_output_buffer", default_partition_count},
+        {"num_timesteps_in_output_buffer", default_timesteps_output_buffer}
+    };
+    config_file["Job_Actor"] = {
+        {"file_manager_path", "/home/username/summa_file_manager"},
+        {"max_run_attempts", 1}
+    };
+    config_file["HRU_Actor"] = {
+        {"print_output", true},
+        {"output_frequency", default_output_frequency},
+        {"dt_init_factor", 1},
+        {"rel_tol", missing_value},
+        {"abs_tol", missing_value}
+    };
+
+    std::ofstream config_file_stream("config.json");
+    config_file_stream << std::setw(4) << config_file.dump(4) << std::endl;
+    config_file_stream.close();
 }
