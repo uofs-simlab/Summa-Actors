@@ -131,7 +131,7 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
 
     ! get the maximum number of snow layers
   select case(model_decisions(iLookDECISIONS%snowLayers)%iDecision)
-    case(sameRulesAllLayers);    maxSnowLayers = 100
+    case(sameRulesAllLayers);    err=100; message=trim(message)//'sameRulesAllLayers not implemented';print*,message;return
     case(rulesDependLayerIndex); maxSnowLayers = 5
     case default; err=20; message=trim(message)//'unable to identify option to combine/sub-divide snow layers';print*,message;return
   end select ! (option to combine/sub-divide snow layers)

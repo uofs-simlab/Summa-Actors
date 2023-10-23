@@ -43,8 +43,13 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
                                  &self->state.err);
     if (self->state.err != 0) {
         aout(self) << "ERROR: File Access Actor - File_Access_init_Fortran\n";
-        self->send(self->state.parent, file_access_error::unhandleable_error, self);
+        if (self->state.err == 100) {
+            self->send(self->state.parent, file_access_error::mDecisions_error, self);
+        } else {
+            self->send(self->state.parent, file_access_error::unhandleable_error, self);
+        }
         return {};
+        
     }
 
     aout(self) << "Simluations Steps: " << self->state.num_steps << "\n";

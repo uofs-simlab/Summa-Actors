@@ -17,6 +17,7 @@ enum class hru_error : uint8_t {
 enum class file_access_error : uint8_t {
     writing_error = 1,
     unhandleable_error = 2,
+    mDecisions_error = 100,
 };
 
 // HRU Errors
