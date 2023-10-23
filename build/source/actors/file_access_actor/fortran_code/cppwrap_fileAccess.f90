@@ -74,14 +74,16 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   USE globalData,only:checkHRU                                ! index of the HRU for a single HRU run
   
   ! look-up values for the choice of heat capacity computation
-  USE mDecisions_module,only:  &
-  enthalpyFD                             ! heat capacity using enthalpy
+#ifdef SUNDIALS_ACTIVE
+  USE mDecisions_module,only:enthalpyFD                       ! heat capacity using enthalpy
+  USE t2enthalpy_module,only:T2E_lookup                       ! module to calculate a look-up table for the temperature-enthalpy conversion
+#endif
   USE mDecisions_module,only:&
- monthlyTable,& ! LAI/SAI taken directly from a monthly table for different vegetation classes
- specified      ! LAI/SAI computed from green vegetation fraction and winterSAI and summerLAI parameters
+                        monthlyTable,& ! LAI/SAI taken directly from a monthly table for different vegetation classes
+                        specified      ! LAI/SAI computed from green vegetation fraction and winterSAI and summerLAI parameters
 
   USE ConvE2Temp_module,only:E2T_lookup                       ! module to calculate a look-up table for the temperature-enthalpy conversion
-  USE t2enthalpy_module,only:T2E_lookup                       ! module to calculate a look-up table for the temperature-enthalpy conversion
+
 
   USE NOAHMP_VEG_PARAMETERS,only:SAIM,LAIM                    ! 2-d tables for stem area index and leaf area index (vegType,month)
   USE NOAHMP_VEG_PARAMETERS,only:HVT,HVB                      ! height at the top and bottom of vegetation (vegType)
@@ -294,6 +296,7 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
       if(err/=0)then; print*,message; return; endif
 
       ! calculate a lookup table to compute enthalpy from temperature, only for enthalpyFD
+#ifdef SUNDIALS_ACTIVE      
       if(model_decisions(iLookDECISIONS%howHeatCap)%iDecision == enthalpyFD)then
         call T2E_lookup(gru_struc(iGRU)%hruInfo(iHRU)%nSoil,   &   ! intent(in):    number of soil layers
                         outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU),        &   ! intent(in):    parameter data structure
@@ -301,7 +304,7 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
                         err,message)                              ! intent(out):   error control
         if(err/=0)then; print*, message; return; endif
       endif
-
+#endif
       ! overwrite the vegetation height
       HVT(outputStructure(1)%typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex)) = outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU)%var(iLookPARAM%heightCanopyTop)%dat(1)
       HVB(outputStructure(1)%typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex)) = outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU)%var(iLookPARAM%heightCanopyBottom)%dat(1)
@@ -400,7 +403,7 @@ subroutine FileAccessActor_DeallocateStructures(handle_forcFileInfo, handle_ncid
   USE globalData,only:failedHRUs
   USE globalData,only:forcingDataStruct
   USE globalData,only:vectime
-  USE globalData,only:outputTimeStep
+  USE output_structure_module,only:outputTimeStep
   implicit none
   type(c_ptr),intent(in), value        :: handle_forcFileInfo
   type(c_ptr),intent(in), value        :: handle_ncid

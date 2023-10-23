@@ -35,6 +35,7 @@ USE globalData,only: integerMissing, realMissing
 USE globalData,only:gru_struc                             ! gru->hru mapping structure
 
 USE output_structure_module,only:outputStructure
+USE output_structure_module,only:outputTimeStep
 
 USE data_types,only:var_i
 
@@ -93,7 +94,6 @@ subroutine writeOutput_fortran(handle_ncid, num_steps, start_gru, max_gru, err) 
   USE var_lookup,only:maxVarFreq                               ! # of available output frequencies
   USE globalData,only:structInfo
   USE globalData,only:bvarChild_map,forcChild_map,progChild_map,diagChild_map,fluxChild_map,indxChild_map             ! index of the child data structure: stats bvar
-  USE globalData,only:outputTimeStep
   USE globalData,only:bvar_meta,time_meta,forc_meta,prog_meta,diag_meta,flux_meta,indx_meta
   USE globalData,only:maxLayers
   implicit none
@@ -492,11 +492,11 @@ subroutine writeVector(ncid, outputTimestep, maxLayers, nSteps, minGRU, maxGRU, 
       select type (dat)
           class is (gru_hru_time_doubleVec)
               if(.not.outputStructure(1)%finalizeStats%gru(iGRU)%hru(1)%tim(iStep)%dat(iFreq)) cycle
-              realArray(gruCounter,1:datLength) = dat%gru(iGRU)%hru(1)%var(iVar)%tim(iStep)%dat(:)
+              realArray(gruCounter,1:datLength) = dat%gru(iGRU)%hru(1)%var(iVar)%tim(iStep)%dat(1:datLength)
 
           class is (gru_hru_time_intVec)
               if(.not.outputStructure(1)%finalizeStats%gru(iGRU)%hru(1)%tim(iStep)%dat(iFreq)) cycle
-              intArray(gruCounter,1:datLength) = dat%gru(iGRU)%hru(1)%var(iVar)%tim(iStep)%dat(:)
+              intArray(gruCounter,1:datLength) = dat%gru(iGRU)%hru(1)%var(iVar)%tim(iStep)%dat(1:datLength)
           class default; err=20; message=trim(message)//'data must not be scalarv and either of type gru_hru_doubleVec or gru_hru_intVec'; return
       end select
 
@@ -520,11 +520,11 @@ subroutine writeVector(ncid, outputTimestep, maxLayers, nSteps, minGRU, maxGRU, 
       case(ixReal)
         err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),realArray(1:numGRU,1:maxLength),start=(/minGRU,1,stepCounter/),count=(/numGRU,maxLength,1/))
         if(err/=0)then; print*, "ERROR: with nf90_put_var in data vector (ixReal)"; return; endif
-
+        realArray(:,:) = realMissing ! reset the realArray
       case(ixInteger)
         err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),intArray(1:numGRU,1:maxLength),start=(/minGRU,1,stepCounter/),count=(/numGRU,maxLength,1/))
         if(err/=0)then; print*, "ERROR: with nf90_put_var in data vector (ixInteger)"; return; endif
-
+        intArray(:,:) = integerMissing ! reset the intArray
       case default; err=20; message=trim(message)//'data must be of type integer or real'; return
     end select ! data type
     stepCounter = stepCounter + 1

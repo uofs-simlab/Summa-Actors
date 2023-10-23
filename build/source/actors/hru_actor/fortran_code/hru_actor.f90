@@ -330,7 +330,8 @@ subroutine setIDATolerances(handle_hru_data,    &
   type(hru_type),pointer                  :: hru_data          !  model time data
 
   call c_f_pointer(handle_hru_data, hru_data)
-
+  
+#ifdef SUNDIALS_ACTIVE
   hru_data%mparStruct%var(iLookPARAM%relTolTempCas)%dat(1)       = relTolTempCas 
   hru_data%mparStruct%var(iLookPARAM%absTolTempCas)%dat(1)       = absTolTempCas
   hru_data%mparStruct%var(iLookPARAM%relTolTempVeg)%dat(1)       = relTolTempVeg
@@ -345,6 +346,7 @@ subroutine setIDATolerances(handle_hru_data,    &
   hru_data%mparStruct%var(iLookPARAM%absTolMatric)%dat(1)        = absTolMatric
   hru_data%mparStruct%var(iLookPARAM%relTolAquifr)%dat(1)        = relTolAquifr
   hru_data%mparStruct%var(iLookPARAM%absTolAquifr)%dat(1)        = absTolAquifr
-end subroutine setIDATolerances
+#endif
+  end subroutine setIDATolerances
 
 end module hru_actor

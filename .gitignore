@@ -27,3 +27,4 @@ build/source/testing/containers/output_container/out.txt
 build/summa_old
 bin/config.json
 bin/summa_sundials
+build/cmake_build/

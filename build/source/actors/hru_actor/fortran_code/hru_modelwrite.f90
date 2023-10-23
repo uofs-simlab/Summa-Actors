@@ -273,16 +273,16 @@ subroutine writeData(indxGRU,indxHRU,iStep,structName,finalizeStats, &
           class is (var_dlength)
             select case(trim(structName))
               case('prog')
-                outputStructure(1)%progStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep)%dat(:) = dat%var(iVar)%dat(:)
+                outputStructure(1)%progStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep)%dat(1:datLength) = dat%var(iVar)%dat(:)
               case('diag')
-                outputStructure(1)%diagStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep)%dat(:) = dat%var(iVar)%dat(:)
+                outputStructure(1)%diagStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep)%dat(1:datLength) = dat%var(iVar)%dat(:)
               case('flux')
-                outputStructure(1)%fluxStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep)%dat(:) = dat%var(iVar)%dat(:)
+                outputStructure(1)%fluxStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep)%dat(1:datLength) = dat%var(iVar)%dat(:)
               case default
                 err=21; message=trim(message)//'data structure not found for output'
             end select
           class is (var_ilength) 
-            outputStructure(1)%indxStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep)%dat(:) = dat%var(iVar)%dat(:)
+            outputStructure(1)%indxStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep)%dat(1:datLength) = dat%var(iVar)%dat(:)
           class default; err=20; message=trim(message)//'data must not be scalarv and either of type var_dlength or var_ilength'; return
         end select
 

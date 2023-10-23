@@ -114,7 +114,7 @@ subroutine runPhysics(&
   ! ---------------------------------------------------------------------------------------
   ! Dummy Variables
   ! ---------------------------------------------------------------------------------------
-  integer(c_int),intent(in)                :: indxHRU                ! id of HRU                   
+  integer(c_long),intent(in)               :: indxHRU                ! id of HRU                   
   integer(c_int),intent(in)                :: modelTimeStep          ! time step index
   type(c_ptr), intent(in), value           :: handle_hru_data         ! c_ptr to -- hru data
   real(c_double),intent(inout)             :: fracJulDay                    ! fractional julian days since the start of year
@@ -160,19 +160,19 @@ subroutine runPhysics(&
       ! (compute the exposed LAI and SAI and whether veg is buried by snow)
       call vegPhenlgy(&
                       ! model control
-                      fracJulDay,                     & ! intent(in):    fractional julian days since the start of year
-                      yearLength,                     & ! intent(in):    number of days in the current year
+                      fracJulDay,             & ! intent(in):    fractional julian days since the start of year
+                      yearLength,             & ! intent(in):    number of days in the current year
                       ! input/output: data structures
-                      model_decisions,                & ! intent(in):    model decisions
-                      hru_data%typeStruct,                     & ! intent(in):    type of vegetation and soil
-                      hru_data%attrStruct,                     & ! intent(in):    spatial attributes
-                      hru_data%mparStruct,                     & ! intent(in):    model parameters
-                      hru_data%progStruct,                     & ! intent(in):    model prognostic variables for a local HRU
-                      hru_data%diagStruct,                     & ! intent(inout): model diagnostic variables for a local HRU
+                      model_decisions,        & ! intent(in):    model decisions
+                      hru_data%typeStruct,    & ! intent(in):    type of vegetation and soil
+                      hru_data%attrStruct,    & ! intent(in):    spatial attributes
+                      hru_data%mparStruct,    & ! intent(in):    model parameters
+                      hru_data%progStruct,    & ! intent(in):    model prognostic variables for a local HRU
+                      hru_data%diagStruct,    & ! intent(inout): model diagnostic variables for a local HRU
                       ! output
-                      computeVegFluxFlag,             & ! intent(out): flag to indicate if we are computing fluxes over vegetation (.false. means veg is buried with snow)
-                      notUsed_canopyDepth,            & ! intent(out): NOT USED: canopy depth (m)
-                      notUsed_exposedVAI,             & ! intent(out): NOT USED: exposed vegetation area index (m2 m-2)
+                      computeVegFluxFlag,     & ! intent(out): flag to indicate if we are computing fluxes over vegetation (.false. means veg is buried with snow)
+                      notUsed_canopyDepth,    & ! intent(out): NOT USED: canopy depth (m)
+                      notUsed_exposedVAI,     & ! intent(out): NOT USED: exposed vegetation area index (m2 m-2)
                       err,cmessage)                     ! intent(out): error control
       if(err/=0)then;message=trim(message)//trim(cmessage); print*, message; return; endif
 
@@ -267,8 +267,8 @@ subroutine runPhysics(&
         hru_data%progStruct,         & ! data structure of model prognostic variables
         hru_data%diagStruct,         & ! data structure of model diagnostic variables
         hru_data%fluxStruct,         & ! data structure of model fluxes
-        tmZoneOffsetFracDay,& ! time zone offset in fractional days
-        err,cmessage)       ! error control
+        tmZoneOffsetFracDay,         & ! time zone offset in fractional days
+        err,cmessage)                  ! error control
   if(err/=0)then;err=20; message=trim(message)//cmessage; print*, message; return; endif
  
   ! initialize the number of flux calls
@@ -277,19 +277,21 @@ subroutine runPhysics(&
   ! run the model for a single HRU
   call coupled_em(&
                   ! model control
-                  indxHRU,            & ! intent(in):    hruID
-                  dt_init,            & ! intent(inout): initial time step
-                  dt_init_factor,     & ! Used to adjust the length of the timestep in the event of a failure
-                  computeVegFluxFlag, & ! intent(inout): flag to indicate if we are computing fluxes over vegetation
-                  fracJulDay,        & ! intent(in):    fractional julian days since the start of year
-                  yearLength,        & ! intent(in):    number of days in the current year
+                  indxHRU,                     & ! intent(in):    hruID
+                  dt_init,                     & ! intent(inout): initial time step
+                  dt_init_factor,              & ! Used to adjust the length of the timestep in the event of a failure
+                  computeVegFluxFlag,          & ! intent(inout): flag to indicate if we are computing fluxes over vegetation
+                  fracJulDay,                  & ! intent(in):    fractional julian days since the start of year
+                  yearLength,                  & ! intent(in):    number of days in the current year
                   ! data structures (input)
                   hru_data%typeStruct,         & ! intent(in):    local classification of soil veg etc. for each HRU
                   hru_data%attrStruct,         & ! intent(in):    local attributes for each HRU
                   hru_data%forcStruct,         & ! intent(in):    model forcing data
                   hru_data%mparStruct,         & ! intent(in):    model parameters
                   hru_data%bvarStruct,         & ! intent(in):    basin-average model variables
+#ifdef SUNDIALS_ACTIVE                  
                   hru_data%lookupStruct,       &
+#endif
                   ! data structures (input-output)
                   hru_data%indxStruct,         & ! intent(inout): model indices
                   hru_data%progStruct,         & ! intent(inout): model prognostic variables for a local HRU

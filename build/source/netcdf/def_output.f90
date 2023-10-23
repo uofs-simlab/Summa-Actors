@@ -79,7 +79,6 @@ subroutine def_output(ncid,startGRU,nGRU,nHRU,actor_info,err,message)
   USE globalData,only:bpar_meta,bvar_meta,time_meta            ! metaData structures
   USE globalData,only:model_decisions                          ! model decisions
   USE globalData,only:outFreq                                  ! output frequencies
-  USE globalData,only:fname
   ! Some global variabels required in the writing process
   USE globalData,only:nHRUrun
   USE globalData,only:nGRUrun
@@ -113,6 +112,7 @@ subroutine def_output(ncid,startGRU,nGRU,nHRU,actor_info,err,message)
   integer(i4b)                         :: iGRU
   character(LEN=256)                   :: startGRUString    ! String Variable to convert startGRU
   character(LEN=256)                   :: numGRUString      ! String Varaible to convert numGRU
+  character(len=1024)                  :: fname                         ! temporary filename
 
 
   ! initialize errors
