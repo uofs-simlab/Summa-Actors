@@ -684,5 +684,39 @@ MODULE data_types
   character(:),allocatable :: cmessage                          ! intent(out):   error message
  end type out_type_bigAquifer
  ! ** end bigAquifer
+
+  type, public :: hru_type
+    type(zLookup),pointer                      :: lookupStruct               ! z(:)%var(:)%lookup(:) -- lookup tables
+    type(var_dlength),pointer                  :: forcStat                   ! model forcing data
+    type(var_dlength),pointer                  :: progStat                   ! model prognostic (state) variables
+    type(var_dlength),pointer                  :: diagStat                   ! model diagnostic variables
+    type(var_dlength),pointer                  :: fluxStat                   ! model fluxes
+    type(var_dlength),pointer                  :: indxStat                   ! model indices
+    type(var_dlength),pointer                  :: bvarStat                   ! basin-average variabl
+    ! primary data structures (scalars)
+    type(var_i),pointer                        :: timeStruct                 ! model time data
+    type(var_d),pointer                        :: forcStruct                 ! model forcing data
+    type(var_d),pointer                        :: attrStruct                 ! model attribute data
+    type(var_i),pointer                        :: typeStruct                 ! model type data
+    type(var_i8),pointer                       :: idStruct                   ! model id data
+    ! primary data structures (variable length vectors)
+    type(var_ilength),pointer                  :: indxStruct                 ! model indices
+    type(var_dlength),pointer                  :: mparStruct                 ! model parameters
+    type(var_dlength),pointer                  :: progStruct                 ! model prognostic (state) variables
+    type(var_dlength),pointer                  :: diagStruct                 ! model diagnostic variables
+    type(var_dlength),pointer                  :: fluxStruct                 ! model fluxes
+    ! basin-average structures
+    type(var_d),pointer                        :: bparStruct                 ! basin-average variables
+    type(var_dlength),pointer                  :: bvarStruct                 ! basin-average variables
+    type(var_d),pointer                        :: dparStruct                 ! default model parameters
+    ! local HRU data structures
+    type(var_i),pointer                        :: startTime_hru              ! start time for the model simulation
+    type(var_i),pointer                        :: finishTime_hru             ! end time for the model simulation
+    type(var_i),pointer                        :: refTime_hru                ! reference time for the model simulation
+    type(var_i),pointer                        :: oldTime_hru                ! time from previous step
+  end type hru_type
+
+
+
 END MODULE data_types
 

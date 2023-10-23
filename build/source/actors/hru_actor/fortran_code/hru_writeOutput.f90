@@ -7,7 +7,8 @@ USE data_types,only:&
                     var_d,          &
                     var_ilength,    &
                     var_dlength,    &
-                    flagVec
+                    flagVec,        &
+                    hru_type
 ! named variables to define new output files
 USE netcdf
 USE netcdf_util_module,only:netcdf_err 
@@ -103,32 +104,11 @@ subroutine writeHRUToOutputStructure(&
                             indxHRU,                   &
                             indxGRU,                   &
                             outputStep,                & ! index into the output Struc
-                            ! statistics variables
-                            handle_forcStat,           & ! model forcing data
-                            handle_progStat,           & ! model prognostic (state) variables
-                            handle_diagStat,           & ! model diagnostic variables
-                            handle_fluxStat,           & ! model fluxes
-                            handle_indxStat,           & ! model indices
-                            handle_bvarStat,           & ! basin-average variables
-                            ! primary data structures (scalars)
-                            handle_timeStruct,         & ! x%var(:)     -- model time data
-                            handle_forcStruct,         & ! x%var(:)     -- model forcing data
-                            ! primary data structures (variable length vectors)
-                            handle_indxStruct,         & ! x%var(:)%dat -- model indices
-                            handle_mparStruct,         & ! x%var(:)%dat -- model parameters
-                            handle_progStruct,         & ! x%var(:)%dat -- model prognostic (state) variables
-                            handle_diagStruct,         & ! x%var(:)%dat -- model diagnostic variables
-                            handle_fluxStruct,         & ! x%var(:)%dat -- model fluxes
-                            ! basin-average structures
-                            handle_bparStruct,         & ! x%var(:)     -- basin-average parameters
-                            handle_bvarStruct,         & ! x%var(:)%dat -- basin-average variables
-                            ! local HRU data
+                            handle_hru_data,           & ! local HRU data
                             handle_statCounter,        & ! x%var(:)
                             handle_outputTimeStep,     & ! x%var(:)
                             handle_resetStats,         & ! x%var(:)
                             handle_finalizeStats,      & ! x%var(:)
-                            handle_finshTime,          & ! x%var(:)    -- end time for the model simulation
-                            handle_oldTime,            & ! x%var(:)    -- time for the previous model time step
                             ! run time variables
                             err) bind(C, name="writeHRUToOutputStructure") 
   USE nrtype
@@ -161,63 +141,19 @@ subroutine writeHRUToOutputStructure(&
   integer(c_int),intent(in)             :: indxHRU               ! index of hru in GRU
   integer(c_int),intent(in)             :: indxGRU               ! index of the GRU
   integer(c_int),intent(in)             :: outputStep            ! index into the output Struc
-
-  ! statistics variables
-  type(c_ptr),intent(in),value          :: handle_forcStat       ! model forcing data
-  type(c_ptr),intent(in),value          :: handle_progStat       ! model prognostic (state) variables
-  type(c_ptr),intent(in),value          :: handle_diagStat       ! model diagnostic variables
-  type(c_ptr),intent(in),value          :: handle_fluxStat       ! model fluxes
-  type(c_ptr),intent(in),value          :: handle_indxStat       ! model indices
-  type(c_ptr),intent(in),value          :: handle_bvarStat       ! basin-average variables
-  ! primary data structures (scalars)
-  type(c_ptr),intent(in),value          :: handle_timeStruct     ! x%var(:)     -- model time data
-  type(c_ptr),intent(in),value          :: handle_forcStruct     ! x%var(:)     -- model forcing data
-  ! primary data structures (variable length vectors)
-  type(c_ptr),intent(in),value          :: handle_indxStruct     ! x%var(:)%dat -- model indices
-  type(c_ptr),intent(in),value          :: handle_mparStruct     ! x%var(:)%dat -- model parameters
-  type(c_ptr),intent(in),value          :: handle_progStruct     ! x%var(:)%dat -- model prognostic (state) variables
-  type(c_ptr),intent(in),value          :: handle_diagStruct     ! x%var(:)%dat -- model diagnostic variables
-  type(c_ptr),intent(in),value          :: handle_fluxStruct     ! x%var(:)%dat -- model fluxes
-  ! basin-average structures
-  type(c_ptr),intent(in),value          :: handle_bparStruct     ! x%var(:)     -- basin-average parameters
-  type(c_ptr),intent(in),value          :: handle_bvarStruct     ! x%var(:)%dat -- basin-average variables
-  ! local HRU data
+  type(c_ptr),intent(in),value          :: handle_hru_data       ! local HRU data
   type(c_ptr),intent(in),value          :: handle_statCounter    ! x%var(:)
   type(c_ptr),intent(in),value          :: handle_outputTimeStep ! x%var(:)
   type(c_ptr),intent(in),value          :: handle_resetStats     ! x%var(:)
   type(c_ptr),intent(in),value          :: handle_finalizeStats  ! x%var(:)
-  type(c_ptr),intent(in),value          :: handle_finshTime      ! x%var(:)    -- end time for the model simulation
-  type(c_ptr),intent(in),value          :: handle_oldTime        ! x%var(:)    -- time for the previous model time step
   integer(c_int),intent(out)            :: err
 
   ! local pointers
-  ! statistics variables 
-  type(var_dlength), pointer            :: forcStat        ! model forcing data
-  type(var_dlength), pointer            :: progStat        ! model prognostic (state) variables
-  type(var_dlength), pointer            :: diagStat        ! model diagnostic variables
-  type(var_dlength), pointer            :: fluxStat        ! model fluxes
-  type(var_dlength), pointer            :: indxStat        ! model indices
-  type(var_dlength), pointer            :: bvarStat        ! basin-average variabl
-  ! primary data structures (scalars)
-  type(var_i),pointer                   :: timeStruct      ! model time data
-  type(var_d),pointer                   :: forcStruct      ! model forcing data
-  ! primary data structures (variable length vectors)
-  type(var_ilength),pointer             :: indxStruct      ! model indices
-  type(var_dlength),pointer             :: mparStruct      ! model parameters
-  type(var_dlength),pointer             :: progStruct      ! model prognostic (state) variables
-  type(var_dlength),pointer             :: diagStruct      ! model diagnostic variables
-  type(var_dlength),pointer             :: fluxStruct      ! model fluxes
-  ! basin-average structures
-  type(var_d),pointer                   :: bparStruct      ! basin-average parameters
-  type(var_dlength),pointer             :: bvarStruct      ! basin-average variables
-  ! local HRU data
+  type(hru_type), pointer               :: hru_data              ! local HRU data
   type(var_i),pointer                   :: statCounter     ! time counter for stats
   type(var_i),pointer                   :: outputTimeStep  ! timestep in output files
   type(flagVec),pointer                 :: resetStats      ! flags to reset statistics
   type(flagVec),pointer                 :: finalizeStats   ! flags to finalize statistics
-  type(var_i),pointer                   :: finshTime       ! end time for the model simulation
-  type(var_i),pointer                   :: oldTime         !
-
   ! local variables
   character(len=256)                    :: cmessage
   character(len=256)                    :: message 
@@ -229,33 +165,16 @@ subroutine writeHRUToOutputStructure(&
   integer(i4b)                          :: iStruct           ! index of model structure
   integer(i4b)                          :: iFreq             ! index of the output frequency
   ! convert the C pointers to Fortran pointers
-  call c_f_pointer(handle_forcStat, forcStat)
-  call c_f_pointer(handle_progStat, progStat)
-  call c_f_pointer(handle_diagStat, diagStat)
-  call c_f_pointer(handle_fluxStat, fluxStat)
-  call c_f_pointer(handle_indxStat, indxStat)
-  call c_f_pointer(handle_bvarStat, bvarStat)
-  call c_f_pointer(handle_timeStruct, timeStruct)
-  call c_f_pointer(handle_forcStruct, forcStruct)
-  call c_f_pointer(handle_indxStruct, indxStruct)
-  call c_f_pointer(handle_mparStruct, mparStruct)
-  call c_f_pointer(handle_progStruct, progStruct)
-  call c_f_pointer(handle_diagStruct, diagStruct)
-  call c_f_pointer(handle_fluxStruct, fluxStruct)
-  call c_f_pointer(handle_bparStruct, bparStruct)
-  call c_f_pointer(handle_bvarStruct, bvarStruct)
+  call c_f_pointer(handle_hru_data, hru_data)
   call c_f_pointer(handle_statCounter, statCounter)
   call c_f_pointer(handle_outputTimeStep, outputTimeStep)
   call c_f_pointer(handle_resetStats, resetStats)
   call c_f_pointer(handle_finalizeStats, finalizeStats)
-  call c_f_pointer(handle_finshTime, finshTime)
-  call c_f_pointer(handle_oldTime, oldTime)
-
   err=0; message='summa_manageOutputFiles/'
   ! identify the start of the writing
 
   ! Many variables get there values from summa4chm_util.f90:getCommandArguments()
-  call summa_setWriteAlarms(oldTime%var, timeStruct%var, finshTime%var,  &   ! time vectors
+  call summa_setWriteAlarms(hru_data%oldTime_hru%var, hru_data%timeStruct%var, hru_data%finishTime_hru%var,  &   ! time vectors
                             newOutputFile,  defNewOutputFile,            &
                             ixRestart,      printRestart,                &   ! flag to print the restart file
                             ixProgress,     printProgress,               &   ! flag to print simulation progress
@@ -272,29 +191,29 @@ subroutine writeHRUToOutputStructure(&
  ! ****************************************************************************
   do iStruct=1,size(structInfo)
     select case(trim(structInfo(iStruct)%structName))
-      case('forc'); call calcStats(forcStat%var, forcStruct%var, statForc_meta, resetStats%dat, finalizeStats%dat, statCounter%var, err, cmessage)
-      case('prog'); call calcStats(progStat%var, progStruct%var, statProg_meta, resetStats%dat, finalizeStats%dat, statCounter%var, err, cmessage)
-      case('diag'); call calcStats(diagStat%var, diagStruct%var, statDiag_meta, resetStats%dat, finalizeStats%dat, statCounter%var, err, cmessage)
-      case('flux'); call calcStats(fluxStat%var, fluxStruct%var, statFlux_meta, resetStats%dat, finalizeStats%dat, statCounter%var, err, cmessage)
-      case('indx'); call calcStats(indxStat%var, indxStruct%var, statIndx_meta, resetStats%dat, finalizeStats%dat, statCounter%var, err, cmessage)     
+      case('forc'); call calcStats(hru_data%forcStat%var, hru_data%forcStruct%var, statForc_meta, resetStats%dat, finalizeStats%dat, statCounter%var, err, cmessage)
+      case('prog'); call calcStats(hru_data%progStat%var, hru_data%progStruct%var, statProg_meta, resetStats%dat, finalizeStats%dat, statCounter%var, err, cmessage)
+      case('diag'); call calcStats(hru_data%diagStat%var, hru_data%diagStruct%var, statDiag_meta, resetStats%dat, finalizeStats%dat, statCounter%var, err, cmessage)
+      case('flux'); call calcStats(hru_data%fluxStat%var, hru_data%fluxStruct%var, statFlux_meta, resetStats%dat, finalizeStats%dat, statCounter%var, err, cmessage)
+      case('indx'); call calcStats(hru_data%indxStat%var, hru_data%indxStruct%var, statIndx_meta, resetStats%dat, finalizeStats%dat, statCounter%var, err, cmessage)     
     end select
     if(err/=0)then; message=trim(message)//trim(cmessage)//'['//trim(structInfo(iStruct)%structName)//']'; return; endif
   end do  ! (looping through structures)
     
   ! calc basin stats
-  call calcStats(bvarStat%var(:), bvarStruct%var(:), statBvar_meta, resetStats%dat, finalizeStats%dat, statCounter%var, err, cmessage)
+  call calcStats(hru_data%bvarStat%var(:), hru_data%bvarStruct%var(:), statBvar_meta, resetStats%dat, finalizeStats%dat, statCounter%var, err, cmessage)
   if(err/=0)then; message=trim(message)//trim(cmessage)//'[bvar stats]'; return; endif
   
   ! write basin-average variables
   call writeBasin(indxGRU,indxHRU,outputStep,finalizeStats%dat, &
-                  outputTimeStep%var,bvar_meta,bvarStat%var,bvarStruct%var,bvarChild_map,err,cmessage)
+                  outputTimeStep%var,bvar_meta,hru_data%bvarStat%var,hru_data%bvarStruct%var,bvarChild_map,err,cmessage)
   if(err/=0)then; message=trim(message)//trim(cmessage)//'[bvar]'; return; endif
 
   ! ****************************************************************************
   ! *** write data
   ! ****************************************************************************
   call writeTime(indxGRU,indxHRU,outputStep,finalizeStats%dat, &
-                time_meta,timeStruct%var,err,message)
+                time_meta,hru_data%timeStruct%var,err,message)
 
   ! write the model output to the OutputStructure
   ! Passes the full metadata structure rather than the stats metadata structure because
@@ -303,15 +222,15 @@ subroutine writeHRUToOutputStructure(&
   do iStruct=1,size(structInfo)
     select case(trim(structInfo(iStruct)%structName))
       case('forc'); call writeData(indxGRU,indxHRU,outputStep,"forc",finalizeStats%dat,&
-                    maxLayers,forc_meta,forcStat,forcStruct,forcChild_map,indxStruct,err,cmessage)
+                    maxLayers,forc_meta,hru_data%forcStat,hru_data%forcStruct,forcChild_map,hru_data%indxStruct,err,cmessage)
       case('prog'); call writeData(indxGRU,indxHRU,outputStep,"prog",finalizeStats%dat,&
-                    maxLayers,prog_meta,progStat,progStruct,progChild_map,indxStruct,err,cmessage)
+                    maxLayers,prog_meta,hru_data%progStat,hru_data%progStruct,progChild_map,hru_data%indxStruct,err,cmessage)
       case('diag'); call writeData(indxGRU,indxHRU,outputStep,"diag",finalizeStats%dat,&
-                    maxLayers,diag_meta,diagStat,diagStruct,diagChild_map,indxStruct,err,cmessage)
+                    maxLayers,diag_meta,hru_data%diagStat,hru_data%diagStruct,diagChild_map,hru_data%indxStruct,err,cmessage)
       case('flux'); call writeData(indxGRU,indxHRU,outputStep,"flux",finalizeStats%dat,&
-                    maxLayers,flux_meta,fluxStat,fluxStruct,fluxChild_map,indxStruct,err,cmessage)
+                    maxLayers,flux_meta,hru_data%fluxStat,hru_data%fluxStruct,fluxChild_map,hru_data%indxStruct,err,cmessage)
       case('indx'); call writeData(indxGRU,indxHRU,outputStep,"indx",finalizeStats%dat,&
-                    maxLayers,indx_meta,indxStat,indxStruct,indxChild_map,indxStruct,err,cmessage)
+                    maxLayers,indx_meta,hru_data%indxStat,hru_data%indxStruct,indxChild_map,hru_data%indxStruct,err,cmessage)
     end select
     if(err/=0)then 
       message=trim(message)//trim(cmessage)//'['//trim(structInfo(iStruct)%structName)//']'
@@ -333,7 +252,7 @@ subroutine writeHRUToOutputStructure(&
   resetStats%dat(:) = finalizeStats%dat(:)
 
   ! save time vector
-  oldTime%var(:) = timeStruct%var(:)
+  hru_data%oldTime_hru%var(:) = hru_data%timeStruct%var(:)
 
 end subroutine writeHRUToOutputStructure
 

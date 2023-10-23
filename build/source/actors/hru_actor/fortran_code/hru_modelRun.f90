@@ -30,7 +30,8 @@ USE data_types,only:&
                     var_ilength,         & ! x%var(:)%dat        (i4b)
                     var_dlength,         & ! x%var(:)%dat        (dp)
                     var_dlength_array,   & ! x%struc(:)%dat       (dp)
-                    zLookup
+                    zLookup,&
+                    hru_type
 ! access missing values
 USE globalData,only:integerMissing         ! missing integer
 USE globalData,only:realMissing            ! missing double precision number
@@ -82,20 +83,7 @@ contains
 subroutine runPhysics(&
               indxHRU,             &
               modelTimeStep,       &
-              ! primary data structures (scalars)
-              handle_timeStruct,   & ! c_ptr to -- model time data
-              handle_forcStruct,   & ! c_ptr to -- model forcing data
-              handle_attrStruct,   & ! c_ptr to -- local attributes for each HRU
-              handle_typeStruct,   & ! c_ptr to -- local classification of soil veg etc. for each HRU
-              ! primary data structures (variable length vectors)
-              handle_indxStruct,   & ! c_ptr to -- model indices
-              handle_mparStruct,   & ! c_ptr to -- model parameters
-              handle_progStruct,   & ! c_ptr to -- model prognostic (state) variables
-              handle_diagStruct,   & ! c_ptr to -- model diagnostic variables
-              handle_fluxStruct,   & ! c_ptr to -- model fluxes
-              ! basin-average structures
-              handle_bvarStruct,   & ! c_ptr to -- basin-average variables
-              handle_lookupStruct, & ! c_ptr to -- lookup structures (enthalpy)
+              handle_hru_data,     &
               fracJulDay,          & ! fraction of the current Julian day
               tmZoneOffsetFracDay, & ! time zone offset (fraction of the day)
               yearLength,          & ! number of days in the current year
@@ -128,20 +116,7 @@ subroutine runPhysics(&
   ! ---------------------------------------------------------------------------------------
   integer(c_int),intent(in)                :: indxHRU                ! id of HRU                   
   integer(c_int),intent(in)                :: modelTimeStep          ! time step index
-  ! primary data structures (scalars)
-  type(c_ptr), intent(in), value           :: handle_timeStruct             ! model time data
-  type(c_ptr), intent(in), value           :: handle_forcStruct             ! model forcing data
-  type(c_ptr), intent(in), value           :: handle_attrStruct             ! local attributes for each HRU
-  type(c_ptr), intent(in), value           :: handle_typeStruct             ! local classification of soil veg etc. for each HRU
-  ! primary data structures (variable length vectors)
-  type(c_ptr), intent(in), value           :: handle_indxStruct             ! model indices
-  type(c_ptr), intent(in), value           :: handle_mparStruct             ! model parameters
-  type(c_ptr), intent(in), value           :: handle_progStruct             ! model prognostic (state) variables
-  type(c_ptr), intent(in), value           :: handle_diagStruct             ! model diagnostic variables
-  type(c_ptr), intent(in), value           :: handle_fluxStruct             ! model fluxes
-  ! basin-average structures
-  type(c_ptr),intent(in),  value           :: handle_bvarStruct             ! basin-average variables
-  type(c_ptr),intent(in),  value           :: handle_lookupStruct           ! enthalpy lookup structures
+  type(c_ptr), intent(in), value           :: handle_hru_data         ! c_ptr to -- hru data
   real(c_double),intent(inout)             :: fracJulDay                    ! fractional julian days since the start of year
   real(c_double),intent(inout)             :: tmZoneOffsetFracDay 
   integer(c_int),intent(inout)             :: yearLength                    ! number of days in the current year
@@ -152,19 +127,8 @@ subroutine runPhysics(&
   ! ---------------------------------------------------------------------------------------
   ! FORTRAN POINTERS
   ! ---------------------------------------------------------------------------------------
-  type(var_i),pointer                      :: timeStruct                 !  model time data
-  type(var_d),pointer                      :: forcStruct                 !  model forcing data
-  type(var_d),pointer                      :: attrStruct                 !  local attributes for each HRU
-  type(var_i),pointer                      :: typeStruct                 !  local classification of soil veg etc. for each HRU
-  ! primary data structures (variable length vectors)
-  type(var_ilength),pointer                :: indxStruct                 !  model indices
-  type(var_dlength),pointer                :: mparStruct                 !  model parameters
-  type(var_dlength),pointer                :: progStruct                 !  model prognostic (state) variables
-  type(var_dlength),pointer                :: diagStruct                 !  model diagnostic variables
-  type(var_dlength),pointer                :: fluxStruct                 !  model fluxes
-  ! basin-average structures
-  type(var_dlength),pointer                :: bvarStruct                 !  basin-average variables 
-  type(zLookup), pointer                   :: lookupStruct               ! lookup tables
+  type(hru_type),pointer                   :: hru_data                ! hru data
+
   ! ---------------------------------------------------------------------------------------
   ! local variables: general
   ! ---------------------------------------------------------------------------------------
@@ -181,19 +145,7 @@ subroutine runPhysics(&
   character(len=256)                        :: message                ! error message
   ! ---------------------------------------------------------------------------------------
 
-  ! ############################ Convert Pointers #############################
-  call c_f_pointer(handle_timeStruct, timeStruct)
-  call c_f_pointer(handle_forcStruct, forcStruct)
-  call c_f_pointer(handle_attrStruct, attrStruct)
-  call c_f_pointer(handle_typeStruct, typeStruct)
-  call c_f_pointer(handle_indxStruct, indxStruct)
-  call c_f_pointer(handle_mparStruct, mparStruct)
-  call c_f_pointer(handle_progStruct, progStruct)
-  call c_f_pointer(handle_diagStruct, diagStruct)
-  call c_f_pointer(handle_fluxStruct, fluxStruct)
-  call c_f_pointer(handle_bvarStruct, bvarStruct)
-  call c_f_pointer(handle_lookupStruct, lookupStruct)
-  ! ############################################################################
+  call c_f_pointer(handle_hru_data, hru_data)
 
   ! ---------------------------------------------------------------------------------------
   ! initialize error control
@@ -212,11 +164,11 @@ subroutine runPhysics(&
                       yearLength,                     & ! intent(in):    number of days in the current year
                       ! input/output: data structures
                       model_decisions,                & ! intent(in):    model decisions
-                      typeStruct,                     & ! intent(in):    type of vegetation and soil
-                      attrStruct,                     & ! intent(in):    spatial attributes
-                      mparStruct,                     & ! intent(in):    model parameters
-                      progStruct,                     & ! intent(in):    model prognostic variables for a local HRU
-                      diagStruct,                     & ! intent(inout): model diagnostic variables for a local HRU
+                      hru_data%typeStruct,                     & ! intent(in):    type of vegetation and soil
+                      hru_data%attrStruct,                     & ! intent(in):    spatial attributes
+                      hru_data%mparStruct,                     & ! intent(in):    model parameters
+                      hru_data%progStruct,                     & ! intent(in):    model prognostic variables for a local HRU
+                      hru_data%diagStruct,                     & ! intent(inout): model diagnostic variables for a local HRU
                       ! output
                       computeVegFluxFlag,             & ! intent(out): flag to indicate if we are computing fluxes over vegetation (.false. means veg is buried with snow)
                       notUsed_canopyDepth,            & ! intent(out): NOT USED: canopy depth (m)
@@ -230,7 +182,7 @@ subroutine runPhysics(&
       if(.not.computeVegFluxFlag) computeVegFlux = no
       
       ! define the green vegetation fraction of the grid box (used to compute LAI)
-      diagStruct%var(iLookDIAG%scalarGreenVegFraction)%dat(1) = greenVegFrac_monthly(timeStruct%var(iLookTIME%im))
+      hru_data%diagStruct%var(iLookDIAG%scalarGreenVegFraction)%dat(1) = greenVegFrac_monthly(hru_data%timeStruct%var(iLookTIME%im))
   end if  ! if the first time step
  
 
@@ -244,25 +196,25 @@ subroutine runPhysics(&
   !******************************************************************************
   ! ----- basin initialization --------------------------------------------------------------------------------------------
   ! initialize runoff variables
-  bvarStruct%var(iLookBVAR%basin__SurfaceRunoff)%dat(1)    = 0._dp  ! surface runoff (m s-1)
-  bvarStruct%var(iLookBVAR%basin__SoilDrainage)%dat(1)     = 0._dp 
-  bvarStruct%var(iLookBVAR%basin__ColumnOutflow)%dat(1)    = 0._dp  ! outflow from all "outlet" HRUs (those with no downstream HRU)
-  bvarStruct%var(iLookBVAR%basin__TotalRunoff)%dat(1)      = 0._dp 
+  hru_data%bvarStruct%var(iLookBVAR%basin__SurfaceRunoff)%dat(1)    = 0._dp  ! surface runoff (m s-1)
+  hru_data%bvarStruct%var(iLookBVAR%basin__SoilDrainage)%dat(1)     = 0._dp 
+  hru_data%bvarStruct%var(iLookBVAR%basin__ColumnOutflow)%dat(1)    = 0._dp  ! outflow from all "outlet" HRUs (those with no downstream HRU)
+  hru_data%bvarStruct%var(iLookBVAR%basin__TotalRunoff)%dat(1)      = 0._dp 
 
   ! initialize baseflow variables
-  bvarStruct%var(iLookBVAR%basin__AquiferRecharge)%dat(1)  = 0._dp ! recharge to the aquifer (m s-1)
-  bvarStruct%var(iLookBVAR%basin__AquiferBaseflow)%dat(1)  = 0._dp ! baseflow from the aquifer (m s-1)
-  bvarStruct%var(iLookBVAR%basin__AquiferTranspire)%dat(1) = 0._dp ! transpiration loss from the aquifer (m s-1)
+  hru_data%bvarStruct%var(iLookBVAR%basin__AquiferRecharge)%dat(1)  = 0._dp ! recharge to the aquifer (m s-1)
+  hru_data%bvarStruct%var(iLookBVAR%basin__AquiferBaseflow)%dat(1)  = 0._dp ! baseflow from the aquifer (m s-1)
+  hru_data%bvarStruct%var(iLookBVAR%basin__AquiferTranspire)%dat(1) = 0._dp ! transpiration loss from the aquifer (m s-1)
 
   ! initialize total inflow for each layer in a soil column
   if (modelTimeStep == 0 .and. indxHRU == 1)then
-    fluxStruct%var(iLookFLUX%mLayerColumnInflow)%dat(:) = 0._dp
+    hru_data%fluxStruct%var(iLookFLUX%mLayerColumnInflow)%dat(:) = 0._dp
   end if
  
   ! update the number of layers
-  nSnow   = indxStruct%var(iLookINDEX%nSnow)%dat(1)    ! number of snow layers
-  nSoil   = indxStruct%var(iLookINDEX%nSoil)%dat(1)    ! number of soil layers
-  nLayers = indxStruct%var(iLookINDEX%nLayers)%dat(1)  ! total number of layers
+  nSnow   = hru_data%indxStruct%var(iLookINDEX%nSnow)%dat(1)    ! number of snow layers
+  nSoil   = hru_data%indxStruct%var(iLookINDEX%nSoil)%dat(1)    ! number of soil layers
+  nLayers = hru_data%indxStruct%var(iLookINDEX%nLayers)%dat(1)  ! total number of layers
   
   computeVegFluxFlag = (ComputeVegFlux == yes)
 
@@ -270,20 +222,20 @@ subroutine runPhysics(&
   !****************************** From run_oneHRU *******************************
   !******************************************************************************
   ! water pixel: do nothing
-  if (typeStruct%var(iLookTYPE%vegTypeIndex) == isWater) return
+  if (hru_data%typeStruct%var(iLookTYPE%vegTypeIndex) == isWater) return
 
   ! get height at bottom of each soil layer, negative downwards (used in Noah MP)
   allocate(zSoilReverseSign(nSoil),stat=err)
   if(err/=0)then; message=trim(message)//'problem allocating space for zSoilReverseSign'; print*, message; return; endif
 
-  zSoilReverseSign(:) = -progStruct%var(iLookPROG%iLayerHeight)%dat(nSnow+1:nLayers)
+  zSoilReverseSign(:) = -hru_data%progStruct%var(iLookPROG%iLayerHeight)%dat(nSnow+1:nLayers)
  
   ! populate parameters in Noah-MP modules
   ! Passing a maxSoilLayer in order to pass the check for NROOT, that is done to avoid making any changes to Noah-MP code.
   !  --> NROOT from Noah-MP veg tables (as read here) is not used in SUMMA
-  call REDPRM(typeStruct%var(iLookTYPE%vegTypeIndex),      & ! vegetation type index
-              typeStruct%var(iLookTYPE%soilTypeIndex),     & ! soil type
-              typeStruct%var(iLookTYPE%slopeTypeIndex),    & ! slope type index
+  call REDPRM(hru_data%typeStruct%var(iLookTYPE%vegTypeIndex),      & ! vegetation type index
+              hru_data%typeStruct%var(iLookTYPE%soilTypeIndex),     & ! soil type
+              hru_data%typeStruct%var(iLookTYPE%slopeTypeIndex),    & ! slope type index
               zSoilReverseSign,                            & ! * not used: height at bottom of each layer [NOTE: negative] (m)
               maxSoilLayers,                               & ! number of soil layers
               urbanVegCategory)                              ! vegetation category for urban areas
@@ -294,33 +246,33 @@ subroutine runPhysics(&
  
 
   ! overwrite the minimum resistance
-  if(overwriteRSMIN) RSMIN = mparStruct%var(iLookPARAM%minStomatalResistance)%dat(1)
+  if(overwriteRSMIN) RSMIN = hru_data%mparStruct%var(iLookPARAM%minStomatalResistance)%dat(1)
   
   ! overwrite the vegetation height
-  HVT(typeStruct%var(iLookTYPE%vegTypeIndex)) = mparStruct%var(iLookPARAM%heightCanopyTop)%dat(1)
-  HVB(typeStruct%var(iLookTYPE%vegTypeIndex)) = mparStruct%var(iLookPARAM%heightCanopyBottom)%dat(1)
+  HVT(hru_data%typeStruct%var(iLookTYPE%vegTypeIndex)) = hru_data%mparStruct%var(iLookPARAM%heightCanopyTop)%dat(1)
+  HVB(hru_data%typeStruct%var(iLookTYPE%vegTypeIndex)) = hru_data%mparStruct%var(iLookPARAM%heightCanopyBottom)%dat(1)
 
   ! overwrite the tables for LAI and SAI
   if(model_decisions(iLookDECISIONS%LAI_method)%iDecision == specified)then
-    SAIM(typeStruct%var(iLookTYPE%vegTypeIndex),:) = mparStruct%var(iLookPARAM%winterSAI)%dat(1)
-    LAIM(typeStruct%var(iLookTYPE%vegTypeIndex),:) = mparStruct%var(iLookPARAM%summerLAI)%dat(1)*greenVegFrac_monthly
+    SAIM(hru_data%typeStruct%var(iLookTYPE%vegTypeIndex),:) = hru_data%mparStruct%var(iLookPARAM%winterSAI)%dat(1)
+    LAIM(hru_data%typeStruct%var(iLookTYPE%vegTypeIndex),:) = hru_data%mparStruct%var(iLookPARAM%summerLAI)%dat(1)*greenVegFrac_monthly
   end if
  
   ! compute derived forcing variables
   call derivforce(&
-        timeStruct%var,     & ! vector of time information
-        forcStruct%var,     & ! vector of model forcing data
-        attrStruct%var,     & ! vector of model attributes
-        mparStruct,         & ! data structure of model parameters
-        progStruct,         & ! data structure of model prognostic variables
-        diagStruct,         & ! data structure of model diagnostic variables
-        fluxStruct,         & ! data structure of model fluxes
+        hru_data%timeStruct%var,     & ! vector of time information
+        hru_data%forcStruct%var,     & ! vector of model forcing data
+        hru_data%attrStruct%var,     & ! vector of model attributes
+        hru_data%mparStruct,         & ! data structure of model parameters
+        hru_data%progStruct,         & ! data structure of model prognostic variables
+        hru_data%diagStruct,         & ! data structure of model diagnostic variables
+        hru_data%fluxStruct,         & ! data structure of model fluxes
         tmZoneOffsetFracDay,& ! time zone offset in fractional days
         err,cmessage)       ! error control
   if(err/=0)then;err=20; message=trim(message)//cmessage; print*, message; return; endif
  
   ! initialize the number of flux calls
-  diagStruct%var(iLookDIAG%numFluxCalls)%dat(1) = 0._dp
+  hru_data%diagStruct%var(iLookDIAG%numFluxCalls)%dat(1) = 0._dp
 
   ! run the model for a single HRU
   call coupled_em(&
@@ -329,20 +281,20 @@ subroutine runPhysics(&
                   dt_init,            & ! intent(inout): initial time step
                   dt_init_factor,     & ! Used to adjust the length of the timestep in the event of a failure
                   computeVegFluxFlag, & ! intent(inout): flag to indicate if we are computing fluxes over vegetation
-                   fracJulDay,        & ! intent(in):    fractional julian days since the start of year
-                   yearLength,        & ! intent(in):    number of days in the current year
+                  fracJulDay,        & ! intent(in):    fractional julian days since the start of year
+                  yearLength,        & ! intent(in):    number of days in the current year
                   ! data structures (input)
-                  typeStruct,         & ! intent(in):    local classification of soil veg etc. for each HRU
-                  attrStruct,         & ! intent(in):    local attributes for each HRU
-                  forcStruct,         & ! intent(in):    model forcing data
-                  mparStruct,         & ! intent(in):    model parameters
-                  bvarStruct,         & ! intent(in):    basin-average model variables
-                  lookupStruct,       &
+                  hru_data%typeStruct,         & ! intent(in):    local classification of soil veg etc. for each HRU
+                  hru_data%attrStruct,         & ! intent(in):    local attributes for each HRU
+                  hru_data%forcStruct,         & ! intent(in):    model forcing data
+                  hru_data%mparStruct,         & ! intent(in):    model parameters
+                  hru_data%bvarStruct,         & ! intent(in):    basin-average model variables
+                  hru_data%lookupStruct,       &
                   ! data structures (input-output)
-                  indxStruct,         & ! intent(inout): model indices
-                  progStruct,         & ! intent(inout): model prognostic variables for a local HRU
-                  diagStruct,         & ! intent(inout): model diagnostic variables for a local HRU
-                  fluxStruct,         & ! intent(inout): model fluxes for a local HRU
+                  hru_data%indxStruct,         & ! intent(inout): model indices
+                  hru_data%progStruct,         & ! intent(inout): model prognostic variables for a local HRU
+                  hru_data%diagStruct,         & ! intent(inout): model diagnostic variables for a local HRU
+                  hru_data%fluxStruct,         & ! intent(inout): model fluxes for a local HRU
                   ! error control
                   err,cmessage)       ! intent(out): error control
   if(err/=0)then; err=20; message=trim(message)//trim(cmessage); print*, message; return; endif;
@@ -353,28 +305,28 @@ subroutine runPhysics(&
   if(computeVegFluxFlag)      ComputeVegFlux = yes
   if(.not.computeVegFluxFlag) ComputeVegFlux = no
 
-  fracHRU = attrStruct%var(iLookATTR%HRUarea) / bvarStruct%var(iLookBVAR%basin__totalArea)%dat(1)
+  fracHRU = hru_data%attrStruct%var(iLookATTR%HRUarea) / hru_data%bvarStruct%var(iLookBVAR%basin__totalArea)%dat(1)
 
   ! ----- calculate weighted basin (GRU) fluxes --------------------------------------------------------------------------------------
   
   ! increment basin surface runoff (m s-1)
-  bvarStruct%var(iLookBVAR%basin__SurfaceRunoff)%dat(1) = bvarStruct%var(iLookBVAR%basin__SurfaceRunoff)%dat(1) + fluxStruct%var(iLookFLUX%scalarSurfaceRunoff)%dat(1) * fracHRU
+  hru_data%bvarStruct%var(iLookBVAR%basin__SurfaceRunoff)%dat(1) = hru_data%bvarStruct%var(iLookBVAR%basin__SurfaceRunoff)%dat(1) + hru_data%fluxStruct%var(iLookFLUX%scalarSurfaceRunoff)%dat(1) * fracHRU
   
   !increment basin soil drainage (m s-1)
-  bvarStruct%var(iLookBVAR%basin__SoilDrainage)%dat(1)   = bvarStruct%var(iLookBVAR%basin__SoilDrainage)%dat(1)  + fluxStruct%var(iLookFLUX%scalarSoilDrainage)%dat(1)  * fracHRU
+  hru_data%bvarStruct%var(iLookBVAR%basin__SoilDrainage)%dat(1)   = hru_data%bvarStruct%var(iLookBVAR%basin__SoilDrainage)%dat(1)  + hru_data%fluxStruct%var(iLookFLUX%scalarSoilDrainage)%dat(1)  * fracHRU
   
   ! increment aquifer variables -- ONLY if aquifer baseflow is computed individually for each HRU and aquifer is run
   ! NOTE: groundwater computed later for singleBasin
   if(model_decisions(iLookDECISIONS%spatial_gw)%iDecision == localColumn .and. model_decisions(iLookDECISIONS%groundwatr)%iDecision == bigBucket) then
 
-    bvarStruct%var(iLookBVAR%basin__AquiferRecharge)%dat(1)  = bvarStruct%var(iLookBVAR%basin__AquiferRecharge)%dat(1)   + fluxStruct%var(iLookFLUX%scalarSoilDrainage)%dat(1)     * fracHRU
-    bvarStruct%var(iLookBVAR%basin__AquiferTranspire)%dat(1) = bvarStruct%var(iLookBVAR%basin__AquiferTranspire)%dat(1)  + fluxStruct%var(iLookFLUX%scalarAquiferTranspire)%dat(1) * fracHRU
-    bvarStruct%var(iLookBVAR%basin__AquiferBaseflow)%dat(1)  =  bvarStruct%var(iLookBVAR%basin__AquiferBaseflow)%dat(1)  &
-            +  fluxStruct%var(iLookFLUX%scalarAquiferBaseflow)%dat(1) * fracHRU
+    hru_data%bvarStruct%var(iLookBVAR%basin__AquiferRecharge)%dat(1)  = hru_data%bvarStruct%var(iLookBVAR%basin__AquiferRecharge)%dat(1)   + hru_data%fluxStruct%var(iLookFLUX%scalarSoilDrainage)%dat(1)     * fracHRU
+    hru_data%bvarStruct%var(iLookBVAR%basin__AquiferTranspire)%dat(1) = hru_data%bvarStruct%var(iLookBVAR%basin__AquiferTranspire)%dat(1)  + hru_data%fluxStruct%var(iLookFLUX%scalarAquiferTranspire)%dat(1) * fracHRU
+    hru_data%bvarStruct%var(iLookBVAR%basin__AquiferBaseflow)%dat(1)  =  hru_data%bvarStruct%var(iLookBVAR%basin__AquiferBaseflow)%dat(1)  &
+            +  hru_data%fluxStruct%var(iLookFLUX%scalarAquiferBaseflow)%dat(1) * fracHRU
     end if
 
   ! perform the routing
-  associate(totalArea => bvarStruct%var(iLookBVAR%basin__totalArea)%dat(1) )
+  associate(totalArea => hru_data%bvarStruct%var(iLookBVAR%basin__totalArea)%dat(1) )
 
   ! compute water balance for the basin aquifer
   if(model_decisions(iLookDECISIONS%spatial_gw)%iDecision == singleBasin)then
@@ -385,20 +337,20 @@ subroutine runPhysics(&
   ! calculate total runoff depending on whether aquifer is connected
   if(model_decisions(iLookDECISIONS%groundwatr)%iDecision == bigBucket) then
     ! aquifer
-    bvarStruct%var(iLookBVAR%basin__TotalRunoff)%dat(1) = bvarStruct%var(iLookBVAR%basin__SurfaceRunoff)%dat(1) + bvarStruct%var(iLookBVAR%basin__ColumnOutflow)%dat(1)/totalArea + bvarStruct%var(iLookBVAR%basin__AquiferBaseflow)%dat(1)
+    hru_data%bvarStruct%var(iLookBVAR%basin__TotalRunoff)%dat(1) = hru_data%bvarStruct%var(iLookBVAR%basin__SurfaceRunoff)%dat(1) + hru_data%bvarStruct%var(iLookBVAR%basin__ColumnOutflow)%dat(1)/totalArea + hru_data%bvarStruct%var(iLookBVAR%basin__AquiferBaseflow)%dat(1)
   else
     ! no aquifer
-    bvarStruct%var(iLookBVAR%basin__TotalRunoff)%dat(1) = bvarStruct%var(iLookBVAR%basin__SurfaceRunoff)%dat(1) + bvarStruct%var(iLookBVAR%basin__ColumnOutflow)%dat(1)/totalArea + bvarStruct%var(iLookBVAR%basin__SoilDrainage)%dat(1)
+    hru_data%bvarStruct%var(iLookBVAR%basin__TotalRunoff)%dat(1) = hru_data%bvarStruct%var(iLookBVAR%basin__SurfaceRunoff)%dat(1) + hru_data%bvarStruct%var(iLookBVAR%basin__ColumnOutflow)%dat(1)/totalArea + hru_data%bvarStruct%var(iLookBVAR%basin__SoilDrainage)%dat(1)
   endif
 
   call qOverland(&! input
                   model_decisions(iLookDECISIONS%subRouting)%iDecision,            &  ! intent(in): index for routing method
-                  bvarStruct%var(iLookBVAR%basin__TotalRunoff)%dat(1),             &  ! intent(in): total runoff to the channel from all active components (m s-1)
-                  bvarStruct%var(iLookBVAR%routingFractionFuture)%dat,             &  ! intent(in): fraction of runoff in future time steps (m s-1)
-                  bvarStruct%var(iLookBVAR%routingRunoffFuture)%dat,               &  ! intent(in): runoff in future time steps (m s-1)
+                  hru_data%bvarStruct%var(iLookBVAR%basin__TotalRunoff)%dat(1),             &  ! intent(in): total runoff to the channel from all active components (m s-1)
+                  hru_data%bvarStruct%var(iLookBVAR%routingFractionFuture)%dat,             &  ! intent(in): fraction of runoff in future time steps (m s-1)
+                  hru_data%bvarStruct%var(iLookBVAR%routingRunoffFuture)%dat,               &  ! intent(in): runoff in future time steps (m s-1)
                   ! output
-                  bvarStruct%var(iLookBVAR%averageInstantRunoff)%dat(1),           &  ! intent(out): instantaneous runoff (m s-1)
-                  bvarStruct%var(iLookBVAR%averageRoutedRunoff)%dat(1),            &  ! intent(out): routed runoff (m s-1)
+                  hru_data%bvarStruct%var(iLookBVAR%averageInstantRunoff)%dat(1),           &  ! intent(out): instantaneous runoff (m s-1)
+                  hru_data%bvarStruct%var(iLookBVAR%averageRoutedRunoff)%dat(1),            &  ! intent(out): routed runoff (m s-1)
                   err,message)                                                                  ! intent(out): error control
   if(err/=0)then; err=20; message=trim(message)//trim(cmessage); print*, message; return; endif;
   end associate

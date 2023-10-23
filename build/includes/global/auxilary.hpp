@@ -23,3 +23,8 @@ std::vector<std::vector<int> > get_var_flagVec(void* handle);
 std::vector<std::vector<int> > get_var_ilength(void* handle);
 std::vector<std::vector<long int> > get_var_i8length(void* handle);
 std::vector<std::vector<double> > get_var_dlength(void* handle);
+
+std::vector<double> get_attr_struct(void* handle);
+std::vector<int> get_type_struct(void* handle);
+std::vector<std::vector<double>> get_mpar_struct_array(void* handle);
+std::vector<double> get_bpar_struct(void* handle);

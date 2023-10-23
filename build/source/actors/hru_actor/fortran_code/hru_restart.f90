@@ -29,8 +29,8 @@ USE data_types,only:&
                     var_i8,              & ! x%var(:)            (i8b)
                     var_d,               & ! x%var(:)            (dp)
                     var_ilength,         & ! x%var(:)%dat        (i4b)
-                    var_dlength            ! x%var(:)%dat        (dp)
-
+                    var_dlength,&            ! x%var(:)%dat        (dp)
+                    hru_type
 ! access missing values
 USE globalData,only:integerMissing   ! missing integer
 USE globalData,only:realMissing      ! missing double precision number
@@ -52,14 +52,8 @@ contains
 subroutine summa_readRestart(&
                 indxGRU,    & ! index of GRU in gru_struc
                 indxHRU,    & ! index of HRU in gru_struc
+                handle_hru_data,   & ! data structure for the HRU
                 ! primary data structures (variable length vectors)
-                handle_indxStruct, & ! c_ptr to -- model indices
-                handle_mparStruct, & ! c_ptr to -- model parameters
-                handle_progStruct, & ! c_ptr to -- model prognostic (state) variables
-                handle_diagStruct, & ! c_ptr to -- model diagnostic variables
-                handle_fluxStruct, & ! c_ptr to -- model fluxes
-                ! basin-average structures
-                handle_bvarStruct, & ! x%var(:)%dat        -- basin-average variables
                 dt_init,    & ! used to initialize the length of the sub-step for each HRU
                 err) bind(C,name='summa_readRestart')
   ! ---------------------------------------------------------------------------------------
@@ -88,46 +82,26 @@ subroutine summa_readRestart(&
   ! ---------------------------------------------------------------------------------------
   ! Dummy variables
   ! ---------------------------------------------------------------------------------------
-  integer(c_int),intent(in)                  :: indxGRU            !  index of GRU in gru_struc
-  integer(c_int),intent(in)                  :: indxHRU            !  index of HRU in gru_struc
-  ! primary data structures (variable length vectors)
-  type(c_ptr), intent(in), value          :: handle_indxStruct !  model indices
-  type(c_ptr), intent(in), value          :: handle_mparStruct !  model parameters
-  type(c_ptr), intent(in), value          :: handle_progStruct !  model prognostic (state) variables
-  type(c_ptr), intent(in), value          :: handle_diagStruct !  model diagnostic variables
-  type(c_ptr), intent(in), value          :: handle_fluxStruct !  model fluxes
-  ! define the basin-average structures
-  type(c_ptr), intent(in), value          :: handle_bvarStruct !  basin-average variables
+  integer(c_int),intent(in)               :: indxGRU            !  index of GRU in gru_struc
+  integer(c_int),intent(in)               :: indxHRU            !  index of HRU in gru_struc
+  type(c_ptr), intent(in), value          :: handle_hru_data   !  data structure for the HRU
+
   real(c_double), intent(inout)           :: dt_init
   integer(c_int), intent(inout)           :: err
   ! ---------------------------------------------------------------------------------------
   ! Fortran Pointers
   ! ---------------------------------------------------------------------------------------
-  ! primary data structures (variable length vectors)
-  type(var_ilength),pointer              :: indxStruct                 !  model indices
-  type(var_dlength),pointer              :: mparStruct                 !  model parameters
-  type(var_dlength),pointer              :: progStruct                 !  model prognostic (state) variables
-  type(var_dlength),pointer              :: diagStruct                 !  model diagnostic variables
-  type(var_dlength),pointer              :: fluxStruct                 !  model fluxes
-  ! define the basin-average structures
-  type(var_dlength),pointer              :: bvarStruct                 !  basin-average variables
+  type(hru_type),pointer                 :: hru_data
   ! ---------------------------------------------------------------------------------------
   ! local variables
   ! ---------------------------------------------------------------------------------------
-  character(len=256)                       :: message            ! error message
-  character(LEN=256)                       :: cmessage           ! error message of downwind routine
-  character(LEN=256)                       :: restartFile        ! restart file name
-  integer(i4b)                             :: nGRU
+  character(len=256)                     :: message            ! error message
+  character(LEN=256)                     :: cmessage           ! error message of downwind routine
+  character(LEN=256)                     :: restartFile        ! restart file name
+  integer(i4b)                           :: nGRU
   ! ---------------------------------------------------------------------------------------
 
-  ! #############################################################################
-  call c_f_pointer(handle_indxStruct, indxStruct)
-  call c_f_pointer(handle_mparStruct, mparStruct)
-  call c_f_pointer(handle_progStruct, progStruct)
-  call c_f_pointer(handle_diagStruct, diagStruct)
-  call c_f_pointer(handle_fluxStruct, fluxStruct)
-  call c_f_pointer(handle_bvarStruct, bvarStruct)
-  ! #############################################################################
+  call c_f_pointer(handle_hru_data, hru_data)
 
   ! initialize error control
   err=0; message='hru_actor_readRestart/'
@@ -138,36 +112,36 @@ subroutine summa_readRestart(&
   ! *****************************************************************************
 
   ! re-calculate height of each layer
-  call calcHeight(indxStruct,   & ! layer type
-                  progStruct,   & ! model prognostic (state) variables for a local HRU
+  call calcHeight(hru_data%indxStruct,   & ! layer type
+                  hru_data%progStruct,   & ! model prognostic (state) variables for a local HRU
                   err,cmessage)                       ! error control
   if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
 
   ! calculate vertical distribution of root density
-  call rootDensty(mparStruct,   & ! vector of model parameters
-                  indxStruct,   & ! data structure of model indices
-                  progStruct,   & ! data structure of model prognostic (state) variables
-                  diagStruct,   & ! data structure of model diagnostic variables
+  call rootDensty(hru_data%mparStruct,   & ! vector of model parameters
+                  hru_data%indxStruct,   & ! data structure of model indices
+                  hru_data%progStruct,   & ! data structure of model prognostic (state) variables
+                  hru_data%diagStruct,   & ! data structure of model diagnostic variables
                   err,cmessage)                       ! error control
   if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
 
   ! calculate saturated hydraulic conductivity in each soil layer
-  call satHydCond(mparStruct,   & ! vector of model parameters
-                  indxStruct,   & ! data structure of model indices
-                  progStruct,   & ! data structure of model prognostic (state) variables
-                  fluxStruct,   & ! data structure of model fluxes
+  call satHydCond(hru_data%mparStruct,   & ! vector of model parameters
+                  hru_data%indxStruct,   & ! data structure of model indices
+                  hru_data%progStruct,   & ! data structure of model prognostic (state) variables
+                  hru_data%fluxStruct,   & ! data structure of model fluxes
                   err,cmessage)                       ! error control
   if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
 
   ! calculate "short-cut" variables such as volumetric heat capacity
-  call v_shortcut(mparStruct,   & ! vector of model parameters
-                  diagStruct,   & ! data structure of model diagnostic variables
+  call v_shortcut(hru_data%mparStruct,   & ! vector of model parameters
+                  hru_data%diagStruct,   & ! data structure of model diagnostic variables
                   err,cmessage)                       ! error control
   if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
 
   ! initialize canopy drip
   ! NOTE: canopy drip from the previous time step is used to compute throughfall for the current time step
-  fluxStruct%var(iLookFLUX%scalarCanopyLiqDrainage)%dat(1) = 0._dp  ! not used
+  hru_data%fluxStruct%var(iLookFLUX%scalarCanopyLiqDrainage)%dat(1) = 0._dp  ! not used
 
   ! *****************************************************************************
   ! *** initialize aquifer storage
@@ -188,13 +162,13 @@ subroutine summa_readRestart(&
 
    ! the basin-average aquifer storage is not used if the groundwater is included in the local column
    case(localColumn)
-    bvarStruct%var(iLookBVAR%basin__AquiferStorage)%dat(1) = 0._dp ! set to zero to be clear that there is no basin-average aquifer storage in this configuration
+    hru_data%bvarStruct%var(iLookBVAR%basin__AquiferStorage)%dat(1) = 0._dp ! set to zero to be clear that there is no basin-average aquifer storage in this configuration
 
    ! the local column aquifer storage is not used if the groundwater is basin-average
    ! (i.e., where multiple HRUs drain to a basin-average aquifer)
    case(singleBasin)
-    bvarStruct%var(iLookBVAR%basin__AquiferStorage)%dat(1) = 1._dp
-    progStruct%var(iLookPROG%scalarAquiferStorage)%dat(1) = 0._dp  ! set to zero to be clear that there is no local aquifer storage in this configuration
+    hru_data%bvarStruct%var(iLookBVAR%basin__AquiferStorage)%dat(1) = 1._dp
+    hru_data%progStruct%var(iLookPROG%scalarAquiferStorage)%dat(1) = 0._dp  ! set to zero to be clear that there is no local aquifer storage in this configuration
 
    ! error check
    case default
@@ -208,7 +182,7 @@ subroutine summa_readRestart(&
   ! *****************************************************************************
 
   ! initialize time step length
-  dt_init = progStruct%var(iLookPROG%dt_init)%dat(1) ! seconds
+  dt_init = hru_data%progStruct%var(iLookPROG%dt_init)%dat(1) ! seconds
    
 
   ! *****************************************************************************

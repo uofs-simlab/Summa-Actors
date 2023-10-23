@@ -279,7 +279,8 @@ subroutine initOutputStructure(forcFileInfo, maxSteps, num_gru, err)
               call alloc_outputStruc(statForc_meta(:)%var_info,outputStructure(1)%forcStat%gru(iGRU)%hru(iHRU), &
                                       nSteps=maxSteps,nSnow=nSnow,nSoil=nSoil,err=err,message=message);    ! model forcing data
             case('attr'); cycle;
-              ! call allocGlobal(attr_meta, outputStructure(1)%attrStruct(1)%gru(iGRU)%hru(iHRU), err, message)
+              ! call alloc_outputStruc(attr_meta, outputStructure(1)%attrStruct(1)%gru(iGRU)%hru(iHRU),&
+              !                         nSteps=1,err=err,message=message)
             case('type'); cycle;
             case('id'  ); cycle;
             case('mpar'); cycle;

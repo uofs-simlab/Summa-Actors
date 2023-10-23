@@ -81,14 +81,14 @@ def get_output_vars(model_output_file):
 
 
 
-num_hru = 1
+num_hru = 50
 print("Checking output for", num_hru, "HRUs")
 
 
 dataset_1 = sys.argv[1]
 dataset_2 = sys.argv[2]
 
-model_output_file = "/project/gwf/gwf_cmt/kck540/domain_NorthAmerica/summa_actors_input/outputControl_state_vars.txt"
+model_output_file = "/project/gwf/gwf_cmt/kck540/domain_NorthAmerica/Summa-Projects/input_data/summa_actors_input/outputControl.txt"
 
 output_vars = get_output_vars(model_output_file)
 verify_data(dataset_1, dataset_2, num_hru, output_vars)

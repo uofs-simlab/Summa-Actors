@@ -7,13 +7,12 @@ USE data_types,only:&
                     var_d,          &
                     var_ilength,    &
                     var_dlength,    &
-                    flagVec
+                    flagVec,        &
+                    hru_type
 implicit none
 
 public::getFirstTimestep
 public::setTimeZoneOffset
-public::prepareOutput
-public::updateCounters
 public::setIDATolerances
 
 real(dp),parameter  :: verySmall=1e-3_rkind      ! tiny number
@@ -107,8 +106,7 @@ subroutine setTimeZoneOffset(iFile, tmZoneOffsetFracDay, err) bind(C, name="setT
 end subroutine setTimeZoneOffset
 
 
-subroutine readForcingHRU(indxGRU, iStep, iRead, handle_timeStruct, handle_forcStruct, &
-                          iFile, err) bind(C, name="readForcingHRU")
+subroutine readForcingHRU(indxGRU, iStep, iRead, handle_hru_data, iFile, err) bind(C, name="readForcingHRU")
   USE multiconst,only:secprday                  ! number of seconds in a day
   ! global Data
   USE globalData,only:data_step                 ! length of the data step (s)
@@ -128,13 +126,11 @@ subroutine readForcingHRU(indxGRU, iStep, iRead, handle_timeStruct, handle_forcS
   integer(c_int),intent(in)               :: indxGRU          ! Index of the GRU in gru_struc
   integer(c_int),intent(in)               :: istep            ! Model Timestep
   integer(c_int),intent(in)               :: iRead            ! Model Timestep 
-  type(c_ptr),intent(in),value            :: handle_timeStruct! vector of time data for a given time step
-  type(c_ptr),intent(in),value            :: handle_forcStruct! model parameters
+  type(c_ptr),intent(in),value            :: handle_hru_data  ! vector of time data for a given time step
   integer(c_int),intent(in)               :: iFile            ! index of current forcing file from forcing file list 
   integer(c_int),intent(out)              :: err              ! Model Timestep
   ! local variables
-  type(var_i),pointer                     :: timeStruct       !  model time data
-  type(var_d),pointer                     :: forcStruct       !  model forcing data
+  type(hru_type),pointer                  :: hru_data         !  model time data
   real(dp)                                :: currentJulDay    ! Julian day of current time step
   real(dp)                                :: dataJulDay       ! julian day of current forcing data step being read
   ! Counters
@@ -154,15 +150,14 @@ subroutine readForcingHRU(indxGRU, iStep, iRead, handle_timeStruct, handle_forcS
   ! ---------------------------------------------------------------------------------------
   ! * Convert From C++ to Fortran
   ! ---------------------------------------------------------------------------------------
-  call c_f_pointer(handle_timeStruct, timeStruct)
-  call c_f_pointer(handle_forcStruct, forcStruct)
+  call c_f_pointer(handle_hru_data, hru_data)
 
   err=0;message="hru_actor.f90 - readForcingHRU";
 
   ! determine the julDay of current model step (istep) we need to read
   currentJulDay = dJulianStart + (data_step*real(iStep-1,dp))/secprday
 
-  timeStruct%var(:) = integerMissing
+  hru_data%timeStruct%var(:) = integerMissing
   dataJulDay = vecTime(iFile)%dat(iRead)/forcingDataStruct(iFile)%convTime2Days + refJulDay_data
  if(abs(currentJulDay - dataJulDay) > verySmall)then
     write(message,'(a,f18.8,a,f18.8)') trim(message)//'date for time step: ',dataJulDay,' differs from the expected date: ',currentJulDay
@@ -174,18 +169,18 @@ subroutine readForcingHRU(indxGRU, iStep, iRead, handle_timeStruct, handle_forcS
   ! convert julian day to time vector
   ! NOTE: use small offset to force ih=0 at the start of the day
   call compcalday(dataJulDay+smallOffset,         & ! input  = julian day
-                  timeStruct%var(iLookTIME%iyyy),      & ! output = year
-                  timeStruct%var(iLookTIME%im),        & ! output = month
-                  timeStruct%var(iLookTIME%id),        & ! output = day
-                  timeStruct%var(iLookTIME%ih),        & ! output = hour
-                  timeStruct%var(iLookTIME%imin),dsec, & ! output = minute/second
+                  hru_data%timeStruct%var(iLookTIME%iyyy),      & ! output = year
+                  hru_data%timeStruct%var(iLookTIME%im),        & ! output = month
+                  hru_data%timeStruct%var(iLookTIME%id),        & ! output = day
+                  hru_data%timeStruct%var(iLookTIME%ih),        & ! output = hour
+                  hru_data%timeStruct%var(iLookTIME%imin),dsec, & ! output = minute/second
                   err,cmessage)                     ! output = error control
   if(err/=0)then; message=trim(message)//trim(cmessage); return; end if
   
   ! check to see if any of the time data is missing -- note that it is OK if ih_tz or imin_tz are missing
-  if((timeStruct%var(iLookTIME%iyyy)==integerMissing) .or. (timeStruct%var(iLookTIME%im)==integerMissing) .or. (timeStruct%var(iLookTIME%id)==integerMissing) .or. (timeStruct%var(iLookTIME%ih)==integerMissing) .or. (timeStruct%var(iLookTIME%imin)==integerMissing))then
-      do iline=1,size(timeStruct%var)
-          if(timeStruct%var(iline)==integerMissing)then; err=40; message=trim(message)//"variableMissing[var='"//trim(time_meta(iline)%varname)//"']"; return; end if
+  if((hru_data%timeStruct%var(iLookTIME%iyyy)==integerMissing) .or. (hru_data%timeStruct%var(iLookTIME%im)==integerMissing) .or. (hru_data%timeStruct%var(iLookTIME%id)==integerMissing) .or. (hru_data%timeStruct%var(iLookTIME%ih)==integerMissing) .or. (hru_data%timeStruct%var(iLookTIME%imin)==integerMissing))then
+      do iline=1,size(hru_data%timeStruct%var)
+          if(hru_data%timeStruct%var(iline)==integerMissing)then; err=40; message=trim(message)//"variableMissing[var='"//trim(time_meta(iline)%varname)//"']"; return; end if
       end do
   end if
 
@@ -207,7 +202,7 @@ subroutine readForcingHRU(indxGRU, iStep, iRead, handle_timeStruct, handle_forcS
       err=20; return
     endif
     ! put the data into structures
-    forcStruct%var(ivar) = forcingDataStruct(iFile)%var(ivar)%dataFromFile(indxGRU,iRead)
+    hru_data%forcStruct%var(ivar) = forcingDataStruct(iFile)%var(ivar)%dataFromFile(indxGRU,iRead)
   end do  ! loop through forcing variables
   
   ! check if any forcing data is missing
@@ -222,7 +217,7 @@ subroutine readForcingHRU(indxGRU, iStep, iRead, handle_timeStruct, handle_forcS
 end subroutine readForcingHRU 
 
 ! This is part 2: from the reading of forcing - separated it so we could call from C++
-subroutine computeTimeForcingHRU(handle_timeStruct, handle_forcStruct, fracJulDay, yearLength, err) bind(C, name="computeTimeForcingHRU")
+subroutine computeTimeForcingHRU(handle_hru_data, fracJulDay, yearLength, err) bind(C, name="computeTimeForcingHRU")
   USE var_lookup,only:iLookTIME,iLookFORCE
   USE time_utils_module,only:compJulDay         ! convert calendar date to julian day
   USE data_types,only:var_i,var_d
@@ -230,14 +225,12 @@ subroutine computeTimeForcingHRU(handle_timeStruct, handle_forcStruct, fracJulDa
   USE globalData,only:refJulDay                 ! reference time (fractional julian days)
 
   implicit none
-  type(c_ptr),intent(in),value        :: handle_timeStruct     ! vector of time data for a given time step
-  type(c_ptr),intent(in),value        :: handle_forcStruct ! model parameters
+  type(c_ptr),intent(in),value        :: handle_hru_data      ! vector of time data for a given time step
   real(c_double),intent(out)          :: fracJulDay
   integer(c_int),intent(out)          :: yearLength    
   integer(c_int),intent(out)          :: err   
   ! local variables
-  type(var_i),pointer                 :: timeStruct       !  model time data
-  type(var_d),pointer                 :: forcStruct       !  model forcing data
+  type(hru_type),pointer              :: hru_data         !  model time data
   real(dp)                            :: startJulDay      ! julian day at the start of the year
   real(dp)                            :: currentJulDay    ! Julian day of current time step
   character(len=256)                  :: message          ! error message for downwind routine
@@ -247,38 +240,37 @@ subroutine computeTimeForcingHRU(handle_timeStruct, handle_forcStruct, fracJulDa
   ! ---------------------------------------------------------------------------------------
   ! * Convert From C++ to Fortran
   ! ---------------------------------------------------------------------------------------
-  call c_f_pointer(handle_timeStruct, timeStruct)
-  call c_f_pointer(handle_forcStruct, forcStruct)
+  call c_f_pointer(handle_hru_data, hru_data)
 
   err=0; message="hru_actor.f90 - computTimeForcingHRU/"
 
   ! compute the julian day at the start of the year
-  call compjulday(timeStruct%var(iLookTIME%iyyy),          & ! input  = year
+  call compjulday(hru_data%timeStruct%var(iLookTIME%iyyy),          & ! input  = year
                   1, 1, 1, 1, 0._dp,                  & ! input  = month, day, hour, minute, second
                   startJulDay,err,cmessage)             ! output = julian day (fraction of day) + error control
   if(err/=0)then; message=trim(message)//trim(cmessage); return; end if
 
   ! compute the fractional julian day for the current time step
-  call compjulday(timeStruct%var(iLookTIME%iyyy),           & ! input  = year
-                  timeStruct%var(iLookTIME%im),             & ! input  = month
-                  timeStruct%var(iLookTIME%id),             & ! input  = day
-                  timeStruct%var(iLookTIME%ih),             & ! input  = hour
-                  timeStruct%var(iLookTIME%imin),0._dp,     & ! input  = minute/second
+  call compjulday(hru_data%timeStruct%var(iLookTIME%iyyy),           & ! input  = year
+                  hru_data%timeStruct%var(iLookTIME%im),             & ! input  = month
+                  hru_data%timeStruct%var(iLookTIME%id),             & ! input  = day
+                  hru_data%timeStruct%var(iLookTIME%ih),             & ! input  = hour
+                  hru_data%timeStruct%var(iLookTIME%imin),0._dp,     & ! input  = minute/second
                   currentJulDay,err,cmessage)            ! output = julian day (fraction of day) + error control
   if(err/=0)then; message=trim(message)//trim(cmessage); return; end if
   ! compute the time since the start of the year (in fractional days)
   fracJulDay = currentJulDay - startJulDay
   ! set timing of current forcing vector (in seconds since reference day)
   ! NOTE: It is a bit silly to have time information for each HRU and GRU
-  forcStruct%var(iLookFORCE%time) = (currentJulDay-refJulDay)*secprday
+  hru_data%forcStruct%var(iLookFORCE%time) = (currentJulDay-refJulDay)*secprday
 
   ! compute the number of days in the current year
   yearLength = 365
-  if(mod(timeStruct%var(iLookTIME%iyyy),4) == 0)then
+  if(mod(hru_data%timeStruct%var(iLookTIME%iyyy),4) == 0)then
     yearLength = 366
-    if(mod(timeStruct%var(iLookTIME%iyyy),100) == 0)then
+    if(mod(hru_data%timeStruct%var(iLookTIME%iyyy),100) == 0)then
     yearLength = 365
-    if(mod(timeStruct%var(iLookTIME%iyyy),400) == 0)then
+    if(mod(hru_data%timeStruct%var(iLookTIME%iyyy),400) == 0)then
       yearLength = 366
     end if
     end if
@@ -286,272 +278,20 @@ subroutine computeTimeForcingHRU(handle_timeStruct, handle_forcStruct, fracJulDa
 
   ! test
   if(checkTime)then
-    write(*,'(i4,1x,4(i2,1x),f9.3,1x,i4)')  timeStruct%var(iLookTIME%iyyy),           & ! year
-                                            timeStruct%var(iLookTIME%im),             & ! month
-                                            timeStruct%var(iLookTIME%id),             & ! day
-                                            timeStruct%var(iLookTIME%ih),             & ! hour
-                                            timeStruct%var(iLookTIME%imin),           & ! minute
+    write(*,'(i4,1x,4(i2,1x),f9.3,1x,i4)')  hru_data%timeStruct%var(iLookTIME%iyyy),           & ! year
+                                            hru_data%timeStruct%var(iLookTIME%im),             & ! month
+                                            hru_data%timeStruct%var(iLookTIME%id),             & ! day
+                                            hru_data%timeStruct%var(iLookTIME%ih),             & ! hour
+                                            hru_data%timeStruct%var(iLookTIME%imin),           & ! minute
                                             fracJulDay,                          & ! fractional julian day for the current time step
                                             yearLength                             ! number of days in the current year
     !pause ' checking time'
   end if
 end subroutine computeTimeForcingHRU
 
-! Prepare structure for being sent off to the file access actor
-! call set alarms and calc stats
-subroutine prepareOutput(&
-                        modelTimeStep,      &
-                        ! statistics variables
-                        handle_forcStat,           & ! model forcing data
-                        handle_progStat,           & ! model prognostic (state) variables
-                        handle_diagStat,           & ! model diagnostic variables
-                        handle_fluxStat,           & ! model fluxes
-                        handle_indxStat,           & ! model indices
-                        handle_bvarStat,           & ! basin-average variables
-                        ! primary data structures (scalars)
-                        handle_timeStruct,         & ! x%var(:)     -- model time data
-                        handle_forcStruct,         & ! x%var(:)     -- model forcing data
-                        handle_attrStruct,         & ! x%var(:)     -- local attributes for each HRU
-                        handle_typeStruct,         & ! x%var(:)     -- local classification of soil veg etc. for each HRU
-                        ! primary data structures (variable length vectors)
-                        handle_indxStruct,         & ! x%var(:)%dat -- model indices
-                        handle_mparStruct,         & ! x%var(:)%dat -- model parameters
-                        handle_progStruct,         & ! x%var(:)%dat -- model prognostic (state) variables
-                        handle_diagStruct,         & ! x%var(:)%dat -- model diagnostic variables
-                        handle_fluxStruct,         & ! x%var(:)%dat -- model fluxes
-                        ! basin-average structures
-                        handle_bparStruct,         & ! x%var(:)     -- basin-average parameters
-                        handle_bvarStruct,         & ! x%var(:)%dat -- basin-average variables
-                        handle_statCounter,        &
-                        handle_outputTimeStep,     & ! x%var(:)
-                        handle_resetStats,         & ! x%var(:)
-                        handle_finalizeStats,      & ! x%var(:)
-                        handle_finshTime,          & ! x%var(:)    -- end time for the model simulation
-                        handle_oldTime,            & ! x%var(:)    -- time for the previous model time step
-                        err) bind(C, name="prepareOutput")
-  USE globalData,only:structInfo
-  USE globalData,only:startWrite,endWrite
-
-  USE globalData,only:ixProgress                              ! define frequency to write progress
-  USE globalData,only:ixRestart                               ! define frequency to write restart files
-  USE globalData,only:gru_struc
-
-  USE globalData,only:newOutputFile                           ! define option for new output files
-  USE summa_alarms,only:summa_setWriteAlarms
-
-  USE globalData,only:forc_meta,attr_meta,type_meta           ! metaData structures
-  USE output_stats,only:calcStats                             ! module for compiling output statistics
-  USE var_lookup,only:iLookTIME,iLookDIAG,iLookPROG,iLookINDEX, &
-    iLookFreq,maxvarFreq ! named variables for time data structure
-  USE globalData,only:time_meta,forc_meta,diag_meta,prog_meta,&
-    flux_meta,indx_meta,bvar_meta,bpar_meta,mpar_meta           ! metadata on the model time
-  USE globalData,only:statForc_meta,statProg_meta,statDiag_meta,&
-    statFlux_meta,statIndx_meta,statBvar_meta             ! child metadata for stats
-  ! index of the child data structure
-  USE globalData,only:forcChild_map,progChild_map,diagChild_map,&
-    fluxChild_map,indxChild_map,bvarChild_map             ! index of the child data structure: stats forc
-  implicit none
-  integer(i4b),intent(in)                  :: modelTimeStep   ! time step index
-  type(c_ptr), intent(in), value           :: handle_forcStat !  model forcing data
-  type(c_ptr), intent(in), value           :: handle_progStat !  model prognostic (state) variables
-  type(c_ptr), intent(in), value           :: handle_diagStat !  model diagnostic variables
-  type(c_ptr), intent(in), value           :: handle_fluxStat !  model fluxes
-  type(c_ptr), intent(in), value           :: handle_indxStat !  model indices
-  type(c_ptr), intent(in), value           :: handle_bvarStat !  basin-average variables
-  ! primary data structures (scalars)
-  type(c_ptr), intent(in), value           :: handle_timeStruct !  model time data
-  type(c_ptr), intent(in), value           :: handle_forcStruct !  model forcing data
-  type(c_ptr), intent(in), value           :: handle_attrStruct !  local attributes for each HRU
-  type(c_ptr), intent(in), value           :: handle_typeStruct !  local classification of soil veg etc. for each HRU
-  ! primary data structures (variable length vectors)
-  type(c_ptr), intent(in), value           :: handle_indxStruct !  model indices
-  type(c_ptr), intent(in), value           :: handle_mparStruct !  model parameters
-  type(c_ptr), intent(in), value           :: handle_progStruct !  model prognostic (state) variables
-  type(c_ptr), intent(in), value           :: handle_diagStruct !  model diagnostic variables
-  type(c_ptr), intent(in), value           :: handle_fluxStruct !  model fluxes
-  ! basin-average structures
-  type(c_ptr), intent(in), value           :: handle_bparStruct !  basin-average parameters
-  type(c_ptr), intent(in), value           :: handle_bvarStruct !  basin-average variables
-  ! local HRU variables
-  type(c_ptr), intent(in), value           :: handle_statCounter
-  type(c_ptr), intent(in), value           :: handle_outputTimeStep
-  type(c_ptr), intent(in), value           :: handle_resetStats
-  type(c_ptr), intent(in), value           :: handle_finalizeStats
-  type(c_ptr), intent(in), value           :: handle_finshTime    ! end time for the model simulation
-  type(c_ptr), intent(in), value           :: handle_oldTime      ! time for the previous model time step
-  ! run time variables
-  integer(i4b),intent(out)                 :: err
-  ! local vairiables for pointers
-  type(var_dlength),pointer                :: forcStat        ! model forcing data
-  type(var_dlength),pointer                :: progStat        ! model prognostic (state) variables
-  type(var_dlength),pointer                :: diagStat        ! model diagnostic variables
-  type(var_dlength),pointer                :: fluxStat        ! model fluxes
-  type(var_dlength),pointer                :: indxStat        ! model indices
-  type(var_dlength),pointer                :: bvarStat        ! basin-average variabl
-  type(var_i),pointer                      :: timeStruct      ! model time data
-  type(var_d),pointer                      :: forcStruct      ! model forcing data
-  type(var_d),pointer                      :: attrStruct      ! local attributes for each HRU
-  type(var_i),pointer                      :: typeStruct      ! local classification of soil veg etc. for each HRU
-  type(var_ilength),pointer                :: indxStruct      ! model indices
-  type(var_dlength),pointer                :: mparStruct      ! model parameters
-  type(var_dlength),pointer                :: progStruct      ! model prognostic (state) variables
-  type(var_dlength),pointer                :: diagStruct      ! model diagnostic variables
-  type(var_dlength),pointer                :: fluxStruct      ! model fluxes
-  type(var_d),pointer                      :: bparStruct      ! basin-average parameters
-  type(var_dlength),pointer                :: bvarStruct      ! basin-average variables
-  type(var_i),pointer                      :: statCounter     ! time counter for stats
-  type(var_i),pointer                      :: outputTimeStep  ! timestep in output files
-  type(flagVec),pointer                    :: resetStats      ! flags to reset statistics
-  type(flagVec),pointer                    :: finalizeStats   ! flags to finalize statistics
-  type(var_i),pointer                      :: finshTime       ! end time for the model simulation
-  type(var_i),pointer                      :: oldTime         !
-  ! local variables
-  character(len=256)                       :: message 
-  character(len=256)                       :: cmessage
-  logical(lgt)                             :: defNewOutputFile=.false.
-  integer(i4b)                             :: iFreq             ! index of the output frequency
-  integer(i4b)                             :: iStruct           ! index of model structure
-  logical(lgt)                             :: printProgress=.false.
-  logical(lgt)                             :: printRestart=.false.
-  ! ---------------------------------------------------------------------------------------
-  ! * Convert From C++ to Fortran
-  ! ---------------------------------------------------------------------------------------
-  call c_f_pointer(handle_forcStat, forcStat)
-  call c_f_pointer(handle_progStat, progStat)
-  call c_f_pointer(handle_diagStat, diagStat)
-  call c_f_pointer(handle_fluxStat, fluxStat)
-  call c_f_pointer(handle_indxStat, indxStat)
-  call c_f_pointer(handle_bvarStat, bvarStat)
-  call c_f_pointer(handle_timeStruct, timeStruct)
-  call c_f_pointer(handle_forcStruct, forcStruct)
-  call c_f_pointer(handle_attrStruct, attrStruct)
-  call c_f_pointer(handle_typeStruct, typeStruct)
-  call c_f_pointer(handle_indxStruct, indxStruct)
-  call c_f_pointer(handle_mparStruct, mparStruct)
-  call c_f_pointer(handle_progStruct, progStruct)
-  call c_f_pointer(handle_diagStruct, diagStruct)
-  call c_f_pointer(handle_fluxStruct, fluxStruct)
-  call c_f_pointer(handle_bparStruct, bparStruct)
-  call c_f_pointer(handle_bvarStruct, bvarStruct)
-  call c_f_pointer(handle_statCounter, statCounter)
-  call c_f_pointer(handle_outputTimeStep, outputTimeStep)
-  call c_f_pointer(handle_resetStats, resetStats)
-  call c_f_pointer(handle_finalizeStats, finalizeStats)
-  call c_f_pointer(handle_finshTime, finshTime);
-  call c_f_pointer(handle_oldTime, oldTime)
-  
-  ! Start of Subroutine
-  err=0; message='summa_manageOutputFiles/'
-  ! identify the start of the writing
-  call date_and_time(values=startWrite)
-
-  ! initialize the statistics flags
-  if(modelTimeStep==1)then
-
-    ! initialize time step index
-    allocate(statCounter%var(maxVarFreq))
-    allocate(outputTimeStep%var(maxVarFreq))
-    statCounter%var(1:maxVarFreq) = 1
-    outputTimeStep%var(1:maxVarFreq) = 1
-
-    allocate(resetStats%dat(maxVarFreq))
-    allocate(finalizeStats%dat(maxVarFreq))
-    ! initialize flags to reset/finalize statistics
-    resetStats%dat(:)    = .true.   ! start by resetting statistics
-    finalizeStats%dat(:) = .false.  ! do not finalize stats on the first time step
-
-    ! set stats flag for the timestep-level output
-    finalizeStats%dat(iLookFreq%timestep)=.true.
-  endif  ! if the first time step
-
-  ! Many variables get there values from summa4chm_util.f90:getCommandArguments()
-  call summa_setWriteAlarms(oldTime%var, timeStruct%var, finshTime%var,  &   ! time vectors
-                            newOutputFile,  defNewOutputFile,            &
-                            ixRestart,      printRestart,                &   ! flag to print the restart file
-                            ixProgress,     printProgress,               &   ! flag to print simulation progress
-                            resetStats%dat, finalizeStats%dat,           &   ! flags to reset and finalize stats
-                            statCounter%var,                             &   ! statistics counter
-                            err, cmessage)                                  ! error control
-  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
-
- ! ****************************************************************************
- ! *** calculate output statistics
- ! ****************************************************************************
-  do iStruct=1,size(structInfo)
-    select case(trim(structInfo(iStruct)%structName))
-      case('forc'); call calcStats(forcStat%var, forcStruct%var, statForc_meta, resetStats%dat, finalizeStats%dat, statCounter%var, err, cmessage)
-      case('prog'); call calcStats(progStat%var, progStruct%var, statProg_meta, resetStats%dat, finalizeStats%dat, statCounter%var, err, cmessage)
-      case('diag'); call calcStats(diagStat%var, diagStruct%var, statDiag_meta, resetStats%dat, finalizeStats%dat, statCounter%var, err, cmessage)
-      case('flux'); call calcStats(fluxStat%var, fluxStruct%var, statFlux_meta, resetStats%dat, finalizeStats%dat, statCounter%var, err, cmessage)
-      case('indx'); call calcStats(indxStat%var, indxStruct%var, statIndx_meta, resetStats%dat, finalizeStats%dat, statCounter%var, err, cmessage)     
-    end select
-    if(err/=0)then; message=trim(message)//trim(cmessage)//'['//trim(structInfo(iStruct)%structName)//']'; return; endif
-  end do  ! (looping through structures)
-    
-  ! calc basin stats
-  call calcStats(bvarStat%var(:), bvarStruct%var(:), statBvar_meta, resetStats%dat, finalizeStats%dat, statCounter%var, err, cmessage)
-  if(err/=0)then; message=trim(message)//trim(cmessage)//'[bvar stats]'; return; endif
-
-end subroutine prepareOutput
-
-
-! Update all of the counters for time and output step
-subroutine updateCounters(handle_timeStruct, handle_statCounter, handle_outputTimeStep, &
-        handle_resetStats, handle_oldTime, handle_finalizeStats) bind(C, name="updateCounters")
-  USE globalData,only:startWrite,endWrite,elapsedWrite
-  USE var_lookup,only:maxvarFreq
-  USE time_utils_module,only:elapsedSec                       ! calculate the elapsed time
-
-  type(c_ptr), intent(in), value           :: handle_statCounter
-  type(c_ptr), intent(in), value           :: handle_outputTimeStep
-  type(c_ptr), intent(in), value           :: handle_resetStats
-  type(c_ptr), intent(in), value           :: handle_oldTime      ! time for the previous model time step
-  type(c_ptr), intent(in), value           :: handle_timeStruct !  model time data
-  type(c_ptr), intent(in), value           :: handle_finalizeStats
-
-  type(var_i),pointer                      :: statCounter     ! time counter for stats
-  type(var_i),pointer                      :: outputTimeStep  ! timestep in output files
-  type(flagVec),pointer                    :: resetStats      ! flags to reset statistics
-  type(var_i),pointer                      :: oldTime         !
-  type(var_i),pointer                      :: timeStruct      ! model time data
-  type(flagVec),pointer                    :: finalizeStats   ! flags to finalize statistics
-
-  integer(i4b)                             :: iFreq
-  
-  call c_f_pointer(handle_statCounter, statCounter)
-  call c_f_pointer(handle_outputTimeStep, outputTimeStep)
-  call c_f_pointer(handle_resetStats, resetStats)
-  call c_f_pointer(handle_oldTime, oldTime)
-  call c_f_pointer(handle_timeStruct, timeStruct)
-  call c_f_pointer(handle_finalizeStats, finalizeStats)
-
-  ! *****************************************************************************
-  ! *** update counters
-  ! *****************************************************************************
-  ! increment output file timestep
-  do iFreq = 1,maxvarFreq
-    statCounter%var(iFreq) = statCounter%var(iFreq)+1
-    if(finalizeStats%dat(iFreq)) outputTimeStep%var(iFreq) = outputTimeStep%var(iFreq) + 1
-  end do
-
- ! if finalized stats, then reset stats on the next time step
- resetStats%dat(:) = finalizeStats%dat(:)
-
- ! save time vector
- oldTime%var(:) = timeStruct%var(:)
-
- ! *****************************************************************************
- ! *** finalize
- ! *****************************************************************************
-
- ! identify the end of the writing
- call date_and_time(values=endWrite)
-
- elapsedWrite = elapsedWrite + elapsedSec(startWrite, endWrite)
-end subroutine updateCounters
 
 ! Set the HRU's relative and absolute tolerances
-subroutine setIDATolerances(handle_mparStruct,  &
+subroutine setIDATolerances(handle_hru_data,    &
                             relTolTempCas,      &
                             absTolTempCas,      &
                             relTolTempVeg,      &
@@ -571,7 +311,7 @@ subroutine setIDATolerances(handle_mparStruct,  &
 
   implicit none
 
-  type(c_ptr), intent(in), value          :: handle_mparStruct !  model parameters
+  type(c_ptr), intent(in), value          :: handle_hru_data    !  model time data
   real(c_double),intent(in)               :: relTolTempCas
   real(c_double),intent(in)               :: absTolTempCas
   real(c_double),intent(in)               :: relTolTempVeg
@@ -587,28 +327,24 @@ subroutine setIDATolerances(handle_mparStruct,  &
   real(c_double),intent(in)               :: relTolAquifr
   real(c_double),intent(in)               :: absTolAquifr
   ! local variables
-  type(var_dlength),pointer               :: mparStruct        ! model parameters
+  type(hru_type),pointer                  :: hru_data          !  model time data
 
-  call c_f_pointer(handle_mparStruct, mparStruct)
+  call c_f_pointer(handle_hru_data, hru_data)
 
-  mparStruct%var(iLookPARAM%relTolTempCas)%dat(1)       = relTolTempCas 
-  mparStruct%var(iLookPARAM%absTolTempCas)%dat(1)       = absTolTempCas
-  mparStruct%var(iLookPARAM%relTolTempVeg)%dat(1)       = relTolTempVeg
-  mparStruct%var(iLookPARAM%absTolTempVeg)%dat(1)       = absTolTempVeg
-  mparStruct%var(iLookPARAM%relTolWatVeg)%dat(1)        = relTolWatVeg
-  mparStruct%var(iLookPARAM%absTolWatVeg)%dat(1)        = absTolWatVeg
-  mparStruct%var(iLookPARAM%relTolTempSoilSnow)%dat(1)  = relTolTempSoilSnow
-  mparStruct%var(iLookPARAM%absTolTempSoilSnow)%dat(1)  = absTolTempSoilSnow
-  mparStruct%var(iLookPARAM%relTolWatSnow)%dat(1)       = relTolWatSnow
-  mparStruct%var(iLookPARAM%absTolWatSnow)%dat(1)       = absTolWatSnow
-  mparStruct%var(iLookPARAM%relTolMatric)%dat(1)        = relTolMatric
-  mparStruct%var(iLookPARAM%absTolMatric)%dat(1)        = absTolMatric
-  mparStruct%var(iLookPARAM%relTolAquifr)%dat(1)        = relTolAquifr
-  mparStruct%var(iLookPARAM%absTolAquifr)%dat(1)        = absTolAquifr
-
-
-
-
+  hru_data%mparStruct%var(iLookPARAM%relTolTempCas)%dat(1)       = relTolTempCas 
+  hru_data%mparStruct%var(iLookPARAM%absTolTempCas)%dat(1)       = absTolTempCas
+  hru_data%mparStruct%var(iLookPARAM%relTolTempVeg)%dat(1)       = relTolTempVeg
+  hru_data%mparStruct%var(iLookPARAM%absTolTempVeg)%dat(1)       = absTolTempVeg
+  hru_data%mparStruct%var(iLookPARAM%relTolWatVeg)%dat(1)        = relTolWatVeg
+  hru_data%mparStruct%var(iLookPARAM%absTolWatVeg)%dat(1)        = absTolWatVeg
+  hru_data%mparStruct%var(iLookPARAM%relTolTempSoilSnow)%dat(1)  = relTolTempSoilSnow
+  hru_data%mparStruct%var(iLookPARAM%absTolTempSoilSnow)%dat(1)  = absTolTempSoilSnow
+  hru_data%mparStruct%var(iLookPARAM%relTolWatSnow)%dat(1)       = relTolWatSnow
+  hru_data%mparStruct%var(iLookPARAM%absTolWatSnow)%dat(1)       = absTolWatSnow
+  hru_data%mparStruct%var(iLookPARAM%relTolMatric)%dat(1)        = relTolMatric
+  hru_data%mparStruct%var(iLookPARAM%absTolMatric)%dat(1)        = absTolMatric
+  hru_data%mparStruct%var(iLookPARAM%relTolAquifr)%dat(1)        = relTolAquifr
+  hru_data%mparStruct%var(iLookPARAM%absTolAquifr)%dat(1)        = absTolAquifr
 end subroutine setIDATolerances
 
 end module hru_actor

@@ -166,6 +166,36 @@ subroutine get_data_var_i(handle, array) bind(C, name='get_data_var_i')
   
 end subroutine get_data_var_i
 
+!-----------------------------------
+subroutine get_size_data_typeStruct(handle, arr_size) bind(C, name='get_size_data_typeStruct')
+  
+  type(c_ptr), intent(in), value :: handle
+  integer(c_int), intent(out) :: arr_size
+  type(hru_type), pointer :: hru_data
+  
+  call c_f_pointer(handle, hru_data)
+  if (allocated(hru_data%typeStruct%var)) then
+    arr_size = size(hru_data%typeStruct%var, kind=c_int)
+  else
+    arr_size = 0_c_int
+  end if
+  
+end subroutine get_size_data_typeStruct
+
+!-----------------------------------
+subroutine get_data_typeStruct(handle, array) bind(C, name='get_data_typeStruct')
+  
+  type(c_ptr), intent(in), value :: handle
+  integer(c_int), intent(out) :: array(*)
+  type(hru_type), pointer :: hru_data
+  
+  call c_f_pointer(handle, hru_data)
+  if (allocated(hru_data%typeStruct%var)) then
+    array(:size(hru_data%typeStruct%var)) = hru_data%typeStruct%var
+  end if
+  
+end subroutine get_data_typeStruct
+
 ! **************************** var_i8 ****************************
 
 function new_handle_var_i8() result(handle) bind(C, name='new_handle_var_i8')
@@ -447,6 +477,7 @@ subroutine get_size_data_var_d(handle, arr_size) bind(C, name='get_size_data_var
   
 end subroutine get_size_data_var_d
 
+
 !-----------------------------------
 subroutine get_data_var_d(handle, array) bind(C, name='get_data_var_d')
   
@@ -460,6 +491,66 @@ subroutine get_data_var_d(handle, array) bind(C, name='get_data_var_d')
   end if
   
 end subroutine get_data_var_d
+
+
+
+subroutine get_size_data_attrStruct(handle, arr_size) bind(C, name='get_size_data_attrStruct')
+  
+  type(c_ptr), intent(in), value :: handle
+  integer(c_int), intent(out) :: arr_size
+  type(hru_type), pointer :: hru_data
+  
+  call c_f_pointer(handle, hru_data)
+  if (allocated(hru_data%attrStruct%var)) then
+    arr_size = size(hru_data%attrStruct%var, kind=c_int)
+  else
+    arr_size = 0_c_int
+  end if
+  
+end subroutine get_size_data_attrStruct
+
+!-----------------------------------
+subroutine get_data_attrStruct(handle, array) bind(C, name='get_data_attrStruct')
+  
+  type(c_ptr), intent(in), value :: handle
+  real(c_double), intent(out) :: array(*)
+  type(hru_type), pointer :: hru_data
+  
+  call c_f_pointer(handle, hru_data)
+  if (allocated(hru_data%attrStruct%var)) then
+    array(:size(hru_data%attrStruct%var)) = hru_data%attrStruct%var
+  end if
+  
+end subroutine get_data_attrStruct
+
+subroutine get_size_data_bparStruct(handle, arr_size) bind(C, name='get_size_data_bparStruct')
+  
+  type(c_ptr), intent(in), value :: handle
+  integer(c_int), intent(out) :: arr_size
+  type(hru_type), pointer :: hru_data
+  
+  call c_f_pointer(handle, hru_data)
+  if (allocated(hru_data%bparStruct%var)) then
+    arr_size = size(hru_data%bparStruct%var, kind=c_int)
+  else
+    arr_size = 0_c_int
+  end if
+  
+end subroutine get_size_data_bparStruct
+
+!-----------------------------------
+subroutine get_data_bparStruct(handle, array) bind(C, name='get_data_bparStruct')
+  
+  type(c_ptr), intent(in), value :: handle
+  real(c_double), intent(out) :: array(*)
+  type(hru_type), pointer :: hru_data
+  
+  call c_f_pointer(handle, hru_data)
+  if (allocated(hru_data%bparStruct%var)) then
+    array(:size(hru_data%bparStruct%var)) = hru_data%bparStruct%var
+  end if
+  
+end subroutine get_data_bparStruct
 
 ! **************************** dlength **************************
 
@@ -991,6 +1082,22 @@ subroutine get_size_var_dlength(handle, var_size) bind(C, name='get_size_var_dle
   
 end subroutine get_size_var_dlength
 
+subroutine get_size_var_mparStruct(handle, var_size) bind(C, name='get_size_var_mparStruct')
+  
+  type(c_ptr), intent(in), value :: handle
+  integer(c_int), intent(out)    :: var_size
+  type(hru_type), pointer     :: hru_data
+  
+  call c_f_pointer(handle, hru_data)
+  if (allocated(hru_data%mparStruct%var)) then
+    var_size = size(hru_data%mparStruct%var, kind=c_int)
+  else
+    var_size = 0_c_int
+  end if
+  
+end subroutine get_size_var_mparStruct
+
+
 !-----------------------------------
 subroutine get_size_data_var_dlength(handle, var_size, dat_size) bind(C, name='get_size_data_var_dlength')
   
@@ -1007,6 +1114,24 @@ subroutine get_size_data_var_dlength(handle, var_size, dat_size) bind(C, name='g
   end do
   
 end subroutine get_size_data_var_dlength
+
+!-----------------------------------
+subroutine get_size_data_mparStruct(handle, var_size, dat_size) bind(C, name='get_size_data_mparStruct')
+  
+  type(c_ptr), intent(in), value :: handle
+  integer(c_int), intent(in) :: var_size
+  integer(c_int), intent(out) :: dat_size(*)
+  type(hru_type), pointer :: hru_data
+  integer(c_int)  :: i
+  
+  call c_f_pointer(handle, hru_data)
+  
+  do i=1,var_size
+      dat_size(i) = size(hru_data%mparStruct%var(i)%dat, kind=c_int)
+  end do
+  
+end subroutine get_size_data_mparStruct
+
 
 !-----------------------------------
 subroutine get_data_var_dlength(handle, array) bind(C, name='get_data_var_dlength')
@@ -1043,6 +1168,42 @@ subroutine get_data_var_dlength(handle, array) bind(C, name='get_data_var_dlengt
   end if
   
 end subroutine get_data_var_dlength
+
+subroutine get_data_mparStruct(handle, array) bind(C, name='get_data_mparStruct')
+  
+  type(c_ptr), intent(in), value :: handle
+  real(c_double), intent(out)    :: array(*)
+  type(hru_type), pointer        :: hru_data
+  integer(c_int)                 :: i,j,size_var,size_dat,size_array,j2,loop_val
+  integer(c_int)                 :: start_index(1)
+  
+  call c_f_pointer(handle, hru_data)
+  
+  size_array = 0
+  if (allocated(hru_data%mparStruct%var)) then
+    size_var = size(hru_data%mparStruct%var)
+    do i=1,size_var
+      size_dat = size(hru_data%mparStruct%var(i)%dat)
+      start_index = lbound(hru_data%mparStruct%var(i)%dat)
+
+      if (start_index(1) == 0) then
+        loop_val = size_dat - 1
+      else
+        loop_val = size_dat
+      endif
+
+      j2=1
+      do j=start_index(1),loop_val
+        array(size_array+j2) = hru_data%mparStruct%var(i)%dat(j)
+        j2=j2+1
+      end do
+      size_array = size_array + size_dat
+    end do
+    
+  end if
+  
+end subroutine get_data_mparStruct
+
 
 ! **************************** var_dlength **************************
 ! ************************ var_dlength_array ************************
@@ -1090,7 +1251,7 @@ end subroutine delete_handle_file_info
 
 ! ****************************** z_lookup ****************************
 function new_handle_z_lookup() result(handle) bind(C, name="new_handle_z_lookup")
-  type(c_ptr)           :: handle
+  type(c_ptr)            :: handle
   type(zLookup), pointer :: p
 
   allocate(p)
@@ -1104,6 +1265,72 @@ subroutine delete_handle_z_lookup(handle) bind(C, name="delete_handle_z_lookup")
   call c_f_pointer(handle, p)
   deallocate(p)
 end subroutine 
+
+! ****************************** hru type ****************************
+function new_handle_hru_type() result(handle) bind(C, name="new_handle_hru_type")
+  type(c_ptr)            :: handle
+  type(hru_type), pointer :: p
+
+  allocate(p)
+  allocate(p%lookupStruct)
+  allocate(p%forcStat)
+  allocate(p%progStat)
+  allocate(p%diagStat)
+  allocate(p%fluxStat)
+  allocate(p%indxStat)
+  allocate(p%bvarStat)
+  allocate(p%timeStruct)
+  allocate(p%forcStruct)
+  allocate(p%attrStruct)
+  allocate(p%typeStruct)
+  allocate(p%idStruct)
+  allocate(p%indxStruct)
+  allocate(p%mparStruct)
+  allocate(p%progStruct)
+  allocate(p%diagStruct)
+  allocate(p%fluxStruct)
+  allocate(p%bparStruct)
+  allocate(p%bvarStruct)
+  allocate(p%dparStruct)
+  allocate(p%startTime_hru)
+  allocate(p%finishTime_hru)
+  allocate(p%refTime_hru)
+  allocate(p%oldTime_hru)
+  handle = c_loc(p)
+end function
+
+subroutine delete_handle_hru_type(handle) bind(C, name="delete_handle_hru_type")
+  type(c_ptr), intent(in), value :: handle
+  type(hru_type), pointer :: p
+
+  call c_f_pointer(handle, p)
+  deallocate(p%lookupStruct)
+  deallocate(p%forcStat)
+  deallocate(p%progStat)
+  deallocate(p%diagStat)
+  deallocate(p%fluxStat)
+  deallocate(p%indxStat)
+  deallocate(p%bvarStat)
+  deallocate(p%timeStruct)
+  deallocate(p%forcStruct)
+  deallocate(p%attrStruct)
+  deallocate(p%typeStruct)
+  deallocate(p%idStruct)
+  deallocate(p%indxStruct)
+  deallocate(p%mparStruct)
+  deallocate(p%progStruct)
+  deallocate(p%diagStruct)
+  deallocate(p%fluxStruct)
+  deallocate(p%bparStruct)
+  deallocate(p%bvarStruct)
+  deallocate(p%dparStruct)
+  deallocate(p%startTime_hru)
+  deallocate(p%finishTime_hru)
+  deallocate(p%refTime_hru)
+  deallocate(p%oldTime_hru)
+  deallocate(p)
+
+end subroutine
 
 end module cppwrap_datatypes
 

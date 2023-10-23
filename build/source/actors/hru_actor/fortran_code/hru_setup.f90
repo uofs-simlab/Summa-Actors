@@ -30,7 +30,8 @@ USE data_types,only:&
                     var_d,               & ! x%var(:)            (dp)
                     var_ilength,         & ! x%var(:)%dat        (i4b)
                     var_dlength,         & ! x%var(:)%dat        (dp)
-                    zLookup
+                    zLookup,            & ! x%z(:)%var(:)%lookup(dp)
+                    hru_type
 
 ! access missing values
 USE globalData,only:integerMissing   ! missing integer
@@ -67,21 +68,7 @@ contains
 subroutine setupHRUParam(&
                   indxGRU,                 & ! ID of hru
                   indxHRU,                 & ! Index of the parent GRU of the HRU 
-                  ! primary data structures (scalars)
-                  handle_attrStruct,              & ! local attributes for each HRU
-                  handle_typeStruct,              & ! local classification of soil veg etc. for each HRU
-                  handle_idStruct,                & ! local classification of soil veg etc. for each HRU
-                  ! primary data structures (variable length vectors)
-                  handle_indxStruct,              & ! model indices
-                  handle_mparStruct,              & ! model parameters
-                  handle_progStruct,              & ! model prognostic (state) variables
-                  handle_bparStruct,              & ! basin-average parameters
-                  handle_bvarStruct,              & ! basin-average variables
-                  handle_dparStruct,              & ! default model parameters
-                  handle_lookupStruct,            & ! lookup tables
-                  ! local HRU data
-                  handle_startTime,               & ! start time for the model simulation
-                  handle_oldTime,                 & ! time for the previous model time step
+                  handle_hru_data,         &
                   ! miscellaneous variables
                   upArea,                  & ! area upslope of each HRU,
                   err) bind(C, name='setupHRUParam')
@@ -121,35 +108,13 @@ subroutine setupHRUParam(&
   ! dummy variables
   ! calling variables
   integer(c_int),intent(in)                :: indxGRU              ! Index of the parent GRU of the HRU
-  integer(c_int),intent(in)                :: indxHRU              ! ID to locate correct HRU from netcdf file  
-  type(c_ptr), intent(in), value           :: handle_attrStruct    ! local attributes for each HRU
-  type(c_ptr), intent(in), value           :: handle_typeStruct    ! local classification of soil veg etc. for each HRU
-  type(c_ptr), intent(in), value           :: handle_idStruct      !  
-  type(c_ptr), intent(in), value           :: handle_indxStruct !  model indices
-  type(c_ptr), intent(in), value           :: handle_mparStruct    ! model parameters
-  type(c_ptr), intent(in), value           :: handle_progStruct    !  model prognostic (state) variables
-  type(c_ptr), intent(in), value           :: handle_bparStruct    ! basin-average parameters
-  type(c_ptr), intent(in), value           :: handle_bvarStruct    ! basin-average variables
-  type(c_ptr), intent(in), value           :: handle_dparStruct    ! default model parameters
-  type(c_ptr), intent(in), value           :: handle_lookupStruct     ! start time for the model simulation
-  type(c_ptr), intent(in), value           :: handle_startTime     ! start time for the model simulation
-  type(c_ptr), intent(in), value           :: handle_oldTime       ! time for the previous model time step
-  real(c_double),intent(inout)             :: upArea
+  integer(c_int),intent(in)                :: indxHRU              ! ID to locate correct HRU from netcdf file 
+  type(c_ptr), intent(in), value           :: handle_hru_data      ! pointer to the hru data structure (for error messages
+   real(c_double),intent(inout)            :: upArea
   integer(c_int),intent(inout)             :: err
 
   ! local variables
-  type(var_d),pointer                      :: attrStruct           ! local attributes for each HRU
-  type(var_i),pointer                      :: typeStruct           ! local classification of soil veg etc. for each HRU
-  type(var_i8),pointer                     :: idStruct             !
-  type(var_ilength),pointer                :: indxStruct           ! model indices
-  type(var_dlength),pointer                :: mparStruct           ! model parameters
-  type(var_dlength),pointer                :: progStruct           ! model prognostic (state) variables
-  type(var_d),pointer                      :: bparStruct           ! basin-average parameters
-  type(var_dlength),pointer                :: bvarStruct           ! basin-average variables
-  type(var_d),pointer                      :: dparStruct           ! default model parameters
-  type(zLookup),pointer                    :: lookupStruct         ! default model parameters
-  type(var_i),pointer                      :: startTime            ! start time for the model simulation
-  type(var_i),pointer                      :: oldTime              ! time for the previous model time step
+  type(hru_type),pointer                   :: hru_data             ! local hru data structure
 
   integer(i4b)                             :: ivar                 ! loop counter
   integer(i4b)                             :: i_z                  ! loop counter
@@ -161,55 +126,44 @@ subroutine setupHRUParam(&
   err=0; message='setupHRUParam/'
 
   ! convert to fortran pointer from C++ pointer
-  call c_f_pointer(handle_attrStruct, attrStruct)
-  call c_f_pointer(handle_typeStruct, typeStruct)
-  call c_f_pointer(handle_idStruct, idStruct)
-  call c_f_pointer(handle_indxStruct, indxStruct)
-  call c_f_pointer(handle_mparStruct, mparStruct)
-  call c_f_pointer(handle_progStruct, progStruct)
-  call c_f_pointer(handle_bparStruct, bparStruct)
-  call c_f_pointer(handle_bvarStruct, bvarStruct)
-  call c_f_pointer(handle_dparStruct, dparStruct)
-  call c_f_pointer(handle_lookupStruct, lookupStruct)
-  call c_f_pointer(handle_startTime, startTime)
-  call c_f_pointer(handle_oldTime, oldTime)
+  call c_f_pointer(handle_hru_data, hru_data)
 
   ! ffile_info and mDecisions moved to their own seperate subroutine call
   
-  oldTime%var(:) = startTime%var(:)
+  hru_data%oldTime_hru%var(:) = hru_data%startTime_hru%var(:)
 
   ! Copy the attrStruct
-  attrStruct%var(:) = outputStructure(1)%attrStruct%gru(indxGRU)%hru(indxHRU)%var(:)
+  hru_data%attrStruct%var(:) = outputStructure(1)%attrStruct%gru(indxGRU)%hru(indxHRU)%var(:)
   ! Copy the typeStruct
-  typeStruct%var(:) = outputStructure(1)%typeStruct%gru(indxGRU)%hru(indxHRU)%var(:)
+  hru_data%typeStruct%var(:) = outputStructure(1)%typeStruct%gru(indxGRU)%hru(indxHRU)%var(:)
   ! Copy the idStruct
-  idStruct%var(:) = outputStructure(1)%idStruct%gru(indxGRU)%hru(indxHRU)%var(:)
+  hru_data%idStruct%var(:) = outputStructure(1)%idStruct%gru(indxGRU)%hru(indxHRU)%var(:)
 
   ! Copy the mparStruct
-  mparStruct%var(:) = outputStructure(1)%mparStruct%gru(indxGRU)%hru(indxHRU)%var(:)
+  hru_data%mparStruct%var(:) = outputStructure(1)%mparStruct%gru(indxGRU)%hru(indxHRU)%var(:)
   ! Copy the bparStruct
-  bparStruct%var(:) = outputStructure(1)%bparStruct%gru(indxGRU)%var(:)
+  hru_data%bparStruct%var(:) = outputStructure(1)%bparStruct%gru(indxGRU)%var(:)
   ! Copy the dparStruct
-  dparStruct%var(:) = outputStructure(1)%dparStruct%gru(indxGRU)%hru(indxHRU)%var(:)
+  hru_data%dparStruct%var(:) = outputStructure(1)%dparStruct%gru(indxGRU)%hru(indxHRU)%var(:)
   ! Copy the bvarStruct
   do ivar=1, size(outputStructure(1)%bvarStruct_init%gru(indxGRU)%var(:))
-    bvarStruct%var(ivar)%dat(:) = outputStructure(1)%bvarStruct_init%gru(indxGRU)%var(ivar)%dat(:)
+    hru_data%bvarStruct%var(ivar)%dat(:) = outputStructure(1)%bvarStruct_init%gru(indxGRU)%var(ivar)%dat(:)
   enddo
   ! Copy the lookup Struct if its allocated
   if (allocated(outputStructure(1)%lookupStruct%gru(indxGRU)%hru(indxHRU)%z)) then
     do i_z=1, size(outputStructure(1)%lookupStruct%gru(indxGRU)%hru(indxHRU)%z(:))
       do iVar=1, size(outputStructure(1)%lookupStruct%gru(indxGRU)%hru(indxHRU)%z(i_z)%var(:))
-        lookupStruct%z(i_z)%var(ivar)%lookup(:) = outputStructure(1)%lookupStruct%gru(indxGRU)%hru(indxHRU)%z(i_z)%var(iVar)%lookup(:)
+        hru_data%lookupStruct%z(i_z)%var(ivar)%lookup(:) = outputStructure(1)%lookupStruct%gru(indxGRU)%hru(indxHRU)%z(i_z)%var(iVar)%lookup(:)
       end do
     end do
   endif
   ! Copy the progStruct_init
   do ivar=1, size(outputStructure(1)%progStruct_init%gru(indxGRU)%hru(indxHRU)%var(:))
-    progStruct%var(ivar)%dat(:) = outputStructure(1)%progStruct_init%gru(indxGRU)%hru(indxHRU)%var(ivar)%dat(:)
+    hru_data%progStruct%var(ivar)%dat(:) = outputStructure(1)%progStruct_init%gru(indxGRU)%hru(indxHRU)%var(ivar)%dat(:)
   enddo
   ! copy the indexStruct_init
   do ivar=1, size(outputStructure(1)%indxStruct_init%gru(indxGRU)%hru(indxHRU)%var(:))
-    indxStruct%var(ivar)%dat(:) = outputStructure(1)%indxStruct_init%gru(indxGRU)%hru(indxHRU)%var(ivar)%dat(:)
+    hru_data%indxStruct%var(ivar)%dat(:) = outputStructure(1)%indxStruct_init%gru(indxGRU)%hru(indxHRU)%var(ivar)%dat(:)
   enddo
 
 end subroutine setupHRUParam

@@ -17,7 +17,7 @@
     },
     
     "Job_Actor": {
-        "file_manager_path": "/project/gwf/gwf_cmt/kck540/domain_NorthAmerica/summa_actors_input/fileManager.txt"
+        "file_manager_path": "/project/gwf/gwf_cmt/kck540/domain_NorthAmerica/Summa-Projects/input_data/summa_actors_input/fileManager.txt"
     },
   
     "HRU_Actor": {
