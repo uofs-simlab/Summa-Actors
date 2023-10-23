@@ -84,11 +84,6 @@ subroutine runPhysics(&
               indxHRU,             &
               modelTimeStep,       &
               handle_hru_data,     &
-              fracJulDay,          & ! fraction of the current Julian day
-              tmZoneOffsetFracDay, & ! time zone offset (fraction of the day)
-              yearLength,          & ! number of days in the current year
-              ! run time variables
-              computeVegFlux,      & ! flag to indicate if we are computing fluxes over vegetation
               dt_init,             & ! used to initialize the length of the sub-step for each HRU
               dt_init_factor,      & ! used to adjust the length of the timestep in the event of a failure
               err) bind(C, name='RunPhysics')
@@ -114,20 +109,16 @@ subroutine runPhysics(&
   ! ---------------------------------------------------------------------------------------
   ! Dummy Variables
   ! ---------------------------------------------------------------------------------------
-  integer(c_long),intent(in)               :: indxHRU                ! id of HRU                   
-  integer(c_int),intent(in)                :: modelTimeStep          ! time step index
-  type(c_ptr), intent(in), value           :: handle_hru_data         ! c_ptr to -- hru data
-  real(c_double),intent(inout)             :: fracJulDay                    ! fractional julian days since the start of year
-  real(c_double),intent(inout)             :: tmZoneOffsetFracDay 
-  integer(c_int),intent(inout)             :: yearLength                    ! number of days in the current year
-  integer(c_int),intent(inout)             :: computeVegFlux         ! flag to indicate if we are computing fluxes over vegetation
-  real(c_double),intent(inout)             :: dt_init                ! used to initialize the length of the sub-step for each HRU
-  integer(c_int),intent(in)                :: dt_init_factor         ! used to adjust the length of the timestep in the event of a failure
-  integer(c_int),intent(inout)             :: err                    ! error code
+  integer(c_long),intent(in)                :: indxHRU                ! id of HRU                   
+  integer(c_int), intent(in)                :: modelTimeStep          ! time step index
+  type(c_ptr),    intent(in), value         :: handle_hru_data        ! c_ptr to -- hru data
+  real(c_double), intent(inout)             :: dt_init                ! used to initialize the length of the sub-step for each HRU
+  integer(c_int), intent(in)                :: dt_init_factor         ! used to adjust the length of the timestep in the event of a failure
+  integer(c_int), intent(inout)             :: err                    ! error code
   ! ---------------------------------------------------------------------------------------
   ! FORTRAN POINTERS
   ! ---------------------------------------------------------------------------------------
-  type(hru_type),pointer                   :: hru_data                ! hru data
+  type(hru_type),pointer                    :: hru_data               ! hru data
 
   ! ---------------------------------------------------------------------------------------
   ! local variables: general
@@ -160,8 +151,8 @@ subroutine runPhysics(&
       ! (compute the exposed LAI and SAI and whether veg is buried by snow)
       call vegPhenlgy(&
                       ! model control
-                      fracJulDay,             & ! intent(in):    fractional julian days since the start of year
-                      yearLength,             & ! intent(in):    number of days in the current year
+                      hru_data%fracJulDay,             & ! intent(in):    fractional julian days since the start of year
+                      hru_data%yearLength,             & ! intent(in):    number of days in the current year
                       ! input/output: data structures
                       model_decisions,        & ! intent(in):    model decisions
                       hru_data%typeStruct,    & ! intent(in):    type of vegetation and soil
@@ -178,8 +169,8 @@ subroutine runPhysics(&
 
     
       ! save the flag for computing the vegetation fluxes
-      if(computeVegFluxFlag)      computeVegFlux = yes
-      if(.not.computeVegFluxFlag) computeVegFlux = no
+      if(computeVegFluxFlag)      hru_data%computeVegFlux = yes
+      if(.not.computeVegFluxFlag) hru_data%computeVegFlux = no
       
       ! define the green vegetation fraction of the grid box (used to compute LAI)
       hru_data%diagStruct%var(iLookDIAG%scalarGreenVegFraction)%dat(1) = greenVegFrac_monthly(hru_data%timeStruct%var(iLookTIME%im))
@@ -216,7 +207,7 @@ subroutine runPhysics(&
   nSoil   = hru_data%indxStruct%var(iLookINDEX%nSoil)%dat(1)    ! number of soil layers
   nLayers = hru_data%indxStruct%var(iLookINDEX%nLayers)%dat(1)  ! total number of layers
   
-  computeVegFluxFlag = (ComputeVegFlux == yes)
+  computeVegFluxFlag = (hru_data%ComputeVegFlux == yes)
 
   !******************************************************************************
   !****************************** From run_oneHRU *******************************
@@ -267,7 +258,7 @@ subroutine runPhysics(&
         hru_data%progStruct,         & ! data structure of model prognostic variables
         hru_data%diagStruct,         & ! data structure of model diagnostic variables
         hru_data%fluxStruct,         & ! data structure of model fluxes
-        tmZoneOffsetFracDay,         & ! time zone offset in fractional days
+        hru_data%tmZoneOffsetFracDay,         & ! time zone offset in fractional days
         err,cmessage)                  ! error control
   if(err/=0)then;err=20; message=trim(message)//cmessage; print*, message; return; endif
  
@@ -281,8 +272,8 @@ subroutine runPhysics(&
                   dt_init,                     & ! intent(inout): initial time step
                   dt_init_factor,              & ! Used to adjust the length of the timestep in the event of a failure
                   computeVegFluxFlag,          & ! intent(inout): flag to indicate if we are computing fluxes over vegetation
-                  fracJulDay,                  & ! intent(in):    fractional julian days since the start of year
-                  yearLength,                  & ! intent(in):    number of days in the current year
+                  hru_data%fracJulDay,                  & ! intent(in):    fractional julian days since the start of year
+                  hru_data%yearLength,                  & ! intent(in):    number of days in the current year
                   ! data structures (input)
                   hru_data%typeStruct,         & ! intent(in):    local classification of soil veg etc. for each HRU
                   hru_data%attrStruct,         & ! intent(in):    local attributes for each HRU
@@ -304,8 +295,8 @@ subroutine runPhysics(&
 
   !************************************* End of run_oneHRU *****************************************
   ! save the flag for computing the vegetation fluxes
-  if(computeVegFluxFlag)      ComputeVegFlux = yes
-  if(.not.computeVegFluxFlag) ComputeVegFlux = no
+  if(computeVegFluxFlag)      hru_data%ComputeVegFlux = yes
+  if(.not.computeVegFluxFlag) hru_data%ComputeVegFlux = no
 
   fracHRU = hru_data%attrStruct%var(iLookATTR%HRUarea) / hru_data%bvarStruct%var(iLookBVAR%basin__totalArea)%dat(1)
 

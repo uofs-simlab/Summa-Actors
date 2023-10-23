@@ -30,7 +30,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
     self->state.hru_actor_settings = hru_actor_settings;
     self->state.dt_init_factor = hru_actor_settings.dt_init_factor;
 
-
+    // Initialize HRU data and statistics structures
     initHRU(&self->state.indxGRU, &self->state.num_steps, self->state.hru_data, &self->state.err);
     if (self->state.err != 0) {
         aout(self) << "Error: HRU_Actor - Initialize - HRU = " << self->state.indxHRU  
@@ -40,20 +40,12 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
         self->quit();
     }
 
-    // Initialize flags that are used for the output 
-    initStatisticsFlags(self->state.handle_statCounter, 
-                        self->state.handle_outputTimeStep, 
-                        self->state.handle_resetStats, 
-                        self->state.handle_finalizeStats, 
-                        &self->state.err);
-
     // Get the number of timesteps required until needing to write
     self->request(self->state.file_access_actor, 
                   caf::infinite,
                   get_num_output_steps_v)
                   .await([=](int num_steps){
                     self->state.num_steps_until_write = num_steps;
-                    self->state.output_structure_step_index = 1;
                     Initialize_HRU(self);
                     self->send(self, start_hru_v);
                   });
@@ -94,10 +86,10 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
         [=](run_hru) {
             int err = 0;
 
-            if (self->state.timestep == 1) {
-                getFirstTimestep(&self->state.iFile, &self->state.forcingStep, &err);
-                if (self->state.forcingStep == -1) { aout(self) << "HRU - Wrong starting forcing file\n";} 
-            }
+            // if (self->state.timestep == 1) {
+            //     getFirstTimestep(&self->state.iFile, &self->state.forcingStep, &err);
+            //     if (self->state.forcingStep == -1) { aout(self) << "HRU - Wrong starting forcing file\n";} 
+            // }
 
             while(self->state.num_steps_until_write > 0) {
                 if (self->state.forcingStep > self->state.stepsInCurrentFFile) {
@@ -121,10 +113,6 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
                                           &self->state.indxGRU, 
                                           &self->state.output_structure_step_index,
                                           self->state.hru_data,
-                                          self->state.handle_statCounter,
-                                          self->state.handle_outputTimeStep,
-                                          self->state.handle_resetStats,
-                                          self->state.handle_finalizeStats,
                                           &err);
                 if (err != 0) {
                     aout(self) << "Error: HRU_Actor - writeHRUToOutputStructure - HRU = " << self->state.indxHRU
@@ -156,7 +144,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
             int err;
             self->state.iFile = iFile;
             self->state.stepsInCurrentFFile = num_forcing_steps_in_iFile;
-            setTimeZoneOffset(&self->state.iFile, &self->state.tmZoneOffsetFracDay, &err);
+            setTimeZoneOffset(&self->state.iFile, self->state.hru_data, &err);
             self->state.forcingStep = 1;
             self->send(self, run_hru_v);
         },
@@ -228,34 +216,20 @@ int Run_HRU(stateful_actor<hru_state>* self) {
     ** READ FORCING
     **********************************************************************/    
 
-    readForcingHRU(&self->state.indxGRU,
-                   &self->state.timestep,
-                   &self->state.forcingStep,
-                   self->state.hru_data,
-                   &self->state.iFile,
-                   &self->state.err);
+    HRU_readForcing(&self->state.indxGRU,
+                    &self->state.timestep,
+                    &self->state.forcingStep,
+                    &self->state.iFile,
+                    self->state.hru_data,
+                    &self->state.err);
     if (self->state.err != 0) {
         aout(self) << "Error---HRU_Actor: ReadForcingHRU\n" 
-                   << "     IndxGRU = " << self->state.indxGRU << "\n"
-                   << "     RefGRU = " << self->state.refGRU << "\n"
-                   << "     Forcing Step = " << self->state.forcingStep << "\n"
-                   << "     Timestep = " << self->state.timestep << "\n"
-                   << "     iFile = " << self->state.iFile << "\n"
-                   << "     Steps in Forcing File = " << self->state.stepsInCurrentFFile << "\n";
-        self->quit();
-        return -1;
-    }
-
-    computeTimeForcingHRU(self->state.hru_data,&self->state.fracJulDay,
-                          &self->state.yearLength, &self->state.err);
-    if (self->state.err != 0) {
-        aout(self) << "Error---HRU_Actor - ComputeTimeForcingHRU\n"
-                   << "     IndxGRU = " << self->state.indxGRU << "\n"
-                   << "     RefGRU = " << self->state.refGRU << "\n"
-                   << "     Forcing Step = " << self->state.forcingStep << "\n"
-                   << "     Timestep = " << self->state.timestep << "\n"
-                   << "     iFile = " << self->state.iFile << "\n"
-                   << "     Steps in Forcing File = " << self->state.stepsInCurrentFFile << "\n";
+                   << "\tIndxGRU = "               << self->state.indxGRU << "\n"
+                   << "\tRefGRU = "                << self->state.refGRU << "\n"
+                   << "\tForcing Step = "          << self->state.forcingStep << "\n"
+                   << "\tTimestep = "              << self->state.timestep << "\n"
+                   << "\tiFile = "                 << self->state.iFile << "\n"
+                   << "\tSteps in Forcing File = " << self->state.stepsInCurrentFFile << "\n";
         self->quit();
         return -1;
     }
@@ -274,19 +248,14 @@ int Run_HRU(stateful_actor<hru_state>* self) {
     RunPhysics(&self->state.indxHRU,
                &self->state.timestep,
                self->state.hru_data,
-               &self->state.fracJulDay,
-               &self->state.tmZoneOffsetFracDay,
-               &self->state.yearLength,
-               &self->state.computeVegFlux,
                &self->state.dt_init, 
                &self->state.dt_init_factor,
                &self->state.err);
-
     if (self->state.err != 0) {
         aout(self) << "Error---RunPhysics:\n"
-                   << "     IndxGRU = " << self->state.indxGRU 
-                   << "     RefGRU = " << self->state.refGRU 
-                   << "     Timestep = " << self->state.timestep <<  "\n";
+                   << "\tIndxGRU = "  << self->state.indxGRU 
+                   << "\tRefGRU = "   << self->state.refGRU 
+                   << "\tTimestep = " << self->state.timestep <<  "\n";
         self->quit();
         return 20;
     }

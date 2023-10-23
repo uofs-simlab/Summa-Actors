@@ -83,7 +83,7 @@ subroutine setupHRUParam(&
   USE paramCheck_module,only:paramCheck                       ! module to check consistency of model parameters
   USE pOverwrite_module,only:pOverwrite                       ! module to overwrite default parameter values with info from the Noah tables
   USE ConvE2Temp_module,only:E2T_lookup                       ! module to calculate a look-up table for the temperature-enthalpy conversion
-#ifdef SUNDIALS_ACTIVE  
+#ifdef V4_ACTIVE  
   USE t2enthalpy_module,only:T2E_lookup                       ! module to calculate a look-up table for the temperature-enthalpy conversion
 #endif
   USE var_derive_module,only:fracFuture                       ! module to calculate the fraction of runoff in future time steps (time delay histogram)
@@ -112,7 +112,7 @@ subroutine setupHRUParam(&
   integer(c_int),intent(in)                :: indxGRU              ! Index of the parent GRU of the HRU
   integer(c_int),intent(in)                :: indxHRU              ! ID to locate correct HRU from netcdf file 
   type(c_ptr), intent(in), value           :: handle_hru_data      ! pointer to the hru data structure (for error messages
-   real(c_double),intent(inout)            :: upArea
+  real(c_double),intent(inout)             :: upArea
   integer(c_int),intent(inout)             :: err
 
   ! local variables

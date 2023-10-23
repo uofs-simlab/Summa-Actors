@@ -24,35 +24,24 @@ struct hru_state {
     int refGRU;			// The actual ID of the GRU we are
 
     // Variables for forcing structures
-	int stepsInCurrentFFile;
-    int num_steps_until_write;
+	int stepsInCurrentFFile;        // number of time steps in current forcing file
+    int num_steps_until_write;      // number of time steps until we pause for FA_Actor to write
 
     // HRU data structures (formerly summa_type)
     void *hru_data = new_handle_hru_type();
 
-    // Counter variables
-    void *handle_statCounter = new_handle_var_i();
-    void *handle_outputTimeStep = new_handle_var_i();
-    void *handle_resetStats = new_handle_flagVec();
-    void *handle_finalizeStats = new_handle_flagVec();
-
     // Misc Variables
 	int 		timestep = 1;	    // Current Timestep of HRU simulation
-    int         computeVegFlux;     // flag to indicate if we are computing fluxes over vegetation
     double      dt_init;            // used to initialize the length of the sub-step for each HRU
     double		upArea;             // area upslope of each HRU
     int         num_steps = 0;      // number of time steps
-    int         forcingStep;    // index of current time step in current forcing file
-    int         iFile;          // index of current forcing file from forcing file list
+    int         forcingStep;        // index of current time step in current forcing file
+    int         iFile;              // index of current forcing file from forcing file list
     int         dt_init_factor = 1; // factor of dt_init (coupled_em)
     bool        printOutput;
     int         outputFrequency;
     int         output_structure_step_index; // index of current time step in output structure
 
-    // Julian Day variables
-    double      fracJulDay;
-    double      tmZoneOffsetFracDay;
-    int         yearLength;
 
     // Settings
     HRU_Actor_Settings hru_actor_settings;
@@ -61,13 +50,6 @@ struct hru_state {
     
     ~hru_state() {
         delete_handle_hru_type(hru_data);
-
-        // counter variables
-        delete_handle_var_i(handle_statCounter);
-        delete_handle_var_i(handle_outputTimeStep);
-        delete_handle_flagVec(handle_resetStats);
-        delete_handle_flagVec(handle_finalizeStats);
-
     }
 };
 

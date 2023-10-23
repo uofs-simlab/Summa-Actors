@@ -1296,6 +1296,10 @@ function new_handle_hru_type() result(handle) bind(C, name="new_handle_hru_type"
   allocate(p%finishTime_hru)
   allocate(p%refTime_hru)
   allocate(p%oldTime_hru)
+  allocate(p%statCounter)
+  allocate(p%outputTimeStep)
+  allocate(p%resetStats)
+  allocate(p%finalizeStats)
   handle = c_loc(p)
 end function
 
@@ -1328,6 +1332,10 @@ subroutine delete_handle_hru_type(handle) bind(C, name="delete_handle_hru_type")
   deallocate(p%finishTime_hru)
   deallocate(p%refTime_hru)
   deallocate(p%oldTime_hru)
+  deallocate(p%statCounter)
+  deallocate(p%outputTimeStep)
+  deallocate(p%resetStats)
+  deallocate(p%finalizeStats)
   deallocate(p)
 
 end subroutine

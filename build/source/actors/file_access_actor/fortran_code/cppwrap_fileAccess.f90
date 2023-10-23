@@ -74,7 +74,7 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   USE globalData,only:checkHRU                                ! index of the HRU for a single HRU run
   
   ! look-up values for the choice of heat capacity computation
-#ifdef SUNDIALS_ACTIVE
+#ifdef V4_ACTIVE
   USE mDecisions_module,only:enthalpyFD                       ! heat capacity using enthalpy
   USE t2enthalpy_module,only:T2E_lookup                       ! module to calculate a look-up table for the temperature-enthalpy conversion
 #endif
@@ -296,7 +296,7 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
       if(err/=0)then; print*,message; return; endif
 
       ! calculate a lookup table to compute enthalpy from temperature, only for enthalpyFD
-#ifdef SUNDIALS_ACTIVE      
+#ifdef V4_ACTIVE      
       if(model_decisions(iLookDECISIONS%howHeatCap)%iDecision == enthalpyFD)then
         call T2E_lookup(gru_struc(iGRU)%hruInfo(iHRU)%nSoil,   &   ! intent(in):    number of soil layers
                         outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU),        &   ! intent(in):    parameter data structure
@@ -367,15 +367,7 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
                    outputStructure(1)%mparStruct,      & ! intent(in):    model parameters
                    outputStructure(1)%indxStruct_init, & ! intent(inout): model indices
                    err,message)                          ! intent(out):   error control
-  if(err/=0)then; print*, message; return; endif
-  
-
-
-
-
-
-
-  
+  if(err/=0)then; print*, message; return; endif  
 end subroutine fileAccessActor_init_fortran
 
 

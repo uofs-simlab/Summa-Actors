@@ -65,7 +65,7 @@ contains
   USE globalData,only:startTime,finshTime,refTime,oldTime
 
   USE var_lookup,only:maxvarFreq                              ! maximum number of output files
-  
+  USE var_lookup,only:iLookFreq                               ! output frequency lookup table
   implicit none
   
   ! ---------------------------------------------------------------------------------------
@@ -189,6 +189,20 @@ contains
       return
     endif
   end do ! iStruct
+
+
+  ! Intilaize the statistics data structures
+  allocate(hru_data%statCounter%var(maxVarFreq), stat=err)
+  allocate(hru_data%outputTimeStep%var(maxVarFreq), stat=err)
+  allocate(hru_data%resetStats%dat(maxVarFreq), stat=err)
+  allocate(hru_data%finalizeStats%dat(maxVarFreq), stat=err)
+  hru_data%statCounter%var(1:maxVarFreq) = 1
+  hru_data%outputTimeStep%var(1:maxVarFreq) = 1
+  ! initialize flags to reset/finalize statistics
+  hru_data%resetStats%dat(:)    = .true.   ! start by resetting statistics
+  hru_data%finalizeStats%dat(:) = .false.  ! do not finalize stats on the first time step
+  ! set stats flag for the timestep-level output
+  hru_data%finalizeStats%dat(iLookFreq%timestep)=.true.
 
   ! identify the end of the initialization
   call date_and_time(values=endInit)

@@ -714,6 +714,21 @@ MODULE data_types
     type(var_i),pointer                        :: finishTime_hru             ! end time for the model simulation
     type(var_i),pointer                        :: refTime_hru                ! reference time for the model simulation
     type(var_i),pointer                        :: oldTime_hru                ! time from previous step
+
+    ! Statistic flags 
+    type(var_i), pointer                       :: statCounter                ! time counter for stats
+    type(var_i), pointer                       :: outputTimeStep             ! timestep in output files
+    type(flagVec), pointer                     :: resetStats                 ! flags to finalize statistics
+    type(flagVec), pointer                     :: finalizeStats              ! flags to finalize statistics
+
+    ! Julian Day Variables
+    real(c_double)                             :: fracJulDay                 ! fractional julian days since the start of year
+    real(c_double)                             :: tmZoneOffsetFracDay        ! time zone offset in fractional days
+    integer(c_int)                             :: yearLength                 ! number of days in the current year
+    ! Misc Variables
+    integer(c_int)                             :: computeVegFlux             ! flag to indicate if we are computing fluxes over vegetation
+    
+
   end type hru_type
 
 

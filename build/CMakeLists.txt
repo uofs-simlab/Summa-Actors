@@ -226,6 +226,7 @@ set(JOB_INTERFACE
 set(HRU_INTERFACE
     ${HRU_ACTOR_DIR}/fortran_code/hru_actor.f90
     ${HRU_ACTOR_DIR}/fortran_code/hru_init.f90
+    ${HRU_ACTOR_DIR}/fortran_code/hru_read.f90
     ${HRU_ACTOR_DIR}/fortran_code/hru_modelRun.f90
     ${HRU_ACTOR_DIR}/fortran_code/hru_modelwrite.f90
     ${HRU_ACTOR_DIR}/fortran_code/hru_restart.f90
