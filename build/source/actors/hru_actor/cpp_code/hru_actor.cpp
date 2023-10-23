@@ -86,11 +86,6 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
         [=](run_hru) {
             int err = 0;
 
-            // if (self->state.timestep == 1) {
-            //     getFirstTimestep(&self->state.iFile, &self->state.forcingStep, &err);
-            //     if (self->state.forcingStep == -1) { aout(self) << "HRU - Wrong starting forcing file\n";} 
-            // }
-
             while(self->state.num_steps_until_write > 0) {
                 if (self->state.forcingStep > self->state.stepsInCurrentFFile) {
                     self->send(self->state.file_access_actor, access_forcing_v, self->state.iFile+1, self);
@@ -100,24 +95,8 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
                 self->state.num_steps_until_write--;
 
                 err = Run_HRU(self); // Simulate a Timestep
-
                 if (err != 0) {
                     // We should have already printed the error to the screen if we get here
-
-                    self->send(self->state.parent, hru_error::run_physics_unhandleable, self);
-                    self->quit();
-                    return;
-                }
-
-                writeHRUToOutputStructure(&self->state.indxHRU, 
-                                          &self->state.indxGRU, 
-                                          &self->state.output_structure_step_index,
-                                          self->state.hru_data,
-                                          &err);
-                if (err != 0) {
-                    aout(self) << "Error: HRU_Actor - writeHRUToOutputStructure - HRU = " << self->state.indxHRU
-                               << " - indxGRU = " << self->state.indxGRU << " - refGRU = " << self->state.refGRU
-                               << "\nError = " << err << "\n";
                     self->send(self->state.parent, hru_error::run_physics_unhandleable, self);
                     self->quit();
                     return;
@@ -126,7 +105,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
                 self->state.timestep++;
                 self->state.forcingStep++;
                 self->state.output_structure_step_index++;
- 
+                
                 if (self->state.timestep > self->state.num_steps) {
                     self->send(self, done_hru_v);
                     break;
@@ -258,6 +237,19 @@ int Run_HRU(stateful_actor<hru_state>* self) {
                    << "\tTimestep = " << self->state.timestep <<  "\n";
         self->quit();
         return 20;
+    }
+
+    hru_writeOutput(&self->state.indxHRU, 
+                &self->state.indxGRU, 
+                &self->state.output_structure_step_index,
+                self->state.hru_data,
+                &self->state.err);
+    if (self->state.err != 0) {
+        aout(self) << "Error: HRU_Actor - writeHRUToOutputStructure - HRU = " << self->state.indxHRU
+                << " - indxGRU = " << self->state.indxGRU << " - refGRU = " << self->state.refGRU
+                << "\nError = " << self->state.err  << "\n";
+        self->quit();
+        return 21;
     }
 
     return 0;      

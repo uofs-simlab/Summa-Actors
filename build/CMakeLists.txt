@@ -224,13 +224,9 @@ set(FILE_ACCESS_INTERFACE
 set(JOB_INTERFACE
     ${JOB_ACTOR_DIR}/job_actor.f90)
 set(HRU_INTERFACE
-    ${HRU_ACTOR_DIR}/fortran_code/hru_actor.f90
     ${HRU_ACTOR_DIR}/fortran_code/hru_init.f90
     ${HRU_ACTOR_DIR}/fortran_code/hru_read.f90
     ${HRU_ACTOR_DIR}/fortran_code/hru_modelRun.f90
-    ${HRU_ACTOR_DIR}/fortran_code/hru_modelwrite.f90
-    ${HRU_ACTOR_DIR}/fortran_code/hru_restart.f90
-    ${HRU_ACTOR_DIR}/fortran_code/hru_setup.f90
     ${HRU_ACTOR_DIR}/fortran_code/hru_writeOutput.f90)
 
 # Actors actual actor modules

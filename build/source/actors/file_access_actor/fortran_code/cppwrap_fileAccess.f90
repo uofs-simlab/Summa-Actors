@@ -34,7 +34,7 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   USE ffile_info_actors_module,only:ffile_info
   USE mDecisions_module,only:mDecisions                       ! module to read model decisions
   USE read_pinit_module,only:read_pinit                       ! module to read initial model parameter values
-  USE SummaActors_setup,only:SOIL_VEG_GEN_PARM
+  USE INIT_HRU_ACTOR,only:SOIL_VEG_GEN_PARM
   USE module_sf_noahmplsm,only:read_mp_veg_parameters         ! module to read NOAH vegetation tables
   USE def_output_actors_module,only:def_output                ! module to define output variables
   USE output_structure_module,only:initOutputStructure        ! module to initialize output structure
