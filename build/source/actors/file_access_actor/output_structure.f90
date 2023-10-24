@@ -24,10 +24,13 @@ module output_structure_module
                       gru_hru_int8,        & ! x%gru(:)%hru(:)%var(:)     integer(8)
                       gru_hru_double,      & ! x%gru(:)%hru(:)%var(:)     (rkind)
                       gru_hru_intVec,      & ! x%gru(:)%hru(:)%var(:)%dat (i4b)
-                      gru_hru_doubleVec,   & ! x%gru(:)%hru(:)%var(:)%dat (rkind)
+                      gru_hru_doubleVec      ! x%gru(:)%hru(:)%var(:)%dat (rkind)
                       ! gru+hru+z dimension
-                      gru_hru_z_vLookup,   & ! x%gru(:)%hru(:)%z(:)%var(:)%lookup (rkind)
-                      ! structures that hold the time dimension
+#ifdef V4_ACTIVE
+  USE data_types,only:gru_hru_z_vLookup ! x%gru(:)%hru(:)%z(:)%var(:)%lookup (rkind)
+#endif
+
+  USE actor_data_types,only:&
                       var_time_i8,         & ! x%var(:)%tim(:)     integer(8)
                       var_time_i,          & ! x%var(:)%tim(:)     (i4b)
                       var_time_d,          & ! x%var(:)%tim(:)     (rkind)
@@ -38,7 +41,6 @@ module output_structure_module
                       gru_hru_time_double, &  ! x%gru(:)%hru(:)%var(:)%tim(:)     (rkind)
                       gru_hru_time_intvec, &  ! x%gru(:)%hru(:)%var(:)%tim(:)%dat (i4b)
                       gru_hru_time_flagvec
-
 
 
   USE data_types,only:var_info
@@ -60,8 +62,9 @@ module output_structure_module
   private::is_var_desired
 
   type, public :: summa_output_type
+#ifdef V4_ACTIVE  
     type(gru_hru_z_vLookup)                          :: lookupStruct                   ! x%gru(:)%hru(:)%z(:)%var(:)%lookup(:) -- lookup tables
-
+#endif
     ! define the statistics structures
     type(gru_hru_time_doubleVec)                      :: forcStat                      ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model forcing data
     type(gru_hru_time_doubleVec)                      :: progStat                      ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model prognostic (state) variables
@@ -144,7 +147,7 @@ subroutine initOutputStructure(forcFileInfo, maxSteps, num_gru, err)
   USE globalData,only:gru_struc
   USE globalData,only:structInfo                              ! information on the data structures
   USE multiconst,only:secprday                                ! number of seconds in a day
-  USE data_types,only:file_info_array
+  USE actor_data_types,only:file_info_array
   USE var_lookup,only:maxvarFreq                              ! maximum number of output files
 
   USE allocspace_module,only:allocGlobal                      ! module to allocate space for global data structures
@@ -360,13 +363,14 @@ subroutine deallocateOutputStructure(err) bind(C, name="deallocateOutputStructur
 end subroutine deallocateOutputStructure
 
 subroutine deallocateData_output(dataStruct)
-  USE data_types,only:gru_hru_time_doubleVec, &
-                      gru_hru_time_intVec, &
-                      gru_hru_time_flagVec, &
-                      gru_hru_time_int, &
-                      gru_hru_int, &
-                      gru_hru_time_int8, &
-                      gru_hru_time_double, &
+  USE actor_data_types,only:gru_hru_time_doubleVec, &
+                            gru_hru_time_intVec,    &
+                            gru_hru_time_flagVec,   &
+                            gru_hru_time_int,       &
+                            gru_hru_time_int8,      &
+                            gru_hru_time_double
+
+  USE data_types,only:gru_hru_int,    &
                       gru_hru_double, &
                       gru_double
   implicit none

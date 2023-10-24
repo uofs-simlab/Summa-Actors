@@ -1,4 +1,4 @@
-#include "batch/batch_container.hpp"
+#include "batch_container.hpp"
 
 Batch_Container::Batch_Container(int total_hru_count, int num_hru_per_batch) {
     this->total_hru_count = total_hru_count;

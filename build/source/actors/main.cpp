@@ -7,7 +7,7 @@
 #include "global.hpp"
 #include "settings_functions.hpp"
 #include "message_atoms.hpp"
-#include "client/client.hpp"
+#include "client.hpp"
 #include <string>
 #include <bits/stdc++.h>
 #include <unistd.h>

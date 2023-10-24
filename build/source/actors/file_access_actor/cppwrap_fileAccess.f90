@@ -5,6 +5,7 @@ module cppwrap_fileAccess
   USE, intrinsic :: iso_c_binding
   USE nrtype
   USE data_types
+  USE actor_data_types
   USE globalData
   USE globalData,only:integerMissing      ! missing integer value
   USE globalData,only:realMissing         ! missing double precision value

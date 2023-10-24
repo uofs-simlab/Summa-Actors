@@ -9,8 +9,9 @@ USE data_types,only:&
                     var_d,          &
                     var_ilength,    &
                     var_dlength,    &
-                    flagVec,        &
-                    hru_type
+                    flagVec
+
+USE actor_data_types,only:hru_type
 implicit none
 public::setTimeZoneOffset
 public::HRU_readForcing

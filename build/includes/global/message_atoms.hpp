@@ -1,9 +1,9 @@
 #pragma once
 
-#include "batch/batch.hpp"
-#include "batch/batch_container.hpp"
-#include "client/client.hpp"
-#include "client/client_container.hpp"
+#include "batch.hpp"
+#include "batch_container.hpp"
+#include "client.hpp"
+#include "client_container.hpp"
 #include <vector>
 #include "settings_functions.hpp"
 #include "global.hpp"

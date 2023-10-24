@@ -125,7 +125,8 @@ set(HOOKUP
 
 # Data modules
 set(DATAMS
-    ${SUB_DSHARE_DIR}/data_types.f90
+    ${DSHARE_DIR}/data_types.f90
+    ${ACTORS_DIR}/global/actor_data_types.f90
     ${DSHARE_DIR}/flxMapping.f90
     ${DSHARE_DIR}/get_ixname.f90
     ${DSHARE_DIR}/globalData.f90
@@ -145,8 +146,7 @@ set(UTILMS
 
 # NetCDF routines
 set(NETCDF
-    ${SUB_NETCDF_DIR}/def_output.f90
-    ${SUB_NETCDF_DIR}/modelwrite.f90
+    ${FILE_ACCESS_DIR}/def_output.f90
     ${NETCDF_DIR}/netcdf_util.f90
     ${NETCDF_DIR}/read_icond.f90)
 
@@ -158,7 +158,7 @@ set(PRELIM
     ${ENGINE_DIR}/childStruc.f90
     ${ENGINE_DIR}/conv_funcs.f90
     ${ENGINE_DIR}/convE2Temp.f90
-    ${SUB_ENGINE_DIR}/ffile_info.f90
+    ${FILE_ACCESS_DIR}/ffile_info.f90
     ${ENGINE_DIR}/read_pinit.f90
     ${ENGINE_DIR}/read_attrb.f90
     ${ENGINE_DIR}/paramCheck.f90
@@ -216,17 +216,17 @@ set(INTERFACE
     ${ACTORS_DIR}/global/cppwrap_datatypes.f90
     ${ACTORS_DIR}/global/cppwrap_metadata.f90)
 set(FILE_ACCESS_INTERFACE
-    ${FILE_ACCESS_DIR}/fortran_code/cppwrap_fileAccess.f90
-    ${FILE_ACCESS_DIR}/fortran_code/output_structure.f90
-    ${FILE_ACCESS_DIR}/fortran_code/read_force.f90
-    ${FILE_ACCESS_DIR}/fortran_code/fileAccess_writeOutput.f90)
+    ${FILE_ACCESS_DIR}/cppwrap_fileAccess.f90
+    ${FILE_ACCESS_DIR}/output_structure.f90
+    ${FILE_ACCESS_DIR}/read_force.f90
+    ${FILE_ACCESS_DIR}/fileAccess_writeOutput.f90)
 set(JOB_INTERFACE
     ${JOB_ACTOR_DIR}/job_actor.f90)
 set(HRU_INTERFACE
-    ${HRU_ACTOR_DIR}/fortran_code/hru_init.f90
-    ${HRU_ACTOR_DIR}/fortran_code/hru_read.f90
-    ${HRU_ACTOR_DIR}/fortran_code/hru_modelRun.f90
-    ${HRU_ACTOR_DIR}/fortran_code/hru_writeOutput.f90)
+    ${HRU_ACTOR_DIR}/hru_init.f90
+    ${HRU_ACTOR_DIR}/hru_read.f90
+    ${HRU_ACTOR_DIR}/hru_modelRun.f90
+    ${HRU_ACTOR_DIR}/hru_writeOutput.f90)
 
 # Actors actual actor modules
 set(ACTORS_GLOBAL
@@ -236,23 +236,23 @@ set(ACTORS_GLOBAL
     ${ACTORS_DIR}/global/settings_functions.cpp
     ${ACTORS_DIR}/global/timing_info.cpp)
 set(SUMMA_ACTOR
-    ${ACTORS_DIR}/summa_actor/batch/batch.cpp
-    ${ACTORS_DIR}/summa_actor/batch/batch_container.cpp
-    ${ACTORS_DIR}/summa_actor/client/client.cpp
-    ${ACTORS_DIR}/summa_actor/client/client_container.cpp
+    ${ACTORS_DIR}/summa_actor/batch.cpp
+    ${ACTORS_DIR}/summa_actor/batch_container.cpp
+    ${ACTORS_DIR}/summa_actor/client.cpp
+    ${ACTORS_DIR}/summa_actor/client_container.cpp
     ${ACTORS_DIR}/summa_actor/summa_actor.cpp
     ${ACTORS_DIR}/summa_actor/summa_backup_server.cpp
     ${ACTORS_DIR}/summa_actor/summa_client.cpp
     ${ACTORS_DIR}/summa_actor/summa_server.cpp)
 set(FILE_ACCESS_ACTOR
-    ${ACTORS_DIR}/file_access_actor/cpp_code/file_access_actor.cpp
-    ${ACTORS_DIR}/file_access_actor/cpp_code/forcing_file_info.cpp
-    ${ACTORS_DIR}/file_access_actor/cpp_code/output_container.cpp)
+    ${ACTORS_DIR}/file_access_actor/file_access_actor.cpp
+    ${ACTORS_DIR}/file_access_actor/forcing_file_info.cpp
+    ${ACTORS_DIR}/file_access_actor/output_container.cpp)
 set(JOB_ACTOR
     ${ACTORS_DIR}/job_actor/GRU.cpp
     ${ACTORS_DIR}/job_actor/job_actor.cpp)
 set(HRU_ACTOR
-    ${ACTORS_DIR}/hru_actor/cpp_code/hru_actor.cpp)
+    ${ACTORS_DIR}/hru_actor/hru_actor.cpp)
 
 #=========================================================================================
 # COMPILE PART 3: Collect the subroutines into build groups depending on build type

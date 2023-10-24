@@ -1,8 +1,8 @@
 #pragma once
 #include "caf/all.hpp"
 #include <vector>
-#include "batch/batch.hpp"
-#include "client/client.hpp"
+#include "batch.hpp"
+#include "client.hpp"
 #include <optional>
 
 

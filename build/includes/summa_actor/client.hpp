@@ -1,7 +1,7 @@
 #pragma once
 #include "caf/all.hpp"
 #include <optional>
-#include "batch/batch.hpp"
+#include "batch.hpp"
 
 class Client {
     private:

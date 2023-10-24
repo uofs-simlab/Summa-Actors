@@ -1,4 +1,4 @@
-#include "batch/batch.hpp"
+#include "batch.hpp"
 
 Batch::Batch(int batch_id, int start_hru, int num_hru){
     this->batch_id = batch_id;

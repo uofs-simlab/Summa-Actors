@@ -22,6 +22,7 @@ module ffile_info_actors_module
 USE nrtype
 USE netcdf
 USE data_types
+USE actor_data_types,only:file_info_array
 USE globalData,only:integerMissing
 implicit none
 private

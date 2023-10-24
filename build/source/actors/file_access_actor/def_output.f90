@@ -20,7 +20,8 @@
 
 module def_output_actors_module
 
-USE data_types,only:var_i,netcdf_gru_actor_info
+USE data_types,only:var_i
+USE actor_data_types,only:netcdf_gru_actor_info
 USE netcdf
 USE netcdf_util_module,only:netcdf_err        ! netcdf error handling function
 USE netcdf_util_module,only:nc_file_close     ! close NetCDF files

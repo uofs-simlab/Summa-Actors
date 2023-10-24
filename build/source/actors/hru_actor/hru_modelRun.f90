@@ -22,16 +22,8 @@ module summa_modelRun
 ! calls the model physics
 USE,intrinsic :: iso_c_binding
 
-USE data_types,only:&
-                    ! no spatial dimension
-                    var_i,               & ! x%var(:)            (i4b)
-                    var_i8,              & ! x%var(:)            (i8b)
-                    var_d,               & ! x%var(:)            (dp)
-                    var_ilength,         & ! x%var(:)%dat        (i4b)
-                    var_dlength,         & ! x%var(:)%dat        (dp)
-                    var_dlength_array,   & ! x%struc(:)%dat       (dp)
-                    zLookup,&
-                    hru_type
+
+USE actor_data_types,only:hru_type
 ! access missing values
 USE globalData,only:integerMissing         ! missing integer
 USE globalData,only:realMissing            ! missing double precision number

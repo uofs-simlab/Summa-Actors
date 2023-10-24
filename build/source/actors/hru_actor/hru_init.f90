@@ -8,9 +8,11 @@ USE data_types,only:&
                     var_i8,              & ! x%var(:)            (i8b)
                     var_d,               & ! x%var(:)            (dp)
                     var_ilength,         & ! x%var(:)%dat        (i4b)
-                    var_dlength,         & ! x%var(:)%dat        (dp)
-                    zLookup,             & ! x%z(:)%var(:)%lookup(:) -- lookup tables
-                    hru_type             ! hru_type
+                    var_dlength            ! x%var(:)%dat        (dp)
+#ifdef V4_ACTIVE
+USE data_types,only:z_lookup               ! x%z(:)%var(:)%lookup(:) -- lookup tables
+#endif
+USE actor_data_types,only:hru_type             ! hru_type
                     
 ! access missing values
 USE globalData,only:integerMissing   ! missing integer

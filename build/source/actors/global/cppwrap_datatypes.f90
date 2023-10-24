@@ -3,6 +3,7 @@ module cppwrap_datatypes
 
 use, intrinsic :: iso_c_binding
 use data_types
+use actor_data_types
 
 implicit none
   
@@ -1250,6 +1251,7 @@ end subroutine delete_handle_file_info
     
 
 ! ****************************** z_lookup ****************************
+#ifdef V4_ACTIVE
 function new_handle_z_lookup() result(handle) bind(C, name="new_handle_z_lookup")
   type(c_ptr)            :: handle
   type(zLookup), pointer :: p
@@ -1264,7 +1266,8 @@ subroutine delete_handle_z_lookup(handle) bind(C, name="delete_handle_z_lookup")
 
   call c_f_pointer(handle, p)
   deallocate(p)
-end subroutine 
+end subroutine
+#endif
 
 ! ****************************** hru type ****************************
 function new_handle_hru_type() result(handle) bind(C, name="new_handle_hru_type")
@@ -1272,7 +1275,9 @@ function new_handle_hru_type() result(handle) bind(C, name="new_handle_hru_type"
   type(hru_type), pointer :: p
 
   allocate(p)
+#ifdef V4_ACTIVE
   allocate(p%lookupStruct)
+#endif
   allocate(p%forcStat)
   allocate(p%progStat)
   allocate(p%diagStat)
@@ -1308,7 +1313,9 @@ subroutine delete_handle_hru_type(handle) bind(C, name="delete_handle_hru_type")
   type(hru_type), pointer :: p
 
   call c_f_pointer(handle, p)
+#ifdef V4_ACTIVE
   deallocate(p%lookupStruct)
+#endif
   deallocate(p%forcStat)
   deallocate(p%progStat)
   deallocate(p%diagStat)

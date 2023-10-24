@@ -10,8 +10,8 @@ USE data_types,only:&
                     
                     var_ilength,    &
                     var_dlength,    &
-                    flagVec,        &
-                    hru_type
+                    flagVec
+USE actor_data_types,only:hru_type
 ! named variables to define new output files
 USE netcdf
 USE netcdf_util_module,only:netcdf_err 

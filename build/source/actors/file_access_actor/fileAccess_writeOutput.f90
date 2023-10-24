@@ -37,14 +37,12 @@ USE globalData,only:gru_struc                             ! gru->hru mapping str
 USE output_structure_module,only:outputStructure
 USE output_structure_module,only:outputTimeStep
 
-USE data_types,only:var_i
 
 ! provide access to the derived types to define the data structures
 USE data_types,only:&
                     ! final data vectors
                     dlength,             & ! var%dat
                     ilength,             & ! var%dat
-                    time_dlength,        & ! var(:)%tim(:)%dat (dp)
                     ! no spatial dimension
                     var_i,               & ! x%var(:)            (i4b)
                     var_i8,              & ! x%var(:)            integer(8)
@@ -54,7 +52,6 @@ USE data_types,only:&
                     ! no variable dimension
                     hru_i,               & ! x%hru(:)            (i4b)
                     hru_d,               & ! x%hru(:)            (dp)
-                    time_i,              &
                     ! gru dimension
                     gru_int,             & ! x%gru(:)%var(:)     (i4b)
                     gru_double,          & ! x%gru(:)%var(:)     (dp)
@@ -65,8 +62,12 @@ USE data_types,only:&
                     gru_hru_int8,        & ! x%gru(:)%hru(:)%var(:)     integer(8)
                     gru_hru_double,      & ! x%gru(:)%hru(:)%var(:)     (dp)
                     gru_hru_intVec,      & ! x%gru(:)%hru(:)%var(:)%dat (i4b)
-                    gru_hru_doubleVec,   & ! x%gru(:)%hru(:)%var(:)%dat (dp)
-                    gru_hru_time_double, &
+                    gru_hru_doubleVec      ! x%gru(:)%hru(:)%var(:)%dat (dp)
+    
+USE actor_data_types,only:&
+                    time_dlength,          & ! var(:)%tim(:)%dat (dp)
+                    time_i,                &
+                    gru_hru_time_double,   &
                     gru_hru_time_doubleVec,&
                     gru_hru_time_intVec
 
@@ -685,7 +686,8 @@ subroutine writeGRUStatistics(handle_ncid,      &
       gru_stats_vector, &
       num_gru,          &
       err) bind(C, name="WriteGRUStatistics")
-  USE data_types,only:var_i,netcdf_gru_actor_info,serializable_netcdf_gru_actor_info
+  USE data_types,only:var_i
+  USE actor_data_types,only:netcdf_gru_actor_info,serializable_netcdf_gru_actor_info
   USE var_lookup, only: maxvarFreq ! number of output frequencies
   USE netcdf
   implicit none

@@ -8,10 +8,10 @@ USE, intrinsic :: iso_c_binding
 USE nrtype
 
 USE data_types,only:file_info
-USE data_types,only:file_info_array
-USE data_types,only:var_forc        ! global data structure for forcing data
 USE data_types,only:dlength         ! global data structure for forcing data
 USE data_types,only:ilength         ! global data structure for forcing data
+USE actor_data_types,only:file_info_array
+USE actor_data_types,only:var_forc        ! global data structure for forcing data
 
 USE globalData,only:gru_struc
 USE globalData,only:time_meta,forc_meta       ! metadata structures

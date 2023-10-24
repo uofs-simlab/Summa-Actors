@@ -56,7 +56,7 @@ def verify_data(dataset_1, dataset_2, num_hru, output_variables):
     for i_hru in range(0, num_hru):
         hru_from_dataset_1 = dataset_1.isel(hru=i_hru).copy()
         hru_from_dataset_2 = dataset_2.isel(hru=i_hru).copy()
-        print(hru_from_dataset_1)
+        # print(hru_from_dataset_1)
         # print("CHECKING HRU", i_hru, "OF", num_hru)
 
         for var in output_variables:
@@ -93,7 +93,7 @@ def get_output_vars(model_output_file):
 
 
 
-num_hru = 1
+num_hru = 25
 print("Checking output for", num_hru, "HRUs")
 
 
