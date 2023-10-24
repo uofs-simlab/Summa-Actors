@@ -18,7 +18,7 @@
 ! You should have received a copy of the GNU General Public License
 ! along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-module writeOutputFromOutputStructure_module
+module fileAccess_writeOutput
   USE, intrinsic :: iso_c_binding
 
 ! NetCDF types
@@ -83,6 +83,7 @@ public::writeBasin
 public::writeTime
 private::writeScalar
 private::writeVector
+public::writeGRUStatistics
 ! define dimension lengths
 integer(i4b),parameter      :: maxSpectral=2              ! maximum number of spectral bands
 contains
@@ -90,18 +91,19 @@ contains
 ! **********************************************************************************************************
 ! public subroutine writeParm: write model parameters
 ! **********************************************************************************************************
-subroutine writeOutput_fortran(handle_ncid, num_steps, start_gru, max_gru, err) bind(C, name="writeOutput_fortran")
+subroutine writeOutput_fortran(handle_ncid, num_steps, start_gru, max_gru, write_parm_flag, err) bind(C, name="writeOutput_fortran")
   USE var_lookup,only:maxVarFreq                               ! # of available output frequencies
   USE globalData,only:structInfo
   USE globalData,only:bvarChild_map,forcChild_map,progChild_map,diagChild_map,fluxChild_map,indxChild_map             ! index of the child data structure: stats bvar
-  USE globalData,only:bvar_meta,time_meta,forc_meta,prog_meta,diag_meta,flux_meta,indx_meta
+  USE globalData,only:attr_meta,bvar_meta,type_meta,time_meta,forc_meta,prog_meta,diag_meta,flux_meta,indx_meta,bpar_meta,mpar_meta
   USE globalData,only:maxLayers
   implicit none
   ! dummy variables
   type(c_ptr),intent(in), value        :: handle_ncid       ! ncid of the output file
-  integer(c_int),intent(in)            :: num_steps            ! number of steps to write
-  integer(c_int),intent(in)            :: start_gru            ! index of GRU we are currently writing for
-  integer(c_int),intent(in)            :: max_gru            ! index of HRU we are currently writing for
+  integer(c_int),intent(in)            :: num_steps         ! number of steps to write
+  integer(c_int),intent(in)            :: start_gru         ! index of GRU we are currently writing for
+  integer(c_int),intent(in)            :: max_gru           ! index of HRU we are currently writing for
+  logical(c_bool),intent(in)           :: write_parm_flag   ! flag to write parameters
   integer(c_int),intent(out)           :: err               ! Error code
   ! local variables
   type(var_i),pointer                  :: ncid
@@ -116,9 +118,31 @@ subroutine writeOutput_fortran(handle_ncid, num_steps, start_gru, max_gru, err) 
   integer(i4b)                         :: iStruct
   integer(i4b)                         :: numGRU
   
-
   ! Change the C pointer to a fortran pointer
   call c_f_pointer(handle_ncid, ncid)
+  
+  ! Write the Parameters if first write
+  if (write_parm_flag)then
+    do iStruct=1,size(structInfo)
+      do iGRU=start_gru, max_gru
+        select case(trim(structInfo(iStruct)%structName))
+        case('attr'); call writeParm(ncid,gru_struc(iGRU)%hruInfo(indxHRU)%hru_ix, &
+          outputStructure(1)%attrStruct%gru(iGRU)%hru(indxHRU),attr_meta,err,cmessage)
+        case('type'); call writeParm(ncid,gru_struc(iGRU)%hruInfo(indxHRU)%hru_ix, &
+          outputStructure(1)%typeStruct%gru(iGRU)%hru(indxHRU),type_meta,err,cmessage)
+        case('mpar'); call writeParm(ncid,gru_struc(iGRU)%hruInfo(indxHRU)%hru_ix, &
+          outputStructure(1)%mparStruct%gru(iGRU)%hru(indxHRU),mpar_meta,err,cmessage)
+        end select
+        if(err/=0)then; message=trim(message)//trim(cmessage)//'['//trim(structInfo(iStruct)%structName)//']'; return; endif
+        call writeParm(ncid,iGRU,outputStructure(1)%bparStruct%gru(iGRU),bpar_meta,err,cmessage)
+        if(err/=0)then; message=trim(message)//trim(cmessage)//'['//trim(structInfo(iStruct)%structName)//']'; return; endif
+      end do ! GRU
+    end do ! structInfo
+  end if
+  
+
+
+
   ! ****************************************************************************
   ! *** write basin data
   ! ****************************************************************************
@@ -259,7 +283,7 @@ subroutine writeData(ncid,outputTimestep,outputTimestepUpdate,maxLayers,nSteps, 
   USE var_lookup,only:iLookIndex                     ! index into index structure
   USE var_lookup,only:iLookStat                      ! index into stat structure
   USE globalData,only:outFreq                        ! output file information
-  USE globalData,only:failedHRUs
+  USE output_structure_module,only:failedHRUs
   USE get_ixName_module,only:get_varTypeName         ! to access type strings for error messages
   USE get_ixName_module,only:get_statName            ! to access type strings for error messages
 
@@ -656,5 +680,67 @@ subroutine writeTime(ncid,outputTimestep,iStep,meta,dat,err,message)
 
 end subroutine writeTime
 
+subroutine writeGRUStatistics(handle_ncid,      &
+      gru_var_ids,      &
+      gru_stats_vector, &
+      num_gru,          &
+      err) bind(C, name="WriteGRUStatistics")
+  USE data_types,only:var_i,netcdf_gru_actor_info,serializable_netcdf_gru_actor_info
+  USE var_lookup, only: maxvarFreq ! number of output frequencies
+  USE netcdf
+  implicit none
+  ! Dummy Variables
+  type(c_ptr), intent(in), value                      :: handle_ncid
+  type(netcdf_gru_actor_info),intent(in)              :: gru_var_ids
+  type(serializable_netcdf_gru_actor_info),intent(in) :: gru_stats_vector(num_gru)
+  integer(c_int), intent(in)                          :: num_gru
+  integer(c_int), intent(out)                         :: err
+
+  ! Local Variables
+  type(var_i), pointer                                :: ncid
+  real(c_double), dimension(num_gru)                  :: run_time_array
+  real(c_double), dimension(num_gru)                  :: init_time_array
+  real(c_double), dimension(num_gru)                  :: forcing_time_array
+  real(c_double), dimension(num_gru)                  :: run_physics_time_array
+  real(c_double), dimension(num_gru)                  :: write_output_time_array
+  real(c_double), dimension(num_gru)                  :: rel_tol_array
+  real(c_double), dimension(num_gru)                  :: abs_tol_array
+  integer(c_int), dimension(num_gru)                  :: successful_array
+  integer(c_int), dimension(num_gru)                  :: num_attempts_array
+
+  integer(c_int)                                      :: i
+  integer(c_int)                                      :: iFreq         
+  ! ---------------------------------------------------------------------------------------
+  ! * Convert From C++ to Fortran
+  call c_f_pointer(handle_ncid, ncid)
+
+  ! Assemble fortran arrays
+  do i=1,num_gru
+    run_time_array(i) = gru_stats_vector(i)%run_time
+    init_time_array(i) = gru_stats_vector(i)%init_duration
+    forcing_time_array(i) = gru_stats_vector(i)%forcing_duration
+    run_physics_time_array(i) = gru_stats_vector(i)%run_physics_duration
+    write_output_time_array(i) = gru_stats_vector(i)%write_output_duration
+    rel_tol_array(i) = gru_stats_vector(i)%rel_tol
+    abs_tol_array(i) = gru_stats_vector(i)%abs_tol
+    successful_array(i) = gru_stats_vector(i)%successful
+    num_attempts_array(i) = gru_stats_vector(i)%num_attempts
+  end do
+
+  ! Write to NetCDF
+  do iFreq=1, maxvarFreq
+    err = nf90_put_var(ncid%var(iFreq), gru_var_ids%run_time_var_id, run_time_array)
+    err = nf90_put_var(ncid%var(iFreq), gru_var_ids%init_duration_var_id, init_time_array)
+    err = nf90_put_var(ncid%var(iFreq), gru_var_ids%forcing_duration_var_id, forcing_time_array)
+    err = nf90_put_var(ncid%var(iFreq), gru_var_ids%run_physics_duration_var_id, run_physics_time_array)
+    err = nf90_put_var(ncid%var(iFreq), gru_var_ids%write_output_duration_var_id, write_output_time_array)
+    err = nf90_put_var(ncid%var(iFreq), gru_var_ids%state_var_id, successful_array)
+    err = nf90_put_var(ncid%var(iFreq), gru_var_ids%num_attempts_var_id, num_attempts_array)
+    err = nf90_put_var(ncid%var(iFreq), gru_var_ids%rel_tol_var_id, rel_tol_array)
+    err = nf90_put_var(ncid%var(iFreq), gru_var_ids%abs_tol_var_id, abs_tol_array)
+  end do
+
+end subroutine writeGRUStatistics
+
    
-end module writeOutputFromOutputStructure_module
+end module fileAccess_writeOutput

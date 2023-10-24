@@ -76,33 +76,8 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
                                                         self->state.num_steps); 
 
     return {
-        [=](write_param, int index_gru, int index_hru, std::vector<double> attr_struct, 
-            std::vector<int> type_struct, std::vector<std::vector<double>> mpar_struct,
-            std::vector<double> bpar_struct) {
-            int err = 0;
 
-            std::shared_ptr<hru_output_handles> params = std::make_shared<hru_output_handles>();
-
-            self->state.file_access_timing.updateStartPoint("write_duration");
-
-            // populate the newly created Fortran structures
-            set_var_d(attr_struct, params->handle_attr_struct);
-            set_var_i(type_struct, params->handle_type_struct);
-            set_var_dlength(mpar_struct, params->handle_mpar_struct);
-            set_var_d(bpar_struct, params->handle_bpar_struct);
-            // write the populated data to netCDF
-            writeParamToNetCDF(self->state.handle_ncid, &index_gru, &index_hru, 
-                               params->handle_attr_struct, 
-                               params->handle_type_struct, 
-                               params->handle_mpar_struct, 
-                               params->handle_bpar_struct, 
-                               &err);
-        
-
-            self->state.file_access_timing.updateEndPoint("write_duration");
-            
-        },
-
+        // Message from the HRU actor to get the forcing file that is loaded
         [=](access_forcing, int currentFile, caf::actor refToRespondTo) {
             if (currentFile <= self->state.numFiles) {
                 if(self->state.forcing_file_list[currentFile - 1].isFileLoaded()) { // C++ starts at 0 Fortran starts at 1
@@ -140,9 +115,9 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
             } else {
                 aout(self) << currentFile << " is larger than expected for a forcing file request from an HRU" << std::endl;
             }
-            
         },
-
+        
+        // Internal Message to load all forcing files, calling this message allows other messages to be processed
         [=](access_forcing_internal, int currentFile) {
             if (self->state.filesLoaded <= self->state.numFiles &&
                 currentFile <= self->state.numFiles) {
@@ -167,27 +142,8 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
                 aout(self) << "All Forcing Files Loaded \n";
             }
         },
-
-        [=] (get_attributes_params, int index_gru) {
-            // From Attributes File
-
-            std::vector<double> attr_struct_to_send = self->state.attr_structs_for_hrus[index_gru-1];
-            std::vector<int> type_struct_to_send = self->state.type_structs_for_hrus[index_gru-1];
-            std::vector<long int> id_struct_to_send = self->state.id_structs_for_hrus[index_gru-1];
-
-            // From Parameters File
-            std::vector<double> bpar_struct_to_send = self->state.bpar_structs_for_hrus[index_gru-1];
-            std::vector<double> dpar_struct_to_send = self->state.dpar_structs_for_hrus[index_gru-1];
-            std::vector<std::vector<double>> mpar_struct_to_send = self->state.mpar_structs_for_hrus[index_gru-1];
-
-            return std::make_tuple(attr_struct_to_send, 
-                                   type_struct_to_send, 
-                                   id_struct_to_send, 
-                                   bpar_struct_to_send, 
-                                   dpar_struct_to_send, 
-                                   mpar_struct_to_send);
-        },
-
+        
+        // Message from HRU Actor so it knows how many timesteps it can write before waiting
         [=] (get_num_output_steps) { return self->state.num_output_steps; },
 
         [=](write_output, int index_gru, int index_hru, caf::actor hru_actor) {
@@ -256,9 +212,10 @@ void writeOutput(stateful_actor<file_access_state>* self, Output_Partition* part
     int num_timesteps_to_write = partition->getNumStoredTimesteps();
     int start_gru = partition->getStartGRUIndex();
     int max_gru = partition->getMaxGRUIndex();
+    bool write_param_flag = partition->isWriteParams();
     
     writeOutput_fortran(self->state.handle_ncid, &num_timesteps_to_write,
-        &start_gru, &max_gru, &self->state.err);
+        &start_gru, &max_gru, &write_param_flag, &self->state.err);
     
     partition->updateTimeSteps();
 

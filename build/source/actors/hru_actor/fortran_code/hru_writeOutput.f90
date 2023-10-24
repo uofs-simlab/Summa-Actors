@@ -73,6 +73,7 @@ contains
 subroutine hru_writeOutput(&
                             indxHRU,                   &
                             indxGRU,                   &
+                            timestep,                  & ! model timestep
                             outputStep,                & ! index into the output Struc
                             handle_hru_data,           & ! local HRU data  
                             err) bind(C, name="hru_writeOutput") 
@@ -101,6 +102,7 @@ subroutine hru_writeOutput(&
   implicit none
   integer(c_int),intent(in)             :: indxHRU               ! index of hru in GRU
   integer(c_int),intent(in)             :: indxGRU               ! index of the GRU
+  integer(c_int),intent(in)             :: timestep              ! model timestep
   integer(c_int),intent(in)             :: outputStep            ! index into the output Struc
   type(c_ptr),intent(in),value          :: handle_hru_data       ! local HRU data
   integer(c_int),intent(out)            :: err
@@ -131,6 +133,22 @@ subroutine hru_writeOutput(&
                             hru_data%statCounter%var,                             &   ! statistics counter
                             err, cmessage)                                  ! error control
   if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+
+  ! Write Parameters to output structure if this is the first
+  if (timestep == 1)then
+    do iStruct=1,size(structInfo)
+      select case(trim(structInfo(iStruct)%structName))
+        case('attr'); call writeParm(indxGRU,indxHRU,gru_struc(indxGRU)%hruInfo(indxHRU)%hru_ix,hru_data%attrStruct,attr_meta,structInfo(iStruct)%structName,err,cmessage)
+        case('type'); call writeParm(indxGRU,indxHRU,gru_struc(indxGRU)%hruInfo(indxHRU)%hru_ix,hru_data%typeStruct,type_meta,structInfo(iStruct)%structName,err,cmessage)
+        case('mpar'); call writeParm(indxGRU,indxHRU,gru_struc(indxGRU)%hruInfo(indxHRU)%hru_ix,hru_data%mparStruct,mpar_meta,structInfo(iStruct)%structName,err,cmessage)
+      end select
+      if(err/=0)then; message=trim(message)//trim(cmessage)//'['//trim(structInfo(iStruct)%structName)//']'; return; endif
+    end do  ! (looping through structures)
+    call writeParm(indxGRU,indxHRU,indxGRU,hru_data%bparStruct,bpar_meta,'bpar',err,cmessage)
+    if(err/=0)then; message=trim(message)//trim(cmessage)//'[bpar]'; return; endif
+  endif
+
+
 
  ! If we do not do this looping we segfault - I am not sure why
   outputStructure(1)%finalizeStats%gru(indxGRU)%hru(indxHRU)%tim(outputStep)%dat(:) = hru_data%finalizeStats%dat(:)

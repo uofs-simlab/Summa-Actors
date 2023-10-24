@@ -16,7 +16,7 @@ extern "C" {
 
   // OutputStructure and Output functions
   void deallocateOutputStructure(int* err);
-  void writeOutput_fortran(void* handle_ncid, int* num_steps, int* start_gru, int* max_gru, int* err);
+  void writeOutput_fortran(void* handle_ncid, int* num_steps, int* start_gru, int* max_gru, bool* writeParamFlag, int* err);
 
   void updateFailed(int* indxHRU);
 

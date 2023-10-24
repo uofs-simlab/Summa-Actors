@@ -12,7 +12,7 @@ extern "C" {
     // Run the model for one timestep
     void RunPhysics(int* id, int* stepIndex, void* hru_data, double* dt, int* dt_int_factor, int* err);
     
-    void hru_writeOutput(int* index_hru, int* index_gru, int* output_step, void* hru_data, int* err);
+    void hru_writeOutput(int* index_hru, int* index_gru, int* timestep, int* output_step, void* hru_data, int* err);
     
     void setTimeZoneOffset(int* iFile, void* hru_data, int* err);
 

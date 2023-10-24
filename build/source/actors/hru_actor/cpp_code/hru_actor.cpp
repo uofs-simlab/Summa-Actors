@@ -45,38 +45,13 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
                   caf::infinite,
                   get_num_output_steps_v)
                   .await([=](int num_steps){
-                    self->state.num_steps_until_write = num_steps;
-                    Initialize_HRU(self);
-                    self->send(self, start_hru_v);
+                        self->state.num_steps_until_write = num_steps;
+                        Initialize_HRU(self);
+                        // Get Forcing information from the File Access Actor to start the simulation
+                        self->send(self->state.file_access_actor, access_forcing_v, self->state.iFile, self);
                   });
 
     return {
-
-        // First method called after initialization, starts the HRU and the HRU asks
-        // for parameters and forcing data from the file_access_actor
-        [=](start_hru) {
-            int err = 0;
-            std::vector<double> attr_struct_array = get_attr_struct(self->state.hru_data); 
-            std::vector<int> type_struct_array    = get_type_struct(self->state.hru_data);
-            std::vector<std::vector<double>> mpar_struct_array = get_mpar_struct_array(self->state.hru_data);
-            std::vector<double> bpar_struct_array = get_bpar_struct(self->state.hru_data);
-
-            // ask file_access_actor to write parameters
-            self->send(self->state.file_access_actor, 
-                       write_param_v, 
-                       self->state.indxGRU, 
-                       self->state.indxHRU, 
-                       attr_struct_array,
-                       type_struct_array, 
-                       mpar_struct_array, 
-                       bpar_struct_array);
-            
-            // ask file_access_actor for forcing data
-            self->send(self->state.file_access_actor,
-                       access_forcing_v, 
-                       self->state.iFile, 
-                       self);
-        },
         [=](num_steps_before_write, int num_steps) {
             self->state.num_steps_until_write = num_steps;
             self->state.output_structure_step_index = 1;
@@ -240,10 +215,11 @@ int Run_HRU(stateful_actor<hru_state>* self) {
     }
 
     hru_writeOutput(&self->state.indxHRU, 
-                &self->state.indxGRU, 
-                &self->state.output_structure_step_index,
-                self->state.hru_data,
-                &self->state.err);
+                    &self->state.indxGRU,
+                    &self->state.timestep,
+                    &self->state.output_structure_step_index,
+                    self->state.hru_data,
+                    &self->state.err);
     if (self->state.err != 0) {
         aout(self) << "Error: HRU_Actor - writeHRUToOutputStructure - HRU = " << self->state.indxHRU
                 << " - indxGRU = " << self->state.indxGRU << " - refGRU = " << self->state.refGRU

@@ -102,8 +102,9 @@ module output_structure_module
   end type summa_output_type  
   
 
-  type(summa_output_type),allocatable,save,public :: outputStructure(:) ! summa_OutputStructure(1)%struc%var(:)%dat(nTimeSteps) 
-  type(ilength),allocatable,save,public           :: outputTimeStep(:)                 ! timestep in output files
+  type(summa_output_type),allocatable,save,public     :: outputStructure(:)            ! summa_OutputStructure(1)%struc%var(:)%dat(nTimeSteps) 
+  type(ilength),allocatable,save,public               :: outputTimeStep(:)             ! timestep in output files
+  logical(lgt),allocatable,save,public                :: failedHRUs(:)                 ! list of true and false values to indicate if an HRU has failed
   
   contains
 

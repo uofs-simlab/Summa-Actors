@@ -27,8 +27,6 @@ struct netcdf_gru_actor_info {
 
 
 namespace caf {
-
-
 struct file_access_state {
     // Variables set on Spwan
     caf::actor parent; 

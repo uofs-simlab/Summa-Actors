@@ -16,12 +16,13 @@
  */
 class Output_Partition {
   private:
-    int start_local_gru_index; // The index of the first GRU in the partition
-    int end_local_gru_index; // The index of the last GRU in the partition
-    int num_local_grus; // The number of GRUs in the partition
-    int num_active_grus; // The number of GRUs that have not failed
+    int start_local_gru_index;    // The index of the first GRU in the partition
+    int end_local_gru_index;      // The index of the last GRU in the partition
+    int num_local_grus;           // The number of GRUs in the partition
+    int num_active_grus;          // The number of GRUs that have not failed
     int num_timesteps_simulation; // The number of timesteps in the simulation
-    int num_stored_timesteps; // The number of timesteps held within the partition
+    int num_stored_timesteps;     // The number of timesteps held within the partition
+    bool write_params = true;     // Flag to write the parameters to the output file (only performed once)
 
     std::vector<caf::actor> ready_to_write_list;
     std::vector<int> failed_gru_index_list; // The list of GRUs that have failed
@@ -58,12 +59,13 @@ class Output_Partition {
 
     std::vector<int> getFailedGRUIndexList();
 
-
     int getNumActiveGRUs();
 
     int getNumLocalGRUs();
 
     int getRemainingTimesteps();
+
+    bool isWriteParams();
 
 };
 

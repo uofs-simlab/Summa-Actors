@@ -89,6 +89,14 @@ std::vector<int> Output_Partition::getFailedGRUIndexList() {
     return this->failed_gru_index_list;
 }
 
+bool Output_Partition::isWriteParams() {
+    if (this->write_params) {
+        this->write_params = false;
+        return true;
+    }
+    return this->write_params;
+}
+
 
 //###################################################################
 // Output_Container

@@ -9,24 +9,25 @@ USE nrtype
 
 USE data_types,only:file_info
 USE data_types,only:file_info_array
+USE data_types,only:var_forc        ! global data structure for forcing data
+USE data_types,only:dlength         ! global data structure for forcing data
+USE data_types,only:ilength         ! global data structure for forcing data
 
 USE globalData,only:gru_struc
-USE globalData,only:forcingDataStruct
-USE globalData,only:vecTime
 USE globalData,only:time_meta,forc_meta       ! metadata structures
 USE globalData,only:integerMissing            ! integer missing value
-
-
 USE var_lookup,only:iLookTIME,iLookFORCE      ! named variables to define structure elements
-
-
 USE summaFileManager,only:FORCING_PATH        ! path of the forcing data file
 USE netcdf_util_module,only:nc_file_close  ! close netcdf file
+
 
 
 implicit none
 private
 public::read_forcingFile
+
+type(var_forc),allocatable,save,public         :: forcingDataStruct(:)              ! forcingDataStruct(:)%var(:)%dataFromFile(:,:)
+type(dlength),allocatable,save,public          :: vecTime(:)
 
 contains
 subroutine read_forcingFile(handle_forcFileInfo, iFile, stepsInFile, startGRU, numGRU, err) bind(C,name="read_forcingFile")

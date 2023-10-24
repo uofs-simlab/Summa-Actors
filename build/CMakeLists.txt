@@ -219,8 +219,7 @@ set(FILE_ACCESS_INTERFACE
     ${FILE_ACCESS_DIR}/fortran_code/cppwrap_fileAccess.f90
     ${FILE_ACCESS_DIR}/fortran_code/output_structure.f90
     ${FILE_ACCESS_DIR}/fortran_code/read_force.f90
-    ${FILE_ACCESS_DIR}/fortran_code/write_to_netcdf.f90
-    ${FILE_ACCESS_DIR}/fortran_code/writeOutputFromOutputStructure.f90)
+    ${FILE_ACCESS_DIR}/fortran_code/fileAccess_writeOutput.f90)
 set(JOB_INTERFACE
     ${JOB_ACTOR_DIR}/job_actor.f90)
 set(HRU_INTERFACE
