@@ -14,7 +14,7 @@ SUMMA-Actors is set up with the following sub-directories, we will consider the 
  - build
    - includes
    - source
-   - summa (https://github.com/CH-Earth/summa, develop branch or summa-sundials)
+   - summa (https://github.com/KyleKlenk/summa/tree/summa-actors, summa-actors branch)
    - CMakeLists.txt
  - utils
  - README.md
@@ -24,7 +24,19 @@ First clone Summa-Actors to your workstation. Then cd into `build/` and clone `s
 ## Compiling SUMMA-Actors
 
 ### Dependencies
-SUMMA-Actors has only one additional dependency, the [C++ Actor Framework](https://github.com/actor-framework/actor-framework). Instructions for installing the C++ Actor Framework can be found [in their readme](https://github.com/actor-framework/actor-framework#build-caf-from-source).
+SUMMA-Actors has only one additional dependency, the [C++ Actor Framework](https://github.com/actor-framework/actor-framework), specifically the [0.18.6 
+release](https://github.com/actor-framework/actor-framework/archive/refs/tags/0.18.6.tar.gz).
+
+The following steps can be used to install the C++ Actor Framework on a Linux system:
+```bash
+wget https://github.com/actor-framework/actor-framework/archive/refs/tags/0.18.6.tar.gz
+tar -xzf 0.18.6.tar.gz
+cd actor-framework-0.18.6/
+./configure --prefix=/path/to/install
+cd build
+make # [-j]
+make install # [as root if necessary]
+```
 
 Additional dependencies required by both SUMMA and SUMMA actors are:
  * g++
@@ -37,16 +49,17 @@ Additional dependencies required by both SUMMA and SUMMA actors are:
  ```
  git clone https://git.cs.usask.ca/numerical_simulations_lab/actors/Summa-Actors.git
  cd Summa-Actors/build
- git clone https://github.com/CH-Earth/summa.git
- mkdir build_dir/
+ git clone https://github.com/KyleKlenk/summa.git
+ cd summa/
+ git checkout summa-actors
+ cd ../
  cd build_dir/
- cmake ..
- make -j
+ cmake -B cmake_build -S . -DCMAKE_BUILD_TYPE=Actors_Cluster
+ cmake --build cmake_build --target all -j
  ```
 
 ## Running SUMMA-Actors
-SUMMA-Actors can be run in two modes, distributed and non-distributed. The distributed mode is meant to run on a cluster, or it can be used to create ad-hoc clusters. The command line arguments are kept
-as close to the original SUMMA as possible. However, there are options not yet available in SUMMA-Actors that are in the original SUMMA. Here is a full list of the Available options and unavailable options:
+SUMMA-Actors can be run in two modes, distributed and non-distributed. The distributed mode used to create ad-hoc clusters. The command line arguments are kept as close to the original SUMMA as possible. However, there are options not yet available in SUMMA-Actors that are in the original SUMMA. Here is a full list of the available and unavailable options:
 ```   
 Usage: summa_actors -m master_file [-g startGRU countGRU] [-c config_file] [-b backup_server] [-s server_mode]
   Available options:
@@ -89,37 +102,37 @@ NOTE: Each system will need a copy of the forcing data or input data, or the dat
 
 
 ### Config File
+The config file is a JSON file that is used to configure SUMMA-Actors. It is highly recommended to use a config file as it allows the user to fine tune how SUMMA-Actors will perform. Using `./summa_actors --gen-config` will generate a configuration file that can then be filled in. Below is a list of the available options and their descriptions.
 
-{
-    "Distributed_Settings": {
-        "distributed_mode": false,
-        "servers_list": [{"hostname": "cnic-giws-cpu-19001-04"}, {"hostname": "cnic-giws-utl-19002"}, {"hostname": "cnic-giws-utl-19003"}],
-        "port": 4444,
-        "total_hru_count": 800,
-        "num_hru_per_batch": 50
-    },
-  
-    "Summa_Actor": {
-        "max_gru_per_job": 4000
-    },
-  
-    "File_Access_Actor": {
-      "num_partitions_in_output_buffer": 8,
-      "num_timesteps_in_output_buffer": 500
-    },
-    
-    "Job_Actor": {
-        "file_manager_path": "/scratch/gwf/gwf_cmt/kck540/Summa-Actors/settings/file_manager_actors.txt",
-        "max_run_attempts": 3
-    },
-  
-    "HRU_Actor": {
-        "print_output": true,
-        "output_frequency": 100000,
-        "dt_init_factor": 1
-    }
-}
+#### Distributed_Settings
+The distributed settings are used to configure the distributed mode of SUMMA-Actors. The following options are available:
+  - distributed_mode: (true/false) Enables distributed mode
+  - servers_list: (list of strings) List of hostnames for backup servers
+  - port: (int) Port to use for communication
+  - total_hru_count: (int) Total number of HRUs in the entire domain
+  - num_hru_per_batch: (int) Number of HRUs to assemble into a batches
 
+#### Summa_Actor
+The Summa_Actor settings are used to restrict how many HRU actor can run at once. The following options are available:
+  - max_gru_per_job: (int) Maximum number of HRUs that can be run at once
+
+#### Job_Actor
+The Job_Actor settings can specify the file manager path so it does not need to be specified on the command line, and the maximum number of times to attempt an HRU before giving up. The following options are available:
+  - file_manager_path: (string) Path to the file manager file
+  - max_run_attempts: (int) Maximum number of times to attempt an HRU before giving up
+
+#### File_Access_Actor
+The File_Access_Actor settings are used to configure the file access actor. The following options are available:
+  - num_partitions_in_output_buffer: (int) Number of partitions in the output buffer
+  - num_timesteps_in_output_buffer: (int) Number of timesteps in the output buffer
+
+#### HRU_Actor
+The HRU_Actor settings are used to configure the HRU actor. The following options are available:
+  - print_output: (true/false) Print output to the screen
+  - output_frequency: (int) Frequency to print output to the screen
+  - dt_init_factor: (int) Factor to multiply dt_init by
+  - rel_tol: (float) Relative tolerance for the HRU actor (Requires Sundials)
+  - abs_tol: (float) Absolute tolerance for the HRU actor (Requires Sundials)
 
 ## Credits
 The initial implementation of SUMMA is credited to the initial publications below. These 
