@@ -19,7 +19,7 @@ export LD_LIBRARY_PATH=/globalhome/kck540/HPC/Libraries/sundials/v6.6/instdir/li
 
 
 gru_max=12000
-gru_count=10
+gru_count=25
 max_job=3
 summa_exe=/globalhome/kck540/HPC/Summa-Projects/Summa-Actors/bin/summa_actors
 # config_summa=/globalhome/kck540/HPC/Summa-Projects/Summa-Actors/bin/config.json
@@ -36,4 +36,4 @@ check=$(( $gru_start + $gru_count ))
 #     gru_count=$(( gru_max-gru_start+1 ))
 # fi
 
-$summa_exe -g $gru_start $gru_count -m $file_manager --caf.scheduler.max-threads=32
+$summa_exe -g $gru_start $gru_count -c $config_summa --caf.scheduler.max-threads=32

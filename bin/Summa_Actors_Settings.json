@@ -12,19 +12,18 @@
     },
   
     "File_Access_Actor": {
-      "num_partitions_in_output_buffer": 32,
+      "num_partitions_in_output_buffer": 16,
       "num_timesteps_in_output_buffer": 1000
     },
     
     "Job_Actor": {
-        "file_manager_path": "/project/gwf/gwf_cmt/kck540/domain_NorthAmerica/Summa-Projects/input_data/summa_actors_input/fileManager.txt"
+        "file_manager_path": "/project/gwf/gwf_cmt/kck540/domain_NorthAmerica/Summa-Projects/input_data/summa_actors_input/fileManager.txt",
+        "max_run_attempts": 3
     },
   
     "HRU_Actor": {
         "print_output": true,
-        "output_frequency": 100,
-        "dt_init_factor": 1,
-        "rel_tol": 1e-3,
-        "abs_tol": 1e-3
+        "output_frequency": 10000,
+        "dt_init_factor": 1
     }
 }
