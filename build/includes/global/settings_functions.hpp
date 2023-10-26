@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <thread>
 #include <optional>
 #include "json.hpp"
 #include <bits/stdc++.h>
@@ -96,13 +97,29 @@ bool inspect(Inspector& inspector, Job_Actor_Settings& job_actor_settings) {
 Job_Actor_Settings readJobActorSettings(std::string json_settings_file);
 
 // ####################################################################
-//                          SUMMA Actor Settings
+//                          HRU Actor Settings
 // ####################################################################
 
 struct HRU_Actor_Settings {
     bool print_output;
     int output_frequency;
     int dt_init_factor; // factor to multiply the initial timestep by
+    double rel_tol;
+    double abs_tol;
+    double relTolTempCas;
+    double absTolTempCas;
+    double relTolTempVeg;
+    double absTolTempVeg;
+    double relTolWatVeg;
+    double absTolWatVeg;
+    double relTolTempSoilSnow;
+    double absTolTempSoilSnow;
+    double relTolWatSnow;
+    double absTolWatSnow;
+    double relTolMatric;
+    double absTolMatric;
+    double relTolAquifr;
+    double absTolAquifr;
 };
 
 template<class Inspector>
@@ -110,7 +127,9 @@ bool inspect(Inspector& inspector, HRU_Actor_Settings& hru_actor_settings) {
     return inspector.object(hru_actor_settings).fields(
                 inspector.field("print_output",     hru_actor_settings.print_output),
                 inspector.field("output_frequency", hru_actor_settings.output_frequency),
-                inspector.field("dt_init_factor",   hru_actor_settings.dt_init_factor));
+                inspector.field("dt_init_factor",   hru_actor_settings.dt_init_factor),
+                inspector.field("rel_tol",          hru_actor_settings.rel_tol),
+                inspector.field("abs_tol",          hru_actor_settings.abs_tol));
 }
 
 HRU_Actor_Settings readHRUActorSettings(std::string json_settings_file);
@@ -121,12 +140,16 @@ HRU_Actor_Settings readHRUActorSettings(std::string json_settings_file);
 
 int checkFileExists(std::string file_path);
 
-// Read in the settings from JSON
+/**
+ * @brief Get the Settings from json
+ * Template function that can be used with retrieving any singular type from the settings file
+ */
 template <typename T>
 std::optional<T> getSettings(std::string json_settings_file, std::string key_1, std::string key_2, 
     T return_value) {
     json settings;
     std::ifstream settings_file(json_settings_file);
+    if (!settings_file.good()) return {};
     settings_file >> settings;
     settings_file.close();
     
@@ -160,3 +183,6 @@ std::optional<std::vector<std::string>> getSettingsArray(std::string json_settin
 void check_settings_from_json(Distributed_Settings &distributed_settings, 
     Summa_Actor_Settings &summa_actor_settings, File_Access_Actor_Settings &file_access_actor_settings, 
     Job_Actor_Settings &job_actor_settings, HRU_Actor_Settings &hru_actor_settings);
+
+// Output a default configuration file
+void generate_config_file();

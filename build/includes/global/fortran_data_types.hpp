@@ -14,6 +14,8 @@ extern "C" {
     void  set_data_var_i(void* handle, const int* array, int size);
     void  get_size_data_var_i(void* handle, int* size);
     void  get_data_var_i(void* handle, int* array);
+    void  get_size_data_typeStruct(void* handle, int* size);
+    void  get_data_typeStruct(void* handle, int* array);
 
     // var_i8 
     void* new_handle_var_i8();
@@ -28,6 +30,10 @@ extern "C" {
     void  set_data_var_d(void* handle, const double* array, int size);
     void  get_size_data_var_d(void* handle, int* size);
     void  get_data_var_d(void* handle, double* array);
+    void  get_data_attrStruct(void* handle, double* array);
+    void  get_size_data_attrStruct(void* handle, int* size);
+    void  get_data_bparStruct(void* handle, double* array);
+    void  get_size_data_bparStruct(void* handle, int* size);
 
     // ilength
     void* new_handle_ilength();
@@ -49,6 +55,7 @@ extern "C" {
     void  set_data_dlength(void* handle, const double* array, int size);
     void  get_size_data_dlength(void* handle, int* size);
     void  get_data_dlength(void* handle, double* array);
+
 
     // var_flagVec
     void* new_handle_var_flagVec();
@@ -81,6 +88,9 @@ extern "C" {
     void  get_size_var_dlength(void* handle, int* num_var);
     void  get_size_data_var_dlength(void* handle, int* num_var, int* num_dat);
     void  get_data_var_dlength(void* handle, double* array);
+    void  get_size_var_mparStruct(void* handle, int* num_var);
+    void  get_size_data_mparStruct(void* handle, int* num_var, int* num_dat);
+    void  get_data_mparStruct(void* handle, double* array);
 
     // var_dlength_array
     void* new_handle_dlength_array();
@@ -99,5 +109,9 @@ extern "C" {
     // zLookup
     void* new_handle_z_lookup();
     void* delete_handle_z_lookup(void* handle);
+
+    // hru_type
+    void* new_handle_hru_type();
+    void delete_handle_hru_type(void* handle);
 
 }

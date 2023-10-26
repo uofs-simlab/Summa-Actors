@@ -3,6 +3,8 @@ import csv
 from sys import argv
 '''
 This is a script that gets the resource usage of jobs and output the stats as a csv.
+
+Usage: python resourceUsage.py <jobId> <numJobs> <gru_per_job>
 '''
 
 '''
@@ -42,7 +44,7 @@ def seffCommand(jobId, numJobs, gru_per_job):
         cmdString = "seff {}_{}".format(jobId, i)
         cmd = subprocess.Popen(cmdString, shell=True, stdout=subprocess.PIPE)
         for line in cmd.stdout:
-            if b'Cores:' in line:
+            if b'Cores' in line:
                 cores = line.decode().split(" ")[-1]
                 cores = cores.strip()
             

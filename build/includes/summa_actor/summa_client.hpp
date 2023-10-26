@@ -3,7 +3,7 @@
 #include "caf/all.hpp"
 #include "caf/io/all.hpp"
 #include "settings_functions.hpp"
-#include "batch/batch.hpp"
+#include "batch.hpp"
 #include "summa_actor.hpp"
 #include "message_atoms.hpp"
 #include <string>

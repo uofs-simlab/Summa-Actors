@@ -3,7 +3,7 @@ from os.path import isfile, join
 from pathlib import Path
 import xarray as xr 
 
-numHRU = 125
+numHRU = 1
 
 time = 'time'
 scalarSWE = 'scalarSWE'

@@ -132,6 +132,16 @@ std::vector<int> get_var_i(void* handle) {
     return array;
 }
 
+std::vector<int> get_type_struct(void* handle) {
+    int size;
+    get_size_data_typeStruct(handle, &size);
+    if (size == 0) return std::vector<int>();
+
+    std::vector<int> array(size);
+    get_data_typeStruct(handle, &array[0]);
+    return array;
+}
+
 
 std::vector<double> get_var_d(void* handle) {
     int size;
@@ -140,6 +150,26 @@ std::vector<double> get_var_d(void* handle) {
 
     std::vector<double> array(size);
     get_data_var_d(handle, &array[0]);
+    return array;
+}
+
+std::vector<double> get_attr_struct(void* handle) {
+    int size;
+    get_size_data_attrStruct(handle, &size);
+    if (size == 0) return std::vector<double>();
+
+    std::vector<double> array(size);
+    get_data_attrStruct(handle, &array[0]);
+    return array;
+}
+
+std::vector<double> get_bpar_struct(void* handle) {
+    int size;
+    get_size_data_bparStruct(handle, &size);
+    if (size == 0) return std::vector<double>();
+
+    std::vector<double> array(size);
+    get_data_bparStruct(handle, &array[0]);
     return array;
 }
 
@@ -182,6 +212,8 @@ std::vector<double> get_dlength(void* handle) {
     get_data_dlength(handle, &array[0]);
     return array;
 }
+
+
 
 std::vector<std::vector<int> > get_var_flagVec(void* handle) {
     int num_row;
@@ -287,6 +319,36 @@ std::vector<std::vector<double> > get_var_dlength(void* handle) {
     std::vector<double> array(num_elem);
 
     get_data_var_dlength(handle, &array[0]);
+
+    std::vector<std::vector<double> > mat(num_row);
+    for(size_t i=0; i<num_row; i++)
+        mat[i] = std::vector<double>(num_col[i]);
+
+    num_elem = 0;
+    for(size_t i=0; i<num_row; i++){
+        for(size_t j=0; j<num_col[i]; j++)
+            mat[i][j] = array[num_elem + j];
+        num_elem += num_col[i];    		
+    }
+        
+    return mat;
+}
+
+std::vector<std::vector<double>> get_mpar_struct_array(void* handle) {
+    int num_row;
+    get_size_var_mparStruct(handle, &num_row);
+    if (num_row == 0) return std::vector<std::vector<double> >();
+
+    std::vector<int> num_col(num_row);
+    get_size_data_mparStruct(handle, &num_row, &num_col[0]);
+
+    int num_elem = 0;
+    for(int i=0; i<num_row; i++)
+        num_elem += num_col[i];   	
+
+    std::vector<double> array(num_elem);
+
+    get_data_mparStruct(handle, &array[0]);
 
     std::vector<std::vector<double> > mat(num_row);
     for(size_t i=0; i<num_row; i++)

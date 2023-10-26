@@ -17,6 +17,9 @@ struct serializable_netcdf_gru_actor_info {
 
     int successful; // 0 = false, 1 = true
     int num_attempts;
+
+    double rel_tol;
+    double abs_tol;
 };
 
 template<class Inspector>
@@ -27,7 +30,9 @@ bool inspect(Inspector& f, serializable_netcdf_gru_actor_info& x) {
                               f.field("run_physics_duration", x.run_physics_duration),
                               f.field("write_output_duration", x.write_output_duration),
                               f.field("successful", x.successful),
-                              f.field("num_attempts", x.num_attempts));
+                              f.field("num_attempts", x.num_attempts),
+                              f.field("rel_tol", x.rel_tol),
+                              f.field("abs_tol", x.abs_tol));
 }
 
 
