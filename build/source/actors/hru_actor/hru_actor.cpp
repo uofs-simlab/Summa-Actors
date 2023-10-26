@@ -1,12 +1,5 @@
 #include "hru_actor.hpp"
 
-// Compiler set flag for sundials
-#ifdef SUNDIALS_ACTIVE
-    bool sundials_active = true;
-#else
-    bool sundials_active = false;
-#endif
-
 namespace caf {
 
 behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
@@ -67,13 +60,12 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
                 err = Run_HRU(self); // Simulate a Timestep
                 if (err != 0) {
                 
-                    if (sundials_active) {
+#ifdef SUNDIALS_ACTIVE                        
                         get_sundials_tolerances(self->state.hru_data, &self->state.rtol, &self->state.atol);
                         self->send(self->state.parent, err_atom_v, self, self->state.rtol, self->state.atol);
-                    } else {
+#else                        
                         self->send(self->state.parent, hru_error::run_physics_unhandleable, self);
-                    }
-
+#endif
 
                     self->quit();
                     return;
@@ -147,9 +139,10 @@ void Initialize_HRU(stateful_actor<hru_state>* self) {
         self->quit();
         return;
     }
-
+#ifdef SUNDIALS_ACTIVE
     if (self->state.hru_actor_settings.rel_tol > 0 && self->state.hru_actor_settings.abs_tol > 0)
-        set_sundials_tolerances(self->state.hru_data, &self->state.hru_actor_settings.rel_tol, &self->state.hru_actor_settings.abs_tol);            
+        set_sundials_tolerances(self->state.hru_data, &self->state.hru_actor_settings.rel_tol, &self->state.hru_actor_settings.abs_tol);
+#endif           
 }
 
 int Run_HRU(stateful_actor<hru_state>* self) {

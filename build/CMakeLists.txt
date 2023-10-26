@@ -85,13 +85,6 @@ set(HOOKUP_DIR ${F_MASTER}/build/source/hookup)
 set(NETCDF_DIR ${F_MASTER}/build/source/netcdf)
 set(NOAHMP_DIR ${F_MASTER}/build/source/noah-mp)
 
-# Define directories for source files that might be replaced by actors (identical if not using actors)
-set(SUB_DRIVER_DIR ${PARENT_DIR}/build/source/driver)
-set(SUB_DSHARE_DIR ${PARENT_DIR}/build/source/dshare)
-set(SUB_ENGINE_DIR ${PARENT_DIR}/build/source/engine)
-set(SUB_HOOKUP_DIR ${PARENT_DIR}/build/source/hookup)
-set(SUB_NETCDF_DIR ${PARENT_DIR}/build/source/netcdf)
-
 # Define Actors specific directories
 set(ACTORS_DIR ${PARENT_DIR}/build/source/actors)
 set(FILE_ACCESS_DIR ${ACTORS_DIR}/file_access_actor)
@@ -144,7 +137,7 @@ set(UTILMS
 
 # NetCDF routines
 set(NETCDF
-    ${FILE_ACCESS_DIR}/def_output.f90
+    ${NETCDF_DIR}/def_output.f90
     ${NETCDF_DIR}/netcdf_util.f90
     ${NETCDF_DIR}/read_icond.f90)
 

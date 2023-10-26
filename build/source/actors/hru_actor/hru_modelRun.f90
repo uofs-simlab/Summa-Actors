@@ -69,8 +69,10 @@ USE mDecisions_module,only:&               ! look-up values for LAI decisions
 implicit none
 private
 public::runPhysics
+#ifdef SUNDIALS_ACTIVE
 public::get_sundials_tolerances
 public::set_sundials_tolerances
+#endif
 contains
 
 ! Runs the model physics for an HRU
@@ -349,6 +351,7 @@ end subroutine runPhysics
 ! *******************************************************************************************
 ! *** get_sundials_tolerances
 ! *******************************************************************************************
+#ifdef SUNDIALS_ACTIVE
 subroutine get_sundials_tolerances(handle_hru_data, rtol, atol) bind(C, name='get_sundials_tolerances')
   USE var_lookup,only: iLookPARAM
   implicit none
@@ -407,6 +410,6 @@ subroutine set_sundials_tolerances(handle_hru_data, rtol, atol) bind(C, name='se
   hru_data%mparStruct%var(iLookPARAM%absTolMatric)%dat(1) = atol 
   hru_data%mparStruct%var(iLookPARAM%absTolAquifr)%dat(1) = atol 
 end subroutine set_sundials_tolerances
-
+#endif
 
 end module summa_modelRun
