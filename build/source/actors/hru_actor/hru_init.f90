@@ -61,7 +61,6 @@ private
 public::initHRU
 public::setupHRUParam
 public::summa_readRestart
-public::setIDATolerances
 contains
 ! **************************************************************************************************
 ! public subroutine initHRU: ! used to declare and allocate summa data structures and initialize model state to known values

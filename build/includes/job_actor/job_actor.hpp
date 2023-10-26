@@ -4,13 +4,30 @@
 #include "GRU.hpp"
 #include "timing_info.hpp"
 #include "settings_functions.hpp"
+#include "global.hpp"
+#include "json.hpp"
+#include "hru_actor.hpp"
+#include "message_atoms.hpp"
+#include "file_access_actor.hpp"
 #include <unistd.h>
 #include <limits.h>
-#include "global.hpp"
 
+
+/*********************************************
+ * Job Actor Fortran Functions
+ *********************************************/
+extern "C" {
+    void job_init_fortran(char const* file_manager, int* start_gru_index, int* num_gru, int* num_hru, int* err);
+
+    void deallocateJobActor(int* err);
+}
+
+
+/*********************************************
+ * Job Actor state variables
+ *********************************************/
 namespace caf {
 using chrono_time = std::chrono::time_point<std::chrono::system_clock>;
-
 
 // Holds information about the GRUs
 struct GRU_Container {
@@ -28,21 +45,17 @@ struct job_state {
     caf::actor parent;            // actor reference to the top-level SummaActor
 
     // Job Parameters
-    int start_gru;                 // Starting GRU for this job
-    int num_gru;                   // Number of GRUs for this job
+    int start_gru;                // Starting GRU for this job
+    int num_gru;                  // Number of GRUs for this job
     int num_hru;
-    int max_run_attempts = 1;         // Max number of attemtps to solve a GRU
-
-
+    int max_run_attempts = 1;     // Max number of attempts to solve a GRU
 
     GRU_Container gru_container;
 
-
-
     // Variables for GRU monitoring
-    int dt_init_start_factor = 1;   // Initial Factor for dt_init (coupled_em)
-    int num_gru_done = 0;             // The number of GRUs that have completed
-    int num_gru_failed = 0;           // Number of GRUs that have failed
+    int dt_init_start_factor = 1; // Initial Factor for dt_init (coupled_em)
+    int num_gru_done = 0;         // The number of GRUs that have completed
+    int num_gru_failed = 0;       // Number of GRUs that have failed
 
     // Timing Variables
     TimingInfo job_timing;
@@ -65,6 +78,10 @@ behavior job_actor(stateful_actor<job_state>* self,
                    HRU_Actor_Settings hru_actor_settings, 
                    actor parent);
 
+
+/*********************************************
+ * Functions for the Job Actor
+ *********************************************/
 
 /** Get the information for the GRUs that will be written to the netcdf file */
 std::vector<serializable_netcdf_gru_actor_info> getGruNetcdfInfo(int max_run_attempts, 

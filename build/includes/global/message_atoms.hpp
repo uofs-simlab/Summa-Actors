@@ -47,6 +47,7 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     // Reciever: 
     // Summary:
     CAF_ADD_ATOM(summa, err)
+    CAF_ADD_ATOM(summa, err_atom)
     // Sender:
     // Reciever: 
     // Summary:

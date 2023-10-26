@@ -69,6 +69,8 @@ USE mDecisions_module,only:&               ! look-up values for LAI decisions
 implicit none
 private
 public::runPhysics
+public::get_sundials_tolerances
+public::set_sundials_tolerances
 contains
 
 ! Runs the model physics for an HRU
@@ -343,5 +345,68 @@ subroutine runPhysics(&
   !************************************* End of run_oneGRU *****************************************
 
 end subroutine runPhysics
+
+! *******************************************************************************************
+! *** get_sundials_tolerances
+! *******************************************************************************************
+subroutine get_sundials_tolerances(handle_hru_data, rtol, atol) bind(C, name='get_sundials_tolerances')
+  USE var_lookup,only: iLookPARAM
+  implicit none
+
+  ! dummy variables
+  type(c_ptr),    intent(in), value         :: handle_hru_data        ! c_ptr to -- hru data
+  real(c_double), intent(out)               :: rtol                   ! relative tolerance
+  real(c_double), intent(out)               :: atol                   ! absolute tolerance
+  ! local variables
+  type(hru_type),pointer                    :: hru_data               ! hru data
+  call c_f_pointer(handle_hru_data, hru_data)
+
+  ! get tolerances
+  rtol = hru_data%mparStruct%var(iLookPARAM%relTolWatSnow)%dat(1) 
+  atol = hru_data%mparStruct%var(iLookPARAM%absTolWatSnow)%dat(1)
+end subroutine get_sundials_tolerances
+
+! *******************************************************************************************
+! *** get_sundials_tolerances
+! *******************************************************************************************
+subroutine set_sundials_tolerances(handle_hru_data, rtol, atol) bind(C, name='set_sundials_tolerances')
+  USE var_lookup,only: iLookPARAM
+  implicit none
+
+  ! dummy variables
+  type(c_ptr),    intent(in), value         :: handle_hru_data        ! c_ptr to -- hru data
+  real(c_double), intent(in)               :: rtol                   ! relative tolerance
+  real(c_double), intent(in)               :: atol                   ! absolute tolerance
+  ! local variables
+  type(hru_type),pointer                    :: hru_data               ! hru data
+  call c_f_pointer(handle_hru_data, hru_data)
+
+
+  ! Set rtols
+  hru_data%mparStruct%var(iLookPARAM%relConvTol_liquid)%dat(1) = rtol  
+  hru_data%mparStruct%var(iLookPARAM%relConvTol_matric)%dat(1) = rtol  
+  hru_data%mparStruct%var(iLookPARAM%relConvTol_energy)%dat(1) = rtol  
+  hru_data%mparStruct%var(iLookPARAM%relConvTol_aquifr)%dat(1) = rtol  
+  hru_data%mparStruct%var(iLookPARAM%relTolTempCas)%dat(1) = rtol  
+  hru_data%mparStruct%var(iLookPARAM%relTolTempVeg)%dat(1) = rtol  
+  hru_data%mparStruct%var(iLookPARAM%relTolWatVeg)%dat(1) = rtol  
+  hru_data%mparStruct%var(iLookPARAM%relTolTempSoilSnow)%dat(1) = rtol  
+  hru_data%mparStruct%var(iLookPARAM%relTolWatSnow)%dat(1) = rtol  
+  hru_data%mparStruct%var(iLookPARAM%relTolMatric)%dat(1) = rtol  
+  hru_data%mparStruct%var(iLookPARAM%relTolAquifr)%dat(1) = rtol  
+  ! Set atols
+  hru_data%mparStruct%var(iLookPARAM%absConvTol_liquid)%dat(1) = atol 
+  hru_data%mparStruct%var(iLookPARAM%absConvTol_matric)%dat(1) = atol 
+  hru_data%mparStruct%var(iLookPARAM%absConvTol_energy)%dat(1) = atol 
+  hru_data%mparStruct%var(iLookPARAM%absConvTol_aquifr)%dat(1) = atol 
+  hru_data%mparStruct%var(iLookPARAM%absTolTempCas)%dat(1) = atol 
+  hru_data%mparStruct%var(iLookPARAM%absTolTempVeg)%dat(1) = atol 
+  hru_data%mparStruct%var(iLookPARAM%absTolWatVeg)%dat(1) = atol 
+  hru_data%mparStruct%var(iLookPARAM%absTolTempSoilSnow)%dat(1) = atol 
+  hru_data%mparStruct%var(iLookPARAM%absTolWatSnow)%dat(1) = atol 
+  hru_data%mparStruct%var(iLookPARAM%absTolMatric)%dat(1) = atol 
+  hru_data%mparStruct%var(iLookPARAM%absTolAquifr)%dat(1) = atol 
+end subroutine set_sundials_tolerances
+
 
 end module summa_modelRun

@@ -1,11 +1,4 @@
 #include "job_actor.hpp"
-#include "file_access_actor.hpp"
-#include "json.hpp"
-#include <chrono>
-#include <thread>
-#include "message_atoms.hpp"
-#include "job_actor_subroutine_wrappers.hpp"
-#include "hru_actor.hpp"
 
 using json = nlohmann::json;
 using chrono_time = std::chrono::time_point<std::chrono::system_clock>;
@@ -164,11 +157,19 @@ behavior job_actor(stateful_actor<job_state>* self,
 
           self->send(self->state.file_access_actor, restart_failures_v); // notify file_access_actor
 
+          // Set Sundials tolerance or decrease timestep length
+          if (self->state.hru_actor_settings.rel_tol > 0 && self->state.hru_actor_settings.abs_tol > 0) {
+            self->state.hru_actor_settings.rel_tol /= 10;
+            self->state.hru_actor_settings.abs_tol /= 10;
+          } else {
+            self->state.hru_actor_settings.dt_init_factor *= 2;
+          }
+
+
           for(auto GRU : self->state.gru_container.gru_list) {
             if(GRU->isFailed()) {
               GRU->setRunning();
               GRU->decrementAttemptsLeft();
-              self->state.hru_actor_settings.dt_init_factor *= 2;
               auto global_gru_index = GRU->getGlobalGRUIndex();
               auto local_gru_index = GRU->getLocalGRUIndex();
               auto gru_actor = self->spawn(hru_actor, 
@@ -222,6 +223,13 @@ behavior job_actor(stateful_actor<job_state>* self,
 
             });
 
+        },
+
+        // Handle Sundials Error
+        [=](err_atom, caf::actor src, double rtol, double atol) {
+          self->state.hru_actor_settings.rel_tol = rtol;
+          self->state.hru_actor_settings.abs_tol = atol;
+          handleGRUError(self, src);
         },
 
         [=](const error& err, caf::actor src) {
@@ -290,6 +298,7 @@ void handleGRUError(stateful_actor<job_state>* self, caf::actor src) {
   if (it != self->state.gru_container.gru_list.end()) {
     (*it)->setFailed();
     (*it)->decrementAttemptsLeft();
+
     self->state.gru_container.num_gru_done++;
     self->state.gru_container.num_gru_failed++;
     self->send(self->state.file_access_actor, run_failure_v, (*it)->getLocalGRUIndex());

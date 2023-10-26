@@ -1,11 +1,11 @@
-#include "caf/all.hpp"
 #include "hru_actor.hpp"
-#include "global.hpp"
-#include "message_atoms.hpp"
-#include "hru_actor_subroutine_wrappers.hpp"
-#include "serialize_data_structure.hpp"
-#include <thread>
 
+// Compiler set flag for sundials
+#ifdef SUNDIALS_ACTIVE
+    bool sundials_active = true;
+#else
+    bool sundials_active = false;
+#endif
 
 namespace caf {
 
@@ -66,8 +66,15 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
 
                 err = Run_HRU(self); // Simulate a Timestep
                 if (err != 0) {
-                    // We should have already printed the error to the screen if we get here
-                    self->send(self->state.parent, hru_error::run_physics_unhandleable, self);
+                
+                    if (sundials_active) {
+                        get_sundials_tolerances(self->state.hru_data, &self->state.rtol, &self->state.atol);
+                        self->send(self->state.parent, err_atom_v, self, self->state.rtol, self->state.atol);
+                    } else {
+                        self->send(self->state.parent, hru_error::run_physics_unhandleable, self);
+                    }
+
+
                     self->quit();
                     return;
                 }
@@ -141,23 +148,8 @@ void Initialize_HRU(stateful_actor<hru_state>* self) {
         return;
     }
 
-    // Set HRU Tolerances
-    // setIDATolerances(self->state.hru_data,
-    //                  &self->state.hru_actor_settings.relTolTempCas,
-    //                  &self->state.hru_actor_settings.absTolTempCas,
-    //                  &self->state.hru_actor_settings.relTolTempVeg,
-    //                  &self->state.hru_actor_settings.absTolTempVeg,
-    //                  &self->state.hru_actor_settings.relTolWatVeg,
-    //                  &self->state.hru_actor_settings.absTolWatVeg,
-    //                  &self->state.hru_actor_settings.relTolTempSoilSnow,
-    //                  &self->state.hru_actor_settings.absTolTempSoilSnow,
-    //                  &self->state.hru_actor_settings.relTolWatSnow,
-    //                  &self->state.hru_actor_settings.absTolWatSnow,
-    //                  &self->state.hru_actor_settings.relTolMatric,
-    //                  &self->state.hru_actor_settings.absTolMatric,
-    //                  &self->state.hru_actor_settings.relTolAquifr,
-    //                  &self->state.hru_actor_settings.absTolAquifr);
-            
+    if (self->state.hru_actor_settings.rel_tol > 0 && self->state.hru_actor_settings.abs_tol > 0)
+        set_sundials_tolerances(self->state.hru_data, &self->state.hru_actor_settings.rel_tol, &self->state.hru_actor_settings.abs_tol);            
 }
 
 int Run_HRU(stateful_actor<hru_state>* self) {
