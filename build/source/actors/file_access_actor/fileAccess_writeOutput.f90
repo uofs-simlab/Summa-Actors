@@ -282,7 +282,6 @@ subroutine writeData(ncid,outputTimestep,outputTimestepUpdate,maxLayers,nSteps, 
   USE var_lookup,only:iLookIndex                     ! index into index structure
   USE var_lookup,only:iLookStat                      ! index into stat structure
   USE globalData,only:outFreq                        ! output file information
-  USE output_structure_module,only:failedHRUs
   USE get_ixName_module,only:get_varTypeName         ! to access type strings for error messages
   USE get_ixName_module,only:get_statName            ! to access type strings for error messages
 

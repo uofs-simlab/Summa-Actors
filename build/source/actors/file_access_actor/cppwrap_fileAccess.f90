@@ -69,7 +69,6 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   USE var_lookup,only:iLookATTR                               ! look-up values for model attributes
   USE var_lookup,only:iLookBVAR                               ! look-up values for basin-average variables
   USE output_structure_module,only:outputStructure            ! output structure
-  USE output_structure_module,only:failedHRUs                              ! Flag for file access actor to know which GRUs have failed
 
   USE globalData,only:iRunModeFull,iRunModeGRU,iRunModeHRU
   USE globalData,only:iRunMode                                ! define the current running mode
@@ -186,13 +185,6 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
     case default; message=trim(message)//'unable to identify vegetation category';print*,message;return
   end select
 
-  ! *****************************************************************************
-  ! *** Initalize failed HRU tracker
-  ! *****************************************************************************
-  if (allocated(failedHRUs))then; deallocate(failedHRUs); endif;
-  allocate(failedHRUs(num_gru), stat=err)
-  if(err/=0)then; print*,trim(message); return; endif
-  failedHRUs(:) = .false.
 
   ! *****************************************************************************
   ! *** Define Output Files
@@ -385,30 +377,11 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
 end subroutine fileAccessActor_init_fortran
 
 
-
-subroutine updateFailed(indxHRU) bind(C, name="updateFailed")
-  USE output_structure_module,only:failedHRUs
-  implicit none
-  integer(c_int), intent(in)        :: indxHRU
-
-  failedHRUs(indxHRU) = .true.
-end subroutine
-
-subroutine resetFailedArray() bind(C, name="resetFailedArray")
-  USE output_structure_module,only:failedHRUs
-  implicit none
-
-  failedHRUs(:) = .false.
-
-end subroutine
-
-
 subroutine FileAccessActor_DeallocateStructures(handle_forcFileInfo, handle_ncid) bind(C,name="FileAccessActor_DeallocateStructures")
   USE netcdf_util_module,only:nc_file_close 
   USE globalData,only:structInfo                              ! information on the data structures
   USE access_forcing_module,only:forcingDataStruct
   USE access_forcing_module,only:vectime
-  USE output_structure_module,only:failedHRUs
   USE output_structure_module,only:outputTimeStep
   implicit none
   type(c_ptr),intent(in), value        :: handle_forcFileInfo
@@ -435,7 +408,6 @@ subroutine FileAccessActor_DeallocateStructures(handle_forcFileInfo, handle_ncid
   
   deallocate(forcFileInfo)
   deallocate(ncid)
-  deallocate(failedHRUs)
   deallocate(outputTimeStep)
 end subroutine FileAccessActor_DeallocateStructures
 
