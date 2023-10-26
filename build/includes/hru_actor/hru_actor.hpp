@@ -24,29 +24,27 @@ struct hru_state {
     int refGRU;			// The actual ID of the GRU we are
 
     // Variables for forcing structures
-	int stepsInCurrentFFile;        // number of time steps in current forcing file
+	  int stepsInCurrentFFile;        // number of time steps in current forcing file
     int num_steps_until_write;      // number of time steps until we pause for FA_Actor to write
 
     // HRU data structures (formerly summa_type)
     void *hru_data = new_handle_hru_type();
 
     // Misc Variables
-	int 		timestep = 1;	    // Current Timestep of HRU simulation
-    double      dt_init;            // used to initialize the length of the sub-step for each HRU
-    double		upArea;             // area upslope of each HRU
-    int         num_steps = 0;      // number of time steps
-    int         forcingStep;        // index of current time step in current forcing file
-    int         iFile;              // index of current forcing file from forcing file list
-    int         dt_init_factor = 1; // factor of dt_init (coupled_em)
-    bool        printOutput;
-    int         outputFrequency;
-    int         output_structure_step_index; // index of current time step in output structure
+	  int 		timestep = 1;	    // Current Timestep of HRU simulation
+    int     forcingStep = 1;    // index of current time step in current forcing file
+    int     num_steps = 0;      // number of time steps
+    int     iFile = 1;              // index of current forcing file from forcing file list
+    int     dt_init_factor = 1; // factor of dt_init (coupled_em)
+    int     output_structure_step_index = 1; // index of current time step in output structure
+    double  dt_init;            // used to initialize the length of the sub-step for each HRU
+    double	upArea;             // area upslope of each HRU
 
 
     // Settings
     HRU_Actor_Settings hru_actor_settings;
     // error control
-    int         err = 0;			        
+    int err = 0;			        
     
     ~hru_state() {
         delete_handle_hru_type(hru_data);
@@ -66,14 +64,5 @@ void Initialize_HRU(stateful_actor<hru_state>* self);
  Function runs all of the hru time_steps
  */
 int Run_HRU(stateful_actor<hru_state>* self);
-
-bool check_HRU(stateful_actor<hru_state>* self, int err);
-
-// Prints the timestep - the frequency of printing can be set by the user
-void printOutput(stateful_actor<hru_state>* self);
-
-// Get output from fortran into arrays
-// Send the output to the file_access_actor
-void getAndSendOutput(stateful_actor<hru_state>* self);
 
 }

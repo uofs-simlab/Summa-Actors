@@ -272,7 +272,7 @@ subroutine runPhysics(&
                   hru_data%forcStruct,         & ! intent(in):    model forcing data
                   hru_data%mparStruct,         & ! intent(in):    model parameters
                   hru_data%bvarStruct,         & ! intent(in):    basin-average model variables
-#ifdef SUNDIALS_ACTIVE                  
+#ifdef V4_ACTIVE                  
                   hru_data%lookupStruct,       &
 #endif
                   ! data structures (input-output)

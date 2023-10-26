@@ -6,7 +6,6 @@
 #include "message_atoms.hpp"
 #include "job_actor_subroutine_wrappers.hpp"
 #include "hru_actor.hpp"
-#include "gru_actor.hpp"
 
 using json = nlohmann::json;
 using chrono_time = std::chrono::time_point<std::chrono::system_clock>;
@@ -194,15 +193,9 @@ behavior job_actor(stateful_actor<job_state>* self,
                   return !gru_info.successful;
               });
 
-            self->request(self->state.file_access_actor, 
-                          infinite,
-                          finalize_v, netcdf_gru_info)
-              .await(
+            self->request(self->state.file_access_actor, infinite, finalize_v).await(
                 [=](std::tuple<double, double> read_write_duration) {
-                
                   int err = 0;
-              
-                  
                   for (auto GRU : self->state.gru_container.gru_list) {
                     delete GRU;
                   }

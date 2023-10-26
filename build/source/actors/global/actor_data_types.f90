@@ -27,35 +27,7 @@ module actor_data_types
     integer(i4b)                         :: nTimeSteps    ! Number of Timesteps in the file
   end type var_forc
 
-  ! ***********************************************************************************************************
-  ! Define GRU_Actor var_id structure
-  ! ***********************************************************************************************************
-  type,public,bind(C) :: netcdf_gru_actor_info
-    integer(C_INT) :: run_time_var_id
-    integer(C_INT) :: init_duration_var_id
-    integer(C_INT) :: forcing_duration_var_id
-    integer(C_INT) :: run_physics_duration_var_id
-    integer(C_INT) :: write_output_duration_var_id
-    integer(C_INT) :: state_var_id
-    integer(C_INT) :: num_attempts_var_id
-    integer(C_INT) :: rel_tol_var_id
-    integer(C_INT) :: abs_tol_var_id
-  end type netcdf_gru_actor_info
-
-  type,public,bind(C) :: serializable_netcdf_gru_actor_info
-    real(C_DOUBLE) :: run_time
-    real(C_DOUBLE) :: init_duration
-    real(C_DOUBLE) :: forcing_duration
-    real(C_DOUBLE) :: run_physics_duration
-    real(C_DOUBLE) :: write_output_duration
-    integer(C_INT) :: successful
-    integer(C_INT) :: num_attempts
-    real(C_DOUBLE) :: rel_tol
-    real(C_DOUBLE) :: abs_tol
-  end type serializable_netcdf_gru_actor_info
-
-
-    ! ** double precision type of for time series
+  ! ** double precision type of for time series
   type, public :: time_dlength
     type(dlength),allocatable          :: tim(:)    ! tim(:)%dat
   endtype time_dlength

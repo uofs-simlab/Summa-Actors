@@ -84,7 +84,6 @@ public::writeBasin
 public::writeTime
 private::writeScalar
 private::writeVector
-public::writeGRUStatistics
 ! define dimension lengths
 integer(i4b),parameter      :: maxSpectral=2              ! maximum number of spectral bands
 contains
@@ -248,7 +247,6 @@ subroutine writeParm(ncid,ispatial,struct,meta,err,message)
         class is (var_d)
           err = nf90_put_var(ncid%var(iLookFreq%timestep),meta(iVar)%ncVarID(iLookFreq%timestep),(/struct%var(iVar)/),start=(/iSpatial/),count=(/1/))
         class is (var_dlength)
-          print*, "Param size", size(struct%var(iVar)%dat)
           err = nf90_put_var(ncid%var(iLookFreq%timestep),meta(iVar)%ncVarID(iLookFreq%timestep),(/struct%var(iVar)%dat/),start=(/iSpatial,1/),count=(/1,size(struct%var(iVar)%dat)/))
         class default; err=20; message=trim(message)//'unknown variable type (with HRU)'; return
       end select
@@ -318,7 +316,6 @@ subroutine writeData(ncid,outputTimestep,outputTimestepUpdate,maxLayers,nSteps, 
   integer(i4b)                     :: stepCounter       ! counter to know how much data we have to write, needed because we do not always write nSteps
   integer(i4b)                     :: iStep
   integer(i4b)                     :: iGRU
-  integer(i4b)                     :: verifiedGRUIndex    ! index of HRU verified to not have failed
   ! initialize error control
   err=0;message="writeData/"
   ! loop through output frequencies
@@ -330,29 +327,16 @@ subroutine writeData(ncid,outputTimestep,outputTimestepUpdate,maxLayers,nSteps, 
     do iVar = 1,size(meta)
       stepCounter = 0
 
-      ! Todo: wrap this in a function
       if (meta(iVar)%varName=='time' .and. structName == 'forc')then
         ! get variable index
         err = nf90_inq_varid(ncid%var(iFreq),trim(meta(iVar)%varName),ncVarID)
         call netcdf_err(err,message); if (err/=0) return
         
-        ! make sure the HRU we are using has not failed
-        if (minGRU == maxGRU)then
-          verifiedGRUIndex = minGRU
-        else 
-          do iGRU = minGRU, maxGRU
-            if(.not.failedHRUs(iGRU))then
-              verifiedGRUIndex = iGRU
-              exit
-            endif
-          end do  
-        endif
-
         do iStep = 1, nSteps
           ! check if we want this timestep
-          if(.not.outputStructure(1)%finalizeStats%gru(verifiedGRUIndex)%hru(1)%tim(iStep)%dat(iFreq)) cycle
+          if(.not.outputStructure(1)%finalizeStats%gru(minGRU)%hru(1)%tim(iStep)%dat(iFreq)) cycle
           stepCounter = stepCounter+1
-          timeVec(stepCounter) = outputStructure(1)%forcStruct%gru(verifiedGRUIndex)%hru(1)%var(iVar)%tim(iStep)
+          timeVec(stepCounter) = outputStructure(1)%forcStruct%gru(minGRU)%hru(1)%var(iVar)%tim(iStep)
         end do ! iStep
         err = nf90_put_var(ncid%var(iFreq),ncVarID,timeVec(1:stepCounter),start=(/outputTimestep(iFreq)/),count=(/stepCounter/))
         call netcdf_err(err,message); if (err/=0)then; print*, "err"; return; endif
@@ -664,8 +648,7 @@ subroutine writeTime(ncid,outputTimestep,iStep,meta,dat,err,message)
 
       ! check instantaneous
     if (meta(iVar)%statIndex(iFreq)/=iLookStat%inst) cycle
-      print*, "Time Data", dat(iVar)%tim(iStep)
-        ! get variable id in file
+      ! get variable id in file
       err = nf90_inq_varid(ncid%var(iFreq),trim(meta(iVar)%varName),ncVarID)
       if (err/=0) message=trim(message)//trim(meta(iVar)%varName); call netcdf_err(err,message)
       if (err/=0) then; err=20; return; end if
@@ -679,70 +662,5 @@ subroutine writeTime(ncid,outputTimestep,iStep,meta,dat,err,message)
   end do ! iFreq
 
 
-end subroutine writeTime
-
-subroutine writeGRUStatistics(handle_ncid,      &
-      gru_var_ids,      &
-      gru_stats_vector, &
-      num_gru,          &
-      err) bind(C, name="WriteGRUStatistics")
-  USE data_types,only:var_i
-  USE actor_data_types,only:netcdf_gru_actor_info,serializable_netcdf_gru_actor_info
-  USE var_lookup, only: maxvarFreq ! number of output frequencies
-  USE netcdf
-  implicit none
-  ! Dummy Variables
-  type(c_ptr), intent(in), value                      :: handle_ncid
-  type(netcdf_gru_actor_info),intent(in)              :: gru_var_ids
-  type(serializable_netcdf_gru_actor_info),intent(in) :: gru_stats_vector(num_gru)
-  integer(c_int), intent(in)                          :: num_gru
-  integer(c_int), intent(out)                         :: err
-
-  ! Local Variables
-  type(var_i), pointer                                :: ncid
-  real(c_double), dimension(num_gru)                  :: run_time_array
-  real(c_double), dimension(num_gru)                  :: init_time_array
-  real(c_double), dimension(num_gru)                  :: forcing_time_array
-  real(c_double), dimension(num_gru)                  :: run_physics_time_array
-  real(c_double), dimension(num_gru)                  :: write_output_time_array
-  real(c_double), dimension(num_gru)                  :: rel_tol_array
-  real(c_double), dimension(num_gru)                  :: abs_tol_array
-  integer(c_int), dimension(num_gru)                  :: successful_array
-  integer(c_int), dimension(num_gru)                  :: num_attempts_array
-
-  integer(c_int)                                      :: i
-  integer(c_int)                                      :: iFreq         
-  ! ---------------------------------------------------------------------------------------
-  ! * Convert From C++ to Fortran
-  call c_f_pointer(handle_ncid, ncid)
-
-  ! Assemble fortran arrays
-  do i=1,num_gru
-    run_time_array(i) = gru_stats_vector(i)%run_time
-    init_time_array(i) = gru_stats_vector(i)%init_duration
-    forcing_time_array(i) = gru_stats_vector(i)%forcing_duration
-    run_physics_time_array(i) = gru_stats_vector(i)%run_physics_duration
-    write_output_time_array(i) = gru_stats_vector(i)%write_output_duration
-    rel_tol_array(i) = gru_stats_vector(i)%rel_tol
-    abs_tol_array(i) = gru_stats_vector(i)%abs_tol
-    successful_array(i) = gru_stats_vector(i)%successful
-    num_attempts_array(i) = gru_stats_vector(i)%num_attempts
-  end do
-
-  ! Write to NetCDF
-  do iFreq=1, maxvarFreq
-    err = nf90_put_var(ncid%var(iFreq), gru_var_ids%run_time_var_id, run_time_array)
-    err = nf90_put_var(ncid%var(iFreq), gru_var_ids%init_duration_var_id, init_time_array)
-    err = nf90_put_var(ncid%var(iFreq), gru_var_ids%forcing_duration_var_id, forcing_time_array)
-    err = nf90_put_var(ncid%var(iFreq), gru_var_ids%run_physics_duration_var_id, run_physics_time_array)
-    err = nf90_put_var(ncid%var(iFreq), gru_var_ids%write_output_duration_var_id, write_output_time_array)
-    err = nf90_put_var(ncid%var(iFreq), gru_var_ids%state_var_id, successful_array)
-    err = nf90_put_var(ncid%var(iFreq), gru_var_ids%num_attempts_var_id, num_attempts_array)
-    err = nf90_put_var(ncid%var(iFreq), gru_var_ids%rel_tol_var_id, rel_tol_array)
-    err = nf90_put_var(ncid%var(iFreq), gru_var_ids%abs_tol_var_id, abs_tol_array)
-  end do
-
-end subroutine writeGRUStatistics
-
-   
+end subroutine writeTime   
 end module fileAccess_writeOutput

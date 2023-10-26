@@ -1,13 +1,11 @@
 #include "file_access_actor.hpp"
 #include "forcing_file_info.hpp"
-#include "file_access_actor_subroutine_wrappers.hpp"
 #include "fortran_data_types.hpp"
 #include "message_atoms.hpp"
 #include "json.hpp"
 #include "auxilary.hpp"
 
 using json = nlohmann::json;
-
 
 namespace caf {
 
@@ -19,13 +17,11 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
     self->state.file_access_timing = TimingInfo();
     self->state.file_access_timing.addTimePoint("read_duration");
     self->state.file_access_timing.addTimePoint("write_duration");
+    // Save the parameters passed from job_actor
     self->state.file_access_actor_settings = file_access_actor_settings;
-
     self->state.parent = parent;
     self->state.num_gru = num_gru;
     self->state.start_gru = start_gru;
-    self->state.handle_forcing_file_info = new_handle_file_info();
-    self->state.handle_ncid = new_handle_var_i();
     self->state.err = 0;
 
     self->state.num_output_steps = self->state.file_access_actor_settings.num_timesteps_in_output_buffer;
@@ -39,7 +35,6 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
                                  &self->state.start_gru, 
                                  &self->state.num_gru, 
                                  &self->state.num_gru, // Filler for num_hrus
-                                 &self->state.gru_actor_stats,
                                  &self->state.err);
     if (self->state.err != 0) {
         aout(self) << "ERROR: File Access Actor - File_Access_init_Fortran\n";
@@ -178,22 +173,12 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
         },
 
 
-        [=](finalize, std::vector<serializable_netcdf_gru_actor_info> &netcdf_gru_info) {
-            int num_gru = netcdf_gru_info.size();
-            WriteGRUStatistics(self->state.handle_ncid, 
-                               &self->state.gru_actor_stats, 
-                               netcdf_gru_info.data(), 
-                               &num_gru, 
-                               &self->state.err);
-
+        [=](finalize) {
             
-            // call output_container deconstructor
-            self->state.output_container->~Output_Container();
-
-
-            aout(self) << "Deallocating Structure" << std::endl;
+            aout(self) << "File Access Actor: Deallocating Structure" << std::endl;
+            self->state.output_container->~Output_Container(); // Delete Output Container
             FileAccessActor_DeallocateStructures(self->state.handle_forcing_file_info, self->state.handle_ncid);
-            // deallocateOutputStructure(&self->state.err);
+
             aout(self) << "\n________________FILE_ACCESS_ACTOR TIMING INFO RESULTS________________\n";
             aout(self) << "Total Read Duration = " << self->state.file_access_timing.getDuration("read_duration").value_or(-1.0) << " Seconds\n";
             aout(self) << "Total Write Duration = " << self->state.file_access_timing.getDuration("write_duration").value_or(-1.0) << " Seconds\n";

@@ -10,7 +10,7 @@ USE data_types,only:&
                     var_ilength,         & ! x%var(:)%dat        (i4b)
                     var_dlength            ! x%var(:)%dat        (dp)
 #ifdef V4_ACTIVE
-USE data_types,only:z_lookup               ! x%z(:)%var(:)%lookup(:) -- lookup tables
+USE data_types,only:zlookup               ! x%z(:)%var(:)%lookup(:) -- lookup tables
 #endif
 USE actor_data_types,only:hru_type             ! hru_type
                     

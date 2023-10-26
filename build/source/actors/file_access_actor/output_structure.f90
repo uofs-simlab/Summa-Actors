@@ -135,7 +135,7 @@ subroutine initOutputStructure(forcFileInfo, maxSteps, num_gru, err)
   USE globalData,only:prog_meta,diag_meta,flux_meta,id_meta   ! metadata structures
   USE globalData,only:mpar_meta,indx_meta                     ! metadata structures
   USE globalData,only:bpar_meta,bvar_meta                     ! metadata structures
-#ifdef SUNDIALS_ACTIVE
+#ifdef V4_ACTIVE
   USE globalData,only:lookup_meta
 #endif
   USE globalData,only:statForc_meta                           ! child metadata for stats
@@ -254,7 +254,7 @@ subroutine initOutputStructure(forcFileInfo, maxSteps, num_gru, err)
     case('bpar'); call allocGlobal(bpar_meta,outputStructure(1)%bparStruct    ,err, message);  ! basin-average params 
     case('bvar'); call allocGlobal(bvar_meta,outputStructure(1)%bvarStruct_init,err,message);  ! basin-average variables
     case('deriv'); cycle;
-#ifdef SUNDIALS_ACTIVE      
+#ifdef V4_ACTIVE     
     case('lookup'); call allocGlobal(lookup_meta,outputStructure(1)%lookupStruct,err, message);
 #endif
     end select

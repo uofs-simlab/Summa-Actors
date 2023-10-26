@@ -17,6 +17,11 @@ module cppwrap_fileAccess
   public::fileAccessActor_init_fortran
   public::FileAccessActor_DeallocateStructures
   public::SOIL_VEG_GEN_PARM
+
+  character(len=64), parameter     :: summaVersion = ''
+  character(len=64), parameter     :: buildTime = ''
+  character(len=64), parameter     :: gitBranch = ''
+  character(len=64), parameter     :: gitHash = ''
   
   contains
 
@@ -31,13 +36,11 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
                                         start_gru,&  
                                         num_gru,&
                                         num_hru,&
-                                        actor_stats,&
                                         err) bind(C, name="fileAccessActor_init_fortran")
   USE ffile_info_actors_module,only:ffile_info
   USE mDecisions_module,only:mDecisions                       ! module to read model decisions
   USE read_pinit_module,only:read_pinit                       ! module to read initial model parameter values
   USE module_sf_noahmplsm,only:read_mp_veg_parameters         ! module to read NOAH vegetation tables
-  USE def_output_actors_module,only:def_output                ! module to define output variables
   USE output_structure_module,only:initOutputStructure        ! module to initialize output structure
   USE output_structure_module,only:initOutputTimeStep         ! module to initialize output timestep structure (tracks GRUs timestep for output)
   USE read_attrb_module,only:read_attrb                       ! module to read local attributes
@@ -47,19 +50,17 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   USE paramCheck_module,only:paramCheck                       ! module to check consistency of model parameters
   USE read_icond_module,only:read_icond                       ! module to read initial conditions
   USE check_icond_module,only:check_icond                     ! module to check initial conditions
-
-  USE mDecisions_module,only:&
-                              sameRulesAllLayers, & ! SNTHERM option: same combination/sub-dividion rules applied to all layers
-                              rulesDependLayerIndex ! CLM option: combination/sub-dividion rules depend on layer index
+  USE def_output_module,only:def_output                       ! module to define model output
   USE globalData,only:localParFallback                        ! local column default parameters
   USE globalData,only:basinParFallback                        ! basin-average default parameters
-  USE summaFileManager,only:LOCALPARAM_INFO,BASINPARAM_INFO   ! files defining the default values and constraints for model parameters
   USE globalData,only:mpar_meta,bpar_meta                     ! parameter metadata structures
+  USE summaFileManager,only:LOCALPARAM_INFO,BASINPARAM_INFO   ! files defining the default values and constraints for model parameters
   USE summaFileManager,only:SETTINGS_PATH                     ! define path to settings files (e.g., parameters, soil and veg. tables)
   USE summaFileManager,only:LOCAL_ATTRIBUTES                  ! name of model initial attributes file
   USE summaFileManager,only:GENPARM,VEGPARM,SOILPARM,MPTABLE  ! files defining the noah tables
   USE summaFileManager,only:MODEL_INITCOND                    ! name of model initial conditions file
   USE summaFileManager,only:STATE_PATH                        ! optional path to state/init. condition files (defaults to SETTINGS_PATH)
+  USE summaFileManager,only:OUTPUT_PATH,OUTPUT_PREFIX ! define output file
   USE globalData,only:model_decisions                         ! model decision structure
   USE var_lookup,only:iLookDECISIONS                          ! look-up values for model decisions
   USE var_lookup,only:iLookTYPE                               ! look-up values for model types
@@ -69,7 +70,7 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   USE var_lookup,only:iLookBVAR                               ! look-up values for basin-average variables
   USE output_structure_module,only:outputStructure            ! output structure
   USE output_structure_module,only:failedHRUs                              ! Flag for file access actor to know which GRUs have failed
-  
+
   USE globalData,only:iRunModeFull,iRunModeGRU,iRunModeHRU
   USE globalData,only:iRunMode                                ! define the current running mode
   USE globalData,only:checkHRU                                ! index of the HRU for a single HRU run
@@ -80,17 +81,19 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   USE t2enthalpy_module,only:T2E_lookup                       ! module to calculate a look-up table for the temperature-enthalpy conversion
 #endif
   USE mDecisions_module,only:&
-                        monthlyTable,& ! LAI/SAI taken directly from a monthly table for different vegetation classes
-                        specified      ! LAI/SAI computed from green vegetation fraction and winterSAI and summerLAI parameters
+                        monthlyTable,&        ! LAI/SAI taken directly from a monthly table for different vegetation classes
+                        specified,&           ! LAI/SAI computed from green vegetation fraction and winterSAI and summerLAI parameters
+                        sameRulesAllLayers, & ! SNTHERM option: same combination/sub-dividion rules applied to all layers
+                        rulesDependLayerIndex ! CLM option: combination/sub-dividion rules depend on layer index
 
-  USE ConvE2Temp_module,only:E2T_lookup                       ! module to calculate a look-up table for the temperature-enthalpy conversion
+  USE ConvE2Temp_module,only:E2T_lookup       ! module to calculate a look-up table for the temperature-enthalpy conversion
 
 
-  USE NOAHMP_VEG_PARAMETERS,only:SAIM,LAIM                    ! 2-d tables for stem area index and leaf area index (vegType,month)
-  USE NOAHMP_VEG_PARAMETERS,only:HVT,HVB                      ! height at the top and bottom of vegetation (vegType)
-
-  USE globalData,only:numtim                 ! number of time steps in the simulation
-
+  USE NOAHMP_VEG_PARAMETERS,only:SAIM,LAIM    ! 2-d tables for stem area index and leaf area index (vegType,month)
+  USE NOAHMP_VEG_PARAMETERS,only:HVT,HVB      ! height at the top and bottom of vegetation (vegType)
+  USE globalData,only:numtim                  ! number of time steps in the simulation
+  USE globalData,only:fileout                 ! name of the output file
+  USE globalData,only:ncid                    ! id of the output file
   implicit none
 
   type(c_ptr), intent(in), value         :: handle_forcFileInfo
@@ -101,9 +104,7 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   integer(c_int),intent(out)             :: start_gru
   integer(c_int),intent(out)             :: num_gru
   integer(c_int),intent(out)             :: num_hru
-  type(netcdf_gru_actor_info),intent(out):: actor_stats        ! netcdf actor information 
   integer(c_int),intent(out)             :: err
-
 
   ! local Variables
   type(file_info_array),pointer          :: forcFileInfo
@@ -113,7 +114,8 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   integer(i4b)                           :: jHRU,kHRU          ! HRU indices
   integer(i4b)                           :: ivar               ! counter for variables
   character(len=256)                     :: attrFile           ! attributes file name
-  character(LEN=256)                    :: restartFile        ! restart file name
+  character(LEN=256)                     :: restartFile        ! restart file name
+  
   integer(i4b)                           :: indxGRU=1
   character(len=256)                     :: message            ! error message for downwind routine
 
@@ -195,8 +197,19 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   ! *****************************************************************************
   ! *** Define Output Files
   ! *****************************************************************************
-  call def_output(output_ncid,start_gru,num_gru,num_hru,actor_stats,err,message)
+  nGRUrun = num_gru
+  nHRUrun = num_gru ! the same as nGRUrun for now
+  fileout = trim(OUTPUT_PATH)//trim(OUTPUT_PREFIX)//trim(output_fileSuffix)
+  ncid(:) = integerMissing
+  call def_output(summaVersion,buildTime,gitBranch,gitHash,num_gru,num_hru,gru_struc(1)%hruInfo(1)%nSoil,fileout,err,message)
   if(err/=0)then; print*,trim(message); return; endif
+  ! allocate space for the output file ID array
+  if (.not.allocated(output_ncid%var))then
+    allocate(output_ncid%var(maxVarFreq))
+    output_ncid%var(:) = integerMissing
+  endif
+  ! copy ncid
+  output_ncid%var(:) = ncid(:)
 
   ! *****************************************************************************
   ! *** Initialize output structure

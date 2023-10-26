@@ -21,11 +21,6 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
     self->state.indxHRU           = 1;
     self->state.indxGRU           = indxGRU;
     self->state.refGRU            = refGRU;
-    // initialize counters 
-    self->state.timestep          = 1;  
-    self->state.forcingStep       = 1;  
-    self->state.output_structure_step_index = 1;
-    self->state.iFile             = 1;
     // Get the settings for the HRU
     self->state.hru_actor_settings = hru_actor_settings;
     self->state.dt_init_factor = hru_actor_settings.dt_init_factor;
@@ -147,21 +142,21 @@ void Initialize_HRU(stateful_actor<hru_state>* self) {
     }
 
     // Set HRU Tolerances
-    setIDATolerances(self->state.hru_data,
-                     &self->state.hru_actor_settings.relTolTempCas,
-                     &self->state.hru_actor_settings.absTolTempCas,
-                     &self->state.hru_actor_settings.relTolTempVeg,
-                     &self->state.hru_actor_settings.absTolTempVeg,
-                     &self->state.hru_actor_settings.relTolWatVeg,
-                     &self->state.hru_actor_settings.absTolWatVeg,
-                     &self->state.hru_actor_settings.relTolTempSoilSnow,
-                     &self->state.hru_actor_settings.absTolTempSoilSnow,
-                     &self->state.hru_actor_settings.relTolWatSnow,
-                     &self->state.hru_actor_settings.absTolWatSnow,
-                     &self->state.hru_actor_settings.relTolMatric,
-                     &self->state.hru_actor_settings.absTolMatric,
-                     &self->state.hru_actor_settings.relTolAquifr,
-                     &self->state.hru_actor_settings.absTolAquifr);
+    // setIDATolerances(self->state.hru_data,
+    //                  &self->state.hru_actor_settings.relTolTempCas,
+    //                  &self->state.hru_actor_settings.absTolTempCas,
+    //                  &self->state.hru_actor_settings.relTolTempVeg,
+    //                  &self->state.hru_actor_settings.absTolTempVeg,
+    //                  &self->state.hru_actor_settings.relTolWatVeg,
+    //                  &self->state.hru_actor_settings.absTolWatVeg,
+    //                  &self->state.hru_actor_settings.relTolTempSoilSnow,
+    //                  &self->state.hru_actor_settings.absTolTempSoilSnow,
+    //                  &self->state.hru_actor_settings.relTolWatSnow,
+    //                  &self->state.hru_actor_settings.absTolWatSnow,
+    //                  &self->state.hru_actor_settings.relTolMatric,
+    //                  &self->state.hru_actor_settings.absTolMatric,
+    //                  &self->state.hru_actor_settings.relTolAquifr,
+    //                  &self->state.hru_actor_settings.absTolAquifr);
             
 }
 
@@ -190,7 +185,8 @@ int Run_HRU(stateful_actor<hru_state>* self) {
 
     if (self->state.hru_actor_settings.print_output && 
         self->state.timestep % self->state.hru_actor_settings.output_frequency == 0) {
-        printOutput(self);
+        // Print the current timestep    
+        aout(self) << self->state.refGRU << " - Timestep = " << self->state.timestep << "\n";
     }
     
 
@@ -231,9 +227,5 @@ int Run_HRU(stateful_actor<hru_state>* self) {
     return 0;      
 }
 
-
-void printOutput(stateful_actor<hru_state>* self) {
-        aout(self) << self->state.refGRU << " - Timestep = " << self->state.timestep << "\n";
-}
 
 }
