@@ -53,10 +53,12 @@ Additional dependencies required by both SUMMA and SUMMA actors are:
  cd summa/
  git checkout summa-actors
  cd ../
- cd build_dir/
- cmake -B cmake_build -S . -DCMAKE_BUILD_TYPE=Actors_Cluster
+ cmake -B cmake_build -S . -DCMAKE_BUILD_TYPE=Build_Type
  cmake --build cmake_build --target all -j
  ```
+Available build types are:
+  * BE or BE_Debug: Builds for local machine
+  * BE_Cluster or BE_Cluster_Debug: Builds for cluster machine (Specific to Alliance machines)
 
 ## Running SUMMA-Actors
 SUMMA-Actors can be run in two modes, distributed and non-distributed. The distributed mode used to create ad-hoc clusters. The command line arguments are kept as close to the original SUMMA as possible. However, there are options not yet available in SUMMA-Actors that are in the original SUMMA. Here is a full list of the available and unavailable options:

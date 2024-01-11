@@ -10,7 +10,7 @@ set(EXEC_DIR ${PARENT_DIR}/bin) # set the output directory for executables
 SET(F_MASTER ${PARENT_DIR}/build/summa)
 # Add options for build type
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${EXEC_DIR})
-set(CMAKE_CONFIGURATION_TYPES BE BE_Cluster BE_Cluster_Debug)
+set(CMAKE_CONFIGURATION_TYPES BE BE_Debug BE_Cluster BE_Cluster_Debug)
 
 # Set Compiler Options
 if(CMAKE_BUILD_TYPE MATCHES Debug)
@@ -26,7 +26,10 @@ else()
     set(FLAGS_CXX  -O3 -Wfatal-errors -std=c++17 ${FLAGS_OPT})
 endif()
 
-find_package(OpenBLAS REQUIRED)
+# find_package(OpenBLAS REQUIRED)
+find_package(CAF COMPONENTS core io REQUIRED)
+set(CAF_INCLUDES ${CAF_INCLUDE_DIRS})
+set(CAF_LIBRARIES CAF::core CAF::io)
 set(EXEC_NAME summa_be)
 
 if (CMAKE_BUILD_TYPE MATCHES Cluster)    
@@ -47,34 +50,19 @@ if (CMAKE_BUILD_TYPE MATCHES Cluster)
         -lcaf_io)
 
 else()
-    set(CMAKE_BUILD_RPATH "/usr/local/lib")
-    set(SUMMA_INCLUDES
-        "/usr/include"
-        ${netCDF_INCLUDES}
-        ${OpenBLAS_INCLUDES})
-    
-    set(SUMMA_LIBS
-        -lnetcdff
-        -lopenblas
-        SUMMA_NOAHMP)
+    # Set include and library for Fortran portion of the code
+    set(INCLUDES "/usr/include" "/usr/local/include")
+    set(LIBRARIES -lnetcdff -lopenblas SUMMA_NOAHMP)
 
-    set(SUMMA_ACTORS_INCLUDES
-        "/usr/local/actor-framework/debug/include"
-        ${CAF_INCLUDES}
-        ${OpenBLAS_INCLUDES}
+    # Set include and library for C++ portion of the code
+    set(INC_ACTORS CAF::core CAF::io ${INCLUDES}
         "${PARENT_DIR}/build/includes/global"
         "${PARENT_DIR}/build/includes/summa_actor"
         "${PARENT_DIR}/build/includes/job_actor"
         "${PARENT_DIR}/build/includes/file_access_actor"
         "${PARENT_DIR}/build/includes/hru_actor")
-    
-    link_directories("/usr/local/actor-framework/debug/lib")
-    set(SUMMA_ACTORS_LIBS   
-        -lopenblas
-        -lcaf_core
-        -lcaf_io
-        summa
-        -lnetcdff)
+    link_directories("/usr/local/lib")
+    set(LIB_ACTORS CAF::core CAF::io -lopenblas -lnetcdff)
 endif()
 
 # Define directories that contains source code
