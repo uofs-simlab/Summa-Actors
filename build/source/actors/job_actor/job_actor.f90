@@ -91,11 +91,13 @@ subroutine job_init_fortran(file_manager, start_gru, num_gru,&
   end select
   if(err/=0)then; print*, trim(message); return; endif
 
-  ! *****************************************************************************
+  ! ****************************************************************************
   ! *** define the suffix for the model output file
-  ! *****************************************************************************
-  ! set up the output file names as: OUTPUT_PREFIX'_'output_fileSuffix'_'startGRU-endGRU_outfreq.nc or OUTPUT_PREFIX'_'output_fileSuffix'_'HRU_outfreq.nc;
-  if (output_fileSuffix(1:1) /= '_') output_fileSuffix='_'//trim(output_fileSuffix)   ! separate output_fileSuffix from others by underscores
+  ! *** OUTPUT_PREFIX'_'output_fileSuffix'_'startGRU-endGRU_outfreq.nc or
+  ! *** OUTPUT_PREFIX'_'output_fileSuffix'_'HRU_outfreq.nc
+  ! ****************************************************************************
+  output_fileSuffix = ''
+  if (output_fileSuffix(1:1) /= '_') output_fileSuffix='_'//trim(output_fileSuffix)
   if (output_fileSuffix(len_trim(output_fileSuffix):len_trim(output_fileSuffix)) == '_') output_fileSuffix(len_trim(output_fileSuffix):len_trim(output_fileSuffix)) = ' '
   select case (iRunMode)
     case(iRunModeGRU)

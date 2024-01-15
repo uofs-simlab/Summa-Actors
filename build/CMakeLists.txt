@@ -26,13 +26,13 @@ else()
     set(FLAGS_CXX  -O3 -Wfatal-errors -std=c++17 ${FLAGS_OPT})
 endif()
 
-# find_package(OpenBLAS REQUIRED)
 find_package(CAF COMPONENTS core io REQUIRED)
 set(CAF_INCLUDES ${CAF_INCLUDE_DIRS})
 set(CAF_LIBRARIES CAF::core CAF::io)
 set(EXEC_NAME summa_be)
 
 if (CMAKE_BUILD_TYPE MATCHES Cluster)    
+    find_package(OpenBLAS REQUIRED)
     # Set include directories
     set(INCLUDES $ENV{EBROOTNETCDFMINFORTRAN}/include ${netCDF_INCLUDES} ${OpenBLAS_INCLUDES})
     set(LIBRARIES SUMMA_NOAHMP  ${OpenBLAS_LIBRARIES} -lnetcdff)
