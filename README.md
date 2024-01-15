@@ -49,16 +49,24 @@ Additional dependencies required by both SUMMA and SUMMA actors are:
  ```
  git clone https://git.cs.usask.ca/numerical_simulations_lab/actors/Summa-Actors.git
  cd Summa-Actors/build
- git clone https://github.com/KyleKlenk/summa.git
- cd summa/
- git checkout summa-actors
- cd ../
+ git clone -b summa-actors https://github.com/KyleKlenk/summa.git
  cmake -B cmake_build -S . -DCMAKE_BUILD_TYPE=Build_Type
  cmake --build cmake_build --target all -j
  ```
 Available build types are:
   * BE or BE_Debug: Builds for local machine
-  * BE_Cluster or BE_Cluster_Debug: Builds for cluster machine (Specific to Alliance machines)
+  * BE_Cluster or BE_Cluster_Debug: See below section (Modules for Alliance Machines)
+
+### Modules for Alliance Machines
+To compile on Alliance machines the following modules can be loaded:
+```bash
+module load StdEnv/2020
+module load gcc/9.3.0
+module load openblas/0.3.17
+module load netcdf-fortran/4.5.2
+module load caf
+```
+
 
 ## Running SUMMA-Actors
 SUMMA-Actors can be run in two modes, distributed and non-distributed. The distributed mode used to create ad-hoc clusters. The command line arguments are kept as close to the original SUMMA as possible. However, there are options not yet available in SUMMA-Actors that are in the original SUMMA. Here is a full list of the available and unavailable options:
