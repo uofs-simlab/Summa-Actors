@@ -211,23 +211,7 @@ void check_settings_from_json(Distributed_Settings &distributed_settings,
               << job_actor_settings.file_manager_path << "\n"
               << "************ HRU_ACTOR_SETTINGS ************\n"
               << hru_actor_settings.print_output << "\n"
-              << hru_actor_settings.output_frequency << "\n"
-              << "rel_tol: "            << hru_actor_settings.rel_tol << "\n"
-              << "abs_tol: "            << hru_actor_settings.abs_tol << "\n"
-              << "relTolTempCas: "      << hru_actor_settings.relTolTempCas << "\n"
-              << "absTolTempCas: "      << hru_actor_settings.absTolTempCas << "\n"
-              << "relTolTempVeg: "      << hru_actor_settings.relTolTempVeg << "\n"
-              << "absTolTempVeg: "      << hru_actor_settings.absTolTempVeg << "\n"
-              << "relTolWatVeg: "       << hru_actor_settings.relTolWatVeg << "\n"
-              << "absTolWatVeg: "       << hru_actor_settings.absTolWatVeg << "\n"
-              << "relTolTempSoilSnow: " << hru_actor_settings.relTolTempSoilSnow << "\n"
-              << "absTolTempSoilSnow: " << hru_actor_settings.absTolTempSoilSnow << "\n"
-              << "relTolWatSnow: "      << hru_actor_settings.relTolWatSnow << "\n"
-              << "absTolWatSnow: "      << hru_actor_settings.absTolWatSnow << "\n"
-              << "relTolMatric: "       << hru_actor_settings.relTolMatric << "\n"
-              << "absTolMatric: "       << hru_actor_settings.absTolMatric << "\n"
-              << "relTolAquifr: "       << hru_actor_settings.relTolAquifr << "\n"
-              << "absTolAquifr: "       << hru_actor_settings.absTolAquifr << "\n\n\n";
+              << hru_actor_settings.output_frequency << "\n";
 
 }
 
