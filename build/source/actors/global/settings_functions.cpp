@@ -191,9 +191,12 @@ HRU_Actor_Settings readHRUActorSettings(std::string json_settings_file) {
 
 
 void check_settings_from_json(Distributed_Settings &distributed_settings, 
-    Summa_Actor_Settings &summa_actor_settings, File_Access_Actor_Settings &file_access_actor_settings, 
-    Job_Actor_Settings &job_actor_settings, HRU_Actor_Settings &hru_actor_settings) {
-
+    Summa_Actor_Settings &summa_actor_settings, 
+    File_Access_Actor_Settings &file_access_actor_settings, 
+    Job_Actor_Settings &job_actor_settings, 
+    HRU_Actor_Settings &hru_actor_settings) {
+  
+  if (distributed_settings.distributed_mode) {
     std::cout << "************ DISTRIBUTED_SETTINGS ************\n"
               << distributed_settings.distributed_mode << "\n";
     for (auto& host : distributed_settings.servers_list) {
@@ -201,17 +204,25 @@ void check_settings_from_json(Distributed_Settings &distributed_settings,
     }
     std::cout << distributed_settings.port << "\n"
               << distributed_settings.total_hru_count << "\n"
-              << distributed_settings.num_hru_per_batch << "\n"
-              << "************ SUMMA_ACTOR_SETTINGS ************\n"
-              << summa_actor_settings.max_gru_per_job << "\n\n\n"
-              << "************ FILE_ACCESS_ACTOR_SETTINGS ************\n"
-              << file_access_actor_settings.num_partitions_in_output_buffer << "\n"
-              << file_access_actor_settings.num_timesteps_in_output_buffer << "\n\n\n"
-              << "************ JOB_ACTOR_SETTINGS ************\n"
-              << job_actor_settings.file_manager_path << "\n"
-              << "************ HRU_ACTOR_SETTINGS ************\n"
-              << hru_actor_settings.print_output << "\n"
-              << hru_actor_settings.output_frequency << "\n";
+              << distributed_settings.num_hru_per_batch << "\n";
+  }
+
+  std::cout << "************ SUMMA_ACTORS SETTINGS ************\n"
+            << "Max GRU per Job: "
+            << summa_actor_settings.max_gru_per_job << "\n"
+            << "Num Partitions in Output Buffer: "
+            << file_access_actor_settings.num_partitions_in_output_buffer << "\n"
+            << "Num Timesteps in Output Buffer: "
+            << file_access_actor_settings.num_timesteps_in_output_buffer << "\n"
+            << "File Manager Path: "
+            << job_actor_settings.file_manager_path << "\n"
+            << "Max Run Attempts Per GRU: "
+            << job_actor_settings.max_run_attempts << "\n"
+            << "Print GRU Timestep: "
+            << hru_actor_settings.print_output << "\n"
+            << "GRU Timestep Print Frequency: "
+            << hru_actor_settings.output_frequency << "\n"
+            << "********************************************\n\n";
 
 }
 
