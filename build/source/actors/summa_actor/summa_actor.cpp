@@ -9,115 +9,183 @@
 #include <chrono>
 #include <string>
 #include <fstream>
+#include <netcdf.h>
 
 using json = nlohmann::json;
+// Helper function to extract the information from the file_manager
+std::string extractEnclosed(const std::string& line) {
+    std::size_t first_quote = line.find_first_of("'");
+    std::size_t last_quote = line.find_last_of("'");
+    if (first_quote != std::string::npos && last_quote != std::string::npos 
+        && first_quote < last_quote) {
+        return line.substr(first_quote + 1, last_quote - first_quote - 1);
+    }
+    return "";
+}
+
+// Check the number of GRUs in the attribute file
+int getNumGRUInFile(const std::string &file_manager) {
+  std::ifstream file(file_manager);
+  std::string attributeFile, settingPath;
+  if (!file.is_open())
+    return -1;
+  
+  std::string line;
+  while (std::getline(file, line)) {
+    if (line.compare(0, 13, "attributeFile") == 0)
+      attributeFile = extractEnclosed(line);
+    if (line.compare(0, 12, "settingsPath") == 0)
+      settingPath = extractEnclosed(line);
+  }
+
+  file.close();
+
+  size_t fileGRU = -1;
+  int ncid, gru_dim;
+  if (attributeFile.empty() || settingPath.empty())
+    return fileGRU;
+  
+  std::string combined = settingPath + attributeFile;
+
+  if (NC_NOERR != nc_open(combined.c_str(), NC_NOWRITE, &ncid))
+    return fileGRU;
+  if (NC_NOERR != nc_inq_dimid(ncid, "gru", &gru_dim)) {
+    nc_close(ncid);
+    return -1;
+  }
+  if (NC_NOERR != nc_inq_dimlen(ncid, gru_dim, &fileGRU)) {
+    nc_close(ncid);
+    return -1;
+  }
+  nc_close(ncid);
+  return fileGRU;
+}
+
 
 namespace caf {
+behavior summa_actor(stateful_actor<summa_actor_state>* self, 
+    int startGRU, int numGRU, 
+    Summa_Actor_Settings summa_actor_settings, 
+    File_Access_Actor_Settings file_access_actor_settings,
+    Job_Actor_Settings job_actor_settings, 
+    HRU_Actor_Settings hru_actor_settings, actor parent) {
 
-behavior summa_actor(stateful_actor<summa_actor_state>* self, int startGRU, int numGRU, 
-	Summa_Actor_Settings summa_actor_settings, File_Access_Actor_Settings file_access_actor_settings,
-    Job_Actor_Settings job_actor_settings, HRU_Actor_Settings hru_actor_settings, actor parent) {
+  // Set Timing Variables
+  self->state.summa_actor_timing = TimingInfo();
+  self->state.summa_actor_timing.addTimePoint("total_duration");
+  self->state.summa_actor_timing.updateStartPoint("total_duration");
+  // Set Variables
+  self->state.startGRU = startGRU;
+  self->state.numGRU = numGRU;
+  self->state.parent = parent;
+  // Set Settings
+  self->state.summa_actor_settings = summa_actor_settings;
+  self->state.file_access_actor_settings = file_access_actor_settings;
+  self->state.job_actor_settings = job_actor_settings;
+  self->state.hru_actor_settings = hru_actor_settings;
+  // Double check the number of GRUs in the file
+  self->state.fileGRU = getNumGRUInFile(job_actor_settings.file_manager_path);
+  if (self->state.fileGRU  == -1) 
+    aout(self) << "***WARNING***: UNABLE TO VERIFY NUMBER OF GRUS" 
+               << " - Job Actor MAY CRASH\n";
 
- 	// Set Timing Variables
-	self->state.summa_actor_timing = TimingInfo();
-	self->state.summa_actor_timing.addTimePoint("total_duration");
-	self->state.summa_actor_timing.updateStartPoint("total_duration");
-	// Set Variables
-	self->state.startGRU = startGRU;
-	self->state.numGRU = numGRU;
-	self->state.parent = parent;
+  if (self->state.fileGRU > 0) { 
+    // Fix the number of GRUs if it exceeds the number of GRUs in the file
+    if (self->state.startGRU + self->state.numGRU > self->state.fileGRU) {
+      self->state.numGRU = self->state.fileGRU - self->state.startGRU + 1;
+    }
+  }
+  // No else: if we cannot verify we try to run anyway
+  self->state.batch_container = Batch_Container(self->state.startGRU, 
+      self->state.numGRU, 
+      self->state.summa_actor_settings.max_gru_per_job);
+  
+  aout(self) << "Starting SUMMA With " << 
+      self->state.batch_container.getBatchesRemaining() << " Batches\n";
+  aout(self) << "###################################################\n"
+              << self->state.batch_container.getBatchesAsString()
+              << "###################################################\n";
 
-	self->state.summa_actor_settings = summa_actor_settings;
-	self->state.file_access_actor_settings = file_access_actor_settings;
-	self->state.job_actor_settings = job_actor_settings;
-	self->state.hru_actor_settings = hru_actor_settings;
+  std::optional<Batch> batch = 
+      self->state.batch_container.getUnsolvedBatch();
+  if (!batch.has_value()) {
+    aout(self) << "ERROR--Summa_Actor: No Batches To Solve\n";
+    self->quit();
+  } 
+  self->state.current_batch_id = batch->getBatchID();
+  aout(self) << "Starting Batch " << self->state.current_batch_id + 1 << "\n";
+  auto batch_val = batch.value();
+  self->state.currentJob = self->spawn(job_actor, batch->getStartHRU(), 
+      batch->getNumHRU(), self->state.file_access_actor_settings, 
+      self->state.job_actor_settings, self->state.hru_actor_settings, self);
 
-	// Create the job_actor and start SUMMA
-	spawnJob(self);
-
-	return {
-		[=](done_job, int numFailed, double job_duration, double read_duration, double write_duration) {
-			auto& timing_info = self->state.timing_info_for_jobs;
-
-
-			self->state.numFailed += numFailed;
-
-			timing_info.job_duration.push_back(job_duration);
-			timing_info.job_read_duration.push_back(read_duration);
-			timing_info.job_write_duration.push_back(write_duration);
-
-			if (self->state.numGRU <= 0) {
-				self->state.summa_actor_timing.updateEndPoint("total_duration");
-
-
-
-				for (size_t i = 0; i < timing_info.job_duration.size(); ++i) {
-					
-   				 	 
-    				aout(self) << "\n________________Job " << i + 1 << " Info_____________\n"
-               				   << "Job Duration = " << timing_info.job_duration[i] << "\n"
-               				   << "Job Read Duration = " << timing_info.job_read_duration[i] << "\n"
-               				   << "Job Write Duration = " << timing_info.job_write_duration[i] << "\n"
-							   << "_____________________________________________________\n\n";
-				}
-
-
-				double total_read_duration = std::accumulate(timing_info.job_read_duration.begin(),
-															 timing_info.job_read_duration.end(),
-															 0.0);
-				double total_write_duration = std::accumulate(timing_info.job_write_duration.begin(),
-															  timing_info.job_write_duration.end(),
-															  0.0);
-				
-				aout(self) << "\n________________SUMMA INFO________________\n"
-						   << "Total Duration = " << self->state.summa_actor_timing.getDuration("total_duration").value_or(-1.0) << " Seconds\n"
-						   << "Total Duration = " << self->state.summa_actor_timing.getDuration("total_duration").value_or(-1.0) / 60 << " Minutes\n"
-						   << "Total Duration = " << (self->state.summa_actor_timing.getDuration("total_duration").value_or(-1.0) / 60) / 60 << " Hours\n"
-						   << "Total Read Duration = " << total_read_duration  << "Seconds\n"
-						   << "Total Write Duration = " << total_write_duration << "Seconds\n"
-						   << "Num Failed = " << self->state.numFailed << "\n"
-						   << "___________________Program Finished__________________\n"; 
+  return {
 
 
+    [=](done_job, int numFailed, double job_duration, double read_duration, 
+        double write_duration) {
+      
+      self->state.batch_container.updateBatch_success(
+          self->state.current_batch_id, job_duration, read_duration,
+          write_duration);
 
-				self->send(self->state.parent, done_batch_v, 
-						   self->state.summa_actor_timing.getDuration("total_duration").value_or(-1.0), 
-						   total_read_duration,
-						   total_write_duration);		
+      aout(self) << "###########################################\n"
+                 << "Job Finished: " 
+                 << self->state.batch_container.getTotalBatches() - 
+                 self->state.batch_container.getBatchesRemaining() 
+                 << "/" << self->state.batch_container.getTotalBatches() << "\n"
+                 << "###########################################\n";
+      
+      self->state.numFailed += numFailed;
+      
+    
+      
+      if (self->state.batch_container.hasUnsolvedBatches()) {
+        spawnJob(self);
+      } else {
+        aout(self) << "All Batches Finished\n";
+        aout(self) << self->state.batch_container.getAllBatchInfoString();
+        self->state.summa_actor_timing.updateEndPoint("total_duration");
+         
+        aout(self) << "\n________________SUMMA INFO________________\n"
+            << "Total Duration = " 
+            << self->state.summa_actor_timing.getDuration(
+                  "total_duration").value_or(-1.0) << " Seconds\n"
+            << "Total Duration = " 
+            << self->state.summa_actor_timing.getDuration(
+                  "total_duration").value_or(-1.0) / 60 << " Minutes\n"
+            << "Total Duration = " 
+            << (self->state.summa_actor_timing.getDuration(
+                  "total_duration").value_or(-1.0) / 60) / 60 << " Hours\n"
+            << "Total Read Duration = " 
+            << self->state.batch_container.getTotalReadTime()  << "Seconds\n"
+            << "Total Write Duration = " 
+            << self->state.batch_container.getTotalWriteTime() << "Seconds\n"
+            << "Num Failed = " << self->state.numFailed << "\n"
+            << "___________________Program Finished__________________\n";
+        
+        self->quit();
+      }
+    },
 
-			} else {
-				spawnJob(self);
-			}
-		},
-
-		[=](err) {
-			aout(self) << "Unrecoverable Error: Attempting To Fail Gracefully\n";
-			self->quit();
-		}
-	};
+    [=](err) {
+      aout(self) << "Unrecoverable Error: Attempting To Fail Gracefully\n";
+      self->quit();
+    }
+  };
 }
 
 
 void spawnJob(stateful_actor<summa_actor_state>* self) {
-	// Ensure we do not start a job with too many GRUs
-	if (self->state.numGRU > self->state.summa_actor_settings.max_gru_per_job) {
-		// spawn the job actor
-		aout(self) << "\n Starting Job with startGRU = " << self->state.startGRU << "\n";
-		self->state.currentJob = self->spawn(job_actor, self->state.startGRU, self->state.summa_actor_settings.max_gru_per_job, 
-											 self->state.file_access_actor_settings, self->state.job_actor_settings, 
-											 self->state.hru_actor_settings, self);
-		
-		// Update GRU count
-		self->state.numGRU = self->state.numGRU - self->state.summa_actor_settings.max_gru_per_job;
-		self->state.startGRU = self->state.startGRU + self->state.summa_actor_settings.max_gru_per_job;
-
-	} else {
-
-		self->state.currentJob = self->spawn(job_actor, self->state.startGRU, self->state.numGRU, 
-										     self->state.file_access_actor_settings, self->state.job_actor_settings, 
-											 self->state.hru_actor_settings, self);
-		self->state.numGRU = 0;
-	}
+  std::optional<Batch> batch =
+          self->state.batch_container.getUnsolvedBatch();
+  self->state.current_batch_id = batch->getBatchID();
+  aout(self) << "Starting Batch " << self->state.current_batch_id + 1 << "\n";
+  auto batch_val = batch.value();
+  self->state.currentJob = self->spawn(job_actor, batch->getStartHRU(), 
+      batch->getNumHRU(), self->state.file_access_actor_settings, 
+      self->state.job_actor_settings, self->state.hru_actor_settings, 
+      self);
 }
 
 } // end namespace

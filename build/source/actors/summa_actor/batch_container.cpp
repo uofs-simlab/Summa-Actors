@@ -1,77 +1,119 @@
 #include "batch_container.hpp"
 
-Batch_Container::Batch_Container(int total_hru_count, int num_hru_per_batch) {
-    this->total_hru_count = total_hru_count;
-    this->num_hru_per_batch = num_hru_per_batch;
-    this->assembleBatches(this->total_hru_count, this->num_hru_per_batch);
-    this->batches_remaining = this->batch_list.size(); // batch_list set in assemble batches
+Batch_Container::Batch_Container(int start_hru, int total_hru_count, 
+                                 int num_hru_per_batch) {
+  start_hru_ = start_hru;
+  total_hru_count_ = total_hru_count;
+  num_hru_per_batch_ = num_hru_per_batch;
+  assembleBatches();
+  batches_remaining_ = batch_list_.size(); // batch_list set in assemble batches
 }
 
-int Batch_Container::getBatchesRemaining() {
-    return this->batches_remaining;
-}
+int Batch_Container::getBatchesRemaining() { return batches_remaining_;}
+int Batch_Container::getTotalBatches() { return batch_list_.size();}
 
-void Batch_Container::assembleBatches(int total_hru_count, int num_hru_per_batch) {
-    int remaining_hru_to_batch = total_hru_count;
-    int batch_id = 0;
-    int start_hru = 1;
+void Batch_Container::assembleBatches() {
+  int remaining_hru_to_batch = total_hru_count_;
+  int batch_id = 0;
+  int start_hru_local = start_hru_;
 
-    while(remaining_hru_to_batch > 0) {
-        if (num_hru_per_batch > remaining_hru_to_batch) {
-            this->batch_list.push_back(Batch(batch_id, start_hru, remaining_hru_to_batch));
-            remaining_hru_to_batch = 0;
-        } else {
-            this->batch_list.push_back(Batch(batch_id, start_hru, num_hru_per_batch));
-            
-            remaining_hru_to_batch -= num_hru_per_batch;
-            start_hru += num_hru_per_batch;
-            batch_id += 1;
-        }
-    }
+  while (remaining_hru_to_batch > 0) {
+    int current_batch_size = std::min(num_hru_per_batch_, remaining_hru_to_batch);
+    batch_list_.push_back(Batch(batch_id, start_hru_local, current_batch_size));
+    
+    remaining_hru_to_batch -= current_batch_size;
+    start_hru_local += current_batch_size;
+    if (current_batch_size == num_hru_per_batch_)
+      batch_id += 1;
+  }
 }
 
 void Batch_Container::printBatches() {
-    for (std::vector<int>::size_type i = 0; i < this->batch_list.size(); i++) {
-        this->batch_list[i].printBatchInfo();
-    }
+  for (auto& batch : batch_list_) {
+    batch.printBatchInfo();
+  }
+}
+
+std::string Batch_Container::getBatchesAsString() {
+  std::string out_string = "";
+  for (auto& batch : batch_list_) {
+    out_string += batch.getBatchInfoString();
+  }
+  return out_string;
 }
 
 void Batch_Container::updateBatchStatus_LostClient(int batch_id) {
-    this->batch_list[batch_id].updateAssigned(false);
+  batch_list_[batch_id].updateAssigned(false);
 }
 
 std::optional<Batch> Batch_Container::getUnsolvedBatch() {
-    for (std::vector<int>::size_type i = 0; i < this->batch_list.size(); i++) {
-        if (!this->batch_list[i].isAssigned() && !this->batch_list[i].isSolved()) {
-            this->batch_list[i].updateAssigned(true);
-            return this->batch_list[i];
-        }
+  for (auto& batch : batch_list_) {
+    if (!batch.isAssigned() && !batch.isSolved()) {
+      batch.updateAssigned(true);
+      return batch;
     }
-    return {};
+  }
+  return {};
 }
 
 void Batch_Container::setBatchAssigned(Batch batch) {
-    this->batch_list[batch.getBatchID()].updateAssigned(true);
+  batch_list_[batch.getBatchID()].updateAssigned(true);
 }
 
 void Batch_Container::setBatchUnassigned(Batch batch) {
-    this->batch_list[batch.getBatchID()].updateAssigned(false);
+  batch_list_[batch.getBatchID()].updateAssigned(false);
 }
 
-void Batch_Container::updateBatch_success(Batch successful_batch, std::string output_csv, std::string hostname) {
-    int batch_id = successful_batch.getBatchID();
-    successful_batch.writeBatchToFile(output_csv, hostname);
-    this->batch_list[batch_id].updateSolved(true);
-    this->batches_remaining--;
+void Batch_Container::updateBatch_success(Batch successful_batch, 
+                                          std::string output_csv, 
+                                          std::string hostname) {
+  successful_batch.writeBatchToFile(output_csv, hostname);
+  batch_list_[successful_batch.getBatchID()].updateSolved(true);
+  batches_remaining_--;
 }
+
+ void Batch_Container::updateBatch_success(int batch_id, double run_time, 
+                                           double read_time, double write_time) {
+    batch_list_[batch_id].updateRunTime(run_time);
+    batch_list_[batch_id].updateReadTime(read_time);
+    batch_list_[batch_id].updateWriteTime(write_time);
+    batch_list_[batch_id].updateSolved(true);
+    batches_remaining_--;
+  }
 
 void Batch_Container::updateBatch_success(Batch successful_batch) {
-    int batch_id = successful_batch.getBatchID();
-    this->batch_list[batch_id].updateSolved(true);
-    this->batches_remaining--;
+  batch_list_[successful_batch.getBatchID()].updateSolved(true);
+  batches_remaining_--;
+}
+
+bool Batch_Container::hasUnsolvedBatches() { return batches_remaining_ > 0;}
+
+
+std::string Batch_Container::getAllBatchInfoString() {
+  std::string out_string = "";
+  for (auto& batch : batch_list_) {
+    out_string += "_____________________________\n";
+    out_string += batch.toString();
+    out_string += "_____________________________\n";
+  }
+  return out_string;
+}
+
+double Batch_Container::getTotalReadTime() {
+  double total_read_time = 0.0;
+  for (auto& batch : batch_list_) {
+    total_read_time += batch.getReadTime();
+  }
+  return total_read_time;
+}
+
+double Batch_Container::getTotalWriteTime() {
+  double total_write_time = 0.0;
+  for (auto& batch : batch_list_) {
+    total_write_time += batch.getWriteTime();
+  }
+  return total_write_time;
 }
 
 
-bool Batch_Container::hasUnsolvedBatches() {
-    return this->batches_remaining > 0;
-}
+
