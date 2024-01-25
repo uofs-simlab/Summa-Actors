@@ -62,7 +62,7 @@ else()
         "${PARENT_DIR}/build/includes/file_access_actor"
         "${PARENT_DIR}/build/includes/hru_actor")
     link_directories("/usr/local/lib")
-    set(LIB_ACTORS CAF::core CAF::io -lopenblas -lnetcdff)
+    set(LIB_ACTORS CAF::core CAF::io -lopenblas -lnetcdff -lnetcdf)
 endif()
 
 # Define directories that contains source code
