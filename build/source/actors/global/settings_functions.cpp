@@ -222,6 +222,8 @@ void check_settings_from_json(Distributed_Settings &distributed_settings,
             << hru_actor_settings.print_output << "\n"
             << "GRU Timestep Print Frequency: "
             << hru_actor_settings.output_frequency << "\n"
+            << "GRU Initial Timestep Factor: "
+            << hru_actor_settings.dt_init_factor << "\n"
             << "********************************************\n\n";
 
 }
