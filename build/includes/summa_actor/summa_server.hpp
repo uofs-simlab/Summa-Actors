@@ -45,9 +45,12 @@ struct summa_server_state {
 };
 
 // Summa Server setup behaviour - initializes the state for the server
-behavior summa_server_init(stateful_actor<summa_server_state>* self, Distributed_Settings distributed_settings, 
-    Summa_Actor_Settings summa_actor_settings, File_Access_Actor_Settings file_access_actor_settings,
-    Job_Actor_Settings job_actor_settings, HRU_Actor_Settings hru_actor_settings);
+behavior summa_server_init(stateful_actor<summa_server_state>* self, 
+    Distributed_Settings distributed_settings, 
+    Summa_Actor_Settings summa_actor_settings, 
+    File_Access_Actor_Settings file_access_actor_settings,
+    Job_Actor_Settings job_actor_settings, 
+    HRU_Actor_Settings hru_actor_settings);
 
 // Summa Server behaviour - handles messages from clients
 behavior summa_server(stateful_actor<summa_server_state>* self);
