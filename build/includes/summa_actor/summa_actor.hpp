@@ -4,7 +4,7 @@
 #include "caf/io/all.hpp"
 #include "timing_info.hpp"
 #include "settings_functions.hpp"
-
+#include "batch_container.hpp"
 #include <chrono>
 #include <string>
 #include <vector>
@@ -26,12 +26,15 @@ struct summa_actor_state {
     // Program Parameters
     int startGRU;           // starting GRU for the simulation
     int numGRU;             // number of GRUs to compute
-    std::string configPath;// path to the fileManager.txt file
-    // Information about the jobs
+    int fileGRU;            // number of GRUs in the file
+    std::string configPath; // path to the fileManager.txt file
     int numFailed = 0;      // Number of jobs that have failed
-
     caf::actor currentJob;  // Reference to the current job actor
     caf::actor parent;
+
+    // Batches
+    Batch_Container batch_container;
+    int current_batch_id;
 
 
     // settings for all child actors (save in case we need to recover)
@@ -41,9 +44,12 @@ struct summa_actor_state {
     HRU_Actor_Settings hru_actor_settings;
 };
 
-behavior summa_actor(stateful_actor<summa_actor_state>* self, int startGRU, int numGRU, 
-    Summa_Actor_Settings summa_actor_settings, File_Access_Actor_Settings file_access_actor_settings,
-    Job_Actor_Settings job_actor_settings, HRU_Actor_Settings hru_actor_settings, actor parent);
+behavior summa_actor(stateful_actor<summa_actor_state>* self, 
+    int startGRU, int numGRU, 
+    Summa_Actor_Settings summa_actor_settings, 
+    File_Access_Actor_Settings file_access_actor_settings,
+    Job_Actor_Settings job_actor_settings, 
+    HRU_Actor_Settings hru_actor_settings, actor parent);
 
 void spawnJob(stateful_actor<summa_actor_state>* self);
 

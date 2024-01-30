@@ -161,8 +161,6 @@ void caf_main(actor_system& sys, const config& cfg) {
         job_actor_settings.file_manager_path = cfg.master_file;
     }
     
-    
-    aout(self) << "Printing Settings For SUMMA Simulation\n";
     check_settings_from_json(distributed_settings,
                              summa_actor_settings, 
                              file_access_actor_settings, 

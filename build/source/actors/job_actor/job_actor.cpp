@@ -56,9 +56,9 @@ behavior job_actor(stateful_actor<job_state>* self,
 
     /*
     Calls: 
-      - summa_SetTimesDirsAndFiles()
-      - summa_defineGlobalData()
-      - read_icond_nlayers()
+      - summa_SetTimesDirsAndFiles
+      - summa_defineGlobalData
+      - read_icond_nlayers
       - Allocates time structures
     */
     job_init_fortran(self->state.job_actor_settings.file_manager_path.c_str(),
@@ -118,12 +118,13 @@ behavior job_actor(stateful_actor<job_state>* self,
           
           chrono_time end_point = high_resolution_clock::now();
           double total_duration = duration_cast<seconds>(end_point - gru_container.gru_start_time).count();
+          gru_container.num_gru_done++;
 
-          aout(self) << "\nJob_Actor: GRU Finished: \n" 
-                     << "          global_gru_index = " 
-                     << gru_container.gru_list[local_gru_index-1]->getGlobalGRUIndex() << "\n"
-                     << "          local_gru_index = " << local_gru_index << "\n"
-                     << "          total_duration = " << total_duration << "\n\n";
+          aout(self) << "GRU Finished: " << gru_container.num_gru_done << "/" 
+                     << gru_container.num_gru_in_run_domain << " -- "
+                     << "GlobalGRU=" << gru_container.gru_list[local_gru_index-1]->getGlobalGRUIndex()
+                     << " -- LocalGRU=" << local_gru_index << "\n";
+
           // Update Timing
           gru_container.gru_list[local_gru_index-1]->setRunTime(total_duration);
           gru_container.gru_list[local_gru_index-1]->setInitDuration(-1);
@@ -133,7 +134,6 @@ behavior job_actor(stateful_actor<job_state>* self,
 
           gru_container.gru_list[local_gru_index-1]->setSuccess();
 
-          gru_container.num_gru_done++;
 
           
           // Check if all GRUs are finished
