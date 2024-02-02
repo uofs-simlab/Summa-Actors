@@ -4,110 +4,135 @@ namespace caf {
 
 behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
                    HRU_Actor_Settings hru_actor_settings, 
-                   caf::actor file_access_actor, 
-                   caf::actor parent) {
+                   caf::actor file_access_actor, caf::actor parent) {
+  
+  // Actor References
+  self->state.file_access_actor = file_access_actor;
+  self->state.parent            = parent;
+  // Indexes into global structures
+  self->state.indxHRU           = 1;
+  self->state.indxGRU           = indxGRU;
+  self->state.refGRU            = refGRU;
+  // Get the settings for the HRU
+  self->state.hru_actor_settings = hru_actor_settings;
+  self->state.dt_init_factor = hru_actor_settings.dt_init_factor;
+
+  // Initialize HRU data and statistics structures
+  initHRU(&self->state.indxGRU, &self->state.num_steps, self->state.hru_data, &self->state.err);
+  if (self->state.err != 0) {
+      aout(self) << "Error: HRU_Actor - Initialize - HRU = " << self->state.indxHRU  
+                  << " - indxGRU = " << self->state.indxGRU 
+                  << " - refGRU = "<< self->state.refGRU
+                  << "\nError Code = " << self->state.err << "\n";
+      self->quit();
+  }
+  Initialize_HRU(self);
+
+
+  return {
+    /* Job actor telling us to run until completions
+        We will interact with the file access actor */
+    [=](update_hru_async) {
+      self->request(self->state.file_access_actor, caf::infinite,
+                    get_num_output_steps_v).await([=](int num_steps){
+        self->state.num_steps_until_write = num_steps;
+        self->send(self->state.file_access_actor, access_forcing_v, 
+                    self->state.iFile, self);
+      });
+    },
+
+    [=](num_steps_before_write, int num_steps) {
+        self->state.num_steps_until_write = num_steps;
+        self->state.output_structure_step_index = 1;
+    },
+
+    // Run HRU for a number of timesteps
+    [=](run_hru) {
+        int err = 0;
+
+        while(self->state.num_steps_until_write > 0) {
+            if (self->state.forcingStep > self->state.stepsInCurrentFFile) {
+                self->send(self->state.file_access_actor, access_forcing_v, self->state.iFile+1, self);
+                break;
+            }
+
+            self->state.num_steps_until_write--;
+
+            err = Run_HRU(self); // Simulate a Timestep
+            if (err != 0) {
+            
+                #ifdef SUNDIALS_ACTIVE                        
+                    get_sundials_tolerances(self->state.hru_data, &self->state.rtol, &self->state.atol);
+                    self->send(self->state.parent, err_atom_v, self, self->state.rtol, self->state.atol);
+                #else                        
+                    self->send(self->state.parent, hru_error::run_physics_unhandleable, self);
+                #endif
+                self->quit();
+                return;
+            }
+
+            self->state.timestep++;
+            self->state.forcingStep++;
+            self->state.output_structure_step_index++;
+            
+            if (self->state.timestep > self->state.num_steps) {
+                self->send(self, done_hru_v);
+                break;
+            }
+
+        }
+        // Our output structure is full
+        if (self->state.num_steps_until_write <= 0) {
+            self->send(self->state.file_access_actor, write_output_v, 
+            self->state.indxGRU, self->state.indxHRU, self);
+        }
+    },
+
+
+    [=](new_forcing_file, int num_forcing_steps_in_iFile, int iFile) {
+        int err;
+        self->state.iFile = iFile;
+        self->state.stepsInCurrentFFile = num_forcing_steps_in_iFile;
+        setTimeZoneOffset(&self->state.iFile, self->state.hru_data, &err);
+        self->state.forcingStep = 1;
+        self->send(self, run_hru_v);
+    },
+
     
-    // Actor References
-    self->state.file_access_actor = file_access_actor;
-    self->state.parent            = parent;
-    // Indexes into global structures
-    self->state.indxHRU           = 1;
-    self->state.indxGRU           = indxGRU;
-    self->state.refGRU            = refGRU;
-    // Get the settings for the HRU
-    self->state.hru_actor_settings = hru_actor_settings;
-    self->state.dt_init_factor = hru_actor_settings.dt_init_factor;
-
-    // Initialize HRU data and statistics structures
-    initHRU(&self->state.indxGRU, &self->state.num_steps, self->state.hru_data, &self->state.err);
-    if (self->state.err != 0) {
-        aout(self) << "Error: HRU_Actor - Initialize - HRU = " << self->state.indxHRU  
-                   << " - indxGRU = " << self->state.indxGRU 
-                   << " - refGRU = "<< self->state.refGRU
-                   << "\nError Code = " << self->state.err << "\n";
+    [=](done_hru) {
+        self->send(self->state.parent,done_hru_v,self->state.indxGRU);
         self->quit();
-    }
+        return;
+    },
 
-    // Get the number of timesteps required until needing to write
-    self->request(self->state.file_access_actor, 
-                  caf::infinite,
-                  get_num_output_steps_v)
-                  .await([=](int num_steps){
-                        self->state.num_steps_until_write = num_steps;
-                        Initialize_HRU(self);
-                        // Get Forcing information from the File Access Actor to start the simulation
-                        self->send(self->state.file_access_actor, access_forcing_v, self->state.iFile, self);
-                  });
+    [=](dt_init_factor, int dt_init_factor) {
+        aout(self) << "Recieved New dt_init_factor to attempt on next run \n";
+    },
 
-    return {
-        [=](num_steps_before_write, int num_steps) {
-            self->state.num_steps_until_write = num_steps;
-            self->state.output_structure_step_index = 1;
-        },
+    [=](update_timeZoneOffset, int iFile) {
+        aout(self) << "Recieved New iFile-" << iFile 
+                    << " to update timeZoneOffset \n";
+        int err;
+        self->state.iFile = iFile;
+        setTimeZoneOffset(&iFile, self->state.hru_data, &err);
+    },
 
-        // Run HRU for a number of timesteps
-        [=](run_hru) {
-            int err = 0;
-
-            while(self->state.num_steps_until_write > 0) {
-                if (self->state.forcingStep > self->state.stepsInCurrentFFile) {
-                    self->send(self->state.file_access_actor, access_forcing_v, self->state.iFile+1, self);
-                    break;
-                }
-
-                self->state.num_steps_until_write--;
-
-                err = Run_HRU(self); // Simulate a Timestep
-                if (err != 0) {
-                
-#ifdef SUNDIALS_ACTIVE                        
-                        get_sundials_tolerances(self->state.hru_data, &self->state.rtol, &self->state.atol);
-                        self->send(self->state.parent, err_atom_v, self, self->state.rtol, self->state.atol);
-#else                        
-                        self->send(self->state.parent, hru_error::run_physics_unhandleable, self);
-#endif
-
-                    self->quit();
-                    return;
-                }
-
-                self->state.timestep++;
-                self->state.forcingStep++;
-                self->state.output_structure_step_index++;
-                
-                if (self->state.timestep > self->state.num_steps) {
-                    self->send(self, done_hru_v);
-                    break;
-                }
-
-            }
-            // Our output structure is full
-            if (self->state.num_steps_until_write <= 0) {
-                self->send(self->state.file_access_actor, write_output_v, self->state.indxGRU, self->state.indxHRU, self);
-            }
-        },
-
-
-        [=](new_forcing_file, int num_forcing_steps_in_iFile, int iFile) {
-            int err;
-            self->state.iFile = iFile;
-            self->state.stepsInCurrentFFile = num_forcing_steps_in_iFile;
-            setTimeZoneOffset(&self->state.iFile, self->state.hru_data, &err);
-            self->state.forcingStep = 1;
-            self->send(self, run_hru_v);
-        },
-
-        
-        [=](done_hru) {
-            self->send(self->state.parent,done_hru_v,self->state.indxGRU);
-            self->quit();
-            return;
-        },
-
-        [=](dt_init_factor, int dt_init_factor) {
-            aout(self) << "Recieved New dt_init_factor to attempt on next run \n";
-        },
-    };
+    // BMI - Functions
+    [=](update_hru, int timestep, int forcingstep) {
+      aout(self) << "Computing Time Step: " << timestep 
+                 << " Forcing Step: " << forcingstep << "\n";
+      self->state.output_structure_step_index = 1;
+      self->state.timestep = timestep;
+      self->state.forcingStep = forcingstep;
+      int err = Run_HRU(self);
+      if (err != 0) {
+        self->send(self->state.parent, hru_error::run_physics_unhandleable, self);
+        self->quit();
+        return;
+      }
+      self->send(self->state.parent, done_update_v);
+    }    
+  };
 }
 
 

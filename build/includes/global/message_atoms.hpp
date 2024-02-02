@@ -39,6 +39,15 @@ bool inspect(Inspector& f, file_access_error& x) {
 }
 
 CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
+    // BMI Start
+    CAF_ADD_ATOM(summa, update_hru)
+    CAF_ADD_ATOM(summa, init_file_access_actor)
+    CAF_ADD_ATOM(summa, update_timeZoneOffset)
+    CAF_ADD_ATOM(summa, done_update)
+    CAF_ADD_ATOM(summa, init_normal_mode)
+    CAF_ADD_ATOM(summa, update_hru_async)
+
+
     // Sender: job_actor 
     // Reciever: summa_actor
     // Summary: job_actor finished job

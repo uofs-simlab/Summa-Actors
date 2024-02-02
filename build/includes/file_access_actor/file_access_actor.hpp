@@ -56,6 +56,10 @@ struct file_access_state {
 
      // Timing Variables
     TimingInfo file_access_timing;
+
+
+
+    bool write_params_flag = true;
 };
 
 // called to spawn a file_access_actor

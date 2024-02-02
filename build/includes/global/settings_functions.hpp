@@ -85,13 +85,15 @@ File_Access_Actor_Settings readFileAccessActorSettings(std::string json_settings
 struct Job_Actor_Settings {
     std::string file_manager_path;
     int max_run_attempts; // maximum number of times to attempt to run each HRU in a job
+    bool data_assimilation_mode;
 };
 
 template<class Inspector>
 bool inspect(Inspector& inspector, Job_Actor_Settings& job_actor_settings) {
     return inspector.object(job_actor_settings).fields(
                 inspector.field("file_manager_path", job_actor_settings.file_manager_path),
-                inspector.field("max_run_attempts",  job_actor_settings.max_run_attempts));
+                inspector.field("max_run_attempts",  job_actor_settings.max_run_attempts),
+                inspector.field("data_assimilation_mode",  job_actor_settings.data_assimilation_mode));
 }
 
 Job_Actor_Settings readJobActorSettings(std::string json_settings_file);

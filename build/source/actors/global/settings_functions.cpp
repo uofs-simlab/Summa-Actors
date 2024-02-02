@@ -96,6 +96,9 @@ Job_Actor_Settings readJobActorSettings(std::string json_settings_file) {
     
     job_actor_settings.max_run_attempts = getSettings(json_settings_file, parent_key,
         "max_run_attempts", job_actor_settings.max_run_attempts).value_or(1);
+    
+    job_actor_settings.data_assimilation_mode = getSettings(json_settings_file, parent_key,
+        "data_assimilation_mode", job_actor_settings.data_assimilation_mode).value_or(false);
 
     return job_actor_settings;
 }

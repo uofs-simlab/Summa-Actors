@@ -67,6 +67,13 @@ struct job_state {
     Job_Actor_Settings job_actor_settings; 
     HRU_Actor_Settings hru_actor_settings;
 
+    // Forcing information
+    int iFile = 1; // index of current forcing file from forcing file list
+    int stepsInCurrentFFile;
+    int forcingStep = 1;
+    int timestep = 1;
+    int num_gru_done_timestep = 0;
+    int num_steps = 0;
 };
 
 

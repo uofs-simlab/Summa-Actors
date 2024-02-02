@@ -414,10 +414,15 @@ subroutine writeScalar(ncid, outputTimestep, outputTimestepUpdate, nSteps, minGR
       if (outputTimeStepUpdate(iFreq) /= stepCounter ) then
         print*, "ERROR Missmatch in Steps - stat doubleVec"
         print*, "   outputTimeStepUpdate(iFreq) = ", outputTimeStepUpdate(iFreq)
+        print*, "   outputTimestep(iFreq) = ", outputTimestep(iFreq)
         print*, "   stepCounter = ", stepCounter
         print*, "   iFreq = ", iFreq
         print*, "   minGRU = ", minGRU
         print*, "   maxGRU = ", maxGRU
+        print*, "   nSteps = ", nSteps
+        print*, "   gruCounter = ", gruCounter
+        print*, "   realVec = ", realVec
+        print*, "   iStep = ", iStep
         err = 20
         return
       endif

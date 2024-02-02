@@ -9,108 +9,111 @@ using json = nlohmann::json;
 
 namespace caf {
 
-behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gru, int num_gru, 
-    File_Access_Actor_Settings file_access_actor_settings, actor parent) {
-    aout(self) << "\n----------File_Access_Actor Started----------\n";
+behavior file_access_actor(stateful_actor<file_access_state>* self, 
+                          int start_gru, int num_gru, 
+                          File_Access_Actor_Settings file_access_actor_settings, 
+                          actor parent) {
+  aout(self) << "\n----------File_Access_Actor Started----------\n";
     
-    // Set Up timing Info we wish to track
-    self->state.file_access_timing = TimingInfo();
-    self->state.file_access_timing.addTimePoint("read_duration");
-    self->state.file_access_timing.addTimePoint("write_duration");
-    // Save the parameters passed from job_actor
-    self->state.file_access_actor_settings = file_access_actor_settings;
-    self->state.parent = parent;
-    self->state.num_gru = num_gru;
-    self->state.start_gru = start_gru;
-    self->state.err = 0;
+  // Set Up timing Info we wish to track
+  self->state.file_access_timing = TimingInfo();
+  self->state.file_access_timing.addTimePoint("read_duration");
+  self->state.file_access_timing.addTimePoint("write_duration");
+  // Save the parameters passed from job_actor
+  self->state.file_access_actor_settings = file_access_actor_settings;
+  auto& fa_settings = self->state.file_access_actor_settings;
+  self->state.parent = parent;
+  self->state.num_gru = num_gru;
+  self->state.start_gru = start_gru;
+  self->state.err = 0;
 
-    self->state.num_output_steps = self->state.file_access_actor_settings.num_timesteps_in_output_buffer;
+  self->state.num_output_steps = fa_settings.num_timesteps_in_output_buffer;
 
-
-    fileAccessActor_init_fortran(self->state.handle_forcing_file_info, 
-                                 &self->state.numFiles,
-                                 &self->state.num_steps,
-                                 &self->state.file_access_actor_settings.num_timesteps_in_output_buffer, 
-                                 self->state.handle_ncid,
-                                 &self->state.start_gru, 
-                                 &self->state.num_gru, 
-                                 &self->state.num_gru, // Filler for num_hrus
-                                 &self->state.err);
-    if (self->state.err != 0) {
-        aout(self) << "ERROR: File Access Actor - File_Access_init_Fortran\n";
-        if (self->state.err == 100) {
-            self->send(self->state.parent, file_access_error::mDecisions_error, self);
-        } else {
-            self->send(self->state.parent, file_access_error::unhandleable_error, self);
-        }
-        return {};
-        
-    }
-
-    aout(self) << "Simluations Steps: " << self->state.num_steps << "\n";
+  fileAccessActor_init_fortran(self->state.handle_forcing_file_info, 
+                                &self->state.numFiles,
+                                &self->state.num_steps,
+                                &fa_settings.num_timesteps_in_output_buffer, 
+                                self->state.handle_ncid,
+                                &self->state.start_gru, 
+                                &self->state.num_gru, 
+                                &self->state.num_gru, // Filler for num_hrus
+                                &self->state.err);
+  if (self->state.err != 0) {
+    aout(self) << "ERROR: File Access Actor - File_Access_init_Fortran\n";
+    if (self->state.err == 100)
+      self->send(self->state.parent, file_access_error::mDecisions_error, 
+                  self);
+    else
+      self->send(self->state.parent, file_access_error::unhandleable_error, 
+                  self);
+    return {};  
+  }
 
     
-    // Inital Files Have Been Loaded - Send Message to Job_Actor to Start Simulation
-    self->send(self->state.parent, init_gru_v);
-    // initalize the forcingFile array
-    self->state.filesLoaded = 0;
-    for (int i = 1; i <= self->state.numFiles; i++) {
-        self->state.forcing_file_list.push_back(Forcing_File_Info(i));
-    }
+  // Inital Files Have Been Loaded - Send Message to Job_Actor to Start Simulation
+  self->send(self->state.parent, init_file_access_actor_v, 
+             self->state.num_steps);
 
-    // Check that the number of timesteps in the output buffer is not greater than the number of timesteps in the simulation
-    if (self->state.num_steps < self->state.file_access_actor_settings.num_timesteps_in_output_buffer) {
-        self->state.num_output_steps = self->state.num_steps;
-        self->state.file_access_actor_settings.num_timesteps_in_output_buffer = self->state.num_steps;
-    }
+  // initalize the forcingFile array
+  self->state.filesLoaded = 0;
+  for (int i = 1; i <= self->state.numFiles; i++) {
+    self->state.forcing_file_list.push_back(Forcing_File_Info(i));
+  }
 
-    // Set up the output container
-    self->state.output_container = new Output_Container(self->state.file_access_actor_settings.num_partitions_in_output_buffer,
-                                                        self->state.num_gru,
-                                                        self->state.file_access_actor_settings.num_timesteps_in_output_buffer,
-                                                        self->state.num_steps); 
+  // Check that the number of timesteps in the output buffer is not greater than the number of timesteps in the simulation
+  if (self->state.num_steps < fa_settings.num_timesteps_in_output_buffer) {
+    self->state.num_output_steps = self->state.num_steps;
+    fa_settings.num_timesteps_in_output_buffer = self->state.num_steps;
+  }
 
-    return {
+  // Set up the output container
+  self->state.output_container = new Output_Container(
+                                  fa_settings.num_partitions_in_output_buffer,
+                                  self->state.num_gru,
+                                  fa_settings.num_timesteps_in_output_buffer,
+                                  self->state.num_steps); 
 
-        // Message from the HRU actor to get the forcing file that is loaded
-        [=](access_forcing, int currentFile, caf::actor refToRespondTo) {
-            if (currentFile <= self->state.numFiles) {
-                if(self->state.forcing_file_list[currentFile - 1].isFileLoaded()) { // C++ starts at 0 Fortran starts at 1
-                    // Send the HRU actor the new forcing file
-                    // then tell it to get back to running
-                    self->send(refToRespondTo, new_forcing_file_v, 
-                        self->state.forcing_file_list[currentFile - 1].getNumSteps(),
-                        currentFile);
+  return {
 
-                } else {
-                    self->state.file_access_timing.updateStartPoint("read_duration");
-                    
-                    // Load the file
-                    read_forcingFile(self->state.handle_forcing_file_info, &currentFile,
-                        &self->state.stepsInCurrentFile, &self->state.start_gru, 
-                        &self->state.num_gru, &self->state.err);
-                    if (self->state.err != 0) {
-                        aout(self) << "ERROR: Reading Forcing" << std::endl;
-                    }
-                    self->state.filesLoaded += 1;
-                    self->state.forcing_file_list[currentFile - 1].updateNumSteps(self->state.stepsInCurrentFile);
+    // Message from the HRU actor to get the forcing file that is loaded
+    [=](access_forcing, int currentFile, caf::actor refToRespondTo) {
+        if (currentFile <= self->state.numFiles) {
+            if(self->state.forcing_file_list[currentFile - 1].isFileLoaded()) { // C++ starts at 0 Fortran starts at 1
+                // Send the HRU actor the new forcing file
+                // then tell it to get back to running
+                self->send(refToRespondTo, new_forcing_file_v, 
+                    self->state.forcing_file_list[currentFile - 1].getNumSteps(),
+                    currentFile);
 
-                    self->state.file_access_timing.updateEndPoint("read_duration");
-                    // Check if we have loaded all forcing files
-                    if(self->state.filesLoaded <= self->state.numFiles) {
-                        self->send(self, access_forcing_internal_v, currentFile + 1);
-                    }
-
-                    // Send the HRU actor the new forcing file
-                    // then tell it to get back to running
-                    self->send(refToRespondTo, new_forcing_file_v, 
-                        self->state.forcing_file_list[currentFile - 1].getNumSteps(),
-                        currentFile);
-                }
             } else {
-                aout(self) << currentFile << " is larger than expected for a forcing file request from an HRU" << std::endl;
+                self->state.file_access_timing.updateStartPoint("read_duration");
+                
+                // Load the file
+                read_forcingFile(self->state.handle_forcing_file_info, &currentFile,
+                    &self->state.stepsInCurrentFile, &self->state.start_gru, 
+                    &self->state.num_gru, &self->state.err);
+                if (self->state.err != 0) {
+                    aout(self) << "ERROR: Reading Forcing" << std::endl;
+                }
+                self->state.filesLoaded += 1;
+                self->state.forcing_file_list[currentFile - 1].updateNumSteps(self->state.stepsInCurrentFile);
+
+                self->state.file_access_timing.updateEndPoint("read_duration");
+                // Check if we have loaded all forcing files
+                if(self->state.filesLoaded <= self->state.numFiles) {
+                    self->send(self, access_forcing_internal_v, currentFile + 1);
+                }
+
+                // Send the HRU actor the new forcing file
+                // then tell it to get back to running
+                self->send(refToRespondTo, new_forcing_file_v, 
+                    self->state.forcing_file_list[currentFile - 1].getNumSteps(),
+                    currentFile);
             }
-        },
+        } else {
+            aout(self) << currentFile << " is larger than expected for a forcing file request from an HRU" << std::endl;
+        }
+    },
         
         // Internal Message to load all forcing files, calling this message allows other messages to be processed
         [=](access_forcing_internal, int currentFile) {
@@ -153,6 +156,19 @@ behavior file_access_actor(stateful_actor<file_access_state>* self, int start_gr
             }
 
             self->state.file_access_timing.updateEndPoint("write_duration");
+        },
+
+        // Write message from the job actor
+        [=](write_output, int steps_to_write, int start_gru, int max_gru) {
+            
+          writeOutput_fortran(self->state.handle_ncid, &steps_to_write,
+                              &start_gru, &max_gru, 
+                              &self->state.write_params_flag, 
+                              &self->state.err);
+          if (self->state.write_params_flag) 
+            self->state.write_params_flag = false;
+
+          return self->state.err;
         },
 
         [=](restart_failures) {
