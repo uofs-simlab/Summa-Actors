@@ -139,7 +139,7 @@ behavior job_actor(stateful_actor<job_state>* self,
     },
 
     [=](update_hru){
-      aout(self) << "Job_Actor: Updating HRUs\n";
+      // aout(self) << "Job_Actor: Updating HRUs\n";
       for(auto gru : self->state.gru_container.gru_list) {
         self->send(gru->getGRUActor(), update_hru_v, 
                     self->state.timestep, self->state.forcingStep);
@@ -150,7 +150,8 @@ behavior job_actor(stateful_actor<job_state>* self,
       self->state.num_gru_done_timestep++;
       
       if (self->state.num_gru_done_timestep >= self->state.num_gru) {
-        aout(self) << "Job_Actor: Done Update\n";
+        aout(self) << "Job_Actor: Done Update for timestep:" 
+                   << self->state.timestep << "\n";
         // write the output
         int steps_to_write = 1;
         int start_gru = 1;
@@ -166,9 +167,8 @@ behavior job_actor(stateful_actor<job_state>* self,
               self->send_exit(self->state.file_access_actor, 
                               exit_reason::user_shutdown);
               self->quit();
-            } else {
-              aout(self) << "Job_Actor: Done Writing Output\n";
-            }
+            } 
+            // else {  aout(self) << "Job_Actor: Done Writing Output\n"; }
           });
 
         self->state.timestep++;

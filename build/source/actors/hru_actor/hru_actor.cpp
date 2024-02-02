@@ -1,5 +1,7 @@
 #include "hru_actor.hpp"
 
+bool hru_extra_logging = false;
+
 namespace caf {
 
 behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
@@ -110,8 +112,9 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
     },
 
     [=](update_timeZoneOffset, int iFile) {
-        aout(self) << "Recieved New iFile-" << iFile 
-                    << " to update timeZoneOffset \n";
+        if (hru_extra_logging)
+            aout(self) << "Recieved New iFile-" << iFile 
+                       << " to update timeZoneOffset \n";
         int err;
         self->state.iFile = iFile;
         setTimeZoneOffset(&iFile, self->state.hru_data, &err);
@@ -119,8 +122,9 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
 
     // BMI - Functions
     [=](update_hru, int timestep, int forcingstep) {
-      aout(self) << "Computing Time Step: " << timestep 
-                 << " Forcing Step: " << forcingstep << "\n";
+      if (hru_extra_logging)
+        aout(self) << "Computing Time Step: " << timestep 
+                   << " Forcing Step: " << forcingstep << "\n";
       self->state.output_structure_step_index = 1;
       self->state.timestep = timestep;
       self->state.forcingStep = forcingstep;
