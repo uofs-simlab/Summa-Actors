@@ -16,6 +16,7 @@
 #include "json.hpp"
 #include <memory>
 #include <optional>
+#include <filesystem>
 
 using namespace caf;
 
@@ -134,89 +135,107 @@ void run_server(actor_system& system, const config& cfg, Distributed_Settings di
 
 
 void caf_main(actor_system& sys, const config& cfg) {
-    scoped_actor self{sys};
-    int err;
+  scoped_actor self{sys};
+  int err;
 
-    if (cfg.generate_config) {
-        std::cout << "Generating Config File" << std::endl;
-        generate_config_file();
-        return;
+  if (cfg.generate_config) {
+      std::cout << "Generating Config File" << std::endl;
+      generate_config_file();
+      return;
+  }
+
+  // Check if the master file was if not check if the config file was specified
+  if (!std::filesystem::exists((std::filesystem::path) cfg.master_file)) {
+    if (!std::filesystem::exists((std::filesystem::path) cfg.config_file)) {
+      aout(self) << "\n\n**** Config (-c) or Master File (-m) "
+                  << "Does Not Exist or Not Specified!! ****\n\n" 
+                  << command_line_help << std::endl;
+      return;
     }
+  }
 
-    struct stat file_to_check;
-    if (stat(cfg.master_file.c_str(), &file_to_check) != 0 && cfg.master_file != "") { // Check if master file exists
-        aout(self) << "ERROR: Master File Path Does Not Exist\n" << command_line_help; return;
-    } else if (stat(cfg.config_file.c_str(), &file_to_check) != 0 && cfg.config_file != "") { // Check if config file exists
-        aout(self) << "ERROR: Config File Path Does Not Exist\n" << command_line_help; return;
-    }
+  Distributed_Settings distributed_settings = readDistributedSettings(cfg.config_file);
+  Summa_Actor_Settings summa_actor_settings = readSummaActorSettings(cfg.config_file);
+  File_Access_Actor_Settings file_access_actor_settings = readFileAccessActorSettings(cfg.config_file);
+  Job_Actor_Settings job_actor_settings = readJobActorSettings(cfg.config_file);
+  HRU_Actor_Settings hru_actor_settings = readHRUActorSettings(cfg.config_file);
 
-    Distributed_Settings distributed_settings = readDistributedSettings(cfg.config_file);
-    Summa_Actor_Settings summa_actor_settings = readSummaActorSettings(cfg.config_file);
-    File_Access_Actor_Settings file_access_actor_settings = readFileAccessActorSettings(cfg.config_file);
-    Job_Actor_Settings job_actor_settings = readJobActorSettings(cfg.config_file);
-    HRU_Actor_Settings hru_actor_settings = readHRUActorSettings(cfg.config_file);
+  // -m setting overides config file
+  if (cfg.master_file != "")
+    job_actor_settings.file_manager_path = cfg.master_file;
+  
+  check_settings_from_json(distributed_settings, summa_actor_settings, 
+                           file_access_actor_settings, job_actor_settings,
+                           hru_actor_settings);
 
-    // -m setting overides config file
-    if (cfg.master_file != "") {
-        job_actor_settings.file_manager_path = cfg.master_file;
-    }
-    
-    check_settings_from_json(distributed_settings,
-                             summa_actor_settings, 
-                             file_access_actor_settings, 
-                             job_actor_settings,
-                             hru_actor_settings);
-
-    if (distributed_settings.distributed_mode) {
-        // only command line arguments needed are config_file and server-mode
-        if (cfg.server_mode) {
-            run_server(sys, 
-                       cfg, 
-                       distributed_settings, 
-                       summa_actor_settings, 
-                       file_access_actor_settings, 
-                       job_actor_settings, 
-                       hru_actor_settings);
-        } else {
-            run_client(sys, 
-                       cfg, 
-                       distributed_settings);
-        }
-
+  if (distributed_settings.distributed_mode) {
+    // only command line arguments needed are config_file and server-mode
+    if (cfg.server_mode) {
+        run_server(sys, cfg, distributed_settings, summa_actor_settings, 
+                   file_access_actor_settings, job_actor_settings, 
+                   hru_actor_settings);
     } else {
-
-        auto summa = sys.spawn(summa_actor, 
-                               cfg.startGRU, 
-                               cfg.countGRU, 
-                               summa_actor_settings, 
-                               file_access_actor_settings, 
-                               job_actor_settings, 
-                               hru_actor_settings, 
-                               self);
+        run_client(sys,cfg, distributed_settings);
     }
+
+  } else {
+    auto summa = sys.spawn(summa_actor, 
+                           cfg.startGRU, 
+                           cfg.countGRU, 
+                           summa_actor_settings, 
+                           file_access_actor_settings, 
+                           job_actor_settings, 
+                           hru_actor_settings, 
+                           self);
+  }
     
 }
 
+/**
+ Command Line Arguments Behavior:
+ - Inseart -t to distinguish the optional argument of countGRU. The original
+   Summa implementation usest "-g startGRU countGRU" to specify the number of 
+   GRUs. CAF needs to have a way to differentiate the two arguments and we 
+    chose to use -t for countGRU.
+*/
+
+
+
+
+
+
+
+
+
+
+
 int main(int argc, char** argv) {
-    // Parse command line arguments
+  // Parse command line arguments
     
-    // Insert -t for countGRU so CAF can differentiate the argument
-    std::vector<std::string> args(argv, argv + argc);
-    for (auto it = args.begin(); it != args.end(); ++it) {
-        if (*it == "-g" && std::next(it) != args.end()) {
-            auto count_gru = std::find_if(std::next(it), args.end(), [](const std::string& arg) {
-                return std::isdigit(arg.front());
-            });
-            if (count_gru != args.end()) {
-                args.insert(std::next(count_gru), "-t");
-            }
-            break;
-        }
-        else if (*it == "-h" || *it == "--help") {
-            std::cout << command_line_help << std::endl;
-            return 0;
-        }
+  // Convert char** argv to vector<string> args
+  std::vector<std::string> args(argv, argv + argc);
+
+
+  // Insert -t for countGRU so CAF can differentiate the argument
+  for (auto it = args.begin(); it != args.end(); ++it) {
+
+    // Find -g and insert -t after it
+    if (*it == "-g" && std::next(it) != args.end()) {
+      auto count_gru = std::find_if(std::next(it), args.end(), [](const std::string& arg) {
+          return std::isdigit(arg.front());
+      });
+      if (count_gru != args.end()) {
+          args.insert(std::next(count_gru), "-t");
+      }
+      break;
     }
+    else if (*it == "-h" || *it == "--help") {
+      std::cout << command_line_help << std::endl;
+      return 0;
+    }
+  }
+
+
     char** argv2 = new char*[args.size()];
     for (int i = 0; i < args.size(); ++i) {
         argv2[i] = new char[args[i].size() + 1];
