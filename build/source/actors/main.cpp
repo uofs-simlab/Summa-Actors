@@ -198,23 +198,10 @@ void caf_main(actor_system& sys, const config& cfg) {
    GRUs. CAF needs to have a way to differentiate the two arguments and we 
     chose to use -t for countGRU.
 */
-
-
-
-
-
-
-
-
-
-
-
 int main(int argc, char** argv) {
-  // Parse command line arguments
     
   // Convert char** argv to vector<string> args
   std::vector<std::string> args(argv, argv + argc);
-
 
   // Insert -t for countGRU so CAF can differentiate the argument
   for (auto it = args.begin(); it != args.end(); ++it) {
@@ -235,16 +222,16 @@ int main(int argc, char** argv) {
     }
   }
 
+  // Convert vector<string> args to char** argv2
+  char** argv2 = new char*[args.size()];
+  for (int i = 0; i < args.size(); ++i) {
+      argv2[i] = new char[args[i].size() + 1];
+      strcpy(argv2[i], args[i].c_str());
+  }
 
-    char** argv2 = new char*[args.size()];
-    for (int i = 0; i < args.size(); ++i) {
-        argv2[i] = new char[args[i].size() + 1];
-        strcpy(argv2[i], args[i].c_str());
-    }
-
-    argc = args.size();
-    exec_main_init_meta_objects<id_block::summa, io::middleman>();
-    caf::core::init_global_meta_objects(); 
-    return exec_main<>(caf_main, argc, argv2);
+  argc = args.size();
+  exec_main_init_meta_objects<id_block::summa, io::middleman>();
+  caf::core::init_global_meta_objects(); 
+  return exec_main<>(caf_main, argc, argv2);
 
 }
