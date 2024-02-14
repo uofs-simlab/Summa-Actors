@@ -66,13 +66,16 @@ class config : public actor_system_config {
 };
 
 void publish_server(caf::actor actor_to_publish, int port_number) {
-    std::cout << "Attempting to publish summa_server_actor on port " << port_number << std::endl;
-    auto is_port = io::publish(actor_to_publish, port_number);
-    if (!is_port) {
-        std::cerr << "********PUBLISH FAILED*******" << to_string(is_port.error()) << "\n";
-        return;
-    }
-    std::cout << "Successfully Published summa_server_actor on port " << *is_port << "\n";
+  std::cout << "Attempting to publish summa_server_actor on port " 
+            << port_number << std::endl;
+  auto is_port = io::publish(actor_to_publish, port_number);
+  if (!is_port) {
+    std::cerr << "********PUBLISH FAILED*******" 
+              << to_string(is_port.error()) << "\n";
+    return;
+  }
+  std::cout << "Successfully Published summa_server_actor on port " 
+            << *is_port << "\n";
 }
 
 void connect_client(caf::actor client_to_connect, std::string host_to_connect_to, int port_number) {
@@ -97,39 +100,43 @@ void run_client(actor_system& system, const config& cfg, Distributed_Settings di
    
 }
 
-void run_server(actor_system& system, const config& cfg, Distributed_Settings distributed_settings, 
-                Summa_Actor_Settings summa_actor_settings, File_Access_Actor_Settings file_access_actor_settings,
-                Job_Actor_Settings job_actor_settings, HRU_Actor_Settings hru_actor_settings) {
-    scoped_actor self{system};
-    int err;
+void run_server(actor_system& system, const config& cfg, 
+                Distributed_Settings distributed_settings, 
+                Summa_Actor_Settings summa_actor_settings, 
+                File_Access_Actor_Settings file_access_actor_settings,
+                Job_Actor_Settings job_actor_settings, 
+                HRU_Actor_Settings hru_actor_settings) {
+  scoped_actor self{system};
+  int err;
 
-    if (distributed_settings.port == -1) {
-        aout(self) << "ERROR: run_server() port - CHECK SETTINGS FILE\n";
-        return;
-    }
+  if (distributed_settings.port == -1) {
+    aout(self) << "ERROR: run_server() port - CHECK SETTINGS FILE\n";
+    return;
+  }
 
-    // Check if we have are the backup server
-    if (cfg.backup_server) {          
-        auto server = system.spawn(summa_backup_server_init,
-                                   distributed_settings,
-                                   summa_actor_settings,
-                                   file_access_actor_settings,
-                                   job_actor_settings,
-                                   hru_actor_settings);
+  // Check if we have are the backup server
+  if (cfg.backup_server) {          
+    auto server = system.spawn(summa_backup_server_init,
+                                distributed_settings,
+                                summa_actor_settings,
+                                file_access_actor_settings,
+                                job_actor_settings,
+                                hru_actor_settings);
 
-        publish_server(server, distributed_settings.port);
-        connect_client(server, distributed_settings.servers_list[0], distributed_settings.port);
+    publish_server(server, distributed_settings.port);
+    connect_client(server, distributed_settings.servers_list[0], distributed_settings.port);
 
-    } else {     
-        auto server = system.spawn(summa_server_init, 
-                                   distributed_settings,
-                                   summa_actor_settings, 
-                                   file_access_actor_settings, 
-                                   job_actor_settings, 
-                                   hru_actor_settings);  
-                 
-        publish_server(server, distributed_settings.port);
-    }
+  } else {  
+    aout(self) << "\n\n*****Starting SUMMA-Server*****\n\n";
+    auto server = system.spawn(summa_server_init, 
+                                distributed_settings,
+                                summa_actor_settings, 
+                                file_access_actor_settings, 
+                                job_actor_settings, 
+                                hru_actor_settings);  
+              
+    publish_server(server, distributed_settings.port);
+  }
 
 }
 
@@ -171,11 +178,11 @@ void caf_main(actor_system& sys, const config& cfg) {
   if (distributed_settings.distributed_mode) {
     // only command line arguments needed are config_file and server-mode
     if (cfg.server_mode) {
-        run_server(sys, cfg, distributed_settings, summa_actor_settings, 
-                   file_access_actor_settings, job_actor_settings, 
-                   hru_actor_settings);
+      run_server(sys, cfg, distributed_settings, summa_actor_settings, 
+                  file_access_actor_settings, job_actor_settings, 
+                  hru_actor_settings);
     } else {
-        run_client(sys,cfg, distributed_settings);
+      run_client(sys,cfg, distributed_settings);
     }
 
   } else {
@@ -208,11 +215,15 @@ int main(int argc, char** argv) {
 
     // Find -g and insert -t after it
     if (*it == "-g" && std::next(it) != args.end()) {
-      auto count_gru = std::find_if(std::next(it), args.end(), [](const std::string& arg) {
-          return std::isdigit(arg.front());
+      auto count_gru = std::find_if(std::next(it), args.end(), 
+                                    [](const std::string& arg) {
+        return std::isdigit(arg.front());
       });
       if (count_gru != args.end()) {
-          args.insert(std::next(count_gru), "-t");
+        args.insert(std::next(count_gru), "-t");
+      } else {
+        std::cerr << "Error: -g requires a countGRU argument" << std::endl;
+        return 1;
       }
       break;
     }
@@ -230,8 +241,9 @@ int main(int argc, char** argv) {
   }
 
   argc = args.size();
-  exec_main_init_meta_objects<id_block::summa, io::middleman>();
+  exec_main_init_meta_objects<io::middleman, id_block::summa>();
   caf::core::init_global_meta_objects(); 
-  return exec_main<>(caf_main, argc, argv2);
+  return exec_main<io::middleman, id_block::summa>(caf_main, argc, argv2);
 
 }
+

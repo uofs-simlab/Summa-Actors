@@ -153,23 +153,22 @@ behavior job_actor(stateful_actor<job_state>* self,
         aout(self) << "Job_Actor: Done Update for timestep:" 
                    << self->state.timestep << "\n";
         // write the output
-        int steps_to_write = 1;
-        int start_gru = 1;
-
-        self->request(self->state.file_access_actor, caf::infinite,
-          write_output_v, steps_to_write, start_gru, self->state.num_gru).await(
-          [=](int err) {
-            if (err != 0) {
-              aout(self) << "Job_Actor: Error Writing Output\n";
-              for (auto GRU : self->state.gru_container.gru_list)
-                self->send_exit(GRU->getGRUActor(), exit_reason::user_shutdown);
+        // int steps_to_write = 1;
+        // int start_gru = 1;
+        // self->request(self->state.file_access_actor, caf::infinite,
+        //   write_output_v, steps_to_write, start_gru, self->state.num_gru).await(
+        //   [=](int err) {
+        //     if (err != 0) {
+        //       aout(self) << "Job_Actor: Error Writing Output\n";
+        //       for (auto GRU : self->state.gru_container.gru_list)
+        //         self->send_exit(GRU->getGRUActor(), exit_reason::user_shutdown);
               
-              self->send_exit(self->state.file_access_actor, 
-                              exit_reason::user_shutdown);
-              self->quit();
-            } 
-            // else {  aout(self) << "Job_Actor: Done Writing Output\n"; }
-          });
+        //       self->send_exit(self->state.file_access_actor, 
+        //                       exit_reason::user_shutdown);
+        //       self->quit();
+        //     } 
+        //     // else {  aout(self) << "Job_Actor: Done Writing Output\n"; }
+        //   });
 
         self->state.timestep++;
         self->state.forcingStep++;
@@ -177,11 +176,7 @@ behavior job_actor(stateful_actor<job_state>* self,
         // Check if we are done the simulation
         if (self->state.timestep > self->state.num_steps) {
           aout(self) << "Job_Actor: Done Job\n";
-          for (auto GRU : self->state.gru_container.gru_list) {
-            self->send_exit(GRU->getGRUActor(), exit_reason::user_shutdown);
-          }
-          self->send_exit(self->state.file_access_actor, exit_reason::user_shutdown);
-          self->quit();
+          self->send(self, finalize_v);
         }
         // Check if we need another forcing file
         else if (self->state.forcingStep > self->state.stepsInCurrentFFile) {

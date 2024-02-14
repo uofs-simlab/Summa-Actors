@@ -160,14 +160,15 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
 
         // Write message from the job actor
         [=](write_output, int steps_to_write, int start_gru, int max_gru) {
-            
+          self->state.file_access_timing.updateStartPoint("write_duration");
+          
           writeOutput_fortran(self->state.handle_ncid, &steps_to_write,
                               &start_gru, &max_gru, 
                               &self->state.write_params_flag, 
                               &self->state.err);
           if (self->state.write_params_flag) 
             self->state.write_params_flag = false;
-
+          self->state.file_access_timing.updateEndPoint("write_duration");
           return self->state.err;
         },
 
@@ -208,28 +209,27 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
 }
 
 
-void writeOutput(stateful_actor<file_access_state>* self, Output_Partition* partition) {
-                
-    int num_timesteps_to_write = partition->getNumStoredTimesteps();
-    int start_gru = partition->getStartGRUIndex();
-    int max_gru = partition->getMaxGRUIndex();
-    bool write_param_flag = partition->isWriteParams();
-    
-    writeOutput_fortran(self->state.handle_ncid, &num_timesteps_to_write,
-        &start_gru, &max_gru, &write_param_flag, &self->state.err);
-    
-    partition->updateTimeSteps();
+void writeOutput(stateful_actor<file_access_state>* self, Output_Partition* partition) {              
+  int num_timesteps_to_write = partition->getNumStoredTimesteps();
+  int start_gru = partition->getStartGRUIndex();
+  int max_gru = partition->getMaxGRUIndex();
+  bool write_param_flag = partition->isWriteParams();
+  
+  writeOutput_fortran(self->state.handle_ncid, &num_timesteps_to_write,
+      &start_gru, &max_gru, &write_param_flag, &self->state.err);
+  
+  partition->updateTimeSteps();
 
-    int num_steps_before_next_write = partition->getNumStoredTimesteps();
+  int num_steps_before_next_write = partition->getNumStoredTimesteps();
 
-    std::vector<caf::actor> hrus_to_update = partition->getReadyToWriteList();
-    
-    for (int i = 0; i < hrus_to_update.size(); i++) {
-        self->send(hrus_to_update[i], num_steps_before_write_v, num_steps_before_next_write);
-        self->send(hrus_to_update[i], run_hru_v);
-    }
+  std::vector<caf::actor> hrus_to_update = partition->getReadyToWriteList();
+  
+  for (int i = 0; i < hrus_to_update.size(); i++) {
+    self->send(hrus_to_update[i], num_steps_before_write_v, num_steps_before_next_write);
+    self->send(hrus_to_update[i], run_hru_v);
+  }
 
-    partition->resetReadyToWriteList();
+  partition->resetReadyToWriteList();
 }
 
 } // end namespace

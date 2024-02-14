@@ -10,37 +10,39 @@ int default_dt_init_factor = 1;
 
 
 
-std::optional<std::vector<std::string>> getSettingsArray(std::string json_settings_file, std::string key_1, std::string key_2) {
-    json settings;
-    std::ifstream settings_file(json_settings_file);
-    if (!settings_file.good()) return {}; // return none in the optional
-    settings_file >> settings;
-    settings_file.close();
-    std::vector<std::string> return_vector;
+std::optional<std::vector<std::string>> getSettingsArray(
+		std::string json_settings_file, std::string key_1, std::string key_2) {
+  json settings;
+  std::ifstream settings_file(json_settings_file);
+  if (!settings_file.good()) return {}; // return none in the optional
+  settings_file >> settings;
+  settings_file.close();
+  std::vector<std::string> return_vector;
 
-    // find first key
-    try {
-        if (settings.find(key_1) != settings.end()) {
-            json key_1_settings = settings[key_1];
+  // find first key
+  try {
+    if (settings.find(key_1) != settings.end()) {
+      json key_1_settings = settings[key_1];
 
-            // find value behind second key
-            if (key_1_settings.find(key_2) != key_1_settings.end()) {
-                for(auto& host : key_1_settings[key_2]) {
-                    return_vector.push_back(host["hostname"]);
-                }
-                return return_vector;
-            } else 
-                return {};
-
-        } else {
-            return {}; // return none in the optional (error value)
-        }
-    } catch (json::exception& e) {
-        std::cout << e.what() << "\n";
-        std::cout << key_1 << "\n";
-        std::cout << key_2 << "\n";
+      // find value behind second key
+      if (key_1_settings.find(key_2) != key_1_settings.end()) {
+        for(auto& host : key_1_settings[key_2])
+          return_vector.push_back(host["hostname"]);
+      
+        return return_vector;
+      } 
+      else 
         return {};
-    }
+
+    } 
+    else
+      return {}; // return none in the optional (error value)
+  } catch (json::exception& e) {
+    std::cout << e.what() << "\n";
+    std::cout << key_1 << "\n";
+    std::cout << key_2 << "\n";
+    return {};
+  }
 }
 
 Distributed_Settings readDistributedSettings(std::string json_settings_file) {
