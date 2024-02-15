@@ -65,19 +65,6 @@ class config : public actor_system_config {
     }
 };
 
-void publish_server(caf::actor actor_to_publish, int port_number) {
-  std::cout << "Attempting to publish summa_server_actor on port " 
-            << port_number << std::endl;
-  auto is_port = io::publish(actor_to_publish, port_number);
-  if (!is_port) {
-    std::cerr << "********PUBLISH FAILED*******" 
-              << to_string(is_port.error()) << "\n";
-    return;
-  }
-  std::cout << "Successfully Published summa_server_actor on port " 
-            << *is_port << "\n";
-}
-
 void connect_client(caf::actor client_to_connect, std::string host_to_connect_to, int port_number) {
     if (!host_to_connect_to.empty() && port_number > 0) {
         uint16_t port = 4444;
@@ -93,10 +80,12 @@ void run_client(actor_system& system, const config& cfg, Distributed_Settings di
 
     aout(self) << "Starting SUMMA-Client in Distributed Mode\n";
     
-    auto client = system.spawn(summa_client_init);
-    for (auto host : distributed_settings.servers_list) {
-        connect_client(client, host, distributed_settings.port);
-    }
+    auto client = system.spawn(summa_client, distributed_settings);
+
+    // Connect to the servers
+    // for (auto host : distributed_settings.servers_list) {
+    //     connect_client(client, host, distributed_settings.port);
+    // }
    
 }
 
@@ -123,19 +112,17 @@ void run_server(actor_system& system, const config& cfg,
                                 job_actor_settings,
                                 hru_actor_settings);
 
-    publish_server(server, distributed_settings.port);
-    connect_client(server, distributed_settings.servers_list[0], distributed_settings.port);
+    // publish_server(server, distributed_settings.port);
+    // connect_client(server, distributed_settings.servers_list[0], distributed_settings.port);
 
   } else {  
     aout(self) << "\n\n*****Starting SUMMA-Server*****\n\n";
-    auto server = system.spawn(summa_server_init, 
-                                distributed_settings,
-                                summa_actor_settings, 
-                                file_access_actor_settings, 
-                                job_actor_settings, 
-                                hru_actor_settings);  
-              
-    publish_server(server, distributed_settings.port);
+    auto server = system.spawn(summa_server, 
+                               distributed_settings,
+                               summa_actor_settings, 
+                               file_access_actor_settings, 
+                               job_actor_settings, 
+                               hru_actor_settings);
   }
 
 }
@@ -146,17 +133,17 @@ void caf_main(actor_system& sys, const config& cfg) {
   int err;
 
   if (cfg.generate_config) {
-      std::cout << "Generating Config File" << std::endl;
-      generate_config_file();
-      return;
+    std::cout << "Generating Config File" << std::endl;
+    generate_config_file();
+    return;
   }
 
   // Check if the master file was if not check if the config file was specified
   if (!std::filesystem::exists((std::filesystem::path) cfg.master_file)) {
     if (!std::filesystem::exists((std::filesystem::path) cfg.config_file)) {
       aout(self) << "\n\n**** Config (-c) or Master File (-m) "
-                  << "Does Not Exist or Not Specified!! ****\n\n" 
-                  << command_line_help << std::endl;
+                 << "Does Not Exist or Not Specified!! ****\n\n" 
+                 << command_line_help << std::endl;
       return;
     }
   }

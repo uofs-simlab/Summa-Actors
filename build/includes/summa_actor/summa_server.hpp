@@ -19,41 +19,45 @@
 namespace caf {
 
 struct summa_server_state {
-    strong_actor_ptr current_server; // if server is a backup then this will be set to the lead server
-    actor current_server_actor;
+  // Server reference -- set if this is a backup server
+  strong_actor_ptr current_server;
+  actor current_server_actor;
+  
+  // Our hostnme
+  std::string hostname;
 
-    std::string hostname;
+  // Output CSV file
+  std::string csv_file_path;
+  std::string csv_output_name = "/batch_results.csv";
 
-    std::string csv_file_path;
+  // Containers
+  Client_Container client_container;
+  Batch_Container batch_container;
+  // Actor Reference, Hostname
+  std::vector<std::tuple<caf::actor, std::string>> backup_servers_list;
 
-    std::string csv_output_name = "/batch_results.csv";
+  // Settings Structures
+  Distributed_Settings distributed_settings;
+  Summa_Actor_Settings summa_actor_settings;
+  File_Access_Actor_Settings file_access_actor_settings;
+  Job_Actor_Settings job_actor_settings;
+  HRU_Actor_Settings hru_actor_settings;
 
-    
-    Client_Container client_container;
-    Batch_Container batch_container;
-    
-    // Actor Reference, Hostname
-    std::vector<std::tuple<caf::actor, std::string>> backup_servers_list;
-
-    // Settings Structures
-    Distributed_Settings distributed_settings;
-    Summa_Actor_Settings summa_actor_settings;
-    File_Access_Actor_Settings file_access_actor_settings;
-    Job_Actor_Settings job_actor_settings;
-    HRU_Actor_Settings hru_actor_settings;
+  // Timing vars
+  using chrono_time = std::chrono::time_point<std::chrono::system_clock>;
+  chrono_time start_time;
+  chrono_time end_time;
+  bool started_simulation = false;
 
 };
 
-// Summa Server setup behaviour - initializes the state for the server
-behavior summa_server_init(stateful_actor<summa_server_state>* self, 
-    Distributed_Settings distributed_settings, 
-    Summa_Actor_Settings summa_actor_settings, 
-    File_Access_Actor_Settings file_access_actor_settings,
-    Job_Actor_Settings job_actor_settings, 
-    HRU_Actor_Settings hru_actor_settings);
-
 // Summa Server behaviour - handles messages from clients
-behavior summa_server(stateful_actor<summa_server_state>* self);
+behavior summa_server(stateful_actor<summa_server_state>* self,
+                      Distributed_Settings distributed_settings, 
+                      Summa_Actor_Settings summa_actor_settings, 
+                      File_Access_Actor_Settings file_access_actor_settings,
+                      Job_Actor_Settings job_actor_settings, 
+                      HRU_Actor_Settings hru_actor_settings);
 
 // Summa Server backup behaviour - handles the exit messages for clients
 behavior summa_server_exit(stateful_actor<summa_server_state>* self);
@@ -65,7 +69,8 @@ void initializeCSVOutput(std::string csv_output_path);
 void sendAllBackupServersList(stateful_actor<summa_server_state>* self);
 
 // Look for the lost backup server in the backup servers list and remove it
-void findAndRemoveLostBackupServer(stateful_actor<summa_server_state>* self, actor_addr lost_backup_server);
+void findAndRemoveLostBackupServer(stateful_actor<summa_server_state>* self, 
+                                   actor_addr lost_backup_server);
 
 // Check for an idle client to send the failed or next batch we find that is not assigned
 void checkForIdleClients(stateful_actor<summa_server_state>* self);

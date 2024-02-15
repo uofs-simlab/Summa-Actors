@@ -143,28 +143,28 @@ behavior summa_actor(stateful_actor<summa_actor_state>* self,
       if (self->state.batch_container.hasUnsolvedBatches()) {
         spawnJob(self);
       } else {
-        aout(self) << "All Batches Finished\n";
-        aout(self) << self->state.batch_container.getAllBatchInfoString();
+        aout(self) << "All Batches Finished\n"
+                   << self->state.batch_container.getAllBatchInfoString();
         self->state.summa_actor_timing.updateEndPoint("total_duration");
+
+        double total_dur_sec = self->state.summa_actor_timing.getDuration(
+            "total_duration").value_or(-1.0);
+        double total_dur_min = total_dur_sec / 60;
+        double total_dur_hr = total_dur_min / 60;
+        double read_dur_sec = self->state.batch_container.getTotalReadTime();
+        double write_dur_sec = self->state.batch_container.getTotalWriteTime();
          
         aout(self) << "\n________________SUMMA INFO________________\n"
-            << "Total Duration = " 
-            << self->state.summa_actor_timing.getDuration(
-                  "total_duration").value_or(-1.0) << " Seconds\n"
-            << "Total Duration = " 
-            << self->state.summa_actor_timing.getDuration(
-                  "total_duration").value_or(-1.0) / 60 << " Minutes\n"
-            << "Total Duration = " 
-            << (self->state.summa_actor_timing.getDuration(
-                  "total_duration").value_or(-1.0) / 60) / 60 << " Hours\n"
-            << "Total Read Duration = " 
-            << self->state.batch_container.getTotalReadTime()  << "Seconds\n"
-            << "Total Write Duration = " 
-            << self->state.batch_container.getTotalWriteTime() << "Seconds\n"
-            << "Num Failed = " << self->state.numFailed << "\n"
-            << "___________________Program Finished__________________\n";
+                   << "Total Duration = " << total_dur_sec << " Seconds\n"
+                   << "Total Duration = " << total_dur_min << " Minutes\n"
+                   << "Total Duration = " << total_dur_hr << " Hours\n"
+                   << "Total Read Duration = " << read_dur_sec << "Seconds\n"
+                   << "Total Write Duration = " << write_dur_sec << "Seconds\n"
+                   << "Num Failed = " << self->state.numFailed << "\n"
+                   << "___________________Program Finished__________________\n";
         
-        self->quit();
+        self->send(self->state.parent, done_batch_v, total_dur_sec, 
+                   read_dur_sec, write_dur_sec);
       }
     },
 

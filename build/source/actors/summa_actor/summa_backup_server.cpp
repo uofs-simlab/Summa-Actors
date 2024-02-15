@@ -38,7 +38,12 @@ behavior summa_backup_server_init(stateful_actor<summa_server_state>* self, Dist
                 if (std::get<0>(self->state.backup_servers_list[0]) == self) {
                     aout(self) << "*** Becoming New Server\n";
                     self->state.backup_servers_list.erase(self->state.backup_servers_list.begin());
-                    self->become(summa_server(self));
+                    self->become(summa_server(self, 
+                                              self->state.distributed_settings, 
+                                              self->state.summa_actor_settings, 
+                                              self->state.file_access_actor_settings, 
+                                              self->state.job_actor_settings, 
+                                              self->state.hru_actor_settings));
                 } else {
                     aout(self) << "Still A backup - but need to connect to new server\n";
                     connecting_backup(self, std::get<1>(self->state.backup_servers_list[0]), (uint16_t) self->state.distributed_settings.port);
