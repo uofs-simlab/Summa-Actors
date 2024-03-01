@@ -3,6 +3,8 @@
 using json = nlohmann::json;
 using chrono_time = std::chrono::time_point<std::chrono::system_clock>;
 
+bool batching = true;
+int batch_size = 10;
 
 namespace caf {
 
@@ -91,24 +93,12 @@ behavior job_actor(stateful_actor<job_state>* self,
 
         auto& gru_container = self->state.gru_container;
         
-        // Spawn GRUs
-        for (int i = 0; i < gru_container.num_gru_in_run_domain; i++) {
-          auto global_gru_index = gru_container.gru_list.size() 
-                                          + self->state.start_gru;
-          auto local_gru_index = gru_container.gru_list.size() + 1;                                
-          
-          auto gru = self->spawn(hru_actor,global_gru_index, local_gru_index,               
-                                 self->state.hru_actor_settings,                                
-                                 self->state.file_access_actor, self);
-
-          // Create the GRU object (Job uses this to keep track of GRU status)
-          gru_container.gru_list.push_back(new GRU(global_gru_index, 
-                  local_gru_index, gru, 
-                  self->state.dt_init_start_factor, 
-                  self->state.hru_actor_settings.rel_tol,
-                  self->state.hru_actor_settings.abs_tol,
-                  self->state.max_run_attempts));  
-        }
+        // Spawn HRUs in batches or individually
+        if (batching)
+          spawnHRUBatches(self);
+        else
+          spawnHRUActors(self, false);
+        
 
         aout(self) << "GRUs Initialized\n";
         self->send(self->state.file_access_actor, access_forcing_v, 
@@ -118,7 +108,7 @@ behavior job_actor(stateful_actor<job_state>* self,
         // # Normal Mode
         // #####################################################
         aout(self) << "Job_Actor: Normal Mode\n";
-        self->send(self, init_normal_mode_v);
+        spawnHRUActors(self, true);
       }
     },
 
@@ -149,7 +139,8 @@ behavior job_actor(stateful_actor<job_state>* self,
     [=](done_update){
       self->state.num_gru_done_timestep++;
       
-      if (self->state.num_gru_done_timestep >= self->state.num_gru) {
+      if (self->state.num_gru_done_timestep >= 
+          self->state.gru_container.gru_list.size()) {
         aout(self) << "Job_Actor: Done Update for timestep:" 
                    << self->state.timestep << "\n";
         // write the output
@@ -203,38 +194,6 @@ behavior job_actor(stateful_actor<job_state>* self,
     // #####################################################
     // # Normal Mode Start
     // #####################################################
-    [=](init_normal_mode) {
-      auto& gru_container = self->state.gru_container;
-
-      gru_container.gru_start_time = std::chrono::high_resolution_clock::now();
-      gru_container.run_attempts_left = self->state.max_run_attempts;
-      gru_container.run_attempts_left--;
-
-
-      // Spawn the GRUs
-      for(int i = 0; i < gru_container.num_gru_in_run_domain; i++) {
-        auto global_gru_index = gru_container.gru_list.size() 
-                                + self->state.start_gru;
-        auto local_gru_index = gru_container.gru_list.size() + 1; 
-
-        auto gru = self->spawn(hru_actor, global_gru_index, local_gru_index,               
-                               self->state.hru_actor_settings,                                
-                               self->state.file_access_actor, self);
-
-        // Create the GRU object (Job uses this to keep track of GRU status)
-        gru_container.gru_list.push_back(
-            new GRU(global_gru_index, local_gru_index, gru, 
-                    self->state.dt_init_start_factor, 
-                    self->state.hru_actor_settings.rel_tol,
-                    self->state.hru_actor_settings.abs_tol,
-                    self->state.max_run_attempts));  
-
-        // Start the HRU_Actor to compute all timesteps asynchonously
-        self->send(gru, update_hru_async_v);  
-      }
-    }, // end init_gru
-
-
     [=](done_hru, int local_gru_index) {
       auto& gru_container = self->state.gru_container;
       using namespace std::chrono;
@@ -271,141 +230,205 @@ behavior job_actor(stateful_actor<job_state>* self,
 
     },
 
-      [=](restart_failures) {
-        aout(self) << "Job_Actor: Restarting GRUs that Failed\n";
+    [=](restart_failures) {
+      aout(self) << "Job_Actor: Restarting GRUs that Failed\n";
 
-        self->state.gru_container.num_gru_done = 0;
-        self->state.gru_container.num_gru_in_run_domain = self->state.gru_container.num_gru_failed;
-        self->state.gru_container.num_gru_failed = 0;
+      self->state.gru_container.num_gru_done = 0;
+      self->state.gru_container.num_gru_in_run_domain = self->state.gru_container.num_gru_failed;
+      self->state.gru_container.num_gru_failed = 0;
 
-        self->send(self->state.file_access_actor, restart_failures_v); // notify file_access_actor
+      self->send(self->state.file_access_actor, restart_failures_v); // notify file_access_actor
 
-        // Set Sundials tolerance or decrease timestep length
-        if (self->state.hru_actor_settings.rel_tol > 0 && 
-          self->state.hru_actor_settings.abs_tol > 0) {
-          self->state.hru_actor_settings.rel_tol /= 10;
-          self->state.hru_actor_settings.abs_tol /= 10;
-        } else {
-          self->state.hru_actor_settings.dt_init_factor *= 2;
+      // Set Sundials tolerance or decrease timestep length
+      if (self->state.hru_actor_settings.rel_tol > 0 && 
+        self->state.hru_actor_settings.abs_tol > 0) {
+        self->state.hru_actor_settings.rel_tol /= 10;
+        self->state.hru_actor_settings.abs_tol /= 10;
+      } else {
+        self->state.hru_actor_settings.dt_init_factor *= 2;
+      }
+
+
+      for(auto GRU : self->state.gru_container.gru_list) {
+        if(GRU->isFailed()) {
+          GRU->setRunning();
+          GRU->decrementAttemptsLeft();
+          auto global_gru_index = GRU->getGlobalGRUIndex();
+          auto local_gru_index = GRU->getLocalGRUIndex();
+          auto gru_actor = self->spawn(hru_actor, 
+                                        global_gru_index, 
+                                        local_gru_index, 
+                                        self->state.hru_actor_settings,
+                                        self->state.file_access_actor, 
+                                        self);
+          self->state.gru_container.gru_list[local_gru_index-1]->setGRUActor(gru_actor);
         }
+      }
+    },
 
+    [=](finalize) {            
+      std::vector<serializable_netcdf_gru_actor_info> 
+          netcdf_gru_info = getGruNetcdfInfo(
+            self->state.max_run_attempts,self->state.gru_container.gru_list);
+        
+            
+      self->state.num_gru_failed = std::count_if(netcdf_gru_info.begin(), 
+          netcdf_gru_info.end(), [](auto& gru_info) {
+        return !gru_info.successful;
+      });
 
-        for(auto GRU : self->state.gru_container.gru_list) {
-          if(GRU->isFailed()) {
-            GRU->setRunning();
-            GRU->decrementAttemptsLeft();
-            auto global_gru_index = GRU->getGlobalGRUIndex();
-            auto local_gru_index = GRU->getLocalGRUIndex();
-            auto gru_actor = self->spawn(hru_actor, 
-                                          global_gru_index, 
-                                          local_gru_index, 
-                                          self->state.hru_actor_settings,
-                                          self->state.file_access_actor, 
-                                          self);
-            self->state.gru_container.gru_list[local_gru_index-1]->setGRUActor(gru_actor);
+      self->request(self->state.file_access_actor, infinite, finalize_v).await(
+        [=](std::tuple<double, double> read_write_duration) {
+          int err = 0;
+          for (auto GRU : self->state.gru_container.gru_list) {
+            delete GRU;
           }
-        }
-      },
+          self->state.gru_container.gru_list.clear();
 
-      [=](finalize) {            
-        std::vector<serializable_netcdf_gru_actor_info> 
-            netcdf_gru_info = getGruNetcdfInfo(
-              self->state.max_run_attempts,self->state.gru_container.gru_list);
-          
-              
-        self->state.num_gru_failed = std::count_if(netcdf_gru_info.begin(), 
-            netcdf_gru_info.end(), [](auto& gru_info) {
-          return !gru_info.successful;
-        });
+          self->state.job_timing.updateEndPoint("total_duration");
 
-        self->request(self->state.file_access_actor, infinite, finalize_v).await(
-          [=](std::tuple<double, double> read_write_duration) {
-            int err = 0;
-            for (auto GRU : self->state.gru_container.gru_list) {
-              delete GRU;
-            }
-            self->state.gru_container.gru_list.clear();
+          aout(self) << "\n________________PRINTING JOB_ACTOR TIMING INFO RESULTS________________\n"
+                      << "Total Duration = " << self->state.job_timing.getDuration("total_duration").value_or(-1.0) << " Seconds\n"
+                      << "Total Duration = " << self->state.job_timing.getDuration("total_duration").value_or(-1.0) / 60 << " Minutes\n"
+                      << "Total Duration = " << (self->state.job_timing.getDuration("total_duration").value_or(-1.0) / 60) / 60 << " Hours\n"
+                      << "________________________________________________________________________\n\n";
 
-            self->state.job_timing.updateEndPoint("total_duration");
+          deallocateJobActor(&err);
 
-            aout(self) << "\n________________PRINTING JOB_ACTOR TIMING INFO RESULTS________________\n"
-                        << "Total Duration = " << self->state.job_timing.getDuration("total_duration").value_or(-1.0) << " Seconds\n"
-                        << "Total Duration = " << self->state.job_timing.getDuration("total_duration").value_or(-1.0) / 60 << " Minutes\n"
-                        << "Total Duration = " << (self->state.job_timing.getDuration("total_duration").value_or(-1.0) / 60) / 60 << " Hours\n"
-                        << "________________________________________________________________________\n\n";
+            // Tell Parent we are done
+          self->send(self->state.parent, 
+                      done_job_v, 
+                      self->state.num_gru_failed, 
+                      self->state.job_timing.getDuration("total_duration").value_or(-1.0),
+                      std::get<0>(read_write_duration), 
+                      std::get<1>(read_write_duration));
+          self->quit();
 
-            deallocateJobActor(&err);
+      });
+    },
 
-              // Tell Parent we are done
-            self->send(self->state.parent, 
-                        done_job_v, 
-                        self->state.num_gru_failed, 
-                        self->state.job_timing.getDuration("total_duration").value_or(-1.0),
-                        std::get<0>(read_write_duration), 
-                        std::get<1>(read_write_duration));
-            self->quit();
+    // Handle Sundials Error
+    [=](err_atom, caf::actor src, double rtol, double atol) {
+      self->state.hru_actor_settings.rel_tol = rtol;
+      self->state.hru_actor_settings.abs_tol = atol;
+      handleGRUError(self, src);
+    },
 
-        });
-      },
-
-      // Handle Sundials Error
-      [=](err_atom, caf::actor src, double rtol, double atol) {
-        self->state.hru_actor_settings.rel_tol = rtol;
-        self->state.hru_actor_settings.abs_tol = atol;
-        handleGRUError(self, src);
-      },
-
-      [=](const error& err, caf::actor src) {
+    [=](const error& err, caf::actor src) {
+      
+      aout(self) << "\n\n ********** ERROR HANDLER \n";
+      
+      switch(err.category()) {
         
-        aout(self) << "\n\n ********** ERROR HANDLER \n";
-        
-        switch(err.category()) {
-          
-          case type_id_v<hru_error>:
-            aout(self) << "HRU Error: " << to_string(err) << "\n";
-            handleGRUError(self, src);
+        case type_id_v<hru_error>:
+          aout(self) << "HRU Error: " << to_string(err) << "\n";
+          handleGRUError(self, src);
 
-            break;
-          case type_id_v<file_access_error>:
-            if (err == file_access_error::mDecisions_error) {
-              aout(self) << "Check mDecisions File For Correctness";
-            } else {
-              aout(self) << "File Access Error: " << to_string(err) << "No Handling Implemented\n";
-            }
-            for (auto GRU : self->state.gru_container.gru_list) {
-              self->send_exit(GRU->getGRUActor(), exit_reason::user_shutdown);
-            }
-            self->quit();
-            break;
-          default:
-            aout(self) << "Unknown Error: " << to_string(err) << "\n";
-            break;
-        }
-      },
+          break;
+        case type_id_v<file_access_error>:
+          if (err == file_access_error::mDecisions_error) {
+            aout(self) << "Check mDecisions File For Correctness";
+          } else {
+            aout(self) << "File Access Error: " << to_string(err) << "No Handling Implemented\n";
+          }
+          for (auto GRU : self->state.gru_container.gru_list) {
+            self->send_exit(GRU->getGRUActor(), exit_reason::user_shutdown);
+          }
+          self->quit();
+          break;
+        default:
+          aout(self) << "Unknown Error: " << to_string(err) << "\n";
+          break;
+      }
+    },
   };
 }
 
-std::vector<serializable_netcdf_gru_actor_info> getGruNetcdfInfo(int max_run_attempts, std::vector<GRU*> &gru_list) {
 
-    std::vector<serializable_netcdf_gru_actor_info> gru_netcdf_info;
-    for(auto gru : gru_list) {
+void spawnHRUActors(stateful_actor<job_state>* self, bool normal_mode) {
+  auto& gru_container = self->state.gru_container;
+  gru_container.gru_start_time = std::chrono::high_resolution_clock::now();
+  gru_container.run_attempts_left = self->state.max_run_attempts;
+  gru_container.run_attempts_left--;
 
-        serializable_netcdf_gru_actor_info gru_info;
-        gru_info.run_time = gru->getRunTime();
-        gru_info.init_duration = gru->getInitDuration();
-        gru_info.forcing_duration = gru->getForcingDuration();
-        gru_info.run_physics_duration = gru->getRunPhysicsDuration();
-        gru_info.write_output_duration = gru->getWriteOutputDuration();
-        
-        gru_info.num_attempts = max_run_attempts - gru->getAttemptsLeft() + 1;
-        gru_info.successful = is_success(gru->getStatus());
-        gru_info.rel_tol = gru->getRelTol();
-        gru_info.abs_tol = gru->getAbsTol();
+  for (int i = 0; i < gru_container.num_gru_in_run_domain; i++) {
+    auto global_gru_index = gru_container.gru_list.size() 
+                            + self->state.start_gru;
+    auto local_gru_index = gru_container.gru_list.size() + 1;                                
 
-        gru_netcdf_info.push_back(gru_info);
+    auto gru = self->spawn(hru_actor, global_gru_index, local_gru_index,               
+                           self->state.hru_actor_settings,                                
+                           self->state.file_access_actor, self);
 
-    }
-    return gru_netcdf_info;
+    // Create the GRU object (Job uses this to keep track of GRU status)
+    gru_container.gru_list.push_back(new GRU(global_gru_index, 
+                                     local_gru_index, gru, 
+                                     self->state.dt_init_start_factor, 
+                                     self->state.hru_actor_settings.rel_tol,
+                                     self->state.hru_actor_settings.abs_tol,
+                                     self->state.max_run_attempts));  
+    
+    if (normal_mode) self->send(gru, update_hru_async_v);
+  }                        
+          
+}
+
+void spawnHRUBatches(stateful_actor<job_state>* self) {
+  auto& gru_container = self->state.gru_container;
+  gru_container.gru_start_time = std::chrono::high_resolution_clock::now();
+  gru_container.run_attempts_left = self->state.max_run_attempts;
+  gru_container.run_attempts_left--;
+
+  int remaining_hru_to_batch = gru_container.num_gru_in_run_domain;
+  int start_hru_global = self->state.start_gru;
+  int start_hru_local = 1;
+
+  while (remaining_hru_to_batch > 0) {
+    int current_batch_size = std::min(batch_size, remaining_hru_to_batch);
+    auto gru_batch = self->spawn(hru_batch_actor, start_hru_local,
+                                 start_hru_global, current_batch_size,
+                                  self->state.hru_actor_settings,
+                                 self->state.file_access_actor, self);
+
+    gru_container.gru_list.push_back(new GRU(start_hru_global, 
+                                    start_hru_local, gru_batch, 
+                                    self->state.dt_init_start_factor, 
+                                    self->state.hru_actor_settings.rel_tol,
+                                    self->state.hru_actor_settings.abs_tol,
+                                    self->state.max_run_attempts));  
+
+    remaining_hru_to_batch -= current_batch_size;
+    start_hru_local += current_batch_size;
+    start_hru_global += current_batch_size;
+  }
+}
+
+
+
+
+
+
+std::vector<serializable_netcdf_gru_actor_info> getGruNetcdfInfo(
+    int max_run_attempts, std::vector<GRU*> &gru_list) {
+  std::vector<serializable_netcdf_gru_actor_info> gru_netcdf_info;
+  
+  for(auto gru : gru_list) {
+    serializable_netcdf_gru_actor_info gru_info;
+    gru_info.run_time = gru->getRunTime();
+    gru_info.init_duration = gru->getInitDuration();
+    gru_info.forcing_duration = gru->getForcingDuration();
+    gru_info.run_physics_duration = gru->getRunPhysicsDuration();
+    gru_info.write_output_duration = gru->getWriteOutputDuration();
+    
+    gru_info.num_attempts = max_run_attempts - gru->getAttemptsLeft() + 1;
+    gru_info.successful = is_success(gru->getStatus());
+    gru_info.rel_tol = gru->getRelTol();
+    gru_info.abs_tol = gru->getAbsTol();
+
+    gru_netcdf_info.push_back(gru_info);
+  }
+  
+  return gru_netcdf_info;
 }
 
 

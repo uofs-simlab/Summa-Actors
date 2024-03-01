@@ -7,6 +7,7 @@
 #include "global.hpp"
 #include "json.hpp"
 #include "hru_actor.hpp"
+#include "hru_batch_actor.hpp"
 #include "message_atoms.hpp"
 #include "file_access_actor.hpp"
 #include <unistd.h>
@@ -89,6 +90,11 @@ behavior job_actor(stateful_actor<job_state>* self,
 /*********************************************
  * Functions for the Job Actor
  *********************************************/
+// Spawn HRU Actors Individually
+void spawnHRUActors(stateful_actor<job_state>* self, bool normal_mode);
+// Spawn HRU Batch Actors
+void spawnHRUBatches(stateful_actor<job_state>* self);
+
 
 /** Get the information for the GRUs that will be written to the netcdf file */
 std::vector<serializable_netcdf_gru_actor_info> getGruNetcdfInfo(int max_run_attempts, 
