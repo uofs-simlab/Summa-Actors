@@ -3,8 +3,7 @@
 using json = nlohmann::json;
 using chrono_time = std::chrono::time_point<std::chrono::system_clock>;
 
-bool batching = true;
-int batch_size = 10;
+int batch_size = 20;
 
 namespace caf {
 
@@ -94,7 +93,7 @@ behavior job_actor(stateful_actor<job_state>* self,
         auto& gru_container = self->state.gru_container;
         
         // Spawn HRUs in batches or individually
-        if (batching)
+        if (self->state.job_actor_settings.batch_size > 1)
           spawnHRUBatches(self);
         else
           spawnHRUActors(self, false);
@@ -384,7 +383,8 @@ void spawnHRUBatches(stateful_actor<job_state>* self) {
   int start_hru_local = 1;
 
   while (remaining_hru_to_batch > 0) {
-    int current_batch_size = std::min(batch_size, remaining_hru_to_batch);
+    int current_batch_size = std::min(self->state.job_actor_settings.batch_size, 
+                                      remaining_hru_to_batch);
     auto gru_batch = self->spawn(hru_batch_actor, start_hru_local,
                                  start_hru_global, current_batch_size,
                                   self->state.hru_actor_settings,

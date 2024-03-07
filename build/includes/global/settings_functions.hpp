@@ -85,7 +85,8 @@ File_Access_Actor_Settings readFileAccessActorSettings(std::string json_settings
 struct Job_Actor_Settings {
     std::string file_manager_path;
     int max_run_attempts; // maximum number of times to attempt to run each HRU in a job
-    bool data_assimilation_mode;
+    bool data_assimilation_mode; // All HRUs actors much finish before the next time step is started 
+    int batch_size; // Initial condition for the number of HRUs to run in a batch
 };
 
 template<class Inspector>

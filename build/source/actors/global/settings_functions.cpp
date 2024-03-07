@@ -102,6 +102,9 @@ Job_Actor_Settings readJobActorSettings(std::string json_settings_file) {
     job_actor_settings.data_assimilation_mode = getSettings(json_settings_file, parent_key,
         "data_assimilation_mode", job_actor_settings.data_assimilation_mode).value_or(false);
 
+    job_actor_settings.batch_size = getSettings(json_settings_file, parent_key,
+        "batch_size", job_actor_settings.batch_size).value_or(10);
+
     return job_actor_settings;
 }
 
