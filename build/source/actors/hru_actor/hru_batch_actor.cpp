@@ -6,10 +6,6 @@ behavior hru_batch_actor(stateful_actor<hru_batch_state>* self,
                          int start_gru_local, int start_gru_global, int num_gru,
                          HRU_Actor_Settings hru_actor_settings,
                          caf::actor file_access_actor, caf::actor parent) {
-  // aout(self) << "HRU Batch Actor Started\n"
-  //            << "\tStart GRU Local: " << start_gru_local << "\n"
-  //            << "\tStart GRU Global: " << start_gru_global << "\n"
-  //            << "\tNum GRU: " << num_gru << "\n";
   
   self->state.file_access_actor = file_access_actor;
   self->state.parent = parent;
@@ -45,6 +41,12 @@ behavior hru_batch_actor(stateful_actor<hru_batch_state>* self,
         self->send(self->state.parent, done_update_v);
         self->state.num_done = 0;
       }
+    },
+    [=](exit_msg) {
+      for(auto& hru_actor : self->state.hru_actors) {
+        self->send_exit(hru_actor, exit_reason::user_shutdown);
+      }
+      self->quit();
     }
   };
 

@@ -65,15 +65,17 @@ behavior job_actor(stateful_actor<job_state>* self,
   job_init_fortran(self->state.job_actor_settings.file_manager_path.c_str(),
                    &self->state.start_gru, &self->state.num_gru, 
                    &self->state.num_hru, &err);
-  if (err != 0) { aout(self) << "\nERROR: Job_Actor - job_init_fortran\n"; return {}; }
+  if (err != 0) { 
+    aout(self) << "\nERROR: Job_Actor - job_init_fortran\n"; 
+    return {};
+  }
   
 
   // Spawn the file_access_actor.
   self->state.file_access_actor = self->spawn(file_access_actor, 
-                                              self->state.start_gru, 
-                                              self->state.num_gru, 
-                                              self->state.file_access_actor_settings, 
-                                              self);
+      self->state.start_gru, self->state.num_gru, 
+      self->state.file_access_actor_settings, 
+      self);
 
 
   aout(self) << "Job Actor Initialized \n";
@@ -151,7 +153,8 @@ behavior job_actor(stateful_actor<job_state>* self,
             if (err != 0) {
               aout(self) << "Job_Actor: Error Writing Output\n";
               for (auto GRU : self->state.gru_container.gru_list)
-                self->send_exit(GRU->getGRUActor(), exit_reason::user_shutdown);
+                self->send(GRU->getGRUActor(), exit_msg_v);
+                // self->send_exit(GRU->getGRUActor(), exit_reason::user_shutdown);
               
               self->send_exit(self->state.file_access_actor, 
                               exit_reason::user_shutdown);

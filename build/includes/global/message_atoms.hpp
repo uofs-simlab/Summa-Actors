@@ -52,6 +52,7 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     // Reciever: summa_actor
     // Summary: job_actor finished job
     CAF_ADD_ATOM(summa, done_job)
+    CAF_ADD_ATOM(summa, exit_msg)
     // Sender: 
     // Reciever: 
     // Summary:
