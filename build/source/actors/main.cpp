@@ -80,13 +80,7 @@ void run_client(actor_system& system, const config& cfg, Distributed_Settings di
 
     aout(self) << "Starting SUMMA-Client in Distributed Mode\n";
     
-    auto client = system.spawn(summa_client, distributed_settings);
-
-    // Connect to the servers
-    // for (auto host : distributed_settings.servers_list) {
-    //     connect_client(client, host, distributed_settings.port);
-    // }
-   
+    auto client = system.spawn(summa_client, distributed_settings);   
 }
 
 void run_server(actor_system& system, const config& cfg, 
@@ -111,9 +105,6 @@ void run_server(actor_system& system, const config& cfg,
                                 file_access_actor_settings,
                                 job_actor_settings,
                                 hru_actor_settings);
-
-    // publish_server(server, distributed_settings.port);
-    // connect_client(server, distributed_settings.servers_list[0], distributed_settings.port);
 
   } else {  
     aout(self) << "\n\n*****Starting SUMMA-Server*****\n\n";

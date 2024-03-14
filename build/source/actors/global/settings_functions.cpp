@@ -260,7 +260,9 @@ void generate_config_file() {
     };
     config_file["Job_Actor"] = {
         {"file_manager_path", "/home/username/summa_file_manager"},
-        {"max_run_attempts", 1}
+        {"max_run_attempts", 1},
+        {"data_assimilation_mode", false},
+        {"batch_size", 10}
     };
     config_file["HRU_Actor"] = {
         {"print_output", true},
