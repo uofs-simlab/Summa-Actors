@@ -75,17 +75,17 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   USE globalData,only:checkHRU                                ! index of the HRU for a single HRU run
   
   ! look-up values for the choice of heat capacity computation
-#ifdef V4_ACTIVE
-  USE mDecisions_module,only:enthalpyFD                       ! heat capacity using enthalpy
-  USE t2enthalpy_module,only:T2E_lookup                       ! module to calculate a look-up table for the temperature-enthalpy conversion
-#endif
+  USE mDecisions_module,only:enthalpyFD,enthalpyFDlu                       ! heat capacity using enthalpy
+  
   USE mDecisions_module,only:&
                         monthlyTable,&        ! LAI/SAI taken directly from a monthly table for different vegetation classes
                         specified,&           ! LAI/SAI computed from green vegetation fraction and winterSAI and summerLAI parameters
                         sameRulesAllLayers, & ! SNTHERM option: same combination/sub-dividion rules applied to all layers
                         rulesDependLayerIndex ! CLM option: combination/sub-dividion rules depend on layer index
 
-  USE ConvE2Temp_module,only:E2T_lookup       ! module to calculate a look-up table for the temperature-enthalpy conversion
+  USE enthalpyTemp_module,only:T2H_lookup_snow                ! module to calculate a look-up table for the snow temperature-enthalpy conversion
+  USE enthalpyTemp_module,only:T2L_lookup_soil                ! module to calculate a look-up table for the soil temperature-enthalpy conversion
+
 
 
   USE NOAHMP_VEG_PARAMETERS,only:SAIM,LAIM    ! 2-d tables for stem area index and leaf area index (vegType,month)
@@ -114,6 +114,7 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   integer(i4b)                           :: ivar               ! counter for variables
   character(len=256)                     :: attrFile           ! attributes file name
   character(LEN=256)                     :: restartFile        ! restart file name
+  logical                                :: needLookup         ! logical to decide if computing enthalpy lookup tables
   
   integer(i4b)                           :: indxGRU=1
   character(len=256)                     :: message            ! error message for downwind routine
@@ -131,15 +132,19 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   ! Get and save the model decisions as integers
   call mDecisions(err,message)
   if(err/=0)then; print*,trim(message); return; endif
-  num_timesteps = numtim
+  
+  num_timesteps = numtim ! Returns to the file_access_actor
 
-    ! get the maximum number of snow layers
+  ! decide if computing enthalpy lookup tables, if need enthalpy and not using hypergeometric function
+  needLookup = .false.
+  if(model_decisions(iLookDECISIONS%nrgConserv)%iDecision == enthalpyFDlu) needLookup = .true.
+
+  ! get the maximum number of snow layers
   select case(model_decisions(iLookDECISIONS%snowLayers)%iDecision)
-    case(sameRulesAllLayers);    err=100; message=trim(message)//'sameRulesAllLayers not implemented';print*,message;return
+    case(sameRulesAllLayers);    maxSnowLayers = 100
     case(rulesDependLayerIndex); maxSnowLayers = 5
-    case default; err=20; message=trim(message)//'unable to identify option to combine/sub-divide snow layers';print*,message;return
+    case default; err=20; message=trim(message)//'unable to identify option to combine/sub-divide snow layers'; return
   end select ! (option to combine/sub-divide snow layers)
-
 
   maxLayers = gru_struc(1)%hruInfo(1)%nSoil + maxSnowLayers
 
@@ -294,17 +299,17 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
       call paramCheck(outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU),err,message)
       if(err/=0)then; print*, message; return; endif
 
+      ! calculate a look-up table for the temperature-enthalpy conversion of snow for future snow layer merging
+      ! NOTE2: H is the mixture enthalpy of snow liquid and ice
+      call T2H_lookup_snow(outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU),err,message)
+      if(err/=0)then; print*, message; return; endif
 
-      ! calculate a look-up table for the temperature-enthalpy conversion: snow
-      ! NOTE1: this should eventually be replaced by the more general routine below
-      ! NOTE2: this does not actually need to be called for each HRU and GRU
-      call E2T_lookup(outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU),err,message)
-      if(err/=0)then; print*,message; return; endif
-
-      ! calculate a lookup table to compute enthalpy from temperature, only for enthalpyFD
+      ! calculate a lookup table for the temperature-enthalpy conversion of soil
+      ! NOTE: L is the integral of soil Clapeyron equation liquid water matric potential from temperature
+      !       multiply by Cp_liq*iden_water to get temperature component of enthalpy
 #ifdef V4_ACTIVE      
-      if(model_decisions(iLookDECISIONS%howHeatCap)%iDecision == enthalpyFD)then
-        call T2E_lookup(gru_struc(iGRU)%hruInfo(iHRU)%nSoil,   &   ! intent(in):    number of soil layers
+      if(needLookup)then
+        call T2L_lookup_soil(gru_struc(iGRU)%hruInfo(iHRU)%nSoil,   &   ! intent(in):    number of soil layers
                         outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU),        &   ! intent(in):    parameter data structure
                         outputStructure(1)%lookupStruct%gru(iGRU)%hru(iHRU),      &   ! intent(inout): lookup table data structure
                         err,message)                              ! intent(out):   error control
