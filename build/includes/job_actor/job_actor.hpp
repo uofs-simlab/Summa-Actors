@@ -12,6 +12,7 @@
 #include "file_access_actor.hpp"
 #include <unistd.h>
 #include <limits.h>
+#include <cmath>
 
 
 /*********************************************
@@ -52,7 +53,7 @@ struct job_state {
     int max_run_attempts = 1;     // Max number of attempts to solve a GRU
 
     GRU_Container gru_container;
-
+    
     // Variables for GRU monitoring
     int dt_init_start_factor = 1; // Initial Factor for dt_init (coupled_em)
     int num_gru_done = 0;         // The number of GRUs that have completed

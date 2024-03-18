@@ -34,6 +34,7 @@ behavior hru_batch_actor(stateful_actor<hru_batch_state>* self,
         self->send(hru_actor, update_hru_v, timestep, forcingstep);
       }
     },
+
     [=](done_update) {
       // aout(self) << "HRU Batch Actor - Done Update\n";
       self->state.num_done++;
@@ -42,6 +43,7 @@ behavior hru_batch_actor(stateful_actor<hru_batch_state>* self,
         self->state.num_done = 0;
       }
     },
+
     [=](exit_msg) {
       for(auto& hru_actor : self->state.hru_actors) {
         self->send_exit(hru_actor, exit_reason::user_shutdown);
