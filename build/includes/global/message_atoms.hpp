@@ -46,6 +46,7 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     CAF_ADD_ATOM(summa, done_update)
     CAF_ADD_ATOM(summa, init_normal_mode)
     CAF_ADD_ATOM(summa, update_hru_async)
+    CAF_ADD_ATOM(summa, start_job)
 
     // Sender: job_actor 
     // Reciever: summa_actor

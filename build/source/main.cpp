@@ -5,6 +5,7 @@
 #include "summa_server.hpp"
 #include "summa_backup_server.hpp"
 #include "job_actor.hpp"
+#include "node_actor.hpp"
 #include "global.hpp"
 #include "settings_functions.hpp"
 #include "message_atoms.hpp"
@@ -28,6 +29,7 @@ const std::string command_line_help = "Summa-Actors is in active development and
     "\t-g, --gru:            Run a subset of countGRU GRUs starting from index startGRU \n"
     "\t-c, --config:         Path name of the Summa-Actors config file (optional but recommended)\n"
     "\t    --gen-config:     Generate a config file \n"
+    "\t    --host:           Hostname of the server \n"
     "\t-b, --backup-server:  Start backup server, requires a server and config_file \n"
     "\t-s, --server-mode:    Enable server mode \n"
     "\t-h, --help:           Print this help message \n"
@@ -48,10 +50,12 @@ class config : public actor_system_config {
         int countGRU = -1;
         std::string master_file = "";
         std::string config_file = "";
+        std::string host = "";
         bool generate_config = false;
         bool backup_server = false;
         bool server_mode = false;
         bool help = false;
+        
     
     config() {
         opt_group{custom_options_, "global"}
@@ -62,6 +66,7 @@ class config : public actor_system_config {
             .add(generate_config, "gen-config", "Generate a config file")
             .add(backup_server, "backup-server,b", "flag to denote if the server starting is a backup server")
             .add(server_mode,   "server-mode,s", "enable server mode")
+            .add(host,          "host", "Hostname of the server")
             .add(help,          "help,h", "Print this help message");
     }
 };
@@ -157,14 +162,27 @@ void caf_main(actor_system& sys, const config& cfg) {
     }
 
   } else if (distributed_settings.distributed_mode &&
-            job_actor_settings.data_assimilation_mode) {
+             job_actor_settings.data_assimilation_mode &&
+             cfg.server_mode) {
     
     auto dist_summa = sys.spawn(distributed_job_actor,
+                                cfg.startGRU,
+                                cfg.countGRU,
                                 distributed_settings,
                                 file_access_actor_settings,
                                 job_actor_settings,
                                 hru_actor_settings);
-
+  
+  } else if (distributed_settings.distributed_mode &&
+             job_actor_settings.data_assimilation_mode) {
+    
+    auto node = sys.spawn(node_actor, 
+                          cfg.host,
+                          self,
+                          distributed_settings, 
+                          file_access_actor_settings, 
+                          job_actor_settings, 
+                          hru_actor_settings);
 
   } else {
     auto summa = sys.spawn(summa_actor, 

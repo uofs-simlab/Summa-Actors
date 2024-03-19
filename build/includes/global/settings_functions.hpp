@@ -25,7 +25,7 @@ struct Distributed_Settings {
     int port;               // the port number of the server actor
     int total_hru_count;
     int num_hru_per_batch;
-    int total_nodes;  // For the data-assimilation mode
+    int num_nodes;  // For the data-assimilation mode
 };
 
 template<class Inspector>
