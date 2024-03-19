@@ -79,6 +79,10 @@ struct job_state {
 };
 
 
+struct distributed_job_state {
+
+};
+
 /** The Job Actor */
 behavior job_actor(stateful_actor<job_state>* self, 
                    int start_gru, int num_gru, 
@@ -86,6 +90,13 @@ behavior job_actor(stateful_actor<job_state>* self,
                    Job_Actor_Settings job_actor_settings, 
                    HRU_Actor_Settings hru_actor_settings, 
                    actor parent);
+
+/** The Job Actor For Internode Communication */
+behavior distributed_job_actor(stateful_actor<distributed_job_state>* self,
+    Distributed_Settings distributed_settings,
+    File_Access_Actor_Settings file_access_actor_settings,
+    Job_Actor_Settings job_actor_settings, 
+    HRU_Actor_Settings hru_actor_settings);
 
 
 /*********************************************

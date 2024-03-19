@@ -4,6 +4,7 @@
 #include "summa_client.hpp"
 #include "summa_server.hpp"
 #include "summa_backup_server.hpp"
+#include "job_actor.hpp"
 #include "global.hpp"
 #include "settings_functions.hpp"
 #include "message_atoms.hpp"
@@ -65,15 +66,6 @@ class config : public actor_system_config {
     }
 };
 
-void connect_client(caf::actor client_to_connect, std::string host_to_connect_to, int port_number) {
-    if (!host_to_connect_to.empty() && port_number > 0) {
-        uint16_t port = 4444;
-        anon_send(client_to_connect, connect_atom_v, host_to_connect_to, (uint16_t) port );
-
-    } else {
-        std::cerr << "No Server Config" << std::endl;
-    }
-}
 
 void run_client(actor_system& system, const config& cfg, Distributed_Settings distributed_settings) {
     scoped_actor self{system};
@@ -153,7 +145,8 @@ void caf_main(actor_system& sys, const config& cfg) {
                            file_access_actor_settings, job_actor_settings,
                            hru_actor_settings);
 
-  if (distributed_settings.distributed_mode) {
+  if (distributed_settings.distributed_mode && 
+      !job_actor_settings.data_assimilation_mode) {
     // only command line arguments needed are config_file and server-mode
     if (cfg.server_mode) {
       run_server(sys, cfg, distributed_settings, summa_actor_settings, 
@@ -162,6 +155,16 @@ void caf_main(actor_system& sys, const config& cfg) {
     } else {
       run_client(sys,cfg, distributed_settings);
     }
+
+  } else if (distributed_settings.distributed_mode &&
+            job_actor_settings.data_assimilation_mode) {
+    
+    auto dist_summa = sys.spawn(distributed_job_actor,
+                                distributed_settings,
+                                file_access_actor_settings,
+                                job_actor_settings,
+                                hru_actor_settings);
+
 
   } else {
     auto summa = sys.spawn(summa_actor, 
