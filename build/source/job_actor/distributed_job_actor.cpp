@@ -103,7 +103,9 @@ behavior distributed_job_actor(stateful_actor<distributed_job_state>* self,
       self->state.stepsInCurrentFFile = num_steps_in_iFile;
       self->state.forcingStep = 1;
       if (self->state.num_steps == 0) {
+        aout(self) << "Setting num_steps\n";
         self->state.num_steps = num_timesteps;
+        aout(self) << "Num Steps: " << self->state.num_steps << "\n";
       }
 
       if (self->state.messages_returned >= distributed_settings.num_nodes) {
@@ -116,7 +118,6 @@ behavior distributed_job_actor(stateful_actor<distributed_job_state>* self,
     },
 
     [=](update_hru) {
-      aout(self) << "Updating HRUs\n";
       for(auto node : self->state.connected_nodes) {
         self->send(node, update_hru_v);
       }
@@ -125,10 +126,58 @@ behavior distributed_job_actor(stateful_actor<distributed_job_state>* self,
     [=](done_update) {
       self->state.messages_returned++;
       if (self->state.messages_returned >= distributed_settings.num_nodes) {
-        aout(self) << "Job_Actor: Done Update for timestep:" 
+        aout(self) << "Distributed Job_Actor: Done Update for timestep:" 
                    << self->state.timestep << "\n";
+        
+        int steps_to_write = 1;
+        
+        for (auto node : self->state.connected_nodes) {
+          self->send(node, write_output_v, steps_to_write);
+        }
+
+        self->state.messages_returned = 0;
       }
+    },
+
+    [=](write_output) {
+      self->state.messages_returned++;
+      if (self->state.messages_returned >= distributed_settings.num_nodes) {
+        aout(self) << "Distributed Job_Actor: Done Writing Output for timestep:" 
+                   << self->state.timestep << "\n";
+        
+        self->state.timestep++;
+        self->state.forcingStep++;
+        self->state.messages_returned = 0;
+
+        if (self->state.timestep > self->state.num_steps) {
+          aout(self) << "Distributed Job_Actor: Done Simulation\n";
+          self->send(self, finalize_v);
+        }
+
+        else if(self->state.forcingStep > self->state.stepsInCurrentFFile) {
+          aout(self) << "Distributed Job_Actor: Done Forcing File\n";
+          self->send(self, new_forcing_file_v, 
+                     self->state.stepsInCurrentFFile, self->state.iFile + 1);
+        }
+
+        else {
+          aout(self) << "Distributed Job_Actor: Updating HRUs\n";
+          self->send(self, update_hru_v);
+        }
+      }
+
+    },
+
+    [=](int err) {
+      aout(self) << "Error in write_output\n";
+    },
+
+    [=](finalize) {
+      aout(self) << "Finalizing\n";
+      self->quit();
     }
+
+
 
 
   };

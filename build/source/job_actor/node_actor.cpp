@@ -48,7 +48,8 @@ behavior node_actor(stateful_actor<node_state>* self,
   return {
     [=](start_job, int start_gru, int num_gru) {
       aout(self) << "Recieved Start Job Message\n";
-      aout(self) << "Start GRU: " << start_gru << " Num GRU: " << num_gru << "\n";
+      aout(self) << "Start GRU: " << start_gru << " Num GRU: " 
+                 << num_gru << "\n";
       
       self->state.start_gru = start_gru;
       self->state.num_gru = num_gru;
@@ -72,7 +73,7 @@ behavior node_actor(stateful_actor<node_state>* self,
 
     [=](init_file_access_actor, int num_timesteps) {
       aout(self) << "Num Steps: " << num_timesteps << "\n";
-
+      self->state.num_steps = num_timesteps;
       auto& gru_container = self->state.gru_container;
         
       // Spawn HRUs in batches or individually
@@ -110,19 +111,41 @@ behavior node_actor(stateful_actor<node_state>* self,
     },
 
     [=](done_update) {
-      aout(self) << "Job_Actor: Done Update for timestep:" 
-                   << self->state.timestep << "\n";
-
       self->state.num_gru_done_timestep++;
       if (self->state.num_gru_done_timestep >= 
           self->state.gru_container.gru_list.size()) {
 
-        aout(self) << "Job_Actor: Done Update for timestep:" 
+        aout(self) << "Node Actor: Done Update for timestep:" 
                    << self->state.timestep << "\n";
+
         self->state.timestep++;
         self->state.forcingStep++;
+        self->state.num_gru_done_timestep = 0;
+
+        self->send(self->state.current_server, done_update_v);
 
       }
+    },
+
+    [=](write_output, int steps_to_write) {
+      
+      self->request(self->state.file_access_actor, infinite, write_output_v, 
+                    steps_to_write, 1, self->state.num_gru)
+                    .await(
+                      [=](int err) {
+                        if (err != 0) {
+                          aout(self) << "Error Writing Output\n";
+                          for (auto gru : self->state.gru_container.gru_list)
+                            self->send(gru->getGRUActor(), exit_msg_v);
+
+                          self->send_exit(self->state.file_access_actor, 
+                                          exit_reason::user_shutdown);
+                          self->send(self->state.current_server, err);
+                          self->quit();
+                        }
+                      });
+
+      self->send(self->state.current_server, write_output_v);
     }
 
 
