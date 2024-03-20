@@ -182,8 +182,6 @@ behavior distributed_job_actor(stateful_actor<distributed_job_state>* self,
                  << "Total Duration = " << total_dur_min << " Minutes\n"
                  << "Total Duration = " << total_dur_hr << " Hours\n"
                  << "___________________Program Finished__________________\n";
-
-      std::exit(0);
     }
 
 

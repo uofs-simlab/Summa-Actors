@@ -9,7 +9,12 @@ behavior node_actor(stateful_actor<node_state>* self,
                     File_Access_Actor_Settings file_access_actor_settings,
                     Job_Actor_Settings job_actor_settings, 
                     HRU_Actor_Settings hru_actor_settings) {
+
   aout(self) << "Starting Node Actor\n";
+  self->state.node_timing = TimingInfo();
+  self->state.node_timing.addTimePoint("total_duration");
+  self->state.node_timing.updateStartPoint("total_duration");
+
   self->set_down_handler([=](const down_msg& dm){
     aout(self) << "Received Down Message\n";
   });
@@ -154,6 +159,16 @@ behavior node_actor(stateful_actor<node_state>* self,
 
     [=](finalize) {
       aout(self) << "Done Simulation\n";
+      self->state.node_timing.updateEndPoint("total_duration");
+      double total_duration = self->state.node_timing.getDuration(
+          "total_duration").value_or(-1.0);
+      double total_dur_min = total_duration / 60;
+      double total_dur_hr = total_dur_min / 60;
+      aout(self) << "Total Duration: " << total_duration << " seconds\n"
+                 << "Total Duration: " << total_dur_min << " minutes\n"
+                 << "Total Duration: " << total_dur_hr << " hours\n"
+                 << "___________________Node Finished__________________\n";
+    
       std::exit(0);
     }
   };

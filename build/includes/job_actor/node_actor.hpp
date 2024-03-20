@@ -7,12 +7,15 @@
 #include "hru_batch_actor.hpp"
 #include "file_access_actor.hpp"
 #include "job_actor.hpp"
+#include "timing_info.hpp"
 
 namespace caf {
 
 struct node_state {
   actor current_server;
   std::string hostname;
+  
+  TimingInfo node_timing;
 
   int start_gru;
   int num_gru;
