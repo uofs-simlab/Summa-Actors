@@ -88,6 +88,11 @@ behavior node_actor(stateful_actor<node_state>* self,
                   self->state.iFile, self);
     },
 
+    [=](access_forcing, int new_iFile) {
+      self->send(self->state.file_access_actor, access_forcing_v, new_iFile, 
+                 self);
+    },
+
     [=](new_forcing_file, int num_steps_in_iFile, int nextFile) {
       aout(self) << "Received New Forcing File\n";
       self->state.iFile = nextFile;
@@ -103,7 +108,6 @@ behavior node_actor(stateful_actor<node_state>* self,
     },
 
     [=](update_hru) {
-      aout(self) << "Updating HRUs\n";
       for (auto gru : self->state.gru_container.gru_list) {
         self->send(gru->getGRUActor(), update_hru_v,
                    self->state.timestep, self->state.forcingStep);
@@ -146,12 +150,12 @@ behavior node_actor(stateful_actor<node_state>* self,
                       });
 
       self->send(self->state.current_server, write_output_v);
+    },
+
+    [=](finalize) {
+      aout(self) << "Done Simulation\n";
+      std::exit(0);
     }
-
-
-
-
-
   };
 }
 

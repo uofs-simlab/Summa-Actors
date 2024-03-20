@@ -22,21 +22,18 @@ behavior hru_batch_actor(stateful_actor<hru_batch_state>* self,
 
   return {
     [=](update_timeZoneOffset, int iFile) {
-      // aout(self) << "HRU Batch Actor - Update Time Zone Offset\n";
       for (auto& hru_actor : self->state.hru_actors) {
         self->send(hru_actor, update_timeZoneOffset_v, iFile);
       }
     },
 
     [=](update_hru, int timestep, int forcingstep) {
-      // aout(self) << "HRU Batch Actor - Update HRU\n";
       for (auto& hru_actor : self->state.hru_actors) {
         self->send(hru_actor, update_hru_v, timestep, forcingstep);
       }
     },
 
     [=](done_update) {
-      // aout(self) << "HRU Batch Actor - Done Update\n";
       self->state.num_done++;
       if (self->state.num_done == self->state.hru_actors.size()) {
         self->send(self->state.parent, done_update_v);
