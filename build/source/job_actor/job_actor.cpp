@@ -198,13 +198,15 @@ behavior job_actor(stateful_actor<job_state>* self,
       using namespace std::chrono;
       
       chrono_time end_point = high_resolution_clock::now();
-      double total_duration = duration_cast<seconds>(end_point - gru_container.gru_start_time).count();
+      double total_duration = duration_cast<seconds>(end_point - 
+          gru_container.gru_start_time).count();
       gru_container.num_gru_done++;
 
       aout(self) << "GRU Finished: " << gru_container.num_gru_done << "/" 
-                  << gru_container.num_gru_in_run_domain << " -- "
-                  << "GlobalGRU=" << gru_container.gru_list[local_gru_index-1]->getGlobalGRUIndex()
-                  << " -- LocalGRU=" << local_gru_index << "\n";
+          << gru_container.num_gru_in_run_domain << " -- "
+          << "GlobalGRU=" 
+          << gru_container.gru_list[local_gru_index-1]->getGlobalGRUIndex()
+          << " -- LocalGRU=" << local_gru_index << "\n";
 
       // Update Timing
       gru_container.gru_list[local_gru_index-1]->setRunTime(total_duration);

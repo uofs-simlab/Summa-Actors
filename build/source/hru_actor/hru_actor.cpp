@@ -137,10 +137,6 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
       self->state.timestep = timestep;
       self->state.forcingStep = forcingstep;
 
-      if (timestep == 5) {
-        self->send(self, serialize_hru_v);
-      } 
-
       int err = Run_HRU(self);
       if (err != 0) {
         self->send(self->state.parent, hru_error::run_physics_unhandleable, 
@@ -157,73 +153,87 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
       // std::vector<std::vector<std::vector<double>>> lookup_struct = 
           // get_lookup_struct(self->state.hru_data);
 
+      self->state.hru_data_serialized.indx_hru = self->state.indxHRU;
+      self->state.hru_data_serialized.indx_gru = self->state.indxGRU;
+      self->state.hru_data_serialized.ref_gru = self->state.refGRU;
+      self->state.hru_data_serialized.timestep = self->state.timestep;
+      self->state.hru_data_serialized.forcing_step = self->state.forcingStep;
+      self->state.hru_data_serialized.num_steps = self->state.num_steps;
+      self->state.hru_data_serialized.iFile = self->state.iFile;
+      self->state.hru_data_serialized.dt_init_factor = 
+          self->state.dt_init_factor;
+      self->state.hru_data_serialized.output_structure_step_index = 
+          self->state.output_structure_step_index; 
+      self->state.hru_data_serialized.dt_init = self->state.dt_init;
+      self->state.hru_data_serialized.upArea = self->state.upArea;
+      self->state.hru_data_serialized.rtol = self->state.rtol;
+      self->state.hru_data_serialized.atol = self->state.atol;
+
       // Statistic Structures
-      std::vector<std::vector<double>> forc_stat = 
+      self->state.hru_data_serialized.forc_stat = 
           get_var_dlength_by_indx(self->state.hru_data, 1); 
-      std::vector<std::vector<double>> prog_stat = 
+      self->state.hru_data_serialized.prog_stat = 
           get_var_dlength_by_indx(self->state.hru_data, 2); 
-      std::vector<std::vector<double>> diag_stat = 
+      self->state.hru_data_serialized.diag_stat = 
           get_var_dlength_by_indx(self->state.hru_data, 3); 
-      std::vector<std::vector<double>> flux_stat = 
+      self->state.hru_data_serialized.flux_stat = 
           get_var_dlength_by_indx(self->state.hru_data, 4); 
-      std::vector<std::vector<double>> indx_stat = 
+      self->state.hru_data_serialized.indx_stat = 
           get_var_dlength_by_indx(self->state.hru_data, 5); 
-      std::vector<std::vector<double>> bvar_stat = 
+      self->state.hru_data_serialized.bvar_stat = 
           get_var_dlength_by_indx(self->state.hru_data, 6);
       
       // Primary Data Structures (scalars)
-      std::vector<int> time_struct = 
+      self->state.hru_data_serialized.time_struct = 
           get_var_i_by_indx(self->state.hru_data, 1);
-      std::vector<double> forc_struct = 
+      self->state.hru_data_serialized.forc_struct = 
           get_var_d_by_indx(self->state.hru_data, 1);
-      std::vector<double> attr_struct = 
+      self->state.hru_data_serialized.attr_struct = 
           get_var_d_by_indx(self->state.hru_data, 2);
-      std::vector<int> type_struct = 
+      self->state.hru_data_serialized.type_struct = 
           get_var_i_by_indx(self->state.hru_data, 2);
-      std::vector<long int> id_struct = 
+      self->state.hru_data_serialized.id_struct = 
           get_var_i8_by_indx(self->state.hru_data, 1);
       
       // Primary Data Structures (variable length vectors)
-      std::vector<std::vector<int>> indx_struct = 
+      self->state.hru_data_serialized.indx_struct = 
           get_var_ilength_by_indx(self->state.hru_data, 1);
-      std::vector<std::vector<double>> mpar_struct = 
+      self->state.hru_data_serialized.mpar_struct = 
           get_var_dlength_by_indx(self->state.hru_data, 7);      
-      std::vector<std::vector<double>> prog_struct = 
+      self->state.hru_data_serialized.prog_struct = 
           get_var_dlength_by_indx(self->state.hru_data, 8);
-      std::vector<std::vector<double>> diag_struct = 
+      self->state.hru_data_serialized.diag_struct = 
           get_var_dlength_by_indx(self->state.hru_data, 9);
-      std::vector<std::vector<double>> flux_struct = 
+      self->state.hru_data_serialized.flux_struct = 
           get_var_dlength_by_indx(self->state.hru_data, 10);
 
       // Basin-average structures
-      std::vector<double> bpar_struct = 
+      self->state.hru_data_serialized.bpar_struct = 
           get_var_d_by_indx(self->state.hru_data, 3);
-      std::vector<std::vector<double>> bvar_struct = 
+      self->state.hru_data_serialized.bvar_struct = 
           get_var_dlength_by_indx(self->state.hru_data, 11);
-      std::vector<double> dpar_struct = 
+      self->state.hru_data_serialized.dpar_struct = 
           get_var_d_by_indx(self->state.hru_data, 4);
 
       // Local HRU data structures
-      std::vector<int> start_time = get_var_i_by_indx(self->state.hru_data, 3);
-      std::vector<int> end_time = get_var_i_by_indx(self->state.hru_data, 4);
-      std::vector<int> ref_time = get_var_i_by_indx(self->state.hru_data, 5);
-      std::vector<int> old_time = get_var_i_by_indx(self->state.hru_data, 6);
+      self->state.hru_data_serialized.start_time = 
+          get_var_i_by_indx(self->state.hru_data, 3);
+      self->state.hru_data_serialized.end_time = 
+          get_var_i_by_indx(self->state.hru_data, 4);
+      self->state.hru_data_serialized.ref_time = 
+          get_var_i_by_indx(self->state.hru_data, 5);
+      self->state.hru_data_serialized.old_time = 
+          get_var_i_by_indx(self->state.hru_data, 6);
 
       // Statistic flags
-      std::vector<int> stat_counter = 
+      self->state.hru_data_serialized.stat_counter = 
           get_var_i_by_indx(self->state.hru_data, 7);
-      std::vector<int> output_timestep = 
+      self->state.hru_data_serialized.output_timestep = 
           get_var_i_by_indx(self->state.hru_data, 8);
-      std::vector<int> reset_stats = 
+      self->state.hru_data_serialized.reset_stats = 
           get_flagVec_by_indx(self->state.hru_data, 1);
-      std::vector<int> finalize_stats = 
+      self->state.hru_data_serialized.finalize_stats = 
           get_flagVec_by_indx(self->state.hru_data, 2);
-
-
-      aout(self) << "Done Serializing HRU Data\n";
-
-      // self->quit();
-      // exit(0);
     },
 
   };

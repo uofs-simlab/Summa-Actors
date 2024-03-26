@@ -3,12 +3,11 @@
 namespace caf {
 
 behavior node_actor(stateful_actor<node_state>* self,
-                    std::string host, // server will spawn this actor, if local do not try to connect via port  
-                    actor parent,  
-                    Distributed_Settings distributed_settings,
-                    File_Access_Actor_Settings file_access_actor_settings,
-                    Job_Actor_Settings job_actor_settings, 
-                    HRU_Actor_Settings hru_actor_settings) {
+    std::string host, // server will spawn this actor, if local do not try to connect via port  
+    actor parent, Distributed_Settings distributed_settings,
+    File_Access_Actor_Settings file_access_actor_settings,
+    Job_Actor_Settings job_actor_settings, 
+    HRU_Actor_Settings hru_actor_settings) {
 
   aout(self) << "Starting Node Actor\n";
   self->state.node_timing = TimingInfo();
@@ -139,20 +138,19 @@ behavior node_actor(stateful_actor<node_state>* self,
     [=](write_output, int steps_to_write) {
       
       self->request(self->state.file_access_actor, infinite, write_output_v, 
-                    steps_to_write, 1, self->state.num_gru)
-                    .await(
-                      [=](int err) {
-                        if (err != 0) {
-                          aout(self) << "Error Writing Output\n";
-                          for (auto gru : self->state.gru_container.gru_list)
-                            self->send(gru->getGRUActor(), exit_msg_v);
+          steps_to_write, 1, self->state.num_gru).await(
+          [=](int err) {
+            if (err != 0) {
+              aout(self) << "Error Writing Output\n";
+              for (auto gru : self->state.gru_container.gru_list)
+                self->send(gru->getGRUActor(), exit_msg_v);
 
-                          self->send_exit(self->state.file_access_actor, 
-                                          exit_reason::user_shutdown);
-                          self->send(self->state.current_server, err);
-                          self->quit();
-                        }
-                      });
+              self->send_exit(self->state.file_access_actor, 
+                  exit_reason::user_shutdown);
+              self->send(self->state.current_server, err);
+              self->quit();
+            }
+          });
 
       self->send(self->state.current_server, write_output_v);
     },

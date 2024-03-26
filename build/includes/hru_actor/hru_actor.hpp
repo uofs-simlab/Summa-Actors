@@ -10,6 +10,10 @@
 #include "global.hpp"
 
 
+
+
+
+
 /*********************************************
  * HRU Actor Fortran Functions
  *********************************************/
@@ -69,6 +73,9 @@ struct hru_state {
   // HRU data structures (formerly summa_type)
   void *hru_data = new_handle_hru_type();
 
+  // Serializable HRU data structure
+  hru hru_data_serialized;
+
     // Misc Variables
 	int     timestep = 1;	    // Current Timestep of HRU simulation
   int     forcingStep = 1;    // index of current time step in current forcing file
@@ -83,7 +90,6 @@ struct hru_state {
   // Sundials variables
   double rtol = -9999; // -9999 uses default
   double atol = -9999; // -9999 uses default		        
-
 
   // Settings
   HRU_Actor_Settings hru_actor_settings;
@@ -106,5 +112,6 @@ void Initialize_HRU(stateful_actor<hru_state>* self);
 
 /** Function runs all of the hru time_steps */
 int Run_HRU(stateful_actor<hru_state>* self);
+
 
 }
