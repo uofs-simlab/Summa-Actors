@@ -105,10 +105,6 @@ void set_var_dlength(std::vector<std::vector<double> > &mat, void *handle) {
     set_data_var_dlength(handle, &array[0], num_row, &num_col[0], num_elements);
 }
 
-// void set_var_info(VarInfo v, void* handle) {
-//     set_data_var_info(handle, v.varname, v.vardesc, v.varunit, v.vartype,
-//                         &v.ncVarID[0], v.ncVarID.size(),  &v.statIndex[0], v.statIndex.size(), v.varDesire);
-// }
 
 /*************** GET DATA **************/
 
@@ -363,3 +359,169 @@ std::vector<std::vector<double>> get_mpar_struct_array(void* handle) {
         
     return mat;
 }
+
+
+// HRU Data Serialization
+
+
+// struct_indx maps to the following:
+// 1: forc_stat
+// 2: prog_stat
+// 3: diag_stat
+// 4: flux_stat
+// 5: indx_stat
+// 6: bvar_stat
+// 7: mpar_struct
+// 8: prog_struct
+// 9: diag_struct
+// 10: flux_struct
+// 11: bvarStruct
+std::vector<std::vector<double>> get_var_dlength_by_indx(void* handle, 
+    int struct_indx) {
+  int size_var;
+  get_size_var_dlength_by_indx(handle, &struct_indx, &size_var);
+  if (size_var == 0) return std::vector<std::vector<double>>();
+
+  std::vector<int> var(size_var);
+  get_size_data_var_dlength_by_indx(handle, &struct_indx, &size_var, &var[0]);
+
+  int num_elem = 0;
+  for(int i=0; i<size_var; i++)
+    num_elem += var[i];
+
+  std::vector<double> dat(num_elem);
+  get_data_var_dlength_by_indx(handle, &struct_indx, &dat[0]);
+
+  std::vector<std::vector<double>> hru_struct(size_var);
+  for(size_t i=0; i<size_var; i++)
+    hru_struct[i] = std::vector<double>(var[i]);
+  
+  num_elem = 0;
+  for(size_t i=0; i<size_var; i++){
+    for(size_t j=0; j<var[i]; j++)
+      hru_struct[i][j] = dat[num_elem + j];
+    num_elem += var[i];    		
+  }
+  
+  return hru_struct;
+}
+
+// struct_indx maps to the following:
+// 1: indxStruct
+std::vector<std::vector<int>> get_var_ilength_by_indx(void* handle,
+    int struct_indx) {
+  
+  int size_var;
+  get_size_var_ilength_by_indx(handle, &struct_indx, &size_var);
+  if (size_var == 0) return std::vector<std::vector<int>>();
+
+  std::vector<int> var(size_var);
+  get_size_data_var_ilength_by_indx(handle, &struct_indx, &size_var, &var[0]);
+
+  int num_elem = 0;
+  for(int i=0; i<size_var; i++)
+    num_elem += var[i];
+
+  std::vector<int> dat(num_elem);
+  get_data_var_ilength_by_indx(handle, &struct_indx, &dat[0]);
+
+  std::vector<std::vector<int>> hru_struct(size_var);
+  for(size_t i=0; i<size_var; i++)
+    hru_struct[i] = std::vector<int>(var[i]);
+  
+  num_elem = 0;
+  for(size_t i=0; i<size_var; i++){
+    for(size_t j=0; j<var[i]; j++)
+      hru_struct[i][j] = dat[num_elem + j];
+    num_elem += var[i];    		
+  }
+
+  return hru_struct;
+}
+
+
+// struct_indx maps to the following:
+// 1: time_struct
+// 2: type_struct
+// 3: start_time
+// 4: end_time
+// 5: ref_time
+// 6: old_time
+// 7: stat_counter
+// 8: output_timestep 
+std::vector<int> get_var_i_by_indx(void* handle, int struct_indx) {
+  int size_var;
+  get_size_data_var_i_by_indx(handle, &struct_indx, &size_var);
+  if (size_var == 0) return std::vector<int>();
+
+  std::vector<int> array(size_var);
+  get_data_var_i_by_indx(handle, &struct_indx, &array[0]);
+  return array;
+}
+
+// Struct_indx maps to the following:
+// 1: forc_struct
+// 2: attr_struct
+// 3: bpar_struct
+// 4: dpar_struct
+std::vector<double> get_var_d_by_indx(void* handle, int struct_indx) {
+  int size_var;
+  get_size_data_var_d_by_indx(handle, &struct_indx, &size_var);
+  if (size_var == 0) return std::vector<double>();
+
+  std::vector<double> array(size_var);
+  get_data_var_d_by_indx(handle, &struct_indx, &array[0]);
+  return array;
+}
+
+// struct_indx maps to the following:
+// 1: id_struct
+std::vector<long int> get_var_i8_by_indx(void* handle, int struct_indx) {
+  int size_var;
+  get_size_data_var_i8_by_indx(handle, &struct_indx, &size_var);
+  if (size_var == 0) return std::vector<long int>();
+
+  std::vector<long int> array(size_var);
+  get_data_var_i8_by_indx(handle, &struct_indx, &array[0]);
+  return array;
+}
+
+std::vector<int> get_flagVec_by_indx(void* handle, int struct_indx) {
+  int size;
+  get_size_data_flagVec_by_indx(handle, &struct_indx, &size);
+  if (size == 0) return std::vector<int>();
+
+  std::vector<int> array(size);
+  get_data_flagVec_by_indx(handle, &struct_indx, &array[0]);
+  return array;
+}
+
+
+
+
+
+
+
+std::vector<std::vector<std::vector<double>>> get_lookup_struct(void *handle) {
+  int size_z;
+  get_size_z_lookup(handle, &size_z);
+  if (size_z == 0) return std::vector<std::vector<std::vector<double>>>();
+
+
+  std::vector<std::vector<std::vector<double>>> lookup_struct;
+  for (int z = 1; z <= size_z; z++) {
+    int size_var;
+    get_size_var_lookup(handle, &z, &size_var);
+    std::vector<std::vector<double>> lookup_var(size_var);
+    lookup_struct.push_back(lookup_var);
+    for(int var = 1; var <= size_var; var++) {
+      int size_data;
+      get_size_data_lookup(handle, &z, &var, &size_data);
+      std::vector<double> lookup(size_data);
+      get_data_zlookup(handle, &z, &var, &lookup[0]);
+      lookup_var[var] = lookup;
+    }
+  }
+
+  return lookup_struct;
+} 

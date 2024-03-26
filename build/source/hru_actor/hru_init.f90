@@ -171,7 +171,7 @@ subroutine initHRU(indxGRU,            & !  Index of HRU's GRU parent
     case('flux'); call allocLocal(flux_meta,hru_data%fluxStruct,nSnow,nSoil,err,cmessage);    ! model fluxes
     case('bpar'); call allocLocal(bpar_meta,hru_data%bparStruct,nSnow=0,nSoil=0,err=err,message=cmessage);  ! basin-average variables
     case('bvar'); call allocLocal(bvar_meta,hru_data%bvarStruct,nSnow=0,nSoil=0,err=err,message=cmessage);  ! basin-average variables
-    case('lookup'); cycle ! allocated in t2enthalpy.f90
+    case('lookup'); cycle ! allocated in enthaplpyTemp.f90
     case('deriv'); cycle
     case default; err=20; message='unable to find structure name: '//trim(structInfo(iStruct)%structName)
   end select

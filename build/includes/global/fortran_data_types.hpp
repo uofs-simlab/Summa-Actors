@@ -109,9 +109,41 @@ extern "C" {
     // zLookup
     void* new_handle_z_lookup();
     void* delete_handle_z_lookup(void* handle);
+    void get_size_z_lookup(void* handle, int* size_z);
+    void get_size_var_lookup(void* handle, int* z, int* size_var);
+    void get_size_data_lookup(void* handle, int* z, int* var, int* size_data);
+    void get_data_zlookup(void* handle, int* z, int* var, double* array);
 
     // hru_type
     void* new_handle_hru_type();
     void delete_handle_hru_type(void* handle);
 
+    // var_dlength_by_indx
+    void get_size_var_dlength_by_indx(void* handle, int* indx, int* num_var);
+    void get_size_data_var_dlength_by_indx(void* handle, int* struct_indx, 
+        int* size_var, int* var);
+    void get_data_var_dlength_by_indx(void* handle, int* struct_indx, 
+        double* dat);
+
+    // var_ilength_by_indx
+    void get_size_var_ilength_by_indx(void* handle, int* indx, int* num_var);
+    void get_size_data_var_ilength_by_indx(void* handle, int* struct_indx, 
+        int* size_var, int* var);
+    void get_data_var_ilength_by_indx(void* handle, int* struct_indx, int* dat);
+    
+    // var_i_by_indx
+    void get_size_data_var_i_by_indx(void* handle, int* indx, int* num_var);
+    void get_data_var_i_by_indx(void* handle, int* struct_indx, int* dat);
+
+    // var_d_by_indx
+    void get_size_data_var_d_by_indx(void* handle, int* indx, int* num_var);
+    void get_data_var_d_by_indx(void* handle, int* struct_indx, double* dat);
+
+    // var_i8_by_indx
+    void get_size_data_var_i8_by_indx(void* handle, int* indx, int* num_var);
+    void get_data_var_i8_by_indx(void* handle, int* struct_indx, long int* dat);
+
+    // flagVec_by_indx
+    void get_size_data_flagVec_by_indx(void* handle, int* indx, int* num_var);
+    void get_data_flagVec_by_indx(void* handle, int* struct_indx, int* dat);
 }
