@@ -9,6 +9,8 @@ struct hru_batch_state {
 	caf::actor file_access_actor;
 	caf::actor parent;
 
+  HRU_Actor_Settings hru_actor_settings;
+
   std::vector<caf::actor> hru_actors;
   int num_done = 0;
 };

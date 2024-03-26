@@ -1724,6 +1724,301 @@ subroutine get_data_var_dlength_by_indx(handle, struct_indx, dat)&
   end select
 end subroutine get_data_var_dlength_by_indx
 
+! TODO: Will need to figure out this index starts at 0 stuff
+subroutine set_data_var_dlength_by_indx(handle, struct_indx, num_var, var_arr,&
+    num_elements, dat_array) bind(C, name='set_data_var_dlength_by_indx')
+
+  type(c_ptr),    intent(in), value :: handle
+  integer(c_int), intent(in)        :: struct_indx
+  integer(c_int), intent(in)        :: num_var
+  integer(c_int), intent(in)        :: var_arr(num_var)
+  integer(c_int), intent(in)        :: num_elements
+  real(c_double), intent(in)        :: dat_array(num_elements)
+  type(hru_type), pointer           :: hru_data
+
+  integer(c_int)                    :: i,j,sum_elem
+
+  call c_f_pointer(handle, hru_data)
+
+  select case(struct_indx)
+    case(1) ! forcStat
+      ! create the structure if it doesn't exist
+      if (allocated(hru_data%forcStat%var)) then
+        if (size(hru_data%forcStat%var) /= num_var) then
+          deallocate(hru_data%forcStat%var)
+          allocate(hru_data%forcStat%var(num_var))
+          do i=1,num_var
+            allocate( hru_data%forcStat%var(i)%dat(var_arr(i)) )
+          end do
+        end if
+      else
+        allocate(hru_data%forcStat%var(num_var))
+        do i=1,num_var
+          allocate( hru_data%forcStat%var(i)%dat(var_arr(i)) )
+        end do
+      end if
+
+      ! Set the data
+      sum_elem = 0
+      do i=1,num_var
+        do j=1,var_arr(i)
+          hru_data%forcStat%var(i)%dat(j) = dat_array(sum_elem + j)
+        end do
+        sum_elem = sum_elem + var_arr(i)
+      end do
+    case(2) ! progStat
+      ! create the structure if it doesn't exist
+      if (allocated(hru_data%progStat%var)) then
+        if (size(hru_data%progStat%var) /= num_var) then
+          deallocate(hru_data%progStat%var)
+          allocate(hru_data%progStat%var(num_var))
+          do i=1,num_var
+            allocate( hru_data%progStat%var(i)%dat(var_arr(i)) )
+          end do
+        end if
+      else
+        allocate(hru_data%progStat%var(num_var))
+        do i=1,num_var
+          allocate( hru_data%progStat%var(i)%dat(var_arr(i)) )
+        end do
+      end if
+
+      ! Set the data
+      sum_elem = 0
+      do i=1,num_var
+        do j=1,var_arr(i)
+          hru_data%progStat%var(i)%dat(j) = dat_array(sum_elem + j)
+        end do
+        sum_elem = sum_elem + var_arr(i)
+      end do
+    case(3) ! diagStat
+      ! create the structure if it doesn't exist
+      if (allocated(hru_data%diagStat%var)) then
+        if (size(hru_data%diagStat%var) /= num_var) then
+          deallocate(hru_data%diagStat%var)
+          allocate(hru_data%diagStat%var(num_var))
+          do i=1,num_var
+            allocate( hru_data%diagStat%var(i)%dat(var_arr(i)) )
+          end do
+        end if
+      else
+        allocate(hru_data%diagStat%var(num_var))
+        do i=1,num_var
+          allocate( hru_data%diagStat%var(i)%dat(var_arr(i)) )
+        end do
+      end if
+
+      ! Set the data
+      sum_elem = 0
+      do i=1,num_var
+        do j=1,var_arr(i)
+          hru_data%diagStat%var(i)%dat(j) = dat_array(sum_elem + j)
+        end do
+        sum_elem = sum_elem + var_arr(i)
+      end do
+    case(4) ! fluxStat
+      ! create the structure if it doesn't exist
+      if (allocated(hru_data%fluxStat%var)) then
+        if (size(hru_data%fluxStat%var) /= num_var) then
+          deallocate(hru_data%fluxStat%var)
+          allocate(hru_data%fluxStat%var(num_var))
+          do i=1,num_var
+            allocate( hru_data%fluxStat%var(i)%dat(var_arr(i)) )
+          end do
+        end if
+      else
+        allocate(hru_data%fluxStat%var(num_var))
+        do i=1,num_var
+          allocate( hru_data%fluxStat%var(i)%dat(var_arr(i)) )
+        end do
+      end if
+
+      ! Set the data
+      sum_elem = 0
+      do i=1,num_var
+        do j=1,var_arr(i)
+          hru_data%fluxStat%var(i)%dat(j) = dat_array(sum_elem + j)
+        end do
+        sum_elem = sum_elem + var_arr(i)
+      end do
+    case(5) ! indxStat
+      ! create the structure if it doesn't exist
+      if (allocated(hru_data%indxStat%var)) then
+        if (size(hru_data%indxStat%var) /= num_var) then
+          deallocate(hru_data%indxStat%var)
+          allocate(hru_data%indxStat%var(num_var))
+          do i=1,num_var
+            allocate( hru_data%indxStat%var(i)%dat(var_arr(i)) )
+          end do
+        end if
+      else
+        allocate(hru_data%indxStat%var(num_var))
+        do i=1,num_var
+          allocate( hru_data%indxStat%var(i)%dat(var_arr(i)) )
+        end do
+      end if
+
+      ! Set the data
+      sum_elem = 0
+      do i=1,num_var
+        do j=1,var_arr(i)
+          hru_data%indxStat%var(i)%dat(j) = dat_array(sum_elem + j)
+        end do
+        sum_elem = sum_elem + var_arr(i)
+      end do
+    case(6) ! bvarStat
+      ! create the structure if it doesn't exist
+      if (allocated(hru_data%bvarStat%var)) then
+        if (size(hru_data%bvarStat%var) /= num_var) then
+          deallocate(hru_data%bvarStat%var)
+          allocate(hru_data%bvarStat%var(num_var))
+          do i=1,num_var
+            allocate( hru_data%bvarStat%var(i)%dat(var_arr(i)) )
+          end do
+        end if
+      else
+        allocate(hru_data%bvarStat%var(num_var))
+        do i=1,num_var
+          allocate( hru_data%bvarStat%var(i)%dat(var_arr(i)) )
+        end do
+      end if
+
+      ! Set the data
+      sum_elem = 0
+      do i=1,num_var
+        do j=1,var_arr(i)
+          hru_data%bvarStat%var(i)%dat(j) = dat_array(sum_elem + j)
+        end do
+        sum_elem = sum_elem + var_arr(i)
+      end do
+    case(7) ! mparStruct
+      ! create the structure if it doesn't exist
+      if (allocated(hru_data%mparStruct%var)) then
+        if (size(hru_data%mparStruct%var) /= num_var) then
+          deallocate(hru_data%mparStruct%var)
+          allocate(hru_data%mparStruct%var(num_var))
+          do i=1,num_var
+            allocate( hru_data%mparStruct%var(i)%dat(var_arr(i)) )
+          end do
+        end if
+      else
+        allocate(hru_data%mparStruct%var(num_var))
+        do i=1,num_var
+          allocate( hru_data%mparStruct%var(i)%dat(var_arr(i)) )
+        end do
+      end if
+
+      ! Set the data
+      sum_elem = 0
+      do i=1,num_var
+        do j=1,var_arr(i)
+          hru_data%mparStruct%var(i)%dat(j) = dat_array(sum_elem + j)
+        end do
+        sum_elem = sum_elem + var_arr(i)
+      end do
+    case(8) ! progStruct
+      ! create the structure if it doesn't exist
+      if (allocated(hru_data%progStruct%var)) then
+        if (size(hru_data%progStruct%var) /= num_var) then
+          deallocate(hru_data%progStruct%var)
+          allocate(hru_data%progStruct%var(num_var))
+          do i=1,num_var
+            allocate( hru_data%progStruct%var(i)%dat(var_arr(i)) )
+          end do
+        end if
+      else
+        allocate(hru_data%progStruct%var(num_var))
+        do i=1,num_var
+          allocate( hru_data%progStruct%var(i)%dat(var_arr(i)) )
+        end do
+      end if
+
+      ! Set the data
+      sum_elem = 0
+      do i=1,num_var
+        do j=1,var_arr(i)
+          hru_data%progStruct%var(i)%dat(j) = dat_array(sum_elem + j)
+        end do
+        sum_elem = sum_elem + var_arr(i)
+      end do
+    case(9) ! diagStruct
+      ! create the structure if it doesn't exist
+      if (allocated(hru_data%diagStruct%var)) then
+        if (size(hru_data%diagStruct%var) /= num_var) then
+          deallocate(hru_data%diagStruct%var)
+          allocate(hru_data%diagStruct%var(num_var))
+          do i=1,num_var
+            allocate( hru_data%diagStruct%var(i)%dat(var_arr(i)) )
+          end do
+        end if
+      else
+        allocate(hru_data%diagStruct%var(num_var))
+        do i=1,num_var
+          allocate( hru_data%diagStruct%var(i)%dat(var_arr(i)) )
+        end do
+      end if
+
+      ! Set the data
+      sum_elem = 0
+      do i=1,num_var
+        do j=1,var_arr(i)
+          hru_data%diagStruct%var(i)%dat(j) = dat_array(sum_elem + j)
+        end do
+        sum_elem = sum_elem + var_arr(i)
+      end do
+    case(10) ! fluxStruct
+      ! create the structure if it doesn't exist
+      if (allocated(hru_data%fluxStruct%var)) then
+        if (size(hru_data%fluxStruct%var) /= num_var) then
+          deallocate(hru_data%fluxStruct%var)
+          allocate(hru_data%fluxStruct%var(num_var))
+          do i=1,num_var
+            allocate( hru_data%fluxStruct%var(i)%dat(var_arr(i)) )
+          end do
+        end if
+      else
+        allocate(hru_data%fluxStruct%var(num_var))
+        do i=1,num_var
+          allocate( hru_data%fluxStruct%var(i)%dat(var_arr(i)) )
+        end do
+      end if
+
+      ! Set the data
+      sum_elem = 0
+      do i=1,num_var
+        do j=1,var_arr(i)
+          hru_data%fluxStruct%var(i)%dat(j) = dat_array(sum_elem + j)
+        end do
+        sum_elem = sum_elem + var_arr(i)
+      end do
+    case(11) ! bvarStruct
+      ! create the structure if it doesn't exist
+      if (allocated(hru_data%bvarStruct%var)) then
+        if (size(hru_data%bvarStruct%var) /= num_var) then
+          deallocate(hru_data%bvarStruct%var)
+          allocate(hru_data%bvarStruct%var(num_var))
+          do i=1,num_var
+            allocate( hru_data%bvarStruct%var(i)%dat(var_arr(i)) )
+          end do
+        end if
+      else
+        allocate(hru_data%bvarStruct%var(num_var))
+        do i=1,num_var
+          allocate( hru_data%bvarStruct%var(i)%dat(var_arr(i)) )
+        end do
+      end if
+
+      ! Set the data
+      sum_elem = 0
+      do i=1,num_var
+        do j=1,var_arr(i)
+          hru_data%bvarStruct%var(i)%dat(j) = dat_array(sum_elem + j)
+        end do
+        sum_elem = sum_elem + var_arr(i)
+      end do
+  end select
+end subroutine set_data_var_dlength_by_indx
+
 ! ****************************** var_dlength ****************************
 
 ! ****************************** var_ilength ****************************
@@ -1805,7 +2100,49 @@ subroutine get_data_var_ilength_by_indx(handle, struct_indx, dat) &
   end select
 end subroutine get_data_var_ilength_by_indx
 
+subroutine set_data_var_ilength_by_indx(handle, struct_indx, num_var, var_arr,&
+    num_elements, dat_array) bind(C, name='set_data_var_ilength_by_indx')
 
+  type(c_ptr),    intent(in), value :: handle
+  integer(c_int), intent(in)        :: struct_indx
+  integer(c_int), intent(in)        :: num_var
+  integer(c_int), intent(in)        :: var_arr(num_var)
+  integer(c_int), intent(in)        :: num_elements
+  integer(c_int), intent(in)        :: dat_array(num_elements)
+  type(hru_type), pointer           :: hru_data
+
+  integer(c_int)                    :: i,j,sum_elem
+
+  call c_f_pointer(handle, hru_data)
+
+  select case(struct_indx)
+    case(1) ! indxStruct
+      ! create the structure if it doesn't exist
+      if (allocated(hru_data%indxStruct%var)) then
+        if (size(hru_data%indxStruct%var) /= num_var) then
+          deallocate(hru_data%indxStruct%var)
+          allocate(hru_data%indxStruct%var(num_var))
+          do i=1,num_var
+            allocate( hru_data%indxStruct%var(i)%dat(var_arr(i)) )
+          end do
+        end if
+      else
+        allocate(hru_data%indxStruct%var(num_var))
+        do i=1,num_var
+          allocate( hru_data%indxStruct%var(i)%dat(var_arr(i)) )
+        end do
+      end if
+
+      ! Set the data
+      sum_elem = 0
+      do i=1,num_var
+        do j=1,var_arr(i)
+          hru_data%indxStruct%var(i)%dat(j) = dat_array(sum_elem + j)
+        end do
+        sum_elem = sum_elem + var_arr(i)
+      end do
+  end select
+end subroutine set_data_var_ilength_by_indx
 
 ! ****************************** var_ilength ****************************
 
@@ -1920,6 +2257,125 @@ subroutine get_data_var_i_by_indx(handle, struct_indx, dat) &
       end if
   end select
 end subroutine get_data_var_i_by_indx
+
+subroutine set_data_var_i_by_indx(handle, struct_indx, num_var, summa_struct) &
+    bind(C, name="set_data_var_i_by_indx")
+
+  type(c_ptr),    intent(in), value :: handle
+  integer(c_int), intent(in)        :: struct_indx
+  integer(c_int), intent(in)        :: num_var
+  integer(c_int), intent(in)        :: summa_struct(num_var)
+  type(hru_type), pointer           :: hru_data
+
+  call c_f_pointer(handle, hru_data)
+
+  select case(struct_indx)
+    case(1) ! timeStruct
+      ! create the structure if it doesn't exist
+      if (allocated(hru_data%timeStruct%var)) then
+        if (size(hru_data%timeStruct%var) /= num_var) then
+          deallocate(hru_data%timeStruct%var)
+          allocate(hru_data%timeStruct%var(num_var))
+        end if
+      else
+        allocate(hru_data%timeStruct%var(num_var))
+      end if
+
+      ! Set the data
+      hru_data%timeStruct%var = summa_struct
+    case(2) ! typeStruct
+      ! create the structure if it doesn't exist
+      if (allocated(hru_data%typeStruct%var)) then
+        if (size(hru_data%typeStruct%var) /= num_var) then
+          deallocate(hru_data%typeStruct%var)
+          allocate(hru_data%typeStruct%var(num_var))
+        end if
+      else
+        allocate(hru_data%typeStruct%var(num_var))
+      end if
+
+      ! Set the data
+      hru_data%typeStruct%var = summa_struct
+    case(3) ! startTime_hru
+      ! create the structure if it doesn't exist
+      if (allocated(hru_data%startTime_hru%var)) then
+        if (size(hru_data%startTime_hru%var) /= num_var) then
+          deallocate(hru_data%startTime_hru%var)
+          allocate(hru_data%startTime_hru%var(num_var))
+        end if
+      else
+        allocate(hru_data%startTime_hru%var(num_var))
+      end if
+
+      ! Set the data
+      hru_data%startTime_hru%var = summa_struct
+    case(4) ! finish_time
+      ! create the structure if it doesn't exist
+      if (allocated(hru_data%finishTime_hru%var)) then
+        if (size(hru_data%finishTime_hru%var) /= num_var) then
+          deallocate(hru_data%finishTime_hru%var)
+          allocate(hru_data%finishTime_hru%var(num_var))
+        end if
+      else
+        allocate(hru_data%finishTime_hru%var(num_var))
+      end if
+
+      ! Set the data
+      hru_data%finishTime_hru%var = summa_struct
+    case(5) ! refTime_hru
+      ! create the structure if it doesn't exist
+      if (allocated(hru_data%refTime_hru%var)) then
+        if (size(hru_data%refTime_hru%var) /= num_var) then
+          deallocate(hru_data%refTime_hru%var)
+          allocate(hru_data%refTime_hru%var(num_var))
+        end if
+      else
+        allocate(hru_data%refTime_hru%var(num_var))
+      end if
+
+      ! Set the data
+      hru_data%refTime_hru%var = summa_struct
+    case(6) ! oldTime_hru
+      ! create the structure if it doesn't exist
+      if (allocated(hru_data%oldTime_hru%var)) then
+        if (size(hru_data%oldTime_hru%var) /= num_var) then
+          deallocate(hru_data%oldTime_hru%var)
+          allocate(hru_data%oldTime_hru%var(num_var))
+        end if
+      else
+        allocate(hru_data%oldTime_hru%var(num_var))
+      end if
+
+      ! Set the data
+      hru_data%oldTime_hru%var = summa_struct
+    case(7) ! statCounter
+      ! create the structure if it doesn't exist
+      if (allocated(hru_data%statCounter%var)) then
+        if (size(hru_data%statCounter%var) /= num_var) then
+          deallocate(hru_data%statCounter%var)
+          allocate(hru_data%statCounter%var(num_var))
+        end if
+      else
+        allocate(hru_data%statCounter%var(num_var))
+      end if
+
+      ! Set the data
+      hru_data%statCounter%var = summa_struct
+    case(8) ! outputTimeStep
+      ! create the structure if it doesn't exist
+      if (allocated(hru_data%outputTimeStep%var)) then
+        if (size(hru_data%outputTimeStep%var) /= num_var) then
+          deallocate(hru_data%outputTimeStep%var)
+          allocate(hru_data%outputTimeStep%var(num_var))
+        end if
+      else
+        allocate(hru_data%outputTimeStep%var(num_var))
+      end if
+
+      ! Set the data
+      hru_data%outputTimeStep%var = summa_struct
+  end select
+end subroutine set_data_var_i_by_indx
 ! ****************************** var_i ****************************
 
 ! ****************************** var_d ****************************
@@ -1992,6 +2448,74 @@ subroutine get_data_var_d_by_indx(handle, struct_indx, dat) &
   end select
 end subroutine get_data_var_d_by_indx
 
+subroutine set_data_var_d_by_indx(handle, struct_indx, num_var, summa_struct) &
+    bind(C, name="set_data_var_d_by_indx")
+  
+  type(c_ptr),    intent(in), value :: handle
+  integer(c_int), intent(in)        :: struct_indx
+  integer(c_int), intent(in)        :: num_var
+  real(c_double), intent(in)        :: summa_struct(num_var)
+  type(hru_type), pointer           :: hru_data
+
+  call c_f_pointer(handle, hru_data)
+  select case(struct_indx)
+    case(1) ! forcStruct
+      ! create the structure if it doesn't exist
+      if (allocated(hru_data%forcStruct%var)) then
+        if (size(hru_data%forcStruct%var) /= num_var) then
+          deallocate(hru_data%forcStruct%var)
+          allocate(hru_data%forcStruct%var(num_var))
+        end if
+      else
+        allocate(hru_data%forcStruct%var(num_var))
+      end if
+
+      ! Set the data
+      hru_data%forcStruct%var = summa_struct
+    case(2) ! attrStruct
+      ! create the structure if it doesn't exist
+      if (allocated(hru_data%attrStruct%var)) then
+        if (size(hru_data%attrStruct%var) /= num_var) then
+          deallocate(hru_data%attrStruct%var)
+          allocate(hru_data%attrStruct%var(num_var))
+        end if
+      else
+        allocate(hru_data%attrStruct%var(num_var))
+      end if
+
+      ! Set the data
+      hru_data%attrStruct%var = summa_struct
+    case(3) ! bpar_struct
+      ! create the structure if it doesn't exist
+      if (allocated(hru_data%bparStruct%var)) then
+        if (size(hru_data%bparStruct%var) /= num_var) then
+          deallocate(hru_data%bparStruct%var)
+          allocate(hru_data%bparStruct%var(num_var))
+        end if
+      else
+        allocate(hru_data%bparStruct%var(num_var))
+      end if
+
+      ! Set the data
+      hru_data%bparStruct%var = summa_struct
+    case(4) ! dpar_struct
+      ! create the structure if it doesn't exist
+      if (allocated(hru_data%dparStruct%var)) then
+        if (size(hru_data%dparStruct%var) /= num_var) then
+          deallocate(hru_data%dparStruct%var)
+          allocate(hru_data%dparStruct%var(num_var))
+        end if
+      else
+        allocate(hru_data%dparStruct%var(num_var))
+      end if
+
+      ! Set the data
+      hru_data%dparStruct%var = summa_struct
+  end select
+
+
+end subroutine set_data_var_d_by_indx
+
 ! ****************************** var_d ****************************
 
 ! ****************************** var_i8 ****************************
@@ -2032,6 +2556,35 @@ subroutine get_data_var_i8_by_indx(handle, struct_indx, dat) &
       end if
   end select
 end subroutine get_data_var_i8_by_indx
+
+subroutine set_data_var_i8_by_indx(handle, struct_indx, num_var, summa_struct) &
+    bind(C, name="set_data_var_i8_by_indx")
+
+  type(c_ptr),    intent(in), value :: handle
+  integer(c_int), intent(in)        :: struct_indx
+  integer(c_int), intent(in)        :: num_var
+  integer(c_long), intent(in)       :: summa_struct(num_var)
+  type(hru_type), pointer           :: hru_data
+
+  call c_f_pointer(handle, hru_data)
+
+  select case(struct_indx)
+    case(1) ! idStruct
+      if (allocated(hru_data%idStruct%var)) then
+        if (size(hru_data%idStruct%var) /= num_var) then
+          deallocate(hru_data%idStruct%var)
+          allocate(hru_data%idStruct%var(num_var))
+          hru_data%idStruct%var = summa_struct
+        end if
+      else
+        allocate(hru_data%idStruct%var(num_var))
+        hru_data%idStruct%var = summa_struct
+      end if
+  end select
+
+end subroutine
+
+
 ! ****************************** var_i8 ****************************
 
 ! ****************************** flag_vec ****************************
@@ -2082,6 +2635,49 @@ subroutine get_data_flagVec_by_indx(handle, struct_indx, dat) &
       end if
   end select
 end subroutine get_data_flagVec_by_indx
+
+subroutine set_data_flagVec_by_indx(handle, struct_indx, num_var, summa_struct)&
+    bind(C, name="set_data_flagVec_by_indx")
+
+  type(c_ptr),    intent(in), value :: handle
+  integer(c_int), intent(in)        :: struct_indx
+  integer(c_int), intent(in)        :: num_var
+  integer(c_int), intent(in)        :: summa_struct(num_var)
+  type(hru_type), pointer           :: hru_data
+
+  call c_f_pointer(handle, hru_data)
+
+  select case(1)
+    case(1) ! resetStats
+      ! create the structure if it doesn't exist
+      if (allocated(hru_data%resetStats%dat)) then
+        if (size(hru_data%resetStats%dat) /= num_var) then
+          deallocate(hru_data%resetStats%dat)
+          allocate(hru_data%resetStats%dat(num_var))
+        end if
+      else
+        allocate(hru_data%resetStats%dat(num_var))
+      end if
+
+      ! Set the data
+      hru_data%resetStats%dat = merge(.true., .false., summa_struct /= 0)
+    case(2) ! finalizeStats
+      ! create the structure if it doesn't exist
+      if (allocated(hru_data%finalizeStats%dat)) then
+        if (size(hru_data%finalizeStats%dat) /= num_var) then
+          deallocate(hru_data%finalizeStats%dat)
+          allocate(hru_data%finalizeStats%dat(num_var))
+        end if
+      else
+        allocate(hru_data%finalizeStats%dat(num_var))
+      end if
+
+      ! Set the data
+      hru_data%finalizeStats%dat = merge(.true., .false., summa_struct /= 0)
+  end select
+
+
+end subroutine
 ! ****************************** flag_vec ****************************
 
 

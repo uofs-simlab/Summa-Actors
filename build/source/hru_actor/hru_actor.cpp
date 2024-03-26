@@ -5,8 +5,12 @@ bool hru_extra_logging = false;
 namespace caf {
 
 behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
-                   HRU_Actor_Settings hru_actor_settings, 
-                   caf::actor file_access_actor, caf::actor parent) {
+    HRU_Actor_Settings hru_actor_settings, caf::actor file_access_actor, 
+    caf::actor parent) {
+
+  self->set_exit_handler([=](const exit_msg& msg) {
+    aout(self) << "HRU Actor: Received Exit Message\n";
+  });
   
   // Actor References
   self->state.file_access_actor = file_access_actor;
@@ -19,20 +23,12 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
   self->state.hru_actor_settings = hru_actor_settings;
   self->state.dt_init_factor = hru_actor_settings.dt_init_factor;
 
-  // Initialize HRU data and statistics structures
-  initHRU(&self->state.indxGRU, &self->state.num_steps, self->state.hru_data, 
-      &self->state.err);
-  if (self->state.err != 0) {
-      aout(self) << "Error: HRU_Actor - Initialize - HRU = " << self->state.indxHRU  
-                  << " - indxGRU = " << self->state.indxGRU 
-                  << " - refGRU = "<< self->state.refGRU
-                  << "\nError Code = " << self->state.err << "\n";
-      self->quit();
-  }
-  Initialize_HRU(self);
-
-
   return {
+    [=](init_hru) {
+      Initialize_HRU(self);
+    },
+
+
     /* Job actor telling us to run until completions
         We will interact with the file access actor */
     [=](update_hru_async) {
@@ -55,8 +51,9 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
 
       while(self->state.num_steps_until_write > 0) {
         if (self->state.forcingStep > self->state.stepsInCurrentFFile) {
-            self->send(self->state.file_access_actor, access_forcing_v, self->state.iFile+1, self);
-            break;
+          self->send(self->state.file_access_actor, access_forcing_v, 
+              self->state.iFile+1, self);
+          break;
         }
 
         self->state.num_steps_until_write--;
@@ -139,8 +136,8 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
 
       int err = Run_HRU(self);
       if (err != 0) {
-        self->send(self->state.parent, hru_error::run_physics_unhandleable, 
-        self);
+        self->send(self->state.parent, hru_error::run_physics_unhandleable,
+            self);
         self->quit();
         return;
       }
@@ -234,6 +231,71 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
           get_flagVec_by_indx(self->state.hru_data, 1);
       self->state.hru_data_serialized.finalize_stats = 
           get_flagVec_by_indx(self->state.hru_data, 2);
+
+      aout(self) << "Done Serializing HRU Data\n";
+
+      self->send(self->state.parent, serialize_hru_v, 
+          self->state.hru_data_serialized);
+    },
+
+    [=](reinit_hru, hru hru_data) {
+      aout(self) << "HRU_Actor: Re-initializing HRU\n";
+
+      self->state.indxHRU = hru_data.indx_hru;
+      self->state.indxGRU = hru_data.indx_gru;
+      self->state.refGRU = hru_data.ref_gru;
+      self->state.timestep = hru_data.timestep;
+      self->state.forcingStep = hru_data.forcing_step;
+      self->state.num_steps = hru_data.num_steps;
+      self->state.iFile = hru_data.iFile;
+      self->state.dt_init_factor = hru_data.dt_init_factor;
+      self->state.output_structure_step_index = 
+          hru_data.output_structure_step_index;
+      self->state.dt_init = hru_data.dt_init;
+      self->state.upArea = hru_data.upArea;
+      self->state.rtol = hru_data.rtol;
+      self->state.atol = hru_data.atol;
+
+      // Statistic Structures
+      set_var_dlength_by_indx(self->state.hru_data, hru_data.forc_stat, 1);
+      set_var_dlength_by_indx(self->state.hru_data, hru_data.prog_stat, 2);
+      set_var_dlength_by_indx(self->state.hru_data, hru_data.diag_stat, 3);
+      set_var_dlength_by_indx(self->state.hru_data, hru_data.flux_stat, 4);
+      set_var_dlength_by_indx(self->state.hru_data, hru_data.indx_stat, 5);
+      set_var_dlength_by_indx(self->state.hru_data, hru_data.bvar_stat, 6);
+
+      // Primary Data Structures (scalars)
+      set_var_i_by_indx(self->state.hru_data, hru_data.time_struct, 1);
+      set_var_d_by_indx(self->state.hru_data, hru_data.forc_struct, 1);
+      set_var_d_by_indx(self->state.hru_data, hru_data.attr_struct, 2);
+      set_var_i_by_indx(self->state.hru_data, hru_data.type_struct, 2);
+      set_var_i8_by_indx(self->state.hru_data, hru_data.id_struct, 1);
+
+      // Primary Data Structures (variable length vectors)
+      set_var_ilength_by_indx(self->state.hru_data, hru_data.indx_struct, 1);
+      set_var_dlength_by_indx(self->state.hru_data, hru_data.mpar_struct, 7);
+      set_var_dlength_by_indx(self->state.hru_data, hru_data.prog_struct, 8);
+      set_var_dlength_by_indx(self->state.hru_data, hru_data.diag_struct, 9);
+      set_var_dlength_by_indx(self->state.hru_data, hru_data.flux_struct, 10);
+
+      // Basin-average structures
+      set_var_d_by_indx(self->state.hru_data, hru_data.bpar_struct, 3);
+      set_var_dlength_by_indx(self->state.hru_data, hru_data.bvar_struct, 11);
+      set_var_d_by_indx(self->state.hru_data, hru_data.dpar_struct, 4);
+
+      // Local HRU data structures
+      set_var_i_by_indx(self->state.hru_data, hru_data.start_time, 3);
+      set_var_i_by_indx(self->state.hru_data, hru_data.end_time, 4);
+      set_var_i_by_indx(self->state.hru_data, hru_data.ref_time, 5);
+      set_var_i_by_indx(self->state.hru_data, hru_data.old_time, 6);
+
+      // statistic flags
+      set_var_i_by_indx(self->state.hru_data, hru_data.stat_counter, 7);
+      set_var_i_by_indx(self->state.hru_data, hru_data.output_timestep, 8);
+      set_flagVec_by_indx(self->state.hru_data, hru_data.reset_stats, 1);
+      set_flagVec_by_indx(self->state.hru_data, hru_data.finalize_stats, 2);
+
+      self->send(self->state.parent, reinit_hru_v);
     },
 
   };
@@ -242,6 +304,16 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
 
 
 void Initialize_HRU(stateful_actor<hru_state>* self) {
+  initHRU(&self->state.indxGRU, &self->state.num_steps, self->state.hru_data, 
+      &self->state.err);
+  if (self->state.err != 0) {
+    aout(self) << "Error: HRU_Actor - Initialize - HRU = " 
+               << self->state.indxHRU  
+               << " - indxGRU = " << self->state.indxGRU 
+               << " - refGRU = "<< self->state.refGRU
+               << "\nError Code = " << self->state.err << "\n";
+    self->quit();
+  }
 
   setupHRUParam(&self->state.indxGRU, &self->state.indxHRU, 
       self->state.hru_data, &self->state.upArea, &self->state.err);
@@ -257,9 +329,10 @@ void Initialize_HRU(stateful_actor<hru_state>* self) {
   summa_readRestart(&self->state.indxGRU, &self->state.indxHRU,
       self->state.hru_data, &self->state.dt_init, &self->state.err);
   if (self->state.err != 0) {
-    aout(self) << "Error: HRU_Actor - summa_readRestart - HRU = " << self->state.indxHRU
-                << " - indxGRU = " << self->state.indxGRU 
-                << " - refGRU = " << self->state.refGRU << "\n";
+    aout(self) << "Error: HRU_Actor - summa_readRestart - HRU = " 
+               << self->state.indxHRU
+               << " - indxGRU = " << self->state.indxGRU 
+               << " - refGRU = " << self->state.refGRU << "\n";
     self->quit();
     return;
   }
@@ -281,19 +354,21 @@ int Run_HRU(stateful_actor<hru_state>* self) {
       &self->state.err);
   if (self->state.err != 0) {
     aout(self) << "Error---HRU_Actor: ReadForcingHRU\n" 
-                << "\tIndxGRU = "               << self->state.indxGRU << "\n"
-                << "\tRefGRU = "                << self->state.refGRU << "\n"
-                << "\tForcing Step = "          << self->state.forcingStep << "\n"
-                << "\tTimestep = "              << self->state.timestep << "\n"
-                << "\tiFile = "                 << self->state.iFile << "\n"
-                << "\tSteps in Forcing File = " << self->state.stepsInCurrentFFile << "\n";
+               << "\tIndxGRU = " << self->state.indxGRU << "\n"
+               << "\tRefGRU = " << self->state.refGRU << "\n"
+               << "\tForcing Step = " << self->state.forcingStep << "\n"
+               << "\tTimestep = " << self->state.timestep << "\n"
+               << "\tiFile = " << self->state.iFile << "\n"
+               << "\tSteps in Forcing File = " 
+               << self->state.stepsInCurrentFFile << "\n";
     self->quit();
     return -1;
   }
 
   if (self->state.hru_actor_settings.print_output && self->state.timestep % 
       self->state.hru_actor_settings.output_frequency == 0) {
-    aout(self) << self->state.refGRU << " - Timestep = " << self->state.timestep << "\n";
+    aout(self) << self->state.refGRU << " - Timestep = " 
+               << self->state.timestep << "\n";
   }
     
 

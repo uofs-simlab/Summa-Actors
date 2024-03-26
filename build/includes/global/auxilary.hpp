@@ -31,6 +31,7 @@ std::vector<int> get_type_struct(void* handle);
 std::vector<std::vector<double>> get_mpar_struct_array(void* handle);
 std::vector<double> get_bpar_struct(void* handle);
 
+// Getters by index
 std::vector<std::vector<double>> get_var_dlength_by_indx(void* handle, 
     int struct_indx);
 std::vector<std::vector<int>> get_var_ilength_by_indx(void* handle,
@@ -39,5 +40,21 @@ std::vector<int> get_var_i_by_indx(void* handle, int struct_indx);
 std::vector<double> get_var_d_by_indx(void* handle, int struct_indx);
 std::vector<long int> get_var_i8_by_indx(void* handle, int struct_indx);
 std::vector<int> get_flagVec_by_indx(void* handle, int struct_indx);
-// z_lookup
 
+// Setters by index
+void set_var_dlength_by_indx(void* handle, 
+    std::vector<std::vector<double>>& summa_struct, int struct_indx);
+void set_var_ilength_by_indx(void* handle, 
+    std::vector<std::vector<int>>& summa_struct, int struct_indx); 
+
+void set_var_i8_by_indx(void* handle, std::vector<long int>& summa_struct, 
+    int struct_indx);
+
+void set_var_i_by_indx(void* handle, std::vector<int>& summa_struct, 
+    int struct_indx);
+
+void set_var_d_by_indx(void* handle, std::vector<double>& summa_struct, 
+    int struct_indx);
+
+void set_flagVec_by_indx(void* handle, std::vector<int>& summa_struct, 
+    int struct_indx);

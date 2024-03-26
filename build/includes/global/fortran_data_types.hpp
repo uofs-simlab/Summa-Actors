@@ -124,26 +124,38 @@ extern "C" {
         int* size_var, int* var);
     void get_data_var_dlength_by_indx(void* handle, int* struct_indx, 
         double* dat);
+    void set_data_var_dlength_by_indx(void* handle, int* struct_indx, 
+        int* num_var, int* var, int* num_summa_data, double* summa_data);
 
     // var_ilength_by_indx
     void get_size_var_ilength_by_indx(void* handle, int* indx, int* num_var);
     void get_size_data_var_ilength_by_indx(void* handle, int* struct_indx, 
         int* size_var, int* var);
     void get_data_var_ilength_by_indx(void* handle, int* struct_indx, int* dat);
+    void set_data_var_ilength_by_indx(void* handle, int* struct_indx, 
+        int* num_var, int* var, int* num_summa_data, int* summa_data);
     
     // var_i_by_indx
     void get_size_data_var_i_by_indx(void* handle, int* indx, int* num_var);
     void get_data_var_i_by_indx(void* handle, int* struct_indx, int* dat);
+    void set_data_var_i_by_indx(void* handle, int* struct_indx, int* num_var, 
+        int* summa_struct);
 
     // var_d_by_indx
     void get_size_data_var_d_by_indx(void* handle, int* indx, int* num_var);
     void get_data_var_d_by_indx(void* handle, int* struct_indx, double* dat);
+    void set_data_var_d_by_indx(void* handle, int* struct_indx, int* num_var, 
+        double* summa_struct);
 
     // var_i8_by_indx
     void get_size_data_var_i8_by_indx(void* handle, int* indx, int* num_var);
     void get_data_var_i8_by_indx(void* handle, int* struct_indx, long int* dat);
+    void set_data_var_i8_by_indx(void* handle, int* struct_indx, int* num_var, 
+        long int* summa_struct);
 
     // flagVec_by_indx
     void get_size_data_flagVec_by_indx(void* handle, int* indx, int* num_var);
     void get_data_flagVec_by_indx(void* handle, int* struct_indx, int* dat);
+    void set_data_flagVec_by_indx(void* handle, int* struct_indx, int* num_var, 
+        int* summa_struct);
 }

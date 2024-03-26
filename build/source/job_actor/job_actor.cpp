@@ -141,6 +141,7 @@ behavior job_actor(stateful_actor<job_state>* self,
           self->state.gru_container.gru_list.size()) {
         aout(self) << "Job_Actor: Done Update for timestep:" 
                    << self->state.timestep << "\n";
+
         // write the output
         int steps_to_write = 1;
         int start_gru = 1;
@@ -167,20 +168,33 @@ behavior job_actor(stateful_actor<job_state>* self,
             GRU->setSuccess();
           aout(self) << "Job_Actor: Done Job\n";
           self->send(self, finalize_v);
-        }
+        } else if (self->state.forcingStep > self->state.stepsInCurrentFFile) {
         // Check if we need another forcing file
-        else if (self->state.forcingStep > self->state.stepsInCurrentFFile) {
           aout(self) << "Job_Actor: Done Forcing Step\n";
           self->send(self->state.file_access_actor, access_forcing_v, 
-                      self->state.iFile+1, self);
-        }
-        else {
+              self->state.iFile+1, self);
+        } else if (self->state.timestep == 5) {
+          // Test serializing the HRU actor
+          self->send(self->state.gru_container.gru_list[0]->getGRUActor(), 
+              serialize_hru_v, 0);
+        } else {
           // otherwise update all HRUs
           self->send(self, update_hru_v);
         }
         self->state.num_gru_done_timestep = 0;
       }
+    },
 
+    [=](serialize_hru, hru hru_data) {
+      aout(self) << "Job_Actor: Recieved HRU Data\n";
+      auto sender = actor_cast<actor>(self->current_sender());
+
+      self->send(sender, reinit_hru_v, hru_data);
+    },
+
+    [=](reinit_hru) {
+      aout(self) << "Job_Actor: HRU Actor Re-initialized\n";
+      self->send(self, update_hru_v);
     },
 
     // #####################################################
@@ -222,7 +236,8 @@ behavior job_actor(stateful_actor<job_state>* self,
       // Check if all GRUs are finished
       if (gru_container.num_gru_done >= gru_container.num_gru_in_run_domain) {
         // Check for failures
-        if(self->state.gru_container.num_gru_failed == 0 || self->state.max_run_attempts == 1) {
+        if(self->state.gru_container.num_gru_failed == 0 || 
+            self->state.max_run_attempts == 1) {
           self->send(self, finalize_v); 
         } else {
           self->send(self, restart_failures_v);
@@ -235,10 +250,12 @@ behavior job_actor(stateful_actor<job_state>* self,
       aout(self) << "Job_Actor: Restarting GRUs that Failed\n";
 
       self->state.gru_container.num_gru_done = 0;
-      self->state.gru_container.num_gru_in_run_domain = self->state.gru_container.num_gru_failed;
+      self->state.gru_container.num_gru_in_run_domain = 
+          self->state.gru_container.num_gru_failed;
       self->state.gru_container.num_gru_failed = 0;
-
-      self->send(self->state.file_access_actor, restart_failures_v); // notify file_access_actor
+      
+      // notify file_access_actor
+      self->send(self->state.file_access_actor, restart_failures_v); 
 
       // Set Sundials tolerance or decrease timestep length
       if (self->state.hru_actor_settings.rel_tol > 0 && 
@@ -262,7 +279,8 @@ behavior job_actor(stateful_actor<job_state>* self,
                                         self->state.hru_actor_settings,
                                         self->state.file_access_actor, 
                                         self);
-          self->state.gru_container.gru_list[local_gru_index-1]->setGRUActor(gru_actor);
+          self->state.gru_container.gru_list[local_gru_index-1]->
+              setGRUActor(gru_actor);
         }
       }
     },
@@ -288,21 +306,29 @@ behavior job_actor(stateful_actor<job_state>* self,
 
           self->state.job_timing.updateEndPoint("total_duration");
 
-          aout(self) << "\n________________PRINTING JOB_ACTOR TIMING INFO RESULTS________________\n"
-                      << "Total Duration = " << self->state.job_timing.getDuration("total_duration").value_or(-1.0) << " Seconds\n"
-                      << "Total Duration = " << self->state.job_timing.getDuration("total_duration").value_or(-1.0) / 60 << " Minutes\n"
-                      << "Total Duration = " << (self->state.job_timing.getDuration("total_duration").value_or(-1.0) / 60) / 60 << " Hours\n"
-                      << "________________________________________________________________________\n\n";
+          aout(self) << "\n________________" 
+                     << "PRINTING JOB_ACTOR TIMING INFO RESULTS"
+                     << "________________\n"
+                     << "Total Duration = "
+                     << self->state.job_timing.getDuration("total_duration")
+                         .value_or(-1.0) << " Seconds\n"
+                     << "Total Duration = " 
+                     << self->state.job_timing.getDuration("total_duration")
+                         .value_or(-1.0) / 60 << " Minutes\n"
+                     << "Total Duration = " 
+                     << (self->state.job_timing.getDuration("total_duration")
+                        .value_or(-1.0) / 60) / 60 << " Hours\n"
+                     << "_________________________________" 
+                     << "_______________________________________\n\n";
 
           deallocateJobActor(&err);
 
             // Tell Parent we are done
-          self->send(self->state.parent, 
-                      done_job_v, 
-                      self->state.num_gru_failed, 
-                      self->state.job_timing.getDuration("total_duration").value_or(-1.0),
-                      std::get<0>(read_write_duration), 
-                      std::get<1>(read_write_duration));
+          self->send(self->state.parent, done_job_v, self->state.num_gru_failed, 
+              self->state.job_timing.getDuration("total_duration")
+                  .value_or(-1.0),
+              std::get<0>(read_write_duration), 
+              std::get<1>(read_write_duration));
           self->quit();
 
       });
@@ -375,6 +401,7 @@ void spawnHRUActors(stateful_actor<job_state>* self, bool normal_mode) {
 }
 
 void spawnHRUBatches(stateful_actor<job_state>* self) {
+  aout(self) << "Job_Actor: Spawning HRU Batches\n";
   int batch_size;
 
   auto& gru_container = self->state.gru_container;
@@ -384,10 +411,18 @@ void spawnHRUBatches(stateful_actor<job_state>* self) {
 
   if (self->state.job_actor_settings.batch_size == 9999) {
     batch_size = std::ceil(gru_container.num_gru_in_run_domain / 
-                           (std::thread::hardware_concurrency() * 2));
+        (std::thread::hardware_concurrency() * 2));
   } else {
     batch_size = self->state.job_actor_settings.batch_size;
   }
+
+  // Correct when number of batches is greater than number of HRUs
+  if (batch_size == 0) {
+    batch_size = 1; 
+  }
+
+  // Correct if number of GRUs is less than the desired batch size
+  aout(self) << "Job_Actor: Batch Size=" << batch_size << "\n";
 
   int remaining_hru_to_batch = gru_container.num_gru_in_run_domain;
   int start_hru_global = self->state.start_gru;
@@ -396,16 +431,13 @@ void spawnHRUBatches(stateful_actor<job_state>* self) {
   while (remaining_hru_to_batch > 0) {
     int current_batch_size = std::min(batch_size, remaining_hru_to_batch);
     auto gru_batch = self->spawn(hru_batch_actor, start_hru_local,
-                                 start_hru_global, current_batch_size,
-                                  self->state.hru_actor_settings,
-                                 self->state.file_access_actor, self);
+        start_hru_global, current_batch_size, self->state.hru_actor_settings,
+        self->state.file_access_actor, self);
 
     gru_container.gru_list.push_back(new GRU(start_hru_global, 
-                                    start_hru_local, gru_batch, 
-                                    self->state.dt_init_start_factor, 
-                                    self->state.hru_actor_settings.rel_tol,
-                                    self->state.hru_actor_settings.abs_tol,
-                                    self->state.max_run_attempts));  
+        start_hru_local, gru_batch, self->state.dt_init_start_factor, 
+        self->state.hru_actor_settings.rel_tol,
+        self->state.hru_actor_settings.abs_tol, self->state.max_run_attempts));  
 
     remaining_hru_to_batch -= current_batch_size;
     start_hru_local += current_batch_size;
@@ -414,9 +446,6 @@ void spawnHRUBatches(stateful_actor<job_state>* self) {
   aout(self) << "Number of HRU_Batch_Actors: " 
              << gru_container.gru_list.size() << "\n";
 }
-
-
-
 
 
 

@@ -362,8 +362,6 @@ std::vector<std::vector<double>> get_mpar_struct_array(void* handle) {
 
 
 // HRU Data Serialization
-
-
 // struct_indx maps to the following:
 // 1: forc_stat
 // 2: prog_stat
@@ -486,6 +484,9 @@ std::vector<long int> get_var_i8_by_indx(void* handle, int struct_indx) {
   return array;
 }
 
+// struct_indx maps to the following:
+// 1: reset_stats
+// 2: finalize_stats
 std::vector<int> get_flagVec_by_indx(void* handle, int struct_indx) {
   int size;
   get_size_data_flagVec_by_indx(handle, &struct_indx, &size);
@@ -495,12 +496,6 @@ std::vector<int> get_flagVec_by_indx(void* handle, int struct_indx) {
   get_data_flagVec_by_indx(handle, &struct_indx, &array[0]);
   return array;
 }
-
-
-
-
-
-
 
 std::vector<std::vector<std::vector<double>>> get_lookup_struct(void *handle) {
   int size_z;
@@ -525,3 +520,101 @@ std::vector<std::vector<std::vector<double>>> get_lookup_struct(void *handle) {
 
   return lookup_struct;
 } 
+
+
+// HRU Data Serialization
+// struct_indx maps to the following:
+// 1: forc_stat
+// 2: prog_stat
+// 3: diag_stat
+// 4: flux_stat
+// 5: indx_stat
+// 6: bvar_stat
+// 7: mpar_struct
+// 8: prog_struct
+// 9: diag_struct
+// 10: flux_struct
+// 11: bvarStruct
+void set_var_dlength_by_indx(void* handle, 
+    std::vector<std::vector<double>>& summa_struct, int struct_indx) {
+  
+  int num_var = summa_struct.size();
+  std::vector<int> var(num_var);
+  std::vector<double> dat_array;
+
+  int num_elem = 0;
+  for (size_t i=0; i<num_var; i++) {
+    var[i] = summa_struct[i].size();
+    for (size_t j=0; j<var[i]; j++)
+      dat_array.push_back(summa_struct[i][j]);
+    num_elem += var[i];
+  }
+
+  set_data_var_dlength_by_indx(handle, &struct_indx, &num_var, &var[0],
+      &num_elem, &dat_array[0]);
+}
+
+// struct_indx maps to the following:
+// 1: indxStruct
+void set_var_ilength_by_indx(void* handle,
+    std::vector<std::vector<int>>& summa_struct, int struct_indx) {
+  
+  int num_var = summa_struct.size();
+  std::vector<int> var(num_var);
+  std::vector<int> dat_array;
+
+  int num_elem = 0;
+  for (size_t i=0; i<num_var; i++) {
+    var[i] = summa_struct[i].size();
+    for (size_t j=0; j<var[i]; j++)
+      dat_array.push_back(summa_struct[i][j]);
+    num_elem += var[i];
+  }
+
+  set_data_var_ilength_by_indx(handle, &struct_indx, &num_var, &var[0],
+      &num_elem, &dat_array[0]);
+  
+}
+
+// struct_indx maps to the following:
+// 1: id_struct
+void set_var_i8_by_indx(void* handle, std::vector<long int>& summa_struct, 
+    int struct_indx) {
+  int num_var = summa_struct.size();
+  set_data_var_i8_by_indx(handle, &struct_indx, &num_var, &summa_struct[0]);
+}
+
+// struct_indx maps to the following:
+// 1: time_struct
+// 2: type_struct
+// 3: start_time
+// 4: end_time
+// 5: ref_time
+// 6: old_time
+// 7: stat_counter
+// 8: output_timestep 
+void set_var_i_by_indx(void* handle, std::vector<int>& summa_struct, 
+    int struct_indx) {
+  int num_var = summa_struct.size();
+  set_data_var_i_by_indx(handle, &struct_indx, &num_var, &summa_struct[0]);
+}
+
+// Struct_indx maps to the following:
+// 1: forc_struct
+// 2: attr_struct
+// 3: bpar_struct
+// 4: dpar_struct
+void set_var_d_by_indx(void* handle, std::vector<double>& summa_struct, 
+    int struct_indx) {
+  int num_var = summa_struct.size();
+  set_data_var_d_by_indx(handle, &struct_indx, &num_var, &summa_struct[0]);
+}
+
+// struct_indx maps to the following:
+// 1: reset_stats
+// 2: finalize_stats
+void set_flagVec_by_indx(void* handle, std::vector<int>& summa_struct, 
+    int struct_indx) {
+  int num_var = summa_struct.size();
+  set_data_flagVec_by_indx(handle, &struct_indx, &num_var, &summa_struct[0]);
+}
