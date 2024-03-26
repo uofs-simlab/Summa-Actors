@@ -158,4 +158,10 @@ extern "C" {
     void get_data_flagVec_by_indx(void* handle, int* struct_indx, int* dat);
     void set_data_flagVec_by_indx(void* handle, int* struct_indx, int* num_var, 
         int* summa_struct);
+
+    // scalar types
+    void get_scalar_data_fortran(void* handle, double* fracJulDay, 
+        double* tmZoneOffsetFracDay, int* year_length, int* computeVegFlux);
+    void set_scalar_data_fortran(void* handle, double* fracJulDay,
+        double* tmZoneOffsetFracDay, int* year_length, int* computeVegFlux);
 }

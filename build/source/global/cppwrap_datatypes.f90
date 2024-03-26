@@ -2493,6 +2493,41 @@ subroutine set_data_flagVec_by_indx(handle, struct_indx, num_var, summa_struct)&
 end subroutine
 ! ****************************** flag_vec ****************************
 
+subroutine get_scalar_data_fortran(handle, fracJulDay, tmZoneOffsetFracDay, &
+    year_length, computeVegFlux) bind(C, name='get_scalar_data_fortran')
+  type(c_ptr), intent(in), value :: handle
+  real(c_double), intent(out) :: fracJulDay
+  real(c_double), intent(out) :: tmZoneOffsetFracDay
+  integer(c_int), intent(out) :: year_length
+  integer(c_int), intent(out) :: computeVegFlux
+  type(hru_type), pointer :: hru_data
+
+  call c_f_pointer(handle, hru_data)
+
+  fracJulDay = hru_data%fracJulDay
+  tmZoneOffsetFracDay = hru_data%tmZoneOffsetFracDay
+  year_length = hru_data%yearLength
+  computeVegFlux = hru_data%computeVegFlux
+
+end subroutine get_scalar_data_fortran
+
+subroutine set_scalar_data_fortran(handle, fracJulDay, tmZoneOffsetFracDay, &
+    year_length, computeVegFlux) bind(C, name='set_scalar_data_fortran')
+  type(c_ptr), intent(in), value :: handle
+  real(c_double), intent(in) :: fracJulDay
+  real(c_double), intent(in) :: tmZoneOffsetFracDay
+  integer(c_int), intent(in) :: year_length
+  integer(c_int), intent(in) :: computeVegFlux
+  type(hru_type), pointer :: hru_data
+
+  call c_f_pointer(handle, hru_data)
+
+  hru_data%fracJulDay = fracJulDay
+  hru_data%tmZoneOffsetFracDay = tmZoneOffsetFracDay
+  hru_data%yearLength = year_length
+  hru_data%computeVegFlux = computeVegFlux
+
+end subroutine set_scalar_data_fortran
 
 
 ! ****************************** hru type ****************************

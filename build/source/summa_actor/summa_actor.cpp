@@ -117,7 +117,8 @@ behavior summa_actor(stateful_actor<summa_actor_state>* self,
         
         self->send(self->state.parent, done_batch_v, total_dur_sec, 
                    read_dur_sec, write_dur_sec);
-        exit(0);
+        self->quit();
+        // exit(0);
       }
     },
 

@@ -63,6 +63,12 @@ struct hru {
   std::vector<int> output_timestep;
   std::vector<int> reset_stats;
   std::vector<int> finalize_stats;
+
+  // scalar data
+  double frac_jul_day;
+  double tm_zone_offset_frac_day;
+  int year_length;
+  int compute_veg_flux;
 };
 
 template <class Inspector>
@@ -108,7 +114,12 @@ bool inspect(Inspector& inspector, hru& hru_data) {
       inspector.field("stat_counter", hru_data.stat_counter),
       inspector.field("output_timestep", hru_data.output_timestep),
       inspector.field("reset_stats", hru_data.reset_stats),
-      inspector.field("finalize_stats", hru_data.finalize_stats));
+      inspector.field("finalize_stats", hru_data.finalize_stats),
+      inspector.field("frac_jul_day", hru_data.frac_jul_day),
+      inspector.field("tm_zone_offset_frac_day", 
+          hru_data.tm_zone_offset_frac_day),
+      inspector.field("year_length", hru_data.year_length),
+      inspector.field("compute_veg_flux", hru_data.compute_veg_flux));
 }
 
 

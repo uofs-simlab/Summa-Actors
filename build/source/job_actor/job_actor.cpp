@@ -164,9 +164,11 @@ behavior job_actor(stateful_actor<job_state>* self,
 
         // Check if we are done the simulation
         if (self->state.timestep > self->state.num_steps) {
-          for (auto GRU : self->state.gru_container.gru_list)
-            GRU->setSuccess();
           aout(self) << "Job_Actor: Done Job\n";
+          for (auto GRU : self->state.gru_container.gru_list) {
+            self->send_exit(GRU->getGRUActor(), exit_reason::user_shutdown);
+            GRU->setSuccess();
+          }
           self->send(self, finalize_v);
         } else if (self->state.forcingStep > self->state.stepsInCurrentFFile) {
         // Check if we need another forcing file

@@ -232,6 +232,12 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
       self->state.hru_data_serialized.finalize_stats = 
           get_flagVec_by_indx(self->state.hru_data, 2);
 
+      get_scalar_data(self->state.hru_data,
+          self->state.hru_data_serialized.frac_jul_day,
+          self->state.hru_data_serialized.tm_zone_offset_frac_day,
+          self->state.hru_data_serialized.year_length,
+          self->state.hru_data_serialized.compute_veg_flux);
+       
       aout(self) << "Done Serializing HRU Data\n";
 
       self->send(self->state.parent, serialize_hru_v, 
@@ -294,6 +300,11 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
       set_var_i_by_indx(self->state.hru_data, hru_data.output_timestep, 8);
       set_flagVec_by_indx(self->state.hru_data, hru_data.reset_stats, 1);
       set_flagVec_by_indx(self->state.hru_data, hru_data.finalize_stats, 2);
+
+      // scalar data
+      set_scalar_data(self->state.hru_data, hru_data.frac_jul_day,
+          hru_data.tm_zone_offset_frac_day, hru_data.year_length,
+          hru_data.compute_veg_flux);
 
       self->send(self->state.parent, reinit_hru_v);
     },

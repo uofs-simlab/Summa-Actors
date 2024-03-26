@@ -69,13 +69,6 @@ behavior hru_batch_actor(stateful_actor<hru_batch_state>* self,
     [=](reinit_hru) {
       aout(self) << "HRU_Batch_Actor: HRU Re-Initialized\n";
       self->send(self->state.parent, reinit_hru_v);
-    },
-
-    [=](exit_msg) {
-      for(auto& hru_actor : self->state.hru_actors) {
-        self->send_exit(hru_actor, exit_reason::user_shutdown);
-      }
-      self->quit();
     }
   };
 

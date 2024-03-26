@@ -521,6 +521,18 @@ std::vector<std::vector<std::vector<double>>> get_lookup_struct(void *handle) {
   return lookup_struct;
 } 
 
+void get_scalar_data(void* handle, double fracJulDay, 
+    double tmZoneOffsetFracDay, int year_length, int computeVegFlux) {
+  get_scalar_data_fortran(handle, &fracJulDay, &tmZoneOffsetFracDay, 
+      &year_length, &computeVegFlux);
+}
+
+void set_scalar_data(void* handle, double fracJulDay, 
+    double tmZoneOffsetFracDay, int year_length, int computeVegFlux) {
+  set_scalar_data_fortran(handle, &fracJulDay, &tmZoneOffsetFracDay, 
+      &year_length, &computeVegFlux);
+}
+
 
 // HRU Data Serialization
 // struct_indx maps to the following:
