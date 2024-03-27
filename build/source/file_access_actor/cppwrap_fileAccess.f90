@@ -364,18 +364,16 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
 end subroutine fileAccessActor_init_fortran
 
 subroutine defOutputFortran(handle_output_ncid, start_gru, num_gru, num_hru, &
-    file_gru, err) bind(C, name="defOutputFortran")
+    file_gru, use_extention, file_extention_c, err) bind(C, name="defOutputFortran")
   USE globalData,only:nGRUrun,nHRUrun
   USE globalData,only:fileout,output_fileSuffix
   USE globalData,only:ncid
   USE globalData,only:integerMissing
   USE globalData,only:iRunMode,iRunModeFull,iRunModeGRU,iRunModeHRU ! define the running modes
-
   USE summaFileManager,only:OUTPUT_PATH,OUTPUT_PREFIX ! define output file
-
-  USE var_lookup,only:maxvarFreq                ! maximum number of output files
-
+  USE var_lookup,only:maxvarFreq ! maximum number of output files
   USE def_output_module,only:def_output ! module to define model output
+  USE cppwrap_auxiliary,only:c_f_string           ! Convert C String to Fortran String
   
   implicit none
 
@@ -385,15 +383,19 @@ subroutine defOutputFortran(handle_output_ncid, start_gru, num_gru, num_hru, &
   integer(c_int),intent(in)              :: num_gru
   integer(c_int),intent(in)              :: num_hru
   integer(c_int),intent(in)              :: file_gru
+  logical(c_bool),intent(in)             :: use_extention
+  character(kind=c_char,len=1),intent(in):: file_extention_c
   integer(c_int),intent(out)             :: err
   ! Local Variables
   type(var_i),pointer                    :: output_ncid
   character(len=128)                     :: fmtGruOutput ! a format string used to write start and end GRU in output file names
-
+  character(len=256)                     :: file_extention
   character(len=256)                     :: message ! error message
 
 
   call c_f_pointer(handle_output_ncid, output_ncid)
+  call c_f_string(file_extention_c,file_extention, 256)
+  file_extention = trim(file_extention)
 
   output_fileSuffix = ''
   if (output_fileSuffix(1:1) /= '_') output_fileSuffix='_'//trim(output_fileSuffix)
@@ -405,6 +407,9 @@ subroutine defOutputFortran(handle_output_ncid, start_gru, num_gru, num_hru, &
       fmtGruOutput = "i"//trim(fmtGruOutput)//"."//trim(fmtGruOutput)                   ! construct the format string for startGRU and endGRU
       fmtGruOutput = "('_G',"//trim(fmtGruOutput)//",'-',"//trim(fmtGruOutput)//")"
       write(output_fileSuffix((len_trim(output_fileSuffix)+1):len(output_fileSuffix)),fmtGruOutput) start_gru,start_gru+num_gru-1
+      if (use_extention) then
+        output_fileSuffix = trim(output_fileSuffix)//trim(file_extention)
+      endif
     case(iRunModeHRU)
       write(output_fileSuffix((len_trim(output_fileSuffix)+1):len(output_fileSuffix)),"('_H',i0)") checkHRU
   end select

@@ -34,6 +34,8 @@ behavior job_actor(stateful_actor<job_state>* self,
   self->state.start_gru = start_gru;
   self->state.num_gru = num_gru;
   self->state.parent = parent;
+
+
   
   // Set the settings variables
   self->state.file_access_actor_settings = file_access_actor_settings;
@@ -69,9 +71,13 @@ behavior job_actor(stateful_actor<job_state>* self,
     return {};
   }
 
+  self->state.num_gru_info = NumGRUInfo(self->state.start_gru, 
+      self->state.start_gru, self->state.num_gru, self->state.num_gru, 
+      file_gru, false);
+
   // Spawn the file_access_actor.
   self->state.file_access_actor = self->spawn(file_access_actor, 
-      self->state.start_gru, self->state.num_gru, 
+      self->state.num_gru_info, 
       self->state.file_access_actor_settings, self);
   self->send(self->state.file_access_actor, def_output_v, file_gru);
 

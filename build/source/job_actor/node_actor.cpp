@@ -2,8 +2,7 @@
 
 namespace caf {
 
-behavior node_actor(stateful_actor<node_state>* self,
-    std::string host, // server will spawn this actor, if local do not try to connect via port  
+behavior node_actor(stateful_actor<node_state>* self, std::string host, 
     actor parent, Distributed_Settings distributed_settings,
     File_Access_Actor_Settings file_access_actor_settings,
     Job_Actor_Settings job_actor_settings, 
@@ -15,7 +14,8 @@ behavior node_actor(stateful_actor<node_state>* self,
   self->state.node_timing.updateStartPoint("total_duration");
 
   self->set_down_handler([=](const down_msg& dm){
-    aout(self) << "Received Down Message\n";
+    aout(self) << "Received Down Message\n.\n.\n.\n.\nExiting\n"; 
+    exit(0);
   });
 
   self->state.max_run_attempts = job_actor_settings.max_run_attempts;
@@ -45,24 +45,48 @@ behavior node_actor(stateful_actor<node_state>* self,
   gethostname(hostname, HOST_NAME_MAX);
   self->state.hostname = hostname;
   self->send(self->state.current_server, connect_to_server_v, self, 
-              self->state.hostname);
+      self->state.hostname);
 
 
   
   return {
-    [=](start_job, int start_gru, int num_gru_local) {
-      aout(self) << "Recieved Start Job Message\n";
-      aout(self) << "Start GRU: " << start_gru << " Num GRU: " 
-                 << num_gru_local << "\n";
+    [=](start_job, NumGRUInfo num_gru_info) {
+      self->state.num_gru_info = num_gru_info;
+      aout(self) << "Recieved Start Job Message\n"
+                 << "Start GRU Local: " 
+                 << self->state.num_gru_info.start_gru_local
+                 << " -- Start GRU Global:"
+                 << self->state.num_gru_info.start_gru_global
+                 << " -- Num GRU Local: "
+                 << self->state.num_gru_info.num_gru_local
+                 << " -- Num GRU Global: "
+                 << self->state.num_gru_info.num_gru_global
+                 << " -- File GRU: " << self->state.num_gru_info.file_gru 
+                 << "\n";
+                 
+                      
+      // self->state.start_gru = start_gru;
+      // self->state.num_gru_local = num_gru_local;
+      // self->state.num_gru_global = num_gru_global;
+      self->state.gru_container.num_gru_in_run_domain 
+          = self->state.num_gru_info.num_gru_local;
       
-      self->state.start_gru = start_gru;
-      self->state.num_gru_local = num_gru_local;
-      self->state.gru_container.num_gru_in_run_domain = num_gru_local;
-      
-      int err, file_gru;
+
+      int start_gru, num_gru, num_hru;
+      if (self->state.num_gru_info.use_global_for_data_structures) {
+        start_gru = self->state.num_gru_info.start_gru_global;
+        num_gru = self->state.num_gru_info.num_gru_global;
+        num_hru = self->state.num_gru_info.num_gru_global;
+      } else {
+        start_gru = self->state.num_gru_info.start_gru_local;
+        num_gru = self->state.num_gru_info.num_gru_local;
+        num_hru = self->state.num_gru_info.num_gru_local;
+      }
+
+
+      int err, file_gru_to_remove;
       job_init_fortran(self->state.job_actor_settings.file_manager_path.c_str(),
-          &self->state.start_gru, &self->state.num_gru_local, 
-          &self->state.num_gru_local, &file_gru, &err);
+          &start_gru, &num_gru, &num_hru, &file_gru_to_remove, &err);
       if (err != 0) { 
         aout(self) << "\nERROR: Job_Actor - job_init_fortran\n"; 
         self->quit();
@@ -70,9 +94,11 @@ behavior node_actor(stateful_actor<node_state>* self,
       }
       // Spawn the file_access_actor.
       self->state.file_access_actor = self->spawn(file_access_actor, 
-          self->state.start_gru, self->state.num_gru_local, 
-          self->state.file_access_actor_settings, self);
-      self->send(self->state.file_access_actor, def_output_v, file_gru);
+          self->state.num_gru_info, self->state.file_access_actor_settings, 
+          self);
+      self->monitor(self->state.file_access_actor);
+      self->send(self->state.file_access_actor, def_output_v, 
+          self->state.num_gru_info.file_gru);
     },
 
     [=](init_file_access_actor, int num_timesteps) {
@@ -137,18 +163,22 @@ behavior node_actor(stateful_actor<node_state>* self,
 
     [=](write_output, int steps_to_write) {
       
+      int num_gru_to_write;
+      if (self->state.num_gru_info.use_global_for_data_structures) {
+        num_gru_to_write = self->state.num_gru_info.num_gru_global;
+      } else {
+        num_gru_to_write = self->state.num_gru_info.num_gru_local;
+      }
+
       self->request(self->state.file_access_actor, infinite, write_output_v, 
-          steps_to_write, 1, self->state.num_gru_local).await(
+          steps_to_write, 1, num_gru_to_write).await(
           [=](int err) {
             if (err != 0) {
               aout(self) << "Error Writing Output\n";
-              for (auto gru : self->state.gru_container.gru_list)
-                self->send(gru->getGRUActor(), exit_msg_v);
-
               self->send_exit(self->state.file_access_actor, 
                   exit_reason::user_shutdown);
               self->send(self->state.current_server, err);
-              self->quit();
+              // self->quit();
             }
           });
 

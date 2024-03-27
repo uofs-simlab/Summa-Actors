@@ -394,6 +394,7 @@ subroutine writeScalar(ncid, outputTimestep, outputTimestepUpdate, nSteps, minGR
   integer(i4b)                      :: iGRU
   ! output array
   real(rkind)                       :: realVec(numGRU, nSteps)! real vector for all HRUs in the run domain
+  real(rkind)                       :: value
 
   err=0; message="writeOutput.f90-writeScalar/"
 
@@ -404,9 +405,13 @@ subroutine writeScalar(ncid, outputTimestep, outputTimestepUpdate, nSteps, minGR
         stepCounter = 0
         gruCounter = gruCounter + 1
         do iStep = 1, nSteps
-          if(.not.outputStructure(1)%finalizeStats%gru(iGRU)%hru(1)%tim(iStep)%dat(iFreq)) cycle
+          if(.not.outputStructure(1)%finalizeStats%gru(iGRU)%hru(1)%tim(iStep)%dat(iFreq)) then
+            value = realMissing
+          else
+            value = stat%gru(iGRU)%hru(1)%var(map(iVar))%tim(iStep)%dat(iFreq)
+          end if
           stepCounter = stepCounter + 1
-          realVec(gruCounter, stepCounter) = stat%gru(iGRU)%hru(1)%var(map(iVar))%tim(iStep)%dat(iFreq)
+          realVec(gruCounter, stepCounter) = value
           outputTimeStepUpdate(iFreq) = stepCounter
         end do ! iStep
       end do ! iGRU 
@@ -421,7 +426,7 @@ subroutine writeScalar(ncid, outputTimestep, outputTimestepUpdate, nSteps, minGR
         print*, "   maxGRU = ", maxGRU
         print*, "   nSteps = ", nSteps
         print*, "   gruCounter = ", gruCounter
-        print*, "   realVec = ", realVec
+        ! print*, "   realVec = ", realVec
         print*, "   iStep = ", iStep
         err = 20
         return

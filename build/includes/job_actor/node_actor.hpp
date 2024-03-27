@@ -19,6 +19,9 @@ struct node_state {
 
   int start_gru;
   int num_gru_local;
+  int num_gru_global;
+
+  NumGRUInfo num_gru_info;
 
   caf::actor file_access_actor; // actor reference for the file_access_actor
   GRU_Container gru_container;
@@ -42,13 +45,11 @@ struct node_state {
 };
 
 
-behavior node_actor(stateful_actor<node_state>* self,
-                    std::string host, // server will spawn this actor, if local do not try to connect via port
-                    actor parent,
-                    Distributed_Settings distributed_settings,
-                    File_Access_Actor_Settings file_access_actor_settings,
-                    Job_Actor_Settings job_actor_settings, 
-                    HRU_Actor_Settings hru_actor_settings);
+behavior node_actor(stateful_actor<node_state>* self, std::string host, 
+    actor parent, Distributed_Settings distributed_settings,
+    File_Access_Actor_Settings file_access_actor_settings,
+    Job_Actor_Settings job_actor_settings, 
+    HRU_Actor_Settings hru_actor_settings);
 
 /*********************************************
  * Functions for the Job Actor

@@ -5,21 +5,24 @@
 namespace caf {
 
 behavior distributed_job_actor(stateful_actor<distributed_job_state>* self,
-    int start_gru, int num_gru, Distributed_Settings distributed_settings,
+    int start_gru_global, int num_gru_global, 
+    Distributed_Settings distributed_settings,
     File_Access_Actor_Settings file_access_actor_settings,
     Job_Actor_Settings job_actor_settings, 
     HRU_Actor_Settings hru_actor_settings) {
+      
   aout(self) << "Starting Distributed Job Actor\n";
   self->state.job_timing = TimingInfo();
   self->state.job_timing.addTimePoint("total_duration");
   self->state.job_timing.updateStartPoint("total_duration");
   
   self->set_down_handler([=](const down_msg& dm){
-    aout(self) << "Received Down Message\n";
+    aout(self) << "Received Down Message\n.\n.\n.\n.\nExiting\n"; 
+    exit(0);
   });
   
-  self->state.start_gru = start_gru;
-  self->state.num_gru = num_gru;
+  self->state.start_gru = start_gru_global;
+  self->state.num_gru = num_gru_global;
   
   self->state.distributed_settings = distributed_settings;
   self->state.file_access_actor_settings = file_access_actor_settings;
@@ -39,19 +42,31 @@ behavior distributed_job_actor(stateful_actor<distributed_job_state>* self,
   }
 
   aout(self) << "Number of Nodes = " << distributed_settings.num_nodes << "\n";
+  aout(self) << "File GRU = " << self->state.file_gru << "\n";
 
   // Set up the node ranges
   int gru_per_node = (self->state.num_gru + distributed_settings.num_nodes - 1) 
-                        / distributed_settings.num_nodes;
+      / distributed_settings.num_nodes;
   int remaining = self->state.num_gru;
   for (int i = 0; i < distributed_settings.num_nodes; i++) {
-    int start_gru = i * gru_per_node + self->state.start_gru;
-    int num_gru = gru_per_node;
+    int start_gru_local = i * gru_per_node + self->state.start_gru;
+    int num_gru_local = gru_per_node;
     if (i == distributed_settings.num_nodes - 1) {
-      num_gru = remaining;
+      num_gru_local = remaining;
     }
-    remaining -= num_gru;
-    self->state.node_gru_ranges.push_back(std::make_tuple(start_gru, num_gru));
+    remaining -= num_gru_local;
+    self->state.node_gru_ranges.push_back(std::make_tuple(start_gru_local, 
+        num_gru_local));
+    
+    bool use_global_for_data_structures = true;
+    self->state.node_num_gru_info.push_back(
+      NumGRUInfo(start_gru_local, self->state.start_gru, num_gru_local, 
+          self->state.num_gru, self->state.file_gru,
+          use_global_for_data_structures)
+    );
+
+
+
   }
 
   // Print the node ranges
@@ -92,8 +107,7 @@ behavior distributed_job_actor(stateful_actor<distributed_job_state>* self,
 
         for (int i = 0; i < distributed_settings.num_nodes; i++) {
           self->send(self->state.connected_nodes[i], start_job_v, 
-                     std::get<0>(self->state.node_gru_ranges[i]), 
-                     std::get<1>(self->state.node_gru_ranges[i]));
+              self->state.node_num_gru_info[i]);
         }
       }
     },

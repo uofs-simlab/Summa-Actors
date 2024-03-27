@@ -54,6 +54,9 @@ struct job_state {
   int num_hru;
   int max_run_attempts = 1;     // Max number of attempts to solve a GRU
 
+  NumGRUInfo num_gru_info;
+
+
   GRU_Container gru_container;
   
   // Variables for GRU monitoring
@@ -89,6 +92,9 @@ struct distributed_job_state {
   int num_gru;
 
   
+  NumGRUInfo num_gru_info;
+  std::vector<NumGRUInfo> node_num_gru_info;
+  
   Distributed_Settings distributed_settings;
   Job_Actor_Settings job_actor_settings; 
   HRU_Actor_Settings hru_actor_settings;
@@ -96,7 +102,6 @@ struct distributed_job_state {
 
   std::vector<caf::actor> connected_nodes;
   std::vector<std::tuple<int,int>> node_gru_ranges; // (start_gru, num_gru)
-
 
   // Forcing information
   int iFile = 1; // index of current forcing file from forcing file list
@@ -113,11 +118,10 @@ struct distributed_job_state {
 
 /** The Job Actor */
 behavior job_actor(stateful_actor<job_state>* self, 
-                   int start_gru, int num_gru, 
-                   File_Access_Actor_Settings file_access_actor_settings, 
-                   Job_Actor_Settings job_actor_settings, 
-                   HRU_Actor_Settings hru_actor_settings, 
-                   actor parent);
+    int start_gru, int num_gru, 
+    File_Access_Actor_Settings file_access_actor_settings, 
+    Job_Actor_Settings job_actor_settings, 
+    HRU_Actor_Settings hru_actor_settings, actor parent);
 
 /** The Job Actor For Internode Communication */
 behavior distributed_job_actor(stateful_actor<distributed_job_state>* self,

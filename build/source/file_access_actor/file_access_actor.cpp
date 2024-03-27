@@ -1,18 +1,12 @@
 #include "file_access_actor.hpp"
-#include "forcing_file_info.hpp"
-#include "fortran_data_types.hpp"
-#include "message_atoms.hpp"
-#include "json.hpp"
-#include "auxilary.hpp"
 
 using json = nlohmann::json;
 
 namespace caf {
 
 behavior file_access_actor(stateful_actor<file_access_state>* self, 
-                          int start_gru, int num_gru, 
-                          File_Access_Actor_Settings file_access_actor_settings, 
-                          actor parent) {
+    NumGRUInfo num_gru_info,
+    File_Access_Actor_Settings file_access_actor_settings, actor parent) {
   aout(self) << "\n----------File_Access_Actor Started----------\n";
     
   // Set Up timing Info we wish to track
@@ -23,17 +17,26 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
   self->state.file_access_actor_settings = file_access_actor_settings;
   auto& fa_settings = self->state.file_access_actor_settings;
   self->state.parent = parent;
-  self->state.num_gru = num_gru;
-  self->state.start_gru = start_gru;
+
+  self->state.num_gru_info = num_gru_info;
+  if (self->state.num_gru_info.use_global_for_data_structures) {
+    self->state.start_gru = self->state.num_gru_info.start_gru_global;
+    self->state.num_gru_local = self->state.num_gru_info.num_gru_global;
+  } else {
+    self->state.start_gru = self->state.num_gru_info.start_gru_local;
+    self->state.num_gru_local = self->state.num_gru_info.num_gru_local;
+  }
+
   self->state.err = 0;
 
   self->state.num_output_steps = fa_settings.num_timesteps_in_output_buffer;
 
-  int num_hru = self->state.num_gru; // Filler for num_hrus
+  int num_hru = self->state.num_gru_local; // Filler for num_hrus
   fileAccessActor_init_fortran(self->state.handle_forcing_file_info, 
       &self->state.numFiles, &self->state.num_steps,
       &fa_settings.num_timesteps_in_output_buffer, self->state.handle_ncid,
-      &self->state.start_gru, &self->state.num_gru, &num_hru, &self->state.err);
+      &self->state.start_gru, &self->state.num_gru_local, &num_hru, 
+      &self->state.err);
   if (self->state.err != 0) {
     aout(self) << "ERROR: File Access Actor - File_Access_init_Fortran\n";
     if (self->state.err == 100)
@@ -63,17 +66,25 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
 
   // Set up the output container
   self->state.output_container = new Output_Container(
-      fa_settings.num_partitions_in_output_buffer, self->state.num_gru,
+      fa_settings.num_partitions_in_output_buffer, self->state.num_gru_local,
       fa_settings.num_timesteps_in_output_buffer, self->state.num_steps); 
 
   return {
     [=](def_output, int file_gru) {
       aout(self) << "Creating Output File\n";
-      int num_hru = self->state.num_gru; // Filler for num_hrus
+      std::string actor_address = "";  
+      
+      if (self->state.num_gru_info.use_global_for_data_structures) {
+        actor_address = "_" + to_string(self->address());
+      }
+
+      int num_hru = self->state.num_gru_local; // Filler for num_hrus
       int err = 0;
       defOutputFortran(self->state.handle_ncid, &self->state.start_gru, 
-          &self->state.num_gru, &num_hru, &file_gru, &err);
-      if (self->state.err != 0) {
+          &self->state.num_gru_local, &num_hru, &file_gru, 
+          &self->state.num_gru_info.use_global_for_data_structures,
+          actor_address.c_str(), &err);
+      if (err != 0) {
         aout(self) << "ERROR: Defining Output\n";
         self->quit();
       }
@@ -87,7 +98,7 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
           self->state.file_access_timing.updateStartPoint("read_duration");
           read_forcingFile(self->state.handle_forcing_file_info, &currentFile,
               &self->state.stepsInCurrentFile, &self->state.start_gru, 
-              &self->state.num_gru, &self->state.err);
+              &self->state.num_gru_local, &self->state.err);
           if (self->state.err != 0) {
             aout(self) << "ERROR: Reading Forcing" << std::endl;
           }
@@ -121,7 +132,7 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
         self->state.file_access_timing.updateStartPoint("read_duration");
         read_forcingFile(self->state.handle_forcing_file_info, &currentFile,
             &self->state.stepsInCurrentFile, &self->state.start_gru, 
-            &self->state.num_gru, &self->state.err);
+            &self->state.num_gru_local, &self->state.err);
         if (self->state.err != 0) {
           aout(self) << "ERROR: Reading Forcing" << std::endl;
         }
@@ -159,6 +170,11 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
     [=](write_output, int steps_to_write, int start_gru, int max_gru) {
       self->state.file_access_timing.updateStartPoint("write_duration");
       
+      // aout(self) << "Received requrest to write output\n"
+      //            << "Steps to write: " << steps_to_write << "\n"
+      //             << "Start GRU: " << start_gru << "\n"
+      //             << "Max GRU: " << max_gru << "\n";
+
       writeOutput_fortran(self->state.handle_ncid, &steps_to_write,
           &start_gru, &max_gru, &self->state.write_params_flag, 
           &self->state.err);
