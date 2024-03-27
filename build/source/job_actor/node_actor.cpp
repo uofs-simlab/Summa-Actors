@@ -59,10 +59,10 @@ behavior node_actor(stateful_actor<node_state>* self,
       self->state.num_gru = num_gru;
       self->state.gru_container.num_gru_in_run_domain = num_gru;
       
-      int err;
+      int err, file_gru;
       job_init_fortran(self->state.job_actor_settings.file_manager_path.c_str(),
           &self->state.start_gru, &self->state.num_gru, &self->state.num_gru, 
-          &err);
+          &file_gru, &err);
       if (err != 0) { 
         aout(self) << "\nERROR: Job_Actor - job_init_fortran\n"; 
         self->quit();
@@ -71,8 +71,8 @@ behavior node_actor(stateful_actor<node_state>* self,
       // Spawn the file_access_actor.
       self->state.file_access_actor = self->spawn(file_access_actor, 
           self->state.start_gru, self->state.num_gru, 
-          self->state.file_access_actor_settings, 
-          self);
+          self->state.file_access_actor_settings, self);
+      self->send(self->state.file_access_actor, def_output_v, file_gru);
     },
 
     [=](init_file_access_actor, int num_timesteps) {

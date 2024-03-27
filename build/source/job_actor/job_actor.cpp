@@ -60,9 +60,10 @@ behavior job_actor(stateful_actor<job_state>* self,
     - read_icond_nlayers
     - Allocates time structures
   */
+  int file_gru = 0;
   job_init_fortran(self->state.job_actor_settings.file_manager_path.c_str(),
-                   &self->state.start_gru, &self->state.num_gru, 
-                   &self->state.num_hru, &err);
+      &self->state.start_gru, &self->state.num_gru, &self->state.num_hru, 
+      &file_gru, &err);
   if (err != 0) { 
     aout(self) << "\nERROR: Job_Actor - job_init_fortran\n"; 
     return {};
@@ -72,7 +73,7 @@ behavior job_actor(stateful_actor<job_state>* self,
   self->state.file_access_actor = self->spawn(file_access_actor, 
       self->state.start_gru, self->state.num_gru, 
       self->state.file_access_actor_settings, self);
-  self->send(self->state.file_access_actor, def_output_v);
+  self->send(self->state.file_access_actor, def_output_v, file_gru);
 
 
   aout(self) << "Job Actor Initialized \n";

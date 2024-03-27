@@ -13,8 +13,8 @@
  * File Access Actor Fortran Functions
  *********************************************/
 extern "C" {
-  void defOutputFortran(void* handle_ncid, int* num_gru, int* num_hru, 
-      int* err);
+  void defOutputFortran(void* handle_ncid, int* start_gru, int* num_gru, 
+      int* num_hru, int* file_gru, int* err);
 
   void fileAccessActor_init_fortran(void* handle_forcing_file_info, 
       int* num_forcing_files, int* num_timesteps, 

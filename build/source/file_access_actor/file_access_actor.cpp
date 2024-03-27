@@ -67,12 +67,12 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
       fa_settings.num_timesteps_in_output_buffer, self->state.num_steps); 
 
   return {
-    [=](def_output) {
+    [=](def_output, int file_gru) {
       aout(self) << "Creating Output File\n";
       int num_hru = self->state.num_gru; // Filler for num_hrus
       int err = 0;
-      defOutputFortran(self->state.handle_ncid, &self->state.num_gru, &num_hru, 
-          &err);
+      defOutputFortran(self->state.handle_ncid, &self->state.start_gru, 
+          &self->state.num_gru, &num_hru, &file_gru, &err);
       if (self->state.err != 0) {
         aout(self) << "ERROR: Defining Output\n";
         self->quit();

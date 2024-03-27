@@ -209,7 +209,7 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
 
   attrFile = trim(SETTINGS_PATH)//trim(LOCAL_ATTRIBUTES)
   call read_attrb(trim(attrFile),num_gru,outputStructure(1)%attrStruct,&
-                  outputStructure(1)%typeStruct,outputStructure(1)%idStruct,err,message)
+      outputStructure(1)%typeStruct,outputStructure(1)%idStruct,err,message)
   if(err/=0)then; print*,trim(message); return; endif
 
 
@@ -363,12 +363,13 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   if(err/=0)then; print*, message; return; endif  
 end subroutine fileAccessActor_init_fortran
 
-subroutine defOutputFortran(handle_output_ncid, num_gru, num_hru, err) &
-    bind(C, name="defOutputFortran")
+subroutine defOutputFortran(handle_output_ncid, start_gru, num_gru, num_hru, &
+    file_gru, err) bind(C, name="defOutputFortran")
   USE globalData,only:nGRUrun,nHRUrun
   USE globalData,only:fileout,output_fileSuffix
   USE globalData,only:ncid
   USE globalData,only:integerMissing
+  USE globalData,only:iRunMode,iRunModeFull,iRunModeGRU,iRunModeHRU ! define the running modes
 
   USE summaFileManager,only:OUTPUT_PATH,OUTPUT_PREFIX ! define output file
 
@@ -380,15 +381,35 @@ subroutine defOutputFortran(handle_output_ncid, num_gru, num_hru, err) &
 
   ! Dummy Variables
   type(c_ptr),intent(in), value          :: handle_output_ncid
+  integer(c_int),intent(in)              :: start_gru
   integer(c_int),intent(in)              :: num_gru
   integer(c_int),intent(in)              :: num_hru
+  integer(c_int),intent(in)              :: file_gru
   integer(c_int),intent(out)             :: err
   ! Local Variables
   type(var_i),pointer                    :: output_ncid
+  character(len=128)                     :: fmtGruOutput ! a format string used to write start and end GRU in output file names
+
   character(len=256)                     :: message ! error message
 
 
   call c_f_pointer(handle_output_ncid, output_ncid)
+
+  output_fileSuffix = ''
+  if (output_fileSuffix(1:1) /= '_') output_fileSuffix='_'//trim(output_fileSuffix)
+  if (output_fileSuffix(len_trim(output_fileSuffix):len_trim(output_fileSuffix)) == '_') output_fileSuffix(len_trim(output_fileSuffix):len_trim(output_fileSuffix)) = ' '
+  select case (iRunMode)
+    case(iRunModeGRU)
+      ! left zero padding for startGRU and endGRU
+      write(fmtGruOutput,"(i0)") ceiling(log10(real(file_gru)+0.1))                      ! maximum width of startGRU and endGRU
+      fmtGruOutput = "i"//trim(fmtGruOutput)//"."//trim(fmtGruOutput)                   ! construct the format string for startGRU and endGRU
+      fmtGruOutput = "('_G',"//trim(fmtGruOutput)//",'-',"//trim(fmtGruOutput)//")"
+      write(output_fileSuffix((len_trim(output_fileSuffix)+1):len(output_fileSuffix)),fmtGruOutput) start_gru,start_gru+num_gru-1
+    case(iRunModeHRU)
+      write(output_fileSuffix((len_trim(output_fileSuffix)+1):len(output_fileSuffix)),"('_H',i0)") checkHRU
+  end select
+
+
 
   nGRUrun = num_gru
   nHRUrun = num_hru
