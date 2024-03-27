@@ -64,10 +64,6 @@ behavior node_actor(stateful_actor<node_state>* self, std::string host,
                  << " -- File GRU: " << self->state.num_gru_info.file_gru 
                  << "\n";
                  
-                      
-      // self->state.start_gru = start_gru;
-      // self->state.num_gru_local = num_gru_local;
-      // self->state.num_gru_global = num_gru_global;
       self->state.gru_container.num_gru_in_run_domain 
           = self->state.num_gru_info.num_gru_local;
       
@@ -244,28 +240,31 @@ void spawnHRUBatches(stateful_actor<node_state>* self) {
   } else {
     batch_size = self->state.job_actor_settings.batch_size;
   }
-
+  
+  int start_hru_index;
+  int start_hru_ref = self->state.num_gru_info.start_gru_local;
   int remaining_hru_to_batch = gru_container.num_gru_in_run_domain;
-  int start_hru_global = self->state.start_gru;
-  int start_hru_local = 1;
+  
+  if (self->state.num_gru_info.use_global_for_data_structures) {
+    start_hru_index = self->state.num_gru_info.start_gru_local;
+  } else {
+    start_hru_index = 1;
+  }
 
   while (remaining_hru_to_batch > 0) {
     int current_batch_size = std::min(batch_size, remaining_hru_to_batch);
-    auto gru_batch = self->spawn(hru_batch_actor, start_hru_local,
-                                 start_hru_global, current_batch_size,
-                                  self->state.hru_actor_settings,
-                                 self->state.file_access_actor, self);
+    auto gru_batch = self->spawn(hru_batch_actor, start_hru_index,
+        start_hru_ref, current_batch_size, self->state.hru_actor_settings,
+        self->state.file_access_actor, self);
 
-    gru_container.gru_list.push_back(new GRU(start_hru_global, 
-                                    start_hru_local, gru_batch, 
-                                    self->state.dt_init_start_factor, 
-                                    self->state.hru_actor_settings.rel_tol,
-                                    self->state.hru_actor_settings.abs_tol,
-                                    self->state.max_run_attempts));  
+    gru_container.gru_list.push_back(new GRU(start_hru_ref, 
+        start_hru_index, gru_batch, self->state.dt_init_start_factor, 
+        self->state.hru_actor_settings.rel_tol,
+        self->state.hru_actor_settings.abs_tol, self->state.max_run_attempts));  
 
     remaining_hru_to_batch -= current_batch_size;
-    start_hru_local += current_batch_size;
-    start_hru_global += current_batch_size;
+    start_hru_index += current_batch_size;
+    start_hru_ref += current_batch_size;
   }
   aout(self) << "Number of HRU_Batch_Actors: " 
              << gru_container.gru_list.size() << "\n";

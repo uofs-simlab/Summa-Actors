@@ -46,8 +46,7 @@ struct file_access_state {
   // Variables set on Spawn
   caf::actor parent; 
   int start_gru;
-  int num_gru_local;
-  int num_gru_global;  // For distributed jobs
+  int num_gru;
 
   NumGRUInfo num_gru_info;
 
@@ -59,7 +58,6 @@ struct file_access_state {
   int stepsInCurrentFile;
   int numFiles;
   int filesLoaded;
-  int err;
   int num_output_steps;
 
   Output_Container* output_container;

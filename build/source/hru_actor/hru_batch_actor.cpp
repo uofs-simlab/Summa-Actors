@@ -3,9 +3,9 @@
 namespace caf {
 
 behavior hru_batch_actor(stateful_actor<hru_batch_state>* self,
-                         int start_gru_local, int start_gru_global, int num_gru,
-                         HRU_Actor_Settings hru_actor_settings,
-                         caf::actor file_access_actor, caf::actor parent) {
+    int start_gru_local, int start_gru_global, int num_gru,
+    HRU_Actor_Settings hru_actor_settings, caf::actor file_access_actor, 
+    caf::actor parent) {
   
   self->state.file_access_actor = file_access_actor;
   self->state.parent = parent;

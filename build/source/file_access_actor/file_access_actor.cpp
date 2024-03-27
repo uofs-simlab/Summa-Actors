@@ -19,27 +19,27 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
   self->state.parent = parent;
 
   self->state.num_gru_info = num_gru_info;
+
   if (self->state.num_gru_info.use_global_for_data_structures) {
     self->state.start_gru = self->state.num_gru_info.start_gru_global;
-    self->state.num_gru_local = self->state.num_gru_info.num_gru_global;
+    self->state.num_gru = self->state.num_gru_info.num_gru_global;
   } else {
     self->state.start_gru = self->state.num_gru_info.start_gru_local;
-    self->state.num_gru_local = self->state.num_gru_info.num_gru_local;
+    self->state.num_gru = self->state.num_gru_info.num_gru_local;
   }
 
-  self->state.err = 0;
 
   self->state.num_output_steps = fa_settings.num_timesteps_in_output_buffer;
-
-  int num_hru = self->state.num_gru_local; // Filler for num_hrus
+  
+  int num_hru = self->state.num_gru;
+  int err = 0;
   fileAccessActor_init_fortran(self->state.handle_forcing_file_info, 
       &self->state.numFiles, &self->state.num_steps,
       &fa_settings.num_timesteps_in_output_buffer, self->state.handle_ncid,
-      &self->state.start_gru, &self->state.num_gru_local, &num_hru, 
-      &self->state.err);
-  if (self->state.err != 0) {
+      &self->state.start_gru, &self->state.num_gru, &num_hru, &err);
+  if (err != 0) {
     aout(self) << "ERROR: File Access Actor - File_Access_init_Fortran\n";
-    if (self->state.err == 100)
+    if (err == 100)
       self->send(self->state.parent, file_access_error::mDecisions_error, 
           self);
     else
@@ -65,23 +65,24 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
   }
 
   // Set up the output container
-  self->state.output_container = new Output_Container(
-      fa_settings.num_partitions_in_output_buffer, self->state.num_gru_local,
-      fa_settings.num_timesteps_in_output_buffer, self->state.num_steps); 
+  if (!self->state.num_gru_info.use_global_for_data_structures) {
+    self->state.output_container = new Output_Container(
+        fa_settings.num_partitions_in_output_buffer, self->state.num_gru,
+        fa_settings.num_timesteps_in_output_buffer, self->state.num_steps);
+  }
 
   return {
     [=](def_output, int file_gru) {
       aout(self) << "Creating Output File\n";
       std::string actor_address = "";  
       
+      int num_hru = self->state.num_gru;
       if (self->state.num_gru_info.use_global_for_data_structures) {
         actor_address = "_" + to_string(self->address());
       }
-
-      int num_hru = self->state.num_gru_local; // Filler for num_hrus
       int err = 0;
       defOutputFortran(self->state.handle_ncid, &self->state.start_gru, 
-          &self->state.num_gru_local, &num_hru, &file_gru, 
+          &self->state.num_gru, &num_hru, &file_gru, 
           &self->state.num_gru_info.use_global_for_data_structures,
           actor_address.c_str(), &err);
       if (err != 0) {
@@ -96,10 +97,11 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
         // Note: C++ starts at 0 and Fortran starts at 1
         if(!self->state.forcing_file_list[currentFile - 1].isFileLoaded()) {
           self->state.file_access_timing.updateStartPoint("read_duration");
+          int err = 0;
           read_forcingFile(self->state.handle_forcing_file_info, &currentFile,
               &self->state.stepsInCurrentFile, &self->state.start_gru, 
-              &self->state.num_gru_local, &self->state.err);
-          if (self->state.err != 0) {
+              &self->state.num_gru, &err);
+          if (err != 0) {
             aout(self) << "ERROR: Reading Forcing" << std::endl;
           }
           self->state.filesLoaded += 1;
@@ -130,10 +132,11 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
         }
       
         self->state.file_access_timing.updateStartPoint("read_duration");
+        int err = 0;
         read_forcingFile(self->state.handle_forcing_file_info, &currentFile,
             &self->state.stepsInCurrentFile, &self->state.start_gru, 
-            &self->state.num_gru_local, &self->state.err);
-        if (self->state.err != 0) {
+            &self->state.num_gru, &err);
+        if (err != 0) {
           aout(self) << "ERROR: Reading Forcing" << std::endl;
         }
         
@@ -169,19 +172,13 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
     // Write message from the job actor TODO: This could be async
     [=](write_output, int steps_to_write, int start_gru, int max_gru) {
       self->state.file_access_timing.updateStartPoint("write_duration");
-      
-      // aout(self) << "Received requrest to write output\n"
-      //            << "Steps to write: " << steps_to_write << "\n"
-      //             << "Start GRU: " << start_gru << "\n"
-      //             << "Max GRU: " << max_gru << "\n";
-
+      int err = 0;
       writeOutput_fortran(self->state.handle_ncid, &steps_to_write,
-          &start_gru, &max_gru, &self->state.write_params_flag, 
-          &self->state.err);
+          &start_gru, &max_gru, &self->state.write_params_flag, &err);
       if (self->state.write_params_flag) 
         self->state.write_params_flag = false;
       self->state.file_access_timing.updateEndPoint("write_duration");
-      return self->state.err;
+      return err;
     },
 
     [=](restart_failures) {
@@ -205,7 +202,10 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
     [=](finalize) {
         
       aout(self) << "File Access Actor: Deallocating Structures\n";
-      self->state.output_container->~Output_Container();
+      // TODO: output container can be wrapped in a smart pointer
+      if (!self->state.num_gru_info.use_global_for_data_structures) {
+        self->state.output_container->~Output_Container();
+      }
       FileAccessActor_DeallocateStructures(self->state.handle_forcing_file_info, 
           self->state.handle_ncid);
 
@@ -235,9 +235,9 @@ void writeOutput(stateful_actor<file_access_state>* self,
   int start_gru = partition->getStartGRUIndex();
   int max_gru = partition->getMaxGRUIndex();
   bool write_param_flag = partition->isWriteParams();
-  
+  int err = 0;
   writeOutput_fortran(self->state.handle_ncid, &num_timesteps_to_write,
-      &start_gru, &max_gru, &write_param_flag, &self->state.err);
+      &start_gru, &max_gru, &write_param_flag, &err);
   
   partition->updateTimeSteps();
 

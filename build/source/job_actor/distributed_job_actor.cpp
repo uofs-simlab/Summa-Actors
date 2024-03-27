@@ -71,9 +71,9 @@ behavior distributed_job_actor(stateful_actor<distributed_job_state>* self,
 
   // Print the node ranges
   for (int i = 0; i < distributed_settings.num_nodes; i++) {
-    aout(self) << "Node " << i << " GRU Range: " 
-               << std::get<0>(self->state.node_gru_ranges[i]) << " - " 
-               << std::get<1>(self->state.node_gru_ranges[i]) << "\n";
+    aout(self) << "Node " << i << " GRU Range: "
+               << self->state.node_num_gru_info[i].start_gru_local << " - "
+                << self->state.node_num_gru_info[i].num_gru_local << "\n"; 
   }
 
   auto is_published = self->system().middleman().publish(self, 

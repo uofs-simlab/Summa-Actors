@@ -19,6 +19,11 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
   self->state.indxHRU           = 1;
   self->state.indxGRU           = indxGRU;
   self->state.refGRU            = refGRU;
+  if (hru_extra_logging) {
+    aout(self) << "HRU Actor: indxHRU = " << self->state.indxHRU 
+               << " indxGRU = " << self->state.indxGRU 
+               << " refGRU = " << self->state.refGRU << "\n";
+  }
   // Get the settings for the HRU
   self->state.hru_actor_settings = hru_actor_settings;
   self->state.dt_init_factor = hru_actor_settings.dt_init_factor;
