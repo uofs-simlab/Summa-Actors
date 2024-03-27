@@ -61,8 +61,8 @@ behavior node_actor(stateful_actor<node_state>* self,
       
       int err;
       job_init_fortran(self->state.job_actor_settings.file_manager_path.c_str(),
-                      &self->state.start_gru, &self->state.num_gru, 
-                      &self->state.num_gru, &err);
+          &self->state.start_gru, &self->state.num_gru, &self->state.num_gru, 
+          &err);
       if (err != 0) { 
         aout(self) << "\nERROR: Job_Actor - job_init_fortran\n"; 
         self->quit();

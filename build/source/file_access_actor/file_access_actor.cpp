@@ -67,6 +67,17 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
       fa_settings.num_timesteps_in_output_buffer, self->state.num_steps); 
 
   return {
+    [=](def_output) {
+      aout(self) << "Creating Output File\n";
+      int num_hru = self->state.num_gru; // Filler for num_hrus
+      int err = 0;
+      defOutputFortran(self->state.handle_ncid, &self->state.num_gru, &num_hru, 
+          &err);
+      if (self->state.err != 0) {
+        aout(self) << "ERROR: Defining Output\n";
+        self->quit();
+      }
+    },
 
     // Message from the HRU actor to get the forcing file that is loaded
     [=](access_forcing, int currentFile, caf::actor refToRespondTo) {

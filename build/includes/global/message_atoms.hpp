@@ -163,6 +163,7 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     CAF_ADD_ATOM(summa, start_job)
     CAF_ADD_ATOM(summa, serialize_hru)
     CAF_ADD_ATOM(summa, reinit_hru)
+    CAF_ADD_ATOM(summa, def_output)
 
     // Sender: job_actor 
     // Reciever: summa_actor

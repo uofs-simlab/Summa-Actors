@@ -13,18 +13,23 @@
  * File Access Actor Fortran Functions
  *********************************************/
 extern "C" {
-  void fileAccessActor_init_fortran(void* handle_forcing_file_info, int* num_forcing_files, int* num_timesteps,
-                                    int* num_timesteps_output_buffer, void* handle_output_ncid, int* startGRU,
-                                    int* numGRU, int* numHRU, int* err);
+  void defOutputFortran(void* handle_ncid, int* num_gru, int* num_hru, 
+      int* err);
 
-  void writeOutput_fortran(void* handle_ncid, int* num_steps, int* start_gru, int* max_gru, 
-                           bool* writeParamFlag, int* err);
+  void fileAccessActor_init_fortran(void* handle_forcing_file_info, 
+      int* num_forcing_files, int* num_timesteps, 
+      int* num_timesteps_output_buffer, void* handle_output_ncid, int* startGRU,
+      int* numGRU, int* numHRU, int* err);
+
+  void writeOutput_fortran(void* handle_ncid, int* num_steps, int* start_gru, 
+      int* max_gru, bool* writeParamFlag, int* err);
 
   void read_forcingFile(void* forcFileInfo, int* currentFile, int* stepsInFile,
-                        int* startGRU, int* numGRU, int* err);
+      int* startGRU, int* numGRU, int* err);
 
-  void FileAccessActor_DeallocateStructures(void* handle_forcFileInfo, void* handle_ncid);
-  
+  void FileAccessActor_DeallocateStructures(void* handle_forcFileInfo, 
+      void* handle_ncid);
+
 }
 
 /*********************************************

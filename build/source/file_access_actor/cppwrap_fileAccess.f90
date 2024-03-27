@@ -10,11 +10,11 @@ module cppwrap_fileAccess
   USE globalData,only:integerMissing      ! missing integer value
   USE globalData,only:realMissing         ! missing double precision value
 
-  USE var_lookup,only:maxvarFreq                ! maximum number of output files
 
 
   implicit none
   public::fileAccessActor_init_fortran
+  public::defOutputFortran
   public::FileAccessActor_DeallocateStructures
   public::SOIL_VEG_GEN_PARM
 
@@ -50,7 +50,7 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   USE paramCheck_module,only:paramCheck                       ! module to check consistency of model parameters
   USE read_icond_module,only:read_icond                       ! module to read initial conditions
   USE check_icond_module,only:check_icond                     ! module to check initial conditions
-  USE def_output_module,only:def_output                       ! module to define model output
+  ! USE def_output_module,only:def_output                       ! module to define model output
   USE globalData,only:localParFallback                        ! local column default parameters
   USE globalData,only:basinParFallback                        ! basin-average default parameters
   USE globalData,only:mpar_meta,bpar_meta                     ! parameter metadata structures
@@ -189,24 +189,6 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
     case('plumberSUMMA');             urbanVegCategory = -999
     case default; message=trim(message)//'unable to identify vegetation category';print*,message;return
   end select
-
-
-  ! *****************************************************************************
-  ! *** Define Output Files
-  ! *****************************************************************************
-  nGRUrun = num_gru
-  nHRUrun = num_gru ! the same as nGRUrun for now
-  fileout = trim(OUTPUT_PATH)//trim(OUTPUT_PREFIX)//trim(output_fileSuffix)
-  ncid(:) = integerMissing
-  call def_output(summaVersion,buildTime,gitBranch,gitHash,num_gru,num_hru,gru_struc(1)%hruInfo(1)%nSoil,fileout,err,message)
-  if(err/=0)then; print*,trim(message); return; endif
-  ! allocate space for the output file ID array
-  if (.not.allocated(output_ncid%var))then
-    allocate(output_ncid%var(maxVarFreq))
-    output_ncid%var(:) = integerMissing
-  endif
-  ! copy ncid
-  output_ncid%var(:) = ncid(:)
 
   ! *****************************************************************************
   ! *** Initialize output structure
@@ -381,6 +363,51 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   if(err/=0)then; print*, message; return; endif  
 end subroutine fileAccessActor_init_fortran
 
+subroutine defOutputFortran(handle_output_ncid, num_gru, num_hru, err) &
+    bind(C, name="defOutputFortran")
+  USE globalData,only:nGRUrun,nHRUrun
+  USE globalData,only:fileout,output_fileSuffix
+  USE globalData,only:ncid
+  USE globalData,only:integerMissing
+
+  USE summaFileManager,only:OUTPUT_PATH,OUTPUT_PREFIX ! define output file
+
+  USE var_lookup,only:maxvarFreq                ! maximum number of output files
+
+  USE def_output_module,only:def_output ! module to define model output
+  
+  implicit none
+
+  ! Dummy Variables
+  type(c_ptr),intent(in), value          :: handle_output_ncid
+  integer(c_int),intent(in)              :: num_gru
+  integer(c_int),intent(in)              :: num_hru
+  integer(c_int),intent(out)             :: err
+  ! Local Variables
+  type(var_i),pointer                    :: output_ncid
+  character(len=256)                     :: message ! error message
+
+
+  call c_f_pointer(handle_output_ncid, output_ncid)
+
+  nGRUrun = num_gru
+  nHRUrun = num_hru
+  fileout = trim(OUTPUT_PATH)//trim(OUTPUT_PREFIX)//trim(output_fileSuffix)
+  ncid(:) = integerMissing
+  call def_output(summaVersion,buildTime,gitBranch,gitHash,num_gru,num_hru,&
+      gru_struc(1)%hruInfo(1)%nSoil,fileout,err,message)
+  if(err/=0)then; print*,trim(message); return; endif
+  ! allocate space for the output file ID array
+  if (.not.allocated(output_ncid%var))then
+    allocate(output_ncid%var(maxVarFreq))
+    output_ncid%var(:) = integerMissing
+  endif
+  ! copy ncid
+  output_ncid%var(:) = ncid(:)
+
+
+end subroutine defOutputFortran
+
 
 subroutine FileAccessActor_DeallocateStructures(handle_forcFileInfo, handle_ncid) bind(C,name="FileAccessActor_DeallocateStructures")
   USE netcdf_util_module,only:nc_file_close 
@@ -388,6 +415,7 @@ subroutine FileAccessActor_DeallocateStructures(handle_forcFileInfo, handle_ncid
   USE access_forcing_module,only:forcingDataStruct
   USE access_forcing_module,only:vectime
   USE output_structure_module,only:outputTimeStep
+  USE var_lookup,only:maxvarFreq                ! maximum number of output files
   implicit none
   type(c_ptr),intent(in), value        :: handle_forcFileInfo
   type(c_ptr),intent(in), value        :: handle_ncid
@@ -406,8 +434,8 @@ subroutine FileAccessActor_DeallocateStructures(handle_forcFileInfo, handle_ncid
   ! close the open output FIle
   do iFreq=1,maxvarFreq
     if (ncid%var(iFreq)/=integerMissing) then
-        call nc_file_close(ncid%var(iFreq),err,cmessage)
-        if(err/=0)then; message=trim(message)//trim(cmessage); return; end if
+      call nc_file_close(ncid%var(iFreq),err,cmessage)
+      if(err/=0)then; message=trim(message)//trim(cmessage); return; end if
     endif   
   end do
   

@@ -71,8 +71,8 @@ behavior job_actor(stateful_actor<job_state>* self,
   // Spawn the file_access_actor.
   self->state.file_access_actor = self->spawn(file_access_actor, 
       self->state.start_gru, self->state.num_gru, 
-      self->state.file_access_actor_settings, 
-      self);
+      self->state.file_access_actor_settings, self);
+  self->send(self->state.file_access_actor, def_output_v);
 
 
   aout(self) << "Job Actor Initialized \n";
