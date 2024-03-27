@@ -50,7 +50,6 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   USE paramCheck_module,only:paramCheck                       ! module to check consistency of model parameters
   USE read_icond_module,only:read_icond                       ! module to read initial conditions
   USE check_icond_module,only:check_icond                     ! module to check initial conditions
-  ! USE def_output_module,only:def_output                       ! module to define model output
   USE globalData,only:localParFallback                        ! local column default parameters
   USE globalData,only:basinParFallback                        ! basin-average default parameters
   USE globalData,only:mpar_meta,bpar_meta                     ! parameter metadata structures
@@ -164,15 +163,16 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   ! *** read Noah vegetation and soil tables
   ! *****************************************************************************
 
-  greenVegFrac_monthly = (/0.01_dp, 0.02_dp, 0.03_dp, 0.07_dp, 0.50_dp, 0.90_dp, 0.95_dp, 0.96_dp, 0.65_dp, 0.24_dp, 0.11_dp, 0.02_dp/)
+  greenVegFrac_monthly = (/0.01_dp, 0.02_dp, 0.03_dp, 0.07_dp, 0.50_dp, 0.90_dp,& 
+      0.95_dp, 0.96_dp, 0.65_dp, 0.24_dp, 0.11_dp, 0.02_dp/)
 
 
   ! read Noah soil and vegetation tables
   call soil_veg_gen_parm(trim(SETTINGS_PATH)//trim(VEGPARM),      & ! filename for vegetation table
-                         trim(SETTINGS_PATH)//trim(SOILPARM),                        & ! filename for soils table
-                         trim(SETTINGS_PATH)//trim(GENPARM),                         & ! filename for general table
-                         trim(model_decisions(iLookDECISIONS%vegeParTbl)%cDecision), & ! classification system used for vegetation
-                         trim(model_decisions(iLookDECISIONS%soilCatTbl)%cDecision))   ! classification system used for soils
+      trim(SETTINGS_PATH)//trim(SOILPARM), & ! filename for soils table
+      trim(SETTINGS_PATH)//trim(GENPARM),  & ! filename for general table
+      trim(model_decisions(iLookDECISIONS%vegeParTbl)%cDecision), & ! classification system used for vegetation
+      trim(model_decisions(iLookDECISIONS%soilCatTbl)%cDecision))   ! classification system used for soils
   if(err/=0)then; print*,trim(message); return; endif
 
   ! read Noah-MP vegetation tables
@@ -246,7 +246,7 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   ! *****************************************************************************
   checkHRU = integerMissing
   call read_param(iRunMode,checkHRU,start_gru,num_hru,num_gru,outputStructure(1)%idStruct,&
-                  outputStructure(1)%mparStruct,outputStructure(1)%bparStruct,err,message)
+      outputStructure(1)%mparStruct,outputStructure(1)%bparStruct,err,message)
   if(err/=0)then; print*,trim(message); return; endif
 
   ! *****************************************************************************

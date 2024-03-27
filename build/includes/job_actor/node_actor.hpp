@@ -18,7 +18,7 @@ struct node_state {
   TimingInfo node_timing;
 
   int start_gru;
-  int num_gru;
+  int num_gru_local;
 
   caf::actor file_access_actor; // actor reference for the file_access_actor
   GRU_Container gru_container;

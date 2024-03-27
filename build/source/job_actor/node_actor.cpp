@@ -50,19 +50,19 @@ behavior node_actor(stateful_actor<node_state>* self,
 
   
   return {
-    [=](start_job, int start_gru, int num_gru) {
+    [=](start_job, int start_gru, int num_gru_local) {
       aout(self) << "Recieved Start Job Message\n";
       aout(self) << "Start GRU: " << start_gru << " Num GRU: " 
-                 << num_gru << "\n";
+                 << num_gru_local << "\n";
       
       self->state.start_gru = start_gru;
-      self->state.num_gru = num_gru;
-      self->state.gru_container.num_gru_in_run_domain = num_gru;
+      self->state.num_gru_local = num_gru_local;
+      self->state.gru_container.num_gru_in_run_domain = num_gru_local;
       
       int err, file_gru;
       job_init_fortran(self->state.job_actor_settings.file_manager_path.c_str(),
-          &self->state.start_gru, &self->state.num_gru, &self->state.num_gru, 
-          &file_gru, &err);
+          &self->state.start_gru, &self->state.num_gru_local, 
+          &self->state.num_gru_local, &file_gru, &err);
       if (err != 0) { 
         aout(self) << "\nERROR: Job_Actor - job_init_fortran\n"; 
         self->quit();
@@ -70,7 +70,7 @@ behavior node_actor(stateful_actor<node_state>* self,
       }
       // Spawn the file_access_actor.
       self->state.file_access_actor = self->spawn(file_access_actor, 
-          self->state.start_gru, self->state.num_gru, 
+          self->state.start_gru, self->state.num_gru_local, 
           self->state.file_access_actor_settings, self);
       self->send(self->state.file_access_actor, def_output_v, file_gru);
     },
@@ -138,7 +138,7 @@ behavior node_actor(stateful_actor<node_state>* self,
     [=](write_output, int steps_to_write) {
       
       self->request(self->state.file_access_actor, infinite, write_output_v, 
-          steps_to_write, 1, self->state.num_gru).await(
+          steps_to_write, 1, self->state.num_gru_local).await(
           [=](int err) {
             if (err != 0) {
               aout(self) << "Error Writing Output\n";
