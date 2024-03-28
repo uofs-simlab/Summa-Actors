@@ -26,18 +26,19 @@ struct Distributed_Settings {
     int total_hru_count;
     int num_hru_per_batch;
     int num_nodes;  // For the data-assimilation mode
+    bool load_balancing; // For the data-assimilation mode
 };
 
 template<class Inspector>
-bool inspect(Inspector& inspector, Distributed_Settings& distributed_settings) {
-  return inspector.object(distributed_settings).fields(
-      inspector.field("distributed_mode", 
-          distributed_settings.distributed_mode),
-      inspector.field("servers_list",     distributed_settings.servers_list),
-      inspector.field("port",             distributed_settings.port),
-      inspector.field("total_hru_count",  distributed_settings.total_hru_count),
-      inspector.field("num_hru_per_batch",
-          distributed_settings.num_hru_per_batch));
+bool inspect(Inspector& inspector, Distributed_Settings& ds) {
+  return inspector.object(ds).fields(
+      inspector.field("distributed_mode", ds.distributed_mode),
+      inspector.field("servers_list",     ds.servers_list),
+      inspector.field("port",             ds.port),
+      inspector.field("total_hru_count",  ds.total_hru_count),
+      inspector.field("num_hru_per_batch",ds.num_hru_per_batch),
+      inspector.field("num_nodes",        ds.num_nodes),
+      inspector.field("load_balancing",   ds.load_balancing));
 }
 
 Distributed_Settings readDistributedSettings(std::string json_settings_file);

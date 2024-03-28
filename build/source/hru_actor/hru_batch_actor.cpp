@@ -10,6 +10,8 @@ behavior hru_batch_actor(stateful_actor<hru_batch_state>* self,
   self->state.file_access_actor = file_access_actor;
   self->state.parent = parent;
   self->state.hru_actor_settings = hru_actor_settings;
+
+  self->state.hru_walltimes.resize(num_gru);
   
   for (int i = 0; i < num_gru; i++) {
     self->state.hru_actors.push_back(
@@ -18,6 +20,8 @@ behavior hru_batch_actor(stateful_actor<hru_batch_state>* self,
     );
     self->send(self->state.hru_actors.back(), init_hru_v);
   }
+
+  self->send(self->state.parent, self->state.hru_actors);
 
   return {
     [=](update_timeZoneOffset, int iFile) {
@@ -32,10 +36,18 @@ behavior hru_batch_actor(stateful_actor<hru_batch_state>* self,
       }
     },
 
-    [=](done_update) {
+    [=](done_update, double walltime_timestep, int indx_gru) {
+      // int indx = indx_gru % self->state.hru_walltimes.size();
+      // self->state.hru_walltimes[indx] = walltime_timestep;
+      
+      caf::actor sender = actor_cast<caf::actor>(self->current_sender());
+      self->state.hru_actor_walltimes[sender] = walltime_timestep;
+
+
       self->state.num_done++;
       if (self->state.num_done == self->state.hru_actors.size()) {
-        self->send(self->state.parent, done_update_v);
+        self->send(self->state.parent, done_update_v, 
+            self->state.hru_actor_walltimes);
         self->state.num_done = 0;
       }
     },
@@ -44,16 +56,22 @@ behavior hru_batch_actor(stateful_actor<hru_batch_state>* self,
       self->send(self->state.hru_actors[indx_gru], serialize_hru_v);
     },
 
-    [=](serialize_hru, hru hru_data) {
+    [=](serialize_hru, caf::actor actor_ref) {
+      self->send(actor_ref, serialize_hru_v);
+    },
+
+    [=](hru hru_data) {
       aout(self) << "HRU_Batch_Actor: Recieved HRU Data\n";
-      auto sender = self->current_sender();
-      self->send_exit(sender, exit_reason::user_shutdown);
-      self->state.hru_actors.erase(
-        std::remove(self->state.hru_actors.begin(), 
-            self->state.hru_actors.end(), sender),
-        self->state.hru_actors.end()
-      );
-      self->send(self->state.parent, serialize_hru_v, hru_data);
+      auto sender = actor_cast<actor>(self->current_sender());
+      // self->send_exit(sender, exit_reason::user_shutdown);
+      // self->state.hru_actors.erase(
+      //   std::remove(self->state.hru_actors.begin(), 
+      //       self->state.hru_actors.end(), sender),
+      //   self->state.hru_actors.end()
+      // );
+
+
+      self->send(self->state.parent, sender, hru_data);
     },
 
     [=](reinit_hru, hru hru_data) {
@@ -64,6 +82,10 @@ behavior hru_batch_actor(stateful_actor<hru_batch_state>* self,
             self)
       );
       self->send(self->state.hru_actors.back(), reinit_hru_v, hru_data);
+    },
+ 
+    [=](reinit_hru, caf::actor target_actor, hru hru_data) {
+      self->send(target_actor, reinit_hru_v, hru_data);
     },
 
     [=](reinit_hru) {

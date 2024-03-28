@@ -7,11 +7,10 @@ namespace caf {
 
 // First Actor that is spawned that is not the Coordinator Actor.
 behavior job_actor(stateful_actor<job_state>* self, 
-                   int start_gru, int num_gru, 
-                   File_Access_Actor_Settings file_access_actor_settings, 
-                   Job_Actor_Settings job_actor_settings, 
-                   HRU_Actor_Settings hru_actor_settings, 
-                   caf::actor parent) {
+    int start_gru, int num_gru, 
+    File_Access_Actor_Settings file_access_actor_settings, 
+    Job_Actor_Settings job_actor_settings, 
+    HRU_Actor_Settings hru_actor_settings, caf::actor parent) {
     
   self->set_down_handler([=](const down_msg& dm) {
       aout(self) << "\n\n ********** DOWN HANDLER ********** \n";

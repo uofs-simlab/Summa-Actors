@@ -68,8 +68,11 @@ Distributed_Settings readDistributedSettings(std::string json_settings_file) {
     distributed_settings.num_hru_per_batch).value_or(missing_value);
 
   distributed_settings.num_nodes = getSettings(json_settings_file, 
-      parent_key, "num_nodes", 
-      distributed_settings.num_nodes).value_or(1);
+      parent_key, "num_nodes", distributed_settings.num_nodes).value_or(1);
+
+  distributed_settings.load_balancing = getSettings(json_settings_file, 
+      parent_key, "load_balancing", 
+      distributed_settings.load_balancing).value_or(false);
   
   return distributed_settings;
 }

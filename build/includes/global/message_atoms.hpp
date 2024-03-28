@@ -8,6 +8,7 @@
 #include "settings_functions.hpp"
 #include "global.hpp"
 #include "caf/all.hpp"
+#include <unordered_map>
 
 // HRU Data structure used for serialization
 struct hru {
@@ -193,6 +194,7 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     CAF_ADD_ATOM(summa, serialize_hru)
     CAF_ADD_ATOM(summa, reinit_hru)
     CAF_ADD_ATOM(summa, def_output)
+    CAF_ADD_ATOM(summa, load_balance)
 
     // Sender: job_actor 
     // Reciever: summa_actor
@@ -369,6 +371,8 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     CAF_ADD_TYPE_ID(summa, (std::vector<long int>))
     CAF_ADD_TYPE_ID(summa, (std::vector<std::tuple<caf::actor, std::string>>))
     CAF_ADD_TYPE_ID(summa, (std::vector<serializable_netcdf_gru_actor_info>))
+    CAF_ADD_TYPE_ID(summa, (std::unordered_map<caf::actor, double>))
+    CAF_ADD_TYPE_ID(summa, (std::unordered_map<caf::actor, caf::actor>))
 
     // GRU Parameter/Attribute Vectors
     CAF_ADD_TYPE_ID(summa, (std::tuple<std::vector<double>, 

@@ -82,6 +82,7 @@ subroutine runPhysics(&
               handle_hru_data,     &
               dt_init,             & ! used to initialize the length of the sub-step for each HRU
               dt_init_factor,      & ! used to adjust the length of the timestep in the event of a failure
+              wallTimeTimeStep,    &
               err) bind(C, name='RunPhysics')
   ! ---------------------------------------------------------------------------------------
   ! * desired modules
@@ -110,6 +111,7 @@ subroutine runPhysics(&
   type(c_ptr),    intent(in), value         :: handle_hru_data        ! c_ptr to -- hru data
   real(c_double), intent(inout)             :: dt_init                ! used to initialize the length of the sub-step for each HRU
   integer(c_int), intent(in)                :: dt_init_factor         ! used to adjust the length of the timestep in the event of a failure
+  real(c_double), intent(out)               :: wallTimeTimeStep       ! wall time for the time step
   integer(c_int), intent(inout)             :: err                    ! error code
   ! ---------------------------------------------------------------------------------------
   ! FORTRAN POINTERS
@@ -343,8 +345,10 @@ subroutine runPhysics(&
                   err,message)                                                                  ! intent(out): error control
   if(err/=0)then; err=20; message=trim(message)//trim(cmessage); print*, message; return; endif;
   end associate
- 
   !************************************* End of run_oneGRU *****************************************
+
+  ! Get the elapsed time for the GRU
+  wallTimeTimeStep = hru_data%diagStruct%var(iLookDIAG%wallClockTime)%dat(1)
 
 end subroutine runPhysics
 

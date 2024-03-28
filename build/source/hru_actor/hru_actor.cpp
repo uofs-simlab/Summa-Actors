@@ -38,7 +38,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
         We will interact with the file access actor */
     [=](update_hru_async) {
       self->request(self->state.file_access_actor, caf::infinite,
-                    get_num_output_steps_v).await([=](int num_steps){
+          get_num_output_steps_v).await([=](int num_steps){
         self->state.num_steps_until_write = num_steps;
         self->send(self->state.file_access_actor, access_forcing_v, 
                     self->state.iFile, self);
@@ -146,7 +146,8 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
         self->quit();
         return;
       }
-      self->send(self->state.parent, done_update_v);
+      self->send(self->state.parent, done_update_v, 
+                 self->state.walltime_timestep, self->state.indxGRU);
     },
 
     // Get Fortran Data into C++
@@ -243,14 +244,18 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
           self->state.hru_data_serialized.year_length,
           self->state.hru_data_serialized.compute_veg_flux);
        
-      aout(self) << "Done Serializing HRU Data\n";
-
-      self->send(self->state.parent, serialize_hru_v, 
-          self->state.hru_data_serialized);
+      self->send(self->state.parent, self->state.hru_data_serialized);
     },
 
     [=](reinit_hru, hru hru_data) {
-      aout(self) << "HRU_Actor: Re-initializing HRU\n";
+
+      // Set output structure finalize stats to false for all timesteps of 
+      // the old GRU index
+      setFinalizeStatsFalse(&self->state.indxGRU);
+      // deallocate the old hru_data
+      delete_handle_hru_type(self->state.hru_data);
+      self->state.hru_data = new_handle_hru_type();
+
 
       self->state.indxHRU = hru_data.indx_hru;
       self->state.indxGRU = hru_data.indx_gru;
@@ -394,7 +399,8 @@ int Run_HRU(stateful_actor<hru_state>* self) {
 
   self->state.err = 0;
   RunPhysics(&self->state.indxHRU, &self->state.timestep, self->state.hru_data, 
-      &self->state.dt_init,  &self->state.dt_init_factor, &self->state.err);
+      &self->state.dt_init,  &self->state.dt_init_factor, 
+      &self->state.walltime_timestep, &self->state.err);
   if (self->state.err != 0) {
     aout(self) << "Error---RunPhysics:\n"
                << "\tIndxGRU = "  << self->state.indxGRU 

@@ -101,7 +101,22 @@ struct distributed_job_state {
   File_Access_Actor_Settings file_access_actor_settings;
 
   std::vector<caf::actor> connected_nodes;
-  std::vector<std::tuple<int,int>> node_gru_ranges; // (start_gru, num_gru)
+
+  std::vector<std::vector<double>> gru_times_per_node;
+  std::vector<double> node_walltimes;
+
+  chrono_time load_balance_start_time;
+  chrono_time load_balance_end_time;
+
+  
+  // <hru_actor, node_actor>
+  std::unordered_map<caf::actor, caf::actor> hru_to_node_map;
+  std::unordered_map<caf::actor, double> hru_walltimes;
+  std::unordered_map<caf::actor, double> node_walltimes_map;
+  std::unordered_map<caf::actor, std::unordered_map<caf::actor, double>> 
+      node_to_hru_map;
+
+  std::vector<std::pair<caf::actor, hru>> hrus_to_balance;
 
   // Forcing information
   int iFile = 1; // index of current forcing file from forcing file list
@@ -114,6 +129,12 @@ struct distributed_job_state {
 
   // Misc message counter
   int messages_returned = 0;
+  int hru_batch_maps_received = 0;
+
+  // Misc counter
+  int num_times_load_balanced = 0;
+  int num_serialize_messages_sent = 0;
+  int num_serialize_messages_received = 0;
 };
 
 /** The Job Actor */
@@ -142,8 +163,8 @@ void spawnHRUBatches(stateful_actor<job_state>* self);
 
 
 /** Get the information for the GRUs that will be written to the netcdf file */
-std::vector<serializable_netcdf_gru_actor_info> getGruNetcdfInfo(int max_run_attempts, 
-                                                                 std::vector<GRU*> &gru_list);
+std::vector<serializable_netcdf_gru_actor_info> getGruNetcdfInfo(
+    int max_run_attempts, std::vector<GRU*> &gru_list);
 
 void handleGRUError(stateful_actor<job_state>* self, caf::actor src);
 } // end namespace

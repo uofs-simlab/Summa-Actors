@@ -1792,7 +1792,7 @@ subroutine set_data_var_dlength_by_indx(handle, struct_indx, num_var, var_arr,&
   real(c_double), intent(in)        :: dat_array(num_elements)
   type(hru_type), pointer           :: hru_data
 
-  integer(c_int)                    :: i,j,sum_elem
+  ! integer(c_int)                    :: i,j,sum_elem
 
   call c_f_pointer(handle, hru_data)
 
@@ -1932,6 +1932,7 @@ subroutine set_data_var_ilength_by_indx(handle, struct_indx, num_var, var_arr,&
     case(1) ! indxStruct
       ! create the structure if it doesn't exist
       if (allocated(hru_data%indxStruct%var)) then
+        print*, "ALLOCATED!!"
         if (size(hru_data%indxStruct%var) /= num_var) then
           deallocate(hru_data%indxStruct%var)
           allocate(hru_data%indxStruct%var(num_var))
@@ -1950,6 +1951,12 @@ subroutine set_data_var_ilength_by_indx(handle, struct_indx, num_var, var_arr,&
       sum_elem = 0
       do i=1,num_var
         do j=1,var_arr(i)
+          if (size(hru_data%indxStruct%var(i)%dat) /= var_arr(i)) then
+            print*, "ERROR: Size of data array does not match size of data"
+            print*, "Size of data array:", size(hru_data%indxStruct%var(i)%dat)
+            print*, "Size of data:", dat_array(sum_elem)
+            stop
+          end if
           hru_data%indxStruct%var(i)%dat(j) = dat_array(sum_elem + j)
         end do
         sum_elem = sum_elem + var_arr(i)

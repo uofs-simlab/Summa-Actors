@@ -9,10 +9,6 @@ behavior node_actor(stateful_actor<node_state>* self, std::string host,
     HRU_Actor_Settings hru_actor_settings) {
 
   aout(self) << "Starting Node Actor\n";
-  self->state.node_timing = TimingInfo();
-  self->state.node_timing.addTimePoint("total_duration");
-  self->state.node_timing.updateStartPoint("total_duration");
-
   self->set_down_handler([=](const down_msg& dm){
     aout(self) << "Received Down Message\n.\n.\n.\n.\nExiting\n"; 
     exit(0);
@@ -51,23 +47,21 @@ behavior node_actor(stateful_actor<node_state>* self, std::string host,
   
   return {
     [=](start_job, NumGRUInfo num_gru_info) {
+      self->state.node_timing = TimingInfo();
+      self->state.node_timing.addTimePoint("total_duration");
+      self->state.node_timing.updateStartPoint("total_duration");
+      
       self->state.num_gru_info = num_gru_info;
       aout(self) << "Recieved Start Job Message\n"
-                 << "Start GRU Local: " 
-                 << self->state.num_gru_info.start_gru_local
-                 << " -- Start GRU Global:"
-                 << self->state.num_gru_info.start_gru_global
-                 << " -- Num GRU Local: "
-                 << self->state.num_gru_info.num_gru_local
-                 << " -- Num GRU Global: "
-                 << self->state.num_gru_info.num_gru_global
-                 << " -- File GRU: " << self->state.num_gru_info.file_gru 
-                 << "\n";
+        << "Start GRU Local: " << self->state.num_gru_info.start_gru_local
+        << " -- Start GRU Global:" << self->state.num_gru_info.start_gru_global
+        << " -- Num GRU Local: " << self->state.num_gru_info.num_gru_local
+        << " -- Num GRU Global: " << self->state.num_gru_info.num_gru_global
+        << " -- File GRU: " << self->state.num_gru_info.file_gru << "\n";
                  
       self->state.gru_container.num_gru_in_run_domain 
           = self->state.num_gru_info.num_gru_local;
       
-
       int start_gru, num_gru, num_hru;
       if (self->state.num_gru_info.use_global_for_data_structures) {
         start_gru = self->state.num_gru_info.start_gru_global;
@@ -134,25 +128,41 @@ behavior node_actor(stateful_actor<node_state>* self, std::string host,
     },
 
     [=](update_hru) {
+      self->state.timestep_start_time 
+        = std::chrono::high_resolution_clock::now();
+      self->state.gru_walltimes.clear();
       for (auto gru : self->state.gru_container.gru_list) {
         self->send(gru->getGRUActor(), update_hru_v,
                    self->state.timestep, self->state.forcingStep);
       }
     },
 
-    [=](done_update) {
+    [=](done_update, std::unordered_map<caf::actor, double> walltimes) {
       self->state.num_gru_done_timestep++;
+
+      // self->state.gru_walltimes.push_back(walltimes);
+      self->state.hru_walltimes.insert(walltimes.begin(), walltimes.end());
+
       if (self->state.num_gru_done_timestep >= 
           self->state.gru_container.gru_list.size()) {
-
-        aout(self) << "Node Actor: Done Update for timestep:" 
-                   << self->state.timestep << "\n";
+        
+        // Get Time Taken for the entire timestep
+        self->state.timestep_end_time 
+            = std::chrono::high_resolution_clock::now();
+        double timestep_duration = std::chrono::duration_cast<
+            std::chrono::milliseconds>(self->state.timestep_end_time 
+            - self->state.timestep_start_time).count();
+        double timestep_sec = timestep_duration / 1000;
+        aout(self) << "Node Actor: Finished timestep:" 
+                   << self->state.timestep << " -- Duration = " 
+                   << timestep_sec << " Sec\n";
 
         self->state.timestep++;
         self->state.forcingStep++;
         self->state.num_gru_done_timestep = 0;
 
-        self->send(self->state.current_server, done_update_v);
+        self->send(self->state.current_server, done_update_v, 
+            timestep_sec, self->state.hru_walltimes);
 
       }
     },
@@ -174,11 +184,56 @@ behavior node_actor(stateful_actor<node_state>* self, std::string host,
               self->send_exit(self->state.file_access_actor, 
                   exit_reason::user_shutdown);
               self->send(self->state.current_server, err);
-              // self->quit();
             }
           });
 
       self->send(self->state.current_server, write_output_v);
+    },
+
+    [=](std::vector<actor> hru_actors) {
+      self->state.hru_batch_maps_received++;
+      actor sender = actor_cast<actor>(self->current_sender());
+      for (auto hru_actor : hru_actors) {
+        self->state.hru_to_batch_map[hru_actor] = sender;
+      }
+
+      self->state.hru_actor_list.insert(self->state.hru_actor_list.end(), 
+          hru_actors.begin(), hru_actors.end());
+
+      if (self->state.hru_batch_maps_received >= 
+          self->state.gru_container.gru_list.size()) {
+        aout(self) << "Sending HRU Maps\n";
+        self->send(self->state.current_server, self->state.hru_actor_list);
+        self->state.hru_batch_maps_received = 0;
+      }
+
+    },
+
+    [=](serialize_hru, caf::actor actor_ref) {
+      // Find the HRU Batch Actor that the HRU Actor belongs to
+      auto hru_batch_actor = self->state.hru_to_batch_map[actor_ref];
+      self->send(hru_batch_actor, serialize_hru_v, actor_ref);
+    },
+
+    [=](serialize_hru, hru hru_data) {
+      aout(self) << "Node Actor: Recieved HRU Data\n";
+      self->send(self->state.current_server, hru_data);
+    },
+
+    [=](reinit_hru, caf::actor traget_actor, hru hru_data) {
+      aout(self) << "Node Actor: Recieved HRU Data to distribute\n";
+      auto hru_batch_actor = self->state.hru_to_batch_map[traget_actor];
+      self->send(hru_batch_actor, reinit_hru_v, traget_actor, hru_data);
+    },
+
+    [=](caf::actor actor_ref, hru hru_data) {
+      aout(self) << "Node Actor: Recieved actor_ref and Recieved hru_data \n";
+      self->send(self->state.current_server, actor_ref, hru_data);
+    },
+
+    [=](reinit_hru) {
+      aout(self) << "Node Actor: Recieved Reinit HRU\n";
+      self->send(self->state.current_server, reinit_hru_v);
     },
 
     [=](finalize) {
@@ -236,7 +291,7 @@ void spawnHRUBatches(stateful_actor<node_state>* self) {
 
   if (self->state.job_actor_settings.batch_size == 9999) {
     batch_size = std::ceil(gru_container.num_gru_in_run_domain / 
-                           (std::thread::hardware_concurrency() * 2));
+                           (std::thread::hardware_concurrency()));
   } else {
     batch_size = self->state.job_actor_settings.batch_size;
   }

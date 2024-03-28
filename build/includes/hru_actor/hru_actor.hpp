@@ -9,11 +9,6 @@
 #include "message_atoms.hpp"
 #include "global.hpp"
 
-
-
-
-
-
 /*********************************************
  * HRU Actor Fortran Functions
  *********************************************/
@@ -30,7 +25,7 @@ extern "C" {
   
   // Run the model for one timestep
   void RunPhysics(int* id, int* stepIndex, void* hru_data, double* dt, 
-      int* dt_int_factor, int* err);
+      int* dt_int_factor, double* walltime_timestep, int* err);
   
   void hru_writeOutput(int* index_hru, int* index_gru, int* timestep, 
       int* output_step, void* hru_data, int* err);
@@ -39,6 +34,9 @@ extern "C" {
 
   void HRU_readForcing(int* index_gru, int* iStep, int* iRead, int* iFile, 
       void* hru_data,  int* err);
+  
+  // hru_writeOutput.f90
+  void setFinalizeStatsFalse(int* indx_gru);
 
   void get_sundials_tolerances(void* hru_data, double* relTol, double* absTol);
   void set_sundials_tolerances(void* hru_data, double* relTol, double* absTol);
@@ -77,7 +75,7 @@ struct hru_state {
   hru hru_data_serialized;
 
     // Misc Variables
-	int     timestep = 1;	    // Current Timestep of HRU simulation
+  int     timestep = 1;	    // Current Timestep of HRU simulation
   int     forcingStep = 1;    // index of current time step in current forcing file
   int     num_steps = 0;      // number of time steps
   int     iFile = 1;              // index of current forcing file from forcing file list
@@ -89,7 +87,9 @@ struct hru_state {
 
   // Sundials variables
   double rtol = -9999; // -9999 uses default
-  double atol = -9999; // -9999 uses default		        
+  double atol = -9999; // -9999 uses default
+
+  double walltime_timestep = 0.0; // walltime for the current timestep		        
 
   // Settings
   HRU_Actor_Settings hru_actor_settings;
