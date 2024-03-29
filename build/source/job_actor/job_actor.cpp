@@ -61,6 +61,7 @@ behavior job_actor(stateful_actor<job_state>* self,
     - read_icond_nlayers
     - Allocates time structures
   */
+  self->state.job_timing.addTimePoint("init_duration");
   int file_gru = 0;
   job_init_fortran(self->state.job_actor_settings.file_manager_path.c_str(),
       &self->state.start_gru, &self->state.num_gru, &self->state.num_hru, 
@@ -80,7 +81,7 @@ behavior job_actor(stateful_actor<job_state>* self,
       self->state.file_access_actor_settings, self);
   self->send(self->state.file_access_actor, def_output_v, file_gru);
 
-
+  self->state.job_timing.updateEndPoint("init_duration");
   aout(self) << "Job Actor Initialized \n";
 
   return {
@@ -140,7 +141,7 @@ behavior job_actor(stateful_actor<job_state>* self,
       }      
     },
 
-    [=](done_update){
+    [=](done_update, std::unordered_map<caf::actor, double> walltimes){
       self->state.num_gru_done_timestep++;
       
       if (self->state.num_gru_done_timestep >= 
@@ -181,10 +182,6 @@ behavior job_actor(stateful_actor<job_state>* self,
           aout(self) << "Job_Actor: Done Forcing Step\n";
           self->send(self->state.file_access_actor, access_forcing_v, 
               self->state.iFile+1, self);
-        } else if (self->state.timestep == 5) {
-          // Test serializing the HRU actor
-          self->send(self->state.gru_container.gru_list[0]->getGRUActor(), 
-              serialize_hru_v, 0);
         } else {
           // otherwise update all HRUs
           self->send(self, update_hru_v);
@@ -203,6 +200,9 @@ behavior job_actor(stateful_actor<job_state>* self,
     [=](reinit_hru) {
       aout(self) << "Job_Actor: HRU Actor Re-initialized\n";
       self->send(self, update_hru_v);
+    },
+
+    [=](std::vector<actor> hru_actors) {
     },
 
     // #####################################################
@@ -326,6 +326,9 @@ behavior job_actor(stateful_actor<job_state>* self,
                      << "Total Duration = " 
                      << (self->state.job_timing.getDuration("total_duration")
                         .value_or(-1.0) / 60) / 60 << " Hours\n"
+                     << "Job Init Duration = " 
+                      << self->state.job_timing.getDuration("init_duration")
+                          .value_or(-1.0) << " Seconds\n"
                      << "_________________________________" 
                      << "_______________________________________\n\n";
 

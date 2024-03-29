@@ -74,6 +74,7 @@ behavior node_actor(stateful_actor<node_state>* self, std::string host,
       }
 
 
+      self->state.node_timing.addTimePoint("node_init");
       int err, file_gru_to_remove;
       job_init_fortran(self->state.job_actor_settings.file_manager_path.c_str(),
           &start_gru, &num_gru, &num_hru, &file_gru_to_remove, &err);
@@ -89,6 +90,7 @@ behavior node_actor(stateful_actor<node_state>* self, std::string host,
       self->monitor(self->state.file_access_actor);
       self->send(self->state.file_access_actor, def_output_v, 
           self->state.num_gru_info.file_gru);
+      self->state.node_timing.updateEndPoint("node_init");
     },
 
     [=](init_file_access_actor, int num_timesteps) {
@@ -202,7 +204,6 @@ behavior node_actor(stateful_actor<node_state>* self, std::string host,
 
       if (self->state.hru_batch_maps_received >= 
           self->state.gru_container.gru_list.size()) {
-        aout(self) << "Sending HRU Maps\n";
         self->send(self->state.current_server, self->state.hru_actor_list);
         self->state.hru_batch_maps_received = 0;
       }
@@ -216,23 +217,19 @@ behavior node_actor(stateful_actor<node_state>* self, std::string host,
     },
 
     [=](serialize_hru, hru hru_data) {
-      aout(self) << "Node Actor: Recieved HRU Data\n";
       self->send(self->state.current_server, hru_data);
     },
 
     [=](reinit_hru, caf::actor traget_actor, hru hru_data) {
-      aout(self) << "Node Actor: Recieved HRU Data to distribute\n";
       auto hru_batch_actor = self->state.hru_to_batch_map[traget_actor];
       self->send(hru_batch_actor, reinit_hru_v, traget_actor, hru_data);
     },
 
     [=](caf::actor actor_ref, hru hru_data) {
-      aout(self) << "Node Actor: Recieved actor_ref and Recieved hru_data \n";
       self->send(self->state.current_server, actor_ref, hru_data);
     },
 
     [=](reinit_hru) {
-      aout(self) << "Node Actor: Recieved Reinit HRU\n";
       self->send(self->state.current_server, reinit_hru_v);
     },
 
@@ -243,12 +240,20 @@ behavior node_actor(stateful_actor<node_state>* self, std::string host,
           "total_duration").value_or(-1.0);
       double total_dur_min = total_duration / 60;
       double total_dur_hr = total_dur_min / 60;
-      aout(self) << "Total Duration: " << total_duration << " seconds\n"
-                 << "Total Duration: " << total_dur_min << " minutes\n"
-                 << "Total Duration: " << total_dur_hr << " hours\n"
-                 << "___________________Node Finished__________________\n";
-    
-      std::exit(0);
+
+      double init_duration = self->state.node_timing.getDuration(
+          "node_init").value_or(-1.0);
+
+      self->request(self->state.file_access_actor, infinite, finalize_v).await(
+          [=](std::tuple<double, double> read_write_duration) {
+            
+            aout(self) << "Total Duration: " << total_duration << " seconds\n"
+                << "Total Duration: " << total_dur_min << " minutes\n"
+                << "Total Duration: " << total_dur_hr << " hours\n"
+                << "Init Duration: " << init_duration << " seconds\n"
+                << "___________________Node Finished__________________\n";
+            exit(1);
+          });
     }
   };
 }

@@ -37,12 +37,8 @@ behavior hru_batch_actor(stateful_actor<hru_batch_state>* self,
     },
 
     [=](done_update, double walltime_timestep, int indx_gru) {
-      // int indx = indx_gru % self->state.hru_walltimes.size();
-      // self->state.hru_walltimes[indx] = walltime_timestep;
-      
       caf::actor sender = actor_cast<caf::actor>(self->current_sender());
       self->state.hru_actor_walltimes[sender] = walltime_timestep;
-
 
       self->state.num_done++;
       if (self->state.num_done == self->state.hru_actors.size()) {
@@ -61,21 +57,11 @@ behavior hru_batch_actor(stateful_actor<hru_batch_state>* self,
     },
 
     [=](hru hru_data) {
-      aout(self) << "HRU_Batch_Actor: Recieved HRU Data\n";
       auto sender = actor_cast<actor>(self->current_sender());
-      // self->send_exit(sender, exit_reason::user_shutdown);
-      // self->state.hru_actors.erase(
-      //   std::remove(self->state.hru_actors.begin(), 
-      //       self->state.hru_actors.end(), sender),
-      //   self->state.hru_actors.end()
-      // );
-
-
       self->send(self->state.parent, sender, hru_data);
     },
 
     [=](reinit_hru, hru hru_data) {
-      aout(self) << "HRU_Batch_Actor: Re-initializing HRU\n";
       self->state.hru_actors.push_back(
         self->spawn(hru_actor, hru_data.ref_gru, hru_data.indx_gru,
             self->state.hru_actor_settings, self->state.file_access_actor, 
@@ -89,7 +75,6 @@ behavior hru_batch_actor(stateful_actor<hru_batch_state>* self,
     },
 
     [=](reinit_hru) {
-      aout(self) << "HRU_Batch_Actor: HRU Re-Initialized\n";
       self->send(self->state.parent, reinit_hru_v);
     }
   };

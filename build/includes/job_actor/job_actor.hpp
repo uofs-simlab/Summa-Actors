@@ -107,6 +107,7 @@ struct distributed_job_state {
 
   chrono_time load_balance_start_time;
   chrono_time load_balance_end_time;
+  double load_balance_time = 0.0;
 
   
   // <hru_actor, node_actor>

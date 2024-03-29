@@ -31,6 +31,7 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
 
   self->state.num_output_steps = fa_settings.num_timesteps_in_output_buffer;
   
+  self->state.file_access_timing.addTimePoint("init_duration");
   int num_hru = self->state.num_gru;
   int err = 0;
   fileAccessActor_init_fortran(self->state.handle_forcing_file_info, 
@@ -70,6 +71,8 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
         fa_settings.num_partitions_in_output_buffer, self->state.num_gru,
         fa_settings.num_timesteps_in_output_buffer, self->state.num_steps);
   }
+
+  self->state.file_access_timing.updateEndPoint("init_duration");
 
   return {
     [=](def_output, int file_gru) {
@@ -216,8 +219,12 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
                      .value_or(-1.0) << " Seconds\n"
                  << "Total Write Duration = "
                  << self->state.file_access_timing.getDuration("write_duration")
-                     .value_or(-1.0) << " Seconds\n";
-                  
+                     .value_or(-1.0) << " Seconds\n"
+                 << "Total Init Duration = "
+                 << self->state.file_access_timing.getDuration("init_duration")
+                      .value_or(-1.0) << " Seconds\n"
+                 << "\n__________________________________________________\n"; 
+           
         
       self->quit();
       return std::make_tuple(self->state.file_access_timing

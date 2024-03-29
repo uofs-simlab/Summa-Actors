@@ -135,7 +135,6 @@ behavior distributed_job_actor(stateful_actor<distributed_job_state>* self,
     [=](load_balance) {
 
       self->state.load_balance_start_time = std::chrono::system_clock::now();
-      aout(self) << "Load Balancing\n";
 
       // Find the node with the highest walltime from the map
       auto max_node = std::max_element(
@@ -146,9 +145,6 @@ behavior distributed_job_actor(stateful_actor<distributed_job_state>* self,
             return p1.second < p2.second;
           });
 
-      aout(self) << "\t Max Node: " << max_node->second 
-                  << " --- " << max_node->first << "\n";
-
       // Find the node with the lowest walltime from the map
       auto min_node = std::min_element(
           self->state.node_walltimes_map.begin(), 
@@ -157,10 +153,6 @@ behavior distributed_job_actor(stateful_actor<distributed_job_state>* self,
               const std::pair<caf::actor, double>& p2) {
             return p1.second < p2.second;
           });
-
-      aout(self) << "\t Min Node: " << min_node->second 
-                  << " --- " << min_node->first << "\n";
-
 
       auto max_node_hru_times = 
           self->state.node_to_hru_map[max_node->first];
@@ -208,8 +200,6 @@ behavior distributed_job_actor(stateful_actor<distributed_job_state>* self,
 
       if (self->state.num_serialize_messages_received >= 
           self->state.num_serialize_messages_sent) {
-        aout(self) << "Ready to redistribute HRU data\n";
-
 
         // Redistribute the HRU data
         while(!self->state.hrus_to_balance.empty()) {
@@ -232,21 +222,17 @@ behavior distributed_job_actor(stateful_actor<distributed_job_state>* self,
                   ),
                   self->state.hrus_to_balance.end()
               );
-
               break;
             }
           }
         }
 
         self->state.num_serialize_messages_received = 0;
-
-
       }
     },
 
     [=](reinit_hru) {
       self->state.num_serialize_messages_received++;
-      aout(self) << "Receieved confirmation that HRU has been reinitialized\n";
 
       if (self->state.num_serialize_messages_received >= 
           self->state.num_serialize_messages_sent) {
@@ -258,8 +244,7 @@ behavior distributed_job_actor(stateful_actor<distributed_job_state>* self,
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
             self->state.load_balance_end_time - 
             self->state.load_balance_start_time);
-        aout(self) << "Load Balance Duration: " << duration.count() / 1000 
-                   << " Seconds\n";
+        self->state.load_balance_time += duration.count();
         self->state.node_walltimes.clear();
         self->send(self, update_hru_v);
       }
@@ -309,7 +294,6 @@ behavior distributed_job_actor(stateful_actor<distributed_job_state>* self,
           // Calculate the standard deviation of the node_wall_times_map
           for (auto& node_walltime : self->state.node_walltimes_map) {
             self->state.node_walltimes.push_back(node_walltime.second);
-            aout(self) << "\tNode Walltime: " << node_walltime.second << "\n";
           }
 
           // Calculate the standard Deviation of the walltimes
@@ -323,9 +307,7 @@ behavior distributed_job_actor(stateful_actor<distributed_job_state>* self,
               sq_sum / self->state.node_walltimes.size() - mean * mean;
           double stdev = std::sqrt(variance);
           
-          aout(self) << "\tStandard Deviation: " << stdev << "\n";
           double load_balancing_threshold = 0.005;
-          
           if (stdev > load_balancing_threshold) {
             load_balance = true;
           }
@@ -357,12 +339,6 @@ behavior distributed_job_actor(stateful_actor<distributed_job_state>* self,
         self->state.hru_to_node_map[hru] = sender;
       }
       self->state.hru_batch_maps_received++;
-
-      // TODO: This check may be unnecessary
-      if (self->state.hru_batch_maps_received == 
-          distributed_settings.num_nodes) {
-        aout(self) << "All HRU Batch Maps Received\n";
-      }
     },
 
     [=](int err) {
@@ -381,6 +357,8 @@ behavior distributed_job_actor(stateful_actor<distributed_job_state>* self,
                  << "Total Duration = " << total_dur_hr << " Hours\n"
                  << "Number of Load Balances = " 
                  << self->state.num_times_load_balanced
+                 << "\nTotal Load Balance Time = " 
+                 << self->state.load_balance_time / 1000 << " Seconds"
                  << "\n___________________Program Finished__________________\n";
     }
 
