@@ -325,6 +325,7 @@ behavior distributed_job_actor(stateful_actor<distributed_job_state>* self,
             self->send(node, access_forcing_v, self->state.iFile + 1);
           }        
         } else if (load_balance) {
+          aout(self) << "Distributed Job_Actor: Load Balancing\n";
           self->send(self, load_balance_v);
         } else {
           self->send(self, update_hru_v);
