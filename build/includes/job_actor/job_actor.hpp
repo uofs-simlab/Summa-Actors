@@ -121,6 +121,9 @@ struct distributed_job_state {
 
   std::unordered_map<caf::actor, std::vector<std::pair<caf::actor, hru>>> 
       node_to_hru_to_balance_map;
+  std::unordered_map<caf::actor, int> node_to_hru_to_balance_map_size; 
+
+  int num_hrus_to_swap = 0; // We want to swap %25 of the HRUs
 
   // Forcing information
   int iFile = 1; // index of current forcing file from forcing file list
