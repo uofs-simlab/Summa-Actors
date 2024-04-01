@@ -119,6 +119,9 @@ struct distributed_job_state {
 
   std::vector<std::pair<caf::actor, hru>> hrus_to_balance;
 
+  std::unordered_map<caf::actor, std::vector<std::pair<caf::actor, hru>>> 
+      node_to_hru_to_balance_map;
+
   // Forcing information
   int iFile = 1; // index of current forcing file from forcing file list
   int stepsInCurrentFFile;

@@ -90,8 +90,10 @@ behavior distributed_job_actor(stateful_actor<distributed_job_state>* self,
       aout(self) << "Received a connect request from: " << hostname << "\n";
       
       self->monitor(client_actor);
-
       self->state.connected_nodes.push_back(client_actor);
+      // Create an empty vector for the nodes hru pairs
+      self->state.node_to_hru_to_balance_map[client_actor] = 
+          std::vector<std::pair<caf::actor, hru>>();
 
       if (self->state.connected_nodes.size() == 
           distributed_settings.num_nodes) {
@@ -133,9 +135,9 @@ behavior distributed_job_actor(stateful_actor<distributed_job_state>* self,
     },
 
     [=](load_balance) {
-
       self->state.load_balance_start_time = std::chrono::system_clock::now();
-
+      
+      aout(self) << "Distributed Job_Actor: Finding max and min elements\n";
       // Find the node with the highest walltime from the map
       auto max_node = std::max_element(
           self->state.node_walltimes_map.begin(), 
@@ -179,12 +181,14 @@ behavior distributed_job_actor(stateful_actor<distributed_job_state>* self,
 
       // Get the 5 HRUs with the highest walltimes states from the 
       // max node
+      aout(self) << "Distributed Job_Actor: Requesting serialized state from max\n";
       for (int i = 0; i < 5; i++) {
         self->send(max_hru_times[i].first, serialize_hru_v);
       }
 
       // Get the 5 HRUs with the lowest walltimes states from the
       // min node
+      aout(self) << "Distributed Job_Actor: Requesting serialized state from min\n";
       for (int i = 0; i < 5; i++) {
         self->send(min_hru_times[i].first, serialize_hru_v);
       }
@@ -195,37 +199,33 @@ behavior distributed_job_actor(stateful_actor<distributed_job_state>* self,
     [=] (caf::actor actor_ref, hru hru_data) {
       self->state.num_serialize_messages_received++;
 
-      self->state.hrus_to_balance.push_back(
+      // Get the node the actor_ref is part of 
+      auto node = self->state.hru_to_node_map[actor_ref];
+      self->state.node_to_hru_to_balance_map[node].push_back(
           std::make_pair(actor_ref, hru_data));
 
       if (self->state.num_serialize_messages_received >= 
           self->state.num_serialize_messages_sent) {
+        aout(self) << "Distributed Job_Actor: Redistributing HRUs\n";
+        int num_sent = 0;
 
         // Redistribute the HRU data
-        while(!self->state.hrus_to_balance.empty()) {
-          // Find two HRUs that have different node owners
-          auto hru1 = self->state.hrus_to_balance.back();
-          self->state.hrus_to_balance.pop_back();
-          auto node_1 = self->state.hru_to_node_map[hru1.first];
-          for (auto hru2 : self->state.hrus_to_balance) {
-            auto node_2 = self->state.hru_to_node_map[hru2.first];
-            if (node_1 != node_2) {
-
-              self->send(node_1, reinit_hru_v, hru1.first, hru2.second);
-              self->send(node_2, reinit_hru_v, hru2.first, hru1.second);
-
-              self->state.hrus_to_balance.erase(
-                  std::remove_if(self->state.hrus_to_balance.begin(), 
-                      self->state.hrus_to_balance.end(),
-                      [&hru2](const auto& pair) { 
-                          return pair.first == hru2.first; }
-                  ),
-                  self->state.hrus_to_balance.end()
-              );
-              break;
-            }
-          }
+        auto node_1_vector = self->state.node_to_hru_to_balance_map[
+            self->state.connected_nodes[0]];
+        auto node_2_vector = self->state.node_to_hru_to_balance_map[
+            self->state.connected_nodes[1]];
+        for (int i = 0; i < 5; i++) {
+          auto hru1 = node_1_vector[i];
+          auto hru2 = node_2_vector[i];
+          self->send(self->state.connected_nodes[0], reinit_hru_v, 
+              hru1.first, hru2.second);
+          self->send(self->state.connected_nodes[1], reinit_hru_v, 
+              hru2.first, hru1.second);
+          num_sent += 2;
         }
+
+        aout(self) << "Distributed Job_Actor: All requests sent: " 
+                   << num_sent << "\n";
 
         self->state.num_serialize_messages_received = 0;
       }
@@ -233,9 +233,10 @@ behavior distributed_job_actor(stateful_actor<distributed_job_state>* self,
 
     [=](reinit_hru) {
       self->state.num_serialize_messages_received++;
-
+      aout(self) << "Recieved: " << self->state.num_serialize_messages_received << "\n";
       if (self->state.num_serialize_messages_received >= 
           self->state.num_serialize_messages_sent) {
+        aout(self) << "Distributed Job_Actor: Done Redistributing HRUs\n";
         
         self->state.num_serialize_messages_received = 0;
         self->state.num_serialize_messages_sent = 0;

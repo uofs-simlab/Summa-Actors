@@ -72,8 +72,9 @@ behavior node_actor(stateful_actor<node_state>* self, std::string host,
         num_gru = self->state.num_gru_info.num_gru_local;
         num_hru = self->state.num_gru_info.num_gru_local;
       }
-
-
+      
+      self->state.node_timing.addTimePoint("node_init");
+      self->state.node_timing.updateStartPoint("node_init");
       int err, file_gru_to_remove;
       job_init_fortran(self->state.job_actor_settings.file_manager_path.c_str(),
           &start_gru, &num_gru, &num_hru, &file_gru_to_remove, &err);
@@ -89,6 +90,7 @@ behavior node_actor(stateful_actor<node_state>* self, std::string host,
       self->monitor(self->state.file_access_actor);
       self->send(self->state.file_access_actor, def_output_v, 
           self->state.num_gru_info.file_gru);
+      self->state.node_timing.updateEndPoint("node_init");
     },
 
     [=](init_file_access_actor, int num_timesteps) {
@@ -248,6 +250,7 @@ behavior node_actor(stateful_actor<node_state>* self, std::string host,
             aout(self) << "Total Duration: " << total_duration << " seconds\n"
                 << "Total Duration: " << total_dur_min << " minutes\n"
                 << "Total Duration: " << total_dur_hr << " hours\n"
+                << "Init Duration: " << init_duration << " seconds\n"
                 << "___________________Node Finished__________________\n";
             exit(1);
           });
