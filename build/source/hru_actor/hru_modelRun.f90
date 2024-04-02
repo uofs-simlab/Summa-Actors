@@ -211,7 +211,12 @@ subroutine runPhysics(&
   !****************************** From run_oneHRU *******************************
   !******************************************************************************
   ! water pixel: do nothing
-  if (hru_data%typeStruct%var(iLookTYPE%vegTypeIndex) == isWater) return
+  if (hru_data%typeStruct%var(iLookTYPE%vegTypeIndex) == isWater) then
+      ! Set wall_clock time to zero so it does not get a random value
+    wallTimeTimeStep = 0._dp
+    hru_data%diagStruct%var(iLookDIAG%wallClockTime)%dat(1) = 0._dp 
+    return
+  endif
 
   ! get height at bottom of each soil layer, negative downwards (used in Noah MP)
   allocate(zSoilReverseSign(nSoil),stat=err)
