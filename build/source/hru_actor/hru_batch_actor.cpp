@@ -42,6 +42,7 @@ behavior hru_batch_actor(stateful_actor<hru_batch_state>* self,
 
       self->state.num_done++;
       if (self->state.num_done == self->state.hru_actors.size()) {
+        
         self->send(self->state.parent, done_update_v, 
             self->state.hru_actor_walltimes);
         self->state.num_done = 0;

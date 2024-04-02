@@ -182,6 +182,7 @@ bool inspect(Inspector& f, file_access_error& x) {
     return caf::default_enum_inspect(f, x);
 }
 
+
 CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     // BMI Start
     CAF_ADD_ATOM(summa, update_hru)
@@ -397,3 +398,4 @@ CAF_END_TYPE_ID_BLOCK(summa)
 
 CAF_ERROR_CODE_ENUM(hru_error)
 CAF_ERROR_CODE_ENUM(file_access_error)
+

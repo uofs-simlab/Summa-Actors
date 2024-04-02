@@ -243,7 +243,7 @@ behavior distributed_job_actor(stateful_actor<distributed_job_state>* self,
           });
       
       // Output all the values to the file
-      for (auto& hru_time : max_node_hru_times) {
+      for (auto& hru_time : max_hru_times) {
         std::string actor_ref = to_string(hru_time.first);
         max_file_out << "(" << actor_ref << ":" 
                      << hru_time.second << "), ";
@@ -261,7 +261,7 @@ behavior distributed_job_actor(stateful_actor<distributed_job_state>* self,
           });
 
       // Output all the values to the file
-      for (auto& hru_time : min_node_hru_times) {
+      for (auto& hru_time : min_hru_times) {
         std::string actor_ref = to_string(hru_time.first);
         min_file_out << "(" << actor_ref << ":" 
                      << hru_time.second << "), ";
@@ -370,6 +370,30 @@ behavior distributed_job_actor(stateful_actor<distributed_job_state>* self,
       if (self->state.messages_returned >= distributed_settings.num_nodes) {
         int steps_to_write = 1;
         for (auto node : self->state.connected_nodes) {
+          auto node_hru_walltimes = self->state.node_to_hru_map[node];
+          std::string node_file = "node_" + to_string(node) + "_times.txt";
+          std::ifstream node_file_stream(node_file);
+          bool node_file_exists = node_file_stream.good();
+
+          // Open the file for writing
+          std::ofstream node_file_out(node_file,node_file_exists ? 
+              std::ios::app : std::ios::out);
+          
+          if (!node_file_out.is_open()) {
+            aout(self) << "Error opening file\n";
+            exit(1);
+          }
+
+          // Output all the values to the file
+          for (auto& hru_time : node_hru_walltimes) {
+            std::string actor_ref = to_string(hru_time.first);
+            node_file_out << "(" << actor_ref << ":" 
+                          << hru_time.second << "), ";
+          }
+          node_file_out << "\n";
+          node_file_out.close();
+
+
           self->send(node, write_output_v, steps_to_write);
         }
 
