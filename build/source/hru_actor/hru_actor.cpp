@@ -146,6 +146,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
         self->quit();
         return;
       }
+      
       self->send(self->state.parent, done_update_v, 
                  self->state.walltime_timestep, self->state.indxGRU);
     },

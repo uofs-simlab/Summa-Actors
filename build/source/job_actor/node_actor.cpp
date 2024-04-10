@@ -147,32 +147,6 @@ behavior node_actor(stateful_actor<node_state>* self, std::string host,
 
       if (self->state.num_gru_done_timestep >= 
           self->state.gru_container.gru_list.size()) {
-        
-        std::string actual_node_file = "self-node_" + 
-            to_string(caf::actor_cast<caf::actor>(self)) + ".txt";
-        
-        std::ifstream node_file(actual_node_file);
-        bool file_exists = node_file.good();
-
-        std::ofstream node_file_out(actual_node_file, file_exists 
-            ? std::ios_base::app : std::ios::out);
-        
-        if (!node_file_out.is_open()) {
-          aout(self) << "Error Opening File\n";
-          exit(1);
-        }
-
-        for(const auto& pair : self->state.hru_walltimes) {
-          std::string actor_ref = to_string(pair.first);
-          node_file_out << "(" << actor_ref << ":" 
-                          << pair.second << "), ";
-        }
-        node_file_out << "\n";
-
-        node_file_out.close();
-
-
-
 
         // Get Time Taken for the entire timestep
         self->state.timestep_end_time 
