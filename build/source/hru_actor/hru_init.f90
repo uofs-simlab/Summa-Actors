@@ -171,7 +171,7 @@ subroutine initHRU(indxGRU,            & !  Index of HRU's GRU parent
     case('flux'); call allocLocal(flux_meta,hru_data%fluxStruct,nSnow,nSoil,err,cmessage);    ! model fluxes
     case('bpar'); call allocLocal(bpar_meta,hru_data%bparStruct,nSnow=0,nSoil=0,err=err,message=cmessage);  ! basin-average variables
     case('bvar'); call allocLocal(bvar_meta,hru_data%bvarStruct,nSnow=0,nSoil=0,err=err,message=cmessage);  ! basin-average variables
-    case('lookup'); cycle ! allocated in t2enthalpy.f90
+    case('lookup'); cycle ! allocated in enthaplpyTemp.f90
     case('deriv'); cycle
     case default; err=20; message='unable to find structure name: '//trim(structInfo(iStruct)%structName)
   end select
@@ -255,10 +255,6 @@ subroutine setupHRUParam(indxGRU,                 & ! ID of hru
   USE mDecisions_module,only:mDecisions                       ! module to read model decisions
   USE paramCheck_module,only:paramCheck                       ! module to check consistency of model parameters
   USE pOverwrite_module,only:pOverwrite                       ! module to overwrite default parameter values with info from the Noah tables
-  USE ConvE2Temp_module,only:E2T_lookup                       ! module to calculate a look-up table for the temperature-enthalpy conversion
-#ifdef V4_ACTIVE  
-  USE t2enthalpy_module,only:T2E_lookup                       ! module to calculate a look-up table for the temperature-enthalpy conversion
-#endif
   USE var_derive_module,only:fracFuture                       ! module to calculate the fraction of runoff in future time steps (time delay histogram)
   USE module_sf_noahmplsm,only:read_mp_veg_parameters         ! module to read NOAH vegetation tables
   ! global data structures

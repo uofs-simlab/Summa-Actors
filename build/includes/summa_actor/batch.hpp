@@ -1,6 +1,8 @@
 #pragma once
 #include "caf/all.hpp"
 #include <string>
+#include <iostream>
+#include <fstream>
 
 class Batch {
   private:

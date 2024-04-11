@@ -68,6 +68,7 @@ public::writeData
 public::writeBasin
 public::writeTime
 public::writeRestart
+public::setFinalizeStatsFalse
 integer(i4b),parameter      :: maxSpectral=2              ! maximum number of spectral bands
 contains
 subroutine hru_writeOutput(&
@@ -844,5 +845,23 @@ subroutine writeRestart(filename,         & ! intent(in): name of restart file
  deallocate(ncVarID)
 
 end subroutine writeRestart
+
+! ******************************************************************************
+! public subroutine setFinalizeStatsFalse: set finalizeStats to false
+! ****************************************************************************** 
+subroutine setFinalizeStatsFalse(indx_gru) & 
+  bind(C, name='setFinalizeStatsFalse')
+  USE output_structure_module,only:outputStructure
+  implicit none
+  integer(c_int), intent(in)        :: indx_gru
+
+  integer(i4b)                      :: iStep
+
+  ! set finalizeStats to false
+  do iStep=1, size(outputStructure(1)%finalizeStats%gru(indx_gru)%hru(1)%tim)
+    outputStructure(1)%finalizeStats%gru(indx_gru)%hru(1)%tim(iStep)%dat = .false.
+  end do
+end subroutine setFinalizeStatsFalse
+
 
 end module HRUwriteoOutput_module

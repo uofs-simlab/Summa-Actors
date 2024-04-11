@@ -10,11 +10,11 @@ module cppwrap_fileAccess
   USE globalData,only:integerMissing      ! missing integer value
   USE globalData,only:realMissing         ! missing double precision value
 
-  USE var_lookup,only:maxvarFreq                ! maximum number of output files
 
 
   implicit none
   public::fileAccessActor_init_fortran
+  public::defOutputFortran
   public::FileAccessActor_DeallocateStructures
   public::SOIL_VEG_GEN_PARM
 
@@ -50,7 +50,6 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   USE paramCheck_module,only:paramCheck                       ! module to check consistency of model parameters
   USE read_icond_module,only:read_icond                       ! module to read initial conditions
   USE check_icond_module,only:check_icond                     ! module to check initial conditions
-  USE def_output_module,only:def_output                       ! module to define model output
   USE globalData,only:localParFallback                        ! local column default parameters
   USE globalData,only:basinParFallback                        ! basin-average default parameters
   USE globalData,only:mpar_meta,bpar_meta                     ! parameter metadata structures
@@ -75,17 +74,17 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   USE globalData,only:checkHRU                                ! index of the HRU for a single HRU run
   
   ! look-up values for the choice of heat capacity computation
-#ifdef V4_ACTIVE
-  USE mDecisions_module,only:enthalpyFD                       ! heat capacity using enthalpy
-  USE t2enthalpy_module,only:T2E_lookup                       ! module to calculate a look-up table for the temperature-enthalpy conversion
-#endif
+  USE mDecisions_module,only:enthalpyFD,enthalpyFDlu                       ! heat capacity using enthalpy
+  
   USE mDecisions_module,only:&
                         monthlyTable,&        ! LAI/SAI taken directly from a monthly table for different vegetation classes
                         specified,&           ! LAI/SAI computed from green vegetation fraction and winterSAI and summerLAI parameters
                         sameRulesAllLayers, & ! SNTHERM option: same combination/sub-dividion rules applied to all layers
                         rulesDependLayerIndex ! CLM option: combination/sub-dividion rules depend on layer index
 
-  USE ConvE2Temp_module,only:E2T_lookup       ! module to calculate a look-up table for the temperature-enthalpy conversion
+  USE enthalpyTemp_module,only:T2H_lookup_snow                ! module to calculate a look-up table for the snow temperature-enthalpy conversion
+  USE enthalpyTemp_module,only:T2L_lookup_soil                ! module to calculate a look-up table for the soil temperature-enthalpy conversion
+
 
 
   USE NOAHMP_VEG_PARAMETERS,only:SAIM,LAIM    ! 2-d tables for stem area index and leaf area index (vegType,month)
@@ -114,6 +113,7 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   integer(i4b)                           :: ivar               ! counter for variables
   character(len=256)                     :: attrFile           ! attributes file name
   character(LEN=256)                     :: restartFile        ! restart file name
+  logical                                :: needLookup         ! logical to decide if computing enthalpy lookup tables
   
   integer(i4b)                           :: indxGRU=1
   character(len=256)                     :: message            ! error message for downwind routine
@@ -131,15 +131,19 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   ! Get and save the model decisions as integers
   call mDecisions(err,message)
   if(err/=0)then; print*,trim(message); return; endif
-  num_timesteps = numtim
+  
+  num_timesteps = numtim ! Returns to the file_access_actor
 
-    ! get the maximum number of snow layers
+  ! decide if computing enthalpy lookup tables, if need enthalpy and not using hypergeometric function
+  needLookup = .false.
+  if(model_decisions(iLookDECISIONS%nrgConserv)%iDecision == enthalpyFDlu) needLookup = .true.
+
+  ! get the maximum number of snow layers
   select case(model_decisions(iLookDECISIONS%snowLayers)%iDecision)
-    case(sameRulesAllLayers);    err=100; message=trim(message)//'sameRulesAllLayers not implemented';print*,message;return
+    case(sameRulesAllLayers);    maxSnowLayers = 100
     case(rulesDependLayerIndex); maxSnowLayers = 5
-    case default; err=20; message=trim(message)//'unable to identify option to combine/sub-divide snow layers';print*,message;return
+    case default; err=20; message=trim(message)//'unable to identify option to combine/sub-divide snow layers'; return
   end select ! (option to combine/sub-divide snow layers)
-
 
   maxLayers = gru_struc(1)%hruInfo(1)%nSoil + maxSnowLayers
 
@@ -159,15 +163,16 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   ! *** read Noah vegetation and soil tables
   ! *****************************************************************************
 
-  greenVegFrac_monthly = (/0.01_dp, 0.02_dp, 0.03_dp, 0.07_dp, 0.50_dp, 0.90_dp, 0.95_dp, 0.96_dp, 0.65_dp, 0.24_dp, 0.11_dp, 0.02_dp/)
+  greenVegFrac_monthly = (/0.01_dp, 0.02_dp, 0.03_dp, 0.07_dp, 0.50_dp, 0.90_dp,& 
+      0.95_dp, 0.96_dp, 0.65_dp, 0.24_dp, 0.11_dp, 0.02_dp/)
 
 
   ! read Noah soil and vegetation tables
   call soil_veg_gen_parm(trim(SETTINGS_PATH)//trim(VEGPARM),      & ! filename for vegetation table
-                         trim(SETTINGS_PATH)//trim(SOILPARM),                        & ! filename for soils table
-                         trim(SETTINGS_PATH)//trim(GENPARM),                         & ! filename for general table
-                         trim(model_decisions(iLookDECISIONS%vegeParTbl)%cDecision), & ! classification system used for vegetation
-                         trim(model_decisions(iLookDECISIONS%soilCatTbl)%cDecision))   ! classification system used for soils
+      trim(SETTINGS_PATH)//trim(SOILPARM), & ! filename for soils table
+      trim(SETTINGS_PATH)//trim(GENPARM),  & ! filename for general table
+      trim(model_decisions(iLookDECISIONS%vegeParTbl)%cDecision), & ! classification system used for vegetation
+      trim(model_decisions(iLookDECISIONS%soilCatTbl)%cDecision))   ! classification system used for soils
   if(err/=0)then; print*,trim(message); return; endif
 
   ! read Noah-MP vegetation tables
@@ -184,24 +189,6 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
     case('plumberSUMMA');             urbanVegCategory = -999
     case default; message=trim(message)//'unable to identify vegetation category';print*,message;return
   end select
-
-
-  ! *****************************************************************************
-  ! *** Define Output Files
-  ! *****************************************************************************
-  nGRUrun = num_gru
-  nHRUrun = num_gru ! the same as nGRUrun for now
-  fileout = trim(OUTPUT_PATH)//trim(OUTPUT_PREFIX)//trim(output_fileSuffix)
-  ncid(:) = integerMissing
-  call def_output(summaVersion,buildTime,gitBranch,gitHash,num_gru,num_hru,gru_struc(1)%hruInfo(1)%nSoil,fileout,err,message)
-  if(err/=0)then; print*,trim(message); return; endif
-  ! allocate space for the output file ID array
-  if (.not.allocated(output_ncid%var))then
-    allocate(output_ncid%var(maxVarFreq))
-    output_ncid%var(:) = integerMissing
-  endif
-  ! copy ncid
-  output_ncid%var(:) = ncid(:)
 
   ! *****************************************************************************
   ! *** Initialize output structure
@@ -222,7 +209,7 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
 
   attrFile = trim(SETTINGS_PATH)//trim(LOCAL_ATTRIBUTES)
   call read_attrb(trim(attrFile),num_gru,outputStructure(1)%attrStruct,&
-                  outputStructure(1)%typeStruct,outputStructure(1)%idStruct,err,message)
+      outputStructure(1)%typeStruct,outputStructure(1)%idStruct,err,message)
   if(err/=0)then; print*,trim(message); return; endif
 
 
@@ -259,7 +246,7 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   ! *****************************************************************************
   checkHRU = integerMissing
   call read_param(iRunMode,checkHRU,start_gru,num_hru,num_gru,outputStructure(1)%idStruct,&
-                  outputStructure(1)%mparStruct,outputStructure(1)%bparStruct,err,message)
+      outputStructure(1)%mparStruct,outputStructure(1)%bparStruct,err,message)
   if(err/=0)then; print*,trim(message); return; endif
 
   ! *****************************************************************************
@@ -294,17 +281,17 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
       call paramCheck(outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU),err,message)
       if(err/=0)then; print*, message; return; endif
 
+      ! calculate a look-up table for the temperature-enthalpy conversion of snow for future snow layer merging
+      ! NOTE2: H is the mixture enthalpy of snow liquid and ice
+      call T2H_lookup_snow(outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU),err,message)
+      if(err/=0)then; print*, message; return; endif
 
-      ! calculate a look-up table for the temperature-enthalpy conversion: snow
-      ! NOTE1: this should eventually be replaced by the more general routine below
-      ! NOTE2: this does not actually need to be called for each HRU and GRU
-      call E2T_lookup(outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU),err,message)
-      if(err/=0)then; print*,message; return; endif
-
-      ! calculate a lookup table to compute enthalpy from temperature, only for enthalpyFD
+      ! calculate a lookup table for the temperature-enthalpy conversion of soil
+      ! NOTE: L is the integral of soil Clapeyron equation liquid water matric potential from temperature
+      !       multiply by Cp_liq*iden_water to get temperature component of enthalpy
 #ifdef V4_ACTIVE      
-      if(model_decisions(iLookDECISIONS%howHeatCap)%iDecision == enthalpyFD)then
-        call T2E_lookup(gru_struc(iGRU)%hruInfo(iHRU)%nSoil,   &   ! intent(in):    number of soil layers
+      if(needLookup)then
+        call T2L_lookup_soil(gru_struc(iGRU)%hruInfo(iHRU)%nSoil,   &   ! intent(in):    number of soil layers
                         outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU),        &   ! intent(in):    parameter data structure
                         outputStructure(1)%lookupStruct%gru(iGRU)%hru(iHRU),      &   ! intent(inout): lookup table data structure
                         err,message)                              ! intent(out):   error control
@@ -376,6 +363,77 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   if(err/=0)then; print*, message; return; endif  
 end subroutine fileAccessActor_init_fortran
 
+subroutine defOutputFortran(handle_output_ncid, start_gru, num_gru, num_hru, &
+    file_gru, use_extention, file_extention_c, err) bind(C, name="defOutputFortran")
+  USE globalData,only:nGRUrun,nHRUrun
+  USE globalData,only:fileout,output_fileSuffix
+  USE globalData,only:ncid
+  USE globalData,only:integerMissing
+  USE globalData,only:iRunMode,iRunModeFull,iRunModeGRU,iRunModeHRU ! define the running modes
+  USE summaFileManager,only:OUTPUT_PATH,OUTPUT_PREFIX ! define output file
+  USE var_lookup,only:maxvarFreq ! maximum number of output files
+  USE def_output_module,only:def_output ! module to define model output
+  USE cppwrap_auxiliary,only:c_f_string           ! Convert C String to Fortran String
+  
+  implicit none
+
+  ! Dummy Variables
+  type(c_ptr),intent(in), value          :: handle_output_ncid
+  integer(c_int),intent(in)              :: start_gru
+  integer(c_int),intent(in)              :: num_gru
+  integer(c_int),intent(in)              :: num_hru
+  integer(c_int),intent(in)              :: file_gru
+  logical(c_bool),intent(in)             :: use_extention
+  character(kind=c_char,len=1),intent(in):: file_extention_c
+  integer(c_int),intent(out)             :: err
+  ! Local Variables
+  type(var_i),pointer                    :: output_ncid
+  character(len=128)                     :: fmtGruOutput ! a format string used to write start and end GRU in output file names
+  character(len=256)                     :: file_extention
+  character(len=256)                     :: message ! error message
+
+
+  call c_f_pointer(handle_output_ncid, output_ncid)
+  call c_f_string(file_extention_c,file_extention, 256)
+  file_extention = trim(file_extention)
+
+  output_fileSuffix = ''
+  if (output_fileSuffix(1:1) /= '_') output_fileSuffix='_'//trim(output_fileSuffix)
+  if (output_fileSuffix(len_trim(output_fileSuffix):len_trim(output_fileSuffix)) == '_') output_fileSuffix(len_trim(output_fileSuffix):len_trim(output_fileSuffix)) = ' '
+  select case (iRunMode)
+    case(iRunModeGRU)
+      ! left zero padding for startGRU and endGRU
+      write(fmtGruOutput,"(i0)") ceiling(log10(real(file_gru)+0.1))                      ! maximum width of startGRU and endGRU
+      fmtGruOutput = "i"//trim(fmtGruOutput)//"."//trim(fmtGruOutput)                   ! construct the format string for startGRU and endGRU
+      fmtGruOutput = "('_G',"//trim(fmtGruOutput)//",'-',"//trim(fmtGruOutput)//")"
+      write(output_fileSuffix((len_trim(output_fileSuffix)+1):len(output_fileSuffix)),fmtGruOutput) start_gru,start_gru+num_gru-1
+      if (use_extention) then
+        output_fileSuffix = trim(output_fileSuffix)//trim(file_extention)
+      endif
+    case(iRunModeHRU)
+      write(output_fileSuffix((len_trim(output_fileSuffix)+1):len(output_fileSuffix)),"('_H',i0)") checkHRU
+  end select
+
+
+
+  nGRUrun = num_gru
+  nHRUrun = num_hru
+  fileout = trim(OUTPUT_PATH)//trim(OUTPUT_PREFIX)//trim(output_fileSuffix)
+  ncid(:) = integerMissing
+  call def_output(summaVersion,buildTime,gitBranch,gitHash,num_gru,num_hru,&
+      gru_struc(1)%hruInfo(1)%nSoil,fileout,err,message)
+  if(err/=0)then; print*,trim(message); return; endif
+  ! allocate space for the output file ID array
+  if (.not.allocated(output_ncid%var))then
+    allocate(output_ncid%var(maxVarFreq))
+    output_ncid%var(:) = integerMissing
+  endif
+  ! copy ncid
+  output_ncid%var(:) = ncid(:)
+
+
+end subroutine defOutputFortran
+
 
 subroutine FileAccessActor_DeallocateStructures(handle_forcFileInfo, handle_ncid) bind(C,name="FileAccessActor_DeallocateStructures")
   USE netcdf_util_module,only:nc_file_close 
@@ -383,6 +441,7 @@ subroutine FileAccessActor_DeallocateStructures(handle_forcFileInfo, handle_ncid
   USE access_forcing_module,only:forcingDataStruct
   USE access_forcing_module,only:vectime
   USE output_structure_module,only:outputTimeStep
+  USE var_lookup,only:maxvarFreq                ! maximum number of output files
   implicit none
   type(c_ptr),intent(in), value        :: handle_forcFileInfo
   type(c_ptr),intent(in), value        :: handle_ncid
@@ -401,8 +460,8 @@ subroutine FileAccessActor_DeallocateStructures(handle_forcFileInfo, handle_ncid
   ! close the open output FIle
   do iFreq=1,maxvarFreq
     if (ncid%var(iFreq)/=integerMissing) then
-        call nc_file_close(ncid%var(iFreq),err,cmessage)
-        if(err/=0)then; message=trim(message)//trim(cmessage); return; end if
+      call nc_file_close(ncid%var(iFreq),err,cmessage)
+      if(err/=0)then; message=trim(message)//trim(cmessage); return; end if
     endif   
   end do
   

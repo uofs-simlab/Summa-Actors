@@ -1,44 +1,32 @@
 #include "summa_client.hpp"
 namespace caf {
 
-// behavior summa_client_init(stateful_actor<summa_client_state>* self) {
-//   // aout(self) << "Client Has Started Successfully" << std::endl;
-
-//   char host[HOST_NAME_MAX];
-//   gethostname(host, HOST_NAME_MAX);
-//   self->state.hostname = host;
-//   self->set_down_handler([=](const down_msg& dm){
-//     if(dm.source == self->state.current_server) {
-//       aout(self) << "*** Lost Connection to Server" << std::endl;
-//       self->state.current_server = nullptr;
-//       // try to connect to new server
-//       if (self->state.backup_servers_list.size() > 0) {
-//           aout(self) << "Trying to connect to backup server\n";
-//           std::this_thread::sleep_for(std::chrono::seconds(3)); 
-//           // TODO: Not obvious where the code goes from here. 
-//           connecting(self, std::get<1>(self->state.backup_servers_list[0]), 
-//                      self->state.port);
-
-//       } else {
-//           aout(self) << "No backup servers available" << std::endl;
-//       }
-//     }
-//   });
-
-//   return {
-//     [=] (connect_atom, const std::string& host, uint16_t port) {
-//       aout(self) << "Received a connect request while not running\n";
-//       connecting(self, host, port);
-//     }
-//   };
-// }
-
- 
 behavior summa_client(stateful_actor<summa_client_state>* self,
                       Distributed_Settings distributed_settings) {
-
   self->state.running = true;
   self->state.distributed_settings = distributed_settings;
+  char host[HOST_NAME_MAX];
+  gethostname(host, HOST_NAME_MAX);
+  self->state.hostname = host;
+
+  self->set_down_handler([=](const down_msg& dm){
+    if(dm.source == self->state.current_server) {
+      aout(self) << "*** Lost Connection to Server" << std::endl;
+      self->state.current_server = nullptr;
+      // try to connect to new server
+      if (self->state.backup_servers_list.size() > 0) {
+        aout(self) << "Trying to connect to backup server\n";
+        std::this_thread::sleep_for(std::chrono::seconds(3)); 
+        // TODO: Not obvious where the code goes from here. 
+        // connecting(self, std::get<1>(self->state.backup_servers_list[0]), 
+        //            self->state.port);
+
+      } else {
+        aout(self) << "No backup servers available" << std::endl;
+      }
+    }
+  });
+
   for (auto host : distributed_settings.servers_list) {
     auto server = self->system().middleman().remote_actor(host, 
                                            distributed_settings.port);

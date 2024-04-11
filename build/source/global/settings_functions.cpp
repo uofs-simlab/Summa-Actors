@@ -46,63 +46,85 @@ std::optional<std::vector<std::string>> getSettingsArray(
 }
 
 Distributed_Settings readDistributedSettings(std::string json_settings_file) {
-    Distributed_Settings distributed_settings;
-    std::string parent_key = "Distributed_Settings";
+  Distributed_Settings distributed_settings;
+  std::string parent_key = "Distributed_Settings";
 
-    distributed_settings.distributed_mode = getSettings(json_settings_file, parent_key, 
-        "distributed_mode", distributed_settings.distributed_mode).value_or(false);
+  distributed_settings.distributed_mode = getSettings(json_settings_file, 
+      parent_key, "distributed_mode", 
+      distributed_settings.distributed_mode).value_or(false);
 
-    distributed_settings.servers_list = getSettingsArray(json_settings_file, parent_key,
-        "servers_list").value_or(std::vector<std::string>());
+  distributed_settings.servers_list = getSettingsArray(json_settings_file, 
+      parent_key, "servers_list").value_or(std::vector<std::string>());
 
-    distributed_settings.port = getSettings(json_settings_file, parent_key,
-        "port", distributed_settings.port).value_or(missing_value);
+  distributed_settings.port = getSettings(json_settings_file, parent_key,
+      "port", distributed_settings.port).value_or(missing_value);
 
-    distributed_settings.total_hru_count = getSettings(json_settings_file, parent_key,
-        "total_hru_count", distributed_settings.total_hru_count).value_or(missing_value);
+  distributed_settings.total_hru_count = getSettings(json_settings_file, 
+      parent_key, "total_hru_count", 
+      distributed_settings.total_hru_count).value_or(missing_value);
 
-    distributed_settings.num_hru_per_batch = getSettings(json_settings_file, parent_key,
-        "num_hru_per_batch", distributed_settings.num_hru_per_batch).value_or(missing_value);
-    
-    return distributed_settings;
+  distributed_settings.num_hru_per_batch = getSettings(json_settings_file, 
+    parent_key, "num_hru_per_batch", 
+    distributed_settings.num_hru_per_batch).value_or(missing_value);
+
+  distributed_settings.num_nodes = getSettings(json_settings_file, 
+      parent_key, "num_nodes", distributed_settings.num_nodes).value_or(1);
+
+  distributed_settings.load_balancing = getSettings(json_settings_file, 
+      parent_key, "load_balancing", 
+      distributed_settings.load_balancing).value_or(false);
+  
+  return distributed_settings;
 }
 
 Summa_Actor_Settings readSummaActorSettings(std::string json_settings_file) {
-    Summa_Actor_Settings summa_actor_settings;
-    std::string parent_key = "Summa_Actor";
-    
-    summa_actor_settings.max_gru_per_job = getSettings(json_settings_file, parent_key,
-        "max_gru_per_job", summa_actor_settings.max_gru_per_job).value_or(250);
+  Summa_Actor_Settings summa_actor_settings;
+  std::string parent_key = "Summa_Actor";
+  
+  summa_actor_settings.max_gru_per_job = getSettings(json_settings_file, 
+      parent_key, "max_gru_per_job", 
+      summa_actor_settings.max_gru_per_job).value_or(250);
 
-    return summa_actor_settings;
+  return summa_actor_settings;
 }
 
 File_Access_Actor_Settings readFileAccessActorSettings(std::string json_settings_file) {
-    // read file access actor settings
-    File_Access_Actor_Settings file_access_actor_settings;
-    std::string parent_key = "File_Access_Actor";
-    file_access_actor_settings.num_partitions_in_output_buffer = getSettings(json_settings_file, parent_key,
-        "num_partitions_in_output_buffer", file_access_actor_settings.num_partitions_in_output_buffer).value_or(default_partition_count);
-    file_access_actor_settings.num_timesteps_in_output_buffer = getSettings(json_settings_file, parent_key,
-        "num_timesteps_in_output_buffer", file_access_actor_settings.num_timesteps_in_output_buffer).value_or(default_timesteps_output_buffer);
+  // read file access actor settings
+  File_Access_Actor_Settings file_access_actor_settings;
+  std::string parent_key = "File_Access_Actor";
+  file_access_actor_settings.num_partitions_in_output_buffer = getSettings(
+      json_settings_file, parent_key, "num_partitions_in_output_buffer", 
+      file_access_actor_settings.num_partitions_in_output_buffer).value_or(
+      default_partition_count);
 
-    return file_access_actor_settings;
+  file_access_actor_settings.num_timesteps_in_output_buffer = getSettings(
+    json_settings_file, parent_key, "num_timesteps_in_output_buffer", 
+    file_access_actor_settings.num_timesteps_in_output_buffer).value_or(
+    default_timesteps_output_buffer);
+
+  return file_access_actor_settings;
 }
 
 Job_Actor_Settings readJobActorSettings(std::string json_settings_file) {
-    // read settings for job actor
-    Job_Actor_Settings job_actor_settings;
-    std::string parent_key = "Job_Actor";
-    job_actor_settings.file_manager_path = getSettings(json_settings_file, parent_key,
-        "file_manager_path", job_actor_settings.file_manager_path).value_or("");
-    
-    job_actor_settings.max_run_attempts = getSettings(json_settings_file, parent_key,
-        "max_run_attempts", job_actor_settings.max_run_attempts).value_or(1);
-    
-    job_actor_settings.data_assimilation_mode = getSettings(json_settings_file, parent_key,
-        "data_assimilation_mode", job_actor_settings.data_assimilation_mode).value_or(false);
+  // read settings for job actor
+  Job_Actor_Settings job_actor_settings;
+  std::string parent_key = "Job_Actor";
+  job_actor_settings.file_manager_path = getSettings(json_settings_file, 
+      parent_key, "file_manager_path", 
+      job_actor_settings.file_manager_path).value_or("");
+  
+  job_actor_settings.max_run_attempts = getSettings(json_settings_file, 
+      parent_key, "max_run_attempts", 
+      job_actor_settings.max_run_attempts).value_or(1);
+  
+  job_actor_settings.data_assimilation_mode = getSettings(json_settings_file, 
+      parent_key, "data_assimilation_mode", 
+      job_actor_settings.data_assimilation_mode).value_or(false);
 
-    return job_actor_settings;
+  job_actor_settings.batch_size = getSettings(json_settings_file, parent_key,
+      "batch_size", job_actor_settings.batch_size).value_or(10);
+
+  return job_actor_settings;
 }
 
 
@@ -257,7 +279,9 @@ void generate_config_file() {
     };
     config_file["Job_Actor"] = {
         {"file_manager_path", "/home/username/summa_file_manager"},
-        {"max_run_attempts", 1}
+        {"max_run_attempts", 1},
+        {"data_assimilation_mode", false},
+        {"batch_size", 10}
     };
     config_file["HRU_Actor"] = {
         {"print_output", true},

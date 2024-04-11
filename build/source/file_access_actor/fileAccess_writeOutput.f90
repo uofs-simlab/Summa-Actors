@@ -315,6 +315,7 @@ subroutine writeData(ncid,outputTimestep,outputTimestepUpdate,maxLayers,nSteps, 
   integer(i4b)                     :: stepCounter       ! counter to know how much data we have to write, needed because we do not always write nSteps
   integer(i4b)                     :: iStep
   integer(i4b)                     :: iGRU
+  real(rkind)                      :: val
   ! initialize error control
   err=0;message="writeData/"
   ! loop through output frequencies
@@ -332,10 +333,15 @@ subroutine writeData(ncid,outputTimestep,outputTimestepUpdate,maxLayers,nSteps, 
         call netcdf_err(err,message); if (err/=0) return
         
         do iStep = 1, nSteps
+          ! Find HRU that is not missing or NaN
           ! check if we want this timestep
-          if(.not.outputStructure(1)%finalizeStats%gru(minGRU)%hru(1)%tim(iStep)%dat(iFreq)) cycle
+          do iGRU = minGRU, maxGRU
+            if(.not.outputStructure(1)%finalizeStats%gru(iGRU)%hru(1)%tim(iStep)%dat(iFreq)) cycle
+            val = outputStructure(1)%forcStruct%gru(iGRU)%hru(1)%var(iVar)%tim(iStep)
+            exit
+          end do
           stepCounter = stepCounter+1
-          timeVec(stepCounter) = outputStructure(1)%forcStruct%gru(minGRU)%hru(1)%var(iVar)%tim(iStep)
+          timeVec(stepCounter) = val
         end do ! iStep
         err = nf90_put_var(ncid%var(iFreq),ncVarID,timeVec(1:stepCounter),start=(/outputTimestep(iFreq)/),count=(/stepCounter/))
         call netcdf_err(err,message); if (err/=0)then; print*, "err"; return; endif
@@ -369,7 +375,7 @@ end subroutine writeData
 subroutine writeScalar(ncid, outputTimestep, outputTimestepUpdate, nSteps, minGRU, maxGRU, &
   numGRU, iFreq, iVar, meta, stat, map, err, message)
   USE data_types,only:var_info                       ! metadata type
-
+  USE, intrinsic :: ieee_arithmetic
   implicit none
   ! declare dummy variables
   type(var_i)   ,intent(in)         :: ncid                    ! fileid
@@ -394,6 +400,7 @@ subroutine writeScalar(ncid, outputTimestep, outputTimestepUpdate, nSteps, minGR
   integer(i4b)                      :: iGRU
   ! output array
   real(rkind)                       :: realVec(numGRU, nSteps)! real vector for all HRUs in the run domain
+  real(rkind)                       :: val
 
   err=0; message="writeOutput.f90-writeScalar/"
 
@@ -404,9 +411,13 @@ subroutine writeScalar(ncid, outputTimestep, outputTimestepUpdate, nSteps, minGR
         stepCounter = 0
         gruCounter = gruCounter + 1
         do iStep = 1, nSteps
-          if(.not.outputStructure(1)%finalizeStats%gru(iGRU)%hru(1)%tim(iStep)%dat(iFreq)) cycle
+          if(.not.outputStructure(1)%finalizeStats%gru(iGRU)%hru(1)%tim(iStep)%dat(iFreq)) then
+            val = realMissing
+          else
+            val = stat%gru(iGRU)%hru(1)%var(map(iVar))%tim(iStep)%dat(iFreq)
+          end if
           stepCounter = stepCounter + 1
-          realVec(gruCounter, stepCounter) = stat%gru(iGRU)%hru(1)%var(map(iVar))%tim(iStep)%dat(iFreq)
+          realVec(gruCounter, stepCounter) = val
           outputTimeStepUpdate(iFreq) = stepCounter
         end do ! iStep
       end do ! iGRU 
@@ -421,11 +432,11 @@ subroutine writeScalar(ncid, outputTimestep, outputTimestepUpdate, nSteps, minGR
         print*, "   maxGRU = ", maxGRU
         print*, "   nSteps = ", nSteps
         print*, "   gruCounter = ", gruCounter
-        print*, "   realVec = ", realVec
         print*, "   iStep = ", iStep
         err = 20
         return
       endif
+
       err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),realVec(1:gruCounter, 1:stepCounter),start=(/minGRU,outputTimestep(iFreq)/),count=(/numGRU,stepCounter/))
     class default; err=20; message=trim(message)//'stats must be scalarv and of type gru_hru_doubleVec'; return
   end select  ! stat

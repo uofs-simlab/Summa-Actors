@@ -4,6 +4,8 @@
 #include "summa_client.hpp"
 #include "summa_server.hpp"
 #include "summa_backup_server.hpp"
+#include "job_actor.hpp"
+#include "node_actor.hpp"
 #include "global.hpp"
 #include "settings_functions.hpp"
 #include "message_atoms.hpp"
@@ -27,6 +29,7 @@ const std::string command_line_help = "Summa-Actors is in active development and
     "\t-g, --gru:            Run a subset of countGRU GRUs starting from index startGRU \n"
     "\t-c, --config:         Path name of the Summa-Actors config file (optional but recommended)\n"
     "\t    --gen-config:     Generate a config file \n"
+    "\t    --host:           Hostname of the server \n"
     "\t-b, --backup-server:  Start backup server, requires a server and config_file \n"
     "\t-s, --server-mode:    Enable server mode \n"
     "\t-h, --help:           Print this help message \n"
@@ -47,10 +50,12 @@ class config : public actor_system_config {
         int countGRU = -1;
         std::string master_file = "";
         std::string config_file = "";
+        std::string host = "";
         bool generate_config = false;
         bool backup_server = false;
         bool server_mode = false;
         bool help = false;
+        
     
     config() {
         opt_group{custom_options_, "global"}
@@ -61,32 +66,18 @@ class config : public actor_system_config {
             .add(generate_config, "gen-config", "Generate a config file")
             .add(backup_server, "backup-server,b", "flag to denote if the server starting is a backup server")
             .add(server_mode,   "server-mode,s", "enable server mode")
+            .add(host,          "host", "Hostname of the server")
             .add(help,          "help,h", "Print this help message");
     }
 };
 
-void connect_client(caf::actor client_to_connect, std::string host_to_connect_to, int port_number) {
-    if (!host_to_connect_to.empty() && port_number > 0) {
-        uint16_t port = 4444;
-        anon_send(client_to_connect, connect_atom_v, host_to_connect_to, (uint16_t) port );
-
-    } else {
-        std::cerr << "No Server Config" << std::endl;
-    }
-}
 
 void run_client(actor_system& system, const config& cfg, Distributed_Settings distributed_settings) {
     scoped_actor self{system};
 
     aout(self) << "Starting SUMMA-Client in Distributed Mode\n";
     
-    auto client = system.spawn(summa_client, distributed_settings);
-
-    // Connect to the servers
-    // for (auto host : distributed_settings.servers_list) {
-    //     connect_client(client, host, distributed_settings.port);
-    // }
-   
+    auto client = system.spawn(summa_client, distributed_settings);   
 }
 
 void run_server(actor_system& system, const config& cfg, 
@@ -111,9 +102,6 @@ void run_server(actor_system& system, const config& cfg,
                                 file_access_actor_settings,
                                 job_actor_settings,
                                 hru_actor_settings);
-
-    // publish_server(server, distributed_settings.port);
-    // connect_client(server, distributed_settings.servers_list[0], distributed_settings.port);
 
   } else {  
     aout(self) << "\n\n*****Starting SUMMA-Server*****\n\n";
@@ -162,7 +150,8 @@ void caf_main(actor_system& sys, const config& cfg) {
                            file_access_actor_settings, job_actor_settings,
                            hru_actor_settings);
 
-  if (distributed_settings.distributed_mode) {
+  if (distributed_settings.distributed_mode && 
+      !job_actor_settings.data_assimilation_mode) {
     // only command line arguments needed are config_file and server-mode
     if (cfg.server_mode) {
       run_server(sys, cfg, distributed_settings, summa_actor_settings, 
@@ -171,6 +160,29 @@ void caf_main(actor_system& sys, const config& cfg) {
     } else {
       run_client(sys,cfg, distributed_settings);
     }
+
+  } else if (distributed_settings.distributed_mode &&
+             job_actor_settings.data_assimilation_mode &&
+             cfg.server_mode) {
+    
+    auto dist_summa = sys.spawn(distributed_job_actor,
+                                cfg.startGRU,
+                                cfg.countGRU,
+                                distributed_settings,
+                                file_access_actor_settings,
+                                job_actor_settings,
+                                hru_actor_settings);
+  
+  } else if (distributed_settings.distributed_mode &&
+             job_actor_settings.data_assimilation_mode) {
+    
+    auto node = sys.spawn(node_actor, 
+                          cfg.host,
+                          self,
+                          distributed_settings, 
+                          file_access_actor_settings, 
+                          job_actor_settings, 
+                          hru_actor_settings);
 
   } else {
     auto summa = sys.spawn(summa_actor, 

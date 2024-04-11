@@ -13,7 +13,7 @@ module job_actor
     contains
 
 subroutine job_init_fortran(file_manager, start_gru, num_gru,&
-                            num_hru, err) bind(C, name="job_init_fortran")
+                            num_hru, file_gru, err) bind(C, name="job_init_fortran")
   USE nrtype  ! variable types, etc.
   
   USE summaFileManager,only:summa_SetTimesDirsAndFiles       ! sets directories and filenames
@@ -50,13 +50,13 @@ subroutine job_init_fortran(file_manager, start_gru, num_gru,&
   integer(c_int),intent(inout)              :: start_gru
   integer(c_int),intent(inout)              :: num_gru
   integer(c_int),intent(inout)              :: num_hru
+  integer(c_int),intent(out)                :: file_gru
   integer(c_int),intent(out)                :: err
 
   ! local variables
   character(len=256)                        :: summaFileManagerIn
   character(len=256)                        :: restartFile        ! restart file name
   character(len=256)                        :: attrFile           ! attributes file name
-  integer(i4b)                              :: fileGRU            ! [used for filenames] number of GRUs in the input file
   integer(i4b)                              :: fileHRU            ! [used for filenames] number of HRUs in the input file
   character(len=128)                        :: fmtGruOutput       ! a format string used to write start and end GRU in output file names
 
@@ -86,30 +86,10 @@ subroutine job_init_fortran(file_manager, start_gru, num_gru,&
   attrFile = trim(SETTINGS_PATH)//trim(LOCAL_ATTRIBUTES)
   select case (iRunMode)
     case(iRunModeFull); err=20; message='iRunModeFull not implemented for Actors Code'
-    case(iRunModeGRU ); call read_dimension(trim(attrFile),fileGRU,fileHRU,num_gru,num_hru,err,message,startGRU=start_gru)
+    case(iRunModeGRU ); call read_dimension(trim(attrFile),file_gru,fileHRU,num_gru,num_hru,err,message,startGRU=start_gru)
     case(iRunModeHRU ); err=20; message='iRunModeHRU not implemented for Actors Code'
   end select
   if(err/=0)then; print*, trim(message); return; endif
-
-  ! ****************************************************************************
-  ! *** define the suffix for the model output file
-  ! *** OUTPUT_PREFIX'_'output_fileSuffix'_'startGRU-endGRU_outfreq.nc or
-  ! *** OUTPUT_PREFIX'_'output_fileSuffix'_'HRU_outfreq.nc
-  ! ****************************************************************************
-  output_fileSuffix = ''
-  if (output_fileSuffix(1:1) /= '_') output_fileSuffix='_'//trim(output_fileSuffix)
-  if (output_fileSuffix(len_trim(output_fileSuffix):len_trim(output_fileSuffix)) == '_') output_fileSuffix(len_trim(output_fileSuffix):len_trim(output_fileSuffix)) = ' '
-  select case (iRunMode)
-    case(iRunModeGRU)
-      ! left zero padding for startGRU and endGRU
-      write(fmtGruOutput,"(i0)") ceiling(log10(real(fileGRU)+0.1))                      ! maximum width of startGRU and endGRU
-      fmtGruOutput = "i"//trim(fmtGruOutput)//"."//trim(fmtGruOutput)                   ! construct the format string for startGRU and endGRU
-      fmtGruOutput = "('_G',"//trim(fmtGruOutput)//",'-',"//trim(fmtGruOutput)//")"
-      write(output_fileSuffix((len_trim(output_fileSuffix)+1):len(output_fileSuffix)),fmtGruOutput) start_gru,start_gru+num_gru-1
-    case(iRunModeHRU)
-      write(output_fileSuffix((len_trim(output_fileSuffix)+1):len(output_fileSuffix)),"('_H',i0)") checkHRU
-  end select
-
 
   ! *****************************************************************************
   ! *** read the number of snow and soil layers

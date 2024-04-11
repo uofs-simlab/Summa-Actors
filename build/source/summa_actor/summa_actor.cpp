@@ -12,55 +12,6 @@
 #include <netcdf.h>
 
 using json = nlohmann::json;
-// Helper function to extract the information from the file_manager
-std::string extractEnclosed(const std::string& line) {
-    std::size_t first_quote = line.find_first_of("'");
-    std::size_t last_quote = line.find_last_of("'");
-    if (first_quote != std::string::npos && last_quote != std::string::npos 
-        && first_quote < last_quote) {
-        return line.substr(first_quote + 1, last_quote - first_quote - 1);
-    }
-    return "";
-}
-
-// Check the number of GRUs in the attribute file
-int getNumGRUInFile(const std::string &file_manager) {
-  std::ifstream file(file_manager);
-  std::string attributeFile, settingPath;
-  if (!file.is_open())
-    return -1;
-  
-  std::string line;
-  while (std::getline(file, line)) {
-    if (line.compare(0, 13, "attributeFile") == 0)
-      attributeFile = extractEnclosed(line);
-    if (line.compare(0, 12, "settingsPath") == 0)
-      settingPath = extractEnclosed(line);
-  }
-
-  file.close();
-
-  size_t fileGRU = -1;
-  int ncid, gru_dim;
-  if (attributeFile.empty() || settingPath.empty())
-    return fileGRU;
-  
-  std::string combined = settingPath + attributeFile;
-
-  if (NC_NOERR != nc_open(combined.c_str(), NC_NOWRITE, &ncid))
-    return fileGRU;
-  if (NC_NOERR != nc_inq_dimid(ncid, "gru", &gru_dim)) {
-    nc_close(ncid);
-    return -1;
-  }
-  if (NC_NOERR != nc_inq_dimlen(ncid, gru_dim, &fileGRU)) {
-    nc_close(ncid);
-    return -1;
-  }
-  nc_close(ncid);
-  return fileGRU;
-}
-
 
 namespace caf {
 behavior summa_actor(stateful_actor<summa_actor_state>* self, 
@@ -100,17 +51,18 @@ behavior summa_actor(stateful_actor<summa_actor_state>* self,
       self->state.numGRU, 
       self->state.summa_actor_settings.max_gru_per_job);
   
-  aout(self) << "Starting SUMMA With " << 
-      self->state.batch_container.getBatchesRemaining() << " Batches\n";
-  aout(self) << "###################################################\n"
-              << self->state.batch_container.getBatchesAsString()
-              << "###################################################\n";
+  aout(self) << "Starting SUMMA With "
+             << self->state.batch_container.getBatchesRemaining() 
+             << " Batches\n"
+             << "###################################################\n"
+             << self->state.batch_container.getBatchesAsString()
+            << "###################################################\n";
 
   std::optional<Batch> batch = 
       self->state.batch_container.getUnsolvedBatch();
   if (!batch.has_value()) {
     aout(self) << "ERROR--Summa_Actor: No Batches To Solve\n";
-    self->quit();
+    self->quit(); return {};
   } 
   self->state.current_batch_id = batch->getBatchID();
   aout(self) << "Starting Batch " << self->state.current_batch_id + 1 << "\n";
@@ -165,6 +117,8 @@ behavior summa_actor(stateful_actor<summa_actor_state>* self,
         
         self->send(self->state.parent, done_batch_v, total_dur_sec, 
                    read_dur_sec, write_dur_sec);
+        self->quit();
+        // exit(0);
       }
     },
 
@@ -189,3 +143,54 @@ void spawnJob(stateful_actor<summa_actor_state>* self) {
 }
 
 } // end namespace
+
+
+std::string extractEnclosed(const std::string& line) {
+  std::size_t first_quote = line.find_first_of("'");
+  std::size_t last_quote = line.find_last_of("'");
+  if (first_quote != std::string::npos && last_quote != std::string::npos 
+      && first_quote < last_quote) {
+    return line.substr(first_quote + 1, last_quote - first_quote - 1);
+  }
+  return "";
+}
+
+int getNumGRUInFile(const std::string &file_manager) {
+  std::ifstream file(file_manager);
+  std::string attributeFile, settingPath;
+  if (!file.is_open())
+    return -1;
+  
+  std::string line;
+  while (std::getline(file, line)) {
+    if (line.compare(0, 13, "attributeFile") == 0)
+      attributeFile = extractEnclosed(line);
+    if (line.compare(0, 12, "settingsPath") == 0)
+      settingPath = extractEnclosed(line);
+  }
+
+  file.close();
+
+  size_t fileGRU = -1;
+  int ncid, gru_dim;
+  if (attributeFile.empty() || settingPath.empty())
+    return fileGRU;
+  
+  std::string combined = settingPath + attributeFile;
+
+  if (NC_NOERR != nc_open(combined.c_str(), NC_NOWRITE, &ncid))
+    return fileGRU;
+  if (NC_NOERR != nc_inq_dimid(ncid, "gru", &gru_dim)) {
+    nc_close(ncid);
+    return -1;
+  }
+  if (NC_NOERR != nc_inq_dimlen(ncid, gru_dim, &fileGRU)) {
+    nc_close(ncid);
+    return -1;
+  }
+  nc_close(ncid);
+  return fileGRU;
+}
+
+
+
