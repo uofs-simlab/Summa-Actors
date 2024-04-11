@@ -1,15 +1,17 @@
 #!/bin/bash
   
-# If most libraries were installed with apt-get, then the following should work
-# Otherwise, you may need to adjust the paths
-export FC=gfortran                                            # Fortran compiler family
-export LINK_DIRS='/usr/local/lib;/usr/lib'                               # Link directories for cmake
-export INCLUDES_DIRS='/usr/local/include;/usr/include'      # directories for INCLUDES cmake variable (cmake uses semicolons as separators)
-export LIBRARY_LINKS='-llapack;-lgfortran;-lnetcdff;-lnetcdf' # list of library links (cmake uses semicolons as separators)
+# build on Copernicus or Graham, from cmake directory run this as ./build_actors.cluster.bash
+# for Summa
+module load StdEnv/2020
+module load gcc/9.3.0
+module load openblas/0.3.17
+module load netcdf-fortran/4.5.2
 
-# Set the following paths
-export SUNDIALS_PATH="/usr/local/sundials"
-export ACTOR_FRAMEWORK_PATH="/usr/local"
+# for Actors
+module load caf
 
-cmake -B ./cmake_build -S ../summa/build/. -DCMAKE_BUILD_TYPE=Sundials_Actors_Debug
-cmake --build ../cmake_build --target all
+export FLAGS_OPT="-flto=1;-fuse-linker-plugin"
+export SUNDIALS_PATH=/globalhome/kck540/HPC/Libraries/sundials/v7.0/instdir
+
+cmake -B ./cmake_build -S ../summa/build/cmake/. -DCMAKE_BUILD_TYPE=Sundials_Actors_Cluster
+cmake --build ./cmake_build --target all -j 
