@@ -21,7 +21,7 @@ SUMMA-Actors is set up with the following sub-directories, we will consider the 
 
 First clone Summa-Actors to your workstation. Then cd into `build/` and clone `summa` into Summa-Actor's build directory as folder summa.
 
-## Compiling SUMMA-Actors
+## Compiling SUMMA-Actors -- With SUMMA verswion 3.x.x
 
 ### Dependencies
 SUMMA-Actors has only one additional dependency, the [C++ Actor Framework](https://github.com/actor-framework/actor-framework), specifically the [0.18.6 
@@ -43,7 +43,6 @@ Additional dependencies required by both SUMMA and SUMMA actors are:
  * gfortran
  * [NetCDF-Fortran](https://github.com/Unidata/netcdf-fortran)
  * [OpenBLAS](https://github.com/xianyi/OpenBLAS)
- * [SUNDIALS V6.6](https://github.com/LLNL/sundials/releases/tag/v6.6.0) (optional)
 
 ### Steps To Compile
  ```
@@ -65,6 +64,35 @@ module load gcc/9.3.0
 module load openblas/0.3.17
 module load netcdf-fortran/4.5.2
 module load caf
+```
+
+## Compiling SUMMA-Actors -- With SUMMA version 4.x.x
+The latest version of SUMMA introduced sundials as a dependency for its numerical solver. As a result the steps to compile SUMMA-Actors have changed
+slightly. The dependecies above still apply, wiht the addition of sundials. The following steps can be used to install sundials on a Linux system:
+```bash
+wget https://github.com/LLNL/sundials/releases/download/v7.0.0/sundials-7.0.0.tar.gz
+tar -xzf sundials-7.0.0.tar.gz
+mkdir sundials && cd sundials
+mkdir /usr/local/sundials
+mkdir builddir && cd builddir
+cmake ../../sundials-7.0.0 -DBUILD_FORTRAN_MODULE_INTERFACE=ON \
+        -DCMAKE_Fortran_COMPILER=gfortran \
+        -DCMAKE_INSTALL_PREFIX=/usr/local/sundials \
+        -DEXAMPLES_INSTALL_PATH=/code/sundials/instdir/examples
+make
+make install
+```
+
+### Steps to Compile
+```bash
+git clone https://git.cs.usask.ca/numerical_simulations_lab/actors/Summa-Actors.git
+cd Summa-Actors/build
+git clone -b develop https://github.com/KyleKlenk/summa.git
+cd Summa-Actors/build/build_scripts
+# There are two files here, one for building on a local machine and one for building on the alliance cluster
+# If local build ensure that the paths in the script are correct and 
+# match the paths to the dependencies on your system
+./build_v4_local.sh
 ```
 
 
@@ -109,6 +137,27 @@ Backup servers can be added with `./summa_actors -c -b`
 Clients can simply be added with `./summa_actors -c`
 
 NOTE: Each system will need a copy of the forcing data or input data, or the data should be in a singular location like on a cluster system.
+
+### Data-Assimilation Mode
+Data-assimilation mode forces all HRUs to run a single timestep before moving on. This is akin to how real world experiments are run where data is collected and then used to
+update the model. To run this mode on a single node there are a few options that are needed to be set in the config file:
+  - `data_assimilation_mode` (true/false) Enables data-assimilation mode
+  - `batch_size` (int) number of HRU actors a HRU_batch actor will run. (9999 = default) and (1) will not use an intermediate batch actor
+
+This mode also works in a distributed environment, the user just needs to ensure that the config file contains 
+the following distributed mode settings:
+ - `distributed_mode` (true/false) Enables the distributed mode
+ - `num_nodes` (int) Number of nodes for the simulation
+  
+Using the distributed mode requires the user to declare how many nodes or more specifically, how many client actors will connect to the server. Once all 
+actors are connected the server will start the simulation.
+```bash
+# To start the Server
+$summa_exe -g 1 $total_hru -c $config_summa -s
+
+# To start the client
+$summa_exe -g 1 $total_hru -c $config_summa --host=$host
+```
 
 
 ### Config File

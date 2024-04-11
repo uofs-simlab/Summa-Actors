@@ -28,3 +28,4 @@ build/summa_old
 bin/config.json
 bin/summa_sundials
 build/cmake_build/
+build/build_scripts/cmake_build
