@@ -1,3 +1,0 @@
-# Introduction to Actors
-
-The actor model is a concurrency model where the fundemental unit of computation is the actor. The actor is considered the fundemental unit of computation because it encapulates what it means to compute inside the actor. Specifically, this means an actor has a thread of execution, the ability to save state, and the ability to message actors. This is what is fundemental to a computer, where a computer has the ability to execute instructions, save state in either RAM (volitle) or HDD/SDD (non-volitle), and connected to a network in which it can communicate with other computers.
