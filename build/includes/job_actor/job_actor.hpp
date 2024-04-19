@@ -151,6 +151,11 @@ behavior job_actor(stateful_actor<job_state>* self,
     Job_Actor_Settings job_actor_settings, 
     HRU_Actor_Settings hru_actor_settings, actor parent);
 
+// TODO: Implement the following behaviors
+// behavior data_assimilation_mode()
+behavior async_mode(stateful_actor<job_state>* self); 
+
+
 /** The Job Actor For Internode Communication */
 behavior distributed_job_actor(stateful_actor<distributed_job_state>* self,
     int start_gru, int num_gru,
@@ -168,6 +173,10 @@ void spawnHRUActors(stateful_actor<job_state>* self, bool normal_mode);
 // Spawn HRU Batch Actors
 void spawnHRUBatches(stateful_actor<job_state>* self);
 
+
+void handleFinishedGRU(stateful_actor<job_state>* self, int local_gru_index);
+
+void finalizeJob(stateful_actor<job_state>* self);
 
 /** Get the information for the GRUs that will be written to the netcdf file */
 std::vector<serializable_netcdf_gru_actor_info> getGruNetcdfInfo(

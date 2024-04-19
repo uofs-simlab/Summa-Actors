@@ -149,10 +149,10 @@ subroutine runPhysics(&
       ! (compute the exposed LAI and SAI and whether veg is buried by snow)
       call vegPhenlgy(&
                       ! model control
-                      hru_data%fracJulDay,             & ! intent(in):    fractional julian days since the start of year
-                      hru_data%yearLength,             & ! intent(in):    number of days in the current year
-                      ! input/output: data structures
                       model_decisions,        & ! intent(in):    model decisions
+                      hru_data%fracJulDay,    & ! intent(in):    fractional julian days since the start of year
+                      hru_data%yearLength,    & ! intent(in):    number of days in the current year
+                      ! input/output: data structures
                       hru_data%typeStruct,    & ! intent(in):    type of vegetation and soil
                       hru_data%attrStruct,    & ! intent(in):    spatial attributes
                       hru_data%mparStruct,    & ! intent(in):    model parameters

@@ -73,25 +73,26 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   USE globalData,only:iRunMode                                ! define the current running mode
   USE globalData,only:checkHRU                                ! index of the HRU for a single HRU run
   
-  ! look-up values for the choice of heat capacity computation
-  USE mDecisions_module,only:enthalpyFD,enthalpyFDlu                       ! heat capacity using enthalpy
-  
+
   USE mDecisions_module,only:&
                         monthlyTable,&        ! LAI/SAI taken directly from a monthly table for different vegetation classes
                         specified,&           ! LAI/SAI computed from green vegetation fraction and winterSAI and summerLAI parameters
                         sameRulesAllLayers, & ! SNTHERM option: same combination/sub-dividion rules applied to all layers
                         rulesDependLayerIndex ! CLM option: combination/sub-dividion rules depend on layer index
 
-  USE enthalpyTemp_module,only:T2H_lookup_snow                ! module to calculate a look-up table for the snow temperature-enthalpy conversion
-  USE enthalpyTemp_module,only:T2L_lookup_soil                ! module to calculate a look-up table for the soil temperature-enthalpy conversion
-
-
-
   USE NOAHMP_VEG_PARAMETERS,only:SAIM,LAIM    ! 2-d tables for stem area index and leaf area index (vegType,month)
   USE NOAHMP_VEG_PARAMETERS,only:HVT,HVB      ! height at the top and bottom of vegetation (vegType)
   USE globalData,only:numtim                  ! number of time steps in the simulation
   USE globalData,only:fileout                 ! name of the output file
   USE globalData,only:ncid                    ! id of the output file
+
+  ! Moudles that pertian to Version 4 (Sundials addition)
+#ifdef V4_ACTIVE
+  USE mDecisions_module,only:enthalpyFD,enthalpyFDlu  ! look-up values for the choice of heat capacity computation
+  USE enthalpyTemp_module,only:T2H_lookup_snow        ! module to calculate a look-up table for the snow temperature-enthalpy conversion
+  USE enthalpyTemp_module,only:T2L_lookup_soil        ! module to calculate a look-up table for the soil temperature-enthalpy conversion
+#endif
+
   implicit none
 
   type(c_ptr), intent(in), value         :: handle_forcFileInfo
@@ -124,19 +125,27 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   call c_f_pointer(handle_forcFileInfo, forcFileInfo)
   call c_f_pointer(handle_output_ncid, output_ncid)
 
-  ! Get the initial forcing file information
+  ! *****************************************************************************
+  ! *** read description of model forcing datafile used in each HRU
+  ! *****************************************************************************
   call ffile_info(indxGRU, forcFileInfo, num_forcing_files, err, message)
   if(err/=0)then; print*, trim(message); return; endif
 
-  ! Get and save the model decisions as integers
+  ! *****************************************************************************
+  ! *** read model decisions
+  ! *****************************************************************************
+  ! NOTE: Must be after ffile_info because mDecisions uses the data_step
   call mDecisions(err,message)
   if(err/=0)then; print*,trim(message); return; endif
   
+  ! TODO: This can be moved to a simple getter the file_access_actor calls
   num_timesteps = numtim ! Returns to the file_access_actor
 
+#ifdef V4_ACTIVE
   ! decide if computing enthalpy lookup tables, if need enthalpy and not using hypergeometric function
   needLookup = .false.
   if(model_decisions(iLookDECISIONS%nrgConserv)%iDecision == enthalpyFDlu) needLookup = .true.
+#endif
 
   ! get the maximum number of snow layers
   select case(model_decisions(iLookDECISIONS%snowLayers)%iDecision)
@@ -255,7 +264,7 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   ! ! loop through GRUs
   do iGRU=1,num_gru
     ! calculate the fraction of runoff in future time steps
-    call fracFuture(outputStructure(1)%bparStruct%gru(iGRU)%var,    &  ! vector of basin-average model parameters
+    call fracFuture(outputStructure(1)%bparStruct%gru(iGRU)%var,     &  ! vector of basin-average model parameters
                     outputStructure(1)%bvarStruct_init%gru(iGRU),    &  ! data structure of basin-average variables
                     err,message)                   ! error control
     if(err/=0)then; print*, trim(message); return; endif
@@ -281,6 +290,7 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
       call paramCheck(outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU),err,message)
       if(err/=0)then; print*, message; return; endif
 
+#ifdef V4_ACTIVE      
       ! calculate a look-up table for the temperature-enthalpy conversion of snow for future snow layer merging
       ! NOTE2: H is the mixture enthalpy of snow liquid and ice
       call T2H_lookup_snow(outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU),err,message)
@@ -289,7 +299,6 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
       ! calculate a lookup table for the temperature-enthalpy conversion of soil
       ! NOTE: L is the integral of soil Clapeyron equation liquid water matric potential from temperature
       !       multiply by Cp_liq*iden_water to get temperature component of enthalpy
-#ifdef V4_ACTIVE      
       if(needLookup)then
         call T2L_lookup_soil(gru_struc(iGRU)%hruInfo(iHRU)%nSoil,   &   ! intent(in):    number of soil layers
                         outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU),        &   ! intent(in):    parameter data structure
@@ -297,6 +306,11 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
                         err,message)                              ! intent(out):   error control
         if(err/=0)then; print*, message; return; endif
       endif
+else
+      ! calculate a look-up table for the temperature-enthalpy conversion
+      call E2T_lookup(outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU),err,message)
+      if(err/=0)then; message=trim(message); print*, message; return; endif
+
 #endif
       ! overwrite the vegetation height
       HVT(outputStructure(1)%typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex)) = outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU)%var(iLookPARAM%heightCanopyTop)%dat(1)

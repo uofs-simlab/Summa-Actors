@@ -16,8 +16,11 @@ set(CMAKE_CONFIGURATION_TYPES BE BE_Debug BE_Cluster BE_Cluster_Debug)
 if(CMAKE_BUILD_TYPE MATCHES Debug)
     message("\nSetting Debug Options\n")
     add_compile_definitions(DEBUG)
-    set(FLAGS_NOAH -g -O0 -fbacktrace -fbounds-check -ffree-form -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors ${FLAGS_OPT})
-    set(FLAGS_ALL  -g -O0 -fbacktrace -fbounds-check -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors -cpp ${FLAGS_OPT})
+    set(FLAGS_NOAH -g -O0 -fbacktrace -fbounds-check -ffree-form 
+        -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors 
+        ${FLAGS_OPT})
+    set(FLAGS_ALL  -g -O0 -fbacktrace -fbounds-check -ffree-line-length-none 
+        -fmax-errors=0 -fPIC -Wfatal-errors -cpp ${FLAGS_OPT})
     set(FLAGS_CXX  -g -O0 -fbounds-check -Wfatal-errors -std=c++17 ${FLAGS_OPT})
 else()
     message("\nSetting Release Options")
@@ -74,7 +77,7 @@ set(NETCDF_DIR ${F_MASTER}/build/source/netcdf)
 set(NOAHMP_DIR ${F_MASTER}/build/source/noah-mp)
 
 # Define Actors specific directories
-set(ACTORS_DIR ${PARENT_DIR}/build/source/actors)
+set(ACTORS_DIR ${PARENT_DIR}/build/source)
 set(FILE_ACCESS_DIR ${ACTORS_DIR}/file_access_actor)
 set(JOB_ACTOR_DIR   ${ACTORS_DIR}/job_actor)
 set(HRU_ACTOR_DIR   ${ACTORS_DIR}/hru_actor)
@@ -229,9 +232,14 @@ set(FILE_ACCESS_ACTOR
     ${ACTORS_DIR}/file_access_actor/output_container.cpp)
 set(JOB_ACTOR
     ${ACTORS_DIR}/job_actor/GRU.cpp
-    ${ACTORS_DIR}/job_actor/job_actor.cpp)
+    ${ACTORS_DIR}/job_actor/job_actor.cpp
+    ${ACTORS_DIR}/job_actor/async_mode.cpp
+    ${ACTORS_DIR}/job_actor/distributed_job_actor.cpp
+    ${ACTORS_DIR}/job_actor/node_actor.cpp)
 set(HRU_ACTOR
-    ${ACTORS_DIR}/hru_actor/hru_actor.cpp)
+    ${ACTORS_DIR}/hru_actor/hru_actor.cpp
+    ${ACTORS_DIR}/hru_actor/hru_batch_actor.cpp)
+    
 
 #=========================================================================================
 # COMPILE PART 3: Collect the subroutines into build groups depending on build type

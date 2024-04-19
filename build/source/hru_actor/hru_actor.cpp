@@ -62,10 +62,6 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
         }
 
         self->state.num_steps_until_write--;
-      if (self->state.timestep == 5) {
-        self->send(self, serialize_hru_v);
-      } 
-
         err = Run_HRU(self); // Simulate a Timestep
         if (err != 0) {
           #ifdef SUNDIALS_ACTIVE                        

@@ -13,56 +13,41 @@ behavior job_actor(stateful_actor<job_state>* self,
     HRU_Actor_Settings hru_actor_settings, caf::actor parent) {
     
   self->set_down_handler([=](const down_msg& dm) {
-      aout(self) << "\n\n ********** DOWN HANDLER ********** \n";
-      aout(self) << "Lost Connection With A Connected Actor\n";
-      aout(self) << "Reason: " << to_string(dm.reason) << "\n";
+      aout(self) << "\n\n ********** DOWN HANDLER ********** \n"
+                 << "Lost Connection With A Connected Actor\n"
+                 << "Reason: " << to_string(dm.reason) << "\n";
   });
 
   self->set_exit_handler([=](const exit_msg& em) {
-      aout(self) << "\n\n ********** EXIT HANDLER ********** \n";
-      aout(self) << "Exit Reason: " << to_string(em.reason) << "\n";
+      aout(self) << "\n\n ********** EXIT HANDLER ********** \n"
+                 << "Exit Reason: " << to_string(em.reason) << "\n";
   });
-
 
   // Timing Information
   self->state.job_timing = TimingInfo(); 
   self->state.job_timing.addTimePoint("total_duration");
   self->state.job_timing.updateStartPoint("total_duration");
-
   // Set Job Variables
   self->state.start_gru = start_gru;
   self->state.num_gru = num_gru;
   self->state.parent = parent;
-
-
-  
   // Set the settings variables
   self->state.file_access_actor_settings = file_access_actor_settings;
   self->state.job_actor_settings = job_actor_settings;
   self->state.hru_actor_settings = hru_actor_settings;
   self->state.max_run_attempts = job_actor_settings.max_run_attempts;
-
   // Init the GRU Container
   self->state.gru_container.num_gru_in_run_domain = num_gru;
 
-  
   char host[HOST_NAME_MAX];
   gethostname(host, HOST_NAME_MAX);
   self->state.hostname = host;
   
-  // Initalize global variables calling Fortran Routines
-  int err = 0;
-
-
-  /*
-  Calls: 
-    - summa_SetTimesDirsAndFiles
-    - summa_defineGlobalData
-    - read_icond_nlayers
-    - Allocates time structures
-  */
+  /* Calls: summa_SetTimesDirsAndFiles(), summa_defineGlobalData(),
+         read_icond_nlayers(), Allocates time structures */
   self->state.job_timing.addTimePoint("init_duration");
   int file_gru = 0;
+  int err = 0;
   job_init_fortran(self->state.job_actor_settings.file_manager_path.c_str(),
       &self->state.start_gru, &self->state.num_gru, &self->state.num_hru, 
       &file_gru, &err);
@@ -75,14 +60,22 @@ behavior job_actor(stateful_actor<job_state>* self,
       self->state.start_gru, self->state.num_gru, self->state.num_gru, 
       file_gru, false);
 
-  // Spawn the file_access_actor.
   self->state.file_access_actor = self->spawn(file_access_actor, 
-      self->state.num_gru_info, 
-      self->state.file_access_actor_settings, self);
+      self->state.num_gru_info, self->state.file_access_actor_settings, self);
   self->send(self->state.file_access_actor, def_output_v, file_gru);
 
   self->state.job_timing.updateEndPoint("init_duration");
   aout(self) << "Job Actor Initialized \n";
+
+
+  if (job_actor_settings.data_assimilation_mode) {
+    aout(self) << "Job_Actor: Data Assimilation Mode\n";
+  } else {
+    self->become(async_mode(self));
+    return {};
+  }
+
+
 
   return {
     /*** From file access actor after it spawns ***/
@@ -390,23 +383,20 @@ void spawnHRUActors(stateful_actor<job_state>* self, bool normal_mode) {
   gru_container.run_attempts_left--;
 
   for (int i = 0; i < gru_container.num_gru_in_run_domain; i++) {
-    auto global_gru_index = gru_container.gru_list.size() 
-                            + self->state.start_gru;
+    auto global_gru_index = gru_container.gru_list.size() + 
+        self->state.start_gru;
     auto local_gru_index = gru_container.gru_list.size() + 1;                                
 
     auto gru = self->spawn(hru_actor, global_gru_index, local_gru_index,               
-                           self->state.hru_actor_settings,                                
-                           self->state.file_access_actor, self);
+        self->state.hru_actor_settings, self->state.file_access_actor, self);
 
     // Create the GRU object (Job uses this to keep track of GRU status)
     gru_container.gru_list.push_back(new GRU(global_gru_index, 
-                                     local_gru_index, gru, 
-                                     self->state.dt_init_start_factor, 
-                                     self->state.hru_actor_settings.rel_tol,
-                                     self->state.hru_actor_settings.abs_tol,
-                                     self->state.max_run_attempts));  
+        local_gru_index, gru, self->state.dt_init_start_factor, 
+        self->state.hru_actor_settings.rel_tol,
+        self->state.hru_actor_settings.abs_tol, self->state.max_run_attempts));  
     
-    if (normal_mode) self->send(gru, update_hru_async_v);
+    // if (normal_mode) self->send(gru, update_hru_async_v);
   }                        
           
 }
