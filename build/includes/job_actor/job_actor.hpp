@@ -144,17 +144,15 @@ struct distributed_job_state {
   int num_serialize_messages_received = 0;
 };
 
-/** The Job Actor */
+/** The Job Actor Behaviors */
 behavior job_actor(stateful_actor<job_state>* self, 
     int start_gru, int num_gru, 
     File_Access_Actor_Settings file_access_actor_settings, 
     Job_Actor_Settings job_actor_settings, 
     HRU_Actor_Settings hru_actor_settings, actor parent);
 
-// TODO: Implement the following behaviors
-// behavior data_assimilation_mode()
+behavior data_assimilation_mode(stateful_actor<job_state>* self);
 behavior async_mode(stateful_actor<job_state>* self); 
-
 
 /** The Job Actor For Internode Communication */
 behavior distributed_job_actor(stateful_actor<distributed_job_state>* self,
@@ -166,13 +164,12 @@ behavior distributed_job_actor(stateful_actor<distributed_job_state>* self,
 
 
 /*********************************************
- * Functions for the Job Actor
+ * Functions for the Job Actor (job_utils.cpp)
  *********************************************/
 // Spawn HRU Actors Individually
-void spawnHRUActors(stateful_actor<job_state>* self, bool normal_mode);
+void spawnHRUActors(stateful_actor<job_state>* self);
 // Spawn HRU Batch Actors
 void spawnHRUBatches(stateful_actor<job_state>* self);
-
 
 void handleFinishedGRU(stateful_actor<job_state>* self, int local_gru_index);
 

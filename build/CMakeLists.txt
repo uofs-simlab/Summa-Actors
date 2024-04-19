@@ -234,6 +234,8 @@ set(JOB_ACTOR
     ${ACTORS_DIR}/job_actor/GRU.cpp
     ${ACTORS_DIR}/job_actor/job_actor.cpp
     ${ACTORS_DIR}/job_actor/async_mode.cpp
+    ${ACTORS_DIR}/job_actor/data_assimilation_mode.cpp
+    ${ACTORS_DIR}/job_actor/job_utils.cpp
     ${ACTORS_DIR}/job_actor/distributed_job_actor.cpp
     ${ACTORS_DIR}/job_actor/node_actor.cpp)
 set(HRU_ACTOR
