@@ -2,10 +2,9 @@
 
 using json = nlohmann::json;
 
-namespace caf {
 
-behavior file_access_actor(stateful_actor<file_access_state>* self, 
-    NumGRUInfo num_gru_info,
+behavior file_access_actor(
+    stateful_actor<file_access_state>* self, NumGRUInfo num_gru_info,
     File_Access_Actor_Settings file_access_actor_settings, actor parent) {
   aout(self) << "\n----------File_Access_Actor Started----------\n";
     
@@ -17,7 +16,6 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
   self->state.file_access_actor_settings = file_access_actor_settings;
   auto& fa_settings = self->state.file_access_actor_settings;
   self->state.parent = parent;
-
   self->state.num_gru_info = num_gru_info;
 
   if (self->state.num_gru_info.use_global_for_data_structures) {
@@ -27,62 +25,63 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
     self->state.start_gru = self->state.num_gru_info.start_gru_local;
     self->state.num_gru = self->state.num_gru_info.num_gru_local;
   }
-
-
   self->state.num_output_steps = fa_settings.num_timesteps_in_output_buffer;
   
-  int num_hru = self->state.num_gru;
-  int err = 0;
-  fileAccessActor_init_fortran(self->state.handle_forcing_file_info, 
-      &self->state.numFiles, &self->state.num_steps,
-      &fa_settings.num_timesteps_in_output_buffer, self->state.handle_ncid,
-      &self->state.start_gru, &self->state.num_gru, &num_hru, &err);
-  if (err != 0) {
-    aout(self) << "ERROR: File Access Actor - File_Access_init_Fortran\n";
-    if (err == 100)
-      self->send(self->state.parent, file_access_error::mDecisions_error, 
-          self);
-    else
-      self->send(self->state.parent, file_access_error::unhandleable_error, 
-          self);
-    return {};  
-  }
-
-  // Notify job actor that initial files have been loaded
-  self->send(self->state.parent, init_file_access_actor_v, 
-      self->state.num_steps);
-
-  // Initalize the forcingFile array
-  self->state.filesLoaded = 0;
-  for (int i = 1; i <= self->state.numFiles; i++) {
-    self->state.forcing_file_list.push_back(Forcing_File_Info(i));
-  }
-  
-  // Ensure output buffer size is less than the number of simulation timesteps
-  if (self->state.num_steps < fa_settings.num_timesteps_in_output_buffer) {
-    self->state.num_output_steps = self->state.num_steps;
-    fa_settings.num_timesteps_in_output_buffer = self->state.num_steps;
-  }
-
-  // Set up the output container
-  if (!self->state.num_gru_info.use_global_for_data_structures) {
-    self->state.output_container = new Output_Container(
-        fa_settings.num_partitions_in_output_buffer, self->state.num_gru,
-        fa_settings.num_timesteps_in_output_buffer, self->state.num_steps);
-  }
-
-  self->state.file_access_timing.updateEndPoint("init_duration");
 
   return {
-    [=](def_output, int file_gru) {
+    [=](init_file_access_actor, int file_gru) {
+      auto& fa_settings = self->state.file_access_actor_settings;
+      int num_hru = self->state.num_gru;
+      int err = 0;
+
+      aout(self) << "File Access Actor: Intializing\n";
+      fileAccessActor_init_fortran(self->state.handle_forcing_file_info, 
+          &self->state.numFiles, 
+          &self->state.num_steps,
+          &fa_settings.num_timesteps_in_output_buffer, 
+          self->state.handle_ncid,
+          &self->state.start_gru, 
+          &self->state.num_gru, 
+          &num_hru, 
+          &err);
+      if (err != 0) {
+        // TODO: Fix Error Handling
+        return -1;
+        // aout(self) << "ERROR: File Access Actor - File_Access_init_Fortran\n";
+        // if (err == 100)
+        //   self->send(self->state.parent, file_access_error::mDecisions_error, 
+        //       self);
+        // else
+        //   self->send(self->state.parent, file_access_error::unhandleable_error, 
+        //       self);
+        // return -1;  
+      }
+
+      // Initalize the forcingFile array
+      self->state.filesLoaded = 0;
+      for (int i = 1; i <= self->state.numFiles; i++) {
+        self->state.forcing_file_list.push_back(Forcing_File_Info(i));
+      }
+      
+      // Ensure output buffer size is less than the number of simulation timesteps
+      if (self->state.num_steps < fa_settings.num_timesteps_in_output_buffer) {
+        self->state.num_output_steps = self->state.num_steps;
+        fa_settings.num_timesteps_in_output_buffer = self->state.num_steps;
+      }
+
+      // Set up the output container
+      if (!self->state.num_gru_info.use_global_for_data_structures) {
+        self->state.output_container = new Output_Container(
+            fa_settings.num_partitions_in_output_buffer, self->state.num_gru,
+            fa_settings.num_timesteps_in_output_buffer, self->state.num_steps);
+      }
+
       aout(self) << "Creating Output File\n";
       std::string actor_address = "";  
       
-      int num_hru = self->state.num_gru;
       if (self->state.num_gru_info.use_global_for_data_structures) {
         actor_address = "_" + to_string(self->address());
       }
-      int err = 0;
       defOutputFortran(self->state.handle_ncid, &self->state.start_gru, 
           &self->state.num_gru, &num_hru, &file_gru, 
           &self->state.num_gru_info.use_global_for_data_structures,
@@ -91,7 +90,13 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
         aout(self) << "ERROR: Defining Output\n";
         self->quit();
       }
+
+      self->state.file_access_timing.updateEndPoint("init_duration");
+      return self->state.num_steps;
     },
+
+
+
 
     // Message from the HRU actor to get the forcing file that is loaded
     [=](access_forcing, int currentFile, caf::actor refToRespondTo) {
@@ -256,5 +261,3 @@ void writeOutput(stateful_actor<file_access_state>* self,
 
   partition->resetReadyToWriteList();
 }
-
-} // end namespace

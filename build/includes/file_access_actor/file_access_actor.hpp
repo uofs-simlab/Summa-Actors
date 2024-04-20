@@ -12,6 +12,7 @@
 #include "forcing_file_info.hpp"
 #include "json.hpp"
 
+using namespace caf;
 
 /*********************************************
  * File Access Actor Fortran Functions
@@ -41,7 +42,7 @@ extern "C" {
  * File Access Actor state variables
  *********************************************/
 
-namespace caf {
+
 struct file_access_state {
   // Variables set on Spawn
   caf::actor parent; 
@@ -79,6 +80,8 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
     NumGRUInfo num_gru_info,
     File_Access_Actor_Settings file_access_actor_settings, actor parent);
 
+
+behavior file_access_init(stateful_actor<file_access_state>* self);
 /*********************************************
  * Functions for the file access actor
  *********************************************/
@@ -88,4 +91,3 @@ void writeOutput(stateful_actor<file_access_state>* self,
     Output_Partition* partition);
 
  
-} // end namespace

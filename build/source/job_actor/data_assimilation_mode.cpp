@@ -5,7 +5,7 @@ behavior data_assimilation_mode(stateful_actor<job_state>* self) {
   aout(self) << "Data Assimilation Mode: Started\n";
 
   return {
-    [=](init_file_access_actor, int num_timesteps) {
+    [=](file_access_actor_ready, int num_timesteps) {
       aout(self) << "Data Assimilation Mode: init_file_access_actor\n";
       self->state.num_steps = num_timesteps;
       self->state.job_actor_settings.batch_size > 0 ? 

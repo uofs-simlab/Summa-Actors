@@ -1,4 +1,4 @@
-module cppwrap_fileAccess
+module file_access_actor
 
 
   !======= Inclusions ===========
@@ -748,4 +748,4 @@ SUBROUTINE SOIL_VEG_GEN_PARM(FILENAME_VEGTABLE, FILENAME_SOILTABLE, FILENAME_GEN
 
 END SUBROUTINE SOIL_VEG_GEN_PARM
 
-end module cppwrap_fileAccess
+end module file_access_actor

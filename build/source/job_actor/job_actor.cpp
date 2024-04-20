@@ -60,22 +60,43 @@ behavior job_actor(stateful_actor<job_state>* self,
       self->state.start_gru, self->state.num_gru, self->state.num_gru, 
       file_gru, false);
 
+  // Spawn File Access Actor and await confirmation it is ready
   self->state.file_access_actor = self->spawn(file_access_actor, 
       self->state.num_gru_info, self->state.file_access_actor_settings, self);
-  self->send(self->state.file_access_actor, def_output_v, file_gru);
+  // self->send(self->state.file_access_actor, def_output_v, file_gru);
+  self->request(self->state.file_access_actor, caf::infinite, 
+      init_file_access_actor_v, file_gru).await(
+        [=](int num_timesteps){
+    
+    if (num_timesteps < 0) {
+      aout(self) << "ERROR: Job_Actor: File Access Actor Not Ready\n";
+      self->quit();
+      return;
+    }
 
-  self->state.job_timing.updateEndPoint("init_duration");
-  aout(self) << "Job Actor Initialized \n";
+
+    aout(self) << "Job_Actor: File Access Actor Ready\n";  
+    self->state.job_timing.updateEndPoint("init_duration");
+    aout(self) << "Job Actor Initialized \n";
+
+    job_actor_settings.data_assimilation_mode ? 
+        self->become(data_assimilation_mode(self)) : 
+        self->become(async_mode(self));
+    
+    // Start the specific mode
+    self->send(self, file_access_actor_ready_v, num_timesteps);
+  });
+      
+
+  /**
+   * TODO: This is where the error handling code can go
+   * We can add a timeout to the receive and if we do not receive it in 
+   * Time then we have to handle that error here
+  */
 
 
-  if (job_actor_settings.data_assimilation_mode) {
-    self->become(data_assimilation_mode(self));
-    return {};
-  } else {
-    self->become(async_mode(self));
-    return {};
-  }
-
+  return {};
+  
 
 
   return {

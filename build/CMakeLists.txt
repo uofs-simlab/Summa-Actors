@@ -198,7 +198,7 @@ set(INTERFACE
     ${ACTORS_DIR}/global/cppwrap_datatypes.f90
     ${ACTORS_DIR}/global/cppwrap_metadata.f90)
 set(FILE_ACCESS_INTERFACE
-    ${FILE_ACCESS_DIR}/cppwrap_fileAccess.f90
+    ${FILE_ACCESS_DIR}/file_access_actor.f90
     ${FILE_ACCESS_DIR}/output_structure.f90
     ${FILE_ACCESS_DIR}/read_force.f90
     ${FILE_ACCESS_DIR}/fileAccess_writeOutput.f90)
@@ -227,7 +227,9 @@ set(SUMMA_ACTOR
     ${ACTORS_DIR}/summa_actor/summa_client.cpp
     ${ACTORS_DIR}/summa_actor/summa_server.cpp)
 set(FILE_ACCESS_ACTOR
+    ${ACTORS_DIR}/file_access_actor/file_access_utils.cpp
     ${ACTORS_DIR}/file_access_actor/file_access_actor.cpp
+    ${ACTORS_DIR}/file_access_actor/file_access_init.cpp
     ${ACTORS_DIR}/file_access_actor/forcing_file_info.cpp
     ${ACTORS_DIR}/file_access_actor/output_container.cpp)
 set(JOB_ACTOR

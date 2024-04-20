@@ -6,7 +6,7 @@ behavior async_mode(stateful_actor<job_state>* self) {
 
   return {
     /*** From file access actor after it spawns ***/
-    [=](init_file_access_actor, int num_timesteps) {
+    [=](file_access_actor_ready, int num_timesteps) {
       aout(self) << "Async Mode: init_file_access_actor\n";
       self->state.num_steps = num_timesteps;
       spawnHRUActors(self);
