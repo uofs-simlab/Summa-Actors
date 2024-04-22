@@ -198,7 +198,8 @@ set(INTERFACE
     ${ACTORS_DIR}/global/cppwrap_auxiliary.f90
     ${ACTORS_DIR}/global/cppwrap_datatypes.f90
     ${ACTORS_DIR}/global/cppwrap_metadata.f90
-    ${ACTORS_DIR}/global/c_interface_module.f90)
+    ${ACTORS_DIR}/global/c_interface_module.f90
+    ${ACTORS_DIR}/global/gru_struc.f90)
 set(SUMMA_ACTOR_INTERFACE
     ${SUMMA_ACTOR_DIR}/batch_distributer_actor.f90)
 set(FILE_ACCESS_INTERFACE
@@ -219,6 +220,7 @@ set(ACTORS_GLOBAL
     ${ACTORS_DIR}/global/auxiliary.cpp
     ${ACTORS_DIR}/global/global.cpp
     ${ACTORS_DIR}/global/fileManager.cpp
+    ${ACTORS_DIR}/global/gru_struc.cpp
     ${ACTORS_DIR}/global/message_atoms.cpp
     ${ACTORS_DIR}/global/settings_functions.cpp
     ${ACTORS_DIR}/global/timing_info.cpp)
@@ -233,7 +235,7 @@ set(SUMMA_ACTOR
     ${ACTORS_DIR}/summa_actor/summa_client.cpp
     ${ACTORS_DIR}/summa_actor/summa_server.cpp)
 set(FILE_ACCESS_ACTOR
-    ${ACTORS_DIR}/file_access_actor/file_access_utils.cpp
+    # ${ACTORS_DIR}/file_access_actor/file_access_utils.cpp
     ${ACTORS_DIR}/file_access_actor/file_access_actor.cpp
     ${ACTORS_DIR}/file_access_actor/file_access_init.cpp
     ${ACTORS_DIR}/file_access_actor/forcing_file_info.cpp

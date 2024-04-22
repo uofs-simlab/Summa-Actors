@@ -50,26 +50,12 @@ behavior summa_actor(stateful_actor<summa_actor_state>* self,
   self->state.fortran_state = 
       self->spawn(fortran_global_state_actor);
   
-
   self->state.fileGRU = getNumGRUInFile(file_manager->settings_path_, 
       file_manager->local_attributes_);
-  // Double check the number of GRUs in the file
   if (self->state.fileGRU  == -1) 
     aout(self) << "***WARNING***: UNABLE TO VERIFY NUMBER OF GRUS" 
-               << " - Job Actor MAY CRASH\n";
-  aout(self) << "Number of GRUs in File: " << self->state.fileGRU << "\n";
-  return {};
-
-
-
-
-
-
-
-
-
-
-
+               << " - Job Actor MAY CRASH\n"
+               << "Number of GRUs in File: " << self->state.fileGRU << "\n";
 
   if (self->state.fileGRU > 0) { 
     // Fix the number of GRUs if it exceeds the number of GRUs in the file

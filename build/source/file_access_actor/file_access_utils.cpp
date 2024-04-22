@@ -16,6 +16,6 @@
 //     double convTime2Days;       // conversion factor to convert time units to days
 // };
 
-fileInfo::fileInfo(void *handle_forcing_file_info) {
-  std::cout << "hello from forcFileInfo constructor\n";
-}
+// fileInfo::fileInfo(void *handle_forcing_file_info) {
+//   std::cout << "hello from forcFileInfo constructor\n";
+// }

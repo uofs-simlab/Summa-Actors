@@ -22,12 +22,12 @@ extern "C" {
       int* num_timesteps_output_buffer, void* handle_output_ncid, int* startGRU,
       int* numGRU, int* numHRU, int* err);
 
-  void getNumForcingFiles_fortran(int* num_files);
+  // void getNumForcingFiles_fortran(int* num_files);
 
-  void getFileInfoSizes_fortran(int& iFile, int& var_ix_size, int& data_id_size, 
-      int& varName_size);
+  // void getFileInfoSizes_fortran(int& iFile, int& var_ix_size, int& data_id_size, 
+  //     int& varName_size);
   
-  void getFileInfoCopy_fortran(int& iFile, char* &name);
+  // void getFileInfoCopy_fortran(int& iFile, void* name);
 
 
   void defOutputFortran(void* handle_ncid, int* start_gru, int* num_gru, 

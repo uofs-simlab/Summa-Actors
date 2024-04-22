@@ -41,8 +41,6 @@ behavior file_access_actor(
 
       aout(self) << "File Access Actor: Intializing\n";
       fileAccessActor_init_fortran(
-          // self->state.handle_forcing_file_info, 
-          // &self->state.numFiles, 
           &self->state.num_steps,
           &fa_settings.num_timesteps_in_output_buffer, 
           self->state.handle_ncid,
@@ -55,32 +53,27 @@ behavior file_access_actor(
       self->state.output_lifetime = std::make_unique<outputStructureLifetime>(
           self->state.handle_forcing_file_info, self->state.handle_ncid);
 
-      getNumForcingFiles_fortran(&self->state.numFiles);
-
-      std::vector<fileInfo> forcFileInfo;
-      forcFileInfo.reserve(self->state.numFiles);
-      for (int i = 1; i <= self->state.numFiles; i++) {
-        int var_ix_size = 0;
-        int data_id_size = 0;
-        int varName_size = 0;
-        getFileInfoSizes_fortran(i, var_ix_size, data_id_size, varName_size);
-        aout(self) << "File: " << i << " Var_ix_size: " << var_ix_size 
-                   << " Data_id_size: " << data_id_size 
-                   << " VarName_size: " << varName_size << std::endl;
-        char* test_string = new char[257];
-        getFileInfoCopy_fortran(i, test_string);
-
-        aout(self) << "test_string: " << test_string << std::endl;
-        // getFileInfoCopy_fortran(self->state.handle_forcing_file_info, i, 
-        //     var_ix_size, data_id_size, varName_size, 
-        //     &forcFileInfo[i - 1].nVars, 
-        //     &forcFileInfo[i - 1].nTimeSteps, 
-        //     forcFileInfo[i - 1].var_ix, 
-        //     forcFileInfo[i - 1].data_id, 
-        //     forcFileInfo[i - 1].varName, 
-        //     &forcFileInfo[i - 1].firstJulDay, 
-        //     &forcFileInfo[i - 1].convTime2Days);
-      }
+      // Forcing File Info
+      // getNumForcingFiles_fortran(&self->state.numFiles);
+      auto forcing_container = new forcingFileContainer();
+      return -2;
+      // std::vector<fileInfo> forcFileInfo;
+      // forcFileInfo.reserve(self->state.numFiles);
+      // for (int i = 1; i <= self->state.numFiles; i++) {
+      //   int var_ix_size = 0;
+      //   int data_id_size = 0;
+      //   int varName_size = 0;
+      //   getFileInfoSizes_fortran(i, var_ix_size, data_id_size, varName_size);
+      //   aout(self) << "File: " << i << " Var_ix_size: " << var_ix_size 
+      //              << " Data_id_size: " << data_id_size 
+      //              << " VarName_size: " << varName_size << std::endl;
+        
+        
+      //   std::unique_ptr<char[]> file_name(new char[256]);
+      //   // getFileInfoCopy_fortran(i, &file_name);
+      //   std::string file_name_str(file_name.get());
+      //   aout(self) << "File Name: " << file_name_str << std::endl;
+      // }
 
       // // Serialize forcing_file_info
       // auto forcing_file_info = 

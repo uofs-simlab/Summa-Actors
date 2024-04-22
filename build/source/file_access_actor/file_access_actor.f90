@@ -403,14 +403,28 @@ subroutine getFileInfoSizes_fortran(iFile, var_ix_size, data_id_size, &
 end subroutine 
 
 
-subroutine getFileInfoCopy_fortran(iFile, filenmData) bind(C, name="getFileInfoCopy_fortran")
+subroutine getFileInfoCopy_fortran(iFile, filenmData, varName_size, &
+    var_name_arr) bind(C, name="getFileInfoCopy_fortran")
   USE globalData,only:forcFileInfo
   USE C_interface_module
   implicit none
-  integer(c_int),intent(in) :: iFile
-  type(c_ptr),intent(out) :: filenmData
+  ! dummy variables
+  integer(c_int),intent(in)   :: iFile
+  type(c_ptr),intent(out)     :: filenmData
+  integer(c_int),intent(in)   :: varName_size
+  type(c_ptr),intent(out)     :: var_name_arr(varName_size)
+  ! local variables
+  integer(i4b)                :: i
   
+  ! Get File Name
   call f_c_string_ptr(trim(forcFileInfo(iFile)%filenmData), filenmData)
+
+  do i=1, varName_size
+    call f_c_string_ptr(trim(forcFileInfo(iFile)%varName(i)), var_name_arr(i))
+  end do
+
+
+
 end subroutine getFileInfoCopy_fortran
 
 subroutine defOutputFortran(handle_output_ncid, start_gru, num_gru, num_hru, &

@@ -6,6 +6,7 @@
 #include "settings_functions.hpp"
 #include "batch_container.hpp"
 #include "fileManager.hpp"
+#include "gru_struc.hpp"
 #include <chrono>
 #include <string>
 #include <vector>

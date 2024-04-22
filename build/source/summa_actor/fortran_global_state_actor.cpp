@@ -16,7 +16,6 @@ behavior fortran_global_state_actor(event_based_actor* self) {
       aout(self) << "\n\nERROR: deallocateGlobalData_fortran() - " 
                  << err_msg.get() << "\n\n";
     }
-    aout(self) << "HERE\n";
   });
 
 
@@ -31,7 +30,12 @@ behavior fortran_global_state_actor(event_based_actor* self) {
   }
 
 
-  return {};
+  return {
+    // Needs a handler to persist, otherwise it gets cleaned up immediately
+    [=](int i) {
+      aout(self) << "Still Awake\n";
+    }
+  };
 }
 
 
