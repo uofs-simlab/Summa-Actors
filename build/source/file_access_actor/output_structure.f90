@@ -129,7 +129,7 @@ subroutine initOutputTimeStep(num_gru, err)
 
 end subroutine initOutputTimeStep
 
-subroutine initOutputStructure(forcFileInfo, maxSteps, num_gru, err)
+subroutine initOutputStructure(maxSteps, num_gru, err)
   USE globalData,only:time_meta,forc_meta,attr_meta,type_meta ! metadata structures
   USE globalData,only:prog_meta,diag_meta,flux_meta,id_meta   ! metadata structures
   USE globalData,only:mpar_meta,indx_meta                     ! metadata structures
@@ -151,9 +151,10 @@ subroutine initOutputStructure(forcFileInfo, maxSteps, num_gru, err)
 
   USE allocspace_module,only:allocGlobal                      ! module to allocate space for global data structures
   USE globalData,only:maxSnowLayers
+
+  USE globalData,only:forcFileInfo
   
   implicit none
-  type(file_info_array),intent(in)      :: forcFileInfo
   integer(i4b), intent(in)              :: maxSteps
   integer(i4b), intent(in)              :: num_gru
   integer(i4b), intent(out)             :: err 
@@ -268,7 +269,7 @@ subroutine initOutputStructure(forcFileInfo, maxSteps, num_gru, err)
     do iHRU=1,gru_struc(iGRU)%hruCount
 
       ! Get the maximum number of steps needed to initalize the output structure
-      nVars = maxval(forcFileInfo%ffile_list(:)%nVars)
+      nVars = maxval(forcFileInfo(:)%nVars)
       nSnow = gru_struc(iGRU)%hruInfo(iHRU)%nSnow
       nSoil = gru_struc(iGRU)%hruInfo(iHRU)%nSoil
 

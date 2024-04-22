@@ -18,14 +18,22 @@ using namespace caf;
  * File Access Actor Fortran Functions
  *********************************************/
 extern "C" {
+  void fileAccessActor_init_fortran( int* num_timesteps, 
+      int* num_timesteps_output_buffer, void* handle_output_ncid, int* startGRU,
+      int* numGRU, int* numHRU, int* err);
+
+  void getNumForcingFiles_fortran(int* num_files);
+
+  void getFileInfoSizes_fortran(int& iFile, int& var_ix_size, int& data_id_size, 
+      int& varName_size);
+  
+  void getFileInfoCopy_fortran(int& iFile, char* &name);
+
+
   void defOutputFortran(void* handle_ncid, int* start_gru, int* num_gru, 
       int* num_hru, int* file_gru, bool* use_extention, 
       char const* output_extention, int* err); 
 
-  void fileAccessActor_init_fortran(void* handle_forcing_file_info, 
-      int* num_forcing_files, int* num_timesteps, 
-      int* num_timesteps_output_buffer, void* handle_output_ncid, int* startGRU,
-      int* numGRU, int* numHRU, int* err);
 
   void writeOutput_fortran(void* handle_ncid, int* num_steps, int* start_gru, 
       int* max_gru, bool* writeParamFlag, int* err);
@@ -42,6 +50,19 @@ extern "C" {
  * File Access Actor state variables
  *********************************************/
 
+class outputStructureLifetime {
+  public:
+    void* handle_forcFileInfo;
+    void* handle_ncid;    
+  outputStructureLifetime(void* handle_forcFileInfo, void* handle_ncid) {
+    this->handle_forcFileInfo = handle_forcFileInfo;
+    this->handle_ncid = handle_ncid;
+  }
+  ~outputStructureLifetime() {
+    std::cout << "Deallocating output structures\n";
+    FileAccessActor_DeallocateStructures(handle_forcFileInfo, handle_ncid);
+  }
+};
 
 struct file_access_state {
   // Variables set on Spawn
@@ -70,6 +91,8 @@ struct file_access_state {
     // Timing Variables
   TimingInfo file_access_timing;
 
+
+  std::unique_ptr<outputStructureLifetime> output_lifetime;
 
 
   bool write_params_flag = true;

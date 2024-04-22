@@ -69,7 +69,8 @@ behavior job_actor(stateful_actor<job_state>* self,
         [=](int num_timesteps){
     
     if (num_timesteps < 0) {
-      aout(self) << "ERROR: Job_Actor: File Access Actor Not Ready\n";
+      aout(self) << "ERROR: Job_Actor: File Access Actor Not Ready\n"
+                 << "\t VALUE: " << num_timesteps << "\n";
       self->quit();
       return;
     }

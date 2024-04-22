@@ -78,6 +78,7 @@ set(NOAHMP_DIR ${F_MASTER}/build/source/noah-mp)
 
 # Define Actors specific directories
 set(ACTORS_DIR ${PARENT_DIR}/build/source)
+set(SUMMA_ACTOR_DIR ${ACTORS_DIR}/summa_actor)
 set(FILE_ACCESS_DIR ${ACTORS_DIR}/file_access_actor)
 set(JOB_ACTOR_DIR   ${ACTORS_DIR}/job_actor)
 set(HRU_ACTOR_DIR   ${ACTORS_DIR}/hru_actor)
@@ -140,7 +141,7 @@ set(PRELIM
     ${ENGINE_DIR}/childStruc.f90
     ${ENGINE_DIR}/conv_funcs.f90
     ${ENGINE_DIR}/convE2Temp.f90
-    ${FILE_ACCESS_DIR}/ffile_info.f90
+    ${ENGINE_DIR}/ffile_info.f90
     ${ENGINE_DIR}/read_pinit.f90
     ${ENGINE_DIR}/read_attrb.f90
     ${ENGINE_DIR}/paramCheck.f90
@@ -196,7 +197,10 @@ set(DRIVER
 set(INTERFACE
     ${ACTORS_DIR}/global/cppwrap_auxiliary.f90
     ${ACTORS_DIR}/global/cppwrap_datatypes.f90
-    ${ACTORS_DIR}/global/cppwrap_metadata.f90)
+    ${ACTORS_DIR}/global/cppwrap_metadata.f90
+    ${ACTORS_DIR}/global/c_interface_module.f90)
+set(SUMMA_ACTOR_INTERFACE
+    ${SUMMA_ACTOR_DIR}/batch_distributer_actor.f90)
 set(FILE_ACCESS_INTERFACE
     ${FILE_ACCESS_DIR}/file_access_actor.f90
     ${FILE_ACCESS_DIR}/output_structure.f90
@@ -214,6 +218,7 @@ set(HRU_INTERFACE
 set(ACTORS_GLOBAL
     ${ACTORS_DIR}/global/auxiliary.cpp
     ${ACTORS_DIR}/global/global.cpp
+    ${ACTORS_DIR}/global/fileManager.cpp
     ${ACTORS_DIR}/global/message_atoms.cpp
     ${ACTORS_DIR}/global/settings_functions.cpp
     ${ACTORS_DIR}/global/timing_info.cpp)
@@ -222,6 +227,7 @@ set(SUMMA_ACTOR
     ${ACTORS_DIR}/summa_actor/batch_container.cpp
     ${ACTORS_DIR}/summa_actor/client.cpp
     ${ACTORS_DIR}/summa_actor/client_container.cpp
+    ${ACTORS_DIR}/summa_actor/fortran_global_state_actor.cpp
     ${ACTORS_DIR}/summa_actor/summa_actor.cpp
     ${ACTORS_DIR}/summa_actor/summa_backup_server.cpp
     ${ACTORS_DIR}/summa_actor/summa_client.cpp
@@ -264,6 +270,7 @@ set(SUMMA_ALL
 
 set(SUMMA_ALL 
     ${SUMMA_ALL}
+    ${SUMMA_ACTOR_INTERFACE}
     ${FILE_ACCESS_INTERFACE}
     ${JOB_INTERFACE}
     ${HRU_INTERFACE})

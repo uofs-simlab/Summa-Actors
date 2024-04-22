@@ -7,6 +7,11 @@ behavior file_access_actor(
     stateful_actor<file_access_state>* self, NumGRUInfo num_gru_info,
     File_Access_Actor_Settings file_access_actor_settings, actor parent) {
   aout(self) << "\n----------File_Access_Actor Started----------\n";
+
+
+  self->set_exit_handler([=](const caf::exit_msg& em) {
+    aout(self) << "File Access Actor: Received Exit Message\n";
+  });
     
   // Set Up timing Info we wish to track
   self->state.file_access_timing = TimingInfo();
@@ -35,8 +40,9 @@ behavior file_access_actor(
       int err = 0;
 
       aout(self) << "File Access Actor: Intializing\n";
-      fileAccessActor_init_fortran(self->state.handle_forcing_file_info, 
-          &self->state.numFiles, 
+      fileAccessActor_init_fortran(
+          // self->state.handle_forcing_file_info, 
+          // &self->state.numFiles, 
           &self->state.num_steps,
           &fa_settings.num_timesteps_in_output_buffer, 
           self->state.handle_ncid,
@@ -44,18 +50,43 @@ behavior file_access_actor(
           &self->state.num_gru, 
           &num_hru, 
           &err);
-      if (err != 0) {
-        // TODO: Fix Error Handling
-        return -1;
-        // aout(self) << "ERROR: File Access Actor - File_Access_init_Fortran\n";
-        // if (err == 100)
-        //   self->send(self->state.parent, file_access_error::mDecisions_error, 
-        //       self);
-        // else
-        //   self->send(self->state.parent, file_access_error::unhandleable_error, 
-        //       self);
-        // return -1;  
+      if (err != 0) return -1;
+
+      self->state.output_lifetime = std::make_unique<outputStructureLifetime>(
+          self->state.handle_forcing_file_info, self->state.handle_ncid);
+
+      getNumForcingFiles_fortran(&self->state.numFiles);
+
+      std::vector<fileInfo> forcFileInfo;
+      forcFileInfo.reserve(self->state.numFiles);
+      for (int i = 1; i <= self->state.numFiles; i++) {
+        int var_ix_size = 0;
+        int data_id_size = 0;
+        int varName_size = 0;
+        getFileInfoSizes_fortran(i, var_ix_size, data_id_size, varName_size);
+        aout(self) << "File: " << i << " Var_ix_size: " << var_ix_size 
+                   << " Data_id_size: " << data_id_size 
+                   << " VarName_size: " << varName_size << std::endl;
+        char* test_string = new char[257];
+        getFileInfoCopy_fortran(i, test_string);
+
+        aout(self) << "test_string: " << test_string << std::endl;
+        // getFileInfoCopy_fortran(self->state.handle_forcing_file_info, i, 
+        //     var_ix_size, data_id_size, varName_size, 
+        //     &forcFileInfo[i - 1].nVars, 
+        //     &forcFileInfo[i - 1].nTimeSteps, 
+        //     forcFileInfo[i - 1].var_ix, 
+        //     forcFileInfo[i - 1].data_id, 
+        //     forcFileInfo[i - 1].varName, 
+        //     &forcFileInfo[i - 1].firstJulDay, 
+        //     &forcFileInfo[i - 1].convTime2Days);
       }
+
+      // // Serialize forcing_file_info
+      // auto forcing_file_info = 
+      //     fileInfo(self->state.handle_forcing_file_info);
+      self->quit();
+      return -2;
 
       // Initalize the forcingFile array
       self->state.filesLoaded = 0;
@@ -82,14 +113,16 @@ behavior file_access_actor(
       if (self->state.num_gru_info.use_global_for_data_structures) {
         actor_address = "_" + to_string(self->address());
       }
-      defOutputFortran(self->state.handle_ncid, &self->state.start_gru, 
-          &self->state.num_gru, &num_hru, &file_gru, 
+      defOutputFortran(self->state.handle_ncid, 
+          &self->state.start_gru, 
+          &self->state.num_gru, 
+          &num_hru, 
+          &file_gru, 
           &self->state.num_gru_info.use_global_for_data_structures,
-          actor_address.c_str(), &err);
-      if (err != 0) {
-        aout(self) << "ERROR: Defining Output\n";
-        self->quit();
-      }
+          actor_address.c_str(), 
+          &err);
+      if (err != 0) return -1;
+
 
       self->state.file_access_timing.updateEndPoint("init_duration");
       return self->state.num_steps;

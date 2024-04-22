@@ -8,6 +8,7 @@ module actor_data_types
   ! ***********************************************************************************************************
   ! Wrapping of file_info (prevents a segmentation fault)
   ! ***********************************************************************************************************
+  ! FORCING FILE DATA STRUCTURE
   type,public :: file_info_array
     type(file_info), allocatable         :: ffile_list(:)
   end type file_info_array
@@ -26,6 +27,7 @@ module actor_data_types
     real(rkind)                          :: refJulDay_data 
     integer(i4b)                         :: nTimeSteps    ! Number of Timesteps in the file
   end type var_forc
+  ! FORCING FILE DATA STRUCTURE
 
   ! ** double precision type of for time series
   type, public :: time_dlength

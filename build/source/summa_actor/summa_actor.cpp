@@ -34,11 +34,42 @@ behavior summa_actor(stateful_actor<summa_actor_state>* self,
   self->state.file_access_actor_settings = file_access_actor_settings;
   self->state.job_actor_settings = job_actor_settings;
   self->state.hru_actor_settings = hru_actor_settings;
+
+  // Read in the file Manager
+  auto& file_manager = self->state.file_manager;
+  file_manager = std::make_unique<fileManager>(
+      job_actor_settings.file_manager_path);
+  // Set the directoires for the fortran side
+  auto err_msg = file_manager->initFileManagerModule();
+  if (!err_msg.empty()) {
+    aout(self) << "\n\nERROR--File Manager: " << err_msg << "\n\n";
+    self->quit(); return {};
+  }
+
+  // Start the Fortran State Actor for this node
+  self->state.fortran_state = 
+      self->spawn(fortran_global_state_actor);
+  
+
+  self->state.fileGRU = getNumGRUInFile(file_manager->settings_path_, 
+      file_manager->local_attributes_);
   // Double check the number of GRUs in the file
-  self->state.fileGRU = getNumGRUInFile(job_actor_settings.file_manager_path);
   if (self->state.fileGRU  == -1) 
     aout(self) << "***WARNING***: UNABLE TO VERIFY NUMBER OF GRUS" 
                << " - Job Actor MAY CRASH\n";
+  aout(self) << "Number of GRUs in File: " << self->state.fileGRU << "\n";
+  return {};
+
+
+
+
+
+
+
+
+
+
+
 
   if (self->state.fileGRU > 0) { 
     // Fix the number of GRUs if it exceeds the number of GRUs in the file
@@ -56,7 +87,7 @@ behavior summa_actor(stateful_actor<summa_actor_state>* self,
              << " Batches\n"
              << "###################################################\n"
              << self->state.batch_container.getBatchesAsString()
-            << "###################################################\n";
+             << "###################################################\n";
 
   std::optional<Batch> batch = 
       self->state.batch_container.getUnsolvedBatch();
@@ -145,38 +176,25 @@ void spawnJob(stateful_actor<summa_actor_state>* self) {
 } // end namespace
 
 
-std::string extractEnclosed(const std::string& line) {
-  std::size_t first_quote = line.find_first_of("'");
-  std::size_t last_quote = line.find_last_of("'");
-  if (first_quote != std::string::npos && last_quote != std::string::npos 
-      && first_quote < last_quote) {
-    return line.substr(first_quote + 1, last_quote - first_quote - 1);
-  }
-  return "";
-}
+// std::string extractEnclosed(const std::string& line) {
+//   std::size_t first_quote = line.find_first_of("'");
+//   std::size_t last_quote = line.find_last_of("'");
+//   if (first_quote != std::string::npos && last_quote != std::string::npos 
+//       && first_quote < last_quote) {
+//     return line.substr(first_quote + 1, last_quote - first_quote - 1);
+//   }
+//   return "";
+// }
 
-int getNumGRUInFile(const std::string &file_manager) {
-  std::ifstream file(file_manager);
-  std::string attributeFile, settingPath;
-  if (!file.is_open())
-    return -1;
-  
-  std::string line;
-  while (std::getline(file, line)) {
-    if (line.compare(0, 13, "attributeFile") == 0)
-      attributeFile = extractEnclosed(line);
-    if (line.compare(0, 12, "settingsPath") == 0)
-      settingPath = extractEnclosed(line);
-  }
-
-  file.close();
-
+int getNumGRUInFile(const std::string &settingsPath, 
+    const std::string &attributeFile) {
   size_t fileGRU = -1;
   int ncid, gru_dim;
-  if (attributeFile.empty() || settingPath.empty())
+
+  if (attributeFile.empty() || settingsPath.empty())
     return fileGRU;
   
-  std::string combined = settingPath + attributeFile;
+  std::string combined = settingsPath + attributeFile;
 
   if (NC_NOERR != nc_open(combined.c_str(), NC_NOWRITE, &ncid))
     return fileGRU;

@@ -27,8 +27,8 @@ module file_access_actor
 
 ! Call the fortran routines that read data in and are associtated with the forcing structure
 subroutine fileAccessActor_init_fortran(& ! Variables for forcing
-                                        handle_forcFileInfo,&
-                                        num_forcing_files,&
+                                        ! handle_forcFileInfo,&
+                                        ! num_forcing_files,&
                                         num_timesteps,&
                                         num_timesteps_output_buffer,&
                                         ! Variables for output
@@ -37,7 +37,7 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
                                         num_gru,&
                                         num_hru,&
                                         err) bind(C, name="fileAccessActor_init_fortran")
-  USE ffile_info_actors_module,only:ffile_info
+  USE ffile_info_module,only:ffile_info                       ! module to read information on forcing datafile
   USE mDecisions_module,only:mDecisions                       ! module to read model decisions
   USE read_pinit_module,only:read_pinit                       ! module to read initial model parameter values
   USE module_sf_noahmplsm,only:read_mp_veg_parameters         ! module to read NOAH vegetation tables
@@ -95,8 +95,8 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
 
   implicit none
 
-  type(c_ptr), intent(in), value         :: handle_forcFileInfo
-  integer(c_int),intent(out)             :: num_forcing_files
+  ! type(c_ptr), intent(in), value         :: handle_forcFileInfo
+  ! integer(c_int),intent(out)             :: num_forcing_files
   integer(c_int),intent(out)             :: num_timesteps
   integer(c_int),intent(in)              :: num_timesteps_output_buffer
   type(c_ptr),intent(in), value          :: handle_output_ncid
@@ -122,13 +122,15 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
 
   err=0; message="fileAccessActor_init_fortran/"
 
-  call c_f_pointer(handle_forcFileInfo, forcFileInfo)
+  ! call c_f_pointer(handle_forcFileInfo, forcFileInfo)
   call c_f_pointer(handle_output_ncid, output_ncid)
 
   ! *****************************************************************************
   ! *** read description of model forcing datafile used in each HRU
   ! *****************************************************************************
-  call ffile_info(indxGRU, forcFileInfo, num_forcing_files, err, message)
+  ! call ffile_info(num_gru, forcFileInfo, num_forcing_files, err, message)
+  call ffile_info(num_gru, err, message)
+  
   if(err/=0)then; print*, trim(message); return; endif
 
   ! *****************************************************************************
@@ -202,7 +204,7 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   ! *****************************************************************************
   ! *** Initialize output structure
   ! *****************************************************************************
-  call initOutputStructure(forcFileInfo, num_timesteps_output_buffer, num_gru, err)
+  call initOutputStructure(num_timesteps_output_buffer, num_gru, err)
   if(err/=0)then; print*,trim(message); return; endif
 
   ! *****************************************************************************
@@ -377,6 +379,40 @@ else
   if(err/=0)then; print*, message; return; endif  
 end subroutine fileAccessActor_init_fortran
 
+
+subroutine getNumForcingFiles_fortran(num_forc_files) bind(C, name="getNumForcingFiles_fortran")
+  USE globalData,only:forcFileInfo
+  implicit none 
+  integer(c_int),intent(out) :: num_forc_files
+  print*, "getting number of forcing files"
+  num_forc_files = size(forcFileInfo)
+end subroutine getNumForcingFiles_fortran
+
+subroutine getFileInfoSizes_fortran(iFile, var_ix_size, data_id_size, &
+    varName_size) bind(C, name="getFileInfoSizes_fortran")
+  USE globalData,only:forcFileInfo
+  implicit none
+  integer(c_int),intent(in) :: iFile
+  integer(c_int),intent(out) :: var_ix_size
+  integer(c_int),intent(out) :: data_id_size
+  integer(c_int),intent(out) :: varName_size
+  print*, "getting file info sizes"
+  var_ix_size = size(forcFileInfo(iFile)%var_ix)
+  data_id_size = size(forcFileInfo(iFile)%data_id)
+  varName_size = size(forcFileInfo(iFile)%varName)
+end subroutine 
+
+
+subroutine getFileInfoCopy_fortran(iFile, filenmData) bind(C, name="getFileInfoCopy_fortran")
+  USE globalData,only:forcFileInfo
+  USE C_interface_module
+  implicit none
+  integer(c_int),intent(in) :: iFile
+  type(c_ptr),intent(out) :: filenmData
+  
+  call f_c_string_ptr(trim(forcFileInfo(iFile)%filenmData), filenmData)
+end subroutine getFileInfoCopy_fortran
+
 subroutine defOutputFortran(handle_output_ncid, start_gru, num_gru, num_hru, &
     file_gru, use_extention, file_extention_c, err) bind(C, name="defOutputFortran")
   USE globalData,only:nGRUrun,nHRUrun
@@ -455,7 +491,9 @@ subroutine FileAccessActor_DeallocateStructures(handle_forcFileInfo, handle_ncid
   USE access_forcing_module,only:forcingDataStruct
   USE access_forcing_module,only:vectime
   USE output_structure_module,only:outputTimeStep
+  USE output_structure_module,only:outputStructure
   USE var_lookup,only:maxvarFreq                ! maximum number of output files
+   USE globalData,only:index_map 
   implicit none
   type(c_ptr),intent(in), value        :: handle_forcFileInfo
   type(c_ptr),intent(in), value        :: handle_ncid
@@ -471,17 +509,19 @@ subroutine FileAccessActor_DeallocateStructures(handle_forcFileInfo, handle_ncid
   call c_f_pointer(handle_forcFileInfo, forcFileInfo)
 
 
-  ! close the open output FIle
-  do iFreq=1,maxvarFreq
-    if (ncid%var(iFreq)/=integerMissing) then
-      call nc_file_close(ncid%var(iFreq),err,cmessage)
-      if(err/=0)then; message=trim(message)//trim(cmessage); return; end if
-    endif   
-  end do
+  ! close the open output Files
+  ! do iFreq=1,maxvarFreq
+  !   if (ncid%var(iFreq)/=integerMissing) then
+  !     call nc_file_close(ncid%var(iFreq),err,cmessage)
+  !     if(err/=0)then; message=trim(message)//trim(cmessage); return; end if
+  !   endif   
+  ! end do
   
   deallocate(forcFileInfo)
   deallocate(ncid)
   deallocate(outputTimeStep)
+  deallocate(outputStructure)
+  deallocate(index_map)
 end subroutine FileAccessActor_DeallocateStructures
 
 ! **************************************************************************************************

@@ -5,9 +5,17 @@
 #include "timing_info.hpp"
 #include "settings_functions.hpp"
 #include "batch_container.hpp"
+#include "fileManager.hpp"
 #include <chrono>
 #include <string>
 #include <vector>
+
+extern "C" {
+  void defineGlobalData_fortran(int* err, void* err_msg);
+
+  void deallocateGlobalData_fortran(int* err, void* err_msg);
+}
+
 
 namespace caf {
 
@@ -36,6 +44,9 @@ struct summa_actor_state {
   Batch_Container batch_container;
   int current_batch_id;
 
+  std::unique_ptr<fileManager> file_manager;
+  actor fortran_state;
+
 
   // settings for all child actors (save in case we need to recover)
   Summa_Actor_Settings summa_actor_settings;
@@ -52,14 +63,21 @@ behavior summa_actor(stateful_actor<summa_actor_state>* self,
                      Job_Actor_Settings job_actor_settings, 
                      HRU_Actor_Settings hru_actor_settings, actor parent);
 
+behavior fortran_global_state_actor(event_based_actor* self);
+
+
+
+
+
 void spawnJob(stateful_actor<summa_actor_state>* self);
 } // namespace caf
 
 
 // Helper Function to extract a string from the line of a file that 
 // is enclosed in quotes
-std::string extractEnclosed(const std::string& line);
+// std::string extractEnclosed(const std::string& line);
 
 // Gets the number of GRUs from the attribute file
-int getNumGRUInFile(const std::string &file_manager);
+int getNumGRUInFile(const std::string &settingsPath, 
+    const std::string &attributeFile);
 
