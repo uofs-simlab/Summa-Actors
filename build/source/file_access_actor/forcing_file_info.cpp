@@ -15,10 +15,25 @@ fileInfo::fileInfo() {
 
 forcingFileContainer::forcingFileContainer() {
   forcing_files_ = std::vector<fileInfo>();
+}
 
-  int num_files;
-  getNumForcingFiles_fortran(&num_files);
+forcingFileContainer::~forcingFileContainer() {
+  freeForcingFiles_fortran();
+}
+
+int forcingFileContainer::initForcingFiles(int num_gru) {
+  int num_files, err;
+  
+  // initalize the fortran side
+  std::unique_ptr<char[]> message(new char[256]);
+  ffile_info_fortran(num_gru, num_files, err, &message);
+  if (err != 0) {
+    std::cout << "Error initializing forcing files: " << message.get() << "\n";
+    return -1;
+  }
+
   forcing_files_.resize(num_files);
+
   for (int i = 1; i < num_files+1; i++) {
     int var_ix_size = 0;
     int data_id_size = 0;
@@ -41,18 +56,14 @@ forcingFileContainer::forcingFileContainer() {
         forcing_files_[i-1].data_id.data(), forcing_files_[i-1].firstJulDay,
         forcing_files_[i-1].convTime2Days);
 
-
     forcing_files_[i-1].filenmData = std::string(file_name.get());
     forcing_files_[i-1].nVars = varName_size;
     for (int j = 0; j < varName_size; j++) {
       forcing_files_[i-1].varName[j] = std::string(var_name_arr[j].get());
     }
   }
-}
 
-
-forcingFileContainer::~forcingFileContainer() {
-  freeForcingFiles_fortran();
+  return 0;
 }
 
 

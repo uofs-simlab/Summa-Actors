@@ -27,17 +27,13 @@ module file_access_actor
 
 ! Call the fortran routines that read data in and are associtated with the forcing structure
 subroutine fileAccessActor_init_fortran(& ! Variables for forcing
-                                        ! handle_forcFileInfo,&
-                                        ! num_forcing_files,&
                                         num_timesteps,&
                                         num_timesteps_output_buffer,&
-                                        ! Variables for output
                                         handle_output_ncid,&
                                         start_gru,&  
                                         num_gru,&
                                         num_hru,&
                                         err) bind(C, name="fileAccessActor_init_fortran")
-  USE ffile_info_module,only:ffile_info                       ! module to read information on forcing datafile
   USE mDecisions_module,only:mDecisions                       ! module to read model decisions
   USE read_pinit_module,only:read_pinit                       ! module to read initial model parameter values
   USE module_sf_noahmplsm,only:read_mp_veg_parameters         ! module to read NOAH vegetation tables
@@ -95,8 +91,6 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
 
   implicit none
 
-  ! type(c_ptr), intent(in), value         :: handle_forcFileInfo
-  ! integer(c_int),intent(out)             :: num_forcing_files
   integer(c_int),intent(out)             :: num_timesteps
   integer(c_int),intent(in)              :: num_timesteps_output_buffer
   type(c_ptr),intent(in), value          :: handle_output_ncid
@@ -122,16 +116,7 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
 
   err=0; message="fileAccessActor_init_fortran/"
 
-  ! call c_f_pointer(handle_forcFileInfo, forcFileInfo)
   call c_f_pointer(handle_output_ncid, output_ncid)
-
-  ! *****************************************************************************
-  ! *** read description of model forcing datafile used in each HRU
-  ! *****************************************************************************
-  ! call ffile_info(num_gru, forcFileInfo, num_forcing_files, err, message)
-  call ffile_info(num_gru, err, message)
-  
-  if(err/=0)then; print*, trim(message); return; endif
 
   ! *****************************************************************************
   ! *** read model decisions
@@ -379,67 +364,9 @@ else
   if(err/=0)then; print*, message; return; endif  
 end subroutine fileAccessActor_init_fortran
 
-! TODO: Can be a function
-subroutine getNumForcingFiles_fortran(num_forc_files) bind(C, name="getNumForcingFiles_fortran")
-  USE globalData,only:forcFileInfo
-  implicit none 
-  integer(c_int),intent(out) :: num_forc_files
-  num_forc_files = size(forcFileInfo)
-end subroutine getNumForcingFiles_fortran
 
-! Get the sizes fo the vector components that make up a forcingFile
-subroutine getFileInfoSizes_fortran(iFile, var_ix_size, data_id_size, &
-    varName_size) bind(C, name="getFileInfoSizes_fortran")
-  USE globalData,only:forcFileInfo
-  implicit none
-  integer(c_int),intent(in)  :: iFile
-  integer(c_int),intent(out) :: var_ix_size
-  integer(c_int),intent(out) :: data_id_size
-  integer(c_int),intent(out) :: varName_size
-  var_ix_size = size(forcFileInfo(iFile)%var_ix)
-  data_id_size = size(forcFileInfo(iFile)%data_id)
-  varName_size = size(forcFileInfo(iFile)%varName)
-end subroutine 
 
-! Get the file info for a specific file
-subroutine getFileInfoCopy_fortran(iFile, filenmData, nVars, nTimeSteps, &
-    varName_size, var_ix_size, data_id_size, var_name_arr, var_ix_arr, &
-    data_id_arr, firstJulDay, convTime2Days) bind(C, name="getFileInfoCopy_fortran")
-  USE globalData,only:forcFileInfo
-  USE C_interface_module
-  implicit none
-  ! dummy variables
-  integer(c_int),intent(in)   :: iFile
-  type(c_ptr),intent(out)     :: filenmData
-  integer(c_int),intent(out)  :: nVars
-  integer(c_int),intent(out)  :: nTimeSteps
-  integer(c_int),intent(in)   :: varName_size
-  integer(c_int),intent(in)   :: var_ix_size
-  integer(c_int),intent(in)   :: data_id_size  
-  type(c_ptr),intent(out)     :: var_name_arr(varName_size)
-  integer(c_int),intent(out)  :: var_ix_arr(var_ix_size)
-  integer(c_int),intent(out)  :: data_id_arr(data_id_size)
-  real(c_double),intent(out)  :: firstJulDay
-  real(c_double),intent(out)  :: convTime2Days
-  ! local variables
-  integer(i4b)                :: i
-  
-  call f_c_string_ptr(trim(forcFileInfo(iFile)%filenmData), filenmData)
 
-  nVars = forcFileInfo(iFile)%nVars
-  nTimeSteps = forcFileInfo(iFile)%nTimeSteps
-
-  do i=1, varName_size
-    call f_c_string_ptr(trim(forcFileInfo(iFile)%varName(i)), var_name_arr(i))
-  end do
-
-  var_ix_arr(:) = forcFileInfo(iFile)%var_ix(:)
-  data_id_arr(:) = forcFileInfo(iFile)%data_id(:)
-
-  firstJulDay = forcFileInfo(iFile)%firstJulDay
-  convTime2Days = forcFileInfo(iFile)%convTime2Days
-
-end subroutine getFileInfoCopy_fortran
 
 subroutine defOutputFortran(handle_output_ncid, start_gru, num_gru, num_hru, &
     file_gru, use_extention, file_extention_c, err) bind(C, name="defOutputFortran")
@@ -513,17 +440,11 @@ subroutine defOutputFortran(handle_output_ncid, start_gru, num_gru, num_hru, &
 end subroutine defOutputFortran
 
 
-subroutine freeForcingFiles_fortran() bind(C, name="freeForcingFiles_fortran")
-  USE globalData,only:forcFileInfo
-  implicit none
-  if (allocated(forcFileInfo)) deallocate(forcFileInfo)
-end subroutine freeForcingFiles_fortran
+
 
 subroutine FileAccessActor_DeallocateStructures(handle_ncid) bind(C,name="FileAccessActor_DeallocateStructures")
   USE netcdf_util_module,only:nc_file_close 
   USE globalData,only:structInfo                              ! information on the data structures
-  USE access_forcing_module,only:forcingDataStruct
-  USE access_forcing_module,only:vectime
   USE output_structure_module,only:outputTimeStep
   USE output_structure_module,only:outputStructure
   USE var_lookup,only:maxvarFreq                ! maximum number of output files

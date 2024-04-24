@@ -5,8 +5,10 @@
 #include <iostream>
 
 extern "C" {
+  // Create the fortran ffile_info and return the number of forcing_files
+  void ffile_info_fortran(int& num_grus, int& num_forcing_files, int& err, 
+      void* message);
   // Creation and population of Fortran structures
-  void getNumForcingFiles_fortran(int* num_files);
   void getFileInfoSizes_fortran(int& iFile, int& var_ix_size, int& data_id_size, 
       int& varName_size);
   void getFileInfoCopy_fortran(int& iFile, void* file_name, int& nVars, 
@@ -18,7 +20,7 @@ extern "C" {
   void read_forcingFile(int& iFile, int& start_gru, int& num_gru, 
       int& err, void* message);
 
-  // Deallocate Fortran Structures
+  // Deallocate Fortran Structures associate with forcing files
   void freeForcingFiles_fortran();
 }
 
@@ -51,6 +53,8 @@ class forcingFileContainer {
     forcingFileContainer();
     ~forcingFileContainer();
 
+    int initForcingFiles(int num_gru);
+
     int loadForcingFile(int file_ID, int start_gru, int num_gru);
     bool isFileLoaded(int file_ID);
     inline bool allFilesLoaded() { 
@@ -59,7 +63,7 @@ class forcingFileContainer {
     inline int getNumSteps(int iFile) {return forcing_files_[iFile-1].nTimeSteps;}
   
   private:
-    int files_loaded_;
+    int files_loaded_ = 0;
 };
 
 

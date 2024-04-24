@@ -11,50 +11,20 @@
 #include <string>
 #include <vector>
 #include "message_atoms.hpp"
-
-extern "C" {
-  void defineGlobalData_fortran(int* err, void* err_msg);
-
-  void deallocateGlobalData_fortran(int* err, void* err_msg);
-}
-
-// This is a class that wraps around the data created in 
-// defineGlobalData()
-class summaGlobalData {
-  public:
-    summaGlobalData();
-    ~summaGlobalData();
-
-    int defineGlobalData();
-  private:
-    bool global_data_ready;
-};  
+#include "summa_global_data.hpp"
 
 
 namespace caf {
-
-
-struct job_timing_info {
-  std::vector<double> job_duration;
-  std::vector<double> job_read_duration;
-  std::vector<double> job_write_duration;
-};
-
 struct summa_actor_state {
-  // Timing Information For Summa-Actor
   TimingInfo summa_actor_timing;
-  struct job_timing_info timing_info_for_jobs;
 
-  // Program Parameters
-  int startGRU;           // starting GRU for the simulation
-  int numGRU;             // number of GRUs to compute
-  int fileGRU;            // number of GRUs in the file
-  std::string configPath; // path to the fileManager.txt file
-  int numFailed = 0;      // Number of jobs that have failed
-  caf::actor currentJob;  // Reference to the current job actor
+  int start_gru;           // starting GRU for the simulation
+  int num_gru;             // number of GRUs to compute
+  int file_gru;            // number of GRUs in the file
+  int num_gru_failed = 0;  // Number of GRUs that have failed
+  caf::actor current_job;  // Reference to the current job actor
   caf::actor parent;
 
-  // Batches
   Batch_Container batch_container;
   int current_batch_id;
 
@@ -76,9 +46,6 @@ behavior summa_actor(stateful_actor<summa_actor_state>* self,
                      File_Access_Actor_Settings file_access_actor_settings,
                      Job_Actor_Settings job_actor_settings, 
                      HRU_Actor_Settings hru_actor_settings, actor parent);
-
-behavior fortran_global_state_actor(event_based_actor* self, actor parent);
-
 
 void spawnJob(stateful_actor<summa_actor_state>* self);
 } // namespace caf

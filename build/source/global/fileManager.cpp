@@ -76,11 +76,11 @@ fileManager::fileManager(const std::string& file_manager_path) {
 }
 
 
-std::string fileManager::initFileManagerModule() {
+std::string fileManager::setTimesDirsAndFiles() {
   int err = 0;
   std::unique_ptr<char[]> err_msg(new char[1024]);
   // Calls summa_SetTimesDirsAndFiles() 
-  initFileManagerModule_fortran(file_manager_path_.c_str(), &err, &err_msg);
+  setTimesDirsAndFiles_fortran(file_manager_path_.c_str(), &err, &err_msg);
   return std::string(err_msg.get());
 }
 

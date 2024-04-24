@@ -5,14 +5,14 @@ module batch_distributer
   USE globalData,only:realMissing         ! missing double precision value
   
   implicit none
-  public::initFileManagerModule_fortran
+  public::SetTimesDirsAndFiles_fortran
   public::defineGlobalData_fortran
   public::deallocateGlobalData_fortran
 
   contains
 
-subroutine initFileManagerModule_fortran(summaFileManagerIn_C,err,message_r) &
-    bind(C, name="initFileManagerModule_fortran")
+subroutine setTimesDirsAndFiles_fortran(summaFileManagerIn_C,err,message_r) &
+    bind(C, name="setTimesDirsAndFiles_fortran")
   USE C_interface_module
   USE summaFileManager
   implicit none
@@ -32,7 +32,7 @@ subroutine initFileManagerModule_fortran(summaFileManagerIn_C,err,message_r) &
   ! Initialize the file manager
   call summa_SetTimesDirsAndFiles(summaFileManagerIn, err, message)
   if (err /= 0) then; call f_c_string_ptr(trim(message), message_r); return; endif
-end subroutine initFileManagerModule_fortran
+end subroutine setTimesDirsAndFiles_fortran
 
 
 subroutine defineGlobalData_fortran(err, message_r) bind(C, name="defineGlobalData_fortran")

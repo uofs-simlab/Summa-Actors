@@ -1,7 +1,7 @@
 #include <string>
 
 extern "C" {
-  void initFileManagerModule_fortran(char const* file_manager_path,  
+  void setTimesDirsAndFiles_fortran(char const* file_manager_path,  
         int* err, void* err_msg);
 }
 
@@ -39,6 +39,6 @@ class fileManager {
     ~fileManager() {};
 
     // Set the variables that are used by the summaFileManager (summaFileManager.f90)
-    std::string initFileManagerModule();
+    std::string setTimesDirsAndFiles();
     std::string toString();
 };

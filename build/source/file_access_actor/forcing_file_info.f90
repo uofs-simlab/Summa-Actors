@@ -1,41 +1,114 @@
+module forcing_file_info
+  USE, intrinsic :: iso_c_binding
+  USE nrtype
+  USE globalData,only:integerMissing   ! integer missing value
+  USE actor_data_types,only:var_forc   ! global data structure for forcing data
+  USE data_types,only:dlength          ! global data structure for forcing data
+  implicit none
+  public::ffile_info_fortran
+  public::getFileInfoSizes_fortran
+  public::getFileInfoCopy_fortran
+  public::read_forcingFile
+  public::openForcingFile
+  public::freeForcingFiles_fortran
 
-! This module contains all the functions that are used to
-! access the forcing file and setup the forcing data
-! for the HRUs to read from
-module access_forcing_module
+  ! Module Data Structures (global to hrus that import this module)
+  type(var_forc),allocatable,save,public  :: forcingDataStruct(:) ! forcingDataStruct(:)%var(:)%dataFromFile(:,:)
+  type(dlength),allocatable,save,public   :: vecTime(:)
+  contains
+! Initalize the fortran data structure and return the number of forcing files
+subroutine ffile_info_fortran(num_gru, num_forcing_files, err, message_r) &
+      bind(C, name="ffile_info_fortran")
+  USE ffile_info_module,only:ffile_info       ! module to read information on forcing datafile
+  USE globalData,only:forcFileInfo            ! Structure allocated by ffil info
+  USE C_interface_module,only:f_c_string_ptr  ! convert fortran string to c string
+  implicit none
+  ! dummy variables
+  integer(c_int), intent(in)  :: num_gru
+  integer(c_int), intent(out) :: num_forcing_files
+  integer(c_int), intent(out) :: err
+  type(c_ptr), intent(out)    :: message_r
+  ! local variables
+  character(len=256)          :: message=""
+  
+  call f_c_string_ptr(message, message_r)
 
-USE, intrinsic :: iso_c_binding
-USE nrtype
+  ! *****************************************************************************
+  ! *** read description of model forcing datafile used in each HRU
+  ! *****************************************************************************
+  call ffile_info(num_gru, err, message)
+  if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
 
-USE data_types,only:file_info
-USE data_types,only:dlength         ! global data structure for forcing data
-USE data_types,only:ilength         ! global data structure for forcing data
-USE actor_data_types,only:file_info_array
-USE actor_data_types,only:var_forc        ! global data structure for forcing data
-USE globalData,only:forcFileInfo              ! forcing file info
+  num_forcing_files = size(forcFileInfo)
+end subroutine ffile_info_fortran
 
-USE globalData,only:gru_struc
-USE globalData,only:time_meta,forc_meta       ! metadata structures
-USE globalData,only:integerMissing            ! integer missing value
-USE var_lookup,only:iLookTIME,iLookFORCE      ! named variables to define structure elements
-USE summaFileManager,only:FORCING_PATH        ! path of the forcing data file
-USE netcdf_util_module,only:nc_file_close  ! close netcdf file
+! Get the sizes fo the vector components that make up a forcingFile
+subroutine getFileInfoSizes_fortran(iFile, var_ix_size, data_id_size, &
+    varName_size) bind(C, name="getFileInfoSizes_fortran")
+  USE globalData,only:forcFileInfo
+  implicit none
+  integer(c_int),intent(in)  :: iFile
+  integer(c_int),intent(out) :: var_ix_size
+  integer(c_int),intent(out) :: data_id_size
+  integer(c_int),intent(out) :: varName_size
+  var_ix_size = size(forcFileInfo(iFile)%var_ix)
+  data_id_size = size(forcFileInfo(iFile)%data_id)
+  varName_size = size(forcFileInfo(iFile)%varName)
+end subroutine getFileInfoSizes_fortran
 
+! Get the file info for a specific file
+subroutine getFileInfoCopy_fortran(iFile, filenmData, nVars, nTimeSteps, &
+    varName_size, var_ix_size, data_id_size, var_name_arr, var_ix_arr, &
+    data_id_arr, firstJulDay, convTime2Days) bind(C, name="getFileInfoCopy_fortran")
+  USE globalData,only:forcFileInfo
+  USE C_interface_module
+  implicit none
+  ! dummy variables
+  integer(c_int),intent(in)   :: iFile
+  type(c_ptr),intent(out)     :: filenmData
+  integer(c_int),intent(out)  :: nVars
+  integer(c_int),intent(out)  :: nTimeSteps
+  integer(c_int),intent(in)   :: varName_size
+  integer(c_int),intent(in)   :: var_ix_size
+  integer(c_int),intent(in)   :: data_id_size  
+  type(c_ptr),intent(out)     :: var_name_arr(varName_size)
+  integer(c_int),intent(out)  :: var_ix_arr(var_ix_size)
+  integer(c_int),intent(out)  :: data_id_arr(data_id_size)
+  real(c_double),intent(out)  :: firstJulDay
+  real(c_double),intent(out)  :: convTime2Days
+  ! local variables
+  integer(i4b)                :: i
+  
+  call f_c_string_ptr(trim(forcFileInfo(iFile)%filenmData), filenmData)
 
+  nVars = forcFileInfo(iFile)%nVars
+  nTimeSteps = forcFileInfo(iFile)%nTimeSteps
 
-implicit none
-private
-public::read_forcingFile
+  do i=1, varName_size
+    call f_c_string_ptr(trim(forcFileInfo(iFile)%varName(i)), var_name_arr(i))
+  end do
 
-type(var_forc),allocatable,save,public         :: forcingDataStruct(:)              ! forcingDataStruct(:)%var(:)%dataFromFile(:,:)
-type(dlength),allocatable,save,public          :: vecTime(:)
+  var_ix_arr(:) = forcFileInfo(iFile)%var_ix(:)
+  data_id_arr(:) = forcFileInfo(iFile)%data_id(:)
 
-contains
+  firstJulDay = forcFileInfo(iFile)%firstJulDay
+  convTime2Days = forcFileInfo(iFile)%convTime2Days
+
+end subroutine getFileInfoCopy_fortran
+
+! Read an entire forcing file into the global structures defined in this module
 subroutine read_forcingFile(iFile, startGRU, numGRU, err, message_r) &
     bind(C,name="read_forcingFile")
   USE netcdf                                             
   USE netcdf_util_module,only:nc_file_open        
-  USE C_interface_module,only:f_c_string_ptr       
+  USE netcdf_util_module,only:nc_file_close  ! close netcdf file
+  USE C_interface_module,only:f_c_string_ptr
+  USE globalData,only:forcFileInfo              
+  USE globalData,only:gru_struc
+  USE globalData,only:forc_meta 
+  USE var_lookup,only:iLookTIME,iLookFORCE      ! named variables to define structure elements
+  USE summaFileManager,only:FORCING_PATH        ! path of the forcing data file
+
   implicit none
   integer(c_int),intent(in)               :: iFile
   integer(c_int),intent(in)               :: startGRU
@@ -136,9 +209,7 @@ subroutine read_forcingFile(iFile, startGRU, numGRU, err, message_r) &
   end do
 
   call nc_file_close(ncid,err,message)
-  if(err/=0)then;message=trim(message)//trim(cmessage);call f_c_string_ptr(message,message_r);return;end if
-
-       
+  if(err/=0)then;message=trim(message)//trim(cmessage);call f_c_string_ptr(message,message_r);return;end if  
 end subroutine read_forcingFile
 
 ! *************************************************************************
@@ -147,10 +218,10 @@ end subroutine read_forcingFile
 subroutine openForcingFile(forc_file,iFile,infile,ncId,err,message)
   USE netcdf                                              ! netcdf capability
   USE netcdf_util_module,only:nc_file_open                ! open netcdf file
+  USE data_types,only:file_info
   USE time_utils_module,only:fracDay                      ! compute fractional day
   USE time_utils_module,only:extractTime                  ! extract time info from units string
   USE time_utils_module,only:compJulDay                   ! convert calendar date to julian day
-  !USE globalData,only:tmZoneOffsetFracDay                ! time zone offset in fractional days
   USE globalData,only:ncTime                              ! time zone information from NetCDF file (timeOffset = longitude/15. - ncTimeOffset)
   USE globalData,only:utcTime                             ! all times in UTC (timeOffset = longitude/15. hours)
   USE globalData,only:localTime                           ! all times local (timeOffset = 0)
@@ -223,6 +294,14 @@ subroutine openForcingFile(forc_file,iFile,infile,ncId,err,message)
     case default;    message=trim(message)//'unable to identify time units'; err=20; return
   end select
    
-  end subroutine openForcingFile
+end subroutine openForcingFile
 
-end module access_forcing_module
+subroutine freeForcingFiles_fortran() bind(C, name="freeForcingFiles_fortran")
+  USE globalData,only:forcFileInfo
+  implicit none
+  if (allocated(forcFileInfo)) deallocate(forcFileInfo)
+  if (allocated(forcingDataStruct)) deallocate(forcingDataStruct)
+  if (allocated(vecTime)) deallocate(vecTime)
+end subroutine freeForcingFiles_fortran
+
+end module forcing_file_info

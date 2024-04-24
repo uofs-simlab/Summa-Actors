@@ -203,9 +203,10 @@ set(INTERFACE
 set(SYS_INIT_INTERFACE
     ${SYS_INIT_DIR}/batch_distributer_actor.f90)
 set(FILE_ACCESS_INTERFACE
+    ${FILE_ACCESS_DIR}/forcing_file_info.f90
     ${FILE_ACCESS_DIR}/file_access_actor.f90
     ${FILE_ACCESS_DIR}/output_structure.f90
-    ${FILE_ACCESS_DIR}/read_force.f90
+    # ${FILE_ACCESS_DIR}/read_force.f90
     ${FILE_ACCESS_DIR}/fileAccess_writeOutput.f90)
 set(JOB_INTERFACE
     ${JOB_ACTOR_DIR}/job_actor.f90)
@@ -229,7 +230,7 @@ set(SYS_INIT
     ${SYS_INIT_DIR}/batch_container.cpp
     ${SYS_INIT_DIR}/client.cpp
     ${SYS_INIT_DIR}/client_container.cpp
-    ${SYS_INIT_DIR}/fortran_global_state_actor.cpp
+    ${SYS_INIT_DIR}/summa_global_data.cpp
     ${SYS_INIT_DIR}/summa_actor.cpp
     ${SYS_INIT_DIR}/summa_backup_server.cpp
     ${SYS_INIT_DIR}/summa_client.cpp
@@ -237,7 +238,6 @@ set(SYS_INIT
 set(FILE_ACCESS_ACTOR
     # ${ACTORS_DIR}/file_access_actor/file_access_utils.cpp
     ${ACTORS_DIR}/file_access_actor/file_access_actor.cpp
-    ${ACTORS_DIR}/file_access_actor/file_access_init.cpp
     ${ACTORS_DIR}/file_access_actor/forcing_file_info.cpp
     ${ACTORS_DIR}/file_access_actor/output_container.cpp)
 set(JOB_ACTOR
