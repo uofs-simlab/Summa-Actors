@@ -77,8 +77,8 @@ set(NETCDF_DIR ${F_MASTER}/build/source/netcdf)
 set(NOAHMP_DIR ${F_MASTER}/build/source/noah-mp)
 
 # Define Actors specific directories
-set(ACTORS_DIR ${PARENT_DIR}/build/source)
-set(SUMMA_ACTOR_DIR ${ACTORS_DIR}/summa_actor)
+set(ACTORS_DIR      ${PARENT_DIR}/build/source)
+set(SYS_INIT_DIR    ${ACTORS_DIR}/system_initialization)
 set(FILE_ACCESS_DIR ${ACTORS_DIR}/file_access_actor)
 set(JOB_ACTOR_DIR   ${ACTORS_DIR}/job_actor)
 set(HRU_ACTOR_DIR   ${ACTORS_DIR}/hru_actor)
@@ -200,8 +200,8 @@ set(INTERFACE
     ${ACTORS_DIR}/global/cppwrap_metadata.f90
     ${ACTORS_DIR}/global/c_interface_module.f90
     ${ACTORS_DIR}/global/gru_struc.f90)
-set(SUMMA_ACTOR_INTERFACE
-    ${SUMMA_ACTOR_DIR}/batch_distributer_actor.f90)
+set(SYS_INIT_INTERFACE
+    ${SYS_INIT_DIR}/batch_distributer_actor.f90)
 set(FILE_ACCESS_INTERFACE
     ${FILE_ACCESS_DIR}/file_access_actor.f90
     ${FILE_ACCESS_DIR}/output_structure.f90
@@ -224,16 +224,16 @@ set(ACTORS_GLOBAL
     ${ACTORS_DIR}/global/message_atoms.cpp
     ${ACTORS_DIR}/global/settings_functions.cpp
     ${ACTORS_DIR}/global/timing_info.cpp)
-set(SUMMA_ACTOR
-    ${ACTORS_DIR}/summa_actor/batch.cpp
-    ${ACTORS_DIR}/summa_actor/batch_container.cpp
-    ${ACTORS_DIR}/summa_actor/client.cpp
-    ${ACTORS_DIR}/summa_actor/client_container.cpp
-    ${ACTORS_DIR}/summa_actor/fortran_global_state_actor.cpp
-    ${ACTORS_DIR}/summa_actor/summa_actor.cpp
-    ${ACTORS_DIR}/summa_actor/summa_backup_server.cpp
-    ${ACTORS_DIR}/summa_actor/summa_client.cpp
-    ${ACTORS_DIR}/summa_actor/summa_server.cpp)
+set(SYS_INIT
+    ${SYS_INIT_DIR}/batch.cpp
+    ${SYS_INIT_DIR}/batch_container.cpp
+    ${SYS_INIT_DIR}/client.cpp
+    ${SYS_INIT_DIR}/client_container.cpp
+    ${SYS_INIT_DIR}/fortran_global_state_actor.cpp
+    ${SYS_INIT_DIR}/summa_actor.cpp
+    ${SYS_INIT_DIR}/summa_backup_server.cpp
+    ${SYS_INIT_DIR}/summa_client.cpp
+    ${SYS_INIT_DIR}/summa_server.cpp)
 set(FILE_ACCESS_ACTOR
     # ${ACTORS_DIR}/file_access_actor/file_access_utils.cpp
     ${ACTORS_DIR}/file_access_actor/file_access_actor.cpp
@@ -272,7 +272,7 @@ set(SUMMA_ALL
 
 set(SUMMA_ALL 
     ${SUMMA_ALL}
-    ${SUMMA_ACTOR_INTERFACE}
+    ${SYS_INIT_INTERFACE}
     ${FILE_ACCESS_INTERFACE}
     ${JOB_INTERFACE}
     ${HRU_INTERFACE})
@@ -316,7 +316,7 @@ add_executable(${EXEC_NAME}
                ${FILE_ACCESS_ACTOR}
                ${JOB_ACTOR}
                ${HRU_ACTOR}
-               ${SUMMA_ACTOR}
+               ${SYS_INIT}
                ${SUMMA_CLIENT}
                ${SUMMA_SERVER})
 set_property(TARGET ${EXEC_NAME} PROPERTY LINKER_LANGUAGE Fortran)

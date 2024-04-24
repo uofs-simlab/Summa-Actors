@@ -1,6 +1,6 @@
 #include "hru_actor.hpp"
 
-bool hru_extra_logging = true;
+bool hru_extra_logging = false;
 
 namespace caf {
 
