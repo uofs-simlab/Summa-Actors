@@ -61,6 +61,10 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
           break;
         }
 
+        if (hru_extra_logging) 
+            aout(self) << "HRU:" << self->state.indxGRU << " - Timestep: " 
+                       << self->state.timestep << "\n";
+
         self->state.num_steps_until_write--;
         err = Run_HRU(self); // Simulate a Timestep
         if (err != 0) {
@@ -96,10 +100,23 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
 
 
     [=](new_forcing_file, int num_forcing_steps_in_iFile, int iFile) {
+        if (hru_extra_logging) {
+            aout(self) << "Recieved New iFile-" << iFile 
+                       << " with " << num_forcing_steps_in_iFile 
+                       << " forcing steps\n";
+        }
         int err;
         self->state.iFile = iFile;
         self->state.stepsInCurrentFFile = num_forcing_steps_in_iFile;
         setTimeZoneOffset(&self->state.iFile, self->state.hru_data, &err);
+        if (err != 0) {
+            aout(self) << "Error: HRU_Actor - setTimeZoneOffset - HRU = " 
+                       << self->state.indxHRU << " - indxGRU = " 
+                       << self->state.indxGRU << " - refGRU = " 
+                       << self->state.refGRU << "\n";
+            self->quit();
+            return;
+        }
         self->state.forcingStep = 1;
         self->send(self, run_hru_v);
     },

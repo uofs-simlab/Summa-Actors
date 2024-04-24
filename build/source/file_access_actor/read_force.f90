@@ -12,6 +12,7 @@ USE data_types,only:dlength         ! global data structure for forcing data
 USE data_types,only:ilength         ! global data structure for forcing data
 USE actor_data_types,only:file_info_array
 USE actor_data_types,only:var_forc        ! global data structure for forcing data
+USE globalData,only:forcFileInfo              ! forcing file info
 
 USE globalData,only:gru_struc
 USE globalData,only:time_meta,forc_meta       ! metadata structures
@@ -30,18 +31,18 @@ type(var_forc),allocatable,save,public         :: forcingDataStruct(:)          
 type(dlength),allocatable,save,public          :: vecTime(:)
 
 contains
-subroutine read_forcingFile(handle_forcFileInfo, iFile, stepsInFile, startGRU, numGRU, err) bind(C,name="read_forcingFile")
-  USE netcdf                                              ! netcdf capability
-  USE netcdf_util_module,only:nc_file_open                ! open netcdf file
+subroutine read_forcingFile(iFile, startGRU, numGRU, err, message_r) &
+    bind(C,name="read_forcingFile")
+  USE netcdf                                             
+  USE netcdf_util_module,only:nc_file_open        
+  USE C_interface_module,only:f_c_string_ptr       
   implicit none
-  type(c_ptr), intent(in), value          :: handle_forcFileInfo
   integer(c_int),intent(in)               :: iFile
-  integer(c_int),intent(inout)            :: stepsInFile
   integer(c_int),intent(in)               :: startGRU
   integer(c_int),intent(in)               :: numGRU
-  integer(c_int),intent(inout)            :: err
+  integer(c_int),intent(out)              :: err
+  type(c_ptr), intent(out)                :: message_r
   ! local varibles            
-  type(file_info_array), pointer          :: forcFileInfo
   integer(i4b)                            :: iHRU_Global
   integer(i4b)                            :: varId
   integer(i4b)                            :: ncid
@@ -58,15 +59,13 @@ subroutine read_forcingFile(handle_forcFileInfo, iFile, stepsInFile, startGRU, n
   logical(lgt),dimension(size(forc_meta)) :: checkForce       ! flags to check forcing data variables exist
   character(len=256)                      :: message          ! error message 
   
-  call c_f_pointer(handle_forcFileInfo, forcFileInfo)
 
   ! Start Procedure here
-  err=0; message="read_force.f90 - read_forcingFile/"
+  err=0; message="read_forcingFile/"
+  call f_c_string_ptr(message,message_r)
 
-  nFiles=size(forcFileInfo%ffile_list(:))
-
-  nTimeSteps = sum(forcFileInfo%ffile_list(:)%nTimeSteps)
-
+  ! TODO: I wonder if I can wrap this in a shared pointer???
+  nFiles=size(forcFileInfo(:))
   ! Allocate forcing data input Struct
   if (.not.allocated(forcingDataStruct))then
     allocate(forcingDataStruct(nFiles))
@@ -75,31 +74,28 @@ subroutine read_forcingFile(handle_forcFileInfo, iFile, stepsInFile, startGRU, n
   endif
  
   ! Files are assumed to be in the correct order
-  infile=trim(FORCING_PATH)//trim(forcFileInfo%ffile_list(iFile)%filenmData)
-  ! open netCDF file
-  call openForcingFile(forcFileInfo%ffile_list,iFile,trim(infile),ncid,err,cmessage)
-  if(err/=0)then; message=trim(message)//trim(cmessage);return; end if
+  infile=trim(FORCING_PATH)//trim(forcFileInfo(iFile)%filenmData)
+  call openForcingFile(forcFileInfo(iFile),iFile,trim(infile),ncid,err,cmessage)
+  if(err/=0)then;message=trim(message)//trim(cmessage);call f_c_string_ptr(message,message_r);return; end if
 
-  err = nf90_inq_varid(ncid,'time',varId);                              if(err/=nf90_noerr)then; message=trim(message)//'cannot find time variable/'//trim(nf90_strerror(err)); return; endif
-  err = nf90_inquire_attribute(ncid,varId,'units',len = attLen);        if(err/=nf90_noerr)then; message=trim(message)//'cannot find time units/'//trim(nf90_strerror(err));    return; endif
-  err = nf90_get_att(ncid,varid,'units',forcingDataStruct(iFile)%refTimeString);if(err/=nf90_noerr)then; message=trim(message)//'cannot read time units/'//trim(nf90_strerror(err));    return; endif
-
-
-  nTimeSteps = forcFileInfo%ffile_list(iFile)%nTimeSteps
+  err = nf90_inq_varid(ncid,'time',varId);                              if(err/=nf90_noerr)then; message=trim(message)//'cannot find time variable/'//trim(nf90_strerror(err));call f_c_string_ptr(message,message_r);return; endif
+  err = nf90_inquire_attribute(ncid,varId,'units',len = attLen);        if(err/=nf90_noerr)then; message=trim(message)//'cannot find time units/'//trim(nf90_strerror(err));call f_c_string_ptr(message,message_r);return; endif
+  err = nf90_get_att(ncid,varid,'units',forcingDataStruct(iFile)%refTimeString);if(err/=nf90_noerr)then; message=trim(message)//'cannot read time units/'//trim(nf90_strerror(err));call f_c_string_ptr(message,message_r);return; endif
+  
+  nTimeSteps = forcFileInfo(iFile)%nTimeSteps
   forcingDataStruct(iFile)%nTimeSteps = nTimeSteps
-  stepsInFile = nTimeSteps
   if(.not.allocated(vecTime(iFile)%dat))then
     allocate(vecTime(iFile)%dat(nTimeSteps))
   end if
 
   ! Get Time Information
   err = nf90_inq_varid(ncid,'time',varId);
-  if(err/=nf90_noerr)then; message=trim(message)//'trouble finding time variable/'//trim(nf90_strerror(err)); return; endif
+  if(err/=nf90_noerr)then; message=trim(message)//'trouble finding time variable/'//trim(nf90_strerror(err)); call f_c_string_ptr(message,message_r); return; endif
   err = nf90_get_var(ncid,varId,vecTime(iFile)%dat(:),start=(/1/),count=(/nTimeSteps/))    
-  if(err/=nf90_noerr)then; message=trim(message)//'trouble reading time variable/'//trim(nf90_strerror(err)); return; endif
+  if(err/=nf90_noerr)then; message=trim(message)//'trouble reading time variable/'//trim(nf90_strerror(err)); call f_c_string_ptr(message,message_r); return; endif
 
   ! Need to loop through vars and add forcing data
-  nVars = forcFileInfo%ffile_list(iFile)%nVars
+  nVars = forcFileInfo(iFile)%nVars
   forcingDataStruct(iFile)%nVars = nVars
   if (.not.allocated(forcingDataStruct(iFile)%var))then
     allocate(forcingDataStruct(iFile)%var(nVars))
@@ -114,13 +110,12 @@ subroutine read_forcingFile(handle_forcFileInfo, iFile, stepsInFile, startGRU, n
   checkForce(iLookFORCE%time) = .true.  ! time is handled separately
   do iNC=1,nVars
     ! populate var_ix so HRUs can access the values
-    forcingDataStruct(iFile)%var_ix(iNC) = forcFileInfo%ffile_list(iFile)%var_ix(iNC)
+    forcingDataStruct(iFile)%var_ix(iNC) = forcFileInfo(iFile)%var_ix(iNC)
 
     ! check variable is desired
-    if(forcFileInfo%ffile_list(iFile)%var_ix(iNC)==integerMissing) cycle
+    if(forcFileInfo(iFile)%var_ix(iNC)==integerMissing) cycle
           
-          
-    iVar = forcFileInfo%ffile_list(iFile)%var_ix(iNC)
+    iVar = forcFileInfo(iFile)%var_ix(iNC)
     checkForce(iVar) = .true.
     if (.not.allocated(forcingDataStruct(iFile)%var(iVar)%dataFromFile))then
       allocate(forcingDataStruct(iFile)%var(iVar)%dataFromFile(numGRU,nTimeSteps))
@@ -129,19 +124,19 @@ subroutine read_forcingFile(handle_forcFileInfo, iFile, stepsInFile, startGRU, n
     ! Get Forcing Data
     ! get variable name for error reporting
     err=nf90_inquire_variable(ncid,iNC,name=varName)
-    if(err/=nf90_noerr)then; message=trim(message)//'problem reading forcing variable name from netCDF: '//trim(nf90_strerror(err)); return; endif
+    if(err/=nf90_noerr)then; message=trim(message)//'problem reading forcing variable name from netCDF: '//trim(nf90_strerror(err)); call f_c_string_ptr(message,message_r); return; endif
 
     ! define global HRU
     iHRU_global = gru_struc(1)%hruInfo(1)%hru_nc
     numHRU = sum(gru_struc(:)%hruCount)
     
 
-    err=nf90_get_var(ncid,forcFileInfo%ffile_list(iFile)%data_id(ivar),forcingDataStruct(iFile)%var(iVar)%dataFromFile, start=(/startGRU,1/),count=(/numHRU, nTimeSteps/))
-    if(err/=nf90_noerr)then; message=trim(message)//'problem reading forcing data: '//trim(varName)//'/'//trim(nf90_strerror(err)); return; endif
+    err=nf90_get_var(ncid,forcFileInfo(iFile)%data_id(ivar),forcingDataStruct(iFile)%var(iVar)%dataFromFile, start=(/startGRU,1/),count=(/numHRU, nTimeSteps/))
+    if(err/=nf90_noerr)then; message=trim(message)//'problem reading forcing data: '//trim(varName)//'/'//trim(nf90_strerror(err)); call f_c_string_ptr(message,message_r); return; endif
   end do
 
   call nc_file_close(ncid,err,message)
-  if(err/=0)then;message=trim(message)//trim(cmessage);return;end if
+  if(err/=0)then;message=trim(message)//trim(cmessage);call f_c_string_ptr(message,message_r);return;end if
 
        
 end subroutine read_forcingFile
@@ -149,7 +144,7 @@ end subroutine read_forcingFile
 ! *************************************************************************
 ! * open the NetCDF forcing file and get the time information
 ! *************************************************************************
-subroutine openForcingFile(forcFileInfo,iFile,infile,ncId,err,message)
+subroutine openForcingFile(forc_file,iFile,infile,ncId,err,message)
   USE netcdf                                              ! netcdf capability
   USE netcdf_util_module,only:nc_file_open                ! open netcdf file
   USE time_utils_module,only:fracDay                      ! compute fractional day
@@ -162,7 +157,7 @@ subroutine openForcingFile(forcFileInfo,iFile,infile,ncId,err,message)
   USE globalData,only:refJulDay_data
   USE summafilemanager,only:NC_TIME_ZONE
   ! dummy variables
-  type(file_info),intent(inout)     :: forcFileInfo(:)
+  type(file_info),intent(inout)     :: forc_file
   integer(i4b),intent(in)           :: iFile              ! index of current forcing file in forcing file list
   character(*) ,intent(in)          :: infile             ! input file
   integer(i4b) ,intent(out)         :: ncId               ! NetCDF ID
@@ -214,16 +209,16 @@ subroutine openForcingFile(forcFileInfo,iFile,infile,ncId,err,message)
   ! get the time multiplier needed to convert time to units of days
   select case( trim( refTimeString(1:index(refTimeString,' ')) ) )
     case('seconds') 
-      forcFileInfo(iFile)%convTime2Days=86400._dp
+      forc_file%convTime2Days=86400._dp
       forcingDataStruct(iFile)%convTime2Days=86400._dp
     case('minutes') 
-      forcFileInfo(iFile)%convTime2Days=1440._dp
+      forc_file%convTime2Days=1440._dp
       forcingDataStruct(iFile)%convTime2Days=1440._dp
     case('hours')
-      forcFileInfo(iFile)%convTime2Days=24._dp
+      forc_file%convTime2Days=24._dp
       forcingDataStruct(iFile)%convTime2Days=24._dp
     case('days')
-      forcFileInfo(iFile)%convTime2Days=1._dp
+      forc_file%convTime2Days=1._dp
       forcingDataStruct(iFile)%convTime2Days=1._dp
     case default;    message=trim(message)//'unable to identify time units'; err=20; return
   end select

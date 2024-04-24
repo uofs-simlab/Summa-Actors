@@ -379,51 +379,65 @@ else
   if(err/=0)then; print*, message; return; endif  
 end subroutine fileAccessActor_init_fortran
 
-
+! TODO: Can be a function
 subroutine getNumForcingFiles_fortran(num_forc_files) bind(C, name="getNumForcingFiles_fortran")
   USE globalData,only:forcFileInfo
   implicit none 
   integer(c_int),intent(out) :: num_forc_files
-  print*, "getting number of forcing files"
   num_forc_files = size(forcFileInfo)
 end subroutine getNumForcingFiles_fortran
 
+! Get the sizes fo the vector components that make up a forcingFile
 subroutine getFileInfoSizes_fortran(iFile, var_ix_size, data_id_size, &
     varName_size) bind(C, name="getFileInfoSizes_fortran")
   USE globalData,only:forcFileInfo
   implicit none
-  integer(c_int),intent(in) :: iFile
+  integer(c_int),intent(in)  :: iFile
   integer(c_int),intent(out) :: var_ix_size
   integer(c_int),intent(out) :: data_id_size
   integer(c_int),intent(out) :: varName_size
-  print*, "getting file info sizes"
   var_ix_size = size(forcFileInfo(iFile)%var_ix)
   data_id_size = size(forcFileInfo(iFile)%data_id)
   varName_size = size(forcFileInfo(iFile)%varName)
 end subroutine 
 
-
-subroutine getFileInfoCopy_fortran(iFile, filenmData, varName_size, &
-    var_name_arr) bind(C, name="getFileInfoCopy_fortran")
+! Get the file info for a specific file
+subroutine getFileInfoCopy_fortran(iFile, filenmData, nVars, nTimeSteps, &
+    varName_size, var_ix_size, data_id_size, var_name_arr, var_ix_arr, &
+    data_id_arr, firstJulDay, convTime2Days) bind(C, name="getFileInfoCopy_fortran")
   USE globalData,only:forcFileInfo
   USE C_interface_module
   implicit none
   ! dummy variables
   integer(c_int),intent(in)   :: iFile
   type(c_ptr),intent(out)     :: filenmData
+  integer(c_int),intent(out)  :: nVars
+  integer(c_int),intent(out)  :: nTimeSteps
   integer(c_int),intent(in)   :: varName_size
+  integer(c_int),intent(in)   :: var_ix_size
+  integer(c_int),intent(in)   :: data_id_size  
   type(c_ptr),intent(out)     :: var_name_arr(varName_size)
+  integer(c_int),intent(out)  :: var_ix_arr(var_ix_size)
+  integer(c_int),intent(out)  :: data_id_arr(data_id_size)
+  real(c_double),intent(out)  :: firstJulDay
+  real(c_double),intent(out)  :: convTime2Days
   ! local variables
   integer(i4b)                :: i
   
-  ! Get File Name
   call f_c_string_ptr(trim(forcFileInfo(iFile)%filenmData), filenmData)
+
+  nVars = forcFileInfo(iFile)%nVars
+  nTimeSteps = forcFileInfo(iFile)%nTimeSteps
 
   do i=1, varName_size
     call f_c_string_ptr(trim(forcFileInfo(iFile)%varName(i)), var_name_arr(i))
   end do
 
+  var_ix_arr(:) = forcFileInfo(iFile)%var_ix(:)
+  data_id_arr(:) = forcFileInfo(iFile)%data_id(:)
 
+  firstJulDay = forcFileInfo(iFile)%firstJulDay
+  convTime2Days = forcFileInfo(iFile)%convTime2Days
 
 end subroutine getFileInfoCopy_fortran
 
@@ -499,7 +513,13 @@ subroutine defOutputFortran(handle_output_ncid, start_gru, num_gru, num_hru, &
 end subroutine defOutputFortran
 
 
-subroutine FileAccessActor_DeallocateStructures(handle_forcFileInfo, handle_ncid) bind(C,name="FileAccessActor_DeallocateStructures")
+subroutine freeForcingFiles_fortran() bind(C, name="freeForcingFiles_fortran")
+  USE globalData,only:forcFileInfo
+  implicit none
+  if (allocated(forcFileInfo)) deallocate(forcFileInfo)
+end subroutine freeForcingFiles_fortran
+
+subroutine FileAccessActor_DeallocateStructures(handle_ncid) bind(C,name="FileAccessActor_DeallocateStructures")
   USE netcdf_util_module,only:nc_file_close 
   USE globalData,only:structInfo                              ! information on the data structures
   USE access_forcing_module,only:forcingDataStruct
@@ -509,7 +529,6 @@ subroutine FileAccessActor_DeallocateStructures(handle_forcFileInfo, handle_ncid
   USE var_lookup,only:maxvarFreq                ! maximum number of output files
    USE globalData,only:index_map 
   implicit none
-  type(c_ptr),intent(in), value        :: handle_forcFileInfo
   type(c_ptr),intent(in), value        :: handle_ncid
   type(var_i),pointer                  :: ncid
 
@@ -520,7 +539,6 @@ subroutine FileAccessActor_DeallocateStructures(handle_forcFileInfo, handle_ncid
   integer(i4b)                         :: err
 
   call c_f_pointer(handle_ncid, ncid)
-  call c_f_pointer(handle_forcFileInfo, forcFileInfo)
 
 
   ! close the open output Files
@@ -531,7 +549,6 @@ subroutine FileAccessActor_DeallocateStructures(handle_forcFileInfo, handle_ncid
   !   endif   
   ! end do
   
-  deallocate(forcFileInfo)
   deallocate(ncid)
   deallocate(outputTimeStep)
   deallocate(outputStructure)

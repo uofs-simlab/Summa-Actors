@@ -197,6 +197,7 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     CAF_ADD_ATOM(summa, def_output)
     CAF_ADD_ATOM(summa, load_balance)
     CAF_ADD_ATOM(summa, file_access_actor_ready)
+    CAF_ADD_ATOM(summa, global_data_ready)
 
     // Sender: job_actor 
     // Reciever: summa_actor

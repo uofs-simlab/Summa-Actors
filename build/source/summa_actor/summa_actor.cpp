@@ -1,6 +1,5 @@
 #include "caf/all.hpp"
 #include "caf/io/all.hpp"
-#include "message_atoms.hpp"
 #include "summa_actor.hpp"
 #include "global.hpp"
 #include "job_actor.hpp"
@@ -46,10 +45,14 @@ behavior summa_actor(stateful_actor<summa_actor_state>* self,
     self->quit(); return {};
   }
 
-  // Start the Fortran State Actor for this node
-  self->state.fortran_state = 
-      self->spawn(fortran_global_state_actor);
-  
+  // Create the global state
+  self->state.global_fortran_state = std::make_unique<summaGlobalData>();
+  auto err = self->state.global_fortran_state->defineGlobalData();
+  if (err != 0) {
+    aout(self) << "ERROR--Global State: Unable To Define Global Data\n";
+    self->quit(); return {};
+  }
+
   self->state.fileGRU = getNumGRUInFile(file_manager->settings_path_, 
       file_manager->local_attributes_);
   if (self->state.fileGRU  == -1) 
@@ -74,13 +77,14 @@ behavior summa_actor(stateful_actor<summa_actor_state>* self,
              << "###################################################\n"
              << self->state.batch_container.getBatchesAsString()
              << "###################################################\n";
-
   std::optional<Batch> batch = 
       self->state.batch_container.getUnsolvedBatch();
   if (!batch.has_value()) {
     aout(self) << "ERROR--Summa_Actor: No Batches To Solve\n";
-    self->quit(); return {};
+    self->quit(); 
+    return {};
   } 
+
   self->state.current_batch_id = batch->getBatchID();
   aout(self) << "Starting Batch " << self->state.current_batch_id + 1 << "\n";
   auto batch_val = batch.value();
@@ -89,8 +93,6 @@ behavior summa_actor(stateful_actor<summa_actor_state>* self,
       self->state.job_actor_settings, self->state.hru_actor_settings, self);
 
   return {
-
-
     [=](done_job, int numFailed, double job_duration, double read_duration, 
         double write_duration) {
       
@@ -139,7 +141,7 @@ behavior summa_actor(stateful_actor<summa_actor_state>* self,
       }
     },
 
-    [=](err) {
+    [=](err_atom) {
       aout(self) << "Unrecoverable Error: Attempting To Fail Gracefully\n";
       self->quit();
     }
@@ -161,16 +163,6 @@ void spawnJob(stateful_actor<summa_actor_state>* self) {
 
 } // end namespace
 
-
-// std::string extractEnclosed(const std::string& line) {
-//   std::size_t first_quote = line.find_first_of("'");
-//   std::size_t last_quote = line.find_last_of("'");
-//   if (first_quote != std::string::npos && last_quote != std::string::npos 
-//       && first_quote < last_quote) {
-//     return line.substr(first_quote + 1, last_quote - first_quote - 1);
-//   }
-//   return "";
-// }
 
 int getNumGRUInFile(const std::string &settingsPath, 
     const std::string &attributeFile) {

@@ -1,0 +1,437 @@
+==3479943== Memcheck, a memory error detector
+==3479943== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
+==3479943== Using Valgrind-3.18.1-42b08ed5bd-20211015 and LibVEX; rerun with -h for copyright info
+==3479943== Command: ./summa_be -g 1 1 -c /code/laugh_tests/test_cases/settings/syntheticTestCases/celia1990/Summa_Actors_Settings_celia1990.json
+==3479943== Parent PID: 2825852
+==3479943== 
+--3479943-- 
+--3479943-- Valgrind options:
+--3479943--    --leak-check=full
+--3479943--    --show-leak-kinds=all
+--3479943--    --track-origins=yes
+--3479943--    --verbose
+--3479943--    --log-file=valgrind-out.txt
+--3479943-- Contents of /proc/version:
+--3479943--   Linux version 6.5.0-28-generic (buildd@lcy02-amd64-098) (x86_64-linux-gnu-gcc-12 (Ubuntu 12.3.0-1ubuntu1~22.04) 12.3.0, GNU ld (GNU Binutils for Ubuntu) 2.38) #29~22.04.1-Ubuntu SMP PREEMPT_DYNAMIC Thu Apr  4 14:39:20 UTC 2
+--3479943-- 
+--3479943-- Arch and hwcaps: AMD64, LittleEndian, amd64-cx16-lzcnt-rdtscp-sse3-ssse3-avx-avx2-bmi-f16c-rdrand-rdseed
+--3479943-- Page sizes: currently 4096, max supported 4096
+--3479943-- Valgrind library directory: /usr/libexec/valgrind
+--3479943-- Reading syms from /code/Summa-Actors/bin/summa_be
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2
+--3479943--   Considering /usr/lib/debug/.build-id/15/921ea631d9f36502d20459c43e5c85b7d6ab76.debug ..
+--3479943--   .. build-id is valid
+--3479943-- Reading syms from /usr/libexec/valgrind/memcheck-amd64-linux
+--3479943--    object doesn't have a symbol table
+--3479943--    object doesn't have a dynamic symbol table
+--3479943-- Scheduler: using generic scheduler lock implementation.
+--3479943-- Reading suppressions file: /usr/libexec/valgrind/default.supp
+==3479943== embedded gdbserver: reading from /tmp/vgdb-pipe-from-vgdb-to-3479943-by-???-on-4ce5b29ed7b1
+==3479943== embedded gdbserver: writing to   /tmp/vgdb-pipe-to-vgdb-from-3479943-by-???-on-4ce5b29ed7b1
+==3479943== embedded gdbserver: shared mem   /tmp/vgdb-pipe-shared-mem-vgdb-3479943-by-???-on-4ce5b29ed7b1
+==3479943== 
+==3479943== TO CONTROL THIS PROCESS USING vgdb (which you probably
+==3479943== don't want to do, unless you know exactly what you're doing,
+==3479943== or are doing some strange experiment):
+==3479943==   /usr/bin/vgdb --pid=3479943 ...command...
+==3479943== 
+==3479943== TO DEBUG THIS PROCESS USING GDB: start GDB like this
+==3479943==   /path/to/gdb ./summa_be
+==3479943== and then give GDB the following command
+==3479943==   target remote | /usr/bin/vgdb --pid=3479943
+==3479943== --pid is optional if only one valgrind process is running
+==3479943== 
+--3479943-- REDIR: 0x402aa40 (ld-linux-x86-64.so.2:strlen) redirected to 0x580bcec2 (???)
+--3479943-- REDIR: 0x402a810 (ld-linux-x86-64.so.2:index) redirected to 0x580bcedc (???)
+--3479943-- Reading syms from /usr/libexec/valgrind/vgpreload_core-amd64-linux.so
+--3479943--    object doesn't have a symbol table
+--3479943-- Reading syms from /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so
+--3479943--    object doesn't have a symbol table
+==3479943== WARNING: new redirection conflicts with existing -- ignoring it
+--3479943--     old: 0x0402aa40 (strlen              ) R-> (0000.0) 0x580bcec2 ???
+--3479943--     new: 0x0402aa40 (strlen              ) R-> (2007.0) 0x0484ee30 strlen
+--3479943-- REDIR: 0x4027220 (ld-linux-x86-64.so.2:strcmp) redirected to 0x484fcd0 (strcmp)
+--3479943-- REDIR: 0x402afa0 (ld-linux-x86-64.so.2:mempcpy) redirected to 0x4853840 (mempcpy)
+--3479943-- Reading syms from /usr/local/lib/libcaf_io.so.0.18.6
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/libnetcdf.so.19
+--3479943--    object doesn't have a symbol table
+--3479943-- Reading syms from /code/Summa-Actors/build/cmake_build/libsummaactors.so
+--3479943-- Reading syms from /usr/local/lib/libcaf_core.so.0.18.6
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.30
+--3479943--    object doesn't have a symbol table
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/libm.so.6
+--3479943--   Considering /usr/lib/debug/.build-id/a8/8ef0199bd5e742ebd0c359edf5cb2be0ec08b5.debug ..
+--3479943--   .. build-id is valid
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/libgcc_s.so.1
+--3479943--    object doesn't have a symbol table
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/libc.so.6
+--3479943--   Considering /usr/lib/debug/.build-id/c2/89da5071a3399de893d2af81d6a30c62646e1e.debug ..
+--3479943--   .. build-id is valid
+==3479943== WARNING: new redirection conflicts with existing -- ignoring it
+--3479943--     old: 0x059c9c60 (memalign            ) R-> (1011.0) 0x0484e080 memalign
+--3479943--     new: 0x059c9c60 (memalign            ) R-> (1017.0) 0x0484e050 aligned_alloc
+==3479943== WARNING: new redirection conflicts with existing -- ignoring it
+--3479943--     old: 0x059c9c60 (memalign            ) R-> (1011.0) 0x0484e080 memalign
+--3479943--     new: 0x059c9c60 (memalign            ) R-> (1017.0) 0x0484e020 aligned_alloc
+==3479943== WARNING: new redirection conflicts with existing -- ignoring it
+--3479943--     old: 0x059c9c60 (memalign            ) R-> (1011.0) 0x0484e080 memalign
+--3479943--     new: 0x059c9c60 (memalign            ) R-> (1017.0) 0x0484e050 aligned_alloc
+==3479943== WARNING: new redirection conflicts with existing -- ignoring it
+--3479943--     old: 0x059c9c60 (memalign            ) R-> (1011.0) 0x0484e080 memalign
+--3479943--     new: 0x059c9c60 (memalign            ) R-> (1017.0) 0x0484e020 aligned_alloc
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/libhdf5_serial_hl.so.100.1.4
+--3479943--    object doesn't have a symbol table
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/libhdf5_serial.so.103.3.0
+--3479943--    object doesn't have a symbol table
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/libcurl.so.4.7.0
+--3479943--    object doesn't have a symbol table
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/libnetcdff.so.7.1.0
+--3479943--    object doesn't have a symbol table
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/openblas-pthread/libopenblasp-r0.3.20.so
+--3479943--    object doesn't have a symbol table
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/libgfortran.so.5.0.0
+--3479943--    object doesn't have a symbol table
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/libcrypto.so.3
+--3479943--    object doesn't have a symbol table
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/libsz.so.2.0.1
+--3479943--    object doesn't have a symbol table
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/libz.so.1.2.11
+--3479943--    object doesn't have a symbol table
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/libnghttp2.so.14.20.1
+--3479943--    object doesn't have a symbol table
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/libidn2.so.0.3.7
+--3479943--    object doesn't have a symbol table
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/librtmp.so.1
+--3479943--    object doesn't have a symbol table
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/libssh.so.4.8.7
+--3479943--    object doesn't have a symbol table
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/libpsl.so.5.3.2
+--3479943--    object doesn't have a symbol table
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/libssl.so.3
+--3479943--    object doesn't have a symbol table
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/libgssapi_krb5.so.2.2
+--3479943--    object doesn't have a symbol table
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/libldap-2.5.so.0.1.11
+--3479943--    object doesn't have a symbol table
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/liblber-2.5.so.0.1.11
+--3479943--    object doesn't have a symbol table
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/libzstd.so.1.4.8
+--3479943--    object doesn't have a symbol table
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/libbrotlidec.so.1.0.9
+--3479943--    object doesn't have a symbol table
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/libquadmath.so.0.0.0
+--3479943--    object doesn't have a symbol table
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/libaec.so.0.0.12
+--3479943--    object doesn't have a symbol table
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/libunistring.so.2.2.0
+--3479943--    object doesn't have a symbol table
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/libgnutls.so.30.31.0
+--3479943--    object doesn't have a symbol table
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/libhogweed.so.6.4
+--3479943--    object doesn't have a symbol table
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/libnettle.so.8.4
+--3479943--    object doesn't have a symbol table
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/libgmp.so.10.4.1
+--3479943--    object doesn't have a symbol table
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/libkrb5.so.3.3
+--3479943--    object doesn't have a symbol table
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/libk5crypto.so.3.1
+--3479943--    object doesn't have a symbol table
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/libcom_err.so.2.1
+--3479943--    object doesn't have a symbol table
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/libkrb5support.so.0.1
+--3479943--    object doesn't have a symbol table
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/libsasl2.so.2.0.25
+--3479943--    object doesn't have a symbol table
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/libbrotlicommon.so.1.0.9
+--3479943--    object doesn't have a symbol table
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/libp11-kit.so.0.3.0
+--3479943--    object doesn't have a symbol table
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/libtasn1.so.6.6.2
+--3479943--    object doesn't have a symbol table
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/libkeyutils.so.1.9
+--3479943--    object doesn't have a symbol table
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/libresolv.so.2
+--3479943--   Considering /usr/lib/debug/.build-id/41/77015ccbe670995ed128899633b71e6ca397ef.debug ..
+--3479943--   .. build-id is valid
+--3479943-- Reading syms from /usr/lib/x86_64-linux-gnu/libffi.so.8.1.0
+--3479943--    object doesn't have a symbol table
+--3479943-- REDIR: 0x59cc720 (libc.so.6:strnlen) redirected to 0x483f220 (_vgnU_ifunc_wrapper)
+--3479943-- REDIR: 0x59cc9e0 (libc.so.6:strpbrk) redirected to 0x483f220 (_vgnU_ifunc_wrapper)
+--3479943-- REDIR: 0x59cc2e0 (libc.so.6:strcmp) redirected to 0x483f220 (_vgnU_ifunc_wrapper)
+--3479943-- REDIR: 0x59eacd0 (libc.so.6:wcsnlen) redirected to 0x483f220 (_vgnU_ifunc_wrapper)
+--3479943-- REDIR: 0x59cd6d0 (libc.so.6:memset) redirected to 0x483f220 (_vgnU_ifunc_wrapper)
+--3479943-- REDIR: 0x59e9540 (libc.so.6:wcslen) redirected to 0x483f220 (_vgnU_ifunc_wrapper)
+--3479943-- REDIR: 0x59cdc10 (libc.so.6:memcpy@@GLIBC_2.14) redirected to 0x483f220 (_vgnU_ifunc_wrapper)
+--3479943-- REDIR: 0x59e9370 (libc.so.6:wcschr) redirected to 0x483f220 (_vgnU_ifunc_wrapper)
+--3479943-- REDIR: 0x59cc260 (libc.so.6:index) redirected to 0x483f220 (_vgnU_ifunc_wrapper)
+--3479943-- REDIR: 0x59cc960 (libc.so.6:rindex) redirected to 0x483f220 (_vgnU_ifunc_wrapper)
+--3479943-- REDIR: 0x59cd5a0 (libc.so.6:memmove) redirected to 0x483f220 (_vgnU_ifunc_wrapper)
+==3479943== Preferring higher priority redirection:
+--3479943--     old: 0x05ac47c0 (__memcpy_avx_unalign) R-> (2018.0) 0x04850f90 __memcpy_avx_unaligned_erms
+--3479943--     new: 0x05ac47c0 (__memcpy_avx_unalign) R-> (2018.1) 0x04852880 memmove
+--3479943-- REDIR: 0x59e93f0 (libc.so.6:wcscmp) redirected to 0x483f220 (_vgnU_ifunc_wrapper)
+--3479943-- REDIR: 0x59cd9e0 (libc.so.6:stpncpy) redirected to 0x483f220 (_vgnU_ifunc_wrapper)
+--3479943-- REDIR: 0x59e99b0 (libc.so.6:wmemchr) redirected to 0x483f220 (_vgnU_ifunc_wrapper)
+--3479943-- REDIR: 0x59cc830 (libc.so.6:strncmp) redirected to 0x483f220 (_vgnU_ifunc_wrapper)
+--3479943-- REDIR: 0x59cda70 (libc.so.6:strcasecmp) redirected to 0x483f220 (_vgnU_ifunc_wrapper)
+--3479943-- REDIR: 0x59cc420 (libc.so.6:strcspn) redirected to 0x483f220 (_vgnU_ifunc_wrapper)
+--3479943-- REDIR: 0x59e9470 (libc.so.6:wcscpy) redirected to 0x483f220 (_vgnU_ifunc_wrapper)
+--3479943-- REDIR: 0x59cc1d0 (libc.so.6:strcat) redirected to 0x483f220 (_vgnU_ifunc_wrapper)
+--3479943-- REDIR: 0x59cdb60 (libc.so.6:strncasecmp_l) redirected to 0x483f220 (_vgnU_ifunc_wrapper)
+--3479943-- REDIR: 0x59cd480 (libc.so.6:bcmp) redirected to 0x483f220 (_vgnU_ifunc_wrapper)
+--3479943-- REDIR: 0x59d5570 (libc.so.6:memrchr) redirected to 0x483f220 (_vgnU_ifunc_wrapper)
+--3479943-- REDIR: 0x59cf010 (libc.so.6:strchrnul) redirected to 0x483f220 (_vgnU_ifunc_wrapper)
+--3479943-- REDIR: 0x59cc390 (libc.so.6:strcpy) redirected to 0x483f220 (_vgnU_ifunc_wrapper)
+--3479943-- REDIR: 0x59cdb10 (libc.so.6:strcasecmp_l) redirected to 0x483f220 (_vgnU_ifunc_wrapper)
+--3479943-- REDIR: 0x59cc6a0 (libc.so.6:strlen) redirected to 0x483f220 (_vgnU_ifunc_wrapper)
+--3479943-- REDIR: 0x59cc8d0 (libc.so.6:strncpy) redirected to 0x483f220 (_vgnU_ifunc_wrapper)
+--3479943-- REDIR: 0x59cd950 (libc.so.6:stpcpy) redirected to 0x483f220 (_vgnU_ifunc_wrapper)
+--3479943-- REDIR: 0x59cd3f0 (libc.so.6:memchr) redirected to 0x483f220 (_vgnU_ifunc_wrapper)
+--3479943-- REDIR: 0x59ccb00 (libc.so.6:strspn) redirected to 0x483f220 (_vgnU_ifunc_wrapper)
+--3479943-- REDIR: 0x59cd7d0 (libc.so.6:mempcpy) redirected to 0x483f220 (_vgnU_ifunc_wrapper)
+--3479943-- REDIR: 0x59cdac0 (libc.so.6:strncasecmp) redirected to 0x483f220 (_vgnU_ifunc_wrapper)
+--3479943-- REDIR: 0x59cef80 (libc.so.6:rawmemchr) redirected to 0x483f220 (_vgnU_ifunc_wrapper)
+--3479943-- REDIR: 0x59cc7a0 (libc.so.6:strncat) redirected to 0x483f220 (_vgnU_ifunc_wrapper)
+--3479943-- REDIR: 0x5a58280 (libc.so.6:__memcpy_chk) redirected to 0x483f220 (_vgnU_ifunc_wrapper)
+--3479943-- REDIR: 0x59cd310 (libc.so.6:strstr) redirected to 0x483f220 (_vgnU_ifunc_wrapper)
+--3479943-- REDIR: 0x5a583b0 (libc.so.6:__memmove_chk) redirected to 0x483f220 (_vgnU_ifunc_wrapper)
+==3479943== WARNING: new redirection conflicts with existing -- ignoring it
+--3479943--     old: 0x05ac4790 (__memcpy_chk_avx_una) R-> (2030.0) 0x04853940 __memcpy_chk
+--3479943--     new: 0x05ac4790 (__memcpy_chk_avx_una) R-> (2024.0) 0x048532c0 __memmove_chk
+==3479943== WARNING: new redirection conflicts with existing -- ignoring it
+--3479943--     old: 0x05ac4790 (__memcpy_chk_avx_una) R-> (2030.0) 0x04853940 __memcpy_chk
+--3479943--     new: 0x05ac4790 (__memcpy_chk_avx_una) R-> (2024.0) 0x048532c0 __memmove_chk
+--3479943-- REDIR: 0x5ac1610 (libc.so.6:__strrchr_avx2) redirected to 0x484e810 (rindex)
+--3479943-- REDIR: 0x5ac17e0 (libc.so.6:__strlen_avx2) redirected to 0x484ed10 (strlen)
+--3479943-- REDIR: 0x5ac1180 (libc.so.6:__strchr_avx2) redirected to 0x484e9f0 (index)
+--3479943-- REDIR: 0x5abc940 (libc.so.6:__strcmp_avx2) redirected to 0x484fbd0 (strcmp)
+--3479943-- REDIR: 0x59c90a0 (libc.so.6:malloc) redirected to 0x4848820 (malloc)
+--3479943-- REDIR: 0x5abda80 (libc.so.6:__memcmp_avx2_movbe) redirected to 0x4852010 (bcmp)
+--3479943-- REDIR: 0x5ac47c0 (libc.so.6:__memcpy_avx_unaligned_erms) redirected to 0x4852880 (memmove)
+--3479943-- REDIR: 0x59ca520 (libc.so.6:calloc) redirected to 0x484d9d0 (calloc)
+--3479943-- REDIR: 0x5ac4790 (libc.so.6:__memcpy_chk_avx_unaligned_erms) redirected to 0x4853940 (__memcpy_chk)
+--3479943-- REDIR: 0x59c93e0 (libc.so.6:free) redirected to 0x484b210 (free)
+--3479943-- REDIR: 0x5ac4f80 (libc.so.6:__memset_avx2_unaligned_erms) redirected to 0x4852770 (memset)
+--3479943-- REDIR: 0x5ac3040 (libc.so.6:__strncpy_avx2) redirected to 0x484efe0 (strncpy)
+--3479943-- REDIR: 0x5ac1400 (libc.so.6:__strchrnul_avx2) redirected to 0x4853330 (strchrnul)
+--3479943-- REDIR: 0x569f970 (libstdc++.so.6:operator new(unsigned long)) redirected to 0x4848fa0 (operator new(unsigned long))
+--3479943-- REDIR: 0x5abd2c0 (libc.so.6:__memchr_avx2) redirected to 0x484fd50 (memchr)
+--3479943-- REDIR: 0x569dc20 (libstdc++.so.6:operator delete(void*, unsigned long)) redirected to 0x484bb00 (operator delete(void*, unsigned long))
+--3479943-- REDIR: 0x569f9d0 (libstdc++.so.6:operator new[](unsigned long)) redirected to 0x484a280 (operator new[](unsigned long))
+--3479943-- REDIR: 0x5ac2cb0 (libc.so.6:__strcpy_avx2) redirected to 0x484ee60 (strcpy)
+--3479943-- REDIR: 0x569dc40 (libstdc++.so.6:operator delete[](void*)) redirected to 0x484ca20 (operator delete[](void*))
+--3479943-- REDIR: 0x569dc10 (libstdc++.so.6:operator delete(void*)) redirected to 0x484b840 (operator delete(void*))
+--3479943-- REDIR: 0x59ccfc0 (libc.so.6:__GI_strstr) redirected to 0x4853ae0 (__strstr_sse2)
+--3479943-- REDIR: 0x5ac4780 (libc.so.6:__mempcpy_avx_unaligned_erms) redirected to 0x4853440 (mempcpy)
+--3479943-- REDIR: 0x5ac1960 (libc.so.6:__strnlen_avx2) redirected to 0x484ecb0 (strnlen)
+--3479943-- REDIR: 0x5abf7b0 (libc.so.6:__strncasecmp_avx) redirected to 0x484f640 (strncasecmp)
+--3479943-- REDIR: 0x5abcd80 (libc.so.6:__strncmp_avx2) redirected to 0x484f3e0 (strncmp)
+--3479943-- REDIR: 0x59c9740 (libc.so.6:realloc) redirected to 0x484dc50 (realloc)
+--3479943-- REDIR: 0x5abd590 (libc.so.6:__rawmemchr_avx2) redirected to 0x4853360 (rawmemchr)
+==3479943== 
+==3479943== HEAP SUMMARY:
+==3479943==     in use at exit: 10,563 bytes in 22 blocks
+==3479943==   total heap usage: 33,349 allocs, 33,327 frees, 3,407,905 bytes allocated
+==3479943== 
+==3479943== Searching for pointers to 22 not-freed blocks
+==3479943== Checked 1,622,424 bytes
+==3479943== 
+==3479943== 5 bytes in 1 blocks are still reachable in loss record 1 of 16
+==3479943==    at 0x4848899: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==3479943==    by 0x59CC58E: strdup (strdup.c:42)
+==3479943==    by 0x4AC1DF0: NCDISPATCH_initialize (in /usr/lib/x86_64-linux-gnu/libnetcdf.so.19)
+==3479943==    by 0x4AC1EE3: nc_initialize (in /usr/lib/x86_64-linux-gnu/libnetcdf.so.19)
+==3479943==    by 0x4AC2480: NC_open (in /usr/lib/x86_64-linux-gnu/libnetcdf.so.19)
+==3479943==    by 0x4AC26A7: nc_open (in /usr/lib/x86_64-linux-gnu/libnetcdf.so.19)
+==3479943==    by 0x1BB635: gruStruc::gruStruc(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, int) (gru_struc.cpp:16)
+==3479943==    by 0x26E1EB: caf::summa_actor(caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*, int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor) (summa_actor.cpp:55)
+==3479943==    by 0x1B0B72: decltype ({parm#1}((forward<caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*&>)({parm#4}), move((get<0l>)({parm#3})), move((get<1l>)({parm#3})), move((get<2l>)({parm#3})), move((get<3l>)({parm#3})), move((get<4l>)({parm#3})), move((get<5l>)({parm#3})), move((get<6l>)({parm#3})))) caf::detail::apply_moved_args_prefixed<caf::behavior (*)(caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*, int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor), 0l, 1l, 2l, 3l, 4l, 5l, 6l, std::tuple<int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor>, caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*&>(caf::behavior (*&)(caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*, int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor), caf::detail::int_list<0l, 1l, 2l, 3l, 4l, 5l, 6l>, std::tuple<int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor>&, caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*&) (apply_args.hpp:64)
+==3479943==    by 0x1AFC38: caf::detail::init_fun_factory_helper<caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>, caf::behavior (*)(caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*, int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor), std::tuple<int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor>, true, true>::operator()(caf::local_actor*) (init_fun_factory.hpp:78)
+==3479943==    by 0x529A084: caf::detail::unique_function<caf::behavior (caf::local_actor*)>::operator()(caf::local_actor*) (in /usr/local/lib/libcaf_core.so.0.18.6)
+==3479943==    by 0x536684A: caf::event_based_actor::make_behavior() (in /usr/local/lib/libcaf_core.so.0.18.6)
+==3479943== 
+==3479943== 6 bytes in 1 blocks are still reachable in loss record 2 of 16
+==3479943==    at 0x4848899: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==3479943==    by 0x59CC58E: strdup (strdup.c:42)
+==3479943==    by 0x4AC1E11: NCDISPATCH_initialize (in /usr/lib/x86_64-linux-gnu/libnetcdf.so.19)
+==3479943==    by 0x4AC1EE3: nc_initialize (in /usr/lib/x86_64-linux-gnu/libnetcdf.so.19)
+==3479943==    by 0x4AC2480: NC_open (in /usr/lib/x86_64-linux-gnu/libnetcdf.so.19)
+==3479943==    by 0x4AC26A7: nc_open (in /usr/lib/x86_64-linux-gnu/libnetcdf.so.19)
+==3479943==    by 0x1BB635: gruStruc::gruStruc(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, int) (gru_struc.cpp:16)
+==3479943==    by 0x26E1EB: caf::summa_actor(caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*, int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor) (summa_actor.cpp:55)
+==3479943==    by 0x1B0B72: decltype ({parm#1}((forward<caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*&>)({parm#4}), move((get<0l>)({parm#3})), move((get<1l>)({parm#3})), move((get<2l>)({parm#3})), move((get<3l>)({parm#3})), move((get<4l>)({parm#3})), move((get<5l>)({parm#3})), move((get<6l>)({parm#3})))) caf::detail::apply_moved_args_prefixed<caf::behavior (*)(caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*, int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor), 0l, 1l, 2l, 3l, 4l, 5l, 6l, std::tuple<int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor>, caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*&>(caf::behavior (*&)(caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*, int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor), caf::detail::int_list<0l, 1l, 2l, 3l, 4l, 5l, 6l>, std::tuple<int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor>&, caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*&) (apply_args.hpp:64)
+==3479943==    by 0x1AFC38: caf::detail::init_fun_factory_helper<caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>, caf::behavior (*)(caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*, int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor), std::tuple<int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor>, true, true>::operator()(caf::local_actor*) (init_fun_factory.hpp:78)
+==3479943==    by 0x529A084: caf::detail::unique_function<caf::behavior (caf::local_actor*)>::operator()(caf::local_actor*) (in /usr/local/lib/libcaf_core.so.0.18.6)
+==3479943==    by 0x536684A: caf::event_based_actor::make_behavior() (in /usr/local/lib/libcaf_core.so.0.18.6)
+==3479943== 
+==3479943== 8 bytes in 1 blocks are still reachable in loss record 3 of 16
+==3479943==    at 0x4848899: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==3479943==    by 0x5BFA7C1: ??? (in /usr/lib/x86_64-linux-gnu/libhdf5_serial.so.103.3.0)
+==3479943==    by 0x5BFA7F8: ??? (in /usr/lib/x86_64-linux-gnu/libhdf5_serial.so.103.3.0)
+==3479943==    by 0x5BB6C96: H5_term_library (in /usr/lib/x86_64-linux-gnu/libhdf5_serial.so.103.3.0)
+==3479943==    by 0x5969494: __run_exit_handlers (exit.c:113)
+==3479943==    by 0x596960F: exit (exit.c:143)
+==3479943==    by 0x594DD96: (below main) (libc_start_call_main.h:74)
+==3479943== 
+==3479943== 8 bytes in 1 blocks are still reachable in loss record 4 of 16
+==3479943==    at 0x484DA83: calloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==3479943==    by 0x5E14D96: H5TS_cancel_count_inc (in /usr/lib/x86_64-linux-gnu/libhdf5_serial.so.103.3.0)
+==3479943==    by 0x5C44E00: H5Eget_auto2 (in /usr/lib/x86_64-linux-gnu/libhdf5_serial.so.103.3.0)
+==3479943==    by 0x5BB6CA4: H5_term_library (in /usr/lib/x86_64-linux-gnu/libhdf5_serial.so.103.3.0)
+==3479943==    by 0x5969494: __run_exit_handlers (exit.c:113)
+==3479943==    by 0x596960F: exit (exit.c:143)
+==3479943==    by 0x594DD96: (below main) (libc_start_call_main.h:74)
+==3479943== 
+==3479943== 23 bytes in 1 blocks are still reachable in loss record 5 of 16
+==3479943==    at 0x4848899: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==3479943==    by 0x59CC58E: strdup (strdup.c:42)
+==3479943==    by 0x4AC1E37: NCDISPATCH_initialize (in /usr/lib/x86_64-linux-gnu/libnetcdf.so.19)
+==3479943==    by 0x4AC1EE3: nc_initialize (in /usr/lib/x86_64-linux-gnu/libnetcdf.so.19)
+==3479943==    by 0x4AC2480: NC_open (in /usr/lib/x86_64-linux-gnu/libnetcdf.so.19)
+==3479943==    by 0x4AC26A7: nc_open (in /usr/lib/x86_64-linux-gnu/libnetcdf.so.19)
+==3479943==    by 0x1BB635: gruStruc::gruStruc(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, int) (gru_struc.cpp:16)
+==3479943==    by 0x26E1EB: caf::summa_actor(caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*, int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor) (summa_actor.cpp:55)
+==3479943==    by 0x1B0B72: decltype ({parm#1}((forward<caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*&>)({parm#4}), move((get<0l>)({parm#3})), move((get<1l>)({parm#3})), move((get<2l>)({parm#3})), move((get<3l>)({parm#3})), move((get<4l>)({parm#3})), move((get<5l>)({parm#3})), move((get<6l>)({parm#3})))) caf::detail::apply_moved_args_prefixed<caf::behavior (*)(caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*, int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor), 0l, 1l, 2l, 3l, 4l, 5l, 6l, std::tuple<int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor>, caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*&>(caf::behavior (*&)(caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*, int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor), caf::detail::int_list<0l, 1l, 2l, 3l, 4l, 5l, 6l>, std::tuple<int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor>&, caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*&) (apply_args.hpp:64)
+==3479943==    by 0x1AFC38: caf::detail::init_fun_factory_helper<caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>, caf::behavior (*)(caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*, int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor), std::tuple<int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor>, true, true>::operator()(caf::local_actor*) (init_fun_factory.hpp:78)
+==3479943==    by 0x529A084: caf::detail::unique_function<caf::behavior (caf::local_actor*)>::operator()(caf::local_actor*) (in /usr/local/lib/libcaf_core.so.0.18.6)
+==3479943==    by 0x536684A: caf::event_based_actor::make_behavior() (in /usr/local/lib/libcaf_core.so.0.18.6)
+==3479943== 
+==3479943== 36 bytes in 1 blocks are still reachable in loss record 6 of 16
+==3479943==    at 0x484DA83: calloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==3479943==    by 0x4AC5975: ncbytessetalloc (in /usr/lib/x86_64-linux-gnu/libnetcdf.so.19)
+==3479943==    by 0x4AC5B4B: ncbytesappendn (in /usr/lib/x86_64-linux-gnu/libnetcdf.so.19)
+==3479943==    by 0x4AC5C0B: ncbytescat (in /usr/lib/x86_64-linux-gnu/libnetcdf.so.19)
+==3479943==    by 0x4B03869: ??? (in /usr/lib/x86_64-linux-gnu/libnetcdf.so.19)
+==3479943==    by 0x4AC1F1F: nc_initialize (in /usr/lib/x86_64-linux-gnu/libnetcdf.so.19)
+==3479943==    by 0x4AC2480: NC_open (in /usr/lib/x86_64-linux-gnu/libnetcdf.so.19)
+==3479943==    by 0x4AC26A7: nc_open (in /usr/lib/x86_64-linux-gnu/libnetcdf.so.19)
+==3479943==    by 0x1BB635: gruStruc::gruStruc(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, int) (gru_struc.cpp:16)
+==3479943==    by 0x26E1EB: caf::summa_actor(caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*, int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor) (summa_actor.cpp:55)
+==3479943==    by 0x1B0B72: decltype ({parm#1}((forward<caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*&>)({parm#4}), move((get<0l>)({parm#3})), move((get<1l>)({parm#3})), move((get<2l>)({parm#3})), move((get<3l>)({parm#3})), move((get<4l>)({parm#3})), move((get<5l>)({parm#3})), move((get<6l>)({parm#3})))) caf::detail::apply_moved_args_prefixed<caf::behavior (*)(caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*, int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor), 0l, 1l, 2l, 3l, 4l, 5l, 6l, std::tuple<int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor>, caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*&>(caf::behavior (*&)(caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*, int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor), caf::detail::int_list<0l, 1l, 2l, 3l, 4l, 5l, 6l>, std::tuple<int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor>&, caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*&) (apply_args.hpp:64)
+==3479943==    by 0x1AFC38: caf::detail::init_fun_factory_helper<caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>, caf::behavior (*)(caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*, int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor), std::tuple<int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor>, true, true>::operator()(caf::local_actor*) (init_fun_factory.hpp:78)
+==3479943== 
+==3479943== 37 bytes in 1 blocks are still reachable in loss record 7 of 16
+==3479943==    at 0x484DA83: calloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==3479943==    by 0x4AC5975: ncbytessetalloc (in /usr/lib/x86_64-linux-gnu/libnetcdf.so.19)
+==3479943==    by 0x4AC5B4B: ncbytesappendn (in /usr/lib/x86_64-linux-gnu/libnetcdf.so.19)
+==3479943==    by 0x4AC5C0B: ncbytescat (in /usr/lib/x86_64-linux-gnu/libnetcdf.so.19)
+==3479943==    by 0x4B433A3: ??? (in /usr/lib/x86_64-linux-gnu/libnetcdf.so.19)
+==3479943==    by 0x4B43447: NCZ_initialize (in /usr/lib/x86_64-linux-gnu/libnetcdf.so.19)
+==3479943==    by 0x4AC2480: NC_open (in /usr/lib/x86_64-linux-gnu/libnetcdf.so.19)
+==3479943==    by 0x4AC26A7: nc_open (in /usr/lib/x86_64-linux-gnu/libnetcdf.so.19)
+==3479943==    by 0x1BB635: gruStruc::gruStruc(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, int) (gru_struc.cpp:16)
+==3479943==    by 0x26E1EB: caf::summa_actor(caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*, int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor) (summa_actor.cpp:55)
+==3479943==    by 0x1B0B72: decltype ({parm#1}((forward<caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*&>)({parm#4}), move((get<0l>)({parm#3})), move((get<1l>)({parm#3})), move((get<2l>)({parm#3})), move((get<3l>)({parm#3})), move((get<4l>)({parm#3})), move((get<5l>)({parm#3})), move((get<6l>)({parm#3})))) caf::detail::apply_moved_args_prefixed<caf::behavior (*)(caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*, int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor), 0l, 1l, 2l, 3l, 4l, 5l, 6l, std::tuple<int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor>, caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*&>(caf::behavior (*&)(caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*, int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor), caf::detail::int_list<0l, 1l, 2l, 3l, 4l, 5l, 6l>, std::tuple<int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor>&, caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*&) (apply_args.hpp:64)
+==3479943==    by 0x1AFC38: caf::detail::init_fun_factory_helper<caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>, caf::behavior (*)(caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*, int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor), std::tuple<int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor>, true, true>::operator()(caf::local_actor*) (init_fun_factory.hpp:78)
+==3479943== 
+==3479943== 64 bytes in 1 blocks are still reachable in loss record 8 of 16
+==3479943==    at 0x484DA83: calloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==3479943==    by 0x4ACA36E: ncrc_initialize (in /usr/lib/x86_64-linux-gnu/libnetcdf.so.19)
+==3479943==    by 0x4ACA3A8: ncrc_getglobalstate (in /usr/lib/x86_64-linux-gnu/libnetcdf.so.19)
+==3479943==    by 0x4AC1DE1: NCDISPATCH_initialize (in /usr/lib/x86_64-linux-gnu/libnetcdf.so.19)
+==3479943==    by 0x4AC1EE3: nc_initialize (in /usr/lib/x86_64-linux-gnu/libnetcdf.so.19)
+==3479943==    by 0x4AC2480: NC_open (in /usr/lib/x86_64-linux-gnu/libnetcdf.so.19)
+==3479943==    by 0x4AC26A7: nc_open (in /usr/lib/x86_64-linux-gnu/libnetcdf.so.19)
+==3479943==    by 0x1BB635: gruStruc::gruStruc(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, int) (gru_struc.cpp:16)
+==3479943==    by 0x26E1EB: caf::summa_actor(caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*, int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor) (summa_actor.cpp:55)
+==3479943==    by 0x1B0B72: decltype ({parm#1}((forward<caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*&>)({parm#4}), move((get<0l>)({parm#3})), move((get<1l>)({parm#3})), move((get<2l>)({parm#3})), move((get<3l>)({parm#3})), move((get<4l>)({parm#3})), move((get<5l>)({parm#3})), move((get<6l>)({parm#3})))) caf::detail::apply_moved_args_prefixed<caf::behavior (*)(caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*, int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor), 0l, 1l, 2l, 3l, 4l, 5l, 6l, std::tuple<int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor>, caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*&>(caf::behavior (*&)(caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*, int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor), caf::detail::int_list<0l, 1l, 2l, 3l, 4l, 5l, 6l>, std::tuple<int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor>&, caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*&) (apply_args.hpp:64)
+==3479943==    by 0x1AFC38: caf::detail::init_fun_factory_helper<caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>, caf::behavior (*)(caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*, int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor), std::tuple<int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor>, true, true>::operator()(caf::local_actor*) (init_fun_factory.hpp:78)
+==3479943==    by 0x529A084: caf::detail::unique_function<caf::behavior (caf::local_actor*)>::operator()(caf::local_actor*) (in /usr/local/lib/libcaf_core.so.0.18.6)
+==3479943== 
+==3479943== 88 bytes in 1 blocks are still reachable in loss record 9 of 16
+==3479943==    at 0x4848899: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==3479943==    by 0x501AA9F: init_gru_struc (gru_struc.f90:15)
+==3479943==    by 0x1BB8BD: gruStruc::gruStruc(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, int) (gru_struc.cpp:42)
+==3479943==    by 0x26E1EB: caf::summa_actor(caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*, int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor) (summa_actor.cpp:55)
+==3479943==    by 0x1B0B72: decltype ({parm#1}((forward<caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*&>)({parm#4}), move((get<0l>)({parm#3})), move((get<1l>)({parm#3})), move((get<2l>)({parm#3})), move((get<3l>)({parm#3})), move((get<4l>)({parm#3})), move((get<5l>)({parm#3})), move((get<6l>)({parm#3})))) caf::detail::apply_moved_args_prefixed<caf::behavior (*)(caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*, int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor), 0l, 1l, 2l, 3l, 4l, 5l, 6l, std::tuple<int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor>, caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*&>(caf::behavior (*&)(caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*, int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor), caf::detail::int_list<0l, 1l, 2l, 3l, 4l, 5l, 6l>, std::tuple<int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor>&, caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*&) (apply_args.hpp:64)
+==3479943==    by 0x1AFC38: caf::detail::init_fun_factory_helper<caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>, caf::behavior (*)(caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*, int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor), std::tuple<int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor>, true, true>::operator()(caf::local_actor*) (init_fun_factory.hpp:78)
+==3479943==    by 0x529A084: caf::detail::unique_function<caf::behavior (caf::local_actor*)>::operator()(caf::local_actor*) (in /usr/local/lib/libcaf_core.so.0.18.6)
+==3479943==    by 0x536684A: caf::event_based_actor::make_behavior() (in /usr/local/lib/libcaf_core.so.0.18.6)
+==3479943==    by 0x5366748: caf::event_based_actor::initialize() (in /usr/local/lib/libcaf_core.so.0.18.6)
+==3479943==    by 0x543CC5E: caf::scheduled_actor::activate(caf::execution_unit*) (in /usr/local/lib/libcaf_core.so.0.18.6)
+==3479943==    by 0x543A31F: caf::scheduled_actor::resume(caf::execution_unit*, unsigned long) (in /usr/local/lib/libcaf_core.so.0.18.6)
+==3479943==    by 0x524A964: caf::scheduler::worker<caf::policy::work_stealing>::run() (in /usr/local/lib/libcaf_core.so.0.18.6)
+==3479943== 
+==3479943== 128 bytes in 7 blocks are indirectly lost in loss record 10 of 16
+==3479943==    at 0x484A2F3: operator new[](unsigned long) (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==3479943==    by 0x11F0B9: main (main.cpp:238)
+==3479943== 
+==3479943== 184 (56 direct, 128 indirect) bytes in 1 blocks are definitely lost in loss record 11 of 16
+==3479943==    at 0x484A2F3: operator new[](unsigned long) (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==3479943==    by 0x11F05A: main (main.cpp:236)
+==3479943== 
+==3479943== 1,848 bytes in 1 blocks are still reachable in loss record 12 of 16
+==3479943==    at 0x4848899: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==3479943==    by 0x5C37111: H5E__get_stack (in /usr/lib/x86_64-linux-gnu/libhdf5_serial.so.103.3.0)
+==3479943==    by 0x5C43A54: H5E_clear_stack (in /usr/lib/x86_64-linux-gnu/libhdf5_serial.so.103.3.0)
+==3479943==    by 0x5C44E37: H5Eget_auto2 (in /usr/lib/x86_64-linux-gnu/libhdf5_serial.so.103.3.0)
+==3479943==    by 0x5BB6CA4: H5_term_library (in /usr/lib/x86_64-linux-gnu/libhdf5_serial.so.103.3.0)
+==3479943==    by 0x5969494: __run_exit_handlers (exit.c:113)
+==3479943==    by 0x596960F: exit (exit.c:143)
+==3479943==    by 0x594DD96: (below main) (libc_start_call_main.h:74)
+==3479943== 
+==3479943== 2,064 bytes in 1 blocks are definitely lost in loss record 13 of 16
+==3479943==    at 0x4848899: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==3479943==    by 0x4F4CBC8: __ascii_util_module_MOD_get_vlines (ascii_util.f90:167)
+==3479943==    by 0x4F4F29E: __summafilemanager_MOD_summa_settimesdirsandfiles (summaFileManager.f90:95)
+==3479943==    by 0x4DF8E60: initFileManagerModule_fortran (batch_distributer_actor.f90:33)
+==3479943==    by 0x1BA48E: fileManager::initFileManagerModule[abi:cxx11]() (fileManager.cpp:83)
+==3479943==    by 0x26E047: caf::summa_actor(caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*, int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor) (summa_actor.cpp:43)
+==3479943==    by 0x1B0B72: decltype ({parm#1}((forward<caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*&>)({parm#4}), move((get<0l>)({parm#3})), move((get<1l>)({parm#3})), move((get<2l>)({parm#3})), move((get<3l>)({parm#3})), move((get<4l>)({parm#3})), move((get<5l>)({parm#3})), move((get<6l>)({parm#3})))) caf::detail::apply_moved_args_prefixed<caf::behavior (*)(caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*, int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor), 0l, 1l, 2l, 3l, 4l, 5l, 6l, std::tuple<int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor>, caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*&>(caf::behavior (*&)(caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*, int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor), caf::detail::int_list<0l, 1l, 2l, 3l, 4l, 5l, 6l>, std::tuple<int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor>&, caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*&) (apply_args.hpp:64)
+==3479943==    by 0x1AFC38: caf::detail::init_fun_factory_helper<caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>, caf::behavior (*)(caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*, int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor), std::tuple<int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor>, true, true>::operator()(caf::local_actor*) (init_fun_factory.hpp:78)
+==3479943==    by 0x529A084: caf::detail::unique_function<caf::behavior (caf::local_actor*)>::operator()(caf::local_actor*) (in /usr/local/lib/libcaf_core.so.0.18.6)
+==3479943==    by 0x536684A: caf::event_based_actor::make_behavior() (in /usr/local/lib/libcaf_core.so.0.18.6)
+==3479943==    by 0x5366748: caf::event_based_actor::initialize() (in /usr/local/lib/libcaf_core.so.0.18.6)
+==3479943==    by 0x543CC5E: caf::scheduled_actor::activate(caf::execution_unit*) (in /usr/local/lib/libcaf_core.so.0.18.6)
+==3479943== 
+==3479943== 2,064 bytes in 1 blocks are definitely lost in loss record 14 of 16
+==3479943==    at 0x4848899: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==3479943==    by 0x4F4CC32: __ascii_util_module_MOD_get_vlines (ascii_util.f90:167)
+==3479943==    by 0x4F4F29E: __summafilemanager_MOD_summa_settimesdirsandfiles (summaFileManager.f90:95)
+==3479943==    by 0x4DF8E60: initFileManagerModule_fortran (batch_distributer_actor.f90:33)
+==3479943==    by 0x1BA48E: fileManager::initFileManagerModule[abi:cxx11]() (fileManager.cpp:83)
+==3479943==    by 0x26E047: caf::summa_actor(caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*, int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor) (summa_actor.cpp:43)
+==3479943==    by 0x1B0B72: decltype ({parm#1}((forward<caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*&>)({parm#4}), move((get<0l>)({parm#3})), move((get<1l>)({parm#3})), move((get<2l>)({parm#3})), move((get<3l>)({parm#3})), move((get<4l>)({parm#3})), move((get<5l>)({parm#3})), move((get<6l>)({parm#3})))) caf::detail::apply_moved_args_prefixed<caf::behavior (*)(caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*, int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor), 0l, 1l, 2l, 3l, 4l, 5l, 6l, std::tuple<int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor>, caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*&>(caf::behavior (*&)(caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*, int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor), caf::detail::int_list<0l, 1l, 2l, 3l, 4l, 5l, 6l>, std::tuple<int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor>&, caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*&) (apply_args.hpp:64)
+==3479943==    by 0x1AFC38: caf::detail::init_fun_factory_helper<caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>, caf::behavior (*)(caf::stateful_actor<caf::summa_actor_state, caf::event_based_actor>*, int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor), std::tuple<int, int, Summa_Actor_Settings, File_Access_Actor_Settings, Job_Actor_Settings, HRU_Actor_Settings, caf::actor>, true, true>::operator()(caf::local_actor*) (init_fun_factory.hpp:78)
+==3479943==    by 0x529A084: caf::detail::unique_function<caf::behavior (caf::local_actor*)>::operator()(caf::local_actor*) (in /usr/local/lib/libcaf_core.so.0.18.6)
+==3479943==    by 0x536684A: caf::event_based_actor::make_behavior() (in /usr/local/lib/libcaf_core.so.0.18.6)
+==3479943==    by 0x5366748: caf::event_based_actor::initialize() (in /usr/local/lib/libcaf_core.so.0.18.6)
+==3479943==    by 0x543CC5E: caf::scheduled_actor::activate(caf::execution_unit*) (in /usr/local/lib/libcaf_core.so.0.18.6)
+==3479943== 
+==3479943== 2,064 bytes in 1 blocks are definitely lost in loss record 15 of 16
+==3479943==    at 0x4848899: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==3479943==    by 0x4F4CBC8: __ascii_util_module_MOD_get_vlines (ascii_util.f90:167)
+==3479943==    by 0x4F92883: __popmetadat_module_MOD_read_output_file (popMetadat.f90:780)
+==3479943==    by 0x4FDCB82: __popmetadat_module_MOD_popmetadat (popMetadat.f90:679)
+==3479943==    by 0x4DF61AF: __summa_globaldata_MOD_summa_defineglobaldata (summa_globalData.f90:113)
+==3479943==    by 0x4DF8D18: defineGlobalData_fortran (batch_distributer_actor.f90:53)
+==3479943==    by 0x26CBBA: caf::fortran_global_state_actor(caf::event_based_actor*) (fortran_global_state_actor.cpp:25)
+==3479943==    by 0x2729FA: caf::detail::init_fun_factory_helper<caf::event_based_actor, caf::behavior (*)(caf::event_based_actor*), std::tuple<>, true, true>::operator()(caf::local_actor*) (init_fun_factory.hpp:70)
+==3479943==    by 0x529A084: caf::detail::unique_function<caf::behavior (caf::local_actor*)>::operator()(caf::local_actor*) (in /usr/local/lib/libcaf_core.so.0.18.6)
+==3479943==    by 0x536684A: caf::event_based_actor::make_behavior() (in /usr/local/lib/libcaf_core.so.0.18.6)
+==3479943==    by 0x5366748: caf::event_based_actor::initialize() (in /usr/local/lib/libcaf_core.so.0.18.6)
+==3479943==    by 0x543CC5E: caf::scheduled_actor::activate(caf::execution_unit*) (in /usr/local/lib/libcaf_core.so.0.18.6)
+==3479943== 
+==3479943== 2,064 bytes in 1 blocks are definitely lost in loss record 16 of 16
+==3479943==    at 0x4848899: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==3479943==    by 0x4F4CC32: __ascii_util_module_MOD_get_vlines (ascii_util.f90:167)
+==3479943==    by 0x4F92883: __popmetadat_module_MOD_read_output_file (popMetadat.f90:780)
+==3479943==    by 0x4FDCB82: __popmetadat_module_MOD_popmetadat (popMetadat.f90:679)
+==3479943==    by 0x4DF61AF: __summa_globaldata_MOD_summa_defineglobaldata (summa_globalData.f90:113)
+==3479943==    by 0x4DF8D18: defineGlobalData_fortran (batch_distributer_actor.f90:53)
+==3479943==    by 0x26CBBA: caf::fortran_global_state_actor(caf::event_based_actor*) (fortran_global_state_actor.cpp:25)
+==3479943==    by 0x2729FA: caf::detail::init_fun_factory_helper<caf::event_based_actor, caf::behavior (*)(caf::event_based_actor*), std::tuple<>, true, true>::operator()(caf::local_actor*) (init_fun_factory.hpp:70)
+==3479943==    by 0x529A084: caf::detail::unique_function<caf::behavior (caf::local_actor*)>::operator()(caf::local_actor*) (in /usr/local/lib/libcaf_core.so.0.18.6)
+==3479943==    by 0x536684A: caf::event_based_actor::make_behavior() (in /usr/local/lib/libcaf_core.so.0.18.6)
+==3479943==    by 0x5366748: caf::event_based_actor::initialize() (in /usr/local/lib/libcaf_core.so.0.18.6)
+==3479943==    by 0x543CC5E: caf::scheduled_actor::activate(caf::execution_unit*) (in /usr/local/lib/libcaf_core.so.0.18.6)
+==3479943== 
+==3479943== LEAK SUMMARY:
+==3479943==    definitely lost: 8,312 bytes in 5 blocks
+==3479943==    indirectly lost: 128 bytes in 7 blocks
+==3479943==      possibly lost: 0 bytes in 0 blocks
+==3479943==    still reachable: 2,123 bytes in 10 blocks
+==3479943==         suppressed: 0 bytes in 0 blocks
+==3479943== 
+==3479943== ERROR SUMMARY: 5 errors from 5 contexts (suppressed: 0 from 0)

@@ -50,43 +50,9 @@ behavior file_access_actor(
           &err);
       if (err != 0) return -1;
 
-      self->state.output_lifetime = std::make_unique<outputStructureLifetime>(
-          self->state.handle_forcing_file_info, self->state.handle_ncid);
-
       // Forcing File Info
-      // getNumForcingFiles_fortran(&self->state.numFiles);
-      auto forcing_container = new forcingFileContainer();
-      return -2;
-      // std::vector<fileInfo> forcFileInfo;
-      // forcFileInfo.reserve(self->state.numFiles);
-      // for (int i = 1; i <= self->state.numFiles; i++) {
-      //   int var_ix_size = 0;
-      //   int data_id_size = 0;
-      //   int varName_size = 0;
-      //   getFileInfoSizes_fortran(i, var_ix_size, data_id_size, varName_size);
-      //   aout(self) << "File: " << i << " Var_ix_size: " << var_ix_size 
-      //              << " Data_id_size: " << data_id_size 
-      //              << " VarName_size: " << varName_size << std::endl;
-        
-        
-      //   std::unique_ptr<char[]> file_name(new char[256]);
-      //   // getFileInfoCopy_fortran(i, &file_name);
-      //   std::string file_name_str(file_name.get());
-      //   aout(self) << "File Name: " << file_name_str << std::endl;
-      // }
-
-      // // Serialize forcing_file_info
-      // auto forcing_file_info = 
-      //     fileInfo(self->state.handle_forcing_file_info);
-      self->quit();
-      return -2;
-
-      // Initalize the forcingFile array
-      self->state.filesLoaded = 0;
-      for (int i = 1; i <= self->state.numFiles; i++) {
-        self->state.forcing_file_list.push_back(Forcing_File_Info(i));
-      }
-      
+      self->state.forcing_files = std::make_unique<forcingFileContainer>();
+            
       // Ensure output buffer size is less than the number of simulation timesteps
       if (self->state.num_steps < fa_settings.num_timesteps_in_output_buffer) {
         self->state.num_output_steps = self->state.num_steps;
@@ -121,67 +87,110 @@ behavior file_access_actor(
       return self->state.num_steps;
     },
 
-
-
-
     // Message from the HRU actor to get the forcing file that is loaded
-    [=](access_forcing, int currentFile, caf::actor refToRespondTo) {
-      if (currentFile <= self->state.numFiles) {
-        // Note: C++ starts at 0 and Fortran starts at 1
-        if(!self->state.forcing_file_list[currentFile - 1].isFileLoaded()) {
-          self->state.file_access_timing.updateStartPoint("read_duration");
-          int err = 0;
-          read_forcingFile(self->state.handle_forcing_file_info, &currentFile,
-              &self->state.stepsInCurrentFile, &self->state.start_gru, 
-              &self->state.num_gru, &err);
-          if (err != 0) {
-            aout(self) << "ERROR: Reading Forcing" << std::endl;
-          }
-          self->state.filesLoaded += 1;
-          self->state.forcing_file_list[currentFile - 1]
-              .updateNumSteps(self->state.stepsInCurrentFile);
-
-          self->state.file_access_timing.updateEndPoint("read_duration");
-          // Check if all files have been loaded
-          if(self->state.filesLoaded <= self->state.numFiles) {
-            self->send(self, access_forcing_internal_v, currentFile + 1);
-          }
-        }
-        
+    [=](access_forcing, int iFile, caf::actor refToRespondTo) {
+      aout(self) << "ACCESS_FORCING\n" << iFile << "\n";
+      if (self->state.forcing_files->allFilesLoaded()) {
         self->send(refToRespondTo, new_forcing_file_v, 
-            self->state.forcing_file_list[currentFile - 1].getNumSteps(),
-            currentFile);
-        } else {
-          aout(self) << currentFile << " exceeds the number of forcing files\n"; 
-        }
+          self->state.forcing_files->getNumSteps(iFile), iFile);
+        aout(self) << "All Forcing Files Loaded \n";
+        return;
+      }
+      // TODO: THis timing coudl probably be handled inside the loadForcingFile?
+      self->state.file_access_timing.updateStartPoint("read_duration");
+      auto err = self->state.forcing_files->loadForcingFile(iFile, 
+          self->state.start_gru, self->state.num_gru);
+      self->state.file_access_timing.updateEndPoint("read_duration");
+
+      if (err != 0) {
+        aout(self) << "ERROR: Reading Forcing" << std::endl;
+        self->quit();
+        return;
+      }
+
+
+      if (!self->state.forcing_files->allFilesLoaded()) {
+        self->send(self, access_forcing_internal_v, iFile + 1);
+      }
+
+      self->send(refToRespondTo, new_forcing_file_v, 
+          self->state.forcing_files->getNumSteps(iFile), iFile);
+
+      // if (currentFile <= self->state.numFiles) {
+      //   // Note: C++ starts at 0 and Fortran starts at 1
+      //   if(!self->state.forcing_file_list[currentFile - 1].isFileLoaded()) {
+      //     self->state.file_access_timing.updateStartPoint("read_duration");
+      //     int err = 0;
+      //     // read_forcingFile(self->state.handle_forcing_file_info, &currentFile,
+      //     //     &self->state.stepsInCurrentFile, &self->state.start_gru, 
+      //     //     &self->state.num_gru, &err);
+      //     // if (err != 0) {
+      //     //   aout(self) << "ERROR: Reading Forcing" << std::endl;
+      //     // }
+      //     self->state.filesLoaded += 1;
+      //     self->state.forcing_file_list[currentFile - 1]
+      //         .updateNumSteps(self->state.stepsInCurrentFile);
+
+      //     self->state.file_access_timing.updateEndPoint("read_duration");
+      //     // Check if all files have been loaded
+      //     if(self->state.filesLoaded <= self->state.numFiles) {
+      //       self->send(self, access_forcing_internal_v, currentFile + 1);
+      //     }
+      //   }
+        
+      //   self->send(refToRespondTo, new_forcing_file_v, 
+      //       self->state.forcing_file_list[currentFile - 1].getNumSteps(),
+      //       currentFile);
+      //   } else {
+      //     aout(self) << currentFile << " exceeds the number of forcing files\n"; 
+      //   }
     },
         
-    [=](access_forcing_internal, int currentFile) {
-      if (self->state.filesLoaded <= self->state.numFiles &&
-          currentFile <= self->state.numFiles) {
-        
-        if (self->state.forcing_file_list[currentFile - 1].isFileLoaded()) {
-          aout(self) << "Unexpected File Loaded!!\n";
-        }
-      
-        self->state.file_access_timing.updateStartPoint("read_duration");
-        int err = 0;
-        read_forcingFile(self->state.handle_forcing_file_info, &currentFile,
-            &self->state.stepsInCurrentFile, &self->state.start_gru, 
-            &self->state.num_gru, &err);
-        if (err != 0) {
-          aout(self) << "ERROR: Reading Forcing" << std::endl;
-        }
-        
-        self->state.filesLoaded += 1;
-        self->state.forcing_file_list[currentFile - 1]
-            .updateNumSteps(self->state.stepsInCurrentFile);
-          
-        self->state.file_access_timing.updateEndPoint("read_duration");
-        self->send(self, access_forcing_internal_v, currentFile + 1);
-      } else {
+    [=](access_forcing_internal, int iFile) {
+      aout(self) << "ACCESS_FORCING_INTERNAL\n";
+      if (self->state.forcing_files->allFilesLoaded()) {
         aout(self) << "All Forcing Files Loaded \n";
+        return;
       }
+
+      self->state.file_access_timing.updateStartPoint("read_duration");
+      auto err = self->state.forcing_files->loadForcingFile(iFile, 
+          self->state.start_gru, self->state.num_gru);
+      self->state.file_access_timing.updateEndPoint("read_duration");
+      if (err != 0) {
+        aout(self) << "ERROR: Reading Forcing" << std::endl;
+        self->quit();
+        return;
+      }
+      self->send(self, access_forcing_internal_v, iFile + 1);
+
+
+
+      // if (self->state.filesLoaded <= self->state.numFiles &&
+      //     currentFile <= self->state.numFiles) {
+        
+      //   if (self->state.forcing_file_list[currentFile - 1].isFileLoaded()) {
+      //     aout(self) << "Unexpected File Loaded!!\n";
+      //   }
+      
+      //   self->state.file_access_timing.updateStartPoint("read_duration");
+      //   int err = 0;
+      //   // read_forcingFile(self->state.handle_forcing_file_info, &currentFile,
+      //   //     &self->state.stepsInCurrentFile, &self->state.start_gru, 
+      //   //     &self->state.num_gru, &err);
+      //   // if (err != 0) {
+      //   //   aout(self) << "ERROR: Reading Forcing" << std::endl;
+      //   // }
+        
+      //   self->state.filesLoaded += 1;
+      //   self->state.forcing_file_list[currentFile - 1]
+      //       .updateNumSteps(self->state.stepsInCurrentFile);
+          
+      //   self->state.file_access_timing.updateEndPoint("read_duration");
+      //   self->send(self, access_forcing_internal_v, currentFile + 1);
+      // } else {
+      //   aout(self) << "All Forcing Files Loaded \n";
+      // }
     },
         
     // Number of steps an HRU can compute before needing to write
@@ -239,8 +248,7 @@ behavior file_access_actor(
       if (!self->state.num_gru_info.use_global_for_data_structures) {
         self->state.output_container->~Output_Container();
       }
-      FileAccessActor_DeallocateStructures(self->state.handle_forcing_file_info, 
-          self->state.handle_ncid);
+      FileAccessActor_DeallocateStructures(self->state.handle_ncid);
 
       aout(self) << "\n________________" 
                  << "FILE_ACCESS_ACTOR TIMING INFO RESULTS________________\n"

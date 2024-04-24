@@ -22,14 +22,6 @@ extern "C" {
       int* num_timesteps_output_buffer, void* handle_output_ncid, int* startGRU,
       int* numGRU, int* numHRU, int* err);
 
-  // void getNumForcingFiles_fortran(int* num_files);
-
-  // void getFileInfoSizes_fortran(int& iFile, int& var_ix_size, int& data_id_size, 
-  //     int& varName_size);
-  
-  // void getFileInfoCopy_fortran(int& iFile, void* name);
-
-
   void defOutputFortran(void* handle_ncid, int* start_gru, int* num_gru, 
       int* num_hru, int* file_gru, bool* use_extention, 
       char const* output_extention, int* err); 
@@ -38,11 +30,10 @@ extern "C" {
   void writeOutput_fortran(void* handle_ncid, int* num_steps, int* start_gru, 
       int* max_gru, bool* writeParamFlag, int* err);
 
-  void read_forcingFile(void* forcFileInfo, int* currentFile, int* stepsInFile,
-      int* startGRU, int* numGRU, int* err);
+  // void read_forcingFile(void* forcFileInfo, int* currentFile, int* stepsInFile,
+  //     int* startGRU, int* numGRU, int* err);
 
-  void FileAccessActor_DeallocateStructures(void* handle_forcFileInfo, 
-      void* handle_ncid);
+  void FileAccessActor_DeallocateStructures(void* handle_ncid);
 
 }
 
@@ -50,19 +41,19 @@ extern "C" {
  * File Access Actor state variables
  *********************************************/
 
-class outputStructureLifetime {
-  public:
-    void* handle_forcFileInfo;
-    void* handle_ncid;    
-  outputStructureLifetime(void* handle_forcFileInfo, void* handle_ncid) {
-    this->handle_forcFileInfo = handle_forcFileInfo;
-    this->handle_ncid = handle_ncid;
-  }
-  ~outputStructureLifetime() {
-    std::cout << "Deallocating output structures\n";
-    FileAccessActor_DeallocateStructures(handle_forcFileInfo, handle_ncid);
-  }
-};
+// class outputStructureLifetime {
+//   public:
+//     void* handle_forcFileInfo;
+//     void* handle_ncid;    
+//   outputStructureLifetime(void* handle_forcFileInfo, void* handle_ncid) {
+//     this->handle_forcFileInfo = handle_forcFileInfo;
+//     this->handle_ncid = handle_ncid;
+//   }
+//   ~outputStructureLifetime() {
+//     std::cout << "Deallocating output structures\n";
+//     FileAccessActor_DeallocateStructures(handle_forcFileInfo, handle_ncid);
+//   }
+// };
 
 struct file_access_state {
   // Variables set on Spawn
@@ -73,7 +64,7 @@ struct file_access_state {
   NumGRUInfo num_gru_info;
 
 
-  void *handle_forcing_file_info = new_handle_file_info(); // Handle for the forcing file information
+  // void *handle_forcing_file_info = new_handle_file_info(); // Handle for the forcing file information
   void *handle_ncid = new_handle_var_i();                  // output file ids
   int num_vectors_in_output_manager;
   int num_steps;
@@ -87,12 +78,13 @@ struct file_access_state {
   File_Access_Actor_Settings file_access_actor_settings;
 
   std::vector<Forcing_File_Info> forcing_file_list; // list of steps in file
+  std::unique_ptr<forcingFileContainer> forcing_files;
 
-    // Timing Variables
+  // Timing Variables
   TimingInfo file_access_timing;
 
 
-  std::unique_ptr<outputStructureLifetime> output_lifetime;
+  // std::unique_ptr<outputStructureLifetime> output_lifetime;
 
 
   bool write_params_flag = true;

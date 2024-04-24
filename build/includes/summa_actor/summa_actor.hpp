@@ -10,12 +10,25 @@
 #include <chrono>
 #include <string>
 #include <vector>
+#include "message_atoms.hpp"
 
 extern "C" {
   void defineGlobalData_fortran(int* err, void* err_msg);
 
   void deallocateGlobalData_fortran(int* err, void* err_msg);
 }
+
+// This is a class that wraps around the data created in 
+// defineGlobalData()
+class summaGlobalData {
+  public:
+    summaGlobalData();
+    ~summaGlobalData();
+
+    int defineGlobalData();
+  private:
+    bool global_data_ready;
+};  
 
 
 namespace caf {
@@ -46,7 +59,7 @@ struct summa_actor_state {
   int current_batch_id;
 
   std::unique_ptr<fileManager> file_manager;
-  actor fortran_state;
+  std::unique_ptr<summaGlobalData> global_fortran_state;
 
 
   // settings for all child actors (save in case we need to recover)
@@ -64,10 +77,7 @@ behavior summa_actor(stateful_actor<summa_actor_state>* self,
                      Job_Actor_Settings job_actor_settings, 
                      HRU_Actor_Settings hru_actor_settings, actor parent);
 
-behavior fortran_global_state_actor(event_based_actor* self);
-
-
-
+behavior fortran_global_state_actor(event_based_actor* self, actor parent);
 
 
 void spawnJob(stateful_actor<summa_actor_state>* self);
@@ -81,4 +91,6 @@ void spawnJob(stateful_actor<summa_actor_state>* self);
 // Gets the number of GRUs from the attribute file
 int getNumGRUInFile(const std::string &settingsPath, 
     const std::string &attributeFile);
+
+
 
