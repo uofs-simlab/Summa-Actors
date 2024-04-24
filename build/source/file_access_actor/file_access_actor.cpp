@@ -15,7 +15,6 @@ behavior file_access_actor(
     
   // Set Up timing Info we wish to track
   self->state.file_access_timing = TimingInfo();
-  self->state.file_access_timing.addTimePoint("read_duration");
   self->state.file_access_timing.addTimePoint("write_duration");
   // Save the parameters passed from job_actor
   self->state.file_access_actor_settings = file_access_actor_settings;
@@ -45,15 +44,16 @@ behavior file_access_actor(
       err = self->state.forcing_files->initForcingFiles(self->state.num_gru);
       if (err != 0) return -1;
 
-      fileAccessActor_init_fortran(
-          &self->state.num_steps,
-          &fa_settings.num_timesteps_in_output_buffer, 
-          self->state.handle_ncid,
-          &self->state.start_gru, 
-          &self->state.num_gru, 
-          &num_hru, 
-          &err);
-      if (err != 0) return -1;
+      std::unique_ptr<char[]> message(new char[256]);
+      fileAccessActor_init_fortran(&self->state.num_steps,
+          &fa_settings.num_timesteps_in_output_buffer, self->state.handle_ncid,
+          &self->state.start_gru, &self->state.num_gru, &num_hru, &err,
+          &message);
+      if (err != 0) {
+        aout(self) << "\n\nERROR: fileAccessActor_init_fortran() - " 
+                   << message.get() << "\n\n";
+        return -1;
+      }
 
             
       // Ensure output buffer size is less than the number of simulation timesteps
@@ -92,43 +92,34 @@ behavior file_access_actor(
 
     // Message from the HRU actor to get the forcing file that is loaded
     [=](access_forcing, int iFile, caf::actor refToRespondTo) {
-      aout(self) << "ACCESS_FORCING\n" << iFile << "\n";
       if (self->state.forcing_files->allFilesLoaded()) {
         self->send(refToRespondTo, new_forcing_file_v, 
           self->state.forcing_files->getNumSteps(iFile), iFile);
-        aout(self) << "All Forcing Files Loaded \n";
         return;
       }
-      // TODO: THis timing coudl probably be handled inside the loadForcingFile?
-      self->state.file_access_timing.updateStartPoint("read_duration");
       auto err = self->state.forcing_files->loadForcingFile(iFile, 
           self->state.start_gru, self->state.num_gru);
-      self->state.file_access_timing.updateEndPoint("read_duration");
       if (err != 0) {
         aout(self) << "ERROR: Reading Forcing" << std::endl;
         self->quit();
         return;
       }
-
-      if (!self->state.forcing_files->allFilesLoaded()) {
-        self->send(self, access_forcing_internal_v, iFile + 1);
-      }
+      
+      // Load files behind the scenes
+      self->send(self, access_forcing_internal_v, iFile + 1);
       
       self->send(refToRespondTo, new_forcing_file_v, 
           self->state.forcing_files->getNumSteps(iFile), iFile);
     },
-        
+
+    // Internal message to load the forcing files in the background    
     [=](access_forcing_internal, int iFile) {
-      aout(self) << "ACCESS_FORCING_INTERNAL\n";
       if (self->state.forcing_files->allFilesLoaded()) {
         aout(self) << "All Forcing Files Loaded \n";
         return;
       }
-
-      self->state.file_access_timing.updateStartPoint("read_duration");
       auto err = self->state.forcing_files->loadForcingFile(iFile, 
           self->state.start_gru, self->state.num_gru);
-      self->state.file_access_timing.updateEndPoint("read_duration");
       if (err != 0) {
         aout(self) << "ERROR: Reading Forcing" << std::endl;
         self->quit();
@@ -138,7 +129,9 @@ behavior file_access_actor(
     },
         
     // Number of steps an HRU can compute before needing to write
-    [=] (get_num_output_steps) { return self->state.num_output_steps; },
+    [=] (get_num_output_steps) { 
+      return self->state.num_output_steps; 
+    },
 
     [=](write_output, int index_gru, int index_hru, caf::actor hru_actor) {
       self->state.file_access_timing.updateStartPoint("write_duration");
@@ -194,11 +187,12 @@ behavior file_access_actor(
       }
       FileAccessActor_DeallocateStructures(self->state.handle_ncid);
 
+
+
       aout(self) << "\n________________" 
                  << "FILE_ACCESS_ACTOR TIMING INFO RESULTS________________\n"
                  << "Total Read Duration = "
-                 << self->state.file_access_timing.getDuration("read_duration")
-                     .value_or(-1.0) << " Seconds\n"
+                 << self->state.forcing_files->getReadDuration() << " Seconds\n"
                  << "Total Write Duration = "
                  << self->state.file_access_timing.getDuration("write_duration")
                      .value_or(-1.0) << " Seconds\n"
@@ -206,8 +200,7 @@ behavior file_access_actor(
            
         
       self->quit();
-      return std::make_tuple(self->state.file_access_timing
-          .getDuration("read_duration").value_or(-1.0), 
+      return std::make_tuple(self->state.forcing_files->getReadDuration(),
           self->state.file_access_timing
           .getDuration("write_duration").value_or(-1.0));
     },

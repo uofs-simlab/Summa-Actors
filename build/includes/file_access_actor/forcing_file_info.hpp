@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include "timing_info.hpp"
 
 extern "C" {
   // Create the fortran ffile_info and return the number of forcing_files
@@ -42,7 +43,7 @@ class fileInfo {
     /** Fortran Replication Part **/
 
     /** C++ Part **/
-    bool is_loaded;
+    bool is_loaded = false;
 
     fileInfo(); 
 };
@@ -60,28 +61,19 @@ class forcingFileContainer {
     inline bool allFilesLoaded() { 
       return files_loaded_ == forcing_files_.size(); 
     }
-    inline int getNumSteps(int iFile) {return forcing_files_[iFile-1].nTimeSteps;}
-  
+    inline int getNumSteps(int iFile) {
+      return forcing_files_[iFile-1].nTimeSteps;
+    }
+
+    inline double getInitDuration() {
+      return file_access_timing_.getDuration("init_duration").value_or(-1.0);
+    }
+
+    inline double getReadDuration() {
+      return file_access_timing_.getDuration("read_duration").value_or(-1.0);
+    }
+
   private:
     int files_loaded_ = 0;
-};
-
-
-class Forcing_File_Info {
-  private:
-    int file_ID;
-    int num_steps;
-    bool is_loaded;
-  
-  public:
-    Forcing_File_Info(int file_ID);
-
-    int getNumSteps();
-
-    bool isFileLoaded();
-
-    void updateIsLoaded();
-
-    void updateNumSteps(int num_steps);
-
+    TimingInfo file_access_timing_ = TimingInfo();
 };

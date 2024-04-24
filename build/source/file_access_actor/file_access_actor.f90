@@ -33,7 +33,8 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
                                         start_gru,&  
                                         num_gru,&
                                         num_hru,&
-                                        err) bind(C, name="fileAccessActor_init_fortran")
+                                        err, &
+                                        message_r) bind(C, name="fileAccessActor_init_fortran")
   USE mDecisions_module,only:mDecisions                       ! module to read model decisions
   USE read_pinit_module,only:read_pinit                       ! module to read initial model parameter values
   USE module_sf_noahmplsm,only:read_mp_veg_parameters         ! module to read NOAH vegetation tables
@@ -81,6 +82,7 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   USE globalData,only:numtim                  ! number of time steps in the simulation
   USE globalData,only:fileout                 ! name of the output file
   USE globalData,only:ncid                    ! id of the output file
+  USE C_interface_module,only:f_c_string_ptr  ! convert fortran string to c string
 
   ! Moudles that pertian to Version 4 (Sundials addition)
 #ifdef V4_ACTIVE
@@ -98,6 +100,7 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   integer(c_int),intent(out)             :: num_gru
   integer(c_int),intent(out)             :: num_hru
   integer(c_int),intent(out)             :: err
+  type(c_ptr),intent(out)                :: message_r
 
   ! local Variables
   type(file_info_array),pointer          :: forcFileInfo
@@ -115,6 +118,7 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
 
 
   err=0; message="fileAccessActor_init_fortran/"
+  call f_c_string_ptr(message, message_r)
 
   call c_f_pointer(handle_output_ncid, output_ncid)
 
@@ -123,7 +127,7 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   ! *****************************************************************************
   ! NOTE: Must be after ffile_info because mDecisions uses the data_step
   call mDecisions(err,message)
-  if(err/=0)then; print*,trim(message); return; endif
+  if(err/=0)then; call f_c_string_ptr(message, message_r); return; endif
   
   ! TODO: This can be moved to a simple getter the file_access_actor calls
   num_timesteps = numtim ! Returns to the file_access_actor
@@ -136,9 +140,9 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
 
   ! get the maximum number of snow layers
   select case(model_decisions(iLookDECISIONS%snowLayers)%iDecision)
-    case(sameRulesAllLayers);    maxSnowLayers = 100
+    case(sameRulesAllLayers); err=100; message=trim(message)//'sameRulesAllLayers not implemented';call f_c_string_ptr(trim(message), message_r);return
     case(rulesDependLayerIndex); maxSnowLayers = 5
-    case default; err=20; message=trim(message)//'unable to identify option to combine/sub-divide snow layers'; return
+    case default; err=20; message=trim(message)//'unable to identify option to combine/sub-divide snow layers'; call f_c_string_ptr(trim(message), message_r); return
   end select ! (option to combine/sub-divide snow layers)
 
   maxLayers = gru_struc(1)%hruInfo(1)%nSoil + maxSnowLayers
@@ -148,11 +152,11 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   ! *****************************************************************************
   ! read default values and constraints for model parameters (local column)
   call read_pinit(LOCALPARAM_INFO,.TRUE., mpar_meta,localParFallback,err,message)
-  if(err/=0)then; print*,trim(message); return; endif
+  if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
 
   ! read default values and constraints for model parameters (basin-average)
   call read_pinit(BASINPARAM_INFO,.FALSE.,bpar_meta,basinParFallback,err,message)
-  if(err/=0)then; print*,trim(message); return; endif
+  if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
   
   
   ! *****************************************************************************
@@ -169,12 +173,12 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
       trim(SETTINGS_PATH)//trim(GENPARM),  & ! filename for general table
       trim(model_decisions(iLookDECISIONS%vegeParTbl)%cDecision), & ! classification system used for vegetation
       trim(model_decisions(iLookDECISIONS%soilCatTbl)%cDecision))   ! classification system used for soils
-  if(err/=0)then; print*,trim(message); return; endif
+  if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
 
   ! read Noah-MP vegetation tables
   call read_mp_veg_parameters(trim(SETTINGS_PATH)//trim(MPTABLE),                       & ! filename for Noah-MP table
                               trim(model_decisions(iLookDECISIONS%vegeParTbl)%cDecision)) ! classification system used for vegetation
-  if(err/=0)then; print*,trim(message); return; endif
+  if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
 
     ! define urban vegetation category
   select case(trim(model_decisions(iLookDECISIONS%vegeParTbl)%cDecision))
@@ -183,20 +187,20 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
     case('plumberCABLE');             urbanVegCategory = -999
     case('plumberCHTESSEL');          urbanVegCategory = -999
     case('plumberSUMMA');             urbanVegCategory = -999
-    case default; message=trim(message)//'unable to identify vegetation category';print*,message;return
+    case default; message=trim(message)//'unable to identify vegetation category';call f_c_string_ptr(trim(message), message_r);return
   end select
 
   ! *****************************************************************************
   ! *** Initialize output structure
   ! *****************************************************************************
   call initOutputStructure(num_timesteps_output_buffer, num_gru, err)
-  if(err/=0)then; print*,trim(message); return; endif
+  if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
 
   ! *****************************************************************************
   ! *** Initialize output time step
   ! *****************************************************************************
   call initOutputTimeStep(num_gru, err)
-  if(err/=0)then; print*,trim(message); return; endif
+  if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
 
 
   ! *****************************************************************************
@@ -206,7 +210,7 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   attrFile = trim(SETTINGS_PATH)//trim(LOCAL_ATTRIBUTES)
   call read_attrb(trim(attrFile),num_gru,outputStructure(1)%attrStruct,&
       outputStructure(1)%typeStruct,outputStructure(1)%idStruct,err,message)
-  if(err/=0)then; print*,trim(message); return; endif
+  if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
 
 
   ! set default model parameters
@@ -220,7 +224,7 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
                       outputStructure(1)%typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%soilTypeIndex), &  ! soil category
                       outputStructure(1)%dparStruct%gru(iGRU)%hru(iHRU)%var,                          &  ! default model parameters
                       err,message)                                                   ! error control
-      if(err/=0)then; print*, trim(message); return; endif
+      if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
 
 
    ! copy over to the parameter structure
@@ -243,7 +247,7 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   checkHRU = integerMissing
   call read_param(iRunMode,checkHRU,start_gru,num_hru,num_gru,outputStructure(1)%idStruct,&
       outputStructure(1)%mparStruct,outputStructure(1)%bparStruct,err,message)
-  if(err/=0)then; print*,trim(message); return; endif
+  if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
 
   ! *****************************************************************************
   ! *** compute derived model variables that are pretty much constant for the basin as a whole
@@ -254,7 +258,7 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
     call fracFuture(outputStructure(1)%bparStruct%gru(iGRU)%var,     &  ! vector of basin-average model parameters
                     outputStructure(1)%bvarStruct_init%gru(iGRU),    &  ! data structure of basin-average variables
                     err,message)                   ! error control
-    if(err/=0)then; print*, trim(message); return; endif
+    if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
 
     ! loop through local HRUs
     do iHRU=1,gru_struc(iGRU)%hruCount
@@ -267,7 +271,7 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
         if(kHRU==0)then  ! check there is a unique match
         kHRU=jHRU
         else
-        message=trim(message)//'only expect there to be one downslope HRU'; print*, message; return
+        message=trim(message)//'only expect there to be one downslope HRU'; call f_c_string_ptr(trim(message), message_r); return
         end if  ! (check there is a unique match)
       end if  ! (if identified a downslope HRU)
       end do
@@ -275,13 +279,13 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
 
       ! check that the parameters are consistent
       call paramCheck(outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU),err,message)
-      if(err/=0)then; print*, message; return; endif
+      if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
 
 #ifdef V4_ACTIVE      
       ! calculate a look-up table for the temperature-enthalpy conversion of snow for future snow layer merging
       ! NOTE2: H is the mixture enthalpy of snow liquid and ice
       call T2H_lookup_snow(outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU),err,message)
-      if(err/=0)then; print*, message; return; endif
+      if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
 
       ! calculate a lookup table for the temperature-enthalpy conversion of soil
       ! NOTE: L is the integral of soil Clapeyron equation liquid water matric potential from temperature
@@ -291,12 +295,12 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
                         outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU),        &   ! intent(in):    parameter data structure
                         outputStructure(1)%lookupStruct%gru(iGRU)%hru(iHRU),      &   ! intent(inout): lookup table data structure
                         err,message)                              ! intent(out):   error control
-        if(err/=0)then; print*, message; return; endif
+        if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
       endif
 else
       ! calculate a look-up table for the temperature-enthalpy conversion
       call E2T_lookup(outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU),err,message)
-      if(err/=0)then; message=trim(message); print*, message; return; endif
+      if(err/=0)then; message=trim(message); call f_c_string_ptr(trim(message), message_r); return; endif
 
 #endif
       ! overwrite the vegetation height
@@ -354,14 +358,14 @@ else
                   outputStructure(1)%bvarStruct_init, & ! intent(inout): model basin (GRU) variables
                   outputStructure(1)%indxStruct_init, & ! intent(inout): model indices
                   err,message)                          ! intent(out):   error control
-  if(err/=0)then; print*, message; return; endif
+  if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
 
   call check_icond(num_gru,                            &
                    outputStructure(1)%progStruct_init, &  ! intent(inout): model prognostic variables
                    outputStructure(1)%mparStruct,      & ! intent(in):    model parameters
                    outputStructure(1)%indxStruct_init, & ! intent(inout): model indices
                    err,message)                          ! intent(out):   error control
-  if(err/=0)then; print*, message; return; endif  
+  if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif  
 end subroutine fileAccessActor_init_fortran
 
 

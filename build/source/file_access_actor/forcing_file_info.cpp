@@ -15,6 +15,8 @@ fileInfo::fileInfo() {
 
 forcingFileContainer::forcingFileContainer() {
   forcing_files_ = std::vector<fileInfo>();
+  file_access_timing_.addTimePoint("init_duration");
+  file_access_timing_.addTimePoint("read_duration");
 }
 
 forcingFileContainer::~forcingFileContainer() {
@@ -22,13 +24,15 @@ forcingFileContainer::~forcingFileContainer() {
 }
 
 int forcingFileContainer::initForcingFiles(int num_gru) {
+  file_access_timing_.updateStartPoint("init_duration");
   int num_files, err;
+  std::unique_ptr<char[]> message(new char[256]);
   
   // initalize the fortran side
-  std::unique_ptr<char[]> message(new char[256]);
   ffile_info_fortran(num_gru, num_files, err, &message);
   if (err != 0) {
     std::cout << "Error initializing forcing files: " << message.get() << "\n";
+    file_access_timing_.updateEndPoint("init_duration");
     return -1;
   }
 
@@ -63,6 +67,7 @@ int forcingFileContainer::initForcingFiles(int num_gru) {
     }
   }
 
+  file_access_timing_.updateEndPoint("init_duration");
   return 0;
 }
 
@@ -78,9 +83,10 @@ int forcingFileContainer::loadForcingFile(int file_ID, int start_gru,
     std::cout << "Error: Invalid file ID: " << file_ID << std::endl;
     return -1;
   }
-
+  file_access_timing_.updateStartPoint("read_duration");
   std::unique_ptr<char[]> message(new char[256]);
   read_forcingFile(file_ID, start_gru, num_gru, err, &message);
+  file_access_timing_.updateEndPoint("read_duration");
   if (err != 0) {
     std::cout << "Error reading forcing file: " << message.get() << std::endl;
     return -2;
@@ -93,31 +99,3 @@ int forcingFileContainer::loadForcingFile(int file_ID, int start_gru,
 bool forcingFileContainer::isFileLoaded(int file_ID) {
   return forcing_files_[file_ID-1].is_loaded;
 }
-
-
-
-
-Forcing_File_Info::Forcing_File_Info(int file_ID) {
-  this->file_ID = file_ID;
-  this->num_steps = 0;
-  this->is_loaded = false;
-}
-
-int Forcing_File_Info::getNumSteps() {
-  return this->num_steps;
-}
-
-bool Forcing_File_Info::isFileLoaded() {
-  return this->is_loaded;
-}
-
-void Forcing_File_Info::updateIsLoaded() {
-  this->is_loaded = true;
-}
-
-void Forcing_File_Info::updateNumSteps(int num_steps) {
-  this->num_steps = num_steps;
-  this->is_loaded = true;
-}
-
-
