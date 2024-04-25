@@ -189,6 +189,9 @@ set(SOLVER
     ${ENGINE_DIR}/vegSWavRad.f90)
 
 set(DRIVER
+    ${DRIVER_DIR}/summa_type.f90
+    ${DRIVER_DIR}/summa_setup.f90
+    ${DRIVER_DIR}/summa_restart.f90
     ${DRIVER_DIR}/summa_alarms.f90
     ${DRIVER_DIR}/summa_globalData.f90)
 
@@ -203,10 +206,10 @@ set(INTERFACE
 set(SYS_INIT_INTERFACE
     ${SYS_INIT_DIR}/batch_distributer_actor.f90)
 set(FILE_ACCESS_INTERFACE
+    ${FILE_ACCESS_DIR}/summa_init_struc.f90
     ${FILE_ACCESS_DIR}/forcing_file_info.f90
     ${FILE_ACCESS_DIR}/file_access_actor.f90
     ${FILE_ACCESS_DIR}/output_structure.f90
-    # ${FILE_ACCESS_DIR}/read_force.f90
     ${FILE_ACCESS_DIR}/fileAccess_writeOutput.f90)
 set(JOB_INTERFACE
     ${JOB_ACTOR_DIR}/job_actor.f90)
@@ -236,10 +239,10 @@ set(SYS_INIT
     ${SYS_INIT_DIR}/summa_client.cpp
     ${SYS_INIT_DIR}/summa_server.cpp)
 set(FILE_ACCESS_ACTOR
-    # ${ACTORS_DIR}/file_access_actor/file_access_utils.cpp
-    ${ACTORS_DIR}/file_access_actor/file_access_actor.cpp
-    ${ACTORS_DIR}/file_access_actor/forcing_file_info.cpp
-    ${ACTORS_DIR}/file_access_actor/output_container.cpp)
+    ${FILE_ACCESS_DIR}/summa_init_struc.cpp
+    ${FILE_ACCESS_DIR}/file_access_actor.cpp
+    ${FILE_ACCESS_DIR}/forcing_file_info.cpp
+    ${FILE_ACCESS_DIR}/output_container.cpp)
 set(JOB_ACTOR
     ${ACTORS_DIR}/job_actor/GRU.cpp
     ${ACTORS_DIR}/job_actor/job_actor.cpp

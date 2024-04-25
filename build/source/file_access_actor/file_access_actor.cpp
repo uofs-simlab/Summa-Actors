@@ -39,22 +39,34 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
       int num_hru = self->state.num_gru;
       int err = 0;
 
-      // Call ffile_info
+
+      self->state.summa_init_struc = std::make_unique<SummaInitStruc>();
+      err = self->state.summa_init_struc->allocate(self->state.num_gru);
+      if (err != 0) aout(self) << "ERROR: SummaInitStruc allocation failed\n";
+      err = self->state.summa_init_struc->summa_paramSetup();
+      if (err != 0) aout(self) << "ERROR: SummaInitStruc paramSetup failed\n";
+      err = self->state.summa_init_struc->summa_readRestart();
+      if (err != 0) aout(self) << "ERROR: SummaInitStruc readRestart failed\n";
+      
+      // Get the information about the forcing files
       self->state.forcing_files = std::make_unique<forcingFileContainer>();
       err = self->state.forcing_files->initForcingFiles(self->state.num_gru);
       if (err != 0) return -1;
 
       std::unique_ptr<char[]> message(new char[256]);
       fileAccessActor_init_fortran(&self->state.num_steps,
-          &fa_settings.num_timesteps_in_output_buffer, self->state.handle_ncid,
-          &self->state.start_gru, &self->state.num_gru, &num_hru, &err,
-          &message);
+                                   &fa_settings.num_timesteps_in_output_buffer, 
+                                   self->state.handle_ncid,
+                                   &self->state.start_gru, 
+                                   &self->state.num_gru, &num_hru, &err,
+                                   &message);
       if (err != 0) {
         aout(self) << "\n\nERROR: fileAccessActor_init_fortran() - " 
                    << message.get() << "\n\n";
         return -1;
       }
    
+      // return -1;
       // Ensure output buffer size is less than the number of simulation timesteps
       if (self->state.num_steps < fa_settings.num_timesteps_in_output_buffer) {
         self->state.num_output_steps = self->state.num_steps;
@@ -95,10 +107,10 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
           self->state.forcing_files->getNumSteps(iFile), iFile);
         return;
       }
-      auto err = self->state.forcing_files->loadForcingFile(iFile, 
-          self->state.start_gru, self->state.num_gru);
+      auto err = self->state.forcing_files->
+          loadForcingFile(iFile, self->state.start_gru, self->state.num_gru);
       if (err != 0) {
-        aout(self) << "ERROR: Reading Forcing" << std::endl;
+        aout(self) << "ERROR: Reading Forcing\n";
         self->quit();
         return;
       }
@@ -118,7 +130,7 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
       auto err = self->state.forcing_files->loadForcingFile(iFile, 
           self->state.start_gru, self->state.num_gru);
       if (err != 0) {
-        aout(self) << "ERROR: Reading Forcing" << std::endl;
+        aout(self) << "ERROR: Reading Forcing Internal\n";
         self->quit();
         return;
       }

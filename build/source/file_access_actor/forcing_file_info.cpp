@@ -25,7 +25,8 @@ forcingFileContainer::~forcingFileContainer() {
 
 int forcingFileContainer::initForcingFiles(int num_gru) {
   file_access_timing_.updateStartPoint("init_duration");
-  int num_files, err;
+  int num_files = 0; 
+  int err = 0;
   std::unique_ptr<char[]> message(new char[256]);
   
   // initalize the fortran side
@@ -55,10 +56,12 @@ int forcingFileContainer::initForcingFiles(int num_gru) {
     }
 
     getFileInfoCopy_fortran(i, &file_name, forcing_files_[i-1].nVars,
-        forcing_files_[i-1].nTimeSteps, varName_size, var_ix_size, 
-        data_id_size, var_name_arr.data(), forcing_files_[i-1].var_ix.data(), 
-        forcing_files_[i-1].data_id.data(), forcing_files_[i-1].firstJulDay,
-        forcing_files_[i-1].convTime2Days);
+                            forcing_files_[i-1].nTimeSteps, varName_size, 
+                            var_ix_size, data_id_size, var_name_arr.data(), 
+                            forcing_files_[i-1].var_ix.data(), 
+                            forcing_files_[i-1].data_id.data(), 
+                            forcing_files_[i-1].firstJulDay,
+                            forcing_files_[i-1].convTime2Days);
 
     forcing_files_[i-1].filenmData = std::string(file_name.get());
     forcing_files_[i-1].nVars = varName_size;

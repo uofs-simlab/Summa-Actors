@@ -86,9 +86,14 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
 
   ! Moudles that pertian to Version 4 (Sundials addition)
 #ifdef V4_ACTIVE
-  USE mDecisions_module,only:enthalpyFD,enthalpyFDlu  ! look-up values for the choice of heat capacity computation
-  USE enthalpyTemp_module,only:T2H_lookup_snow        ! module to calculate a look-up table for the snow temperature-enthalpy conversion
+  USE mDecisions_module,only:enthalpyForm,   & ! use enthalpy with soil temperature-enthalpy analytical solution
+                             enthalpyFormLU, & ! use enthalpy with soil temperature-enthalpy lookup tables
+                             closedForm        ! use temperature with closed form heat capacity
+  
+  USE enthalpyTemp_module,only:T2H_lookup_snWat        ! module to calculate a look-up table for the snow temperature-enthalpy conversion
   USE enthalpyTemp_module,only:T2L_lookup_soil        ! module to calculate a look-up table for the soil temperature-enthalpy conversion
+#else
+  USE ConvE2Temp_module,only:E2T_lookup
 #endif
 
   implicit none
@@ -111,8 +116,10 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   integer(i4b)                           :: ivar               ! counter for variables
   character(len=256)                     :: attrFile           ! attributes file name
   character(LEN=256)                     :: restartFile        ! restart file name
-  logical                                :: needLookup         ! logical to decide if computing enthalpy lookup tables
-  
+  logical(lgt)                           :: needLookup_soil    ! logical to decide if computing enthalpy lookup tables
+  logical(lgt)                           :: checkEnthalpy      ! flag if checking enthalpy for consistency
+  logical(lgt)                           :: use_lookup         ! flag to use the lookup table for soil enthalpy, otherwise use analytical solution
+
   integer(i4b)                           :: indxGRU=1
   character(len=256)                     :: message            ! error message for downwind routine
 
@@ -126,69 +133,71 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   ! *** read model decisions
   ! *****************************************************************************
   ! NOTE: Must be after ffile_info because mDecisions uses the data_step
-  call mDecisions(err,message)
-  if(err/=0)then; call f_c_string_ptr(message, message_r); return; endif
+  ! call mDecisions(err,message)
+  ! if(err/=0)then; call f_c_string_ptr(message, message_r); return; endif
   
   ! TODO: This can be moved to a simple getter the file_access_actor calls
   num_timesteps = numtim ! Returns to the file_access_actor
 
-#ifdef V4_ACTIVE
-  ! decide if computing enthalpy lookup tables, if need enthalpy and not using hypergeometric function
-  needLookup = .false.
-  if(model_decisions(iLookDECISIONS%nrgConserv)%iDecision == enthalpyFDlu) needLookup = .true.
-#endif
+! #ifdef V4_ACTIVE
+!   ! decide if computing enthalpy lookup tables, if need enthalpy and not using hypergeometric function
+!   needLookup_soil = .false.
+!   ! if need enthalpy for either energy backward Euler residual or IDA state variable and not using soil enthalpy hypergeometric function
+!   if(model_decisions(iLookDECISIONS%nrgConserv)%iDecision == enthalpyFormLU) needLookup_soil = .true. 
+!   ! if using IDA and enthalpy as a state variable, need temperature-enthalpy lookup tables for soil and vegetation
+! #endif
 
-  ! get the maximum number of snow layers
-  select case(model_decisions(iLookDECISIONS%snowLayers)%iDecision)
-    case(sameRulesAllLayers); err=100; message=trim(message)//'sameRulesAllLayers not implemented';call f_c_string_ptr(trim(message), message_r);return
-    case(rulesDependLayerIndex); maxSnowLayers = 5
-    case default; err=20; message=trim(message)//'unable to identify option to combine/sub-divide snow layers'; call f_c_string_ptr(trim(message), message_r); return
-  end select ! (option to combine/sub-divide snow layers)
+  ! ! get the maximum number of snow layers
+  ! select case(model_decisions(iLookDECISIONS%snowLayers)%iDecision)
+  !   case(sameRulesAllLayers); err=100; message=trim(message)//'sameRulesAllLayers not implemented';call f_c_string_ptr(trim(message), message_r);return
+  !   case(rulesDependLayerIndex); maxSnowLayers = 5
+  !   case default; err=20; message=trim(message)//'unable to identify option to combine/sub-divide snow layers'; call f_c_string_ptr(trim(message), message_r); return
+  ! end select ! (option to combine/sub-divide snow layers)
 
-  maxLayers = gru_struc(1)%hruInfo(1)%nSoil + maxSnowLayers
+  ! maxLayers = gru_struc(1)%hruInfo(1)%nSoil + maxSnowLayers
 
   ! *****************************************************************************
   ! *** read default model parameters
   ! *****************************************************************************
-  ! read default values and constraints for model parameters (local column)
-  call read_pinit(LOCALPARAM_INFO,.TRUE., mpar_meta,localParFallback,err,message)
-  if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
+  ! ! read default values and constraints for model parameters (local column)
+  ! call read_pinit(LOCALPARAM_INFO,.TRUE., mpar_meta,localParFallback,err,message)
+  ! if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
 
-  ! read default values and constraints for model parameters (basin-average)
-  call read_pinit(BASINPARAM_INFO,.FALSE.,bpar_meta,basinParFallback,err,message)
-  if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
+  ! ! read default values and constraints for model parameters (basin-average)
+  ! call read_pinit(BASINPARAM_INFO,.FALSE.,bpar_meta,basinParFallback,err,message)
+  ! if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
   
   
   ! *****************************************************************************
   ! *** read Noah vegetation and soil tables
   ! *****************************************************************************
 
-  greenVegFrac_monthly = (/0.01_dp, 0.02_dp, 0.03_dp, 0.07_dp, 0.50_dp, 0.90_dp,& 
-      0.95_dp, 0.96_dp, 0.65_dp, 0.24_dp, 0.11_dp, 0.02_dp/)
+  ! greenVegFrac_monthly = (/0.01_dp, 0.02_dp, 0.03_dp, 0.07_dp, 0.50_dp, 0.90_dp,& 
+  !     0.95_dp, 0.96_dp, 0.65_dp, 0.24_dp, 0.11_dp, 0.02_dp/)
 
 
   ! read Noah soil and vegetation tables
-  call soil_veg_gen_parm(trim(SETTINGS_PATH)//trim(VEGPARM),      & ! filename for vegetation table
-      trim(SETTINGS_PATH)//trim(SOILPARM), & ! filename for soils table
-      trim(SETTINGS_PATH)//trim(GENPARM),  & ! filename for general table
-      trim(model_decisions(iLookDECISIONS%vegeParTbl)%cDecision), & ! classification system used for vegetation
-      trim(model_decisions(iLookDECISIONS%soilCatTbl)%cDecision))   ! classification system used for soils
-  if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
+  ! call soil_veg_gen_parm(trim(SETTINGS_PATH)//trim(VEGPARM),      & ! filename for vegetation table
+  !     trim(SETTINGS_PATH)//trim(SOILPARM), & ! filename for soils table
+  !     trim(SETTINGS_PATH)//trim(GENPARM),  & ! filename for general table
+  !     trim(model_decisions(iLookDECISIONS%vegeParTbl)%cDecision), & ! classification system used for vegetation
+  !     trim(model_decisions(iLookDECISIONS%soilCatTbl)%cDecision))   ! classification system used for soils
+  ! if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
 
   ! read Noah-MP vegetation tables
-  call read_mp_veg_parameters(trim(SETTINGS_PATH)//trim(MPTABLE),                       & ! filename for Noah-MP table
-                              trim(model_decisions(iLookDECISIONS%vegeParTbl)%cDecision)) ! classification system used for vegetation
-  if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
+  ! call read_mp_veg_parameters(trim(SETTINGS_PATH)//trim(MPTABLE),                       & ! filename for Noah-MP table
+  !                             trim(model_decisions(iLookDECISIONS%vegeParTbl)%cDecision)) ! classification system used for vegetation
+  ! if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
 
     ! define urban vegetation category
-  select case(trim(model_decisions(iLookDECISIONS%vegeParTbl)%cDecision))
-    case('USGS');                     urbanVegCategory =    1
-    case('MODIFIED_IGBP_MODIS_NOAH'); urbanVegCategory =   13
-    case('plumberCABLE');             urbanVegCategory = -999
-    case('plumberCHTESSEL');          urbanVegCategory = -999
-    case('plumberSUMMA');             urbanVegCategory = -999
-    case default; message=trim(message)//'unable to identify vegetation category';call f_c_string_ptr(trim(message), message_r);return
-  end select
+  ! select case(trim(model_decisions(iLookDECISIONS%vegeParTbl)%cDecision))
+  !   case('USGS');                     urbanVegCategory =    1
+  !   case('MODIFIED_IGBP_MODIS_NOAH'); urbanVegCategory =   13
+  !   case('plumberCABLE');             urbanVegCategory = -999
+  !   case('plumberCHTESSEL');          urbanVegCategory = -999
+  !   case('plumberSUMMA');             urbanVegCategory = -999
+  !   case default; message=trim(message)//'unable to identify vegetation category';call f_c_string_ptr(trim(message), message_r);return
+  ! end select
 
   ! *****************************************************************************
   ! *** Initialize output structure
@@ -207,164 +216,144 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   ! *** Read Attributes
   ! *****************************************************************************
 
-  attrFile = trim(SETTINGS_PATH)//trim(LOCAL_ATTRIBUTES)
-  call read_attrb(trim(attrFile),num_gru,outputStructure(1)%attrStruct,&
-      outputStructure(1)%typeStruct,outputStructure(1)%idStruct,err,message)
-  if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
+  ! attrFile = trim(SETTINGS_PATH)//trim(LOCAL_ATTRIBUTES)
+  ! call read_attrb(trim(attrFile),num_gru,outputStructure(1)%attrStruct,&
+  !     outputStructure(1)%typeStruct,outputStructure(1)%idStruct,err,message)
+  ! if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
 
 
-  ! set default model parameters
-  do iGRU=1, num_gru
-    do iHRU=1, gru_struc(iGRU)%hruCount
-      ! set parmameters to their default value
-      outputStructure(1)%dparStruct%gru(iGRU)%hru(iHRU)%var(:) = localParFallback(:)%default_val         ! x%hru(:)%var(:)
+  ! ! set default model parameters
+  ! do iGRU=1, num_gru
+  !   do iHRU=1, gru_struc(iGRU)%hruCount
+  !     ! set parmameters to their default value
+  !     outputStructure(1)%dparStruct%gru(iGRU)%hru(iHRU)%var(:) = localParFallback(:)%default_val         ! x%hru(:)%var(:)
 
-      ! overwrite default model parameters with information from the Noah-MP tables
-      call pOverwrite(outputStructure(1)%typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex),  &  ! vegetation category
-                      outputStructure(1)%typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%soilTypeIndex), &  ! soil category
-                      outputStructure(1)%dparStruct%gru(iGRU)%hru(iHRU)%var,                          &  ! default model parameters
-                      err,message)                                                   ! error control
-      if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
+  !     ! overwrite default model parameters with information from the Noah-MP tables
+  !     call pOverwrite(outputStructure(1)%typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex),  &  ! vegetation category
+  !                     outputStructure(1)%typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%soilTypeIndex), &  ! soil category
+  !                     outputStructure(1)%dparStruct%gru(iGRU)%hru(iHRU)%var,                          &  ! default model parameters
+  !                     err,message)                                                   ! error control
+  !     if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
 
 
-   ! copy over to the parameter structure
-   ! NOTE: constant for the dat(:) dimension (normally depth)
-      do ivar=1,size(localParFallback)
-        outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU)%var(ivar)%dat(:) = outputStructure(1)%dparStruct%gru(iGRU)%hru(iHRU)%var(ivar)
-      end do  ! looping through variables
+  !  ! copy over to the parameter structure
+  !  ! NOTE: constant for the dat(:) dimension (normally depth)
+  !     do ivar=1,size(localParFallback)
+  !       outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU)%var(ivar)%dat(:) = outputStructure(1)%dparStruct%gru(iGRU)%hru(iHRU)%var(ivar)
+  !     end do  ! looping through variables
     
-    end do  ! looping through HRUs
+  !   end do  ! looping through HRUs
     
-    ! set default for basin-average parameters
-    outputStructure(1)%bparStruct%gru(iGRU)%var(:) = basinParFallback(:)%default_val
+  !   ! set default for basin-average parameters
+  !   outputStructure(1)%bparStruct%gru(iGRU)%var(:) = basinParFallback(:)%default_val
     
-  end do  ! looping through GRUs
+  ! end do  ! looping through GRUs
 
 
   ! *****************************************************************************
   ! *** Read Parameters
   ! *****************************************************************************
-  checkHRU = integerMissing
-  call read_param(iRunMode,checkHRU,start_gru,num_hru,num_gru,outputStructure(1)%idStruct,&
-      outputStructure(1)%mparStruct,outputStructure(1)%bparStruct,err,message)
-  if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
+  ! checkHRU = integerMissing
+  ! call read_param(iRunMode,checkHRU,start_gru,num_hru,num_gru,outputStructure(1)%idStruct,&
+  !     outputStructure(1)%mparStruct,outputStructure(1)%bparStruct,err,message)
+  ! if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
 
   ! *****************************************************************************
   ! *** compute derived model variables that are pretty much constant for the basin as a whole
   ! *****************************************************************************
   ! ! loop through GRUs
-  do iGRU=1,num_gru
-    ! calculate the fraction of runoff in future time steps
-    call fracFuture(outputStructure(1)%bparStruct%gru(iGRU)%var,     &  ! vector of basin-average model parameters
-                    outputStructure(1)%bvarStruct_init%gru(iGRU),    &  ! data structure of basin-average variables
-                    err,message)                   ! error control
-    if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
+  ! do iGRU=1,num_gru
+  !   ! calculate the fraction of runoff in future time steps
+  !   call fracFuture(outputStructure(1)%bparStruct%gru(iGRU)%var,     &  ! vector of basin-average model parameters
+  !                   outputStructure(1)%bvarStruct_init%gru(iGRU),    &  ! data structure of basin-average variables
+  !                   err,message)                   ! error control
+  !   if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
 
-    ! loop through local HRUs
-    do iHRU=1,gru_struc(iGRU)%hruCount
+  !   ! loop through local HRUs
+  !   do iHRU=1,gru_struc(iGRU)%hruCount
 
     
-      kHRU=0
-      ! check the network topology (only expect there to be one downslope HRU)
-      do jHRU=1,gru_struc(iGRU)%hruCount
-      if(outputStructure(1)%typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%downHRUindex) == outputStructure(1)%idStruct%gru(iGRU)%hru(jHRU)%var(iLookID%hruId))then
-        if(kHRU==0)then  ! check there is a unique match
-        kHRU=jHRU
-        else
-        message=trim(message)//'only expect there to be one downslope HRU'; call f_c_string_ptr(trim(message), message_r); return
-        end if  ! (check there is a unique match)
-      end if  ! (if identified a downslope HRU)
-      end do
+  !     kHRU=0
+  !     ! check the network topology (only expect there to be one downslope HRU)
+  !     do jHRU=1,gru_struc(iGRU)%hruCount
+  !     if(outputStructure(1)%typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%downHRUindex) == outputStructure(1)%idStruct%gru(iGRU)%hru(jHRU)%var(iLookID%hruId))then
+  !       if(kHRU==0)then  ! check there is a unique match
+  !       kHRU=jHRU
+  !       else
+  !       message=trim(message)//'only expect there to be one downslope HRU'; call f_c_string_ptr(trim(message), message_r); return
+  !       end if  ! (check there is a unique match)
+  !     end if  ! (if identified a downslope HRU)
+  !     end do
 
 
-      ! check that the parameters are consistent
-      call paramCheck(outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU),err,message)
-      if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
+  !     ! check that the parameters are consistent
+  !     call paramCheck(outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU),err,message)
+  !     if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
 
 #ifdef V4_ACTIVE      
       ! calculate a look-up table for the temperature-enthalpy conversion of snow for future snow layer merging
+      ! NOTE1: might be able to make this more efficient by only doing this for the HRUs that have snow
       ! NOTE2: H is the mixture enthalpy of snow liquid and ice
-      call T2H_lookup_snow(outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU),err,message)
-      if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
+      ! call T2H_lookup_snWat(outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU),err,message)
+      ! if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
 
-      ! calculate a lookup table for the temperature-enthalpy conversion of soil
-      ! NOTE: L is the integral of soil Clapeyron equation liquid water matric potential from temperature
-      !       multiply by Cp_liq*iden_water to get temperature component of enthalpy
-      if(needLookup)then
-        call T2L_lookup_soil(gru_struc(iGRU)%hruInfo(iHRU)%nSoil,   &   ! intent(in):    number of soil layers
-                        outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU),        &   ! intent(in):    parameter data structure
-                        outputStructure(1)%lookupStruct%gru(iGRU)%hru(iHRU),      &   ! intent(inout): lookup table data structure
-                        err,message)                              ! intent(out):   error control
-        if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
-      endif
-else
-      ! calculate a look-up table for the temperature-enthalpy conversion
-      call E2T_lookup(outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU),err,message)
-      if(err/=0)then; message=trim(message); call f_c_string_ptr(trim(message), message_r); return; endif
+      ! ! calculate a lookup table for the temperature-enthalpy conversion of soil
+      ! ! NOTE: L is the integral of soil Clapeyron equation liquid water matric potential from temperature
+      ! !       multiply by Cp_liq*iden_water to get temperature component of enthalpy
+      ! if(needLookup_soil)then
+      !   call T2L_lookup_soil(gru_struc(iGRU)%hruInfo(iHRU)%nSoil,   &   ! intent(in):    number of soil layers
+      !                   outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU),        &   ! intent(in):    parameter data structure
+      !                   outputStructure(1)%lookupStruct%gru(iGRU)%hru(iHRU),      &   ! intent(inout): lookup table data structure
+      !                   err,message)                              ! intent(out):   error control
+      !   if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
+      ! endif
+#else
+      ! ! calculate a look-up table for the temperature-enthalpy conversion
+      ! call E2T_lookup(outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU),err,message)
+      ! if(err/=0)then; message=trim(message); call f_c_string_ptr(trim(message), message_r); return; endif
 
 #endif
-      ! overwrite the vegetation height
-      HVT(outputStructure(1)%typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex)) = outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU)%var(iLookPARAM%heightCanopyTop)%dat(1)
-      HVB(outputStructure(1)%typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex)) = outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU)%var(iLookPARAM%heightCanopyBottom)%dat(1)
-         
-      ! overwrite the tables for LAI and SAI
-      if(model_decisions(iLookDECISIONS%LAI_method)%iDecision == specified)then
-        SAIM(outputStructure(1)%typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex),:) = outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU)%var(iLookPARAM%winterSAI)%dat(1)
-        LAIM(outputStructure(1)%typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex),:) = outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU)%var(iLookPARAM%summerLAI)%dat(1)*greenVegFrac_monthly
-      endif
-
-    end do ! HRU
-    
-    ! compute total area of the upstream HRUS that flow into each HRU
-    do iHRU=1,gru_struc(iGRU)%hruCount
-      outputStructure(1)%upArea%gru(iGRU)%hru(iHRU) = 0._rkind
-      do jHRU=1,gru_struc(iGRU)%hruCount
-       ! check if jHRU flows into iHRU; assume no exchange between GRUs
-       if(outputStructure(1)%typeStruct%gru(iGRU)%hru(jHRU)%var(iLookTYPE%downHRUindex)==outputStructure(1)%typeStruct%gru(iGRU)%hru(iHRU)%var(iLookID%hruId))then
-        outputStructure(1)%upArea%gru(iGRU)%hru(iHRU) = outputStructure(1)%upArea%gru(iGRU)%hru(iHRU) + outputStructure(1)%attrStruct%gru(iGRU)%hru(jHRU)%var(iLookATTR%HRUarea)
-       endif   ! (if jHRU is an upstream HRU)
-      end do  ! jHRU
-    end do  ! iHRU
-  
-    ! identify the total basin area for a GRU (m2)  
-    outputStructure(1)%bvarStruct_init%gru(iGRU)%var(iLookBVAR%basin__totalArea)%dat(1) = 0._rkind
-    do iHRU=1,gru_struc(iGRU)%hruCount
-      outputStructure(1)%bvarStruct_init%gru(iGRU)%var(iLookBVAR%basin__totalArea)%dat(1) = &
-      outputStructure(1)%bvarStruct_init%gru(iGRU)%var(iLookBVAR%basin__totalArea)%dat(1) + outputStructure(1)%attrStruct%gru(iGRU)%hru(iHRU)%var(iLookATTR%HRUarea)
-    end do
-  
-  end do ! GRU
-
-
-
-
-
-
-  ! *****************************************************************************
-  ! Restart File
+  !     ! overwrite the vegetation height !     HVT(outputStructure(1)%typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex)) = outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU)%var(iLookPARAM%heightCanopyTop)%dat(1) !     HVB(outputStructure(1)%typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex)) = outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU)%var(iLookPARAM%heightCanopyBottom)%dat(1) !     ! overwrite the tables for LAI and SAI !     if(model_decisions(iLookDECISIONS%LAI_method)%iDecision == specified)then !       SAIM(outputStructure(1)%typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex),:) = outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU)%var(iLookPARAM%winterSAI)%dat(1) !       LAIM(outputStructure(1)%typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex),:) = outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU)%var(iLookPARAM%summerLAI)%dat(1)*greenVegFrac_monthly !     endif !   end do ! HRU !   ! compute total area of the upstream HRUS that flow into each HRU !   do iHRU=1,gru_struc(iGRU)%hruCount !     outputStructure(1)%upArea%gru(iGRU)%hru(iHRU) = 0._rkind !     do jHRU=1,gru_struc(iGRU)%hruCount !      ! check if jHRU flows into iHRU; assume no exchange between GRUs !      if(outputStructure(1)%typeStruct%gru(iGRU)%hru(jHRU)%var(iLookTYPE%downHRUindex)==outputStructure(1)%typeStruct%gru(iGRU)%hru(iHRU)%var(iLookID%hruId))then !       outputStructure(1)%upArea%gru(iGRU)%hru(iHRU) = outputStructure(1)%upArea%gru(iGRU)%hru(iHRU) + outputStructure(1)%attrStruct%gru(iGRU)%hru(jHRU)%var(iLookATTR%HRUarea) !      endif   ! (if jHRU is an upstream HRU) !     end do  ! jHRU !   end do  ! iHRU !   ! identify the total basin area for a GRU (m2) !   outputStructure(1)%bvarStruct_init%gru(iGRU)%var(iLookBVAR%basin__totalArea)%dat(1) = 0._rkind !   do iHRU=1,gru_struc(iGRU)%hruCount !     outputStructure(1)%bvarStruct_init%gru(iGRU)%var(iLookBVAR%basin__totalArea)%dat(1) = & !     outputStructure(1)%bvarStruct_init%gru(iGRU)%var(iLookBVAR%basin__totalArea)%dat(1) + outputStructure(1)%attrStruct%gru(iGRU)%hru(iHRU)%var(iLookATTR%HRUarea) !   end do ! end do ! GRU ! ***************************************************************************** ! Restart File
   ! *****************************************************************************
   ! define restart file path/name
-  if(STATE_PATH == '') then
-    restartFile = trim(SETTINGS_PATH)//trim(MODEL_INITCOND)
-  else
-    restartFile = trim(STATE_PATH)//trim(MODEL_INITCOND)
-  endif
+!   if(STATE_PATH == '') then
+!     restartFile = trim(SETTINGS_PATH)//trim(MODEL_INITCOND)
+!   else
+!     restartFile = trim(STATE_PATH)//trim(MODEL_INITCOND)
+!   endif
 
- ! read initial conditions
-  call read_icond(restartFile,                        & ! intent(in):    name of initial conditions file
-                  num_gru,                            & ! intent(in):    number of response units
-                  outputStructure(1)%mparStruct,      & ! intent(in):    model parameters
-                  outputStructure(1)%progStruct_init, & ! intent(inout): model prognostic variables
-                  outputStructure(1)%bvarStruct_init, & ! intent(inout): model basin (GRU) variables
-                  outputStructure(1)%indxStruct_init, & ! intent(inout): model indices
-                  err,message)                          ! intent(out):   error control
-  if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
+!  ! read initial conditions
+!   call read_icond(restartFile,                        & ! intent(in):    name of initial conditions file
+!                   num_gru,                            & ! intent(in):    number of response units
+!                   outputStructure(1)%mparStruct,      & ! intent(in):    model parameters
+!                   outputStructure(1)%progStruct_init, & ! intent(inout): model prognostic variables
+!                   outputStructure(1)%bvarStruct_init, & ! intent(inout): model basin (GRU) variables
+!                   outputStructure(1)%indxStruct_init, & ! intent(inout): model indices
+!                   err,message)                          ! intent(out):   error control
+!   if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
 
-  call check_icond(num_gru,                            &
-                   outputStructure(1)%progStruct_init, &  ! intent(inout): model prognostic variables
-                   outputStructure(1)%mparStruct,      & ! intent(in):    model parameters
-                   outputStructure(1)%indxStruct_init, & ! intent(inout): model indices
-                   err,message)                          ! intent(out):   error control
+! #ifdef V4_ACTIVE
+!   checkEnthalpy = .false.
+!   use_lookup    = .false.
+!   if(model_decisions(iLookDECISIONS%nrgConserv)%iDecision .ne. closedForm) checkEnthalpy = .true. ! check enthalpy either for mixed form energy equation or enthalpy state variable
+!   if(model_decisions(iLookDECISIONS%nrgConserv)%iDecision==enthalpyFormLU) use_lookup = .true.    ! use lookup tables for soil temperature-enthalpy instead of analytical solution
+!   call check_icond(num_gru,                              & ! intent(in):    number of response units 
+!                    outputStructure(1)%progStruct_init,   & ! intent(inout): model prognostic variables
+!                    outputStructure(1)%diagStruct,        & ! intent(inout): model diagnostic variables
+!                    outputStructure(1)%mparStruct,        & ! intent(in):    model parameters
+!                    outputStructure(1)%indxStruct_init,   & ! intent(in):    layer indexes
+!                    outputStructure(1)%lookupStruct,      & ! intent(in):    lookup tables
+!                    checkEnthalpy,                        & ! intent(in):    flag if need to start with consistent enthalpy
+!                    use_lookup,                           & ! intent(in):    flag to use the lookup table for soil enthalpy
+!                    err,message)
+
+! #else
+!   call check_icond(num_gru,                            &
+!                    outputStructure(1)%progStruct_init, & ! intent(inout): model prognostic variables
+!                    outputStructure(1)%mparStruct,      & ! intent(in):    model parameters
+!                    outputStructure(1)%indxStruct_init, & ! intent(inout): model indices
+!                    err,message)                          ! intent(out):   error control
+! #endif
   if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif  
 end subroutine fileAccessActor_init_fortran
 
@@ -465,15 +454,6 @@ subroutine FileAccessActor_DeallocateStructures(handle_ncid) bind(C,name="FileAc
 
   call c_f_pointer(handle_ncid, ncid)
 
-
-  ! close the open output Files
-  ! do iFreq=1,maxvarFreq
-  !   if (ncid%var(iFreq)/=integerMissing) then
-  !     call nc_file_close(ncid%var(iFreq),err,cmessage)
-  !     if(err/=0)then; message=trim(message)//trim(cmessage); return; end if
-  !   endif   
-  ! end do
-  
   deallocate(ncid)
   deallocate(outputTimeStep)
   deallocate(outputStructure)

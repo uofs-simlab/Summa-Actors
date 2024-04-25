@@ -1,6 +1,6 @@
 #include "hru_actor.hpp"
 
-bool hru_extra_logging = false;
+bool hru_extra_logging = true;
 
 namespace caf {
 
@@ -57,10 +57,6 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
                      self->state.iFile+1, self);
           break;
         }
-
-        if (hru_extra_logging) 
-            aout(self) << "HRU:" << self->state.indxGRU << " - Timestep: " 
-                       << self->state.timestep << "\n";
 
         self->state.num_steps_until_write--;
         err = Run_HRU(self); // Simulate a Timestep

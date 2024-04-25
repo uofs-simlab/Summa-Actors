@@ -36,8 +36,8 @@ subroutine ffile_info_fortran(num_gru, num_forcing_files, err, message_r) &
   ! *****************************************************************************
   ! *** read description of model forcing datafile used in each HRU
   ! *****************************************************************************
-  call ffile_info(num_gru, err, message)
-  if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
+  ! call ffile_info(num_gru, err, message)
+  ! if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
 
   num_forcing_files = size(forcFileInfo)
 end subroutine ffile_info_fortran
@@ -259,9 +259,9 @@ subroutine openForcingFile(forc_file,iFile,infile,ncId,err,message)
   
   ! define the reference time for the model simulation
   call extractTime(refTimeString,                        & ! input  = units string for time data
-                  iyyy,im,id,ih,imin,dsec,               & ! output = year, month, day, hour, minute, second
-                  ih_tz, imin_tz, dsec_tz,               & ! output = time zone information (hour, minute, second)
-                  err,cmessage)                            ! output = error code and error message
+                   iyyy,im,id,ih,imin,dsec,              & ! output = year, month, day, hour, minute, second
+                   ih_tz, imin_tz, dsec_tz,              & ! output = time zone information (hour, minute, second)
+                   err,cmessage)                            ! output = error code and error message
   if(err/=0)then; message=trim(message)//trim(cmessage); return; end if
    
   select case(trim(NC_TIME_ZONE))

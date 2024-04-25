@@ -9,6 +9,7 @@
 #include "message_atoms.hpp"
 #include "forcing_file_info.hpp"
 #include "json.hpp"
+#include "summa_init_struc.hpp"
 
 using namespace caf;
 
@@ -35,6 +36,7 @@ extern "C" {
  * File Access Actor state variables
  *********************************************/
 struct file_access_state {
+  TimingInfo file_access_timing;
   caf::actor parent; 
   int start_gru;
   int num_gru;
@@ -42,20 +44,16 @@ struct file_access_state {
   NumGRUInfo num_gru_info;
 
   void *handle_ncid = new_handle_var_i();  // output file ids
-  int num_vectors_in_output_manager;
   int num_steps;
-  int stepsInCurrentFile;
-  int numFiles;
-  int filesLoaded;
   int num_output_steps;
 
   Output_Container* output_container;
 
   File_Access_Actor_Settings file_access_actor_settings;
 
+  std::unique_ptr<SummaInitStruc> summa_init_struc;
   std::unique_ptr<forcingFileContainer> forcing_files;
 
-  TimingInfo file_access_timing;
 
   bool write_params_flag = true;
 };

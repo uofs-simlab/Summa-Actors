@@ -72,14 +72,6 @@ subroutine job_init_fortran(file_manager, start_gru, num_gru,&
   startGRU=start_gru
   iRunMode=iRunModeGRU
   checkHRU=integerMissing
-
-  ! TODO: MOVED TO SUMMA_ACTOR (Batch_Distributer_Actor)
-  ! call summa_SetTimesDirsAndFiles(summaFileManagerIn,err,message)
-  ! if(err/=0)then; print*, trim(message); return; endif
-
-  ! TODO: MOVED TO fortran_global_state_actor 
-  ! call summa_defineGlobalData(err, message)
-  ! if(err/=0)then; print*, trim(message); return; endif
   
   ! *****************************************************************************
   ! *** read the number of GRUs and HRUs
