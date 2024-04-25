@@ -25,6 +25,9 @@ subroutine initialize_init_struc(num_gru, err, message_r) bind(C, name="initiali
                       indx_meta, &
                       bpar_meta, &
                       bvar_meta
+#ifdef V4_ACTIVE
+  USE globalData,only:lookup_meta
+#endif
   ! statistics metadata structures
   USE globalData,only:statForc_meta, &        ! child metadata for stats
                       statProg_meta, &        ! child metadata for stats
@@ -49,6 +52,9 @@ subroutine initialize_init_struc(num_gru, err, message_r) bind(C, name="initiali
   call f_c_string_ptr(trim(message), message_r)
   allocate(init_struc)
   summaVars: associate(&
+#ifdef V4_ACTIVE  
+    lookupStruct         =>init_struc%lookupStruct         , & ! x%gru(:)%hru(:)%z(:)%var(:)%lookup(:) -- lookup tables
+#endif
     ! statistics structures
     forcStat             => init_struc%forcStat            , & ! x%gru(:)%hru(:)%var(:)%dat -- model forcing data
     progStat             => init_struc%progStat            , & ! x%gru(:)%hru(:)%var(:)%dat -- model prognostic (state) variables
@@ -105,6 +111,9 @@ subroutine initialize_init_struc(num_gru, err, message_r) bind(C, name="initiali
       case('flux'); call allocGlobal(flux_meta,  fluxStruct,  err, cmessage)   ! model fluxes
       case('bpar'); call allocGlobal(bpar_meta,  bparStruct,  err, cmessage)   ! basin-average parameters
       case('bvar'); call allocGlobal(bvar_meta,  bvarStruct,  err, cmessage)   ! basin-average variables
+#ifdef V4_ACTIVE
+      case('lookup'); call allocGlobal(lookup_meta, lookupStruct, err, cmessage) ! lookup tables
+#endif      
       case('deriv'); cycle
       case default; err=20; message='unable to find structure name: '//trim(structInfo(iStruct)%structName)
     end select
