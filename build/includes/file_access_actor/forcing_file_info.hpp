@@ -7,8 +7,7 @@
 
 extern "C" {
   // Create the fortran ffile_info and return the number of forcing_files
-  void ffile_info_fortran(int& num_grus, int& num_forcing_files, int& err, 
-      void* message);
+  void getNumFrocingFiles_fortran(int& num_forcing_files);
   // Creation and population of Fortran structures
   void getFileInfoSizes_fortran(int& iFile, int& var_ix_size, int& data_id_size, 
       int& varName_size);
@@ -54,7 +53,7 @@ class forcingFileContainer {
     forcingFileContainer();
     ~forcingFileContainer();
 
-    int initForcingFiles(int num_gru);
+    int initForcingFiles();
 
     int loadForcingFile(int file_ID, int start_gru, int num_gru);
     bool isFileLoaded(int file_ID);

@@ -23,14 +23,14 @@ forcingFileContainer::~forcingFileContainer() {
   freeForcingFiles_fortran();
 }
 
-int forcingFileContainer::initForcingFiles(int num_gru) {
+int forcingFileContainer::initForcingFiles() {
   file_access_timing_.updateStartPoint("init_duration");
   int num_files = 0; 
   int err = 0;
   std::unique_ptr<char[]> message(new char[256]);
   
   // initalize the fortran side
-  ffile_info_fortran(num_gru, num_files, err, &message);
+  getNumFrocingFiles_fortran(num_files);
   if (err != 0) {
     std::cout << "Error initializing forcing files: " << message.get() << "\n";
     file_access_timing_.updateEndPoint("init_duration");

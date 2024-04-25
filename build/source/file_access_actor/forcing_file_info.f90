@@ -5,7 +5,7 @@ module forcing_file_info
   USE actor_data_types,only:var_forc   ! global data structure for forcing data
   USE data_types,only:dlength          ! global data structure for forcing data
   implicit none
-  public::ffile_info_fortran
+  public::getNumFrocingFiles_fortran
   public::getFileInfoSizes_fortran
   public::getFileInfoCopy_fortran
   public::read_forcingFile
@@ -17,30 +17,14 @@ module forcing_file_info
   type(dlength),allocatable,save,public   :: vecTime(:)
   contains
 ! Initalize the fortran data structure and return the number of forcing files
-subroutine ffile_info_fortran(num_gru, num_forcing_files, err, message_r) &
-      bind(C, name="ffile_info_fortran")
-  USE ffile_info_module,only:ffile_info       ! module to read information on forcing datafile
+subroutine getNumFrocingFiles_fortran(num_forcing_files) &
+      bind(C, name="getNumFrocingFiles_fortran")
   USE globalData,only:forcFileInfo            ! Structure allocated by ffil info
-  USE C_interface_module,only:f_c_string_ptr  ! convert fortran string to c string
   implicit none
   ! dummy variables
-  integer(c_int), intent(in)  :: num_gru
   integer(c_int), intent(out) :: num_forcing_files
-  integer(c_int), intent(out) :: err
-  type(c_ptr), intent(out)    :: message_r
-  ! local variables
-  character(len=256)          :: message=""
-  
-  call f_c_string_ptr(message, message_r)
-
-  ! *****************************************************************************
-  ! *** read description of model forcing datafile used in each HRU
-  ! *****************************************************************************
-  ! call ffile_info(num_gru, err, message)
-  ! if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
-
   num_forcing_files = size(forcFileInfo)
-end subroutine ffile_info_fortran
+end subroutine getNumFrocingFiles_fortran
 
 ! Get the sizes fo the vector components that make up a forcingFile
 subroutine getFileInfoSizes_fortran(iFile, var_ix_size, data_id_size, &
@@ -61,7 +45,7 @@ subroutine getFileInfoCopy_fortran(iFile, filenmData, nVars, nTimeSteps, &
     varName_size, var_ix_size, data_id_size, var_name_arr, var_ix_arr, &
     data_id_arr, firstJulDay, convTime2Days) bind(C, name="getFileInfoCopy_fortran")
   USE globalData,only:forcFileInfo
-  USE C_interface_module
+  USE C_interface_module,only:f_c_string_ptr
   implicit none
   ! dummy variables
   integer(c_int),intent(in)   :: iFile
@@ -78,15 +62,25 @@ subroutine getFileInfoCopy_fortran(iFile, filenmData, nVars, nTimeSteps, &
   real(c_double),intent(out)  :: convTime2Days
   ! local variables
   integer(i4b)                :: i
+  integer(i4b)                :: index
+  character(len=256)          :: emptyString = ""
   
   call f_c_string_ptr(trim(forcFileInfo(iFile)%filenmData), filenmData)
 
   nVars = forcFileInfo(iFile)%nVars
   nTimeSteps = forcFileInfo(iFile)%nTimeSteps
 
+  ! First just populate with an empty string
   do i=1, varName_size
-    call f_c_string_ptr(trim(forcFileInfo(iFile)%varName(i)), var_name_arr(i))
+    call f_c_string_ptr(trim(emptyString), var_name_arr(i))
   end do
+  ! Then look for the actual values by index
+  do i=1, size(forcFileInfo(iFile)%var_ix)
+    index = forcFileInfo(iFile)%var_ix(i)
+    if (index /= integerMissing) then
+      call f_c_string_ptr(trim(forcFileInfo(iFile)%varName(index)), var_name_arr(index))
+    end if
+  end do 
 
   var_ix_arr(:) = forcFileInfo(iFile)%var_ix(:)
   data_id_arr(:) = forcFileInfo(iFile)%data_id(:)
@@ -135,7 +129,7 @@ subroutine read_forcingFile(iFile, startGRU, numGRU, err, message_r) &
 
   ! Start Procedure here
   err=0; message="read_forcingFile/"
-  call f_c_string_ptr(message,message_r)
+  call f_c_string_ptr(trim(message),message_r)
 
   ! TODO: I wonder if I can wrap this in a shared pointer???
   nFiles=size(forcFileInfo(:))
@@ -149,11 +143,11 @@ subroutine read_forcingFile(iFile, startGRU, numGRU, err, message_r) &
   ! Files are assumed to be in the correct order
   infile=trim(FORCING_PATH)//trim(forcFileInfo(iFile)%filenmData)
   call openForcingFile(forcFileInfo(iFile),iFile,trim(infile),ncid,err,cmessage)
-  if(err/=0)then;message=trim(message)//trim(cmessage);call f_c_string_ptr(message,message_r);return; end if
+  if(err/=0)then;message=trim(message)//trim(cmessage);call f_c_string_ptr(trim(message),message_r);return; end if
 
-  err = nf90_inq_varid(ncid,'time',varId);                              if(err/=nf90_noerr)then; message=trim(message)//'cannot find time variable/'//trim(nf90_strerror(err));call f_c_string_ptr(message,message_r);return; endif
-  err = nf90_inquire_attribute(ncid,varId,'units',len = attLen);        if(err/=nf90_noerr)then; message=trim(message)//'cannot find time units/'//trim(nf90_strerror(err));call f_c_string_ptr(message,message_r);return; endif
-  err = nf90_get_att(ncid,varid,'units',forcingDataStruct(iFile)%refTimeString);if(err/=nf90_noerr)then; message=trim(message)//'cannot read time units/'//trim(nf90_strerror(err));call f_c_string_ptr(message,message_r);return; endif
+  err = nf90_inq_varid(ncid,'time',varId);                              if(err/=nf90_noerr)then; message=trim(message)//'cannot find time variable/'//trim(nf90_strerror(err));call f_c_string_ptr(trim(message),message_r);return; endif
+  err = nf90_inquire_attribute(ncid,varId,'units',len = attLen);        if(err/=nf90_noerr)then; message=trim(message)//'cannot find time units/'//trim(nf90_strerror(err));call f_c_string_ptr(trim(message),message_r);return; endif
+  err = nf90_get_att(ncid,varid,'units',forcingDataStruct(iFile)%refTimeString);if(err/=nf90_noerr)then; message=trim(message)//'cannot read time units/'//trim(nf90_strerror(err));call f_c_string_ptr(trim(message),message_r);return; endif
   
   nTimeSteps = forcFileInfo(iFile)%nTimeSteps
   forcingDataStruct(iFile)%nTimeSteps = nTimeSteps
@@ -163,9 +157,9 @@ subroutine read_forcingFile(iFile, startGRU, numGRU, err, message_r) &
 
   ! Get Time Information
   err = nf90_inq_varid(ncid,'time',varId);
-  if(err/=nf90_noerr)then; message=trim(message)//'trouble finding time variable/'//trim(nf90_strerror(err)); call f_c_string_ptr(message,message_r); return; endif
+  if(err/=nf90_noerr)then; message=trim(message)//'trouble finding time variable/'//trim(nf90_strerror(err)); call f_c_string_ptr(trim(message),message_r); return; endif
   err = nf90_get_var(ncid,varId,vecTime(iFile)%dat(:),start=(/1/),count=(/nTimeSteps/))    
-  if(err/=nf90_noerr)then; message=trim(message)//'trouble reading time variable/'//trim(nf90_strerror(err)); call f_c_string_ptr(message,message_r); return; endif
+  if(err/=nf90_noerr)then; message=trim(message)//'trouble reading time variable/'//trim(nf90_strerror(err)); call f_c_string_ptr(trim(message),message_r); return; endif
 
   ! Need to loop through vars and add forcing data
   nVars = forcFileInfo(iFile)%nVars
@@ -197,7 +191,7 @@ subroutine read_forcingFile(iFile, startGRU, numGRU, err, message_r) &
     ! Get Forcing Data
     ! get variable name for error reporting
     err=nf90_inquire_variable(ncid,iNC,name=varName)
-    if(err/=nf90_noerr)then; message=trim(message)//'problem reading forcing variable name from netCDF: '//trim(nf90_strerror(err)); call f_c_string_ptr(message,message_r); return; endif
+    if(err/=nf90_noerr)then; message=trim(message)//'problem reading forcing variable name from netCDF: '//trim(nf90_strerror(err)); call f_c_string_ptr(trim(message),message_r); return; endif
 
     ! define global HRU
     iHRU_global = gru_struc(1)%hruInfo(1)%hru_nc
@@ -205,11 +199,11 @@ subroutine read_forcingFile(iFile, startGRU, numGRU, err, message_r) &
     
 
     err=nf90_get_var(ncid,forcFileInfo(iFile)%data_id(ivar),forcingDataStruct(iFile)%var(iVar)%dataFromFile, start=(/startGRU,1/),count=(/numHRU, nTimeSteps/))
-    if(err/=nf90_noerr)then; message=trim(message)//'problem reading forcing data: '//trim(varName)//'/'//trim(nf90_strerror(err)); call f_c_string_ptr(message,message_r); return; endif
+    if(err/=nf90_noerr)then; message=trim(message)//'problem reading forcing data: '//trim(varName)//'/'//trim(nf90_strerror(err)); call f_c_string_ptr(trim(message),message_r); return; endif
   end do
 
   call nc_file_close(ncid,err,message)
-  if(err/=0)then;message=trim(message)//trim(cmessage);call f_c_string_ptr(message,message_r);return;end if  
+  if(err/=0)then;message=trim(message)//trim(cmessage);call f_c_string_ptr(trim(message),message_r);return;end if  
 end subroutine read_forcingFile
 
 ! *************************************************************************

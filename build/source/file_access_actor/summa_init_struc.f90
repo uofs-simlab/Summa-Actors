@@ -26,12 +26,12 @@ subroutine initialize_init_struc(num_gru, err, message_r) bind(C, name="initiali
                       bpar_meta, &
                       bvar_meta
   ! statistics metadata structures
-  USE globalData,only:statForc_meta, &                       ! child metadata for stats
-                      statProg_meta, &                       ! child metadata for stats
-                      statDiag_meta, &                       ! child metadata for stats
-                      statFlux_meta, &                       ! child metadata for stats
-                      statIndx_meta, &                       ! child metadata for stats
-                      statBvar_meta                          ! child metadata for stats
+  USE globalData,only:statForc_meta, &        ! child metadata for stats
+                      statProg_meta, &        ! child metadata for stats
+                      statDiag_meta, &        ! child metadata for stats
+                      statFlux_meta, &        ! child metadata for stats
+                      statIndx_meta, &        ! child metadata for stats
+                      statBvar_meta           ! child metadata for stats
   USE allocspace_module,only:allocGlobal      ! module to allocate space for global data structures
   USE C_interface_module,only:f_c_string_ptr  ! convert fortran string to c string
   implicit none
@@ -45,8 +45,8 @@ subroutine initialize_init_struc(num_gru, err, message_r) bind(C, name="initiali
   character(len=256)                      :: cmessage          ! error message
 
   ! Start of subroutine
-  message = ''
-  call f_c_string_ptr(message, message_r)
+  message = ""
+  call f_c_string_ptr(trim(message), message_r)
   allocate(init_struc)
   summaVars: associate(&
     ! statistics structures
@@ -111,7 +111,7 @@ subroutine initialize_init_struc(num_gru, err, message_r) bind(C, name="initiali
     ! check errors
     if(err/=0)then
       message=trim(message)//trim(cmessage)//'[structure =  '//trim(structInfo(iStruct)%structName)//']'
-      call f_c_string_ptr(message, message_r)
+      call f_c_string_ptr(trim(message), message_r)
       return
     endif
   end do  ! looping through data structures
@@ -121,7 +121,7 @@ subroutine initialize_init_struc(num_gru, err, message_r) bind(C, name="initiali
   call allocGlobal(mpar_meta,dparStruct,err,cmessage)   ! default model parameters
   if(err/=0)then
     message=trim(message)//trim(cmessage)//' [problem allocating dparStruct]'
-    call f_c_string_ptr(message, message_r)
+    call f_c_string_ptr(trim(message), message_r)
     return
   endif
 
@@ -129,7 +129,7 @@ subroutine initialize_init_struc(num_gru, err, message_r) bind(C, name="initiali
   allocate(dt_init%gru(num_gru),upArea%gru(num_gru),computeVegFlux%gru(num_gru),stat=err)
   if(err/=0)then
     message=trim(message)//'problem allocating space for dt_init, upArea, or computeVegFlux [GRU]'
-    call f_c_string_ptr(message, message_r)
+    call f_c_string_ptr(trim(message), message_r)
     return
   endif
 
@@ -140,7 +140,7 @@ subroutine initialize_init_struc(num_gru, err, message_r) bind(C, name="initiali
              computeVegFlux%gru(iGRU)%hru(hruCount),stat=err)
     if(err/=0)then
       message='problem allocating space for dt_init, upArea, or computeVegFlux [HRU]'
-      call f_c_string_ptr(message, message_r)
+      call f_c_string_ptr(trim(message), message_r)
       return
     endif
   end do
@@ -163,10 +163,10 @@ subroutine paramSetup_fortran(err, message_r) bind(C, name="paramSetup_fortran")
   character(len=256)                      :: message           ! error message
 
   message = ''
-  call f_c_string_ptr(message, message_r)
+  call f_c_string_ptr(trim(message), message_r)
 
   call summa_paramSetup(init_struc, err, message)
-  call f_c_string_ptr(message, message_r)
+  call f_c_string_ptr(trim(message), message_r)
 
 end subroutine paramSetup_fortran
 
@@ -181,9 +181,9 @@ subroutine readRestart_fortran(err, message_r) bind(C, name="readRestart_fortran
   character(len=256)                      :: message           ! error message
 
   message = ''
-  call f_c_string_ptr(message, message_r)
+  call f_c_string_ptr(trim(message), message_r)
   call summa_readRestart(init_struc, err, message)
-  call f_c_string_ptr(message, message_r)
+  call f_c_string_ptr(trim(message), message_r)
 
 end subroutine readRestart_fortran
 

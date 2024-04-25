@@ -125,7 +125,7 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
 
 
   err=0; message="fileAccessActor_init_fortran/"
-  call f_c_string_ptr(message, message_r)
+  call f_c_string_ptr(trim(message), message_r)
 
   call c_f_pointer(handle_output_ncid, output_ncid)
 
@@ -418,8 +418,15 @@ subroutine defOutputFortran(handle_output_ncid, start_gru, num_gru, num_hru, &
   nHRUrun = num_hru
   fileout = trim(OUTPUT_PATH)//trim(OUTPUT_PREFIX)//trim(output_fileSuffix)
   ncid(:) = integerMissing
-  call def_output(summaVersion,buildTime,gitBranch,gitHash,num_gru,num_hru,&
-      gru_struc(1)%hruInfo(1)%nSoil,fileout,err,message)
+  call def_output(summaVersion,                  &
+                  buildTime,                     &
+                  gitBranch,                     &
+                  gitHash,                       &
+                  num_gru,                       &
+                  num_hru,                       &
+                  gru_struc(1)%hruInfo(1)%nSoil, &
+                  fileout,                       &
+                  err,message)
   if(err/=0)then; print*,trim(message); return; endif
   ! allocate space for the output file ID array
   if (.not.allocated(output_ncid%var))then
@@ -453,6 +460,13 @@ subroutine FileAccessActor_DeallocateStructures(handle_ncid) bind(C,name="FileAc
   integer(i4b)                         :: err
 
   call c_f_pointer(handle_ncid, ncid)
+  ! close the open output FIle
+  do iFreq=1,maxvarFreq
+    if (ncid%var(iFreq)/=integerMissing) then
+      call nc_file_close(ncid%var(iFreq),err,cmessage)
+      if(err/=0)then; message=trim(message)//trim(cmessage); return; end if
+    endif   
+  end do
 
   deallocate(ncid)
   deallocate(outputTimeStep)

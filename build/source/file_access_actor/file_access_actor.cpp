@@ -49,7 +49,7 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
       
       // Get the information about the forcing files
       self->state.forcing_files = std::make_unique<forcingFileContainer>();
-      err = self->state.forcing_files->initForcingFiles(self->state.num_gru);
+      err = self->state.forcing_files->initForcingFiles();
       if (err != 0) return -1;
 
       std::unique_ptr<char[]> message(new char[256]);
@@ -191,8 +191,9 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
       aout(self) << "File Access Actor: Deallocating Structures\n";
       // TODO: output container can be wrapped in a smart pointer
       if (!self->state.num_gru_info.use_global_for_data_structures) {
-        self->state.output_container->~Output_Container();
+        delete self->state.output_container;
       }
+
       FileAccessActor_DeallocateStructures(self->state.handle_ncid);
 
 
