@@ -1,25 +1,19 @@
-#include "caf/all.hpp"
-#include "caf/io/all.hpp"
 #include "summa_actor.hpp"
 #include "global.hpp"
 #include "job_actor.hpp"
 #include "json.hpp"
 #include <iostream>
-#include <chrono>
-#include <string>
 #include <fstream>
 #include <netcdf.h>
 
 using json = nlohmann::json;
 
 namespace caf {
-behavior summa_actor(stateful_actor<summa_actor_state>* self, 
-    int start_gru, int num_gru, 
-    Summa_Actor_Settings summa_actor_settings, 
-    File_Access_Actor_Settings file_access_actor_settings,
-    Job_Actor_Settings job_actor_settings, 
-    HRU_Actor_Settings hru_actor_settings, actor parent) {
-
+behavior summa_actor(stateful_actor<summa_actor_state>* self, int start_gru, 
+                     int num_gru, Summa_Actor_Settings summa_actor_settings, 
+                     File_Access_Actor_Settings file_access_actor_settings,
+                     Job_Actor_Settings job_actor_settings, 
+                     HRU_Actor_Settings hru_actor_settings, actor parent) {
   // Set Timing Variables
   self->state.summa_actor_timing = TimingInfo();
   self->state.summa_actor_timing.addTimePoint("total_duration");
@@ -163,7 +157,7 @@ void spawnJob(stateful_actor<summa_actor_state>* self) {
 
 
 int getNumGRUInFile(const std::string &settingsPath, 
-    const std::string &attributeFile) {
+                    const std::string &attributeFile) {
   size_t fileGRU = -1;
   int ncid, gru_dim;
 

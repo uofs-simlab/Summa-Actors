@@ -39,7 +39,11 @@ struct summa_actor_state {
   HRU_Actor_Settings hru_actor_settings;
 };
 
-
+/**
+ * This actor is for local computation and computes a num_gru from the 
+ * start_gru index. This actor can split the computation into multiple
+ * jobs if needed.
+*/
 behavior summa_actor(stateful_actor<summa_actor_state>* self, 
                      int startGRU, int numGRU, 
                      Summa_Actor_Settings summa_actor_settings, 
@@ -50,14 +54,9 @@ behavior summa_actor(stateful_actor<summa_actor_state>* self,
 void spawnJob(stateful_actor<summa_actor_state>* self);
 } // namespace caf
 
-
-// Helper Function to extract a string from the line of a file that 
-// is enclosed in quotes
-// std::string extractEnclosed(const std::string& line);
-
 // Gets the number of GRUs from the attribute file
 int getNumGRUInFile(const std::string &settingsPath, 
-    const std::string &attributeFile);
+                    const std::string &attributeFile);
 
 
 

@@ -101,122 +101,11 @@ behavior job_actor(stateful_actor<job_state>* self,
 
 
   return {
-    /*** From file access actor after it spawns ***/
-    // [=](init_file_access_actor, int num_timesteps) {
-    //   self->state.num_steps = num_timesteps;
-    //   aout(self) << "Num Steps: " << self->state.num_steps << "\n";
-      
-    //   // #####################################################
-    //   // # Data Assimilation Mode
-    //   // #####################################################
-    //   if (self->state.job_actor_settings.data_assimilation_mode) {
-    //     aout(self) << "Job_Actor: Data Assimilation Mode\n";
-
-    //     auto& gru_container = self->state.gru_container;
-        
-    //     // Spawn HRUs in batches or individually
-    //     if (self->state.job_actor_settings.batch_size > 1)
-    //       spawnHRUBatches(self);
-    //     else
-    //       spawnHRUActors(self);
-        
-
-    //     aout(self) << "GRUs Initialized\n";
-    //     self->send(self->state.file_access_actor, access_forcing_v, 
-    //                self->state.iFile, self);
-    //   } else {
-    //     // #####################################################
-    //     // # Normal Mode
-    //     // #####################################################
-    //     aout(self) << "Job_Actor: Normal Mode\n";
-    //     spawnHRUActors(self);
-    //   }
-    // },
-
-    // #####################################################
-    // # Data Assimilation Mode Start
-    // #####################################################
-    // [=](new_forcing_file, int num_steps_in_iFile, int nextFile) {
-    //   aout(self) << "Job_Actor: New Forcing File\n";
-    //   self->state.iFile = nextFile;
-    //   self->state.stepsInCurrentFFile = num_steps_in_iFile;
-    //   self->state.forcingStep = 1;
-    //   for(auto gru : self->state.gru_container.gru_list) {
-    //     self->send(gru->getGRUActor(), update_timeZoneOffset_v, 
-    //         self->state.iFile);
-    //   }
-
-    //   self->send(self, update_hru_v); // update HRUs
-    // },
-
-    // [=](update_hru){
-    //   // aout(self) << "Job_Actor: Updating HRUs\n";
-    //   for(auto gru : self->state.gru_container.gru_list) {
-    //     self->send(gru->getGRUActor(), update_hru_v, 
-    //                 self->state.timestep, self->state.forcingStep);
-    //   }      
-    // },
-
-
-
-
 
     [=](reinit_hru) {
       aout(self) << "Job_Actor: HRU Actor Re-initialized\n";
       self->send(self, update_hru_v);
     },
-
-    // [=](std::vector<actor> hru_actors) {
-    // },
-
-    // #####################################################
-    // # Data Assimilation Mode End
-    // #####################################################
-
-
-
-
-    // #####################################################
-    // # Normal Mode Start
-    // #####################################################
-    // [=](done_hru, int local_gru_index) {
-    //   auto& gru_container = self->state.gru_container;
-    //   using namespace std::chrono;
-      
-    //   chrono_time end_point = high_resolution_clock::now();
-    //   double total_duration = duration_cast<seconds>(end_point - 
-    //       gru_container.gru_start_time).count();
-    //   gru_container.num_gru_done++;
-
-    //   aout(self) << "GRU Finished: " << gru_container.num_gru_done << "/" 
-    //       << gru_container.num_gru_in_run_domain << " -- "
-    //       << "GlobalGRU=" 
-    //       << gru_container.gru_list[local_gru_index-1]->getGlobalGRUIndex()
-    //       << " -- LocalGRU=" << local_gru_index << "\n";
-
-    //   // Update Timing
-    //   gru_container.gru_list[local_gru_index-1]->setRunTime(total_duration);
-    //   gru_container.gru_list[local_gru_index-1]->setInitDuration(-1);
-    //   gru_container.gru_list[local_gru_index-1]->setForcingDuration(-1);
-    //   gru_container.gru_list[local_gru_index-1]->setRunPhysicsDuration(-1);
-    //   gru_container.gru_list[local_gru_index-1]->setWriteOutputDuration(-1);
-
-    //   gru_container.gru_list[local_gru_index-1]->setSuccess();
-
-
-      
-    //   // Check if all GRUs are finished
-    //   if (gru_container.num_gru_done >= gru_container.num_gru_in_run_domain) {
-    //     // Check for failures
-    //     if(self->state.gru_container.num_gru_failed == 0 || 
-    //         self->state.max_run_attempts == 1) {
-    //       self->send(self, finalize_v); 
-    //     } else {
-    //       self->send(self, restart_failures_v);
-    //     }
-    //   }
-
-    // },
 
     [=](restart_failures) {
       aout(self) << "Job_Actor: Restarting GRUs that Failed\n";
@@ -231,7 +120,7 @@ behavior job_actor(stateful_actor<job_state>* self,
 
       // Set Sundials tolerance or decrease timestep length
       if (self->state.hru_actor_settings.rel_tol > 0 && 
-        self->state.hru_actor_settings.abs_tol > 0) {
+          self->state.hru_actor_settings.abs_tol > 0) {
         self->state.hru_actor_settings.rel_tol /= 10;
         self->state.hru_actor_settings.abs_tol /= 10;
       } else {
@@ -256,58 +145,6 @@ behavior job_actor(stateful_actor<job_state>* self,
         }
       }
     },
-
-    // [=](finalize) {            
-    //   std::vector<serializable_netcdf_gru_actor_info> 
-    //       netcdf_gru_info = getGruNetcdfInfo(
-    //         self->state.max_run_attempts,self->state.gru_container.gru_list);
-        
-            
-    //   self->state.num_gru_failed = std::count_if(netcdf_gru_info.begin(), 
-    //       netcdf_gru_info.end(), [](auto& gru_info) {
-    //     return !gru_info.successful;
-    //   });
-
-    //   self->request(self->state.file_access_actor, infinite, finalize_v).await(
-    //     [=](std::tuple<double, double> read_write_duration) {
-    //       int err = 0;
-    //       for (auto GRU : self->state.gru_container.gru_list) {
-    //         delete GRU;
-    //       }
-    //       self->state.gru_container.gru_list.clear();
-
-    //       self->state.job_timing.updateEndPoint("total_duration");
-
-    //       aout(self) << "\n________________" 
-    //                  << "PRINTING JOB_ACTOR TIMING INFO RESULTS"
-    //                  << "________________\n"
-    //                  << "Total Duration = "
-    //                  << self->state.job_timing.getDuration("total_duration")
-    //                      .value_or(-1.0) << " Seconds\n"
-    //                  << "Total Duration = " 
-    //                  << self->state.job_timing.getDuration("total_duration")
-    //                      .value_or(-1.0) / 60 << " Minutes\n"
-    //                  << "Total Duration = " 
-    //                  << (self->state.job_timing.getDuration("total_duration")
-    //                     .value_or(-1.0) / 60) / 60 << " Hours\n"
-    //                  << "Job Init Duration = " 
-    //                   << self->state.job_timing.getDuration("init_duration")
-    //                       .value_or(-1.0) << " Seconds\n"
-    //                  << "_________________________________" 
-    //                  << "_______________________________________\n\n";
-
-    //       deallocateJobActor(&err);
-
-    //         // Tell Parent we are done
-    //       self->send(self->state.parent, done_job_v, self->state.num_gru_failed, 
-    //           self->state.job_timing.getDuration("total_duration")
-    //               .value_or(-1.0),
-    //           std::get<0>(read_write_duration), 
-    //           std::get<1>(read_write_duration));
-    //       self->quit();
-
-    //   });
-    // },
 
     // Handle Sundials Error
     [=](err_atom, caf::actor src, double rtol, double atol) {

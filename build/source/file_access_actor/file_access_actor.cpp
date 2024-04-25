@@ -3,11 +3,11 @@
 using json = nlohmann::json;
 
 
-behavior file_access_actor(
-    stateful_actor<file_access_state>* self, NumGRUInfo num_gru_info,
-    File_Access_Actor_Settings file_access_actor_settings, actor parent) {
+behavior file_access_actor(stateful_actor<file_access_state>* self, 
+                           NumGRUInfo num_gru_info,
+                           File_Access_Actor_Settings file_access_actor_settings, 
+                           actor parent) {
   aout(self) << "\n----------File_Access_Actor Started----------\n";
-
 
   self->set_exit_handler([=](const caf::exit_msg& em) {
     aout(self) << "File Access Actor: Received Exit Message\n";
@@ -54,8 +54,7 @@ behavior file_access_actor(
                    << message.get() << "\n\n";
         return -1;
       }
-
-            
+   
       // Ensure output buffer size is less than the number of simulation timesteps
       if (self->state.num_steps < fa_settings.num_timesteps_in_output_buffer) {
         self->state.num_output_steps = self->state.num_steps;
@@ -76,15 +75,14 @@ behavior file_access_actor(
         actor_address = "_" + to_string(self->address());
       }
       defOutputFortran(self->state.handle_ncid, 
-          &self->state.start_gru, 
-          &self->state.num_gru, 
-          &num_hru, 
-          &file_gru, 
-          &self->state.num_gru_info.use_global_for_data_structures,
-          actor_address.c_str(), 
-          &err);
+                       &self->state.start_gru, 
+                       &self->state.num_gru, 
+                       &num_hru, 
+                       &file_gru, 
+                       &self->state.num_gru_info.use_global_for_data_structures,
+                       actor_address.c_str(), 
+                       &err);
       if (err != 0) return -1;
-
 
       self->state.file_access_timing.updateEndPoint("init_duration");
       return self->state.num_steps;
@@ -115,7 +113,6 @@ behavior file_access_actor(
     // Internal message to load the forcing files in the background    
     [=](access_forcing_internal, int iFile) {
       if (self->state.forcing_files->allFilesLoaded()) {
-        aout(self) << "All Forcing Files Loaded \n";
         return;
       }
       auto err = self->state.forcing_files->loadForcingFile(iFile, 
