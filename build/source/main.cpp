@@ -243,6 +243,5 @@ int main(int argc, char** argv) {
   exec_main_init_meta_objects<io::middleman, id_block::summa>();
   caf::core::init_global_meta_objects(); 
   return exec_main<io::middleman, id_block::summa>(caf_main, argc, argv2);
-
 }
 
