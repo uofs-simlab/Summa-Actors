@@ -191,4 +191,5 @@ subroutine deallocate_init_struc() bind(C, name="deallocate_init_struc")
   implicit none
   deallocate(init_struc)
 end subroutine deallocate_init_struc
+
 end module summa_init_struc

@@ -37,11 +37,10 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
       aout(self) << "File Access Actor: Intializing\n";
       auto& fa_settings = self->state.file_access_actor_settings;
       int num_hru = self->state.num_gru;
-      int err = 0;
 
 
       self->state.summa_init_struc = std::make_unique<SummaInitStruc>();
-      err = self->state.summa_init_struc->allocate(self->state.num_gru);
+      int err = self->state.summa_init_struc->allocate(self->state.num_gru);
       if (err != 0) aout(self) << "ERROR: SummaInitStruc allocation failed\n";
       err = self->state.summa_init_struc->summa_paramSetup();
       if (err != 0) aout(self) << "ERROR: SummaInitStruc paramSetup failed\n";
