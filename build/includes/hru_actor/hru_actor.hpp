@@ -9,6 +9,15 @@
 #include "message_atoms.hpp"
 #include "global.hpp"
 
+
+struct Date {
+  int y;
+  int m;
+  int d;
+  int h;
+};
+
+
 /*********************************************
  * HRU Actor Fortran Functions
  *********************************************/
@@ -27,9 +36,10 @@ extern "C" {
   void RunPhysics(int* id, int* stepIndex, void* hru_data, double* dt, 
       int* dt_int_factor, double* walltime_timestep, int* err);
   
-  void hru_writeOutput(int* index_hru, int* index_gru, int* timestep, 
-      int* output_step, void* hru_data, int* err);
-  
+  void hru_writeOutput(int* index_hru, int* index_gru, int* timestep, int* output_step, void* hru_data, int* y, int* m, int* d, int* h, int* err);
+    
+  int  hru_writeRestart(int* index_hru, int* index_gru, int* timestep, int* output_step, void* hru_data, int* err);
+
   void setTimeZoneOffset(int* iFile, void* hru_data, int* err);
 
   void HRU_readForcing(int* index_gru, int* iStep, int* iRead, int* iFile, 
@@ -89,7 +99,15 @@ struct hru_state {
   double rtol = -9999; // -9999 uses default
   double atol = -9999; // -9999 uses default
 
-  double walltime_timestep = 0.0; // walltime for the current timestep		        
+  double walltime_timestep = 0.0; // walltime for the current timestep		
+
+  // Checkpointing variables
+  Date startDate =   {0,0,0,0}; // will be initalized when hru finishes first timestep
+  Date currentDate = {0,0,0,0}; // will be initalized when hru finishes first timestep
+  int  checkpoint= 0;
+  int daysInMonth[12] = {31,28,31,30,31,30,31,31,30,31,30,31};
+  int restartFrequency; // 0=never(default) 1=hour 2=day 3=week? 4=month 5=year 
+        
 
   // Settings
   HRU_Actor_Settings hru_actor_settings;
@@ -112,6 +130,9 @@ void Initialize_HRU(stateful_actor<hru_state>* self);
 
 /** Function runs all of the hru time_steps */
 int Run_HRU(stateful_actor<hru_state>* self);
+
+//** Function checks if the HRU is at a restart checkpoint **/
+bool isCheckpoint(stateful_actor<hru_state>* self);
 
 
 }

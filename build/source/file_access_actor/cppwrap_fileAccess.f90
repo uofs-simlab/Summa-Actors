@@ -67,7 +67,7 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   USE var_lookup,only:iLookPARAM
   USE var_lookup,only:iLookATTR                               ! look-up values for model attributes
   USE var_lookup,only:iLookBVAR                               ! look-up values for basin-average variables
-  USE output_structure_module,only:outputStructure            ! output structure
+  USE output_structure_module,only:summa_struct            ! output structure
 
   USE globalData,only:iRunModeFull,iRunModeGRU,iRunModeHRU
   USE globalData,only:iRunMode                                ! define the current running mode
@@ -217,8 +217,8 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   ! *****************************************************************************
 
   attrFile = trim(SETTINGS_PATH)//trim(LOCAL_ATTRIBUTES)
-  call read_attrb(trim(attrFile),num_gru,outputStructure(1)%attrStruct,&
-      outputStructure(1)%typeStruct,outputStructure(1)%idStruct,err,message)
+  call read_attrb(trim(attrFile),num_gru,summa_struct(1)%attrStruct,&
+      summa_struct(1)%typeStruct,summa_struct(1)%idStruct,err,message)
   if(err/=0)then; print*,trim(message); return; endif
 
 
@@ -226,12 +226,12 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   do iGRU=1, num_gru
     do iHRU=1, gru_struc(iGRU)%hruCount
       ! set parmameters to their default value
-      outputStructure(1)%dparStruct%gru(iGRU)%hru(iHRU)%var(:) = localParFallback(:)%default_val         ! x%hru(:)%var(:)
+      summa_struct(1)%dparStruct%gru(iGRU)%hru(iHRU)%var(:) = localParFallback(:)%default_val         ! x%hru(:)%var(:)
 
       ! overwrite default model parameters with information from the Noah-MP tables
-      call pOverwrite(outputStructure(1)%typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex),  &  ! vegetation category
-                      outputStructure(1)%typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%soilTypeIndex), &  ! soil category
-                      outputStructure(1)%dparStruct%gru(iGRU)%hru(iHRU)%var,                          &  ! default model parameters
+      call pOverwrite(summa_struct(1)%typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex),  &  ! vegetation category
+                      summa_struct(1)%typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%soilTypeIndex), &  ! soil category
+                      summa_struct(1)%dparStruct%gru(iGRU)%hru(iHRU)%var,                          &  ! default model parameters
                       err,message)                                                   ! error control
       if(err/=0)then; print*, trim(message); return; endif
 
@@ -239,13 +239,13 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
    ! copy over to the parameter structure
    ! NOTE: constant for the dat(:) dimension (normally depth)
       do ivar=1,size(localParFallback)
-        outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU)%var(ivar)%dat(:) = outputStructure(1)%dparStruct%gru(iGRU)%hru(iHRU)%var(ivar)
+        summa_struct(1)%mparStruct%gru(iGRU)%hru(iHRU)%var(ivar)%dat(:) = summa_struct(1)%dparStruct%gru(iGRU)%hru(iHRU)%var(ivar)
       end do  ! looping through variables
     
     end do  ! looping through HRUs
     
     ! set default for basin-average parameters
-    outputStructure(1)%bparStruct%gru(iGRU)%var(:) = basinParFallback(:)%default_val
+    summa_struct(1)%bparStruct%gru(iGRU)%var(:) = basinParFallback(:)%default_val
     
   end do  ! looping through GRUs
 
@@ -254,8 +254,8 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   ! *** Read Parameters
   ! *****************************************************************************
   checkHRU = integerMissing
-  call read_param(iRunMode,checkHRU,start_gru,num_hru,num_gru,outputStructure(1)%idStruct,&
-      outputStructure(1)%mparStruct,outputStructure(1)%bparStruct,err,message)
+  call read_param(iRunMode,checkHRU,start_gru,num_hru,num_gru,summa_struct(1)%idStruct,&
+      summa_struct(1)%mparStruct,summa_struct(1)%bparStruct,err,message)
   if(err/=0)then; print*,trim(message); return; endif
 
   ! *****************************************************************************
@@ -264,8 +264,8 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
   ! ! loop through GRUs
   do iGRU=1,num_gru
     ! calculate the fraction of runoff in future time steps
-    call fracFuture(outputStructure(1)%bparStruct%gru(iGRU)%var,     &  ! vector of basin-average model parameters
-                    outputStructure(1)%bvarStruct_init%gru(iGRU),    &  ! data structure of basin-average variables
+    call fracFuture(summa_struct(1)%bparStruct%gru(iGRU)%var,     &  ! vector of basin-average model parameters
+                    summa_struct(1)%bvarStruct_init%gru(iGRU),    &  ! data structure of basin-average variables
                     err,message)                   ! error control
     if(err/=0)then; print*, trim(message); return; endif
 
@@ -276,7 +276,7 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
       kHRU=0
       ! check the network topology (only expect there to be one downslope HRU)
       do jHRU=1,gru_struc(iGRU)%hruCount
-      if(outputStructure(1)%typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%downHRUindex) == outputStructure(1)%idStruct%gru(iGRU)%hru(jHRU)%var(iLookID%hruId))then
+      if(summa_struct(1)%typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%downHRUindex) == summa_struct(1)%idStruct%gru(iGRU)%hru(jHRU)%var(iLookID%hruId))then
         if(kHRU==0)then  ! check there is a unique match
         kHRU=jHRU
         else
@@ -287,13 +287,13 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
 
 
       ! check that the parameters are consistent
-      call paramCheck(outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU),err,message)
+      call paramCheck(summa_struct(1)%mparStruct%gru(iGRU)%hru(iHRU),err,message)
       if(err/=0)then; print*, message; return; endif
 
 #ifdef V4_ACTIVE      
       ! calculate a look-up table for the temperature-enthalpy conversion of snow for future snow layer merging
       ! NOTE2: H is the mixture enthalpy of snow liquid and ice
-      call T2H_lookup_snow(outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU),err,message)
+      call T2H_lookup_snow(summa_struct(1)%mparStruct%gru(iGRU)%hru(iHRU),err,message)
       if(err/=0)then; print*, message; return; endif
 
       ! calculate a lookup table for the temperature-enthalpy conversion of soil
@@ -301,45 +301,45 @@ subroutine fileAccessActor_init_fortran(& ! Variables for forcing
       !       multiply by Cp_liq*iden_water to get temperature component of enthalpy
       if(needLookup)then
         call T2L_lookup_soil(gru_struc(iGRU)%hruInfo(iHRU)%nSoil,   &   ! intent(in):    number of soil layers
-                        outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU),        &   ! intent(in):    parameter data structure
-                        outputStructure(1)%lookupStruct%gru(iGRU)%hru(iHRU),      &   ! intent(inout): lookup table data structure
+                        summa_struct(1)%mparStruct%gru(iGRU)%hru(iHRU),        &   ! intent(in):    parameter data structure
+                        summa_struct(1)%lookupStruct%gru(iGRU)%hru(iHRU),      &   ! intent(inout): lookup table data structure
                         err,message)                              ! intent(out):   error control
         if(err/=0)then; print*, message; return; endif
       endif
 else
       ! calculate a look-up table for the temperature-enthalpy conversion
-      call E2T_lookup(outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU),err,message)
+      call E2T_lookup(summa_struct(1)%mparStruct%gru(iGRU)%hru(iHRU),err,message)
       if(err/=0)then; message=trim(message); print*, message; return; endif
 
 #endif
       ! overwrite the vegetation height
-      HVT(outputStructure(1)%typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex)) = outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU)%var(iLookPARAM%heightCanopyTop)%dat(1)
-      HVB(outputStructure(1)%typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex)) = outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU)%var(iLookPARAM%heightCanopyBottom)%dat(1)
+      HVT(summa_struct(1)%typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex)) = summa_struct(1)%mparStruct%gru(iGRU)%hru(iHRU)%var(iLookPARAM%heightCanopyTop)%dat(1)
+      HVB(summa_struct(1)%typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex)) = summa_struct(1)%mparStruct%gru(iGRU)%hru(iHRU)%var(iLookPARAM%heightCanopyBottom)%dat(1)
          
       ! overwrite the tables for LAI and SAI
       if(model_decisions(iLookDECISIONS%LAI_method)%iDecision == specified)then
-        SAIM(outputStructure(1)%typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex),:) = outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU)%var(iLookPARAM%winterSAI)%dat(1)
-        LAIM(outputStructure(1)%typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex),:) = outputStructure(1)%mparStruct%gru(iGRU)%hru(iHRU)%var(iLookPARAM%summerLAI)%dat(1)*greenVegFrac_monthly
+        SAIM(summa_struct(1)%typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex),:) = summa_struct(1)%mparStruct%gru(iGRU)%hru(iHRU)%var(iLookPARAM%winterSAI)%dat(1)
+        LAIM(summa_struct(1)%typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex),:) = summa_struct(1)%mparStruct%gru(iGRU)%hru(iHRU)%var(iLookPARAM%summerLAI)%dat(1)*greenVegFrac_monthly
       endif
 
     end do ! HRU
     
     ! compute total area of the upstream HRUS that flow into each HRU
     do iHRU=1,gru_struc(iGRU)%hruCount
-      outputStructure(1)%upArea%gru(iGRU)%hru(iHRU) = 0._rkind
+      summa_struct(1)%upArea%gru(iGRU)%hru(iHRU) = 0._rkind
       do jHRU=1,gru_struc(iGRU)%hruCount
        ! check if jHRU flows into iHRU; assume no exchange between GRUs
-       if(outputStructure(1)%typeStruct%gru(iGRU)%hru(jHRU)%var(iLookTYPE%downHRUindex)==outputStructure(1)%typeStruct%gru(iGRU)%hru(iHRU)%var(iLookID%hruId))then
-        outputStructure(1)%upArea%gru(iGRU)%hru(iHRU) = outputStructure(1)%upArea%gru(iGRU)%hru(iHRU) + outputStructure(1)%attrStruct%gru(iGRU)%hru(jHRU)%var(iLookATTR%HRUarea)
+       if(summa_struct(1)%typeStruct%gru(iGRU)%hru(jHRU)%var(iLookTYPE%downHRUindex)==summa_struct(1)%typeStruct%gru(iGRU)%hru(iHRU)%var(iLookID%hruId))then
+        summa_struct(1)%upArea%gru(iGRU)%hru(iHRU) = summa_struct(1)%upArea%gru(iGRU)%hru(iHRU) + summa_struct(1)%attrStruct%gru(iGRU)%hru(jHRU)%var(iLookATTR%HRUarea)
        endif   ! (if jHRU is an upstream HRU)
       end do  ! jHRU
     end do  ! iHRU
   
     ! identify the total basin area for a GRU (m2)  
-    outputStructure(1)%bvarStruct_init%gru(iGRU)%var(iLookBVAR%basin__totalArea)%dat(1) = 0._rkind
+    summa_struct(1)%bvarStruct_init%gru(iGRU)%var(iLookBVAR%basin__totalArea)%dat(1) = 0._rkind
     do iHRU=1,gru_struc(iGRU)%hruCount
-      outputStructure(1)%bvarStruct_init%gru(iGRU)%var(iLookBVAR%basin__totalArea)%dat(1) = &
-      outputStructure(1)%bvarStruct_init%gru(iGRU)%var(iLookBVAR%basin__totalArea)%dat(1) + outputStructure(1)%attrStruct%gru(iGRU)%hru(iHRU)%var(iLookATTR%HRUarea)
+      summa_struct(1)%bvarStruct_init%gru(iGRU)%var(iLookBVAR%basin__totalArea)%dat(1) = &
+      summa_struct(1)%bvarStruct_init%gru(iGRU)%var(iLookBVAR%basin__totalArea)%dat(1) + summa_struct(1)%attrStruct%gru(iGRU)%hru(iHRU)%var(iLookATTR%HRUarea)
     end do
   
   end do ! GRU
@@ -362,17 +362,17 @@ else
  ! read initial conditions
   call read_icond(restartFile,                        & ! intent(in):    name of initial conditions file
                   num_gru,                            & ! intent(in):    number of response units
-                  outputStructure(1)%mparStruct,      & ! intent(in):    model parameters
-                  outputStructure(1)%progStruct_init, & ! intent(inout): model prognostic variables
-                  outputStructure(1)%bvarStruct_init, & ! intent(inout): model basin (GRU) variables
-                  outputStructure(1)%indxStruct_init, & ! intent(inout): model indices
+                  summa_struct(1)%mparStruct,      & ! intent(in):    model parameters
+                  summa_struct(1)%progStruct_init, & ! intent(inout): model prognostic variables
+                  summa_struct(1)%bvarStruct_init, & ! intent(inout): model basin (GRU) variables
+                  summa_struct(1)%indxStruct_init, & ! intent(inout): model indices
                   err,message)                          ! intent(out):   error control
   if(err/=0)then; print*, message; return; endif
 
   call check_icond(num_gru,                            &
-                   outputStructure(1)%progStruct_init, &  ! intent(inout): model prognostic variables
-                   outputStructure(1)%mparStruct,      & ! intent(in):    model parameters
-                   outputStructure(1)%indxStruct_init, & ! intent(inout): model indices
+                   summa_struct(1)%progStruct_init, &  ! intent(inout): model prognostic variables
+                   summa_struct(1)%mparStruct,      & ! intent(in):    model parameters
+                   summa_struct(1)%indxStruct_init, & ! intent(inout): model indices
                    err,message)                          ! intent(out):   error control
   if(err/=0)then; print*, message; return; endif  
 end subroutine fileAccessActor_init_fortran

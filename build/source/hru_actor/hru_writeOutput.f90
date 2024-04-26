@@ -57,7 +57,7 @@ USE var_lookup,only:iLookBVAR                 ! named variables for basin parame
 USE var_lookup, only: maxvarFreq ! number of output frequencies
 USE var_lookup, only: maxvarStat ! number of statistics
 USE get_ixname_module,only:get_freqName       ! get name of frequency from frequency index
-USE output_structure_module,only:outputStructure
+USE output_structure_module,only:summa_struct
 
 
 implicit none
@@ -76,7 +76,7 @@ subroutine hru_writeOutput(&
                             indxGRU,                   &
                             timestep,                  & ! model timestep
                             outputStep,                & ! index into the output Struc
-                            handle_hru_data,           & ! local HRU data  
+                            handle_hru_data, y,m,d,h,  & ! local HRU data  
                             err) bind(C, name="hru_writeOutput") 
   USE nrtype
   USE globalData,only:structInfo
@@ -95,7 +95,7 @@ subroutine hru_writeOutput(&
   USE output_stats,only:calcStats                             ! module for compiling output statistics
   USE time_utils_module,only:elapsedSec                       ! calculate the elapsed time
   USE globalData,only:elapsedWrite                            ! elapsed time to write data
-  USE output_structure_module,only:outputStructure
+  USE output_structure_module,only:summa_struct
   USE netcdf_util_module,only:nc_file_close                   ! close netcdf file
   USE netcdf_util_module,only:nc_file_open                    ! open netcdf file
   USE var_lookup,only:maxvarFreq                              ! maximum number of output files
@@ -107,6 +107,11 @@ subroutine hru_writeOutput(&
   integer(c_int),intent(in)             :: outputStep            ! index into the output Struc
   type(c_ptr),intent(in),value          :: handle_hru_data       ! local HRU data
   integer(c_int),intent(out)            :: err
+  integer(c_int),intent(out)            :: y
+  integer(c_int),intent(out)            :: m
+  integer(c_int),intent(out)            :: d
+  integer(c_int),intent(out)            :: h
+
 
   ! local pointers
   type(hru_type), pointer               :: hru_data              ! local HRU data
@@ -124,6 +129,13 @@ subroutine hru_writeOutput(&
   call c_f_pointer(handle_hru_data, hru_data)
   err=0; message='summa_manageOutputFiles/'
   ! identify the start of the writing
+
+  ! updating date variables to be passed back to the actors
+  y = hru_data%timeStruct%var(iLookTIME%iyyy)
+  m = hru_data%timeStruct%var(iLookTIME%im)
+  d = hru_data%timeStruct%var(iLookTIME%id)
+  h = hru_data%timeStruct%var(iLookTIME%ih)
+
 
   ! Many variables get there values from summa4chm_util.f90:getCommandArguments()
   call summa_setWriteAlarms(hru_data%oldTime_hru%var, hru_data%timeStruct%var, hru_data%finishTime_hru%var,  &   ! time vectors
@@ -152,7 +164,7 @@ subroutine hru_writeOutput(&
 
 
  ! If we do not do this looping we segfault - I am not sure why
-  outputStructure(1)%finalizeStats%gru(indxGRU)%hru(indxHRU)%tim(outputStep)%dat(:) = hru_data%finalizeStats%dat(:)
+  summa_struct(1)%finalizeStats%gru(indxGRU)%hru(indxHRU)%tim(outputStep)%dat(:) = hru_data%finalizeStats%dat(:)
 
  ! ****************************************************************************
  ! *** calculate output statistics
@@ -224,6 +236,109 @@ subroutine hru_writeOutput(&
 
 end subroutine hru_writeOutput
 
+
+subroutine hru_writeRestart(&
+  indxHRU,                   &
+  indxGRU,                   &
+  checkPoint,                & ! model checkPoint, index into the output Struc
+  outputStep,                & ! unused :(
+  handle_hru_data,           & ! local HRU data  
+  err) bind(C, name="hru_writeRestart")
+  USE nrtype
+  USE globalData,only:structInfo
+  USE globalData,only:startWrite,endWrite
+  USE globalData,only:maxLayers                               ! maximum number of layers
+  USE globalData,only:maxSnowLayers                           ! maximum number of snow layers
+
+  USE globalData,only:ixProgress                              ! define frequency to write progress
+  USE globalData,only:ixRestart                               ! define frequency to write restart files
+  USE globalData,only:gru_struc
+
+  USE globalData,only:newOutputFile                           ! define option for new output files
+  USE summa_alarms,only:summa_setWriteAlarms
+
+  USE summaFileManager,only:OUTPUT_PATH,OUTPUT_PREFIX         ! define output file
+  USE summaFileManager,only:STATE_PATH                        ! optional path to state output files (defaults to OUTPUT_PATH)
+
+
+  USE globalData,only:forc_meta,attr_meta,type_meta           ! metaData structures
+  USE output_stats,only:calcStats                             ! module for compiling output statistics
+  USE time_utils_module,only:elapsedSec                       ! calculate the elapsed time
+  USE globalData,only:elapsedWrite                            ! elapsed time to write data
+  USE output_structure_module,only:summa_struct
+  USE netcdf_util_module,only:nc_file_close                   ! close netcdf file
+  USE netcdf_util_module,only:nc_file_open                    ! open netcdf file
+  USE var_lookup,only:maxvarFreq                              ! maximum number of output files
+  USE var_lookup,only:iLookVarType           ! named variables for structure elements
+
+
+  implicit none
+  integer(c_int),intent(in)             :: indxHRU               ! index of hru in GRU
+  integer(c_int),intent(in)             :: indxGRU               ! index of the GRU
+  integer(c_int),intent(in)             :: checkPoint              ! model checkPoint
+  integer(c_int),intent(in)             :: outputStep            ! index into the output Struc
+  type(c_ptr),intent(in),value          :: handle_hru_data       ! local HRU data
+  integer(c_int),intent(out)            :: err
+
+  ! local pointers
+  type(hru_type), pointer               :: hru_data              ! local HRU data
+  ! local variables
+  character(len=256)                    :: cmessage
+  character(len=256)                    :: message 
+  logical(lgt)                          :: defNewOutputFile=.false.
+  logical(lgt)                          :: printRestart=.false.
+  logical(lgt)                          :: printProgress=.false.
+  character(len=256)                    :: restartFile       ! restart file name
+  character(len=256)                    :: timeString        ! portion of restart file name that contains the write-out time
+  character (len = 5) :: output_fileSuffix
+
+  integer(i4b)                          :: iStruct           ! index of model structure
+  integer(i4b)                          :: iFreq             ! index of the output frequency
+  integer(i4b)                          :: iVar 
+  integer(i4b)                          :: iDat
+  
+  ! convert the C pointers to Fortran pointers
+  call c_f_pointer(handle_hru_data, hru_data)
+  err=0; message='summa_manageOutputFiles/'
+  
+  ! ****************************************************************************
+  ! *** write restart data
+  ! ****************************************************************************
+  
+  ! write prog vars
+  do iVar = 1, size(hru_data%progstruct%var(:))
+    select case (prog_meta(iVar)%varType)
+    case(iLookVarType%scalarv);
+      summa_struct(1)%progStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(checkPoint)%dat(:) = hru_data%progstruct%var(iVar)%dat(:) 
+    case(iLookVarType%wlength);              
+      summa_struct(1)%progStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(checkPoint)%dat(:) = hru_data%progstruct%var(iVar)%dat(:) 
+    case(iLookVarType%midSoil);              
+      summa_struct(1)%progStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(checkPoint)%dat(:) = hru_data%progstruct%var(iVar)%dat(:) 
+    case(iLookVarType%midToto);              
+      do iDat = 1, size(hru_data%progstruct%var(iVar)%dat(:))
+        summa_struct(1)%progStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(checkPoint)%dat(iDat) = hru_data%progstruct%var(iVar)%dat(iDat)
+      end do ! iDat 
+    case(iLookVarType%ifcSoil);              
+      summa_struct(1)%progStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(checkPoint)%dat(:) = hru_data%progstruct%var(iVar)%dat(:) 
+    case(iLookVarType%ifcToto);              
+      do iDat = 0, size(hru_data%progstruct%var(iVar)%dat(:)) -1 !vartype 8 in hru_data begins its index at 0 instead of the default of 1. this case accomodates that
+        summa_struct(1)%progStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(checkPoint)%dat(iDat+1) = hru_data%progstruct%var(iVar)%dat(iDat)
+      end do ! iDat 
+    case(iLookVarType%midSnow);
+      summa_struct(1)%progStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(checkPoint)%dat(:) = hru_data%progstruct%var(iVar)%dat(:) 
+    case(iLookVarType%ifcSnow); 
+      summa_struct(1)%progStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(checkPoint)%dat(:) = hru_data%progstruct%var(iVar)%dat(:) 
+    case default; err=20; message=trim(message)//'unknown var type'; return
+   end select
+  end do ! iVar
+
+  ! write Basin var
+  summa_struct(1)%bvarStruct%gru(indxGRU)%hru(indxHRU)%var(iLookBVAR%routingRunoffFuture)%tim(checkPoint)%dat(:) = hru_data%bvarstruct%var(iLookBVAR%routingRunoffFuture)%dat(:)
+
+  
+end subroutine hru_writeRestart
+
+
 ! **********************************************************************************************************
 ! public subroutine writeParm: write model parameters
 ! **********************************************************************************************************
@@ -263,17 +378,17 @@ subroutine writeParm(indxGRU,indxHRU,ispatial,struct,meta,structName,err,message
       select type (struct)
         class is (var_i)
         if (structName == "type")then
-          outputStructure(1)%typeStruct%gru(indxGRU)%hru(indxHRU)%var(iVar) = struct%var(iVar)
+          summa_struct(1)%typeStruct%gru(indxGRU)%hru(indxHRU)%var(iVar) = struct%var(iVar)
         end if
         class is (var_i8)
         
         class is (var_d)
         if (structName == "attr")then
-          outputStructure(1)%attrStruct%gru(indxGRU)%hru(indxHRU)%var(iVar) = struct%var(iVar)
+          summa_struct(1)%attrStruct%gru(indxGRU)%hru(indxHRU)%var(iVar) = struct%var(iVar)
         end if
         class is (var_dlength)
         if (structName == "mpar")then
-          outputStructure(1)%mparStruct%gru(indxGRU)%hru(indxHRU)%var(iVar) = struct%var(iVar)
+          summa_struct(1)%mparStruct%gru(indxGRU)%hru(indxHRU)%var(iVar) = struct%var(iVar)
         end if
         
         class default; err=20; message=trim(message)//'unknown variable type (with HRU)'; return
@@ -285,7 +400,7 @@ subroutine writeParm(indxGRU,indxHRU,ispatial,struct,meta,structName,err,message
       select type (struct)
         class is (var_d)
         if (structName == "bpar")then
-          outputStructure(1)%bparStruct%gru(indxGRU)%var(iVar) = struct%var(iVar) ! this will overwrite data
+          summa_struct(1)%bparStruct%gru(indxGRU)%var(iVar) = struct%var(iVar) ! this will overwrite data
           print*, "bpar"
         end if
         class is (var_i8)
@@ -360,7 +475,7 @@ subroutine writeData(indxGRU,indxHRU,iStep,structName,finalizeStats, &
         ! Write the time step values
         select type(dat)      ! forcStruc
           class is (var_d)    ! x%var(:)
-            outputStructure(1)%forcStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep) = dat%var(iVar)
+            summa_struct(1)%forcStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep) = dat%var(iVar)
           class default; err=20; message=trim(message)//'time variable must be of type var_d (forcing data structure)'; return
         end select
       end if  ! id time
@@ -377,15 +492,15 @@ subroutine writeData(indxGRU,indxHRU,iStep,structName,finalizeStats, &
           class is (var_dlength)
             select case(trim(structName))
             case('forc')
-              outputStructure(1)%forcStat%gru(indxGRU)%hru(indxHRU)%var(map(iVar))%tim(iStep)%dat(iFreq) = stat%var(map(iVar))%dat(iFreq)
+              summa_struct(1)%forcStat%gru(indxGRU)%hru(indxHRU)%var(map(iVar))%tim(iStep)%dat(iFreq) = stat%var(map(iVar))%dat(iFreq)
             case('prog')
-              outputStructure(1)%progStat%gru(indxGRU)%hru(indxHRU)%var(map(iVar))%tim(iStep)%dat(iFreq) = stat%var(map(iVar))%dat(iFreq)
+              summa_struct(1)%progStat%gru(indxGRU)%hru(indxHRU)%var(map(iVar))%tim(iStep)%dat(iFreq) = stat%var(map(iVar))%dat(iFreq)
             case('diag')
-              outputStructure(1)%diagStat%gru(indxGRU)%hru(indxHRU)%var(map(iVar))%tim(iStep)%dat(iFreq) = stat%var(map(iVar))%dat(iFreq)
+              summa_struct(1)%diagStat%gru(indxGRU)%hru(indxHRU)%var(map(iVar))%tim(iStep)%dat(iFreq) = stat%var(map(iVar))%dat(iFreq)
             case('flux')
-              outputStructure(1)%fluxStat%gru(indxGRU)%hru(indxHRU)%var(map(iVar))%tim(iStep)%dat(iFreq) = stat%var(map(iVar))%dat(iFreq)
+              summa_struct(1)%fluxStat%gru(indxGRU)%hru(indxHRU)%var(map(iVar))%tim(iStep)%dat(iFreq) = stat%var(map(iVar))%dat(iFreq)
             case('indx')
-              outputStructure(1)%indxStat%gru(indxGRU)%hru(indxHRU)%var(map(iVar))%tim(iStep)%dat(iFreq) = stat%var(map(iVar))%dat(iFreq)
+              summa_struct(1)%indxStat%gru(indxGRU)%hru(indxHRU)%var(map(iVar))%tim(iStep)%dat(iFreq) = stat%var(map(iVar))%dat(iFreq)
             case default
               err=21; message=trim(message)//"Stats structure not found"; return
             end select
@@ -397,11 +512,11 @@ subroutine writeData(indxGRU,indxHRU,iStep,structName,finalizeStats, &
 
         ! get the model layers
         nSoil   = indx%var(iLookIndex%nSoil)%dat(1)
-        outputStructure(1)%indxStruct%gru(indxGRU)%hru(indxHRU)%var(iLookIndex%nSoil)%tim(iStep)%dat(1) = nSoil
+        summa_struct(1)%indxStruct%gru(indxGRU)%hru(indxHRU)%var(iLookIndex%nSoil)%tim(iStep)%dat(1) = nSoil
         nSnow   = indx%var(iLookIndex%nSnow)%dat(1)
-        outputStructure(1)%indxStruct%gru(indxGRU)%hru(indxHRU)%var(iLookIndex%nSnow)%tim(iStep)%dat(1) = nSnow
+        summa_struct(1)%indxStruct%gru(indxGRU)%hru(indxHRU)%var(iLookIndex%nSnow)%tim(iStep)%dat(1) = nSnow
         nLayers = indx%var(iLookIndex%nLayers)%dat(1)
-        outputStructure(1)%indxStruct%gru(indxGRU)%hru(indxHRU)%var(iLookIndex%nLayers)%tim(iStep)%dat(1) = nLayers
+        summa_struct(1)%indxStruct%gru(indxGRU)%hru(indxHRU)%var(iLookIndex%nLayers)%tim(iStep)%dat(1) = nLayers
 
         ! get the length of each data vector
         select case (meta(iVar)%varType)
@@ -420,16 +535,16 @@ subroutine writeData(indxGRU,indxHRU,iStep,structName,finalizeStats, &
           class is (var_dlength)
             select case(trim(structName))
               case('prog')
-                outputStructure(1)%progStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep)%dat(1:datLength) = dat%var(iVar)%dat(:)
+                summa_struct(1)%progStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep)%dat(1:datLength) = dat%var(iVar)%dat(:)
               case('diag')
-                outputStructure(1)%diagStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep)%dat(1:datLength) = dat%var(iVar)%dat(:)
+                summa_struct(1)%diagStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep)%dat(1:datLength) = dat%var(iVar)%dat(:)
               case('flux')
-                outputStructure(1)%fluxStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep)%dat(1:datLength) = dat%var(iVar)%dat(:)
+                summa_struct(1)%fluxStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep)%dat(1:datLength) = dat%var(iVar)%dat(:)
               case default
                 err=21; message=trim(message)//'data structure not found for output'
             end select
           class is (var_ilength) 
-            outputStructure(1)%indxStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep)%dat(1:datLength) = dat%var(iVar)%dat(:)
+            summa_struct(1)%indxStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep)%dat(1:datLength) = dat%var(iVar)%dat(:)
           class default; err=20; message=trim(message)//'data must not be scalarv and either of type var_dlength or var_ilength'; return
         end select
 
@@ -509,10 +624,10 @@ subroutine writeBasin(indxGRU,indxHRU,iStep,finalizeStats,&
    select case (meta(iVar)%varType)
 
     case (iLookVarType%scalarv)
-      outputStructure(1)%bvarStat%gru(indxGRU)%hru(indxHRU)%var(map(iVar))%tim(iStep)%dat(iFreq) = stat(map(iVar))%dat(iFreq)
+      summa_struct(1)%bvarStat%gru(indxGRU)%hru(indxHRU)%var(map(iVar))%tim(iStep)%dat(iFreq) = stat(map(iVar))%dat(iFreq)
     case (iLookVarType%routing)
      if (iFreq==1 .and. outputTimestep(iFreq)==1) then
-      outputStructure(1)%bvarStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep)%dat(iFreq) = dat(iVar)%dat(iFreq)
+      summa_struct(1)%bvarStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep)%dat(iFreq) = dat(iVar)%dat(iFreq)
      end if
 
     case default
@@ -563,8 +678,8 @@ subroutine writeTime(indxGRU,indxHRU,iStep,finalizeStats,meta,dat,err,message)
    ! check instantaneous
    if (meta(iVar)%statIndex(iFreq)/=iLookStat%inst) cycle
 
-   ! add to outputStructure
-   outputStructure(1)%timeStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep) = dat(iVar)
+   ! add to summa_struct
+   summa_struct(1)%timeStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep) = dat(iVar)
    if (err/=0) message=trim(message)//trim(meta(iVar)%varName)
    if (err/=0) then; err=20; return; end if
 
@@ -851,15 +966,15 @@ end subroutine writeRestart
 ! ****************************************************************************** 
 subroutine setFinalizeStatsFalse(indx_gru) & 
   bind(C, name='setFinalizeStatsFalse')
-  USE output_structure_module,only:outputStructure
+  USE output_structure_module,only:summa_struct
   implicit none
   integer(c_int), intent(in)        :: indx_gru
 
   integer(i4b)                      :: iStep
 
   ! set finalizeStats to false
-  do iStep=1, size(outputStructure(1)%finalizeStats%gru(indx_gru)%hru(1)%tim)
-    outputStructure(1)%finalizeStats%gru(indx_gru)%hru(1)%tim(iStep)%dat = .false.
+  do iStep=1, size(summa_struct(1)%finalizeStats%gru(indx_gru)%hru(1)%tim)
+    summa_struct(1)%finalizeStats%gru(indx_gru)%hru(1)%tim(iStep)%dat = .false.
   end do
 end subroutine setFinalizeStatsFalse
 

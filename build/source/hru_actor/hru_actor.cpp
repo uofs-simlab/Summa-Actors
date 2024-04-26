@@ -28,6 +28,10 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
   self->state.hru_actor_settings = hru_actor_settings;
   self->state.dt_init_factor = hru_actor_settings.dt_init_factor;
 
+  // Set the restart frequency
+  self->state.restartFrequency = 2; // TODO: obtain this value from command line arg
+
+
   return {
     [=](init_hru) {
       Initialize_HRU(self);
@@ -407,19 +411,90 @@ int Run_HRU(stateful_actor<hru_state>* self) {
     return 20;
   }
 
-  hru_writeOutput(&self->state.indxHRU, &self->state.indxGRU,
-      &self->state.timestep, &self->state.output_structure_step_index,
-      self->state.hru_data, &self->state.err);
-  if (self->state.err != 0) {
-    aout(self) << "Error: HRU_Actor - writeHRUToOutputStructure - HRU = " 
-                << self->state.indxHRU << " - indxGRU = " 
-                << self->state.indxGRU << " - refGRU = " << self->state.refGRU
-                << "\nError = " << self->state.err  << "\n";
-    self->quit();
-    return 21;
+  if (self->state.timestep != 0){
+    // write variables for output to summa_struct, extract y,m,d,h from 
+    // fortran side ald save it to the hru's state
+    int y,m,d,h;
+
+    hru_writeOutput(&self->state.indxHRU, &self->state.indxGRU,
+        &self->state.timestep, &self->state.output_structure_step_index,
+        self->state.hru_data, &y, &m, &d, &h, &self->state.err);
+    if (self->state.err != 0) {
+      aout(self) << "Error: HRU_Actor - writeHRUToOutputStructure - HRU = " 
+                  << self->state.indxHRU << " - indxGRU = " 
+                  << self->state.indxGRU << " - refGRU = " << self->state.refGRU
+                  << "\nError = " << self->state.err  << "\n";
+      self->quit();
+      return 21;
+    }
+
+    self->state.currentDate.y = y;
+    self->state.currentDate.m = m;
+    self->state.currentDate.d = d;
+    self->state.currentDate.h = h;
+
+    // collect date infomation on first timestep to find starting date
+    if (self->state.timestep == 1 ){
+        self->state.startDate = self->state.currentDate;
+    }
+
+    // check if hru reached a checkpoint, if so it will write restart data to outputsructure and
+    // send an update to the FAA
+    if (isCheckpoint(self)){
+        self->state.checkpoint++;
+        hru_writeRestart(&self->state.indxHRU, 
+                        &self->state.indxGRU,
+                        &self->state.checkpoint,
+                        &self->state.output_structure_step_index, //unused
+                        self->state.hru_data,
+                        &self->state.err);
+                  
+        self->send(self->state.file_access_actor, 
+            write_restart_v,
+            self->state.refGRU,
+            self->state.timestep,
+            self->state.checkpoint,
+            self->state.currentDate.y,
+            self->state.currentDate.m,
+            self->state.currentDate.d,
+            self->state.currentDate.h);
+    }
+
+
   }
 
   return 0;      
+}
+
+// given a hru_actor with a state, compared current date with starting date to deterimine if hru is on a checkpoint
+bool isCheckpoint(stateful_actor<hru_state>* self){
+    switch(self->state.restartFrequency){
+        case 0: // restart not enabled
+            break;
+        case 1: // hourly, not supported, would need to extract minute info from hru_data
+            break;
+        case 2: // daily
+            if (self->state.startDate.h == self->state.currentDate.h){
+                return true;
+            }
+            break;
+        case 3: // weekly not supported
+            break;
+        case 4: // monthly
+            if (self->state.startDate.d == self->state.currentDate.d &&
+                self->state.startDate.h == self->state.currentDate.h){
+                return true;
+            }    
+            break;   
+        case 5: // yearly
+            if (self->state.startDate.m == self->state.currentDate.m &&
+                self->state.startDate.d == self->state.currentDate.d &&
+                self->state.startDate.h == self->state.currentDate.h){
+                return true;
+            }
+            break;
+    }
+    return false;
 }
 
 

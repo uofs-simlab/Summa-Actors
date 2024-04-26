@@ -247,6 +247,10 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     // Reciever:
     // Summary:
     CAF_ADD_ATOM(summa, write_output)
+    // Sender: HRU Actor
+    // Reciever: File Access Actor 
+    // Summary: Updates FAA when hru reaches restart checkpoint
+    CAF_ADD_ATOM(summa, write_restart)
     // Sender:
     // Reciever:
     // Summary:
