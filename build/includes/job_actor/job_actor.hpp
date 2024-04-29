@@ -1,7 +1,9 @@
 #pragma once
 #include "caf/all.hpp"
 #include "caf/io/all.hpp"
+#include "num_gru_info.hpp"
 #include "GRU.hpp"
+#include "gru_struc.hpp"
 #include "timing_info.hpp"
 #include "settings_functions.hpp"
 #include "global.hpp"
@@ -16,34 +18,27 @@
 #include <vector>
 #include <tuple>
 
-/*********************************************
- * Job Actor Fortran Functions
- *********************************************/
-extern "C" {
-  void job_init_fortran(char const* file_manager, int* start_gru_index, 
-      int* num_gru, int* num_hru, int* file_gru, int* err);
-
-  void deallocateJobActor(int* err);
-}
 
 
 /*********************************************
- * Job Actor state variables
+ * Job Actor Data Structures
  *********************************************/
-namespace caf {
-using chrono_time = std::chrono::time_point<std::chrono::system_clock>;
-
 // Holds information about the GRUs
 struct GRU_Container {
   std::vector<GRU*> gru_list;
-  chrono_time gru_start_time; // Vector of start times for each GRU
+  std::chrono::time_point<std::chrono::system_clock> gru_start_time; // Vector of start times for each GRU
   int num_gru_done = 0; 
   int num_gru_failed = 0; // number of grus that are waiting to be restarted
   int num_gru_in_run_domain = 0; // number of grus we are currently solving for
   int run_attempts_left = 1; // current run attempt for all grus
 };
 
+
+/*********************************************
+ * Job Actor state variables
+ *********************************************/
 struct job_state {
+  TimingInfo job_timing;
   // Actor References
   caf::actor file_access_actor; // actor reference for the file_access_actor
   caf::actor parent;            // actor reference to the top-level SummaActor
@@ -53,10 +48,10 @@ struct job_state {
   int num_gru;                  // Number of GRUs for this job
   int num_hru;
   int max_run_attempts = 1;     // Max number of attempts to solve a GRU
-
+  
+  // TODO: gru_struc can contain the num_gru_info and be the gru_container
+  std::unique_ptr<GruStruc> gru_struc; 
   NumGRUInfo num_gru_info;
-
-
   GRU_Container gru_container;
   
   // Variables for GRU monitoring
@@ -65,7 +60,6 @@ struct job_state {
   int num_gru_failed = 0;       // Number of GRUs that have failed
 
   // Timing Variables
-  TimingInfo job_timing;
   
   std::string hostname;
 
@@ -105,8 +99,8 @@ struct distributed_job_state {
   std::vector<std::vector<double>> gru_times_per_node;
   std::vector<double> node_walltimes;
 
-  chrono_time load_balance_start_time;
-  chrono_time load_balance_end_time;
+  std::chrono::time_point<std::chrono::system_clock> load_balance_start_time;
+  std::chrono::time_point<std::chrono::system_clock> load_balance_end_time;
   double load_balance_time = 0.0;
 
   
@@ -145,19 +139,20 @@ struct distributed_job_state {
 };
 
 /** The Job Actor Behaviors */
-behavior job_actor(stateful_actor<job_state>* self, 
-    int start_gru, int num_gru, 
-    File_Access_Actor_Settings file_access_actor_settings, 
-    Job_Actor_Settings job_actor_settings, 
-    HRU_Actor_Settings hru_actor_settings, actor parent);
+caf::behavior job_actor(caf::stateful_actor<job_state>* self, int start_gru, 
+                        int num_gru, 
+                        File_Access_Actor_Settings file_access_actor_settings, 
+                        Job_Actor_Settings job_actor_settings, 
+                        HRU_Actor_Settings hru_actor_settings, 
+                        caf::actor parent);
 
-behavior data_assimilation_mode(stateful_actor<job_state>* self);
-behavior async_mode(stateful_actor<job_state>* self); 
+caf::behavior data_assimilation_mode(caf::stateful_actor<job_state>* self);
+caf::behavior async_mode(caf::stateful_actor<job_state>* self); 
 
 /** The Job Actor For Internode Communication */
-behavior distributed_job_actor(stateful_actor<distributed_job_state>* self,
-    int start_gru, int num_gru,
-    Distributed_Settings distributed_settings,
+caf::behavior distributed_job_actor(
+    caf::stateful_actor<distributed_job_state>* self, int start_gru, 
+    int num_gru, Distributed_Settings distributed_settings,
     File_Access_Actor_Settings file_access_actor_settings,
     Job_Actor_Settings job_actor_settings, 
     HRU_Actor_Settings hru_actor_settings);
@@ -167,17 +162,17 @@ behavior distributed_job_actor(stateful_actor<distributed_job_state>* self,
  * Functions for the Job Actor (job_utils.cpp)
  *********************************************/
 // Spawn HRU Actors Individually
-void spawnHRUActors(stateful_actor<job_state>* self);
+void spawnHRUActors(caf::stateful_actor<job_state>* self);
 // Spawn HRU Batch Actors
-void spawnHRUBatches(stateful_actor<job_state>* self);
+void spawnHRUBatches(caf::stateful_actor<job_state>* self);
 
-void handleFinishedGRU(stateful_actor<job_state>* self, int local_gru_index);
+void handleFinishedGRU(caf::stateful_actor<job_state>* self,
+                       int local_gru_index);
 
-void finalizeJob(stateful_actor<job_state>* self);
+void finalizeJob(caf::stateful_actor<job_state>* self);
 
 /** Get the information for the GRUs that will be written to the netcdf file */
 std::vector<serializable_netcdf_gru_actor_info> getGruNetcdfInfo(
     int max_run_attempts, std::vector<GRU*> &gru_list);
 
-void handleGRUError(stateful_actor<job_state>* self, caf::actor src);
-} // end namespace
+void handleGRUError(caf::stateful_actor<job_state>* self, caf::actor src);

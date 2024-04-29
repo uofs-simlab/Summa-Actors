@@ -1,5 +1,6 @@
 #include "job_actor.hpp"
-namespace caf {
+
+using namespace caf;
 
 behavior async_mode(stateful_actor<job_state>* self) {
   aout(self) << "Async Mode Started\n";
@@ -10,20 +11,18 @@ behavior async_mode(stateful_actor<job_state>* self) {
       aout(self) << "Async Mode: init_file_access_actor\n";
       self->state.num_steps = num_timesteps;
       spawnHRUActors(self);
-      for(auto& gru : self->state.gru_container.gru_list) {
-        self->send(gru->getGRUActor(), init_hru_v);
-        self->send(gru->getGRUActor(), update_hru_async_v);
-      }
     },
 
-    [=](done_hru, int local_gru_index) {
-      aout(self) << "HRU Done: " << local_gru_index << "\n";
-      handleFinishedGRU(self, local_gru_index);
+    [=](done_hru, int gru_job_index) {
+      handleFinishedGRU(self, gru_job_index);
     },
 
     [=](finalize) { finalizeJob(self); },
+
+    /**Error Handling Functions*/
+    [=](err_atom, int err_code) {
+      aout(self) << "Async Mode: Error: " << err_code << "\n";
+    }
     
   };
 }
-
-} // End of Namespace

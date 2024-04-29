@@ -1,6 +1,7 @@
 #include "job_actor.hpp"
 
-namespace caf {
+using namespace caf;
+
 behavior data_assimilation_mode(stateful_actor<job_state>* self) {
   aout(self) << "Data Assimilation Mode: Started\n";
 
@@ -21,7 +22,7 @@ behavior data_assimilation_mode(stateful_actor<job_state>* self) {
       self->state.stepsInCurrentFFile = num_steps_in_iFile;
       self->state.forcingStep = 1;
       for(auto gru : self->state.gru_container.gru_list) {
-        self->send(gru->getGRUActor(), update_timeZoneOffset_v, 
+        self->send(gru->getActorRef(), update_timeZoneOffset_v, 
             self->state.iFile);
       }
 
@@ -30,7 +31,7 @@ behavior data_assimilation_mode(stateful_actor<job_state>* self) {
 
     [=](update_hru){
       for(auto gru : self->state.gru_container.gru_list) {
-        self->send(gru->getGRUActor(), update_hru_v, self->state.timestep, 
+        self->send(gru->getActorRef(), update_hru_v, self->state.timestep, 
             self->state.forcingStep);
       }      
     },
@@ -52,7 +53,7 @@ behavior data_assimilation_mode(stateful_actor<job_state>* self) {
             if (err != 0) {
               aout(self) << "Job_Actor: Error Writing Output\n";
               for (auto GRU : self->state.gru_container.gru_list)
-                self->send(GRU->getGRUActor(), exit_msg_v);
+                self->send(GRU->getActorRef(), exit_msg_v);
               
               self->send_exit(self->state.file_access_actor, 
                               exit_reason::user_shutdown);
@@ -67,7 +68,7 @@ behavior data_assimilation_mode(stateful_actor<job_state>* self) {
         if (self->state.timestep > self->state.num_steps) {
           aout(self) << "Job_Actor: Done Job\n";
           for (auto GRU : self->state.gru_container.gru_list) {
-            self->send_exit(GRU->getGRUActor(), exit_reason::user_shutdown);
+            self->send_exit(GRU->getActorRef(), exit_reason::user_shutdown);
             GRU->setSuccess();
           }
           self->send(self, finalize_v);
@@ -99,4 +100,3 @@ behavior data_assimilation_mode(stateful_actor<job_state>* self) {
 
   };
 }
-} // End of Namespace caf

@@ -1,30 +1,25 @@
 #include "job_actor.hpp"
 
-namespace caf {
+using namespace caf;
 
 void spawnHRUActors(stateful_actor<job_state>* self) {
-  auto& gru_container = self->state.gru_container;
-  gru_container.gru_start_time = std::chrono::high_resolution_clock::now();
-  gru_container.run_attempts_left = self->state.max_run_attempts;
-  gru_container.run_attempts_left--;
-
-  for (int i = 0; i < gru_container.num_gru_in_run_domain; i++) {
-    auto global_gru_index = gru_container.gru_list.size() + 
-        self->state.start_gru;
-    auto local_gru_index = gru_container.gru_list.size() + 1;                                
-
-    auto gru = self->spawn(hru_actor, global_gru_index, local_gru_index,               
-        self->state.hru_actor_settings, self->state.file_access_actor, self);
-
-    // Create the GRU object (Job uses this to keep track of GRU status)
-    gru_container.gru_list.push_back(new GRU(global_gru_index, 
-        local_gru_index, gru, self->state.dt_init_start_factor, 
-        self->state.hru_actor_settings.rel_tol,
-        self->state.hru_actor_settings.abs_tol, self->state.max_run_attempts));  
-    
-    // if (normal_mode) self->send(gru, update_hru_async_v);
-  }                        
-          
+  auto& gru_struc = self->state.gru_struc;
+  for (int i = 0; i < gru_struc->getNumGrus(); i++) {
+    auto netcdf_index = gru_struc->getStartGru() + i;
+    auto job_index = i + 1;
+    // Start GRU
+    auto gru = self->spawn(hru_actor, netcdf_index, job_index, 
+                           self->state.hru_actor_settings, 
+                           self->state.file_access_actor, self);
+    self->send(gru, init_hru_v);
+    self->send(gru, update_hru_async_v);
+    // Save information about the GRU
+    std::unique_ptr<GRU> gru_obj = std::make_unique<GRU>(
+        netcdf_index, job_index, gru, self->state.dt_init_start_factor, 
+        self->state.hru_actor_settings.rel_tol, 
+        self->state.hru_actor_settings.abs_tol, self->state.max_run_attempts);
+    gru_struc->addGRU(std::move(gru_obj));
+  }    
 }
 
 void spawnHRUBatches(stateful_actor<job_state>* self) {
@@ -76,21 +71,9 @@ void spawnHRUBatches(stateful_actor<job_state>* self) {
 
 
 void finalizeJob(stateful_actor<job_state>* self) {
-  std::vector<serializable_netcdf_gru_actor_info> netcdf_gru_info = 
-      getGruNetcdfInfo(
-          self->state.max_run_attempts,self->state.gru_container.gru_list);
-  
-  self->state.num_gru_failed = std::count_if(netcdf_gru_info.begin(), 
-      netcdf_gru_info.end(), [](auto& gru_info) {
-    return !gru_info.successful;
-  });
-
   self->request(self->state.file_access_actor, infinite, finalize_v).await(
     [=](std::tuple<double, double> read_write_duration) {
       int err = 0;
-      for (auto GRU : self->state.gru_container.gru_list) 
-        delete GRU;
-      self->state.gru_container.gru_list.clear();
       self->state.job_timing.updateEndPoint("total_duration");
       aout(self) << "\n________________" 
                   << "PRINTING JOB_ACTOR TIMING INFO RESULTS"
@@ -109,45 +92,29 @@ void finalizeJob(stateful_actor<job_state>* self) {
                       .value_or(-1.0) << " Seconds\n"
                   << "_________________________________" 
                   << "_______________________________________\n\n";
-      
-      deallocateJobActor(&err);
-      
+            
       // Tell Parent we are done
+      auto total_duration = self->state.job_timing.getDuration("total_duration")
+          .value_or(-1.0);
       self->send(self->state.parent, done_job_v, self->state.num_gru_failed, 
-          self->state.job_timing.getDuration("total_duration").value_or(-1.0),
-          std::get<0>(read_write_duration), 
-          std::get<1>(read_write_duration));
+                 total_duration, std::get<0>(read_write_duration), 
+                 std::get<1>(read_write_duration));
       self->quit();
     });
 }
 
-void handleFinishedGRU(stateful_actor<job_state>* self, int local_gru_index) {
-  using namespace std::chrono;
-  auto& gru_container = self->state.gru_container;
-  chrono_time end_point = high_resolution_clock::now();
-  double total_duration = duration_cast<seconds>(end_point - 
-      gru_container.gru_start_time).count();
-  gru_container.num_gru_done++;
+void handleFinishedGRU(stateful_actor<job_state>* self, int gru_job_index) {
+  auto& gru_struc = self->state.gru_struc;
+  gru_struc->incrementNumGRUDone();
+  gru_struc->getGRU(gru_job_index)->setSuccess();
+  aout(self) << "GRU Finished: " << gru_struc->getNumGrusDone() << "/" 
+             << gru_struc->getNumGrus() << " -- GlobalGRU=" 
+             << gru_struc->getGRU(gru_job_index)->getIndexNetcdf()
+             << " -- LocalGRU=" 
+             << gru_struc->getGRU(gru_job_index)->getIndexJob() << "\n";
 
-  aout(self) << "GRU Finished: " << gru_container.num_gru_done << "/" 
-             << gru_container.num_gru_in_run_domain << " -- GlobalGRU=" 
-             << gru_container.gru_list[local_gru_index-1]->getGlobalGRUIndex()
-             << " -- LocalGRU=" << local_gru_index << "\n";
-
-  gru_container.gru_list[local_gru_index-1]->setRunTime(total_duration);
-  gru_container.gru_list[local_gru_index-1]->setInitDuration(-1);
-  gru_container.gru_list[local_gru_index-1]->setForcingDuration(-1);
-  gru_container.gru_list[local_gru_index-1]->setRunPhysicsDuration(-1);
-  gru_container.gru_list[local_gru_index-1]->setWriteOutputDuration(-1);
-  gru_container.gru_list[local_gru_index-1]->setSuccess();
-
-
-  // Check if all GRUs are done
-  if (gru_container.num_gru_done >= gru_container.num_gru_in_run_domain) {
-    if(gru_container.num_gru_failed == 0 || self->state.max_run_attempts == 1)
-      self->send(self, finalize_v);
-    else
-      self->send(self, restart_failures_v);
+  if (gru_struc->isDone()) {
+    gru_struc->hasFailures() && gru_struc->shouldRetry() ? 
+        self->send(self, restart_failures_v) : self->send(self, finalize_v);
   }
 }
-} // End of Namespace caf

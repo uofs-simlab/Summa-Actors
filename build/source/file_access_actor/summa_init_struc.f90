@@ -36,6 +36,8 @@ subroutine initialize_init_struc(num_gru, err, message_r) bind(C, name="initiali
                       statIndx_meta, &        ! child metadata for stats
                       statBvar_meta           ! child metadata for stats
   USE allocspace_module,only:allocGlobal      ! module to allocate space for global data structures
+  USE allocspace_module,only:allocLocal
+  USE globalData,only:startTime,finshTime,refTime,oldTime
   USE C_interface_module,only:f_c_string_ptr  ! convert fortran string to c string
   implicit none
   ! dummy variables
@@ -156,9 +158,16 @@ subroutine initialize_init_struc(num_gru, err, message_r) bind(C, name="initiali
 
   nGRU = num_gru
   nHRU = sum(gru_struc%hruCount)
-
-
+  
   end associate summaVars
+
+  ! Allocate the time structures
+  call allocLocal(time_meta, startTime, err=err, message=message)
+  call allocLocal(time_meta, finshTime, err=err, message=message)
+  call allocLocal(time_meta, refTime,   err=err, message=message)
+  call allocLocal(time_meta, oldTime,   err=err, message=message)
+  if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
+
 end subroutine initialize_init_struc
 
 subroutine paramSetup_fortran(err, message_r) bind(C, name="paramSetup_fortran")
@@ -197,8 +206,14 @@ subroutine readRestart_fortran(err, message_r) bind(C, name="readRestart_fortran
 end subroutine readRestart_fortran
 
 subroutine deallocate_init_struc() bind(C, name="deallocate_init_struc")
+  USE globalData,only:startTime,finshTime,refTime,oldTime
   implicit none
   deallocate(init_struc)
+  deallocate(startTime%var);
+  deallocate(finshTime%var);
+  deallocate(refTime%var);
+  deallocate(oldTime%var);
+  
 end subroutine deallocate_init_struc
 
 end module summa_init_struc

@@ -11,5 +11,5 @@ export LIBRARY_LINKS='-llapack;-lgfortran;-lnetcdff;-lnetcdf' # list of library 
 export SUNDIALS_PATH="/usr/local/sundials"
 export ACTOR_FRAMEWORK_PATH="/usr/local"
 
-cmake -B ./cmake_build -S ../summa/build/cmake/. -DCMAKE_BUILD_TYPE=Sundials_Actors
-cmake --build ./cmake_build --target all
+cmake -B ./cmake_build -S ../summa/build/cmake/. -DCMAKE_BUILD_TYPE=Sundials_Actors_Debug
+cmake --build ./cmake_build --target all -j

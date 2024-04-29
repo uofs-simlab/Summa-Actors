@@ -1,177 +1,27 @@
 #pragma once
+#include "caf/all.hpp"
 
 #include "batch.hpp"
 #include "batch_container.hpp"
+
 #include "client.hpp"
 #include "client_container.hpp"
-#include <vector>
+
+#include "hru_utils.hpp"
+#include "num_gru_info.hpp"
 #include "settings_functions.hpp"
 #include "global.hpp"
-#include "caf/all.hpp"
+
+#include <vector>
 #include <unordered_map>
 
 // HRU Data structure used for serialization
-struct hru {
-  int indx_hru;
-  int indx_gru;
-  int ref_gru;
-
-  // Misc Variables
-  int timestep;
-  int forcing_step;
-  int num_steps;
-  int iFile;
-  int dt_init_factor;
-  int output_structure_step_index;
-  double dt_init;
-  double upArea;
-
-  // Sundials variables
-  double rtol;
-  double atol;
-
-  // HRU data structures
-  // Statistic Structure
-  std::vector<std::vector<double>> forc_stat;
-  std::vector<std::vector<double>> prog_stat;
-  std::vector<std::vector<double>> diag_stat;
-  std::vector<std::vector<double>> flux_stat;
-  std::vector<std::vector<double>> indx_stat;
-  std::vector<std::vector<double>> bvar_stat;
-  // Primary Data Strutures (scalars)
-  std::vector<int> time_struct;
-  std::vector<double> forc_struct;
-  std::vector<double> attr_struct;
-  std::vector<int> type_struct;
-  std::vector<long int> id_struct;
-  // Primary Data Structures (arrays)
-  std::vector<std::vector<int>> indx_struct;
-  std::vector<std::vector<double>> mpar_struct;
-  std::vector<std::vector<double>> prog_struct;
-  std::vector<std::vector<double>> diag_struct;
-  std::vector<std::vector<double>> flux_struct;
-  // Basin-average structures
-  std::vector<double> bpar_struct;
-  std::vector<std::vector<double>> bvar_struct;
-  std::vector<double> dpar_struct;
-  // Local HRU data structures
-  std::vector<int> start_time;
-  std::vector<int> end_time;
-  std::vector<int> ref_time;
-  std::vector<int> old_time;
-  // statistic flags
-  std::vector<int> stat_counter;
-  std::vector<int> output_timestep;
-  std::vector<int> reset_stats;
-  std::vector<int> finalize_stats;
-
-  // scalar data
-  double frac_jul_day;
-  double tm_zone_offset_frac_day;
-  int year_length;
-  int compute_veg_flux;
-};
-
-template <class Inspector>
-bool inspect(Inspector& inspector, hru& hru_data) {
-  return inspector.object(hru_data).fields(
-      inspector.field("indx_hru", hru_data.indx_hru),
-      inspector.field("indx_gru", hru_data.indx_gru),
-      inspector.field("ref_gru", hru_data.ref_gru),
-      inspector.field("timestep", hru_data.timestep),
-      inspector.field("forcing_step", hru_data.forcing_step),
-      inspector.field("num_steps", hru_data.num_steps),
-      inspector.field("iFile", hru_data.iFile),
-      inspector.field("dt_init_factor", hru_data.dt_init_factor),
-      inspector.field("output_structure_step_index", 
-          hru_data.output_structure_step_index),
-      inspector.field("dt_init", hru_data.dt_init),
-      inspector.field("upArea", hru_data.upArea),
-      inspector.field("rtol", hru_data.rtol),
-      inspector.field("atol", hru_data.atol),
-      inspector.field("forc_stat", hru_data.forc_stat),
-      inspector.field("prog_stat", hru_data.prog_stat),
-      inspector.field("diag_stat", hru_data.diag_stat),
-      inspector.field("flux_stat", hru_data.flux_stat),
-      inspector.field("indx_stat", hru_data.indx_stat),
-      inspector.field("bvar_stat", hru_data.bvar_stat),
-      inspector.field("time_struct", hru_data.time_struct),
-      inspector.field("forc_struct", hru_data.forc_struct),
-      inspector.field("attr_struct", hru_data.attr_struct),
-      inspector.field("type_struct", hru_data.type_struct),
-      inspector.field("id_struct", hru_data.id_struct),
-      inspector.field("indx_struct", hru_data.indx_struct),
-      inspector.field("mpar_struct", hru_data.mpar_struct),
-      inspector.field("prog_struct", hru_data.prog_struct),
-      inspector.field("diag_struct", hru_data.diag_struct),
-      inspector.field("flux_struct", hru_data.flux_struct),
-      inspector.field("bpar_struct", hru_data.bpar_struct),
-      inspector.field("bvar_struct", hru_data.bvar_struct),
-      inspector.field("dpar_struct", hru_data.dpar_struct),
-      inspector.field("start_time", hru_data.start_time),
-      inspector.field("end_time", hru_data.end_time),
-      inspector.field("ref_time", hru_data.ref_time),
-      inspector.field("old_time", hru_data.old_time),
-      inspector.field("stat_counter", hru_data.stat_counter),
-      inspector.field("output_timestep", hru_data.output_timestep),
-      inspector.field("reset_stats", hru_data.reset_stats),
-      inspector.field("finalize_stats", hru_data.finalize_stats),
-      inspector.field("frac_jul_day", hru_data.frac_jul_day),
-      inspector.field("tm_zone_offset_frac_day", 
-          hru_data.tm_zone_offset_frac_day),
-      inspector.field("year_length", hru_data.year_length),
-      inspector.field("compute_veg_flux", hru_data.compute_veg_flux));
-}
-
-struct NumGRUInfo {
-  int start_gru_local;
-  int start_gru_global; 
-  int num_gru_local;
-  int num_gru_global;
-  int file_gru; 
-  bool use_global_for_data_structures;
-
-  // Constructor
-  NumGRUInfo(int start_gru_local = 0, int start_gru_global= 0, 
-      int num_gru_local = 0, int num_gru_global = 0, int file_gru = 0, 
-      bool use_global_for_data_structures = false) 
-    : start_gru_local(start_gru_local), start_gru_global(start_gru_global), 
-    num_gru_local(num_gru_local), num_gru_global(num_gru_global), 
-    file_gru(file_gru), 
-    use_global_for_data_structures(use_global_for_data_structures) {}
-};
-template <class Insepctor>
-bool inspect(Insepctor& inspector, NumGRUInfo& num_gru) {
-  return inspector.object(num_gru).fields(
-      inspector.field("start_gru_local", num_gru.start_gru_local),
-      inspector.field("start_gru_global", num_gru.start_gru_global),
-      inspector.field("num_gru_local", num_gru.num_gru_local),
-      inspector.field("num_gru_global", num_gru.num_gru_global),
-      inspector.field("file_gru", num_gru.file_gru),
-      inspector.field("use_global_for_data_structures", 
-          num_gru.use_global_for_data_structures));
-}
-
-
-enum class hru_error : uint8_t {
-    run_physics_unhandleable = 1,
-    run_physics_infeasible_state = 2,
-};
 
 enum class file_access_error : uint8_t {
     writing_error = 1,
     unhandleable_error = 2,
     mDecisions_error = 100,
 };
-
-// HRU Errors
-std::string to_string(hru_error err);
-bool from_string(caf::string_view in, hru_error& out);
-bool from_integer(uint8_t in, hru_error& out);
-template<class Inspector>
-bool inspect(Inspector& f, hru_error& x) {
-    return caf::default_enum_inspect(f, x);
-}
 
 // File Access Actor
 std::string to_string(file_access_error err);
@@ -390,14 +240,12 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
 
     CAF_ADD_TYPE_ID(summa, (std::optional<caf::strong_actor_ptr>))
 
-    // error types
-    CAF_ADD_TYPE_ID(summa, (hru_error))
+
 
     CAF_ADD_TYPE_ID(summa, (file_access_error))
 
 
 CAF_END_TYPE_ID_BLOCK(summa)
 
-CAF_ERROR_CODE_ENUM(hru_error)
 CAF_ERROR_CODE_ENUM(file_access_error)
 

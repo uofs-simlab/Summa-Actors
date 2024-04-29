@@ -24,7 +24,8 @@ subroutine setTimesDirsAndFiles_fortran(summaFileManagerIn_C,err,message_r) &
   ! local variables
   character(len=256)                        :: summaFileManagerIn    
   character(len=256)                        :: message = ""
-  
+
+
   ! Convert strings 
   call f_c_string_ptr(trim(message), message_r);
   call c_f_string_chars(summaFileManagerIn_C, summaFileManagerIn)

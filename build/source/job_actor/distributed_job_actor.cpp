@@ -3,7 +3,9 @@
 #include "node_actor.hpp"
 #include <fstream>
 #include <iostream>
-namespace caf {
+
+
+using namespace caf;
 
 behavior distributed_job_actor(stateful_actor<distributed_job_state>* self,
     int start_gru_global, int num_gru_global, 
@@ -413,5 +415,3 @@ behavior distributed_job_actor(stateful_actor<distributed_job_state>* self,
 }
 
 
-
-} // namespace caf
