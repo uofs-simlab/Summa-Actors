@@ -18,8 +18,7 @@ using namespace caf;
  *********************************************/
 extern "C" {
   void fileAccessActor_init_fortran( int* num_timesteps, 
-      int* num_timesteps_output_buffer, void* handle_output_ncid, int* startGRU,
-      int* numGRU, int* numHRU, int* err, void* message);
+      int* num_timesteps_output_buffer, int* numGRU, int* err, void* message);
 
   void defOutputFortran(void* handle_ncid, int* start_gru, int* num_gru, 
       int* num_hru, int* file_gru, bool* use_extention, 

@@ -146,7 +146,6 @@ subroutine initOutputStructure(maxSteps, num_gru, err)
   USE globalData,only:gru_struc
   USE globalData,only:structInfo                              ! information on the data structures
   USE multiconst,only:secprday                                ! number of seconds in a day
-  USE actor_data_types,only:file_info_array
   USE var_lookup,only:maxvarFreq                              ! maximum number of output files
 
   USE allocspace_module,only:allocGlobal                      ! module to allocate space for global data structures

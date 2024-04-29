@@ -61,10 +61,7 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
       std::unique_ptr<char[]> message(new char[256]);
       fileAccessActor_init_fortran(&self->state.num_steps,
                                    &fa_settings.num_timesteps_in_output_buffer, 
-                                   self->state.handle_ncid,
-                                   &self->state.start_gru, 
-                                   &self->state.num_gru, &num_hru, &err,
-                                   &message);
+                                   &self->state.num_gru, &err, &message);
       if (err != 0) {
         aout(self) << "\n\nERROR: fileAccessActor_init_fortran() - " 
                    << message.get() << "\n\n";
