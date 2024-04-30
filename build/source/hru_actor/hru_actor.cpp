@@ -442,9 +442,10 @@ int Run_HRU(stateful_actor<hru_state>* self) {
     // send an update to the FAA
     if (isCheckpoint(self)){
         self->state.checkpoint++;
+
         hru_writeRestart(&self->state.indxHRU, 
                         &self->state.indxGRU,
-                        &self->state.checkpoint,
+                        &self->state.output_structure_step_index,
                         &self->state.output_structure_step_index, //unused
                         self->state.hru_data,
                         &self->state.err);
@@ -454,6 +455,7 @@ int Run_HRU(stateful_actor<hru_state>* self) {
             self->state.refGRU,
             self->state.timestep,
             self->state.checkpoint,
+            self->state.output_structure_step_index,
             self->state.currentDate.y,
             self->state.currentDate.m,
             self->state.currentDate.d,
@@ -471,8 +473,8 @@ bool isCheckpoint(stateful_actor<hru_state>* self){
     switch(self->state.restartFrequency){
         case 0: // restart not enabled
             break;
-        case 1: // hourly, not supported, would need to extract minute info from hru_data
-            break;
+        case 1: // every timestep
+            return true;
         case 2: // daily
             if (self->state.startDate.h == self->state.currentDate.h){
                 return true;

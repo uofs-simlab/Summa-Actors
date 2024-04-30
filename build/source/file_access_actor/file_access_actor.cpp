@@ -178,7 +178,7 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
       self->state.file_access_timing.updateEndPoint("write_duration");
     },
 
-    [=] (write_restart, int gru, int gru_timestep, int gru_checkpoint, int year, int month, int day, int hour){
+    [=] (write_restart, int gru, int gru_timestep, int gru_checkpoint, int output_stucture_index, int year, int month, int day, int hour){
     // update hru progress vecs 
     int gru_index = abs(self->state.start_gru - gru); 
     self->state.hru_timesteps[gru_index] = gru_timestep;
@@ -191,7 +191,7 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
     // if the slowest hru is past the ith checkpoint (current threshold)            
     if ( slowest_checkpoint >= (self->state.completed_checkpoints)){// temp for dubuging
         Output_Partition *output_partition = self->state.output_container->getOutputPartition(gru-1);
-        writeRestart(self, output_partition, self->state.start_gru, self->state.hru_timesteps.size(), gru_checkpoint,
+        writeRestart(self, output_partition, self->state.start_gru, self->state.hru_timesteps.size(), output_stucture_index,
                      year, month, day, hour);
         // update checkpint counter
         self->state.completed_checkpoints++;
