@@ -403,9 +403,9 @@ subroutine writeData(ncid,outputTimestep,outputTimestepUpdate,maxLayers,nSteps, 
   err=0;message="writeData/"
   ! loop through output frequencies
   do iFreq=1,maxvarFreq
+    print *, outFreq(iFreq) , iFreq, outputTimeStepUpdate(iFreq)
     ! skip frequencies that are not needed
     if(.not.outFreq(iFreq)) cycle
-
     ! loop through model variables
     do iVar = 1,size(meta)
       stepCounter = 0
