@@ -39,19 +39,19 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
       int num_hru = self->state.num_gru;
 
 
-      self->state.summa_init_struc = std::make_unique<SummaInitStruc>();
-      if (self->state.summa_init_struc->allocate(self->state.num_gru) != 0) {
-        aout(self) << "ERROR -- File_Access_Actor: SummaInitStruc allocation failed\n";
-        return -1;
-      }
-      if (self->state.summa_init_struc->summa_paramSetup() != 0) {
-        aout(self) << "ERROR -- File_Access_Actor: SummaInitStruc paramSetup failed\n";
-        return -1;
-      }
-      if (self->state.summa_init_struc->summa_readRestart()!= 0) {
-        aout(self) << "ERROR -- File_Access_Actor: SummaInitStruc readRestart failed\n";
-        return -1;
-      }
+      // self->state.summa_init_struc = std::make_unique<SummaInitStruc>();
+      // if (self->state.summa_init_struc->allocate(self->state.num_gru) != 0) {
+      //   aout(self) << "ERROR -- File_Access_Actor: SummaInitStruc allocation failed\n";
+      //   return -1;
+      // }
+      // if (self->state.summa_init_struc->summa_paramSetup() != 0) {
+      //   aout(self) << "ERROR -- File_Access_Actor: SummaInitStruc paramSetup failed\n";
+      //   return -1;
+      // }
+      // if (self->state.summa_init_struc->summa_readRestart()!= 0) {
+      //   aout(self) << "ERROR -- File_Access_Actor: SummaInitStruc readRestart failed\n";
+      //   return -1;
+      // }
       
       // Get the information about the forcing files
       self->state.forcing_files = std::make_unique<forcingFileContainer>();

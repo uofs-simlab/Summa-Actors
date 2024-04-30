@@ -200,10 +200,12 @@ void Initialize_HRU(stateful_actor<hru_state>* self) {
   }
   #ifdef SUNDIALS_ACTIVE
     if (self->state.hru_actor_settings.rel_tol > 0 && 
-        self->state.hru_actor_settings.abs_tol > 0)
+        self->state.hru_actor_settings.abs_tol > 0) {
+      aout(self) << "Setting Sundials Tolerances\n";
       set_sundials_tolerances(self->state.hru_data, 
-          &self->state.hru_actor_settings.rel_tol, 
-          &self->state.hru_actor_settings.abs_tol);
+                              &self->state.hru_actor_settings.rel_tol, 
+                              &self->state.hru_actor_settings.abs_tol);
+    }
   #endif           
 }
 

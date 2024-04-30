@@ -6,6 +6,7 @@ module summa_init_struc
   public :: initialize_init_struc
   public :: paramSetup_fortran
   public :: deallocate_init_struc
+  public :: getInitTolerance_fortran 
   ! Used to get all the inital conditions for the model -- allows calling summa_setup.f90
   type(summa1_type_dec),allocatable,save,public :: init_struc 
 
@@ -204,6 +205,26 @@ subroutine readRestart_fortran(err, message_r) bind(C, name="readRestart_fortran
   call f_c_string_ptr(trim(message), message_r)
 
 end subroutine readRestart_fortran
+
+subroutine getInitTolerance_fortran(rtol, atol) &
+    bind(C, name="getInitTolerance_fortran")
+   USE globalData,only:model_decisions                         ! model decision structure
+  USE var_lookup,only:iLookDECISIONS
+  USE var_lookup,only:iLookPARAM
+  implicit none
+  ! dummy variables
+  real(c_double),       intent(out)       :: rtol
+  real(c_double),       intent(out)       :: atol
+
+  if (model_decisions(iLookDECISIONS%num_method)%iDecision == 83) then
+    rtol = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolWatSnow)%dat(1)
+    atol = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolWatSnow)%dat(1)
+  else
+    rtol = -9999
+    atol = -9999
+  end if
+
+end subroutine getInitTolerance_fortran
 
 subroutine deallocate_init_struc() bind(C, name="deallocate_init_struc")
   USE globalData,only:startTime,finshTime,refTime,oldTime

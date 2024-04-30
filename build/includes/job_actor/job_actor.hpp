@@ -17,6 +17,7 @@
 #include <cmath>
 #include <vector>
 #include <tuple>
+#include "summa_init_struc.hpp"
 
 
 
@@ -54,6 +55,9 @@ struct job_state {
   NumGRUInfo num_gru_info;
   GRU_Container gru_container;
   
+
+  std::unique_ptr<SummaInitStruc> summa_init_struc;
+
   // Variables for GRU monitoring
   int dt_init_start_factor = 1; // Initial Factor for dt_init (coupled_em)
   int num_gru_done = 0;         // The number of GRUs that have completed

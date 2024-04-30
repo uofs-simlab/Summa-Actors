@@ -9,7 +9,7 @@
 #include "message_atoms.hpp"
 #include "forcing_file_info.hpp"
 #include "json.hpp"
-#include "summa_init_struc.hpp"
+// #include "summa_init_struc.hpp"
 
 /*********************************************
  * File Access Actor Fortran Functions
@@ -48,7 +48,7 @@ struct file_access_state {
 
   File_Access_Actor_Settings file_access_actor_settings;
 
-  std::unique_ptr<SummaInitStruc> summa_init_struc;
+  // std::unique_ptr<SummaInitStruc> summa_init_struc;
   std::unique_ptr<forcingFileContainer> forcing_files;
 
   bool write_params_flag = true;

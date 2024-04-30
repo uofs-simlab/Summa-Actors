@@ -33,12 +33,21 @@ class GruStruc {
     inline void incrementNumGRUDone() { num_gru_done_++; }
     inline void incrementNumGRUFailed() { num_gru_failed_++; num_gru_done_++;}
     inline void decrementRetryAttempts() { num_retry_attempts_left_--; }
+    inline void decrementNumGRUFailed() { num_gru_failed_--; num_gru_done_--;}
     inline GRU* getGRU(int index) { return gru_info_[index-1].get(); }
 
     inline bool isDone() { return num_gru_done_ >= num_gru_; }
     inline bool hasFailures() { return num_gru_failed_ > 0; }
     inline bool shouldRetry() { return num_retry_attempts_left_ > 0; }
 
+    int getFailedIndex() {
+      for (int i = 0; i < gru_info_.size(); i++) {
+        if (gru_info_[i]->getStatus() == gru_state::failed) {
+          return gru_info_[i]->getIndexJob();
+        }
+      }
+      return -1;
+    }
 
   private:
     // Inital Information about the GRUs
