@@ -5,6 +5,23 @@ module actor_data_types
   implicit none
   private
 
+  
+  type,public :: forcingFileData
+    real(rkind), dimension (:,:), allocatable   :: dataFromFile
+  end type forcingFileData
+
+  type,public :: var_forc
+    type(forcingFileData), allocatable   :: var(:)       ! var(:)%dataFromFile(:,:)
+    character(len=256)                   :: refTimeString
+    real(rkind)                          :: convTime2Days
+    integer(i4b)                         :: nVars
+    integer(i4b),allocatable             :: var_ix(:)
+    real(rkind)                          :: tmZoneOffsetFracDay
+    real(rkind)                          :: refJulDay_data 
+    integer(i4b)                         :: nTimeSteps    ! Number of Timesteps in the file
+  end type var_forc
+
+
   ! ** double precision type of for time series
   type, public :: time_dlength
     type(dlength),allocatable          :: tim(:)    ! tim(:)%dat
