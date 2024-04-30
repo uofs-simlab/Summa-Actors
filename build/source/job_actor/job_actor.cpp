@@ -144,13 +144,6 @@ behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru,
       }
     },
 
-    // Handle Sundials Error
-    [=](err_atom, caf::actor src, double rtol, double atol) {
-      self->state.hru_actor_settings.rel_tol = rtol;
-      self->state.hru_actor_settings.abs_tol = atol;
-      handleGRUError(self, src);
-    },
-
     // [=](const error& err, caf::actor src) {
       
     //   aout(self) << "\n\n ********** ERROR HANDLER \n";
@@ -186,35 +179,35 @@ behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru,
 
 
 
-void handleGRUError(stateful_actor<job_state>* self, caf::actor src) {
-  auto it = std::find_if(self->state.gru_container.gru_list.begin(), 
-                          self->state.gru_container.gru_list.end(),
-                          [src](auto& gru) {
-                          return gru->getActorRef() == src;
-                        });
+// void handleGRUError(stateful_actor<job_state>* self, caf::actor src) {
+//   auto it = std::find_if(self->state.gru_container.gru_list.begin(), 
+//                           self->state.gru_container.gru_list.end(),
+//                           [src](auto& gru) {
+//                           return gru->getActorRef() == src;
+//                         });
 
-  if (it != self->state.gru_container.gru_list.end()) {
-    (*it)->setFailed();
-    (*it)->decrementAttemptsLeft();
+//   if (it != self->state.gru_container.gru_list.end()) {
+//     (*it)->setFailed();
+//     (*it)->decrementAttemptsLeft();
 
-    self->state.gru_container.num_gru_done++;
-    self->state.gru_container.num_gru_failed++;
-    self->send(self->state.file_access_actor, run_failure_v, (*it)->getIndexJob());
-  } else {
-    aout(self) << "ERROR: Job_Actor: Could not find GRU in GRU_Container\n";
-  }
+//     self->state.gru_container.num_gru_done++;
+//     self->state.gru_container.num_gru_failed++;
+//     self->send(self->state.file_access_actor, run_failure_v, (*it)->getIndexJob());
+//   } else {
+//     aout(self) << "ERROR: Job_Actor: Could not find GRU in GRU_Container\n";
+//   }
 
-  // Check if all GRUs are finished
-  if (self->state.gru_container.num_gru_done >= self->state.gru_container.num_gru_in_run_domain) {
-    // Check for failures
-    if(self->state.gru_container.num_gru_failed == 0 || self->state.max_run_attempts == 1) {
-      self->send(self, finalize_v); 
-    } else {
-      self->send(self, restart_failures_v);
-    }
-  }
+//   // Check if all GRUs are finished
+//   if (self->state.gru_container.num_gru_done >= self->state.gru_container.num_gru_in_run_domain) {
+//     // Check for failures
+//     if(self->state.gru_container.num_gru_failed == 0 || self->state.max_run_attempts == 1) {
+//       self->send(self, finalize_v); 
+//     } else {
+//       self->send(self, restart_failures_v);
+//     }
+//   }
 
-}
+// }
 
 
 

@@ -11,24 +11,22 @@
 #include "json.hpp"
 #include "summa_init_struc.hpp"
 
-using namespace caf;
-
 /*********************************************
  * File Access Actor Fortran Functions
  *********************************************/
 extern "C" {
-  void fileAccessActor_init_fortran( int* num_timesteps, 
-      int* num_timesteps_output_buffer, int* numGRU, int* err, void* message);
+  void fileAccessActor_init_fortran(int* num_timesteps, 
+                                    int* num_timesteps_output_buffer, 
+                                    int* numGRU, int* err, void* message);
 
   void defOutputFortran(void* handle_ncid, int* start_gru, int* num_gru, 
-      int* num_hru, int* file_gru, bool* use_extention, 
-      char const* output_extention, int* err); 
+                        int* num_hru, int* file_gru, bool* use_extention, 
+                        char const* output_extention, int* err); 
 
   void writeOutput_fortran(void* handle_ncid, int* num_steps, int* start_gru, 
-      int* max_gru, bool* writeParamFlag, int* err);
+                           int* max_gru, bool* writeParamFlag, int* err);
 
   void FileAccessActor_DeallocateStructures(void* handle_ncid);
-
 }
 
 /*********************************************
@@ -53,23 +51,21 @@ struct file_access_state {
   std::unique_ptr<SummaInitStruc> summa_init_struc;
   std::unique_ptr<forcingFileContainer> forcing_files;
 
-
   bool write_params_flag = true;
 };
 
 // called to spawn a file_access_actor
-behavior file_access_actor(stateful_actor<file_access_state>* self, 
-    NumGRUInfo num_gru_info,
-    File_Access_Actor_Settings file_access_actor_settings, actor parent);
+caf::behavior file_access_actor(caf::stateful_actor<file_access_state>* self, 
+                                NumGRUInfo num_gru_info,
+                                File_Access_Actor_Settings file_access_actor_settings, 
+                                caf::actor parent);
 
 
-behavior file_access_init(stateful_actor<file_access_state>* self);
 /*********************************************
  * Functions for the file access actor
  *********************************************/
-
 /* Setup and call the fortran routine that writes the output */
-void writeOutput(stateful_actor<file_access_state>* self, 
-    Output_Partition* partition);
+void writeOutput(caf::stateful_actor<file_access_state>* self, 
+                 Output_Partition* partition);
 
  

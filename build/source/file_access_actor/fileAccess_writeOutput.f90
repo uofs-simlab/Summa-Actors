@@ -357,10 +357,13 @@ subroutine writeData(ncid,outputTimestep,outputTimestepUpdate,maxLayers,nSteps, 
 
         ! stats output: only scalar variable type
         if(meta(iVar)%varType==iLookVarType%scalarv) then
-          call writeScalar(ncid, outputTimeStep, outputTimeStepUpdate, nSteps, minGRU, maxGRU, numGRU, iFreq, iVar, meta, stat, map, err, message)
+          call writeScalar(ncid, outputTimeStep, outputTimeStepUpdate, nSteps, &
+                           minGRU, maxGRU, numGRU, iFreq, iVar, meta, stat,    &
+                           map, err, message)
         else ! non-scalar variables: regular data structures
-          call writeVector(ncid, outputTimeStep, maxLayers, nSteps, minGRU, maxGRU, numGRU, iFreq, iVar, meta, dat, &
-            indx, err, message)
+          call writeVector(ncid, outputTimeStep, maxLayers, nSteps, minGRU, &
+                           maxGRU, numGRU, iFreq, iVar, meta, dat, indx,    &
+                           err, message)
         end if ! not scalarv
 
       ! process error code

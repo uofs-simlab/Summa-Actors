@@ -60,7 +60,8 @@ behavior hru_actor(stateful_actor<hru_state>* self, int ref_gru, int indx_gru,
         self->state.num_steps_until_write--;
         err = Run_HRU(self); // Simulate a Timestep
         if (err != 0) {
-            self->send(self->state.parent, err_atom_v, err);
+            self->send(self->state.parent, err_atom_v, err, 
+                       self->state.indxGRU);
           self->quit();
           return;
         }
@@ -138,7 +139,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int ref_gru, int indx_gru,
 
       int err = Run_HRU(self);
       if (err != 0) {
-        self->send(self->state.parent, err_atom_v, err);
+        self->send(self->state.parent, err_atom_v, err, self->state.indxGRU);
         self->quit();
         return;
       }

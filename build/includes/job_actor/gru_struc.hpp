@@ -24,13 +24,15 @@ class GruStruc {
     inline int get_file_gru() const { return file_gru_; }
     inline int get_gru_info_size() const { return gru_info_.size(); }
     inline int getNumGrusDone() const { return num_gru_done_; }
+    inline int getNumGRUFailed() const { return num_gru_failed_; }
 
     inline void addGRU(std::unique_ptr<GRU> gru) {
       gru_info_[gru->getIndexJob() - 1] = std::move(gru);
     }
 
     inline void incrementNumGRUDone() { num_gru_done_++; }
-
+    inline void incrementNumGRUFailed() { num_gru_failed_++; num_gru_done_++;}
+    inline void decrementRetryAttempts() { num_retry_attempts_left_--; }
     inline GRU* getGRU(int index) { return gru_info_[index-1].get(); }
 
     inline bool isDone() { return num_gru_done_ >= num_gru_; }

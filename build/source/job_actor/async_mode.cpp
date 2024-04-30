@@ -17,11 +17,22 @@ behavior async_mode(stateful_actor<job_state>* self) {
       handleFinishedGRU(self, gru_job_index);
     },
 
+    [=] (restart_failures) {
+      aout(self) << "Async Mode: Restarting GRUs that Failed\n";
+    },
+
     [=](finalize) { finalizeJob(self); },
 
     /**Error Handling Functions*/
-    [=](err_atom, int err_code) {
-      aout(self) << "Async Mode: Error: " << err_code << "\n";
+    [=](err_atom, int err_code, int gru_job_index) {
+      if (gru_job_index == 0) {
+        aout(self) << "Async Mode: File_Access_Actor Error: " 
+                   << err_code << "\n";
+        self->send(self, finalize_v);
+        return;
+      } 
+      aout(self) << "Async Mode: GRU Error: " << err_code << "\n";
+      handleGRUError(self, err_code, gru_job_index);
     }
     
   };

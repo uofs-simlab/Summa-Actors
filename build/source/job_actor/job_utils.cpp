@@ -19,7 +19,8 @@ void spawnHRUActors(stateful_actor<job_state>* self) {
         self->state.hru_actor_settings.rel_tol, 
         self->state.hru_actor_settings.abs_tol, self->state.max_run_attempts);
     gru_struc->addGRU(std::move(gru_obj));
-  }    
+  }
+  gru_struc->decrementRetryAttempts();    
 }
 
 void spawnHRUBatches(stateful_actor<job_state>* self) {
@@ -69,7 +70,6 @@ void spawnHRUBatches(stateful_actor<job_state>* self) {
              << gru_container.gru_list.size() << "\n";
 }
 
-
 void finalizeJob(stateful_actor<job_state>* self) {
   self->request(self->state.file_access_actor, infinite, finalize_v).await(
     [=](std::tuple<double, double> read_write_duration) {
@@ -96,7 +96,8 @@ void finalizeJob(stateful_actor<job_state>* self) {
       // Tell Parent we are done
       auto total_duration = self->state.job_timing.getDuration("total_duration")
           .value_or(-1.0);
-      self->send(self->state.parent, done_job_v, self->state.num_gru_failed, 
+      auto num_failed_grus = self->state.gru_struc->getNumGRUFailed();    
+      self->send(self->state.parent, done_job_v, num_failed_grus, 
                  total_duration, std::get<0>(read_write_duration), 
                  std::get<1>(read_write_duration));
       self->quit();
@@ -113,6 +114,18 @@ void handleFinishedGRU(stateful_actor<job_state>* self, int gru_job_index) {
              << " -- LocalGRU=" 
              << gru_struc->getGRU(gru_job_index)->getIndexJob() << "\n";
 
+  if (gru_struc->isDone()) {
+    gru_struc->hasFailures() && gru_struc->shouldRetry() ? 
+        self->send(self, restart_failures_v) : self->send(self, finalize_v);
+  }
+}
+
+void handleGRUError(stateful_actor<job_state>* self, int err_code, 
+                    int gru_job_index) {
+  auto& gru_struc = self->state.gru_struc;
+  gru_struc->getGRU(gru_job_index)->setFailed();
+  gru_struc->incrementNumGRUFailed();
+  self->send(self->state.file_access_actor, run_failure_v, gru_job_index);
   if (gru_struc->isDone()) {
     gru_struc->hasFailures() && gru_struc->shouldRetry() ? 
         self->send(self, restart_failures_v) : self->send(self, finalize_v);

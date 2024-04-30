@@ -171,8 +171,5 @@ void handleFinishedGRU(caf::stateful_actor<job_state>* self,
 
 void finalizeJob(caf::stateful_actor<job_state>* self);
 
-/** Get the information for the GRUs that will be written to the netcdf file */
-std::vector<serializable_netcdf_gru_actor_info> getGruNetcdfInfo(
-    int max_run_attempts, std::vector<GRU*> &gru_list);
-
-void handleGRUError(caf::stateful_actor<job_state>* self, caf::actor src);
+void handleGRUError(caf::stateful_actor<job_state>* self, int err_code, 
+                    int index);

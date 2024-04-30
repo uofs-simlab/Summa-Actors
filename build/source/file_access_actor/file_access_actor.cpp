@@ -1,7 +1,7 @@
 #include "file_access_actor.hpp"
 
 using json = nlohmann::json;
-
+using namespace caf;
 
 behavior file_access_actor(stateful_actor<file_access_state>* self, 
                            NumGRUInfo num_gru_info,
@@ -68,7 +68,6 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
         return -1;
       }
    
-      // return -1;
       // Ensure output buffer size is less than the number of simulation timesteps
       if (self->state.num_steps < fa_settings.num_timesteps_in_output_buffer) {
         self->state.num_output_steps = self->state.num_steps;
@@ -88,14 +87,10 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
       if (self->state.num_gru_info.use_global_for_data_structures) {
         actor_address = "_" + to_string(self->address());
       }
-      defOutputFortran(self->state.handle_ncid, 
-                       &self->state.start_gru, 
-                       &self->state.num_gru, 
-                       &num_hru, 
-                       &file_gru, 
+      defOutputFortran(self->state.handle_ncid, &self->state.start_gru, 
+                       &self->state.num_gru, &num_hru, &file_gru, 
                        &self->state.num_gru_info.use_global_for_data_structures,
-                       actor_address.c_str(), 
-                       &err);
+                       actor_address.c_str(), &err);
       if (err != 0) return -1;
 
       self->state.file_access_timing.updateEndPoint("init_duration");
@@ -119,9 +114,8 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
       
       // Load files behind the scenes
       self->send(self, access_forcing_internal_v, iFile + 1);
-      
       self->send(refToRespondTo, new_forcing_file_v, 
-          self->state.forcing_files->getNumSteps(iFile), iFile);
+                 self->state.forcing_files->getNumSteps(iFile), iFile);
     },
 
     // Internal message to load the forcing files in the background    
@@ -163,10 +157,9 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
     [=](write_output, int steps_to_write, int start_gru, int max_gru) {
       self->state.file_access_timing.updateStartPoint("write_duration");
       int err = 0;
-      writeOutput_fortran(self->state.handle_ncid, &steps_to_write,
-          &start_gru, &max_gru, &self->state.write_params_flag, &err);
-      if (self->state.write_params_flag) 
-        self->state.write_params_flag = false;
+      writeOutput_fortran(self->state.handle_ncid, &steps_to_write, &start_gru, 
+                          &max_gru, &self->state.write_params_flag, &err);
+      if (self->state.write_params_flag) self->state.write_params_flag = false;
       self->state.file_access_timing.updateEndPoint("write_duration");
       return err;
     },
@@ -177,7 +170,7 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
 
     [=](run_failure, int local_gru_index) {
       self->state.file_access_timing.updateStartPoint("write_duration");
-
+      aout(self) << "File Access Actor: GRU Failed: " << local_gru_index << "\n";
       Output_Partition *output_partition = 
           self->state.output_container->getOutputPartition(local_gru_index);
         
@@ -213,22 +206,23 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
         
       self->quit();
       return std::make_tuple(self->state.forcing_files->getReadDuration(),
-          self->state.file_access_timing
-          .getDuration("write_duration").value_or(-1.0));
+                             self->state.file_access_timing
+                             .getDuration("write_duration").value_or(-1.0));
     },
   };
 }
 
 
 void writeOutput(stateful_actor<file_access_state>* self, 
-    Output_Partition* partition) {              
+                 Output_Partition* partition) {              
   int num_timesteps_to_write = partition->getNumStoredTimesteps();
   int start_gru = partition->getStartGRUIndex();
   int max_gru = partition->getMaxGRUIndex();
   bool write_param_flag = partition->isWriteParams();
   int err = 0;
+  // aout(self) << "Writing Output\n";
   writeOutput_fortran(self->state.handle_ncid, &num_timesteps_to_write,
-      &start_gru, &max_gru, &write_param_flag, &err);
+                      &start_gru, &max_gru, &write_param_flag, &err);
   
   partition->updateTimeSteps();
 
@@ -238,7 +232,7 @@ void writeOutput(stateful_actor<file_access_state>* self,
   
   for (int i = 0; i < hrus_to_update.size(); i++) {
     self->send(hrus_to_update[i], num_steps_before_write_v, 
-        num_steps_before_next_write);
+               num_steps_before_next_write);
     self->send(hrus_to_update[i], run_hru_v);
   }
 
