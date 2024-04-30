@@ -415,15 +415,12 @@ subroutine writeData(ncid,outputTimestep,outputTimestepUpdate,maxLayers,nSteps, 
         call netcdf_err(err,message); if (err/=0) return
         
         do iStep = 1, nSteps
-          ! Find HRU that is not missing or NaN
-          ! check if we want this timestep
-          do iGRU = minGRU, maxGRU
-            if(.not.summa_struct(1)%finalizeStats%gru(iGRU)%hru(1)%tim(iStep)%dat(iFreq)) cycle
-            val = summa_struct(1)%forcStruct%gru(iGRU)%hru(1)%var(iVar)%tim(iStep)
-            exit
-          end do
+
+          if(.not.summa_struct(1)%finalizeStats%gru(minGRU)%hru(1)%tim(iStep)%dat(iFreq)) cycle
+
           stepCounter = stepCounter+1
-          timeVec(stepCounter) = val
+          timeVec(stepCounter) = summa_struct(1)%forcStruct%gru(minGRU)%hru(1)%var(iVar)%tim(iStep)
+
         end do ! iStep
         err = nf90_put_var(ncid%var(iFreq),ncVarID,timeVec(1:stepCounter),start=(/outputTimestep(iFreq)/),count=(/stepCounter/))
         call netcdf_err(err,message); if (err/=0)then; print*, "err"; return; endif
@@ -493,13 +490,14 @@ subroutine writeScalar(ncid, outputTimestep, outputTimestepUpdate, nSteps, minGR
         stepCounter = 0
         gruCounter = gruCounter + 1
         do iStep = 1, nSteps
-          if(.not.summa_struct(1)%finalizeStats%gru(iGRU)%hru(1)%tim(iStep)%dat(iFreq)) then
-            val = realMissing
-          else
-            val = stat%gru(iGRU)%hru(1)%var(map(iVar))%tim(iStep)%dat(iFreq)
-          end if
+          
+          if(.not.summa_struct(1)%finalizeStats%gru(iGRU)%hru(1)%tim(iStep)%dat(iFreq)) cycle
+
+
           stepCounter = stepCounter + 1
-          realVec(gruCounter, stepCounter) = val
+
+          realVec(gruCounter, stepCounter) = stat%gru(iGRU)%hru(1)%var(map(iVar))%tim(iStep)%dat(iFreq)
+
           outputTimeStepUpdate(iFreq) = stepCounter
         end do ! iStep
       end do ! iGRU 
