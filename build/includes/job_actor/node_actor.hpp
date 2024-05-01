@@ -33,6 +33,8 @@ struct node_state {
   caf::actor file_access_actor; // actor reference for the file_access_actor
   GRU_Container gru_container;
 
+  std::unique_ptr<GruStruc> gru_struc;
+
   Distributed_Settings distributed_settings;
   File_Access_Actor_Settings file_access_actor_settings;
   Job_Actor_Settings job_actor_settings;

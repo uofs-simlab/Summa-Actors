@@ -117,20 +117,6 @@ struct HRU_Actor_Settings {
     int dt_init_factor; // factor to multiply the initial timestep by
     double rel_tol;
     double abs_tol;
-    double relTolTempCas;
-    double absTolTempCas;
-    double relTolTempVeg;
-    double absTolTempVeg;
-    double relTolWatVeg;
-    double absTolWatVeg;
-    double relTolTempSoilSnow;
-    double absTolTempSoilSnow;
-    double relTolWatSnow;
-    double absTolWatSnow;
-    double relTolMatric;
-    double absTolMatric;
-    double relTolAquifr;
-    double absTolAquifr;
 };
 
 template<class Inspector>

@@ -152,6 +152,10 @@ int Output_Container::findPartition(int local_gru_index) {
         if (it != this->failed_gru_index_list.end()) {
             return std::distance(this->failed_gru_index_list.begin(), it);
         } else {
+            std::cout << "GRU index: " << local_gru_index << std::endl;
+            for (int i = 0; i < this->failed_gru_index_list.size(); i++) {
+                std::cout << this->failed_gru_index_list[i] << std::endl;
+            }
             throw std::runtime_error("GRU index not found in failed GRU index list");
         }
     }

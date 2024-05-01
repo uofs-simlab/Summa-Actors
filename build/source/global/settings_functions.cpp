@@ -170,47 +170,6 @@ HRU_Actor_Settings readHRUActorSettings(std::string json_settings_file) {
         local_atol = 1e-6;
     }
 
-    hru_actor_settings.relTolTempCas = getSettings(json_settings_file, parent_key,
-        "relTolTempCas", hru_actor_settings.relTolTempCas).value_or(local_rtol);
-
-    hru_actor_settings.absTolTempCas = getSettings(json_settings_file, parent_key,
-        "absTolTempCas", hru_actor_settings.absTolTempCas).value_or(local_atol);
-
-    hru_actor_settings.relTolTempVeg = getSettings(json_settings_file, parent_key,
-        "relTolTempVeg", hru_actor_settings.relTolTempVeg).value_or(local_rtol);
-
-    hru_actor_settings.absTolTempVeg = getSettings(json_settings_file, parent_key,
-        "absTolTempVeg", hru_actor_settings.absTolTempVeg).value_or(local_atol);
-
-    hru_actor_settings.relTolWatVeg = getSettings(json_settings_file, parent_key,
-        "relTolWatVeg", hru_actor_settings.relTolWatVeg).value_or(local_rtol);
-
-    hru_actor_settings.absTolWatVeg = getSettings(json_settings_file, parent_key,
-        "absTolWatVeg", hru_actor_settings.absTolWatVeg).value_or(local_atol);
-
-    hru_actor_settings.relTolTempSoilSnow = getSettings(json_settings_file, parent_key,
-        "relTolTempSoilSnow", hru_actor_settings.relTolTempSoilSnow).value_or(local_rtol);
-
-    hru_actor_settings.absTolTempSoilSnow = getSettings(json_settings_file, parent_key,
-        "absTolTempSoilSnow", hru_actor_settings.absTolTempSoilSnow).value_or(local_atol);
-
-    hru_actor_settings.relTolWatSnow = getSettings(json_settings_file, parent_key,
-        "relTolWatSnow", hru_actor_settings.relTolWatSnow).value_or(local_rtol);
-
-    hru_actor_settings.absTolWatSnow = getSettings(json_settings_file, parent_key,
-        "absTolWatSnow", hru_actor_settings.absTolWatSnow).value_or(local_atol);
-
-    hru_actor_settings.relTolMatric = getSettings(json_settings_file, parent_key,
-        "relTolMatric", hru_actor_settings.relTolMatric).value_or(local_rtol);
-
-    hru_actor_settings.absTolMatric = getSettings(json_settings_file, parent_key,
-        "absTolMatric", hru_actor_settings.absTolMatric).value_or(local_atol);
-
-    hru_actor_settings.relTolAquifr = getSettings(json_settings_file, parent_key,
-        "relTolAquifr", hru_actor_settings.relTolAquifr).value_or(local_rtol);
-
-    hru_actor_settings.absTolAquifr = getSettings(json_settings_file, parent_key,
-        "absTolAquifr", hru_actor_settings.absTolAquifr).value_or(local_atol);
 
     return hru_actor_settings;
 }
@@ -257,12 +216,15 @@ void check_settings_from_json(Distributed_Settings &distributed_settings,
 
 
 void generate_config_file() {
+    using json = nlohmann::ordered_json;
     json config_file; 
     config_file["Distributed_Settings"] = {
         {"distributed_mode", false},
         {"port", missing_value},
         {"total_hru_count", missing_value},
         {"num_hru_per_batch", missing_value},
+        {"load_balancing", false},
+        {"num_nodes", missing_value},
         {"servers_list", {
             {{"hostname", "host_1"}},
             {{"hostname", "host_2"}},
@@ -292,6 +254,6 @@ void generate_config_file() {
     };
 
     std::ofstream config_file_stream("config.json");
-    config_file_stream << std::setw(4) << config_file.dump(4) << std::endl;
+    config_file_stream << std::setw(4) << config_file.dump(2) << std::endl;
     config_file_stream.close();
 }

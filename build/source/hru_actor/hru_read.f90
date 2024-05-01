@@ -25,7 +25,7 @@ contains
 
 ! set the refTimeString and extract the time to set the tmZonOffsetFracDay
 subroutine setTimeZoneOffset(iFile, handle_hru_data, err) bind(C, name="setTimeZoneOffset")
-  USE access_forcing_module,only:forcingDataStruct         ! forcing structure
+  USE forcing_file_info,only:forcingDataStruct         ! forcing structure
   USE time_utils_module,only:extractTime        ! extract time info from units string
   USE time_utils_module,only:fracDay            ! compute fractional day
   USE summafilemanager,only:NC_TIME_ZONE
@@ -73,8 +73,8 @@ subroutine HRU_readForcing(indxGRU, iStep, iRead, iFile, handle_hru_data, err) b
   USE globalData,only:dJulianStart              ! julian day of start time of simulation
   USE globalData,only:refJulDay_data            ! reference time for data files (fractional julian days)
   USE globalData,only:integerMissing            ! integer missing value
-  USE access_forcing_module,only:vecTime
-  USE access_forcing_module,only:forcingDataStruct
+  USE forcing_file_info,only:vecTime
+  USE forcing_file_info,only:forcingDataStruct
   USE globalData,only:time_meta,forc_meta
   USE var_lookup,only:iLookTIME,iLookFORCE
   USE data_types,only:var_i,var_d
@@ -235,8 +235,8 @@ end subroutine HRU_readForcing
 
  ! Find the first timestep within the forcing file
 subroutine getFirstTimestep(iFile, iRead, err)
-  USE access_forcing_module,only:forcingDataStruct         ! forcing structure
-  USE access_forcing_module,only:vecTime                   ! time structure for forcing 
+  USE forcing_file_info,only:forcingDataStruct  ! forcing structure
+  USE forcing_file_info,only:vecTime            ! time structure for forcing 
   USE globalData,only:dJulianStart              ! julian day of start time of simulation
   USE globalData,only:data_step                 ! length of the data step (s)
   USE globalData,only:refJulDay_data            ! reference time for data files (fractional julian days)

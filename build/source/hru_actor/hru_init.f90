@@ -250,6 +250,7 @@ subroutine setupHRUParam(indxGRU,                 & ! ID of hru
   ! ---------------------------------------------------------------------------------------
   USE nrtype                                                  ! variable types, etc.
   USE output_structure_module,only:summa_struct
+  USE summa_init_struc,only:init_struc
   ! subroutines and functions
   use time_utils_module,only:elapsedSec                       ! calculate the elapsed time
   USE mDecisions_module,only:mDecisions                       ! module to read model decisions
@@ -302,41 +303,29 @@ subroutine setupHRUParam(indxGRU,                 & ! ID of hru
   ! ffile_info and mDecisions moved to their own seperate subroutine call
 
   hru_data%oldTime_hru%var(:) = hru_data%startTime_hru%var(:)
-
-  ! Copy the attrStruct
-  hru_data%attrStruct%var(:) = summa_struct(1)%attrStruct%gru(indxGRU)%hru(indxHRU)%var(:)
-  ! Copy the typeStruct
-  hru_data%typeStruct%var(:) = summa_struct(1)%typeStruct%gru(indxGRU)%hru(indxHRU)%var(:)
-  ! Copy the idStruct
-  hru_data%idStruct%var(:) = summa_struct(1)%idStruct%gru(indxGRU)%hru(indxHRU)%var(:)
-
-  ! Copy the mparStruct
-  hru_data%mparStruct%var(:) = summa_struct(1)%mparStruct%gru(indxGRU)%hru(indxHRU)%var(:)
-  ! Copy the bparStruct
-  hru_data%bparStruct%var(:) = summa_struct(1)%bparStruct%gru(indxGRU)%var(:)
-  ! Copy the dparStruct
-  hru_data%dparStruct%var(:) = summa_struct(1)%dparStruct%gru(indxGRU)%hru(indxHRU)%var(:)
-  ! Copy the bvarStruct
-  do ivar=1, size(summa_struct(1)%bvarStruct_init%gru(indxGRU)%var(:))
-    hru_data%bvarStruct%var(ivar)%dat(:) = summa_struct(1)%bvarStruct_init%gru(indxGRU)%var(ivar)%dat(:)
+  hru_data%attrStruct%var(:) = init_struc%attrStruct%gru(indxGRU)%hru(indxHRU)%var(:)
+  hru_data%typeStruct%var(:) = init_struc%typeStruct%gru(indxGRU)%hru(indxHRU)%var(:)
+  hru_data%idStruct%var(:) = init_struc%idStruct%gru(indxGRU)%hru(indxHRU)%var(:)
+  hru_data%mparStruct%var(:) = init_struc%mparStruct%gru(indxGRU)%hru(indxHRU)%var(:)
+  hru_data%bparStruct%var(:) = init_struc%bparStruct%gru(indxGRU)%var(:)
+  hru_data%dparStruct%var(:) = init_struc%dparStruct%gru(indxGRU)%hru(indxHRU)%var(:)
+  do ivar=1, size(init_struc%bvarStruct%gru(indxGRU)%var(:))
+    hru_data%bvarStruct%var(ivar)%dat(:) = init_struc%bvarStruct%gru(indxGRU)%var(ivar)%dat(:)
   enddo
-  ! Copy the lookup Struct if its allocated
 #ifdef V4_ACTIVE
-  if (allocated(summa_struct(1)%lookupStruct%gru(indxGRU)%hru(indxHRU)%z)) then
-    do i_z=1, size(summa_struct(1)%lookupStruct%gru(indxGRU)%hru(indxHRU)%z(:))
-      do iVar=1, size(summa_struct(1)%lookupStruct%gru(indxGRU)%hru(indxHRU)%z(i_z)%var(:))
-        hru_data%lookupStruct%z(i_z)%var(ivar)%lookup(:) = summa_struct(1)%lookupStruct%gru(indxGRU)%hru(indxHRU)%z(i_z)%var(iVar)%lookup(:)
+  if (allocated(init_struc%lookupStruct%gru(indxGRU)%hru(indxHRU)%z)) then
+    do i_z=1, size(init_struc%lookupStruct%gru(indxGRU)%hru(indxHRU)%z(:))
+      do iVar=1, size(init_struc%lookupStruct%gru(indxGRU)%hru(indxHRU)%z(i_z)%var(:))
+        hru_data%lookupStruct%z(i_z)%var(ivar)%lookup(:) = init_struc%lookupStruct%gru(indxGRU)%hru(indxHRU)%z(i_z)%var(iVar)%lookup(:)
       end do
     end do
   endif
 #endif
-  ! Copy the progStruct_init
-  do ivar=1, size(summa_struct(1)%progStruct_init%gru(indxGRU)%hru(indxHRU)%var(:))
-    hru_data%progStruct%var(ivar)%dat(:) = summa_struct(1)%progStruct_init%gru(indxGRU)%hru(indxHRU)%var(ivar)%dat(:)
+  do ivar=1, size(init_struc%progStruct%gru(indxGRU)%hru(indxHRU)%var(:))
+    hru_data%progStruct%var(ivar)%dat(:) = init_struc%progStruct%gru(indxGRU)%hru(indxHRU)%var(ivar)%dat(:)
   enddo
-  ! copy the indexStruct_init
-  do ivar=1, size(summa_struct(1)%indxStruct_init%gru(indxGRU)%hru(indxHRU)%var(:))
-    hru_data%indxStruct%var(ivar)%dat(:) = summa_struct(1)%indxStruct_init%gru(indxGRU)%hru(indxHRU)%var(ivar)%dat(:)
+  do ivar=1, size(init_struc%indxStruct%gru(indxGRU)%hru(indxHRU)%var(:))
+    hru_data%indxStruct%var(ivar)%dat(:) = init_struc%indxStruct%gru(indxGRU)%hru(indxHRU)%var(ivar)%dat(:)
   enddo
 end subroutine setupHRUParam
 

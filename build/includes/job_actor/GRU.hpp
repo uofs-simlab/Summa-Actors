@@ -1,92 +1,57 @@
 #pragma once
-
 #include "caf/all.hpp"
-#include <iostream>
-#include <fstream>
 
-/*
- * Determine the state of the GRU
-*/
-enum class gru_state {
-    running,
-    failed,
-    succeeded
-};
+/** Determine the state of the GRU */
+enum class gru_state { running, failed, succeeded };
 
-int is_success(const gru_state& state);
-
-/**
- * Class that holds information about the running GRUs. This class is held by the job actor
- * The GRU/HRU actors that carry out the simulation are held by the GRU class 
-*/
+/** Gru Information (meant to mimic gru_struc)*/
 class GRU {
   private:
-    int global_gru_index; // The index of the GRU in the netcdf file
-    int local_gru_index; // The index of the GRU within this job
-    caf::actor gru_actor; // The actor for the GRU
+    int index_netcdf_;       // The index of the GRU in the netcdf file
+    int index_job_;          // The index of the GRU within this job
+    caf::actor actor_ref_;   // The actor for the GRU
 
     // Modifyable Parameters
-    int dt_init_factor; // The initial dt for the GRU
-    double rel_tol; // The relative tolerance for the GRU
-    double abs_tol; // The absolute tolerance for the GRU
+    int dt_init_factor_;     // The initial dt for the GRU
+    double rel_tol_;         // The relative tolerance for the GRU
+    double abs_tol_;         // The absolute tolerance for the GRU
 
     // Status Information
-    int attempts_left; // The number of attempts left for the GRU to succeed
-    gru_state state; // The state of the GRU
+    int attempts_left_;      // The number of attempts left for the GRU to succeed
+    gru_state state_;        // The state of the GRU
 
     // Timing Information
-    double run_time = 0.0; // The total time to run the GRU
-    double init_duration = 0.0; // The time to initialize the GRU
-    double forcing_duration = 0.0; // The time to read the forcing data
-    double run_physics_duration = 0.0; // The time to run the physics
-    double write_output_duration = 0.0; // The time to write the output
+    double run_time_ = 0.0;  // The total time to run the GRU
 
     
   public:
     // Constructor
-    GRU(int global_gru_index, int local_gru_index, caf::actor gru_actor, int dt_init_factor, 
-        double rel_tol, double abs_tol, int max_attempts);
+    GRU(int index_netcdf, int index_job, caf::actor actor_ref, 
+        int dt_init_factor, double rel_tol, double abs_tol, int max_attempts);
 
     // Deconstructor
     ~GRU();
 
     // Getters
-    int getGlobalGRUIndex();
-    int getLocalGRUIndex();
-    caf::actor getGRUActor();
-
-    double getRunTime();
-    double getInitDuration();
-    double getForcingDuration();
-    double getRunPhysicsDuration();
-    double getWriteOutputDuration();
-
-    double getRelTol();
-    double getAbsTol();
-
-    double getAttemptsLeft();
-    gru_state getStatus();
-
-    bool isFailed();
-
-
+    inline int getIndexNetcdf() const { return index_netcdf_; }
+    inline int getIndexJob() const { return index_job_; }
+    inline caf::actor getActorRef() const { return actor_ref_; }
+    inline double getRunTime() const { return run_time_; }
+    inline double getRelTol() const { return rel_tol_; }
+    inline double getAbsTol() const { return abs_tol_; }
+    inline int getAttemptsLeft() const { return attempts_left_; }
+    inline gru_state getStatus() const { return state_; }
 
     // Setters
-    void setRunTime(double run_time);
-    void setInitDuration(double init_duration);
-    void setForcingDuration(double forcing_duration);
-    void setRunPhysicsDuration(double run_physics_duration);
-    void setWriteOutputDuration(double write_output_duration);
+    inline void setRunTime(double run_time) { run_time_ = run_time; }
+    inline void setRelTol(double rel_tol) { rel_tol_ = rel_tol; }
+    inline void setAbsTol(double abs_tol) { abs_tol_ = abs_tol; }
+    inline void setSuccess() { state_ = gru_state::succeeded; }
+    inline void setFailed() { state_ = gru_state::failed; }
+    inline void setRunning() { state_ = gru_state::running; }
 
-    void setRelTol(double rel_tol);
-    void setAbsTol(double abs_tol);
-
-    void setSuccess();
-    void setFailed();
-    void setRunning();
-
-    void decrementAttemptsLeft();
-
-    void setGRUActor(caf::actor gru_actor);
-
+    // Methods
+    inline bool isFailed() const { return state_ == gru_state::failed; }
+    inline void decrementAttemptsLeft() { attempts_left_--; }
+    inline void setActorRef(caf::actor gru_actor) { actor_ref_ = gru_actor; }
 };
