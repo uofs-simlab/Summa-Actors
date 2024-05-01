@@ -105,7 +105,7 @@ module output_structure_module
   end type summa_output_type  
   
 
-  type(summa_output_type),allocatable,save,public     :: outputStructure(:)            ! summa_OutputStructure(1)%struc%var(:)%dat(nTimeSteps) 
+  type(summa_output_type),allocatable,save,public     :: summa_struct(:)            ! summa_OutputStructure(1)%struc%var(:)%dat(nTimeSteps) 
   type(ilength),allocatable,save,public               :: outputTimeStep(:)             ! timestep in output files
   
   contains
@@ -172,8 +172,8 @@ subroutine initOutputStructure(forcFileInfo, maxSteps, num_gru, err)
 
 
   ! Allocate structure to hold output files
-  if (.not.allocated(outputStructure))then
-    allocate(outputStructure(1))
+  if (.not.allocated(summa_struct))then
+    allocate(summa_struct(1))
   else
     print*, "Already Allocated"; return;
   end if
@@ -181,58 +181,58 @@ subroutine initOutputStructure(forcFileInfo, maxSteps, num_gru, err)
   ! LookupStructure
 
   ! Statistics Structures
-  allocate(outputStructure(1)%forcStat%gru(num_gru))
-  allocate(outputStructure(1)%progStat%gru(num_gru))
-  allocate(outputStructure(1)%diagStat%gru(num_gru))
-  allocate(outputStructure(1)%fluxStat%gru(num_gru))
-  allocate(outputStructure(1)%indxStat%gru(num_gru))
-  allocate(outputStructure(1)%bvarStat%gru(num_gru))
+  allocate(summa_struct(1)%forcStat%gru(num_gru))
+  allocate(summa_struct(1)%progStat%gru(num_gru))
+  allocate(summa_struct(1)%diagStat%gru(num_gru))
+  allocate(summa_struct(1)%fluxStat%gru(num_gru))
+  allocate(summa_struct(1)%indxStat%gru(num_gru))
+  allocate(summa_struct(1)%bvarStat%gru(num_gru))
   ! Primary Data Structures (scalars)
-  allocate(outputStructure(1)%timeStruct%gru(num_gru))
-  allocate(outputStructure(1)%forcStruct%gru(num_gru))
+  allocate(summa_struct(1)%timeStruct%gru(num_gru))
+  allocate(summa_struct(1)%forcStruct%gru(num_gru))
   ! Primary Data Structures (variable length vectors)
-  allocate(outputStructure(1)%indxStruct%gru(num_gru))
-  allocate(outputStructure(1)%progStruct%gru(num_gru))
-  allocate(outputStructure(1)%diagStruct%gru(num_gru))
-  allocate(outputStructure(1)%fluxStruct%gru(num_gru))
+  allocate(summa_struct(1)%indxStruct%gru(num_gru))
+  allocate(summa_struct(1)%progStruct%gru(num_gru))
+  allocate(summa_struct(1)%diagStruct%gru(num_gru))
+  allocate(summa_struct(1)%fluxStruct%gru(num_gru))
   ! Basin-Average structures
-  allocate(outputStructure(1)%bvarStruct%gru(num_gru))
+  allocate(summa_struct(1)%bvarStruct%gru(num_gru))
   ! Finalize Stats for writing
-  allocate(outputStructure(1)%finalizeStats%gru(num_gru))
+  allocate(summa_struct(1)%finalizeStats%gru(num_gru))
   ! Extras
-  allocate(outputStructure(1)%upArea%gru(num_gru))
+  allocate(summa_struct(1)%upArea%gru(num_gru))
   
   
   do iGRU = 1, num_gru
     num_hru = gru_struc(iGRU)%hruCount
     ! Statistics Structures
-    allocate(outputStructure(1)%forcStat%gru(iGRU)%hru(num_hru))
-    allocate(outputStructure(1)%progStat%gru(iGRU)%hru(num_hru))
-    allocate(outputStructure(1)%diagStat%gru(iGRU)%hru(num_hru))
-    allocate(outputStructure(1)%fluxStat%gru(iGRU)%hru(num_hru))
-    allocate(outputStructure(1)%indxStat%gru(iGRU)%hru(num_hru))
-    allocate(outputStructure(1)%bvarStat%gru(iGRU)%hru(num_hru))
+    allocate(summa_struct(1)%forcStat%gru(iGRU)%hru(num_hru))
+    allocate(summa_struct(1)%progStat%gru(iGRU)%hru(num_hru))
+    allocate(summa_struct(1)%diagStat%gru(iGRU)%hru(num_hru))
+    allocate(summa_struct(1)%fluxStat%gru(iGRU)%hru(num_hru))
+    allocate(summa_struct(1)%indxStat%gru(iGRU)%hru(num_hru))
+    allocate(summa_struct(1)%bvarStat%gru(iGRU)%hru(num_hru))
 
     ! Primary Data Structures (scalars)
-    allocate(outputStructure(1)%timeStruct%gru(iGRU)%hru(num_hru))
-    allocate(outputStructure(1)%forcStruct%gru(iGRU)%hru(num_hru))
+    allocate(summa_struct(1)%timeStruct%gru(iGRU)%hru(num_hru))
+    allocate(summa_struct(1)%forcStruct%gru(iGRU)%hru(num_hru))
 
     ! Primary Data Structures (variable length vectors)
-    allocate(outputStructure(1)%indxStruct%gru(iGRU)%hru(num_hru))
-    allocate(outputStructure(1)%progStruct%gru(iGRU)%hru(num_hru))
-    allocate(outputStructure(1)%diagStruct%gru(iGRU)%hru(num_hru))
-    allocate(outputStructure(1)%fluxStruct%gru(iGRU)%hru(num_hru))
+    allocate(summa_struct(1)%indxStruct%gru(iGRU)%hru(num_hru))
+    allocate(summa_struct(1)%progStruct%gru(iGRU)%hru(num_hru))
+    allocate(summa_struct(1)%diagStruct%gru(iGRU)%hru(num_hru))
+    allocate(summa_struct(1)%fluxStruct%gru(iGRU)%hru(num_hru))
   
     ! Basin-Average structures
-    allocate(outputStructure(1)%bvarStruct%gru(iGRU)%hru(num_hru))
+    allocate(summa_struct(1)%bvarStruct%gru(iGRU)%hru(num_hru))
 
 
    ! define the ancillary data structures
 
     ! Finalize Stats for writing
-    allocate(outputStructure(1)%finalizeStats%gru(iGRU)%hru(num_hru))
+    allocate(summa_struct(1)%finalizeStats%gru(iGRU)%hru(num_hru))
 
-    allocate(outputStructure(1)%upArea%gru(iGRU)%hru(num_hru))
+    allocate(summa_struct(1)%upArea%gru(iGRU)%hru(num_hru))
 
   end do
 
@@ -242,25 +242,25 @@ subroutine initOutputStructure(forcFileInfo, maxSteps, num_gru, err)
     select case(trim(structInfo(iStruct)%structName))
     case('time'); cycle;
     case('forc'); cycle;
-    case('attr'); call allocGlobal(attr_meta,  outputStructure(1)%attrStruct,  err, message)
-    case('type'); call allocGlobal(type_meta,  outputStructure(1)%typeStruct,  err, message)
-    case('id'  ); call allocGlobal(id_meta,    outputStructure(1)%idStruct,    err, message)
-    case('mpar'); call allocGlobal(mpar_meta,  outputStructure(1)%mparStruct,  err, message); 
-    case('indx'); call allocGlobal(indx_meta,  outputStructure(1)%indxStruct_init, err, message);
-    case('prog'); call allocGlobal(prog_meta,  outputStructure(1)%progStruct_init, err, message);
+    case('attr'); call allocGlobal(attr_meta,  summa_struct(1)%attrStruct,  err, message)
+    case('type'); call allocGlobal(type_meta,  summa_struct(1)%typeStruct,  err, message)
+    case('id'  ); call allocGlobal(id_meta,    summa_struct(1)%idStruct,    err, message)
+    case('mpar'); call allocGlobal(mpar_meta,  summa_struct(1)%mparStruct,  err, message); 
+    case('indx'); call allocGlobal(indx_meta,  summa_struct(1)%indxStruct_init, err, message);
+    case('prog'); call allocGlobal(prog_meta,  summa_struct(1)%progStruct_init, err, message);
     case('diag'); cycle;
     case('flux'); cycle;
-    case('bpar'); call allocGlobal(bpar_meta,outputStructure(1)%bparStruct    ,err, message);  ! basin-average params 
-    case('bvar'); call allocGlobal(bvar_meta,outputStructure(1)%bvarStruct_init,err,message);  ! basin-average variables
+    case('bpar'); call allocGlobal(bpar_meta,summa_struct(1)%bparStruct    ,err, message);  ! basin-average params 
+    case('bvar'); call allocGlobal(bvar_meta,summa_struct(1)%bvarStruct_init,err,message);  ! basin-average variables
     case('deriv'); cycle;
 #ifdef V4_ACTIVE     
-    case('lookup'); call allocGlobal(lookup_meta,outputStructure(1)%lookupStruct,err, message);
+    case('lookup'); call allocGlobal(lookup_meta,summa_struct(1)%lookupStruct,err, message);
 #endif
     end select
   end do
   
 
-  call allocGlobal(mpar_meta,outputStructure(1)%dparStruct,err,message);
+  call allocGlobal(mpar_meta,summa_struct(1)%dparStruct,err,message);
 
 
 
@@ -276,57 +276,57 @@ subroutine initOutputStructure(forcFileInfo, maxSteps, num_gru, err)
         ! allocate space structures
           select case(trim(structInfo(iStruct)%structName))    
             case('time')
-              call alloc_outputStruc(time_meta,outputStructure(1)%timeStruct%gru(iGRU)%hru(iHRU), &
+              call alloc_outputStruc(time_meta,summa_struct(1)%timeStruct%gru(iGRU)%hru(iHRU), &
                                       nSteps=maxSteps,err=err,message=message)     ! model forcing data
             case('forc')
               ! Structure
-              call alloc_outputStruc(forc_meta,outputStructure(1)%forcStruct%gru(iGRU)%hru(iHRU), &
+              call alloc_outputStruc(forc_meta,summa_struct(1)%forcStruct%gru(iGRU)%hru(iHRU), &
                                       nSteps=maxSteps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,message=message);    ! model forcing data
               ! Statistics
-              call alloc_outputStruc(statForc_meta(:)%var_info,outputStructure(1)%forcStat%gru(iGRU)%hru(iHRU), &
+              call alloc_outputStruc(statForc_meta(:)%var_info,summa_struct(1)%forcStat%gru(iGRU)%hru(iHRU), &
                                       nSteps=maxSteps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,message=message);    ! model forcing data
             case('attr'); cycle;
-              ! call alloc_outputStruc(attr_meta, outputStructure(1)%attrStruct(1)%gru(iGRU)%hru(iHRU),&
+              ! call alloc_outputStruc(attr_meta, summa_struct(1)%attrStruct(1)%gru(iGRU)%hru(iHRU),&
               !                         nSteps=1,err=err,message=message)
             case('type'); cycle;
             case('id'  ); cycle;
             case('mpar'); cycle;
             case('indx')
               ! Structure
-              call alloc_outputStruc(indx_meta,outputStructure(1)%indxStruct%gru(iGRU)%hru(iHRU), &
+              call alloc_outputStruc(indx_meta,summa_struct(1)%indxStruct%gru(iGRU)%hru(iHRU), &
                                       nSteps=maxSteps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,str_name='indx',message=message);    ! model variables
               ! Statistics
-              call alloc_outputStruc(statIndx_meta(:)%var_info,outputStructure(1)%indxStat%gru(iGRU)%hru(1), &
+              call alloc_outputStruc(statIndx_meta(:)%var_info,summa_struct(1)%indxStat%gru(iGRU)%hru(1), &
                                       nSteps=maxSteps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,message=message);    ! index vars
             case('prog')
               ! Structure
-              call alloc_outputStruc(prog_meta,outputStructure(1)%progStruct%gru(iGRU)%hru(iHRU), &
-                                      nSteps=maxSteps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,message=message);    ! model prognostic (state) variables
+              call alloc_outputStruc(prog_meta,summa_struct(1)%progStruct%gru(iGRU)%hru(iHRU), &
+                                      nSteps=maxSteps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,str_name='prog',message=message);    ! model prognostic (state) variables
               ! Statistics
-              call alloc_outputStruc(statProg_meta(:)%var_info,outputStructure(1)%progStat%gru(iGRU)%hru(iHRU), &
-                                      nSteps=maxSteps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,message=message);    ! model prognostic 
+              call alloc_outputStruc(statProg_meta(:)%var_info,summa_struct(1)%progStat%gru(iGRU)%hru(iHRU), &
+                                      nSteps=maxSteps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,str_name='prog',message=message);    ! model prognostic 
             case('diag')
               ! Structure
-              call alloc_outputStruc(diag_meta,outputStructure(1)%diagStruct%gru(iGRU)%hru(iHRU), &
+              call alloc_outputStruc(diag_meta,summa_struct(1)%diagStruct%gru(iGRU)%hru(iHRU), &
                                       nSteps=maxSteps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,message=message);    ! model diagnostic variables
               ! Statistics
-              call alloc_outputStruc(statDiag_meta(:)%var_info,outputStructure(1)%diagStat%gru(iGRU)%hru(iHRU), &
+              call alloc_outputStruc(statDiag_meta(:)%var_info,summa_struct(1)%diagStat%gru(iGRU)%hru(iHRU), &
                                       nSteps=maxSteps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,message=message);    ! model diagnostic
             case('flux')
               ! Structure
-              call alloc_outputStruc(flux_meta,outputStructure(1)%fluxStruct%gru(iGRU)%hru(iHRU), &
+              call alloc_outputStruc(flux_meta,summa_struct(1)%fluxStruct%gru(iGRU)%hru(iHRU), &
                                       nSteps=maxSteps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,message=message);    ! model fluxes
               ! Statistics
-              call alloc_outputStruc(statFlux_meta(:)%var_info,outputStructure(1)%fluxStat%gru(iGRU)%hru(iHRU), &
+              call alloc_outputStruc(statFlux_meta(:)%var_info,summa_struct(1)%fluxStat%gru(iGRU)%hru(iHRU), &
                                       nSteps=maxSteps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,message=message);    ! model fluxes
             case('bpar'); cycle;
             case('bvar')
               ! Structure
-              call alloc_outputStruc(bvar_meta,outputStructure(1)%bvarStruct%gru(iGRU)%hru(iHRU), &
-                                      nSteps=maxSteps,nSnow=0,nSoil=0,err=err,message=message);  ! basin-average variables
+              call alloc_outputStruc(bvar_meta,summa_struct(1)%bvarStruct%gru(iGRU)%hru(iHRU), &
+                                      nSteps=maxSteps,nSnow=0,nSoil=0,err=err,str_name='bvar',message=message);  ! basin-average variables
               ! Statistics
-              call alloc_outputStruc(statBvar_meta(:)%var_info,outputStructure(1)%bvarStat%gru(iGRU)%hru(iHRU), &
-                                      nSteps=maxSteps,nSnow=0,nSoil=0,err=err,message=message);  ! basin-average variables
+              call alloc_outputStruc(statBvar_meta(:)%var_info,summa_struct(1)%bvarStat%gru(iGRU)%hru(iHRU), &
+                                      nSteps=maxSteps,nSnow=0,nSoil=0,err=err,str_name='bvar',message=message);  ! basin-average variables
             case('deriv');  cycle
             case('lookup'); cycle  ! lookup tables
             case default; err=20; message='unable to find structure name: '//trim(structInfo(iStruct)%structName)
@@ -341,9 +341,9 @@ subroutine initOutputStructure(forcFileInfo, maxSteps, num_gru, err)
       end do  ! looping through data structures
     
       ! Finalize stats structure for writing to output file
-      allocate(outputStructure(1)%finalizeStats%gru(iGRU)%hru(iHRU)%tim(maxSteps))
+      allocate(summa_struct(1)%finalizeStats%gru(iGRU)%hru(iHRU)%tim(maxSteps))
       do iStep = 1, maxSteps
-        allocate(outputStructure(1)%finalizeStats%gru(iGRU)%hru(iHRU)%tim(iStep)%dat(1:maxVarFreq))
+        allocate(summa_struct(1)%finalizeStats%gru(iGRU)%hru(iHRU)%tim(iStep)%dat(1:maxVarFreq))
       end do ! timeSteps
     end do ! Looping through GRUs
   end do
@@ -357,7 +357,7 @@ subroutine deallocateOutputStructure(err) bind(C, name="deallocateOutputStructur
   integer(i4b), intent(inout)   :: err
 
   err = 0
-  deallocate(outputStructure)
+  deallocate(summa_struct)
 
 end subroutine deallocateOutputStructure
 
@@ -519,6 +519,7 @@ subroutine alloc_outputStruc(metaStruct,dataStruct,nSteps,nSnow,nSoil,str_name,e
   character(*),intent(out)             :: message        ! error message
   ! local
   logical(lgt)                         :: check          ! .true. if the variables are allocated
+  logical(lgt)                         :: allocAllFlag   ! .true. if struct is to have all timesteps allocated
   integer(i4b)                         :: nVars          ! number of variables in the metadata structure
   integer(i4b)                         :: nLayers        ! total number of layers
   integer(i4b)                         :: iVar
@@ -526,6 +527,11 @@ subroutine alloc_outputStruc(metaStruct,dataStruct,nSteps,nSnow,nSoil,str_name,e
   character(len=256)                   :: cmessage       ! error message of the downwind routine
   ! initalize error control
   message='alloc_outputStruc'
+
+  allocAllFlag = .false.
+  if (present(str_name)) then
+    allocAllFlag = .true.
+  end if
 
   nVars = size(metaStruct)
   if(present(nSnow) .or. present(nSoil))then
@@ -554,7 +560,7 @@ subroutine alloc_outputStruc(metaStruct,dataStruct,nSteps,nSnow,nSoil,str_name,e
       end if
       do iVar=1, nVars
         ! Check if this variable is desired within any timeframe
-        if(is_var_desired(metaStruct,iVar))then
+        if(is_var_desired(metaStruct,iVar) .or. allocAllFlag)then
           allocate(dataStruct%var(iVar)%tim(nSteps))
         end if
       end do
@@ -568,7 +574,7 @@ subroutine alloc_outputStruc(metaStruct,dataStruct,nSteps,nSnow,nSoil,str_name,e
       end if 
       do iVar=1, nVars
         ! Check if this variable is desired within any timeframe
-        if(is_var_desired(metaStruct,iVar))then
+        if(is_var_desired(metaStruct,iVar) .or. allocAllFlag)then
           allocate(dataStruct%var(iVar)%tim(nSteps))
         end if
       end do
@@ -582,7 +588,7 @@ subroutine alloc_outputStruc(metaStruct,dataStruct,nSteps,nSnow,nSoil,str_name,e
       end if
       do iVar=1, nVars
         ! Check if this variable is desired within any timeframe
-        if(is_var_desired(metaStruct,iVar))then
+        if(is_var_desired(metaStruct,iVar) .or. allocAllFlag)then
           allocate(dataStruct%var(iVar)%tim(nSteps))
         end if
       end do
@@ -628,7 +634,7 @@ subroutine alloc_outputStruc(metaStruct,dataStruct,nSteps,nSnow,nSoil,str_name,e
       end if
       do iVar=1, nVars
         ! Check if this variable is desired within any timeframe
-        if(is_var_desired(metaStruct,iVar) .or. (present(str_name) .and. &
+        if(is_var_desired(metaStruct,iVar) .or. allocAllFlag .or. (present(str_name) .and. &
          ((iVar == iLookINDEX%nLayers) .or. (iVar == iLookINDEX%nSnow) .or. (iVar == iLookINDEX%nSoil)) ))then
         allocate(dataStruct%var(iVar)%tim(nSteps))
           call allocateDat_int(metaStruct,dataStruct,nSnow,nSoil,nSteps,iVar,err,cmessage)
@@ -643,7 +649,7 @@ subroutine alloc_outputStruc(metaStruct,dataStruct,nSteps,nSnow,nSoil,str_name,e
       end if
       do iVar=1, nVars
         ! Check if this variable is desired within any timeframe
-        if(is_var_desired(metaStruct,iVar))then
+        if(is_var_desired(metaStruct,iVar) .or. allocAllFlag)then
           allocate(dataStruct%var(iVar)%tim(nSteps))
           call allocateDat_rkind_nSteps(metaStruct,dataStruct,nSnow,nSoil,nSteps,iVar,err,cmessage)
         end if

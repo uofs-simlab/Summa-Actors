@@ -29,6 +29,9 @@ extern "C" {
   void writeOutput_fortran(void* handle_ncid, int* num_steps, int* start_gru, 
       int* max_gru, bool* writeParamFlag, int* err);
 
+  void writeRestart_fortran(void* handle_ncid, int* start_gru, int* max_gru, int* timestep, 
+      int* year, int* month, int* day, int* hour, int* err); 
+
   void read_forcingFile(void* forcFileInfo, int* currentFile, int* stepsInFile,
       int* startGRU, int* numGRU, int* err);
 
@@ -59,6 +62,7 @@ struct file_access_state {
   int numFiles;
   int filesLoaded;
   int num_output_steps;
+  int err = 0; // this is to make compiler happy
 
   Output_Container* output_container;
 
@@ -72,6 +76,12 @@ struct file_access_state {
 
 
   bool write_params_flag = true;
+
+  // Checkpointing variables
+  int completed_checkpoints = 1;  // 
+  std::vector<int> hru_checkpoints;
+  std::vector<int> hru_timesteps;
+
 };
 
 // called to spawn a file_access_actor
@@ -86,6 +96,9 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
 /* Setup and call the fortran routine that writes the output */
 void writeOutput(stateful_actor<file_access_state>* self, 
     Output_Partition* partition);
+
+void writeRestart(stateful_actor<file_access_state>* self, Output_Partition* partition, 
+    int start_gru, int num_gru, int timestep, int year, int month, int day, int hour);
 
  
 } // end namespace

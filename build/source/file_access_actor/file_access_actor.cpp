@@ -71,6 +71,13 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
         fa_settings.num_timesteps_in_output_buffer, self->state.num_steps);
   }
 
+  // initialize vecs for keeping track of each hru's timestep and checkpoint
+  for (int i = 1; i < self->state.num_gru +1; ++i) {
+      self->state.hru_timesteps.push_back(0);
+      self->state.hru_checkpoints.push_back(0);
+  } 
+
+
   self->state.file_access_timing.updateEndPoint("init_duration");
 
   return {
@@ -171,6 +178,27 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
       self->state.file_access_timing.updateEndPoint("write_duration");
     },
 
+    [=] (write_restart, int gru, int gru_timestep, int gru_checkpoint, int output_stucture_index, int year, int month, int day, int hour){
+    // update hru progress vecs 
+    int gru_index = abs(self->state.start_gru - gru); 
+    self->state.hru_timesteps[gru_index] = gru_timestep;
+    self->state.hru_checkpoints[gru_index] = gru_checkpoint;
+
+    // find slowest time step of all hrus in job, stored in self->state.hru_timesteps
+    int slowest_timestep = *std::min_element(self->state.hru_timesteps.begin(), self->state.hru_timesteps.end());  
+    int slowest_checkpoint = *std::min_element(self->state.hru_checkpoints.begin(), self->state.hru_checkpoints.end());  
+
+    // if the slowest hru is past the ith checkpoint (current threshold)            
+    if ( slowest_checkpoint >= (self->state.completed_checkpoints)){// temp for dubuging
+        Output_Partition *output_partition = self->state.output_container->getOutputPartition(gru-1);
+        writeRestart(self, output_partition, self->state.start_gru, self->state.hru_timesteps.size(), output_stucture_index,
+                     year, month, day, hour);
+        // update checkpint counter
+        self->state.completed_checkpoints++;
+    }
+},
+
+
     // Write message from the job actor TODO: This could be async
     [=](write_output, int steps_to_write, int start_gru, int max_gru) {
       self->state.file_access_timing.updateStartPoint("write_duration");
@@ -256,5 +284,14 @@ void writeOutput(stateful_actor<file_access_state>* self,
 
   partition->resetReadyToWriteList();
 }
+
+void writeRestart(stateful_actor<file_access_state>* self , Output_Partition* partition, 
+  int start_gru, int num_gru, int timestep,
+  int year, int month, int day, int hour){  
+  
+  writeRestart_fortran(self->state.handle_ncid, &start_gru, &num_gru, &timestep, 
+    &year, &month, &day, &hour, &self->state.err);
+  }
+
 
 } // end namespace
