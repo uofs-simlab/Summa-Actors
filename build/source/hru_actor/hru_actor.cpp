@@ -29,7 +29,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int refGRU, int indxGRU,
   self->state.dt_init_factor = hru_actor_settings.dt_init_factor;
 
   // Set the restart frequency
-  self->state.restartFrequency = 2; // TODO: obtain this value from command line arg
+  self->state.restartFrequency = 0; // TODO: obtain this value from command line arg
 
 
   return {
