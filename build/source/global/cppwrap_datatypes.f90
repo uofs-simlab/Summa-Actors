@@ -1227,29 +1227,8 @@ subroutine delete_handle_dlength_array(handle) bind(C, name='delete_handle_dleng
 
 end subroutine
 ! ************************ var_dlength_array ************************
-! ***************************** file_info ***************************
-function new_handle_file_info() result(handle) bind(C, name='new_handle_file_info')
-  type(c_ptr) :: handle
-  type(file_info_array), pointer :: p
 
-  allocate(p)
-  handle = c_loc(p)
-
-end function new_handle_file_info
-
-!---------------------------------
-subroutine delete_handle_file_info(handle) bind(C, name='delete_handle_file_info')
-
-  type(c_ptr), intent(in), value :: handle
-  type(file_info_array), pointer :: p
-
-  call c_f_pointer(handle, p)
-  deallocate(p)
-
-end subroutine delete_handle_file_info
-! ***************************** file_info ***************************
-    
-
+  
 ! ****************************** z_lookup ****************************
 #ifdef V4_ACTIVE
 function new_handle_z_lookup() result(handle) bind(C, name="new_handle_z_lookup")

@@ -3,7 +3,9 @@
 #include "node_actor.hpp"
 #include <fstream>
 #include <iostream>
-namespace caf {
+
+
+using namespace caf;
 
 behavior distributed_job_actor(stateful_actor<distributed_job_state>* self,
     int start_gru_global, int num_gru_global, 
@@ -28,7 +30,7 @@ behavior distributed_job_actor(stateful_actor<distributed_job_state>* self,
   self->state.job_actor_settings = job_actor_settings;
   self->state.hru_actor_settings = hru_actor_settings;
 
-  self->state.file_gru = getNumGRUInFile(job_actor_settings.file_manager_path);
+  // self->state.file_gru = getNumGRUInFile(job_actor_settings.file_manager_path);
   if (self->state.file_gru  == -1) 
     aout(self) << "***WARNING***: UNABLE TO VERIFY NUMBER OF GRUS" 
                << " - Job Actor MAY CRASH\n";
@@ -413,5 +415,3 @@ behavior distributed_job_actor(stateful_actor<distributed_job_state>* self,
 }
 
 
-
-} // namespace caf

@@ -75,14 +75,29 @@ behavior node_actor(stateful_actor<node_state>* self, std::string host,
       
       self->state.node_timing.addTimePoint("node_init");
       self->state.node_timing.updateStartPoint("node_init");
-      int err, file_gru_to_remove;
-      job_init_fortran(self->state.job_actor_settings.file_manager_path.c_str(),
-          &start_gru, &num_gru, &num_hru, &file_gru_to_remove, &err);
-      if (err != 0) { 
-        aout(self) << "\nERROR: Job_Actor - job_init_fortran\n"; 
-        self->quit();
+
+
+
+      auto& gru_struc = self->state.gru_struc;
+      gru_struc = std::make_unique<GruStruc>(start_gru, num_gru, 
+                                             job_actor_settings.max_run_attempts);
+      if (gru_struc->ReadDimension()) {
+        aout(self) << "ERROR: Job_Actor - ReadDimension\n";
+        // TODO: Needs to return an error
         return;
       }
+      if (gru_struc->ReadIcondNlayers()) {
+        aout(self) << "ERROR: Job_Actor - ReadIcondNlayers\n";
+        // TODO: Needs to return an error
+        return;
+      }
+      // job_init_fortran(self->state.job_actor_settings.file_manager_path.c_str(),
+      //     &start_gru, &num_gru, &num_hru, &file_gru_to_remove, &err);
+      // if (err != 0) { 
+      //   aout(self) << "\nERROR: Job_Actor - job_init_fortran\n"; 
+      //   self->quit();
+      //   return;
+      // }
       // Spawn the file_access_actor.
       self->state.file_access_actor = self->spawn(file_access_actor, 
           self->state.num_gru_info, self->state.file_access_actor_settings, 
@@ -121,7 +136,7 @@ behavior node_actor(stateful_actor<node_state>* self, std::string host,
       self->state.stepsInCurrentFFile = num_steps_in_iFile;
       self->state.forcingStep = 1;
       for(auto gru : self->state.gru_container.gru_list) {
-        self->send(gru->getGRUActor(), update_timeZoneOffset_v, 
+        self->send(gru->getActorRef(), update_timeZoneOffset_v, 
             self->state.iFile);
       }
       self->send(self->state.current_server, new_forcing_file_v, 
@@ -133,7 +148,7 @@ behavior node_actor(stateful_actor<node_state>* self, std::string host,
       self->state.timestep_start_time 
         = std::chrono::high_resolution_clock::now();
       for (auto gru : self->state.gru_container.gru_list) {
-        self->send(gru->getGRUActor(), update_hru_v, self->state.timestep, 
+        self->send(gru->getActorRef(), update_hru_v, self->state.timestep, 
             self->state.forcingStep);
       }
     },

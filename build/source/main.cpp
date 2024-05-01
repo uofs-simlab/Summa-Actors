@@ -1,23 +1,12 @@
-#include "caf/all.hpp"
-#include "caf/io/all.hpp"
 #include "summa_actor.hpp"
 #include "summa_client.hpp"
 #include "summa_server.hpp"
 #include "summa_backup_server.hpp"
 #include "job_actor.hpp"
 #include "node_actor.hpp"
-#include "global.hpp"
 #include "settings_functions.hpp"
 #include "message_atoms.hpp"
 #include "client.hpp"
-#include <string>
-#include <bits/stdc++.h>
-#include <unistd.h>
-#include <sys/stat.h>
-#include <iostream>
-#include "json.hpp"
-#include <memory>
-#include <optional>
 #include <filesystem>
 
 using namespace caf;
@@ -72,12 +61,13 @@ class config : public actor_system_config {
 };
 
 
-void run_client(actor_system& system, const config& cfg, Distributed_Settings distributed_settings) {
-    scoped_actor self{system};
+void run_client(actor_system& system, const config& cfg, 
+                Distributed_Settings distributed_settings) {
+  scoped_actor self{system};
 
-    aout(self) << "Starting SUMMA-Client in Distributed Mode\n";
+  aout(self) << "Starting SUMMA-Client in Distributed Mode\n";
     
-    auto client = system.spawn(summa_client, distributed_settings);   
+  auto client = system.spawn(summa_client, distributed_settings);   
 }
 
 void run_server(actor_system& system, const config& cfg, 
@@ -96,23 +86,16 @@ void run_server(actor_system& system, const config& cfg,
 
   // Check if we have are the backup server
   if (cfg.backup_server) {          
-    auto server = system.spawn(summa_backup_server_init,
-                                distributed_settings,
-                                summa_actor_settings,
-                                file_access_actor_settings,
-                                job_actor_settings,
-                                hru_actor_settings);
+    auto server = system.spawn(summa_backup_server_init, distributed_settings,
+                               summa_actor_settings, file_access_actor_settings, 
+                               job_actor_settings, hru_actor_settings);
 
   } else {  
     aout(self) << "\n\n*****Starting SUMMA-Server*****\n\n";
-    auto server = system.spawn(summa_server, 
-                               distributed_settings,
-                               summa_actor_settings, 
-                               file_access_actor_settings, 
-                               job_actor_settings, 
-                               hru_actor_settings);
+    auto server = system.spawn(summa_server, distributed_settings,
+        summa_actor_settings, file_access_actor_settings, job_actor_settings, 
+        hru_actor_settings);
   }
-
 }
 
 
@@ -147,7 +130,7 @@ void caf_main(actor_system& sys, const config& cfg) {
     job_actor_settings.file_manager_path = cfg.master_file;
   
   check_settings_from_json(distributed_settings, summa_actor_settings, 
-                           file_access_actor_settings, job_actor_settings,
+                           file_access_actor_settings, job_actor_settings, 
                            hru_actor_settings);
 
   if (distributed_settings.distributed_mode && 
@@ -155,44 +138,31 @@ void caf_main(actor_system& sys, const config& cfg) {
     // only command line arguments needed are config_file and server-mode
     if (cfg.server_mode) {
       run_server(sys, cfg, distributed_settings, summa_actor_settings, 
-                  file_access_actor_settings, job_actor_settings, 
-                  hru_actor_settings);
+                 file_access_actor_settings, job_actor_settings, 
+                 hru_actor_settings);
     } else {
       run_client(sys,cfg, distributed_settings);
     }
 
   } else if (distributed_settings.distributed_mode &&
-             job_actor_settings.data_assimilation_mode &&
-             cfg.server_mode) {
+             job_actor_settings.data_assimilation_mode && cfg.server_mode) {
     
-    auto dist_summa = sys.spawn(distributed_job_actor,
-                                cfg.startGRU,
-                                cfg.countGRU,
-                                distributed_settings,
+    auto dist_summa = sys.spawn(distributed_job_actor, cfg.startGRU,
+                                cfg.countGRU, distributed_settings, 
                                 file_access_actor_settings,
-                                job_actor_settings,
-                                hru_actor_settings);
+                                job_actor_settings, hru_actor_settings);
   
   } else if (distributed_settings.distributed_mode &&
              job_actor_settings.data_assimilation_mode) {
     
-    auto node = sys.spawn(node_actor, 
-                          cfg.host,
-                          self,
-                          distributed_settings, 
-                          file_access_actor_settings, 
-                          job_actor_settings, 
+    auto node = sys.spawn(node_actor, cfg.host, self, distributed_settings, 
+                          file_access_actor_settings, job_actor_settings, 
                           hru_actor_settings);
 
   } else {
-    auto summa = sys.spawn(summa_actor, 
-                           cfg.startGRU, 
-                           cfg.countGRU, 
-                           summa_actor_settings, 
-                           file_access_actor_settings, 
-                           job_actor_settings, 
-                           hru_actor_settings, 
-                           self);
+    auto summa = sys.spawn(summa_actor, cfg.startGRU, cfg.countGRU, 
+                           summa_actor_settings, file_access_actor_settings, 
+                           job_actor_settings, hru_actor_settings, self);
   }
     
 }
@@ -243,6 +213,5 @@ int main(int argc, char** argv) {
   exec_main_init_meta_objects<io::middleman, id_block::summa>();
   caf::core::init_global_meta_objects(); 
   return exec_main<io::middleman, id_block::summa>(caf_main, argc, argv2);
-
 }
 
