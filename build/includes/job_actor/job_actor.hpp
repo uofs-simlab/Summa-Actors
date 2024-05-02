@@ -18,6 +18,7 @@
 #include <vector>
 #include <tuple>
 #include "summa_init_struc.hpp"
+#include "gru_actor.hpp"
 
 
 

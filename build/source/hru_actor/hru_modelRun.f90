@@ -77,6 +77,7 @@ contains
 
 ! Runs the model physics for an HRU
 subroutine runPhysics(&
+              indxGRU,             &
               indxHRU,             &
               modelTimeStep,       &
               handle_hru_data,     &
@@ -98,6 +99,7 @@ subroutine runPhysics(&
   USE coupled_em_module,only:coupled_em        ! module to run the coupled energy and mass model
   USE qTimeDelay_module,only:qOverland         ! module to route water through an "unresolved" river network
   ! global data
+  USE globalData,only:gru_struc
   USE globalData,only:model_decisions          ! model decision structure
   USE globalData,only:startPhysics,endPhysics  ! date/time for the start and end of the initialization
   USE globalData,only:elapsedPhysics           ! elapsed time for the initialization
@@ -106,7 +108,8 @@ subroutine runPhysics(&
   ! ---------------------------------------------------------------------------------------
   ! Dummy Variables
   ! ---------------------------------------------------------------------------------------
-  integer(c_long),intent(in)                :: indxHRU                ! id of HRU                   
+  integer(c_int),intent(in)                 :: indxGRU                ! id of GRU
+  integer(c_int),intent(in)                 :: indxHRU                ! id of HRU                   
   integer(c_int), intent(in)                :: modelTimeStep          ! time step index
   type(c_ptr),    intent(in), value         :: handle_hru_data        ! c_ptr to -- hru data
   real(c_double), intent(inout)             :: dt_init                ! used to initialize the length of the sub-step for each HRU
@@ -117,10 +120,10 @@ subroutine runPhysics(&
   ! FORTRAN POINTERS
   ! ---------------------------------------------------------------------------------------
   type(hru_type),pointer                    :: hru_data               ! hru data
-
   ! ---------------------------------------------------------------------------------------
   ! local variables: general
   ! ---------------------------------------------------------------------------------------
+  integer(8)                                :: hruId                  ! hruId
   real(dp)                                  :: fracHRU                ! fractional area of a given HRU (-)
   character(LEN=256)                        :: cmessage               ! error message of downwind routine
   ! local variables: veg phenology
@@ -133,8 +136,8 @@ subroutine runPhysics(&
   real(dp), allocatable                     :: zSoilReverseSign(:)    ! height at bottom of each soil layer, negative downwards (m)
   character(len=256)                        :: message                ! error message
   ! ---------------------------------------------------------------------------------------
-
   call c_f_pointer(handle_hru_data, hru_data)
+  hruId = gru_struc(indxGRU)%hruInfo(indxHRU)%hru_id
 
   ! ---------------------------------------------------------------------------------------
   ! initialize error control
@@ -271,12 +274,12 @@ subroutine runPhysics(&
   ! run the model for a single HRU
   call coupled_em(&
                   ! model control
-                  indxHRU,                     & ! intent(in):    hruID
+                  hruId,                      & ! intent(in):    hruID
                   dt_init,                     & ! intent(inout): initial time step
                   dt_init_factor,              & ! Used to adjust the length of the timestep in the event of a failure
                   computeVegFluxFlag,          & ! intent(inout): flag to indicate if we are computing fluxes over vegetation
-                  hru_data%fracJulDay,                  & ! intent(in):    fractional julian days since the start of year
-                  hru_data%yearLength,                  & ! intent(in):    number of days in the current year
+                  hru_data%fracJulDay,         & ! intent(in):    fractional julian days since the start of year
+                  hru_data%yearLength,         & ! intent(in):    number of days in the current year
                   ! data structures (input)
                   hru_data%typeStruct,         & ! intent(in):    local classification of soil veg etc. for each HRU
                   hru_data%attrStruct,         & ! intent(in):    local attributes for each HRU
@@ -302,6 +305,38 @@ subroutine runPhysics(&
   if(.not.computeVegFluxFlag) hru_data%ComputeVegFlux = no
 
   fracHRU = hru_data%attrStruct%var(iLookATTR%HRUarea) / hru_data%bvarStruct%var(iLookBVAR%basin__totalArea)%dat(1)
+
+
+
+  ! ----- compute fluxes across HRUs --------------------------------------------------------------------------------------------------
+
+  ! ! identify lateral connectivity
+  ! ! (Note:  for efficiency, this could this be done as a setup task, not every timestep)
+  ! kHRU = 0
+  ! ! identify the downslope HRU
+  ! dsHRU: do jHRU=1,gruInfo%hruCount
+  !   if(typeHRU%hru(iHRU)%var(iLookTYPE%downHRUindex) == idHRU%hru(jHRU)%var(iLookID%hruId))then
+  !     if(kHRU==0)then  ! check there is a unique match
+  !       kHRU=jHRU
+  !       exit dsHRU
+  !     end if  ! (check there is a unique match)
+  !   end if  ! (if identified a downslope HRU)
+  ! end do dsHRU
+
+  ! ! if lateral flows are active, add inflow to the downslope HRU
+  ! if(kHRU > 0)then  ! if there is a downslope HRU
+  !   fluxHRU%hru(kHRU)%var(iLookFLUX%mLayerColumnInflow)%dat(:) = fluxHRU%hru(kHRU)%var(iLookFLUX%mLayerColumnInflow)%dat(:)  + fluxHRU%hru(iHRU)%var(iLookFLUX%mLayerColumnOutflow)%dat(:)
+  ! ! otherwise just increment basin (GRU) column outflow (m3 s-1) with the hru fraction
+  ! else
+  !   bvarData%var(iLookBVAR%basin__ColumnOutflow)%dat(1) = bvarData%var(iLookBVAR%basin__ColumnOutflow)%dat(1) + sum(fluxHRU%hru(iHRU)%var(iLookFLUX%mLayerColumnOutflow)%dat(:))
+  ! end if
+
+
+
+
+
+
+
 
   ! ----- calculate weighted basin (GRU) fluxes --------------------------------------------------------------------------------------
   

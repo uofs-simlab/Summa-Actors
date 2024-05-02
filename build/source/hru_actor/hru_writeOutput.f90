@@ -138,22 +138,33 @@ subroutine hru_writeOutput(&
 
 
   ! Many variables get there values from summa4chm_util.f90:getCommandArguments()
-  call summa_setWriteAlarms(hru_data%oldTime_hru%var, hru_data%timeStruct%var, hru_data%finishTime_hru%var,  &   ! time vectors
-                            newOutputFile,  defNewOutputFile,            &
-                            ixRestart,      printRestart,                &   ! flag to print the restart file
-                            ixProgress,     printProgress,               &   ! flag to print simulation progress
-                            hru_data%resetStats%dat, hru_data%finalizeStats%dat,           &   ! flags to reset and finalize stats
-                            hru_data%statCounter%var,                             &   ! statistics counter
-                            err, cmessage)                                  ! error control
+  call summa_setWriteAlarms(hru_data%oldTime_hru%var, hru_data%timeStruct%var, & 
+                            hru_data%finishTime_hru%var, newOutputFile,        &
+                            defNewOutputFile, ixRestart, printRestart,         &
+                            ixProgress, printProgress, hru_data%resetStats%dat,& 
+                            hru_data%finalizeStats%dat,                        &
+                            hru_data%statCounter%var, err, cmessage)
   if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
 
   ! Write Parameters to output structure if this is the first
   if (timestep == 1)then
     do iStruct=1,size(structInfo)
       select case(trim(structInfo(iStruct)%structName))
-        case('attr'); call writeParm(indxGRU,indxHRU,gru_struc(indxGRU)%hruInfo(indxHRU)%hru_ix,hru_data%attrStruct,attr_meta,structInfo(iStruct)%structName,err,cmessage)
-        case('type'); call writeParm(indxGRU,indxHRU,gru_struc(indxGRU)%hruInfo(indxHRU)%hru_ix,hru_data%typeStruct,type_meta,structInfo(iStruct)%structName,err,cmessage)
-        case('mpar'); call writeParm(indxGRU,indxHRU,gru_struc(indxGRU)%hruInfo(indxHRU)%hru_ix,hru_data%mparStruct,mpar_meta,structInfo(iStruct)%structName,err,cmessage)
+        case('attr'); call writeParm(indxGRU,indxHRU,                           &
+                                     gru_struc(indxGRU)%hruInfo(indxHRU)%hru_ix,&
+                                     hru_data%attrStruct,attr_meta,             &
+                                     structInfo(iStruct)%structName,            &
+                                     err,cmessage)
+        case('type'); call writeParm(indxGRU,indxHRU,                           &
+                                     gru_struc(indxGRU)%hruInfo(indxHRU)%hru_ix,&
+                                     hru_data%typeStruct,type_meta,             &
+                                     structInfo(iStruct)%structName,            &
+                                     err,cmessage)
+        case('mpar'); call writeParm(indxGRU,indxHRU,                           &
+                                     gru_struc(indxGRU)%hruInfo(indxHRU)%hru_ix,&
+                                     hru_data%mparStruct,mpar_meta,             &
+                                     structInfo(iStruct)%structName,            &
+                                     err,cmessage)
       end select
       if(err/=0)then; message=trim(message)//trim(cmessage)//'['//trim(structInfo(iStruct)%structName)//']'; return; endif
     end do  ! (looping through structures)
@@ -171,22 +182,45 @@ subroutine hru_writeOutput(&
  ! ****************************************************************************
   do iStruct=1,size(structInfo)
     select case(trim(structInfo(iStruct)%structName))
-      case('forc'); call calcStats(hru_data%forcStat%var, hru_data%forcStruct%var, statForc_meta, hru_data%resetStats%dat, hru_data%finalizeStats%dat, hru_data%statCounter%var, err, cmessage)
-      case('prog'); call calcStats(hru_data%progStat%var, hru_data%progStruct%var, statProg_meta, hru_data%resetStats%dat, hru_data%finalizeStats%dat, hru_data%statCounter%var, err, cmessage)
-      case('diag'); call calcStats(hru_data%diagStat%var, hru_data%diagStruct%var, statDiag_meta, hru_data%resetStats%dat, hru_data%finalizeStats%dat, hru_data%statCounter%var, err, cmessage)
-      case('flux'); call calcStats(hru_data%fluxStat%var, hru_data%fluxStruct%var, statFlux_meta, hru_data%resetStats%dat, hru_data%finalizeStats%dat, hru_data%statCounter%var, err, cmessage)
-      case('indx'); call calcStats(hru_data%indxStat%var, hru_data%indxStruct%var, statIndx_meta, hru_data%resetStats%dat, hru_data%finalizeStats%dat, hru_data%statCounter%var, err, cmessage)     
+      case('forc'); call calcStats(hru_data%forcStat%var,                     &
+                                   hru_data%forcStruct%var, statForc_meta,    & 
+                                   hru_data%resetStats%dat,                   &     
+                                   hru_data%finalizeStats%dat,                &
+                                   hru_data%statCounter%var, err, cmessage)
+      case('prog'); call calcStats(hru_data%progStat%var,                     &
+                                   hru_data%progStruct%var, statProg_meta,    &
+                                   hru_data%resetStats%dat,                   &
+                                   hru_data%finalizeStats%dat,                &
+                                   hru_data%statCounter%var, err, cmessage)
+      case('diag'); call calcStats(hru_data%diagStat%var,                     &
+                                   hru_data%diagStruct%var, statDiag_meta,    &
+                                   hru_data%resetStats%dat,                   &
+                                   hru_data%finalizeStats%dat,                &
+                                   hru_data%statCounter%var, err, cmessage)
+      case('flux'); call calcStats(hru_data%fluxStat%var,                     &
+                                   hru_data%fluxStruct%var, statFlux_meta,    &
+                                   hru_data%resetStats%dat,                   &
+                                   hru_data%finalizeStats%dat,                &
+                                   hru_data%statCounter%var, err, cmessage)
+      case('indx'); call calcStats(hru_data%indxStat%var,                     &
+                                   hru_data%indxStruct%var, statIndx_meta,    &
+                                   hru_data%resetStats%dat,                   &
+                                   hru_data%finalizeStats%dat,                &
+                                   hru_data%statCounter%var, err, cmessage)     
     end select
     if(err/=0)then; message=trim(message)//trim(cmessage)//'['//trim(structInfo(iStruct)%structName)//']'; return; endif
   end do  ! (looping through structures)
     
   ! calc basin stats
-  call calcStats(hru_data%bvarStat%var(:), hru_data%bvarStruct%var(:), statBvar_meta, hru_data%resetStats%dat, hru_data%finalizeStats%dat, hru_data%statCounter%var, err, cmessage)
+  call calcStats(hru_data%bvarStat%var(:), hru_data%bvarStruct%var(:),        &
+                 statBvar_meta, hru_data%resetStats%dat,                      &
+                 hru_data%finalizeStats%dat, hru_data%statCounter%var,        &
+                 err, cmessage)                   
   if(err/=0)then; message=trim(message)//trim(cmessage)//'[bvar stats]'; return; endif
-  
   ! write basin-average variables
-  call writeBasin(indxGRU,indxHRU,outputStep,hru_data%finalizeStats%dat, &
-                  hru_data%outputTimeStep%var,bvar_meta,hru_data%bvarStat%var,hru_data%bvarStruct%var,bvarChild_map,err,cmessage)
+  call writeBasin(indxGRU,indxHRU,outputStep,hru_data%finalizeStats%dat,      &
+                  hru_data%outputTimeStep%var,bvar_meta,hru_data%bvarStat%var,&
+                  hru_data%bvarStruct%var,bvarChild_map,err,cmessage)
   if(err/=0)then; message=trim(message)//trim(cmessage)//'[bvar]'; return; endif
 
   ! ****************************************************************************
@@ -201,16 +235,31 @@ subroutine hru_writeOutput(&
   ! Thus, we must also pass the stats parent->child maps from childStruct.
   do iStruct=1,size(structInfo)
     select case(trim(structInfo(iStruct)%structName))
-      case('forc'); call writeData(indxGRU,indxHRU,outputStep,"forc",hru_data%finalizeStats%dat,&
-                    maxLayers,forc_meta,hru_data%forcStat,hru_data%forcStruct,forcChild_map,hru_data%indxStruct,err,cmessage)
-      case('prog'); call writeData(indxGRU,indxHRU,outputStep,"prog",hru_data%finalizeStats%dat,&
-                    maxLayers,prog_meta,hru_data%progStat,hru_data%progStruct,progChild_map,hru_data%indxStruct,err,cmessage)
-      case('diag'); call writeData(indxGRU,indxHRU,outputStep,"diag",hru_data%finalizeStats%dat,&
-                    maxLayers,diag_meta,hru_data%diagStat,hru_data%diagStruct,diagChild_map,hru_data%indxStruct,err,cmessage)
-      case('flux'); call writeData(indxGRU,indxHRU,outputStep,"flux",hru_data%finalizeStats%dat,&
-                    maxLayers,flux_meta,hru_data%fluxStat,hru_data%fluxStruct,fluxChild_map,hru_data%indxStruct,err,cmessage)
-      case('indx'); call writeData(indxGRU,indxHRU,outputStep,"indx",hru_data%finalizeStats%dat,&
-                    maxLayers,indx_meta,hru_data%indxStat,hru_data%indxStruct,indxChild_map,hru_data%indxStruct,err,cmessage)
+      case('forc'); call writeData(indxGRU,indxHRU,outputStep,"forc",         &
+                                   hru_data%finalizeStats%dat, maxLayers,     &
+                                   forc_meta,hru_data%forcStat,               &
+                                   hru_data%forcStruct,forcChild_map,         &
+                                   hru_data%indxStruct,err,cmessage)
+      case('prog'); call writeData(indxGRU,indxHRU,outputStep,"prog",         &
+                                   hru_data%finalizeStats%dat, maxLayers,     &
+                                   prog_meta,hru_data%progStat,               &
+                                   hru_data%progStruct,progChild_map,         &
+                                   hru_data%indxStruct,err,cmessage)
+      case('diag'); call writeData(indxGRU,indxHRU,outputStep,"diag",         &
+                                   hru_data%finalizeStats%dat, maxLayers,     &
+                                   diag_meta,hru_data%diagStat,               &
+                                   hru_data%diagStruct,diagChild_map,         &
+                                   hru_data%indxStruct,err,cmessage)
+      case('flux'); call writeData(indxGRU,indxHRU,outputStep,"flux",         &
+                                   hru_data%finalizeStats%dat, maxLayers,     &
+                                   flux_meta,hru_data%fluxStat,               &
+                                   hru_data%fluxStruct,fluxChild_map,         &
+                                   hru_data%indxStruct,err,cmessage)
+      case('indx'); call writeData(indxGRU,indxHRU,outputStep,"indx",         &
+                                   hru_data%finalizeStats%dat, maxLayers,     &
+                                   indx_meta,hru_data%indxStat,               &
+                                   hru_data%indxStruct,indxChild_map,         &
+                                   hru_data%indxStruct,err,cmessage)
     end select
     if(err/=0)then 
       message=trim(message)//trim(cmessage)//'['//trim(structInfo(iStruct)%structName)//']'
@@ -225,7 +274,9 @@ subroutine hru_writeOutput(&
   ! increment output file timestep
   do iFreq = 1,maxvarFreq
     hru_data%statCounter%var(iFreq) = hru_data%statCounter%var(iFreq)+1
-    if(hru_data%finalizeStats%dat(iFreq)) hru_data%outputTimeStep%var(iFreq) = hru_data%outputTimeStep%var(iFreq) + 1
+    if(hru_data%finalizeStats%dat(iFreq)) then
+      hru_data%outputTimeStep%var(iFreq) = hru_data%outputTimeStep%var(iFreq) + 1
+    end if
   end do
 
   ! if finalized stats, then reset stats on the next time step

@@ -22,6 +22,7 @@ class GruStruc {
     inline int getStartGru() const { return start_gru_; }
     inline int getNumGrus() const { return num_gru_; }
     inline int get_file_gru() const { return file_gru_; }
+    inline int getNumHrus() const { return num_hru_; }
     inline int get_gru_info_size() const { return gru_info_.size(); }
     inline int getNumGrusDone() const { return num_gru_done_; }
     inline int getNumGRUFailed() const { return num_gru_failed_; }

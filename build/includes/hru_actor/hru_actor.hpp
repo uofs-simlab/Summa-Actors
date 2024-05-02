@@ -31,10 +31,13 @@ extern "C" {
   // Setup summa_readRestart File if this option has been chosen 
   void summa_readRestart(int* indxGRU, int* indxHRU, void* hru_data, 
                          double* dtInit, int* err);
-  
+                         
+  void HRU_readForcing(int& index_gru, int& indx_hru, int& iStep, int& iRead, 
+                       int& iFile, void* hru_data,  int& err);
   // Run the model for one timestep
-  void RunPhysics(int* id, int* stepIndex, void* hru_data, double* dt, 
-                  int* dt_int_factor, double* walltime_timestep, int* err);
+  void RunPhysics(int& indx_gru, int& indx_hru, int& timestep, void* hru_data, 
+                  double& dt, int& dt_int_factor, double& walltime_timestep, 
+                  int& err);
   
   void hru_writeOutput(int* index_hru, int* index_gru, int* timestep, 
                        int* output_step, void* hru_data, int* y, int* m, 
@@ -45,8 +48,7 @@ extern "C" {
 
   void setTimeZoneOffset(int* iFile, void* hru_data, int* err);
 
-  void HRU_readForcing(int* index_gru, int* iStep, int* iRead, int* iFile, 
-                       void* hru_data,  int* err);
+
   
   // hru_writeOutput.f90
   void setFinalizeStatsFalse(int* indx_gru);

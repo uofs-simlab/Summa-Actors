@@ -56,7 +56,6 @@ behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru,
     return {};
   }
 
-
   self->state.summa_init_struc = std::make_unique<SummaInitStruc>();
   if (self->state.summa_init_struc->allocate(self->state.num_gru) != 0) {
     aout(self) << "ERROR -- Job_Actor: SummaInitStruc allocation failed\n";
@@ -83,7 +82,8 @@ behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru,
       file_access_actor, self->state.num_gru_info, 
       self->state.file_access_actor_settings, self);
   self->request(self->state.file_access_actor, caf::infinite, 
-                init_file_access_actor_v, gru_struc->get_file_gru())
+                init_file_access_actor_v, gru_struc->get_file_gru(),
+                gru_struc->getNumHrus())
       .await([=](int num_timesteps){
     
     if (num_timesteps < 0) {

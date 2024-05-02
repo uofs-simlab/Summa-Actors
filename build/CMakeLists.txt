@@ -46,6 +46,7 @@ if (CMAKE_BUILD_TYPE MATCHES Cluster)
         ${PARENT_DIR}/build/includes/summa_actor 
         ${PARENT_DIR}/build/includes/job_actor 
         ${PARENT_DIR}/build/includes/file_access_actor 
+        ${PARENT_DIR}/build/includes/gru_actor
         ${PARENT_DIR}/build/includes/hru_actor)
     set(LIB_ACTORS 
         ${CAF_LIBRARIES} 
@@ -63,6 +64,7 @@ else()
         "${PARENT_DIR}/build/includes/summa_actor"
         "${PARENT_DIR}/build/includes/job_actor"
         "${PARENT_DIR}/build/includes/file_access_actor"
+        "${PARENT_DIR}/build/includes/gru_actor"
         "${PARENT_DIR}/build/includes/hru_actor")
     link_directories("/usr/local/lib")
     set(LIB_ACTORS CAF::core CAF::io -lopenblas -lnetcdff -lnetcdf)
@@ -81,6 +83,7 @@ set(ACTORS_DIR      ${PARENT_DIR}/build/source)
 set(SYS_INIT_DIR    ${ACTORS_DIR}/system_initialization)
 set(FILE_ACCESS_DIR ${ACTORS_DIR}/file_access_actor)
 set(JOB_ACTOR_DIR   ${ACTORS_DIR}/job_actor)
+set(GRU_ACTOR_DIR   ${ACTORS_DIR}/gru_actor)
 set(HRU_ACTOR_DIR   ${ACTORS_DIR}/hru_actor)
 
 # NOAHMP modules
@@ -212,6 +215,8 @@ set(FILE_ACCESS_INTERFACE
     ${FILE_ACCESS_DIR}/fileAccess_writeOutput.f90)
 set(JOB_INTERFACE
     ${JOB_ACTOR_DIR}/gru_struc.f90)
+set(GRU_INTERFACE
+    ${GRU_ACTOR_DIR}/gru_actor.f90)
 set(HRU_INTERFACE
     ${HRU_ACTOR_DIR}/hru_init.f90
     ${HRU_ACTOR_DIR}/hru_read.f90
@@ -250,6 +255,8 @@ set(JOB_ACTOR
     ${JOB_ACTOR_DIR}/job_utils.cpp
     ${JOB_ACTOR_DIR}/distributed_job_actor.cpp
     ${JOB_ACTOR_DIR}/node_actor.cpp)
+set(GRU_ACTOR
+    ${GRU_ACTOR_DIR}/gru_actor.cpp)
 set(HRU_ACTOR
     ${HRU_ACTOR_DIR}/hru_utils.cpp
     ${HRU_ACTOR_DIR}/hru_actor.cpp
@@ -278,6 +285,7 @@ set(SUMMA_ALL
     ${SYS_INIT_INTERFACE}
     ${FILE_ACCESS_INTERFACE}
     ${JOB_INTERFACE}
+    ${GRU_INTERFACE}
     ${HRU_INTERFACE})
 
 set(MAIN_ACTOR ${ACTORS_DIR}/main.cpp)
@@ -318,6 +326,7 @@ add_executable(${EXEC_NAME}
                ${ACTORS_GLOBAL}
                ${FILE_ACCESS_ACTOR}
                ${JOB_ACTOR}
+               ${GRU_ACTOR}
                ${HRU_ACTOR}
                ${SYS_INIT}
                ${SUMMA_CLIENT}

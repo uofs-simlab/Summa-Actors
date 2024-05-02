@@ -7,12 +7,17 @@ void spawnHRUActors(stateful_actor<job_state>* self) {
   for (int i = 0; i < gru_struc->getNumGrus(); i++) {
     auto netcdf_index = gru_struc->getStartGru() + i;
     auto job_index = i + 1;
+    
+    // auto gru = self->spawn(gru_actor, netcdf_index, job_index, self);
+    
     // Start GRU
     auto gru = self->spawn(hru_actor, netcdf_index, job_index, 
                            self->state.hru_actor_settings, 
                            self->state.file_access_actor, self);
     self->send(gru, init_hru_v);
     self->send(gru, update_hru_async_v);
+
+
     // Save information about the GRU
     std::unique_ptr<GRU> gru_obj = std::make_unique<GRU>(
         netcdf_index, job_index, gru, self->state.dt_init_start_factor, 

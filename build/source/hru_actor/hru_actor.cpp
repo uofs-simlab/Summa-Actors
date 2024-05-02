@@ -213,9 +213,9 @@ void Initialize_HRU(stateful_actor<hru_state>* self) {
 
 int Run_HRU(stateful_actor<hru_state>* self) {
   int err = 0;
-  HRU_readForcing(&self->state.indxGRU, &self->state.timestep, 
-                  &self->state.forcingStep, &self->state.iFile, 
-                  self->state.hru_data, &err);
+  HRU_readForcing(self->state.indxGRU, self->state.indxHRU, 
+                  self->state.timestep, self->state.forcingStep, 
+                  self->state.iFile, self->state.hru_data, err);
   if (err != 0) {
     aout(self) << "Error---HRU_Actor: ReadForcingHRU\n" 
                << "\tIndxGRU = " << self->state.indxGRU << "\n"
@@ -236,9 +236,9 @@ int Run_HRU(stateful_actor<hru_state>* self) {
                << self->state.timestep << "\n";
   }
     
-  RunPhysics(&self->state.indxHRU, &self->state.timestep, self->state.hru_data, 
-             &self->state.dt_init,  &self->state.dt_init_factor, 
-             &self->state.walltime_timestep, &err);
+  RunPhysics(self->state.indxGRU, self->state.indxHRU, self->state.timestep, 
+             self->state.hru_data, self->state.dt_init,  
+             self->state.dt_init_factor, self->state.walltime_timestep, err);
   if (err != 0) {
     aout(self) << "Error---RunPhysics:\n"
                << "\tIndxGRU = "  << self->state.indxGRU 
@@ -301,7 +301,8 @@ int Run_HRU(stateful_actor<hru_state>* self) {
   return 0;      
 }
 
-// given a hru_actor with a state, compared current date with starting date to deterimine if hru is on a checkpoint
+// given a hru_actor with a state, compared current date with starting date
+// to deterimine if hru is on a checkpoint
 bool isCheckpoint(stateful_actor<hru_state>* self){
   switch(self->state.restartFrequency){
     case 0: // restart not enabled

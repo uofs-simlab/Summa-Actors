@@ -32,10 +32,10 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
   self->state.num_output_steps = fa_settings.num_timesteps_in_output_buffer;
   
   return {
-    [=](init_file_access_actor, int file_gru) {
+    [=](init_file_access_actor, int file_gru, int num_hru) {
       aout(self) << "File Access Actor: Intializing\n";
       auto& fa_settings = self->state.file_access_actor_settings;
-      int num_hru = self->state.num_gru;
+      self->state.num_hru = num_hru;
       
       // Get the information about the forcing files
       self->state.forcing_files = std::make_unique<forcingFileContainer>();
@@ -72,7 +72,7 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
         actor_address = "_" + to_string(self->address());
       }
       defOutputFortran(self->state.handle_ncid, &self->state.start_gru, 
-                       &self->state.num_gru, &num_hru, &file_gru, 
+                       &self->state.num_gru, &self->state.num_hru, &file_gru, 
                        &self->state.num_gru_info.use_global_for_data_structures,
                        actor_address.c_str(), &err);
       if (err != 0) return -1;
