@@ -47,9 +47,6 @@ USE globalData,only:indxChild_map             ! index of the child data structur
 USE globalData,only:bvarChild_map             ! index of the child data structure: stats bvar
 USE globalData,only:outFreq                   ! output frequencies
 ! named variables
-USE var_lookup,only:iLookTIME                 ! named variables for time data structure
-USE var_lookup,only:iLookDIAG                 ! named variables for local column model diagnostic variables
-USE var_lookup,only:iLookPROG                 ! named variables for local column model prognostic variables
 USE var_lookup,only:iLookINDEX                ! named variables for local column index variables
 USE var_lookup,only:iLookFreq                 ! named variables for the frequency structure
 USE var_lookup,only:iLookBVAR                 ! named variables for basin parameters
@@ -62,7 +59,7 @@ USE output_structure_module,only:summa_struct
 
 implicit none
 private
-public::hru_writeOutput
+public::writeHRUOutput
 public::writeParm
 public::writeData
 public::writeBasin
@@ -71,13 +68,7 @@ public::writeRestart
 public::setFinalizeStatsFalse
 integer(i4b),parameter      :: maxSpectral=2              ! maximum number of spectral bands
 contains
-subroutine hru_writeOutput(&
-                            indxHRU,                   &
-                            indxGRU,                   &
-                            timestep,                  & ! model timestep
-                            outputStep,                & ! index into the output Struc
-                            handle_hru_data, y,m,d,h,  & ! local HRU data  
-                            err) bind(C, name="hru_writeOutput") 
+subroutine writeHRUOutput(indxGRU, indxHRU, timestep, outputStep, hru_data, err, message)
   USE nrtype
   USE globalData,only:structInfo
   USE globalData,only:startWrite,endWrite
@@ -99,25 +90,17 @@ subroutine hru_writeOutput(&
   USE netcdf_util_module,only:nc_file_close                   ! close netcdf file
   USE netcdf_util_module,only:nc_file_open                    ! open netcdf file
   USE var_lookup,only:maxvarFreq                              ! maximum number of output files
-
   implicit none
-  integer(c_int),intent(in)             :: indxHRU               ! index of hru in GRU
-  integer(c_int),intent(in)             :: indxGRU               ! index of the GRU
-  integer(c_int),intent(in)             :: timestep              ! model timestep
-  integer(c_int),intent(in)             :: outputStep            ! index into the output Struc
-  type(c_ptr),intent(in),value          :: handle_hru_data       ! local HRU data
+  ! Dummy variables
+  integer(c_int),intent(in)             :: indxGRU            ! index of the GRU
+  integer(c_int),intent(in)             :: indxHRU            ! index of hru in GRU
+  integer(c_int),intent(in)             :: timestep           ! model timestep
+  integer(c_int),intent(in)             :: outputStep         ! index into the output Struc
+  type(hru_type),intent(in),value       :: hru_data           ! local HRU data
   integer(c_int),intent(out)            :: err
-  integer(c_int),intent(out)            :: y
-  integer(c_int),intent(out)            :: m
-  integer(c_int),intent(out)            :: d
-  integer(c_int),intent(out)            :: h
-
-
-  ! local pointers
-  type(hru_type), pointer               :: hru_data              ! local HRU data
+  character(len=256),intent(out)        :: message
   ! local variables
   character(len=256)                    :: cmessage
-  character(len=256)                    :: message 
   logical(lgt)                          :: defNewOutputFile=.false.
   logical(lgt)                          :: printRestart=.false.
   logical(lgt)                          :: printProgress=.false.
@@ -125,17 +108,8 @@ subroutine hru_writeOutput(&
   character(len=256)                    :: timeString        ! portion of restart file name that contains the write-out time
   integer(i4b)                          :: iStruct           ! index of model structure
   integer(i4b)                          :: iFreq             ! index of the output frequency
-  ! convert the C pointers to Fortran pointers
-  call c_f_pointer(handle_hru_data, hru_data)
   err=0; message='summa_manageOutputFiles/'
   ! identify the start of the writing
-
-  ! updating date variables to be passed back to the actors
-  y = hru_data%timeStruct%var(iLookTIME%iyyy)
-  m = hru_data%timeStruct%var(iLookTIME%im)
-  d = hru_data%timeStruct%var(iLookTIME%id)
-  h = hru_data%timeStruct%var(iLookTIME%ih)
-
 
   ! Many variables get there values from summa4chm_util.f90:getCommandArguments()
   call summa_setWriteAlarms(hru_data%oldTime_hru%var, hru_data%timeStruct%var, & 
@@ -285,7 +259,7 @@ subroutine hru_writeOutput(&
   ! save time vector
   hru_data%oldTime_hru%var(:) = hru_data%timeStruct%var(:)
 
-end subroutine hru_writeOutput
+end subroutine writeHRUOutput
 
 
 subroutine hru_writeRestart(&

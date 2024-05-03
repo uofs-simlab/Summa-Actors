@@ -216,12 +216,13 @@ set(FILE_ACCESS_INTERFACE
 set(JOB_INTERFACE
     ${JOB_ACTOR_DIR}/gru_struc.f90)
 set(GRU_INTERFACE
-    ${GRU_ACTOR_DIR}/gru_actor.f90)
+    ${GRU_ACTOR_DIR}/gru_interface.f90)
 set(HRU_INTERFACE
     ${HRU_ACTOR_DIR}/hru_init.f90
     ${HRU_ACTOR_DIR}/hru_read.f90
     ${HRU_ACTOR_DIR}/hru_modelRun.f90
-    ${HRU_ACTOR_DIR}/hru_writeOutput.f90)
+    ${HRU_ACTOR_DIR}/hru_writeOutput.f90
+    ${HRU_ACTOR_DIR}/hru_interface.f90)
 
 # Actors actual actor modules
 set(ACTORS_GLOBAL

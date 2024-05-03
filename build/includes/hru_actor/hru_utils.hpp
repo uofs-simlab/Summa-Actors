@@ -14,8 +14,6 @@ struct hru {
   int iFile;
   int dt_init_factor;
   int output_structure_step_index;
-  double dt_init;
-  double upArea;
 
   // Sundials variables
   double rtol;
@@ -61,6 +59,8 @@ struct hru {
   double tm_zone_offset_frac_day;
   int year_length;
   int compute_veg_flux;
+  double dt_init;
+  double upArea;
 };
 
 template <class Inspector>
@@ -76,8 +76,6 @@ bool inspect(Inspector& inspector, hru& hru_data) {
          inspector.field("dt_init_factor", hru_data.dt_init_factor),
          inspector.field("output_structure_step_index", 
                          hru_data.output_structure_step_index),
-         inspector.field("dt_init", hru_data.dt_init),
-         inspector.field("upArea", hru_data.upArea),
          inspector.field("rtol", hru_data.rtol),
          inspector.field("atol", hru_data.atol),
          inspector.field("forc_stat", hru_data.forc_stat),
@@ -111,5 +109,7 @@ bool inspect(Inspector& inspector, hru& hru_data) {
          inspector.field("tm_zone_offset_frac_day", 
                          hru_data.tm_zone_offset_frac_day),
          inspector.field("year_length", hru_data.year_length),
-         inspector.field("compute_veg_flux", hru_data.compute_veg_flux));
+         inspector.field("compute_veg_flux", hru_data.compute_veg_flux),
+         inspector.field("dt_init", hru_data.dt_init),
+         inspector.field("upArea", hru_data.upArea));
 }

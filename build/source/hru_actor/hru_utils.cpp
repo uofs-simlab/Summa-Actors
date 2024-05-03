@@ -19,8 +19,6 @@ void serializeHru(stateful_actor<hru_state>* self, hru& serialized_state) {
   serialized_state.dt_init_factor = self->state.dt_init_factor;
   serialized_state.output_structure_step_index = 
       self->state.output_structure_step_index; 
-  serialized_state.dt_init = self->state.dt_init;
-  serialized_state.upArea = self->state.upArea;
   serialized_state.rtol = self->state.rtol;
   serialized_state.atol = self->state.atol;
 
@@ -69,7 +67,9 @@ void serializeHru(stateful_actor<hru_state>* self, hru& serialized_state) {
   get_scalar_data(self->state.hru_data, serialized_state.frac_jul_day,
                   serialized_state.tm_zone_offset_frac_day,
                   serialized_state.year_length,
-                  serialized_state.compute_veg_flux);
+                  serialized_state.compute_veg_flux,
+                  serialized_state.dt_init,
+                  serialized_state.upArea);
 }
 
 void deserializeHru(stateful_actor<hru_state>* self, hru& new_state) {
@@ -89,8 +89,6 @@ void deserializeHru(stateful_actor<hru_state>* self, hru& new_state) {
   self->state.dt_init_factor = new_state.dt_init_factor;
   self->state.output_structure_step_index = 
       new_state.output_structure_step_index;
-  self->state.dt_init = new_state.dt_init;
-  self->state.upArea = new_state.upArea;
   self->state.rtol = new_state.rtol;
   self->state.atol = new_state.atol;
   // Statistic Structures
@@ -129,5 +127,6 @@ void deserializeHru(stateful_actor<hru_state>* self, hru& new_state) {
   // scalar data
   set_scalar_data(self->state.hru_data, new_state.frac_jul_day,
                   new_state.tm_zone_offset_frac_day, new_state.year_length,
-                  new_state.compute_veg_flux);
+                  new_state.compute_veg_flux, new_state.dt_init, 
+                  new_state.upArea);
 }

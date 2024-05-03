@@ -23,30 +23,33 @@ struct Date {
  *********************************************/
 extern "C" {
   // Initialize HRU data_structures
-  void initHRU(int* indxGRU, int* num_steps, void* hru_data, int* err);
+  void initHRU_fortran(int& indxGRU, int& indx_hru, int& num_steps, 
+                       void* hru_data, int& err, void* message);
   
-  void setupHRUParam(int* indxGRU, int* indxHRU, void* hru_data, 
-                     double* upArea, int* err);
+  void setupHRU_fortran(int& indxGRU, int& indxHRU, void* hru_data, int& err, 
+                        void* message);
   
   // Setup summa_readRestart File if this option has been chosen 
-  void summa_readRestart(int* indxGRU, int* indxHRU, void* hru_data, 
-                         double* dtInit, int* err);
+  void readHRURestart_fortran(int& indxGRU, int& indxHRU, void* hru_data, 
+                              int& err, void* message);
                          
-  void HRU_readForcing(int& index_gru, int& indx_hru, int& iStep, int& iRead, 
-                       int& iFile, void* hru_data,  int& err);
+  void readHRUForcing_fortran(int& index_gru, int& indx_hru, int& iStep, 
+                              int& iRead, int& iFile, void* hru_data,  
+                              int& err, void* message);
   // Run the model for one timestep
-  void RunPhysics(int& indx_gru, int& indx_hru, int& timestep, void* hru_data, 
-                  double& dt, int& dt_int_factor, double& walltime_timestep, 
-                  int& err);
+  void runHRU_fortran(int& indx_gru, int& indx_hru, int& timestep, void* hru_data, 
+                      int& dt_int_factor, double& walltime_timestep, 
+                      int& err, void* message);
   
-  void hru_writeOutput(int* index_hru, int* index_gru, int* timestep, 
-                       int* output_step, void* hru_data, int* y, int* m, 
-                       int* d, int* h, int* err);
+  void writeHRUOutput_fortran(int& index_gru, int& index_hru, int& timestep, 
+                              int& output_step, void* hru_data, int& y, int& m, 
+                              int& d, int& h, int& err, void* message);
     
   int  hru_writeRestart(int* index_hru, int* index_gru, int* timestep, 
                         int* output_step, void* hru_data, int* err);
 
-  void setTimeZoneOffset(int* iFile, void* hru_data, int* err);
+  void setTimeZoneOffset_fortran(int& iFile, void* hru_data, int& err, 
+                                 void* message);
 
 
   
@@ -95,9 +98,7 @@ struct hru_state {
   int     iFile = 1;              // index of current forcing file from forcing file list
   int     dt_init_factor = 1; // factor of dt_init (coupled_em)
   int     output_structure_step_index = 1; // index of current time step in output structure
-  double  dt_init;            // used to initialize the length of the sub-step for each HRU
-  double	upArea;             // area upslope of each HRU
-
+  
   // Sundials variables
   double rtol = -9999; // -9999 uses default
   double atol = -9999; // -9999 uses default

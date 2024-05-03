@@ -117,6 +117,9 @@ extern "C" {
     // hru_type
     void* new_handle_hru_type();
     void delete_handle_hru_type(void* handle);
+    // gru_type
+    void* new_handle_gru_type(int& num_hru);
+    void delete_handle_gru_type(void* handle);
 
     // var_dlength_by_indx
     void get_size_var_dlength_by_indx(void* handle, int* indx, int* num_var);
@@ -161,7 +164,11 @@ extern "C" {
 
     // scalar types
     void get_scalar_data_fortran(void* handle, double* fracJulDay, 
-        double* tmZoneOffsetFracDay, int* year_length, int* computeVegFlux);
+                                 double* tmZoneOffsetFracDay, int* year_length, 
+                                 int* computeVegFlux, double* dt_init,
+                                 double* upArea);
     void set_scalar_data_fortran(void* handle, double* fracJulDay,
-        double* tmZoneOffsetFracDay, int* year_length, int* computeVegFlux);
+                                 double* tmZoneOffsetFracDay, int* year_length, 
+                                 int* computeVegFlux, double* dt_init,
+                                 double* upArea);
 }

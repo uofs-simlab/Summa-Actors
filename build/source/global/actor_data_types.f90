@@ -157,5 +157,13 @@ module actor_data_types
     integer(c_int)                             :: yearLength                 ! number of days in the current year
     ! Misc Variables
     integer(c_int)                             :: computeVegFlux             ! flag to indicate if we are computing fluxes over vegetation
+    real(c_double)                             :: dt_init
+    real(c_double)                             :: upArea
   end type hru_type
+
+  type, public :: gru_type
+    type(hru_type),allocatable :: hru(:)
+    type(var_dlength),pointer  :: bvarStat
+    type(var_dlength),pointer  :: bvarStruct
+  end type gru_type
 end module

@@ -76,15 +76,8 @@ public::set_sundials_tolerances
 contains
 
 ! Runs the model physics for an HRU
-subroutine runPhysics(&
-              indxGRU,             &
-              indxHRU,             &
-              modelTimeStep,       &
-              handle_hru_data,     &
-              dt_init,             & ! used to initialize the length of the sub-step for each HRU
-              dt_init_factor,      & ! used to adjust the length of the timestep in the event of a failure
-              wallTimeTimeStep,    &
-              err) bind(C, name='RunPhysics')
+subroutine runPhysics(indxGRU, indxHRU, modelTimeStep, hru_data, &
+    dt_init_factor, err, message)
   ! ---------------------------------------------------------------------------------------
   ! * desired modules
   ! ---------------------------------------------------------------------------------------
@@ -104,27 +97,16 @@ subroutine runPhysics(&
   USE globalData,only:startPhysics,endPhysics  ! date/time for the start and end of the initialization
   USE globalData,only:elapsedPhysics           ! elapsed time for the initialization
   implicit none
- 
-  ! ---------------------------------------------------------------------------------------
   ! Dummy Variables
-  ! ---------------------------------------------------------------------------------------
   integer(c_int),intent(in)                 :: indxGRU                ! id of GRU
   integer(c_int),intent(in)                 :: indxHRU                ! id of HRU                   
   integer(c_int), intent(in)                :: modelTimeStep          ! time step index
-  type(c_ptr),    intent(in), value         :: handle_hru_data        ! c_ptr to -- hru data
-  real(c_double), intent(inout)             :: dt_init                ! used to initialize the length of the sub-step for each HRU
+  type(hru_type), intent(inout)             :: hru_data               ! c_ptr to -- hru data
   integer(c_int), intent(in)                :: dt_init_factor         ! used to adjust the length of the timestep in the event of a failure
-  real(c_double), intent(out)               :: wallTimeTimeStep       ! wall time for the time step
   integer(c_int), intent(inout)             :: err                    ! error code
-  ! ---------------------------------------------------------------------------------------
-  ! FORTRAN POINTERS
-  ! ---------------------------------------------------------------------------------------
-  type(hru_type),pointer                    :: hru_data               ! hru data
-  ! ---------------------------------------------------------------------------------------
+  character(len=256), intent(out)           :: message                ! error message
   ! local variables: general
-  ! ---------------------------------------------------------------------------------------
   integer(8)                                :: hruId                  ! hruId
-  real(dp)                                  :: fracHRU                ! fractional area of a given HRU (-)
   character(LEN=256)                        :: cmessage               ! error message of downwind routine
   ! local variables: veg phenology
   logical(lgt)                              :: computeVegFluxFlag     ! flag to indicate if we are computing fluxes over vegetation (.false. means veg is buried with snow)
@@ -134,9 +116,7 @@ subroutine runPhysics(&
   integer(i4b)                              :: nSoil                  ! number of soil layers
   integer(i4b)                              :: nLayers                ! total number of layers
   real(dp), allocatable                     :: zSoilReverseSign(:)    ! height at bottom of each soil layer, negative downwards (m)
-  character(len=256)                        :: message                ! error message
   ! ---------------------------------------------------------------------------------------
-  call c_f_pointer(handle_hru_data, hru_data)
   hruId = gru_struc(indxGRU)%hruInfo(indxHRU)%hru_id
 
   ! ---------------------------------------------------------------------------------------
@@ -181,28 +161,6 @@ subroutine runPhysics(&
   ! ****************************************************************************
   ! *** model simulation
   ! ****************************************************************************
-
-  
-  !****************************************************************************** 
-  !****************************** From run_oneGRU *******************************
-  !******************************************************************************
-  ! ----- basin initialization --------------------------------------------------------------------------------------------
-  ! initialize runoff variables
-  hru_data%bvarStruct%var(iLookBVAR%basin__SurfaceRunoff)%dat(1)    = 0._dp  ! surface runoff (m s-1)
-  hru_data%bvarStruct%var(iLookBVAR%basin__SoilDrainage)%dat(1)     = 0._dp 
-  hru_data%bvarStruct%var(iLookBVAR%basin__ColumnOutflow)%dat(1)    = 0._dp  ! outflow from all "outlet" HRUs (those with no downstream HRU)
-  hru_data%bvarStruct%var(iLookBVAR%basin__TotalRunoff)%dat(1)      = 0._dp 
-
-  ! initialize baseflow variables
-  hru_data%bvarStruct%var(iLookBVAR%basin__AquiferRecharge)%dat(1)  = 0._dp ! recharge to the aquifer (m s-1)
-  hru_data%bvarStruct%var(iLookBVAR%basin__AquiferBaseflow)%dat(1)  = 0._dp ! baseflow from the aquifer (m s-1)
-  hru_data%bvarStruct%var(iLookBVAR%basin__AquiferTranspire)%dat(1) = 0._dp ! transpiration loss from the aquifer (m s-1)
-
-  ! initialize total inflow for each layer in a soil column
-  if (modelTimeStep == 0 .and. indxHRU == 1)then
-    hru_data%fluxStruct%var(iLookFLUX%mLayerColumnInflow)%dat(:) = 0._dp
-  end if
- 
   ! update the number of layers
   nSnow   = hru_data%indxStruct%var(iLookINDEX%nSnow)%dat(1)    ! number of snow layers
   nSoil   = hru_data%indxStruct%var(iLookINDEX%nSoil)%dat(1)    ! number of soil layers
@@ -216,7 +174,6 @@ subroutine runPhysics(&
   ! water pixel: do nothing
   if (hru_data%typeStruct%var(iLookTYPE%vegTypeIndex) == isWater) then
       ! Set wall_clock time to zero so it does not get a random value
-    wallTimeTimeStep = 0._dp
     hru_data%diagStruct%var(iLookDIAG%wallClockTime)%dat(1) = 0._dp 
     return
   endif
@@ -274,8 +231,8 @@ subroutine runPhysics(&
   ! run the model for a single HRU
   call coupled_em(&
                   ! model control
-                  hruId,                      & ! intent(in):    hruID
-                  dt_init,                     & ! intent(inout): initial time step
+                  hruId,                       & ! intent(in):    hruID
+                  hru_data%dt_init,            & ! intent(inout): initial time step
                   dt_init_factor,              & ! Used to adjust the length of the timestep in the event of a failure
                   computeVegFluxFlag,          & ! intent(inout): flag to indicate if we are computing fluxes over vegetation
                   hru_data%fracJulDay,         & ! intent(in):    fractional julian days since the start of year
@@ -304,7 +261,6 @@ subroutine runPhysics(&
   if(computeVegFluxFlag)      hru_data%ComputeVegFlux = yes
   if(.not.computeVegFluxFlag) hru_data%ComputeVegFlux = no
 
-  fracHRU = hru_data%attrStruct%var(iLookATTR%HRUarea) / hru_data%bvarStruct%var(iLookBVAR%basin__totalArea)%dat(1)
 
 
 
@@ -331,64 +287,7 @@ subroutine runPhysics(&
   !   bvarData%var(iLookBVAR%basin__ColumnOutflow)%dat(1) = bvarData%var(iLookBVAR%basin__ColumnOutflow)%dat(1) + sum(fluxHRU%hru(iHRU)%var(iLookFLUX%mLayerColumnOutflow)%dat(:))
   ! end if
 
-
-
-
-
-
-
-
-  ! ----- calculate weighted basin (GRU) fluxes --------------------------------------------------------------------------------------
-  
-  ! increment basin surface runoff (m s-1)
-  hru_data%bvarStruct%var(iLookBVAR%basin__SurfaceRunoff)%dat(1) = hru_data%bvarStruct%var(iLookBVAR%basin__SurfaceRunoff)%dat(1) + hru_data%fluxStruct%var(iLookFLUX%scalarSurfaceRunoff)%dat(1) * fracHRU
-  
-  !increment basin soil drainage (m s-1)
-  hru_data%bvarStruct%var(iLookBVAR%basin__SoilDrainage)%dat(1)   = hru_data%bvarStruct%var(iLookBVAR%basin__SoilDrainage)%dat(1)  + hru_data%fluxStruct%var(iLookFLUX%scalarSoilDrainage)%dat(1)  * fracHRU
-  
-  ! increment aquifer variables -- ONLY if aquifer baseflow is computed individually for each HRU and aquifer is run
-  ! NOTE: groundwater computed later for singleBasin
-  if(model_decisions(iLookDECISIONS%spatial_gw)%iDecision == localColumn .and. model_decisions(iLookDECISIONS%groundwatr)%iDecision == bigBucket) then
-
-    hru_data%bvarStruct%var(iLookBVAR%basin__AquiferRecharge)%dat(1)  = hru_data%bvarStruct%var(iLookBVAR%basin__AquiferRecharge)%dat(1)   + hru_data%fluxStruct%var(iLookFLUX%scalarSoilDrainage)%dat(1)     * fracHRU
-    hru_data%bvarStruct%var(iLookBVAR%basin__AquiferTranspire)%dat(1) = hru_data%bvarStruct%var(iLookBVAR%basin__AquiferTranspire)%dat(1)  + hru_data%fluxStruct%var(iLookFLUX%scalarAquiferTranspire)%dat(1) * fracHRU
-    hru_data%bvarStruct%var(iLookBVAR%basin__AquiferBaseflow)%dat(1)  =  hru_data%bvarStruct%var(iLookBVAR%basin__AquiferBaseflow)%dat(1)  &
-            +  hru_data%fluxStruct%var(iLookFLUX%scalarAquiferBaseflow)%dat(1) * fracHRU
-    end if
-
-  ! perform the routing
-  associate(totalArea => hru_data%bvarStruct%var(iLookBVAR%basin__totalArea)%dat(1) )
-
-  ! compute water balance for the basin aquifer
-  if(model_decisions(iLookDECISIONS%spatial_gw)%iDecision == singleBasin)then
-    message=trim(message)//'multi_driver/bigBucket groundwater code not transferred from old code base yet'
-    err=20; print*, message; return
-  end if
-
-  ! calculate total runoff depending on whether aquifer is connected
-  if(model_decisions(iLookDECISIONS%groundwatr)%iDecision == bigBucket) then
-    ! aquifer
-    hru_data%bvarStruct%var(iLookBVAR%basin__TotalRunoff)%dat(1) = hru_data%bvarStruct%var(iLookBVAR%basin__SurfaceRunoff)%dat(1) + hru_data%bvarStruct%var(iLookBVAR%basin__ColumnOutflow)%dat(1)/totalArea + hru_data%bvarStruct%var(iLookBVAR%basin__AquiferBaseflow)%dat(1)
-  else
-    ! no aquifer
-    hru_data%bvarStruct%var(iLookBVAR%basin__TotalRunoff)%dat(1) = hru_data%bvarStruct%var(iLookBVAR%basin__SurfaceRunoff)%dat(1) + hru_data%bvarStruct%var(iLookBVAR%basin__ColumnOutflow)%dat(1)/totalArea + hru_data%bvarStruct%var(iLookBVAR%basin__SoilDrainage)%dat(1)
-  endif
-
-  call qOverland(&! input
-                  model_decisions(iLookDECISIONS%subRouting)%iDecision,            &  ! intent(in): index for routing method
-                  hru_data%bvarStruct%var(iLookBVAR%basin__TotalRunoff)%dat(1),             &  ! intent(in): total runoff to the channel from all active components (m s-1)
-                  hru_data%bvarStruct%var(iLookBVAR%routingFractionFuture)%dat,             &  ! intent(in): fraction of runoff in future time steps (m s-1)
-                  hru_data%bvarStruct%var(iLookBVAR%routingRunoffFuture)%dat,               &  ! intent(in): runoff in future time steps (m s-1)
-                  ! output
-                  hru_data%bvarStruct%var(iLookBVAR%averageInstantRunoff)%dat(1),           &  ! intent(out): instantaneous runoff (m s-1)
-                  hru_data%bvarStruct%var(iLookBVAR%averageRoutedRunoff)%dat(1),            &  ! intent(out): routed runoff (m s-1)
-                  err,message)                                                                  ! intent(out): error control
-  if(err/=0)then; err=20; message=trim(message)//trim(cmessage); print*, message; return; endif;
-  end associate
   !************************************* End of run_oneGRU *****************************************
-
-  ! Get the elapsed time for the GRU
-  wallTimeTimeStep = hru_data%diagStruct%var(iLookDIAG%wallClockTime)%dat(1)
 
 end subroutine runPhysics
 
