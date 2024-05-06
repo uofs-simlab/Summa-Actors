@@ -11,6 +11,8 @@ class GRU {
     int index_job_;          // The index of the GRU within this job
     caf::actor actor_ref_;   // The actor for the GRU
 
+    int num_hrus_;           // The number of HRUs in the GRU
+
     // Modifyable Parameters
     int dt_init_factor_;     // The initial dt for the GRU
     double rel_tol_;         // The relative tolerance for the GRU

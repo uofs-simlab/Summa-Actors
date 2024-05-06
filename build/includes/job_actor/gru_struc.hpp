@@ -9,6 +9,8 @@ extern "C" {
 
   void read_icond_nlayers_fortran(int& num_gru, int& err, void* message);
 
+  void get_num_hru_per_gru_fortran(int& arr_size, int& num_hru_per_gru_array);
+
   void deallocate_gru_struc_fortran();
 }
 
@@ -50,6 +52,9 @@ class GruStruc {
       return -1;
     }
 
+    void getNumHrusPerGru();
+    inline int getNumHruPerGru(int index) { return num_hru_per_gru_[index]; }
+
   private:
     // Inital Information about the GRUs
     int start_gru_;
@@ -60,6 +65,7 @@ class GruStruc {
     
     // GRU specific Information
     std::vector<std::unique_ptr<GRU>> gru_info_;
+    std::vector<int> num_hru_per_gru_;
 
     // Runtime status of the GRUs
     int num_gru_done_ = 0;

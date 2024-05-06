@@ -55,6 +55,7 @@ behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru,
     aout(self) << "ERROR: Job_Actor - ReadIcondNlayers\n";
     return {};
   }
+  gru_struc->getNumHrusPerGru();
 
   self->state.summa_init_struc = std::make_unique<SummaInitStruc>();
   if (self->state.summa_init_struc->allocate(self->state.num_gru) != 0) {
@@ -78,9 +79,10 @@ behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru,
                                         gru_struc->get_file_gru(), 
                                         false);
 
-  self->state.file_access_actor = self->spawn(
-      file_access_actor, self->state.num_gru_info, 
-      self->state.file_access_actor_settings, self);
+  self->state.file_access_actor = self->spawn(file_access_actor, 
+                                              self->state.num_gru_info, 
+                                              self->state.file_access_actor_settings, 
+                                              self);
   self->request(self->state.file_access_actor, caf::infinite, 
                 init_file_access_actor_v, gru_struc->get_file_gru(),
                 gru_struc->getNumHrus())
@@ -92,7 +94,6 @@ behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru,
       self->quit();
       return;
     }
-
 
     aout(self) << "Job_Actor: File Access Actor Ready\n";  
     self->state.job_timing.updateEndPoint("init_duration");
