@@ -82,7 +82,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int ref_gru, int indx_gru,
       // Our output structure is full
       if (self->state.num_steps_until_write <= 0) {
           self->send(self->state.file_access_actor, write_output_v, 
-          self->state.indxGRU, self->state.indxHRU, self);
+                     self->state.indxGRU, self->state.indxHRU, self);
       }
     },
 
@@ -96,7 +96,8 @@ behavior hru_actor(stateful_actor<hru_state>* self, int ref_gru, int indx_gru,
       int err;
       self->state.iFile = iFile;
       self->state.stepsInCurrentFFile = num_forcing_steps_in_iFile;
-      setTimeZoneOffset(&self->state.iFile, self->state.hru_data, &err);
+      std::unique_ptr<char[]> message(new char[256]);
+      setTimeZoneOffset_fortran(iFile, self->state.hru_data, err, &message);
       if (err != 0) {
         aout(self) << "Error: HRU_Actor - setTimeZoneOffset - HRU = " 
                    << self->state.indxHRU << " - indxGRU = " 
@@ -126,7 +127,8 @@ behavior hru_actor(stateful_actor<hru_state>* self, int ref_gru, int indx_gru,
                      << " Updating timeZoneOffset\n";
       int err;
       self->state.iFile = iFile;
-      setTimeZoneOffset(&iFile, self->state.hru_data, &err);
+      std::unique_ptr<char[]> message(new char[256]);
+      setTimeZoneOffset_fortran(iFile, self->state.hru_data, err, &message);
     },
 
     // BMI - Functions
@@ -169,8 +171,9 @@ behavior hru_actor(stateful_actor<hru_state>* self, int ref_gru, int indx_gru,
 
 void Initialize_HRU(stateful_actor<hru_state>* self) {
   int err = 0;
-  initHRU(&self->state.indxGRU, &self->state.num_steps, self->state.hru_data, 
-          &err);
+  std::unique_ptr<char[]> message(new char[256]);
+  initHRU_fortran(self->state.indxGRU, self->state.indxHRU, 
+                  self->state.num_steps, self->state.hru_data, err, &message);
   if (err != 0) {
     aout(self) << "Error: HRU_Actor - Initialize - HRU = " 
                << self->state.indxHRU  
@@ -179,9 +182,10 @@ void Initialize_HRU(stateful_actor<hru_state>* self) {
                << "\nError Code = " << err << "\n";
     self->quit();
   }
-
-  setupHRUParam(&self->state.indxGRU, &self->state.indxHRU, 
-                self->state.hru_data, &self->state.upArea, &err);
+  
+  std::fill(message.get(), message.get() + 256, '\0'); // Clear message
+  setupHRU_fortran(self->state.indxGRU, self->state.indxHRU, 
+                   self->state.hru_data, err, &message);
   if (err != 0) {
     aout(self) << "Error: HRU_Actor - SetupHRUParam - HRU = " 
                 << self->state.indxHRU
@@ -190,9 +194,10 @@ void Initialize_HRU(stateful_actor<hru_state>* self) {
     self->quit();
     return;
   }
-          
-  summa_readRestart(&self->state.indxGRU, &self->state.indxHRU,
-                    self->state.hru_data, &self->state.dt_init, &err);
+
+  std::fill(message.get(), message.get() + 256, '\0'); // Clear message
+  readHRURestart_fortran(self->state.indxGRU, self->state.indxHRU,
+                        self->state.hru_data, err, &message);
   if (err != 0) {
     aout(self) << "Error: HRU_Actor - summa_readRestart - HRU = " 
                << self->state.indxHRU
@@ -213,9 +218,11 @@ void Initialize_HRU(stateful_actor<hru_state>* self) {
 
 int Run_HRU(stateful_actor<hru_state>* self) {
   int err = 0;
-  HRU_readForcing(&self->state.indxGRU, &self->state.timestep, 
-                  &self->state.forcingStep, &self->state.iFile, 
-                  self->state.hru_data, &err);
+  std::unique_ptr<char[]> message(new char[256]);
+  readHRUForcing_fortran(self->state.indxGRU, self->state.indxHRU, 
+                         self->state.timestep, self->state.forcingStep, 
+                         self->state.iFile, self->state.hru_data, err,
+                         &message);
   if (err != 0) {
     aout(self) << "Error---HRU_Actor: ReadForcingHRU\n" 
                << "\tIndxGRU = " << self->state.indxGRU << "\n"
@@ -235,10 +242,11 @@ int Run_HRU(stateful_actor<hru_state>* self) {
     aout(self) << self->state.ref_gru << " - Timestep = " 
                << self->state.timestep << "\n";
   }
-    
-  RunPhysics(&self->state.indxHRU, &self->state.timestep, self->state.hru_data, 
-             &self->state.dt_init,  &self->state.dt_init_factor, 
-             &self->state.walltime_timestep, &err);
+
+  std::fill(message.get(), message.get() + 256, '\0'); // Clear message
+  runHRU_fortran(self->state.indxGRU, self->state.indxHRU, self->state.timestep, 
+                 self->state.hru_data, self->state.dt_init_factor, 
+                 self->state.walltime_timestep, err, &message);
   if (err != 0) {
     aout(self) << "Error---RunPhysics:\n"
                << "\tIndxGRU = "  << self->state.indxGRU 
@@ -252,11 +260,11 @@ int Run_HRU(stateful_actor<hru_state>* self) {
     // write variables for output to summa_struct, extract y,m,d,h from 
     // fortran side ald save it to the hru's state
     int y,m,d,h;
-
-    hru_writeOutput(&self->state.indxHRU, &self->state.indxGRU,
-                    &self->state.timestep, 
-                    &self->state.output_structure_step_index,
-                    self->state.hru_data, &y, &m, &d, &h, &err);
+    std::fill(message.get(), message.get() + 256, '\0'); // Clear message
+    writeHRUOutput_fortran(self->state.indxGRU, self->state.indxHRU,
+                           self->state.timestep, 
+                           self->state.output_structure_step_index,
+                           self->state.hru_data, y, m, d, h, err, &message);
     if (err != 0) {
       aout(self) << "Error: HRU_Actor - writeHRUToOutputStructure - HRU = " 
                  << self->state.indxHRU << " - indxGRU = " 
@@ -301,7 +309,8 @@ int Run_HRU(stateful_actor<hru_state>* self) {
   return 0;      
 }
 
-// given a hru_actor with a state, compared current date with starting date to deterimine if hru is on a checkpoint
+// given a hru_actor with a state, compared current date with starting date
+// to deterimine if hru is on a checkpoint
 bool isCheckpoint(stateful_actor<hru_state>* self){
   switch(self->state.restartFrequency){
     case 0: // restart not enabled

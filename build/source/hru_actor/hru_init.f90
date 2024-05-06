@@ -41,13 +41,11 @@ USE var_lookup,only:maxVarFreq                               ! # of available ou
 USE var_lookup,only:iLookATTR                               ! look-up values for local attributes
 USE var_lookup,only:iLookTYPE                               ! look-up values for classification of veg, soils etc.
 USE var_lookup,only:iLookPARAM                              ! look-up values for local column model parameters
-USE var_lookup,only:iLookID                                 ! look-up values for local column model parameters
+USE var_lookup,only:iLookID                                   ! look-up values for local column model parameters
 
 USE var_lookup,only:iLookPROG                               ! look-up values for local column model prognostic (state) variables
 USE var_lookup,only:iLookDIAG                               ! look-up values for local column model diagnostic variables
 USE var_lookup,only:iLookFLUX                               ! look-up values for local column model fluxes
-USE var_lookup,only:iLookBVAR                               ! look-up values for basin-average model variables
-USE var_lookup,only:iLookDECISIONS                          ! look-up values for model decisions
 USE globalData,only:urbanVegCategory                        ! vegetation category for urban areas
 
 ! named variables to define LAI decisions
@@ -59,16 +57,13 @@ USE mDecisions_module,only:&
 implicit none
 private
 public::initHRU
-public::setupHRUParam
-public::summa_readRestart
+public::setupHRU
+public::readHRURestart
 contains
 ! **************************************************************************************************
 ! public subroutine initHRU: ! used to declare and allocate summa data structures and initialize model state to known values
 ! **************************************************************************************************
-subroutine initHRU(indxGRU,            & !  Index of HRU's GRU parent
-                   num_steps,          &
-                   handle_hru_data,    &
-                   err) bind(C,name='initHRU')
+subroutine initHRU(indx_gru, indx_hru, hru_data, err, message)
   ! ---------------------------------------------------------------------------------------
   ! * desired modules
   ! ---------------------------------------------------------------------------------------
@@ -84,35 +79,20 @@ subroutine initHRU(indxGRU,            & !  Index of HRU's GRU parent
   ! miscellaneous global data
   USE globalData,only:gru_struc                               ! gru-hru mapping structures
   USE globalData,only:structInfo                              ! information on the data structures
-  USE globalData,only:numtim
   USE globalData,only:startTime,finshTime,refTime,oldTime
 
   USE var_lookup,only:maxvarFreq                              ! maximum number of output files
   USE var_lookup,only:iLookFreq                               ! output frequency lookup table
   implicit none
-  
-  ! ---------------------------------------------------------------------------------------
-  ! * variables from C++
-  ! ---------------------------------------------------------------------------------------
-  integer(c_int),intent(in)                  :: indxGRU                    ! indx of the parent GRU
-  integer(c_int),intent(out)                 :: num_steps                  ! number of steps in model, local to the HRU                 
-  type(c_ptr), intent(in), value             :: handle_hru_data            ! hru data structure (hru_type
-  ! ancillary data structures
-  integer(c_int),intent(inout)               :: err  
-  ! ---------------------------------------------------------------------------------------
-  ! * Fortran Variables For Conversion
-  ! ---------------------------------------------------------------------------------------
-  type(hru_type),pointer                     :: hru_data                   ! hru data structure (hru_type
-  ! ---------------------------------------------------------------------------------------
-  ! * Local Subroutine Variables
-  ! ---------------------------------------------------------------------------------------
-  character(LEN=256)                         :: message                    ! error message
-  character(LEN=256)                         :: cmessage                   ! error message of downwind routine
-  integer(i4b)                               :: iStruct                    ! looping variables
-  ! ---------------------------------------------------------------------------------------
-  ! * Convert From C++ to Fortran
-  ! ---------------------------------------------------------------------------------------
-  call c_f_pointer(handle_hru_data,   hru_data)
+  ! Dummy Variables
+  integer(c_int),intent(in)                  :: indx_gru      ! indx of the parent GRU
+  integer(c_int),intent(in)                  :: indx_hru      ! indx of the HRU
+  type(hru_type),intent(out)                 :: hru_data      ! hru data structure (hru_type
+  integer(c_int),intent(out)                 :: err  
+  character(len=256),intent(out)             :: message       ! error message
+  ! Local Variables
+  character(LEN=256)                         :: cmessage      ! error message of downwind routine
+  integer(i4b)                               :: iStruct       ! looping variables
   ! ---------------------------------------------------------------------------------------
   ! initialize error control
   err=0; message='hru_init/'
@@ -125,13 +105,9 @@ subroutine initHRU(indxGRU,            & !  Index of HRU's GRU parent
   elapsedWrite=0._dp
   elapsedPhysics=0._dp
 
-  ! copy the number of the steps for the hru
-  num_steps = numtim
-
   ! *****************************************************************************
   ! *** allocate space for data structures
-  ! *****************************************************************************
-
+  ! ****************************************************************************
   ! allocate time structures
   do iStruct=1,4
   select case(iStruct)
@@ -152,8 +128,8 @@ subroutine initHRU(indxGRU,            & !  Index of HRU's GRU parent
 
   ! get the number of snow and soil layers
   associate(&
-  nSnow => gru_struc(indxGRU)%hruInfo(1)%nSnow, & ! number of snow layers for each HRU
-  nSoil => gru_struc(indxGRU)%hruInfo(1)%nSoil  ) ! number of soil layers for each HRU
+  nSnow => gru_struc(indx_gru)%hruInfo(indx_hru)%nSnow, & ! number of snow layers for each HRU
+  nSoil => gru_struc(indx_gru)%hruInfo(indx_hru)%nSoil  ) ! number of soil layers for each HRU
 
   ! allocate other data structures
   do iStruct=1,size(structInfo)
@@ -236,20 +212,14 @@ subroutine initHRU(indxGRU,            & !  Index of HRU's GRU parent
 end subroutine initHRU
 
 
-
 ! **************************************************************************************************
 ! public subroutine setupHRUParam: initializes parameter data structures (e.g. vegetation and soil parameters).
 ! **************************************************************************************************
-subroutine setupHRUParam(indxGRU,                 & ! ID of hru
-                         indxHRU,                 & ! Index of the parent GRU of the HRU 
-                         handle_hru_data,         &
-                         upArea,                  & ! area upslope of each HRU,
-                         err) bind(C, name='setupHRUParam')
+subroutine setupHRU(indxGRU, indxHRU, hru_data, err, message)
   ! ---------------------------------------------------------------------------------------
   ! * desired modules
   ! ---------------------------------------------------------------------------------------
   USE nrtype                                                  ! variable types, etc.
-  USE output_structure_module,only:summa_struct
   USE summa_init_struc,only:init_struc
   ! subroutines and functions
   use time_utils_module,only:elapsedSec                       ! calculate the elapsed time
@@ -281,26 +251,19 @@ subroutine setupHRUParam(indxGRU,                 & ! ID of hru
   ! calling variables
   integer(c_int),intent(in)                :: indxGRU              ! Index of the parent GRU of the HRU
   integer(c_int),intent(in)                :: indxHRU              ! ID to locate correct HRU from netcdf file 
-  type(c_ptr), intent(in), value           :: handle_hru_data      ! pointer to the hru data structure (for error messages
-  real(c_double),intent(inout)             :: upArea
+  type(hru_type),intent(out)               :: hru_data             ! local hru data structure
   integer(c_int),intent(inout)             :: err
+  character(len=256),intent(out)           :: message
 
   ! local variables
-  type(hru_type),pointer                   :: hru_data             ! local hru data structure
 
   integer(i4b)                             :: ivar                 ! loop counter
   integer(i4b)                             :: i_z                  ! loop counter
-  character(len=256)                       :: message              ! error message
   character(len=256)                       :: cmessage             ! error message of downwind routine
 
   ! ---------------------------------------------------------------------------------------
   ! initialize error control
-  err=0; message='setupHRUParam/'
-
-  ! convert to fortran pointer from C++ pointer
-  call c_f_pointer(handle_hru_data, hru_data)
-
-  ! ffile_info and mDecisions moved to their own seperate subroutine call
+  err=0; message='setupHRU'
 
   hru_data%oldTime_hru%var(:) = hru_data%startTime_hru%var(:)
   hru_data%attrStruct%var(:) = init_struc%attrStruct%gru(indxGRU)%hru(indxHRU)%var(:)
@@ -327,26 +290,16 @@ subroutine setupHRUParam(indxGRU,                 & ! ID of hru
   do ivar=1, size(init_struc%indxStruct%gru(indxGRU)%hru(indxHRU)%var(:))
     hru_data%indxStruct%var(ivar)%dat(:) = init_struc%indxStruct%gru(indxGRU)%hru(indxHRU)%var(ivar)%dat(:)
   enddo
-end subroutine setupHRUParam
+end subroutine setupHRU
 
 
 ! **************************************************************************************************
 ! public subroutine summa_readRestart: read restart data and reset the model state
 ! **************************************************************************************************
-subroutine summa_readRestart(indxGRU,         & ! index of GRU in gru_struc
-                            indxHRU,          & ! index of HRU in gru_struc
-                            handle_hru_data,  & ! data structure for the HRU
-                            dt_init,          & ! used to initialize the length of the sub-step for each HRU
-                            err) bind(C,name='summa_readRestart')
-  ! ---------------------------------------------------------------------------------------
-  ! * desired modules
-  ! ---------------------------------------------------------------------------------------
-  ! data types
+subroutine readHRURestart(indxGRU, indxHRU, hru_data, err, message)
   USE nrtype                                                  ! variable types, etc.
   ! functions and subroutines
   USE time_utils_module,only:elapsedSec                       ! calculate the elapsed time
-  ! USE read_icond_module,only:read_icond               ! module to read initial conditions
-  ! USE check_icond4chm_module,only:check_icond4chm             ! module to check initial conditions
   USE var_derive_module,only:calcHeight                       ! module to calculate height at layer interfaces and layer mid-point
   USE var_derive_module,only:v_shortcut                       ! module to calculate "short-cut" variables
   USE var_derive_module,only:rootDensty                       ! module to calculate the vertical distribution of roots
@@ -356,39 +309,28 @@ subroutine summa_readRestart(indxGRU,         & ! index of GRU in gru_struc
   ! timing variables
   USE globalData,only:startRestart,endRestart                 ! date/time for the start and end of reading model restart files
   USE globalData,only:elapsedRestart                          ! elapsed time to read model restart files
+  ! Lookup values
+  USE var_lookup,only:iLookDECISIONS                          ! look-up values for model decisions
+  USE var_lookup,only:iLookBVAR                               ! look-up values for basin-average model variables
   ! model decisions
   USE mDecisions_module,only:&                                ! look-up values for the choice of method for the spatial representation of groundwater
   localColumn, & ! separate groundwater representation in each local soil column
   singleBasin    ! single groundwater store over the entire basin
   implicit none
-  ! ---------------------------------------------------------------------------------------
   ! Dummy variables
-  ! ---------------------------------------------------------------------------------------
   integer(c_int),intent(in)               :: indxGRU            !  index of GRU in gru_struc
   integer(c_int),intent(in)               :: indxHRU            !  index of HRU in gru_struc
-  type(c_ptr), intent(in), value          :: handle_hru_data   !  data structure for the HRU
-
-  real(c_double), intent(inout)           :: dt_init
-  integer(c_int), intent(inout)           :: err
-  ! ---------------------------------------------------------------------------------------
-  ! Fortran Pointers
-  ! ---------------------------------------------------------------------------------------
-  type(hru_type),pointer                  :: hru_data
-  ! ---------------------------------------------------------------------------------------
+  type(hru_type),intent(out)              :: hru_data
+  integer(c_int), intent(out)             :: err
+  character(len=256),intent(out)          :: message
   ! local variables
-  ! ---------------------------------------------------------------------------------------
   integer(i4b)                            :: ivar               ! index of variable
-  character(len=256)                      :: message            ! error message
   character(LEN=256)                      :: cmessage           ! error message of downwind routine
   character(LEN=256)                      :: restartFile        ! restart file name
   integer(i4b)                            :: nGRU
   ! ---------------------------------------------------------------------------------------
-
-  call c_f_pointer(handle_hru_data, hru_data)
-
   ! initialize error control
   err=0; message='hru_actor_readRestart/'
-
 
   ! *****************************************************************************
   ! *** compute ancillary variables
@@ -465,9 +407,9 @@ subroutine summa_readRestart(indxGRU,         & ! index of GRU in gru_struc
   ! *****************************************************************************
 
   ! initialize time step length
-  dt_init = hru_data%progStruct%var(iLookPROG%dt_init)%dat(1) ! seconds
+  hru_data%dt_init = hru_data%progStruct%var(iLookPROG%dt_init)%dat(1) ! seconds
 
-end subroutine summa_readRestart
+end subroutine readHRURestart
 
 ! Set the HRU's relative and absolute tolerances
 subroutine setIDATolerances(handle_hru_data,    &

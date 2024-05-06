@@ -2,7 +2,6 @@ module forcing_file_info
   USE, intrinsic :: iso_c_binding
   USE nrtype
   USE globalData,only:integerMissing   ! integer missing value
-  USE actor_data_types,only:var_forc   ! global data structure for forcing data
   USE data_types,only:dlength          ! global data structure for forcing data
   implicit none
   public::getNumFrocingFiles_fortran
@@ -11,6 +10,23 @@ module forcing_file_info
   public::read_forcingFile
   public::openForcingFile
   public::freeForcingFiles_fortran
+
+    
+  type,public :: forcingFileData
+    real(rkind), dimension (:,:), allocatable   :: dataFromFile  ! (hru, time)
+  end type forcingFileData
+
+  type,public :: var_forc
+    type(forcingFileData), allocatable   :: var(:)       ! var(:)%dataFromFile(:,:)
+    character(len=256)                   :: refTimeString
+    real(rkind)                          :: convTime2Days
+    integer(i4b)                         :: nVars
+    integer(i4b),allocatable             :: var_ix(:)
+    real(rkind)                          :: tmZoneOffsetFracDay
+    real(rkind)                          :: refJulDay_data 
+    integer(i4b)                         :: nTimeSteps    ! Number of Timesteps in the file
+  end type var_forc
+
 
   ! Module Data Structures (global to hrus that import this module)
   type(var_forc),allocatable,save,public  :: forcingDataStruct(:) ! forcingDataStruct(:)%var(:)%dataFromFile(:,:)
@@ -102,6 +118,7 @@ subroutine read_forcingFile(iFile, startGRU, numGRU, err, message_r) &
   USE globalData,only:forc_meta 
   USE var_lookup,only:iLookTIME,iLookFORCE      ! named variables to define structure elements
   USE summaFileManager,only:FORCING_PATH        ! path of the forcing data file
+  USE globalData,only:ixHRUfile_min,ixHRUfile_max
 
   implicit none
   integer(c_int),intent(in)               :: iFile
@@ -109,7 +126,8 @@ subroutine read_forcingFile(iFile, startGRU, numGRU, err, message_r) &
   integer(c_int),intent(in)               :: numGRU
   integer(c_int),intent(out)              :: err
   type(c_ptr), intent(out)                :: message_r
-  ! local varibles            
+  ! local varibles
+  integer(i4b)                            :: nHRUlocal            
   integer(i4b)                            :: iHRU_Global
   integer(i4b)                            :: varId
   integer(i4b)                            :: ncid
@@ -125,7 +143,8 @@ subroutine read_forcingFile(iFile, startGRU, numGRU, err, message_r) &
   character(len = nf90_max_name)          :: varName          ! dimenison name
   logical(lgt),dimension(size(forc_meta)) :: checkForce       ! flags to check forcing data variables exist
   character(len=256)                      :: message          ! error message 
-  
+
+  nHRUlocal = sum(gru_struc(:)%hruCount)
 
   ! Start Procedure here
   err=0; message="read_forcingFile/"
@@ -185,7 +204,7 @@ subroutine read_forcingFile(iFile, startGRU, numGRU, err, message_r) &
     iVar = forcFileInfo(iFile)%var_ix(iNC)
     checkForce(iVar) = .true.
     if (.not.allocated(forcingDataStruct(iFile)%var(iVar)%dataFromFile))then
-      allocate(forcingDataStruct(iFile)%var(iVar)%dataFromFile(numGRU,nTimeSteps))
+      allocate(forcingDataStruct(iFile)%var(iVar)%dataFromFile(nHRUlocal,nTimeSteps))
     endif
 
     ! Get Forcing Data
@@ -198,7 +217,9 @@ subroutine read_forcingFile(iFile, startGRU, numGRU, err, message_r) &
     numHRU = sum(gru_struc(:)%hruCount)
     
 
-    err=nf90_get_var(ncid,forcFileInfo(iFile)%data_id(ivar),forcingDataStruct(iFile)%var(iVar)%dataFromFile, start=(/startGRU,1/),count=(/numHRU, nTimeSteps/))
+    err=nf90_get_var(ncid,forcFileInfo(iFile)%data_id(ivar), &
+                     forcingDataStruct(iFile)%var(iVar)%dataFromFile, &
+                     start=(/ixHRUfile_min,1/),count=(/nHRUlocal, nTimeSteps/))
     if(err/=nf90_noerr)then; message=trim(message)//'problem reading forcing data: '//trim(varName)//'/'//trim(nf90_strerror(err)); call f_c_string_ptr(trim(message),message_r); return; endif
   end do
 

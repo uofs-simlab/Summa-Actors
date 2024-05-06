@@ -14,7 +14,7 @@ USE data_types,only:&
 USE actor_data_types,only:hru_type
 implicit none
 public::setTimeZoneOffset
-public::HRU_readForcing
+public::readHRUForcing
 private::getFirstTimeStep
 
 
@@ -24,7 +24,7 @@ real(dp),parameter  :: smallOffset=1.e-8_rkind   ! small offset (units=days) to 
 contains
 
 ! set the refTimeString and extract the time to set the tmZonOffsetFracDay
-subroutine setTimeZoneOffset(iFile, handle_hru_data, err) bind(C, name="setTimeZoneOffset")
+subroutine setTimeZoneOffset(iFile, hru_data, err, message)
   USE forcing_file_info,only:forcingDataStruct         ! forcing structure
   USE time_utils_module,only:extractTime        ! extract time info from units string
   USE time_utils_module,only:fracDay            ! compute fractional day
@@ -32,18 +32,16 @@ subroutine setTimeZoneOffset(iFile, handle_hru_data, err) bind(C, name="setTimeZ
   implicit none
 
   integer(c_int),intent(in)             :: iFile
-  type(c_ptr),intent(in),value          :: handle_hru_data  ! vector of time data for a given time step
+  type(hru_type)                        :: hru_data         !  model time data
   integer(c_int),intent(out)            :: err
+  character(len=256),intent(out)        :: message
 
   ! local variables
-  type(hru_type),pointer                :: hru_data         !  model time data
-  character(len=256)                    :: message
   character(len=256)                    :: cmessage
   integer(i4b)                          :: iyyy,im,id,ih,imin ! date
   integer(i4b)                          :: ih_tz,imin_tz      ! time zone information
   real(dp)                              :: dsec,dsec_tz       ! seconds
 
-  call c_f_pointer(handle_hru_data, hru_data)
   err=0; message="hru_actor.f90 - setForcingTimeInfo";
 
   ! define the reference time for the model simulation
@@ -51,7 +49,7 @@ subroutine setTimeZoneOffset(iFile, handle_hru_data, err) bind(C, name="setTimeZ
                    iyyy,im,id,ih,imin,dsec,                & ! output = year, month, day, hour, minute, second
                    ih_tz, imin_tz, dsec_tz,                & ! output = time zone information (hour, minute, second)
                    err,cmessage)                             ! output = error code and error message
-  if(err/=0)then; message=trim(message)//trim(cmessage); print*, "message"; return; end if
+  if(err/=0)then; message=trim(message)//trim(cmessage); return; end if
   
   ! set the timezone offset
   select case(trim(NC_TIME_ZONE))
@@ -65,7 +63,8 @@ subroutine setTimeZoneOffset(iFile, handle_hru_data, err) bind(C, name="setTimeZ
 
 end subroutine setTimeZoneOffset
 
-subroutine HRU_readForcing(indxGRU, iStep, iRead, iFile, handle_hru_data, err) bind(C, name="HRU_readForcing")
+subroutine readHRUForcing(indx_gru, indx_hru, iStep, iRead, iFile, &
+    hru_data, err, message)
   USE multiconst,only:secprday                  ! number of seconds in a day
   USE time_utils_module,only:compJulDay         ! convert calendar date to julian day
   ! global Data
@@ -81,21 +80,25 @@ subroutine HRU_readForcing(indxGRU, iStep, iRead, iFile, handle_hru_data, err) b
   USE netcdf,only:nf90_max_name                                   ! used for nf90_max_name
   USE time_utils_module,only:compcalday                 ! convert julian day to calendar date
   USE globalData,only:refJulDay                 ! reference time (fractional julian days)
-
+  USE globalData,only:ixHRUfile_min             ! minimum index of HRU in the forcing file
+  USE globalData,only:ixHRUfile_max             ! maximum index of HRU in the forcing file
+  USE globalData,only:gru_struc                 ! GRU structure
   implicit none
 
-  integer(c_int),intent(in)               :: indxGRU          ! Index of the GRU in gru_struc
+  integer(c_int),intent(in)               :: indx_gru         ! Index of the GRU in gru_struc
+  integer(c_int),intent(in)               :: indx_hru         ! Index of the HRU in hru_struc
   integer(c_int),intent(in)               :: istep            ! Model Timestep
   integer(c_int),intent(inout)            :: iRead            ! Model Timestep 
   integer(c_int),intent(in)               :: iFile            ! index of current forcing file from forcing file list 
-  type(c_ptr),intent(in),value            :: handle_hru_data  ! vector of time data for a given time step
+  type(hru_type)                          :: hru_data         !  model time data
   integer(c_int),intent(out)              :: err              ! Model Timestep
+  character(len=256),intent(out)          :: message          ! error message
   ! local variables
-  type(hru_type),pointer                  :: hru_data         !  model time data
   real(dp)                                :: currentJulDay    ! Julian day of current time step
   real(dp)                                :: dataJulDay       ! julian day of current forcing data step being read
   real(dp)                                :: startJulDay      ! julian day at the start of the year
-  
+  integer(i4b)                            :: iHRU_global      ! index of HRU in the forcing file
+  integer(i4b)                            :: iHRU_local       ! index of HRU in the forcing file
   ! Counters
   integer(i4b)                            :: iline            ! loop through lines in the file
   integer(i4b)                            :: iVar
@@ -103,16 +106,16 @@ subroutine HRU_readForcing(indxGRU, iStep, iRead, iFile, handle_hru_data, err) b
   ! other
   logical(lgt),dimension(size(forc_meta)) :: checkForce       ! flags to check forcing data variables exist
   logical(lgt),parameter                  :: checkTime=.false.! flag to check the time
-  
   real(dp)                                :: dsec             ! double precision seconds (not used)
   real(dp),parameter                      :: dataMin=-1._dp   ! minimum allowable data value (all forcing variables should be positive)
   character(len = nf90_max_name)          :: varName          ! dimenison name
-
-  character(len=256)                      :: message          ! error message
   character(len=256)                      :: cmessage         ! error message
 
-  call c_f_pointer(handle_hru_data, hru_data)
   err=0;message="hru_actor.f90 - readForcingHRU";
+
+  ! Get index into the forcing structure
+  iHRU_global = gru_struc(indx_gru)%hruInfo(indx_hru)%hru_nc
+  iHRU_local  = (iHRU_global - ixHRUfile_min)+1
 
   if(istep == 1) then
     call getFirstTimestep(iFile, iRead, err)
@@ -162,12 +165,12 @@ subroutine HRU_readForcing(indxGRU, iStep, iRead, iFile, handle_hru_data, err) b
     checkForce(iVar) = .true.
 
     ! check individual data value
-    if(forcingDataStruct(iFile)%var(ivar)%dataFromFile(indxGRU,iRead)<dataMin)then
+    if(forcingDataStruct(iFile)%var(ivar)%dataFromFile(indx_gru,iRead)<dataMin)then
       write(message,'(a,f13.5)') trim(message)//'forcing data for variable '//trim(varname)//' is less than minimum allowable value ', dataMin
       err=20; return
     endif
     ! put the data into structures
-    hru_data%forcStruct%var(ivar) = forcingDataStruct(iFile)%var(ivar)%dataFromFile(indxGRU,iRead)
+    hru_data%forcStruct%var(ivar) = forcingDataStruct(iFile)%var(ivar)%dataFromFile(indx_gru,iRead)
   end do  ! loop through forcing variables
     
   ! check if any forcing data is missing
@@ -227,11 +230,7 @@ subroutine HRU_readForcing(indxGRU, iStep, iRead, iFile, handle_hru_data, err) b
                                             hru_data%yearLength                             ! number of days in the current year
     !pause ' checking time'
   end if
-
-
-
-
-end subroutine HRU_readForcing 
+end subroutine readHRUForcing 
 
  ! Find the first timestep within the forcing file
 subroutine getFirstTimestep(iFile, iRead, err)

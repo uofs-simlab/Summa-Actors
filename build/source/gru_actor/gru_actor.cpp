@@ -1,151 +1,115 @@
-#include "caf/all.hpp"
 #include "gru_actor.hpp"
-#include "global.hpp"
-#include "hru_actor.hpp"
-#include "message_atoms.hpp"
-#include <vector>
-#include "gru_actor_subroutine_wrappers.hpp"
 
-namespace caf {
 
-behavior gru_actor(stateful_actor<gru_state>* self, 
-    int ref_gru, int indx_gru, std::string config_path, caf::actor file_access_actor,
-    caf::actor parent) {
+using namespace caf;
 
-    aout(self) << "GRU Actor Has Started\n";
-    self->state.parent = parent;
-    self->state.ref_gru = ref_gru;
-    self->state.indx_gru = indx_gru;
-    self->state.config_path = config_path;
-    self->state.file_access_actor = file_access_actor;
-    self->state.parent = parent;
+behavior gru_actor(stateful_actor<gru_actor_state>* self, int netcdf_index, 
+                   int gru_job_index, int num_steps, 
+                   HRU_Actor_Settings hru_actor_settings,
+                   actor file_access_actor, actor parent) {
+  self->state.netcdf_index = netcdf_index;
+  self->state.gru_job_index = gru_job_index;
+  self->state.num_steps = num_steps;
+  self->state.hru_actor_settings = hru_actor_settings;
+  self->state.file_access_actor = file_access_actor;
+  self->state.parent = parent;
 
-    self->state.num_hrus = getNumHRU(&self->state.indx_gru);
+  // Check for lateral flows
+  getNumHRU(self->state.gru_job_index, self->state.num_hrus);
+  aout(self) << "NUM HRUS: " << self->state.num_hrus << "\n";
+  self->state.hrus.resize(self->state.num_hrus);
+  self->state.gru_data = new_handle_gru_type(self->state.num_hrus);
+  int err = 0;
+  std::unique_ptr<char[]> message(new char[256]);
+  initGRU_fortran(self->state.gru_job_index, self->state.gru_data, err, 
+                  &message);
+  std::fill(message.get(), message.get() + 256, '\0'); // Clear message
+  setupGRU_fortran(self->state.gru_job_index, self->state.gru_data, err, 
+                   &message);
+  std::fill(message.get(), message.get() + 256, '\0'); // Clear message
+  readGRURestart_fortran(self->state.gru_job_index, self->state.gru_data, err, 
+                         &message);
 
-    self->send(self, init_hru_v);
+  aout(self) << "GRU Actor: HRUs Initialized\n";
+  self->send(self, update_hru_async_v);
 
-    return {
+  return {
+    [=](update_hru_async) {
+      self->request(self->state.file_access_actor, caf::infinite,
+                    get_num_output_steps_v).await([=](int num_steps) {
+        self->state.num_steps_until_write = num_steps;
+        self->send(self->state.file_access_actor, access_forcing_v, 
+                   self->state.iFile, self);
+      });
+    },
+    [=](new_forcing_file, int num_forcing_steps_in_iFile, int iFile) {
+      int err;
+      std::unique_ptr<char[]> message(new char[256]);
+      self->state.iFile = iFile;
+      self->state.stepsInCurrentFFile = num_forcing_steps_in_iFile;
+      setTimeZoneOffsetGRU_fortran(self->state.iFile, self->state.gru_data, 
+                                   err, &message);
+      if (err != 0) {
+        aout(self) << "GRU_Actor: Error setting time zone offset\n";
+        self->quit();
+        return;
+      }
+      self->state.forcingStep = 1;
+      self->send(self, run_hru_v);
+    },
 
-        [=](init_hru) {
-            for (int i = 0; i < self->state.num_hrus; i++) {
-                // auto hru = self->spawn(hru_actor,
-                //         self->state.ref_gru, self->state.indx_gru, 
-                //         self->state.config_path, self->state.file_access_actor,
-                //         self->state.output_struc_size,
-                //         self);
-                // self->state.hru_list.push_back(hru);
-            }
-        },
-
-        [=](done_hru, int indx_gru, double total_duration, double init_duration, 
-            double forcing_duration, double run_physics_duration, double write_output_duration) {
-            aout(self) << "GRU Received HRU is Done\n";
-
-            self->state.hrus_complete++;
-            if (self->state.hrus_complete >= self->state.num_hrus) {
-                aout(self) << "All HRUs have finished";
-
-                self->send(self->state.parent,
-                    done_hru_v,
-                    indx_gru, 
-                    total_duration,
-                    init_duration, 
-                    forcing_duration,
-                    run_physics_duration,
-                    write_output_duration);
-            }
-        
-        },
-
-        // What does a GRU need to assemble its data structure?
-        [=](init_gru) {
-            // Get the variable data length, we also need the type information
-            aout(self) << "init GRU \n";
-            int integer_missing_value = -9999;
-
-            // Get the sizes we need for the lists from Fortran
-            getVarSizes(&self->state.num_var_types,
-                        &self->state.num_bpar_vars,
-                        &self->state.num_bvar_vars);
-            
-            aout(self) << "GRU: GOT VAR SIZES\n";
-            aout(self) << "NUM VAR Type = " << self->state.num_var_types << "\n";
-            aout(self) << "NUM BPAR = " << self->state.num_bpar_vars << "\n";
-            aout(self) << "NUM BVAR = " << self->state.num_bvar_vars << "\n";
-
-            for (int i = 0; i < self->state.num_var_types; i++) {
-                self->state.i_look_var_type_list.push_back(integer_missing_value);
-            }
-            for (int i = 0; i < self->state.num_bpar_vars; i++) {
-                self->state.bpar_struct_var_type_list.push_back(integer_missing_value);
-            }
-            for (int i = 0; i < self->state.num_bvar_vars; i++) {
-                self->state.bvar_struct_var_type_list.push_back(integer_missing_value);
-            }
-
-            initVarType(&self->state.var_type_lookup);
-                // aout(self) << "************C++************\n";
-                // aout(self) << self->state.var_type_lookup.scalarv << "\n";
-                // aout(self) << self->state.var_type_lookup.wLength << "\n";
-                // aout(self) << self->state.var_type_lookup.midSnow << "\n";
-                // aout(self) << self->state.var_type_lookup.midSoil << "\n";
-                // aout(self) << self->state.var_type_lookup.midToto << "\n";
-                // aout(self) << self->state.var_type_lookup.ifcSnow << "\n";
-                // aout(self) << self->state.var_type_lookup.ifcSoil << "\n";
-                // aout(self) << self->state.var_type_lookup.ifcToto << "\n";
-                // aout(self) << self->state.var_type_lookup.parSoil << "\n";
-                // aout(self) << self->state.var_type_lookup.routing << "\n";
-                // aout(self) << self->state.var_type_lookup.outstat << "\n";
-                // aout(self) << self->state.var_type_lookup.unknown << "\n";
-                // aout(self) << "************C++************\n";
-
-            // Fill The lists with the values from the fortran lists
-            int err = 0;
-            fillVarTypeLists(&self->state.num_bpar_vars,
-                             &self->state.num_bvar_vars,
-                             &self->state.bpar_struct_var_type_list[0],
-                             &self->state.bvar_struct_var_type_list[0],
-                             &err);
-            // aout(self) << "Printing BPAR\n";
-            // for(int i = 0; i < self->state.num_bpar_vars; i++) {
-            //     aout(self) << i << ": " << self->state.bpar_struct_var_type_list[i] << "\n";
-            // }
-            // aout(self) << "Printing BVAR\n";
-            // for(int i = 0; i < self->state.num_bvar_vars; i++) {
-            //     aout(self) << i << ": " << self->state.bvar_struct_var_type_list[i] << "\n";
-            // }
-
-            // Now we can allocate space for the structures
-            for(int i = 0; i < self->state.num_bpar_vars; i++) {
-                if (self->state.bpar_struct_var_type_list[i] == self->state.var_type_lookup.scalarv) {
-                    self->state.bpar_struct.push_back(0.0);
-                } else {
-                    aout(self) << "ERROR: GRU - bpar_struct contains type that is not a scalar\n";
-                }
-            }
-            for(int i = 0; i < self->state.num_bvar_vars; i++) {
-                if (self->state.bvar_struct_var_type_list[i] == self->state.var_type_lookup.scalarv) {
-                    std::vector<double> temp;
-                    self->state.bvar_struct.push_back(temp);
-                    self->state.bvar_struct[i].push_back(0.0);
-
-                } else if(self->state.bvar_struct_var_type_list[i] == self->state.var_type_lookup.routing) {
-                    std::vector<double> temp;
-                    self->state.bvar_struct.push_back(temp);
-                    for (int x = 0; x < self->state.nTimeDelay; x++) {
-                        self->state.bvar_struct[i].push_back(0.0);
-                    }
-                } else {
-                    aout(self) << "ERROR: GRU - bvar_struct contains type that is not a scalar or routing\n";
-
-                }
-            }
-
-            self->send(self->state.parent, done_init_gru_v);
+    [=](num_steps_before_write, int num_steps) {
+      self->state.num_steps_until_write = num_steps;
+      self->state.output_structure_step_index = 1;
+    },
+    
+    [=](run_hru) {
+      int err = 0;
+      std::unique_ptr<char[]> message(new char[256]);
+      while(self->state.num_steps_until_write > 0) {
+        if (self->state.forcingStep > self->state.stepsInCurrentFFile) {
+          aout(self) << "GRU Actor: New Forcing File\n";
+          self->send(self->state.file_access_actor, access_forcing_v, 
+                     self->state.iFile+1, self);
+          break;
         }
+        self->state.num_steps_until_write--;
+        aout(self) << "GRU Actor: timestep=" << self->state.timestep << "\n";
+        readGRUForcing_fortran(self->state.gru_job_index, 
+                               self->state.forcingStep, 
+                               self->state.timestep, self->state.iFile, 
+                               self->state.gru_data, err, &message);
+        std::fill(message.get(), message.get() + 256, '\0'); // Clear message
+        runGRU_fortran(self->state.gru_job_index, self->state.timestep, 
+                       self->state.gru_data, self->state.dt_init_factor,
+                       err, &message);
+        std::fill(message.get(), message.get() + 256, '\0'); // Clear message
+        writeGRUOutput_fortran(self->state.gru_job_index, self->state.timestep, 
+                               self->state.output_structure_step_index, 
+                               self->state.gru_data, err, &message);
 
+        self->state.timestep++;
+        self->state.forcingStep++;
+        self->state.output_structure_step_index++;
 
-    };
-}
-
+        if (self->state.timestep > self->state.num_steps) {
+          aout(self) << "GRU Actor: Done\n";
+          self->send(self, done_hru_v);
+          break;
+        }
+      }
+      // Our output structure is full
+      if (self->state.num_steps_until_write <= 0) {
+        aout(self) << "GRU Actor: Writing Output\n";
+        self->send(self->state.file_access_actor, write_output_v,
+                   self->state.gru_job_index, 1, self);
+      }
+    },
+    
+    [=](done_hru) {
+      self->send(self->state.parent,done_hru_v,self->state.gru_job_index);
+      self->quit();
+      return;
+    },
+  };
 }

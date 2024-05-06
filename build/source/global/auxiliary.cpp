@@ -523,15 +523,17 @@ std::vector<std::vector<std::vector<double>>> get_lookup_struct(void *handle) {
 #endif
 
 void get_scalar_data(void* handle, double fracJulDay, 
-    double tmZoneOffsetFracDay, int year_length, int computeVegFlux) {
+                     double tmZoneOffsetFracDay, int year_length, 
+                     int computeVegFlux, double dt_init, double upArea) {
   get_scalar_data_fortran(handle, &fracJulDay, &tmZoneOffsetFracDay, 
-      &year_length, &computeVegFlux);
+      &year_length, &computeVegFlux, &dt_init, &upArea);
 }
 
 void set_scalar_data(void* handle, double fracJulDay, 
-    double tmZoneOffsetFracDay, int year_length, int computeVegFlux) {
+                     double tmZoneOffsetFracDay, int year_length, 
+                     int computeVegFlux, double dt_init, double upArea) {
   set_scalar_data_fortran(handle, &fracJulDay, &tmZoneOffsetFracDay, 
-      &year_length, &computeVegFlux);
+      &year_length, &computeVegFlux, &dt_init, &upArea);
 }
 
 

@@ -5,6 +5,7 @@ module gru_struc_module
 
   public::read_dimension_fortran
   public::read_icond_nlayers_fortran
+  public::get_num_hru_per_gru_fortran
   public::deallocate_gru_struc_fortran
   contains
 
@@ -86,6 +87,22 @@ subroutine read_icond_nlayers_fortran(num_gru, err, message_r)&
   if(err/=0)then; call f_c_string_ptr(trim(message), message_r); endif
 
 end subroutine read_icond_nlayers_fortran
+
+subroutine get_num_hru_per_gru_fortran(num_gru, num_hru_per_gru_array) &
+    bind(C, name="get_num_hru_per_gru_fortran")
+  USE globalData,only:gru_struc           ! gru->hru mapping structure
+  implicit none
+  ! Dummy Variables
+  integer(c_int), intent(in)      :: num_gru
+  integer(c_int), intent(out)     :: num_hru_per_gru_array(num_gru)
+  ! Local Variables
+  integer                         :: iGRU
+
+  do iGRU = 1, num_gru
+    num_hru_per_gru_array(iGRU) = gru_struc(iGRU)%hruCount
+  end do
+  
+end subroutine 
 
 subroutine deallocate_gru_struc_fortran() bind(C, name="deallocate_gru_struc_fortran")
     USE globalData,only:gru_struc           ! gru->hru mapping structure

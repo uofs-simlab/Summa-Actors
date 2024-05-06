@@ -5,21 +5,6 @@ module actor_data_types
   implicit none
   private
 
-  
-  type,public :: forcingFileData
-    real(rkind), dimension (:,:), allocatable   :: dataFromFile
-  end type forcingFileData
-
-  type,public :: var_forc
-    type(forcingFileData), allocatable   :: var(:)       ! var(:)%dataFromFile(:,:)
-    character(len=256)                   :: refTimeString
-    real(rkind)                          :: convTime2Days
-    integer(i4b)                         :: nVars
-    integer(i4b),allocatable             :: var_ix(:)
-    real(rkind)                          :: tmZoneOffsetFracDay
-    real(rkind)                          :: refJulDay_data 
-    integer(i4b)                         :: nTimeSteps    ! Number of Timesteps in the file
-  end type var_forc
 
 
   ! ** double precision type of for time series
@@ -172,5 +157,13 @@ module actor_data_types
     integer(c_int)                             :: yearLength                 ! number of days in the current year
     ! Misc Variables
     integer(c_int)                             :: computeVegFlux             ! flag to indicate if we are computing fluxes over vegetation
+    real(c_double)                             :: dt_init
+    real(c_double)                             :: upArea
   end type hru_type
+
+  type, public :: gru_type
+    type(hru_type),allocatable :: hru(:)
+    type(var_dlength),pointer  :: bvarStat
+    type(var_dlength),pointer  :: bvarStruct
+  end type gru_type
 end module

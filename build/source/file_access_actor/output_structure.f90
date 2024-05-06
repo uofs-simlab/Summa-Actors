@@ -296,7 +296,7 @@ subroutine initOutputStructure(maxSteps, num_gru, err)
               call alloc_outputStruc(indx_meta,summa_struct(1)%indxStruct%gru(iGRU)%hru(iHRU), &
                                       nSteps=maxSteps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,str_name='indx',message=message);    ! model variables
               ! Statistics
-              call alloc_outputStruc(statIndx_meta(:)%var_info,summa_struct(1)%indxStat%gru(iGRU)%hru(1), &
+              call alloc_outputStruc(statIndx_meta(:)%var_info,summa_struct(1)%indxStat%gru(iGRU)%hru(iHRU), &
                                       nSteps=maxSteps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,message=message);    ! index vars
             case('prog')
               ! Structure
@@ -347,9 +347,6 @@ subroutine initOutputStructure(maxSteps, num_gru, err)
       end do ! timeSteps
     end do ! Looping through GRUs
   end do
-
-
-
 end subroutine initOutputStructure
 
 subroutine deallocateOutputStructure(err) bind(C, name="deallocateOutputStructure")
@@ -650,7 +647,10 @@ subroutine alloc_outputStruc(metaStruct,dataStruct,nSteps,nSnow,nSoil,str_name,e
       do iVar=1, nVars
         ! Check if this variable is desired within any timeframe
         if(is_var_desired(metaStruct,iVar) .or. allocAllFlag)then
-          allocate(dataStruct%var(iVar)%tim(nSteps))
+          if (allocated(dataStruct%var(iVar)%tim)) then
+            print*, "Already Allocated"; return;
+          end if
+          allocate(dataStruct%var(iVar)%tim(nSteps), stat=err)
           call allocateDat_rkind_nSteps(metaStruct,dataStruct,nSnow,nSoil,nSteps,iVar,err,cmessage)
         end if
       end do

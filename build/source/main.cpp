@@ -114,6 +114,8 @@ void caf_main(actor_system& sys, const config& cfg) {
     if (!std::filesystem::exists((std::filesystem::path) cfg.config_file)) {
       aout(self) << "\n\n**** Config (-c) or Master File (-m) "
                  << "Does Not Exist or Not Specified!! ****\n\n" 
+                 << "Config File: " << cfg.config_file << "\n"
+                 << "Master File: " << cfg.master_file << "\n\n"
                  << command_line_help << std::endl;
       return;
     }

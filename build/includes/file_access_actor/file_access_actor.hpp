@@ -41,6 +41,7 @@ struct file_access_state {
   caf::actor parent; 
   int start_gru;
   int num_gru;
+  int num_hru;
 
   NumGRUInfo num_gru_info;
 

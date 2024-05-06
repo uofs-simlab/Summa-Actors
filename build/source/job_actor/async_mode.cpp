@@ -10,7 +10,7 @@ behavior async_mode(stateful_actor<job_state>* self) {
     [=](file_access_actor_ready, int num_timesteps) {
       aout(self) << "Async Mode: init_file_access_actor\n";
       self->state.num_steps = num_timesteps;
-      spawnHRUActors(self);
+      spawnHRUActors(self);    
     },
 
     [=](done_hru, int gru_job_index) {

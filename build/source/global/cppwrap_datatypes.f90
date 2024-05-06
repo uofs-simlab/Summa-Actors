@@ -2480,12 +2480,14 @@ end subroutine
 ! ****************************** flag_vec ****************************
 
 subroutine get_scalar_data_fortran(handle, fracJulDay, tmZoneOffsetFracDay, &
-    year_length, computeVegFlux) bind(C, name='get_scalar_data_fortran')
+    year_length, computeVegFlux, dt_init, upArea) bind(C, name='get_scalar_data_fortran')
   type(c_ptr), intent(in), value :: handle
   real(c_double), intent(out) :: fracJulDay
   real(c_double), intent(out) :: tmZoneOffsetFracDay
   integer(c_int), intent(out) :: year_length
   integer(c_int), intent(out) :: computeVegFlux
+  real(c_double), intent(out) :: dt_init
+  real(c_double), intent(out) :: upArea
   type(hru_type), pointer :: hru_data
 
   call c_f_pointer(handle, hru_data)
@@ -2494,16 +2496,20 @@ subroutine get_scalar_data_fortran(handle, fracJulDay, tmZoneOffsetFracDay, &
   tmZoneOffsetFracDay = hru_data%tmZoneOffsetFracDay
   year_length = hru_data%yearLength
   computeVegFlux = hru_data%computeVegFlux
+  dt_init = hru_data%dt_init
+  upArea = hru_data%upArea
 
 end subroutine get_scalar_data_fortran
 
 subroutine set_scalar_data_fortran(handle, fracJulDay, tmZoneOffsetFracDay, &
-    year_length, computeVegFlux) bind(C, name='set_scalar_data_fortran')
+    year_length, computeVegFlux, dt_init, upArea) bind(C, name='set_scalar_data_fortran')
   type(c_ptr), intent(in), value :: handle
   real(c_double), intent(in) :: fracJulDay
   real(c_double), intent(in) :: tmZoneOffsetFracDay
   integer(c_int), intent(in) :: year_length
   integer(c_int), intent(in) :: computeVegFlux
+  real(c_double), intent(in) :: dt_init
+  real(c_double), intent(in) :: upArea
   type(hru_type), pointer :: hru_data
 
   call c_f_pointer(handle, hru_data)
@@ -2512,6 +2518,8 @@ subroutine set_scalar_data_fortran(handle, fracJulDay, tmZoneOffsetFracDay, &
   hru_data%tmZoneOffsetFracDay = tmZoneOffsetFracDay
   hru_data%yearLength = year_length
   hru_data%computeVegFlux = computeVegFlux
+  hru_data%dt_init = dt_init
+  hru_data%upArea = upArea
 
 end subroutine set_scalar_data_fortran
 
@@ -2593,6 +2601,65 @@ subroutine delete_handle_hru_type(handle) bind(C, name="delete_handle_hru_type")
   deallocate(p)
 
 end subroutine
+
+function new_handle_gru_type(num_hru) result(handle) bind(C, name="new_handle_gru_type")
+  type(c_ptr)                :: handle
+  integer(c_int), intent(in) :: num_hru
+  type(gru_type), pointer    :: p
+  integer(c_int)             :: i
+
+  allocate(p)
+  allocate(p%hru(num_hru))
+  allocate(p%bvarStat)
+  allocate(p%bvarStruct)
+
+  do i=1,num_hru
+#ifdef V4_ACTIVE
+  allocate(p%hru(i)%lookupStruct)
+#endif
+  allocate(p%hru(i)%forcStat)
+  allocate(p%hru(i)%progStat)
+  allocate(p%hru(i)%diagStat)
+  allocate(p%hru(i)%fluxStat)
+  allocate(p%hru(i)%indxStat)
+  allocate(p%hru(i)%bvarStat)
+  allocate(p%hru(i)%timeStruct)
+  allocate(p%hru(i)%forcStruct)
+  allocate(p%hru(i)%attrStruct)
+  allocate(p%hru(i)%typeStruct)
+  allocate(p%hru(i)%idStruct)
+  allocate(p%hru(i)%indxStruct)
+  allocate(p%hru(i)%mparStruct)
+  allocate(p%hru(i)%progStruct)
+  allocate(p%hru(i)%diagStruct)
+  allocate(p%hru(i)%fluxStruct)
+  allocate(p%hru(i)%bparStruct)
+  allocate(p%hru(i)%bvarStruct)
+  allocate(p%hru(i)%dparStruct)
+  allocate(p%hru(i)%startTime_hru)
+  allocate(p%hru(i)%finishTime_hru)
+  allocate(p%hru(i)%refTime_hru)
+  allocate(p%hru(i)%oldTime_hru)
+  allocate(p%hru(i)%statCounter)
+  allocate(p%hru(i)%outputTimeStep)
+  allocate(p%hru(i)%resetStats)
+  allocate(p%hru(i)%finalizeStats)
+  end do
+
+
+  handle = c_loc(p)
+end function new_handle_gru_type
+
+subroutine delete_handle_gru_type(handle) bind(C, name="delete_handle_gru_type")
+  type(c_ptr), intent(in), value :: handle
+  type(gru_type), pointer :: p
+
+  call c_f_pointer(handle, p)
+  deallocate(p%hru)
+  deallocate(p%bvarStat)
+  deallocate(p%bvarStruct)
+  deallocate(p)
+end subroutine delete_handle_gru_type
 
 end module cppwrap_datatypes
 
