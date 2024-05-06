@@ -200,6 +200,7 @@ subroutine runGRU_fortran(indx_gru, modelTimeStep, handle_gru_data, &
   USE summa_modelRun,only:runPhysics
   
   USE globalData,only:model_decisions          ! model decision structure
+  USE globalData,only:gru_struc
   USE qTimeDelay_module,only:qOverland         ! module to route water through an "unresolved" river network
   
   USE mDecisions_module,only:&               ! look-up values for LAI decisions
@@ -213,6 +214,8 @@ subroutine runGRU_fortran(indx_gru, modelTimeStep, handle_gru_data, &
   USE var_lookup,only:iLookFLUX              ! look-up values for local column model fluxes
   USE var_lookup,only:iLookATTR              ! look-up values for local attributes
   USE var_lookup,only:iLookDECISIONS         ! look-up values for model decisions
+  USE var_lookup,only:iLookTYPE              ! look-up values for HRU types
+  USE var_lookup,only:iLookID                ! look-up values for HRU IDs
   implicit none
   ! Dummy Variables
   integer(c_int), intent(in)       :: indx_gru
@@ -222,7 +225,7 @@ subroutine runGRU_fortran(indx_gru, modelTimeStep, handle_gru_data, &
   integer(c_int), intent(out)      :: err
   type(c_ptr),    intent(out)      :: message_r
   ! Local Variables
-  integer(i4b)                     :: iHRU
+  integer(i4b)                     :: iHRU, kHRU, jHRU
   integer(i4b)                     :: iVar
   type(gru_type),pointer           :: gru_data
   character(len=256)               :: message = ""
@@ -259,7 +262,36 @@ subroutine runGRU_fortran(indx_gru, modelTimeStep, handle_gru_data, &
                     dt_init_factor, err, message)
     if(err /= 0) then; call f_c_string_ptr(trim(message), message_r);return; end if
 
-    fracHRU = gru_data%hru(iHRU)%attrStruct%var(iLookATTR%HRUarea) / gru_data%hru(iHRU)%bvarStruct%var(iLookBVAR%basin__totalArea)%dat(1)
+    fracHRU = gru_data%hru(iHRU)%attrStruct%var(iLookATTR%HRUarea) / &
+              gru_data%hru(iHRU)%bvarStruct%var(iLookBVAR%basin__totalArea)%dat(1)
+
+    ! Compute Fluxes Across HRUs
+    ! identify lateral connectivity
+    ! (Note:  for efficiency, this could this be done as a setup task, not every timestep)
+    kHRU = 0
+    ! identify the downslope HRU
+    dsHRU: do jHRU=1,gru_struc(indx_gru)%hruCount
+      if(gru_data%hru(iHRU)%typeStruct%var(iLookTYPE%downHRUindex) == gru_data%hru(jHRU)%idStruct%var(iLookID%hruId))then
+        if(kHRU==0)then  ! check there is a unique match
+          kHRU=jHRU
+          exit dsHRU
+        end if  ! (check there is a unique match)
+      end if  ! (if identified a downslope HRU)
+    end do dsHRU
+
+    ! if lateral flows are active, add inflow to the downslope HRU
+    if(kHRU > 0)then  ! if there is a downslope HRU
+      gru_data%hru(kHRU)%fluxStruct%var(iLookFLUX%mLayerColumnInflow)%dat(:) = &
+          gru_data%hru(kHRU)%fluxStruct%var(iLookFLUX%mLayerColumnInflow)%dat(:) + &
+          gru_data%hru(iHRU)%fluxStruct%var(iLookFLUX%mLayerColumnOutflow)%dat(:)
+
+    ! otherwise just increment basin (GRU) column outflow (m3 s-1) with the hru fraction
+    else
+      gru_data%bvarStruct%var(iLookBVAR%basin__ColumnOutflow)%dat(1) = & 
+          gru_data%bvarStruct%var(iLookBVAR%basin__ColumnOutflow)%dat(1) + &
+          sum( gru_data%hru(iHRU)%fluxStruct%var(iLookFLUX%mLayerColumnOutflow)%dat(:))
+    end if
+
 
     ! ----- calculate weighted basin (GRU) fluxes --------------------------------------------------------------------------------------
     
@@ -292,7 +324,7 @@ subroutine runGRU_fortran(indx_gru, modelTimeStep, handle_gru_data, &
           gru_data%bvarStruct%var(iLookBVAR%basin__AquiferBaseflow)%dat(1) + &
           gru_data%hru(iHRU)%fluxStruct%var(iLookFLUX%scalarAquiferBaseflow)%dat(1) &
           * fracHRU
-      end if
+    end if
   end do
   ! ***********************************************************************************************************************
   ! ********** END LOOP THROUGH HRUS **************************************************************************************

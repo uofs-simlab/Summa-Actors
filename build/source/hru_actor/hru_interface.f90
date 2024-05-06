@@ -11,7 +11,6 @@ module hru_interface
   public::readHRUForcing_fortran
   public::runHRU_fortran
   public::writeHRUOutput_fortran
-  ! public::initGRU_fortran
 
   contains
 

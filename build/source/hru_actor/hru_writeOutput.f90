@@ -110,7 +110,6 @@ subroutine writeHRUOutput(indxGRU, indxHRU, timestep, outputStep, hru_data, err,
   integer(i4b)                          :: iFreq             ! index of the output frequency
   err=0; message='summa_manageOutputFiles/'
   ! identify the start of the writing
-
   ! Many variables get there values from summa4chm_util.f90:getCommandArguments()
   call summa_setWriteAlarms(hru_data%oldTime_hru%var, hru_data%timeStruct%var, & 
                             hru_data%finishTime_hru%var, newOutputFile,        &

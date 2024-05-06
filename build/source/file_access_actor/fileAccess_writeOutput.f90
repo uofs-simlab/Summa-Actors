@@ -526,7 +526,6 @@ subroutine writeScalar(ncid, outputTimestep, outputTimestepUpdate, nSteps, minGR
         err = 20
         return
       endif
-
       err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),&
                          realVec(1:hru_counter, 1:stepCounter),    &
                          start=(/minGRU,outputTimestep(iFreq)/),   & 
