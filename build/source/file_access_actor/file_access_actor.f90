@@ -102,13 +102,14 @@ subroutine defOutputFortran(handle_output_ncid, start_gru, num_gru, num_hru, &
   select case (iRunMode)
     case(iRunModeGRU)
       ! left zero padding for startGRU and endGRU
+      if (use_extention) then
+        output_fileSuffix = trim(output_fileSuffix)//trim(file_extention)
+      endif
       write(fmtGruOutput,"(i0)") ceiling(log10(real(file_gru)+0.1))                      ! maximum width of startGRU and endGRU
       fmtGruOutput = "i"//trim(fmtGruOutput)//"."//trim(fmtGruOutput)                   ! construct the format string for startGRU and endGRU
       fmtGruOutput = "('_G',"//trim(fmtGruOutput)//",'-',"//trim(fmtGruOutput)//")"
       write(output_fileSuffix((len_trim(output_fileSuffix)+1):len(output_fileSuffix)),fmtGruOutput) start_gru,start_gru+num_gru-1
-      if (use_extention) then
-        output_fileSuffix = trim(output_fileSuffix)//trim(file_extention)
-      endif
+  
     case(iRunModeHRU)
       write(output_fileSuffix((len_trim(output_fileSuffix)+1):len(output_fileSuffix)),"('_H',i0)") checkHRU
   end select

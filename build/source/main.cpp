@@ -17,18 +17,18 @@ const std::string command_line_help = "Summa-Actors is in active development and
     "\t-m, --master:         Define path/name of master file (can be specified in config)\n"
     "\t-g, --gru:            Run a subset of countGRU GRUs starting from index startGRU \n"
     "\t-c, --config:         Path name of the Summa-Actors config file (optional but recommended)\n"
+    "\t-s  --suffix          Add fileSuffix to the output files\n"
     "\t    --gen-config:     Generate a config file \n"
     "\t    --host:           Hostname of the server \n"
     "\t-b, --backup-server:  Start backup server, requires a server and config_file \n"
-    "\t-s, --server-mode:    Enable server mode \n"
+    "\t    --server-mode:    Enable server mode \n"
     "\t-h, --help:           Print this help message \n"
     "\nUnimplemented Options: \n"
-    "\t-n --newFile          Define frequency [noNewFiles,newFileEveryOct1] of new output files\n"
-    "\t-s --suffix           Add fileSuffix to the output files\n"
-    "\t-h --hru              Run a single HRU with index of iHRU\n"
-    "\t-r --restart          Define frequency [y,m,d,e,never] to write restart files\n"
-    "\t-p --progress         Define frequency [m,d,h,never] to print progress\n"
-    "\t-v --version          Display version information of the current build\n";
+    "\t-n, --newFile         Define frequency [noNewFiles,newFileEveryOct1] of new output files\n"
+    "\t-h, --hru             Run a single HRU with index of iHRU\n"
+    "\t-r, --restart         Define frequency [y,m,d,e,never] to write restart files\n"
+    "\t-p, --progress        Define frequency [m,d,h,never] to print progress\n"
+    "\t-v, --version         Display version information of the current build\n";
 
 
 /* Configuration class that handles the config and 
@@ -40,6 +40,7 @@ class config : public actor_system_config {
         std::string master_file = "";
         std::string config_file = "";
         std::string host = "";
+        std::string output_file_suffix = "";
         bool generate_config = false;
         bool backup_server = false;
         bool server_mode = false;
@@ -51,10 +52,11 @@ class config : public actor_system_config {
             .add(master_file,   "master,m", "Path/name of master file")
             .add(startGRU,      "gru,g", "Starting GRU Index")
             .add(countGRU,      "countGRU,t", "Number of GRUs to run in subset")
+            .add(output_file_suffix, "suffix,s", "Add fileSuffix to the output files")
             .add(config_file,   "config,c", "Path name of the config directory")
             .add(generate_config, "gen-config", "Generate a config file")
             .add(backup_server, "backup-server,b", "flag to denote if the server starting is a backup server")
-            .add(server_mode,   "server-mode,s", "enable server mode")
+            .add(server_mode,   "server-mode", "enable server mode")
             .add(host,          "host", "Hostname of the server")
             .add(help,          "help,h", "Print this help message");
     }
@@ -117,7 +119,7 @@ void caf_main(actor_system& sys, const config& cfg) {
                  << "Config File: " << cfg.config_file << "\n"
                  << "Master File: " << cfg.master_file << "\n\n"
                  << command_line_help << std::endl;
-      return;
+      exit(EXIT_FAILURE);
     }
   }
 
@@ -134,6 +136,8 @@ void caf_main(actor_system& sys, const config& cfg) {
   check_settings_from_json(distributed_settings, summa_actor_settings, 
                            file_access_actor_settings, job_actor_settings, 
                            hru_actor_settings);
+
+  file_access_actor_settings.output_file_suffix = cfg.output_file_suffix;
 
   if (distributed_settings.distributed_mode && 
       !job_actor_settings.data_assimilation_mode) {

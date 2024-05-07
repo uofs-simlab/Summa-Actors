@@ -67,10 +67,15 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
 
       aout(self) << "Creating Output File\n";
       std::string actor_address = "";  
-      
       if (self->state.num_gru_info.use_global_for_data_structures) {
         actor_address = "_" + to_string(self->address());
       }
+
+      if (fa_settings.output_file_suffix != "") {
+        actor_address = "_" + fa_settings.output_file_suffix;
+        self->state.num_gru_info.use_global_for_data_structures = true;
+      }
+
       defOutputFortran(self->state.handle_ncid, &self->state.start_gru, 
                        &self->state.num_gru, &self->state.num_hru, &file_gru, 
                        &self->state.num_gru_info.use_global_for_data_structures,

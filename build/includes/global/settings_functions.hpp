@@ -70,16 +70,19 @@ Summa_Actor_Settings readSummaActorSettings(std::string json_settings_file);
 struct File_Access_Actor_Settings {
     int num_partitions_in_output_buffer;
     int num_timesteps_in_output_buffer;
+    std::string output_file_suffix; // option set by -s flag
 };
 
 template<class Inspector>
 bool inspect(Inspector& inspector, 
     File_Access_Actor_Settings& file_access_actor_settings) {
   return inspector.object(file_access_actor_settings).fields(
-      inspector.field("num_partitions_in_output_buffer", 
-      file_access_actor_settings.num_partitions_in_output_buffer),
-      inspector.field("num_timesteps_in_output_buffer", 
-      file_access_actor_settings.num_timesteps_in_output_buffer));
+         inspector.field("num_partitions_in_output_buffer", 
+            file_access_actor_settings.num_partitions_in_output_buffer),
+         inspector.field("num_timesteps_in_output_buffer", 
+            file_access_actor_settings.num_timesteps_in_output_buffer),
+          inspector.field("output_file_suffix", 
+            file_access_actor_settings.output_file_suffix));
 }
 
 File_Access_Actor_Settings readFileAccessActorSettings(
