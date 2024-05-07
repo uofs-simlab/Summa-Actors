@@ -6,8 +6,8 @@ include(FortranCInterface)
 FortranCInterface_VERIFY(CXX)
 
 get_filename_component(PARENT_DIR "${CMAKE_CURRENT_SOURCE_DIR}" DIRECTORY)
-set(EXEC_DIR ${PARENT_DIR}/bin) # set the output directory for executables
-SET(F_MASTER ${PARENT_DIR}/build/summa)
+set(EXEC_DIR ${PARENT_DIR}/../bin) # set the output directory for executables
+SET(F_MASTER ${PARENT_DIR}/summa)
 # Add options for build type
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${EXEC_DIR})
 set(CMAKE_CONFIGURATION_TYPES BE BE_Debug BE_Cluster BE_Cluster_Debug)
@@ -60,12 +60,12 @@ else()
 
     # Set include and library for C++ portion of the code
     set(INC_ACTORS CAF::core CAF::io ${INCLUDES}
-        "${PARENT_DIR}/build/includes/global"
-        "${PARENT_DIR}/build/includes/summa_actor"
-        "${PARENT_DIR}/build/includes/job_actor"
-        "${PARENT_DIR}/build/includes/file_access_actor"
-        "${PARENT_DIR}/build/includes/gru_actor"
-        "${PARENT_DIR}/build/includes/hru_actor")
+        "${PARENT_DIR}/includes/global"
+        "${PARENT_DIR}/includes/summa_actor"
+        "${PARENT_DIR}/includes/job_actor"
+        "${PARENT_DIR}/includes/file_access_actor"
+        "${PARENT_DIR}/includes/gru_actor"
+        "${PARENT_DIR}/includes/hru_actor")
     link_directories("/usr/local/lib")
     set(LIB_ACTORS CAF::core CAF::io -lopenblas -lnetcdff -lnetcdf)
 endif()
@@ -79,7 +79,7 @@ set(NETCDF_DIR ${F_MASTER}/build/source/netcdf)
 set(NOAHMP_DIR ${F_MASTER}/build/source/noah-mp)
 
 # Define Actors specific directories
-set(ACTORS_DIR      ${PARENT_DIR}/build/source)
+set(ACTORS_DIR      ${PARENT_DIR}/source)
 set(SYS_INIT_DIR    ${ACTORS_DIR}/system_initialization)
 set(FILE_ACCESS_DIR ${ACTORS_DIR}/file_access_actor)
 set(JOB_ACTOR_DIR   ${ACTORS_DIR}/job_actor)
