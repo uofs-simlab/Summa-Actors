@@ -2,7 +2,6 @@
 #include "caf/io/all.hpp"
 #include "message_atoms.hpp"
 #include "summa_backup_server.hpp"
-#include "global.hpp"
 #include <chrono>
 #include <thread>
 namespace caf {

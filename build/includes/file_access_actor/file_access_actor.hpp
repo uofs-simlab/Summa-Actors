@@ -5,7 +5,6 @@
 #include "settings_functions.hpp"
 #include "fortran_data_types.hpp"
 #include "auxilary.hpp"
-#include "global.hpp"
 #include "message_atoms.hpp"
 #include "forcing_file_info.hpp"
 #include "json.hpp"

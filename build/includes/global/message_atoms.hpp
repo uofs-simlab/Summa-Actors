@@ -10,27 +10,9 @@
 #include "hru_utils.hpp"
 #include "num_gru_info.hpp"
 #include "settings_functions.hpp"
-#include "global.hpp"
 
 #include <vector>
 #include <unordered_map>
-
-// HRU Data structure used for serialization
-
-enum class file_access_error : uint8_t {
-    writing_error = 1,
-    unhandleable_error = 2,
-    mDecisions_error = 100,
-};
-
-// File Access Actor
-std::string to_string(file_access_error err);
-bool from_string(caf::string_view in, file_access_error& out);
-bool from_integer(uint8_t in, file_access_error& out);
-template<class Inspector>
-bool inspect(Inspector& f, file_access_error& x) {
-    return caf::default_enum_inspect(f, x);
-}
 
 
 CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
@@ -210,7 +192,6 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     CAF_ADD_TYPE_ID(summa, (File_Access_Actor_Settings))
     CAF_ADD_TYPE_ID(summa, (Job_Actor_Settings))
     CAF_ADD_TYPE_ID(summa, (HRU_Actor_Settings))
-    CAF_ADD_TYPE_ID(summa, (serializable_netcdf_gru_actor_info))
 
     CAF_ADD_TYPE_ID(summa, (hru))
     CAF_ADD_TYPE_ID(summa, (NumGRUInfo))
@@ -227,7 +208,6 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     CAF_ADD_TYPE_ID(summa, (std::vector<double>))
     CAF_ADD_TYPE_ID(summa, (std::vector<long int>))
     CAF_ADD_TYPE_ID(summa, (std::vector<std::tuple<caf::actor, std::string>>))
-    CAF_ADD_TYPE_ID(summa, (std::vector<serializable_netcdf_gru_actor_info>))
     CAF_ADD_TYPE_ID(summa, (std::unordered_map<caf::actor, double>))
     CAF_ADD_TYPE_ID(summa, (std::unordered_map<caf::actor, caf::actor>))
 
@@ -244,12 +224,6 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
 
     CAF_ADD_TYPE_ID(summa, (std::optional<caf::strong_actor_ptr>))
 
-
-
-    CAF_ADD_TYPE_ID(summa, (file_access_error))
-
-
 CAF_END_TYPE_ID_BLOCK(summa)
 
-CAF_ERROR_CODE_ENUM(file_access_error)
 

@@ -227,9 +227,7 @@ set(HRU_INTERFACE
 # Actors actual actor modules
 set(ACTORS_GLOBAL
     ${ACTORS_DIR}/global/auxiliary.cpp
-    ${ACTORS_DIR}/global/global.cpp
     ${ACTORS_DIR}/global/fileManager.cpp
-    ${ACTORS_DIR}/global/message_atoms.cpp
     ${ACTORS_DIR}/global/settings_functions.cpp
     ${ACTORS_DIR}/global/timing_info.cpp)
 set(SYS_INIT

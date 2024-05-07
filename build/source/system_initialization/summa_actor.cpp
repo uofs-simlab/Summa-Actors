@@ -1,5 +1,4 @@
 #include "summa_actor.hpp"
-#include "global.hpp"
 #include "job_actor.hpp"
 #include "json.hpp"
 #include <iostream>

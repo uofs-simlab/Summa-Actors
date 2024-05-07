@@ -7,7 +7,6 @@
 #include "client.hpp"
 #include "client_container.hpp"
 #include "settings_functions.hpp"
-#include "global.hpp"
 #include "message_atoms.hpp"
 #include <string>
 #include <optional>

@@ -6,7 +6,6 @@
 #include "gru_struc.hpp"
 #include "timing_info.hpp"
 #include "settings_functions.hpp"
-#include "global.hpp"
 #include "json.hpp"
 #include "hru_actor.hpp"
 #include "hru_batch_actor.hpp"

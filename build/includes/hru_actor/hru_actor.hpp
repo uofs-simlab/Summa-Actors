@@ -7,7 +7,6 @@
 #include "settings_functions.hpp"
 #include <string>
 #include "message_atoms.hpp"
-#include "global.hpp"
 
 
 struct Date {
