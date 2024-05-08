@@ -7,7 +7,7 @@ export LINK_DIRS='/usr/local/lib;/usr/lib'                    # Link directories
 export INCLUDES_DIRS='/usr/local/include;/usr/include'        # directories for INCLUDES cmake variable (cmake uses semicolons as separators)
 export LIBRARY_LINKS='-llapack;-lgfortran;-lnetcdff;-lnetcdf' # list of library links (cmake uses semicolons as separators)
 
-# Set the following paths
+# Set the paths to the Sundials libraries and the C++ Actor Framework
 export SUNDIALS_PATH="/usr/local/sundials"
 export ACTOR_FRAMEWORK_PATH="/usr/local/caf"
 
