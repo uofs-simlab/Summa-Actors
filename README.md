@@ -46,7 +46,7 @@ Summa-Actors/
   * [NetCDF-Fortran](https://github.com/Unidata/netcdf-fortran)
   * NetCDF-C 
   * [C++ Actor Framework (0.18.6)](https://github.com/actor-framework/actor-framework/releases/tag/0.18.6)
-  * [Sundials v7.0.0 (Only for SUMMA version 4.x.x)][https://github.com/LLNL/sundials/releases/tag/v7.0.0]
+  * [Sundials v7.0.0 (Only for SUMMA version 4.x.x)](https://github.com/LLNL/sundials/releases/tag/v7.0.0)
 
 Install most dependencies using your preferred package manager. If you’re using Ubuntu, check our Dockerfile for specific installation examples. 
 

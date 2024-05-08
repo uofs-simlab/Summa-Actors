@@ -49,7 +49,8 @@ if (CMAKE_BUILD_TYPE MATCHES Cluster)
         ${PARENT_DIR}/build/includes/gru_actor
         ${PARENT_DIR}/build/includes/hru_actor)
     set(LIB_ACTORS 
-        ${CAF_LIBRARIES} 
+        ${CAF_LIBRARIES}
+        -lnetcdf 
         -lcaf_core 
         -lcaf_io)
 

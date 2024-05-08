@@ -31,7 +31,6 @@ struct summa_actor_state {
   std::unique_ptr<fileManager> file_manager;
   std::unique_ptr<summaGlobalData> global_fortran_state;
 
-
   // settings for all child actors (save in case we need to recover)
   Summa_Actor_Settings summa_actor_settings;
   File_Access_Actor_Settings file_access_actor_settings;
