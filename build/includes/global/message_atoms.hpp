@@ -1,48 +1,41 @@
 #pragma once
+#include "caf/all.hpp"
 
 #include "batch.hpp"
 #include "batch_container.hpp"
+
 #include "client.hpp"
 #include "client_container.hpp"
-#include <vector>
+
+#include "hru_utils.hpp"
+#include "num_gru_info.hpp"
 #include "settings_functions.hpp"
-#include "global.hpp"
-#include "caf/all.hpp"
 
-enum class hru_error : uint8_t {
-    run_physics_unhandleable = 1,
-    run_physics_infeasible_state = 2,
-};
+#include <vector>
+#include <unordered_map>
 
-enum class file_access_error : uint8_t {
-    writing_error = 1,
-    unhandleable_error = 2,
-    mDecisions_error = 100,
-};
-
-// HRU Errors
-std::string to_string(hru_error err);
-bool from_string(caf::string_view in, hru_error& out);
-bool from_integer(uint8_t in, hru_error& out);
-template<class Inspector>
-bool inspect(Inspector& f, hru_error& x) {
-    return caf::default_enum_inspect(f, x);
-}
-
-// File Access Actor
-std::string to_string(file_access_error err);
-bool from_string(caf::string_view in, file_access_error& out);
-bool from_integer(uint8_t in, file_access_error& out);
-template<class Inspector>
-bool inspect(Inspector& f, file_access_error& x) {
-    return caf::default_enum_inspect(f, x);
-}
 
 CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
+    // BMI Start
+    CAF_ADD_ATOM(summa, update_hru)
+    CAF_ADD_ATOM(summa, init_file_access_actor)
+    CAF_ADD_ATOM(summa, update_timeZoneOffset)
+    CAF_ADD_ATOM(summa, done_update)
+    CAF_ADD_ATOM(summa, init_normal_mode)
+    CAF_ADD_ATOM(summa, update_hru_async)
+    CAF_ADD_ATOM(summa, start_job)
+    CAF_ADD_ATOM(summa, serialize_hru)
+    CAF_ADD_ATOM(summa, reinit_hru)
+    CAF_ADD_ATOM(summa, def_output)
+    CAF_ADD_ATOM(summa, load_balance)
+    CAF_ADD_ATOM(summa, file_access_actor_ready)
+    CAF_ADD_ATOM(summa, global_data_ready)
+
     // Sender: job_actor 
     // Reciever: summa_actor
     // Summary: job_actor finished job
     CAF_ADD_ATOM(summa, done_job)
+    CAF_ADD_ATOM(summa, exit_msg)
     // Sender: 
     // Reciever: 
     // Summary:
@@ -88,6 +81,10 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     // Reciever:
     // Summary:
     CAF_ADD_ATOM(summa, write_output)
+    // Sender: HRU Actor
+    // Reciever: File Access Actor 
+    // Summary: Updates FAA when hru reaches restart checkpoint
+    CAF_ADD_ATOM(summa, write_restart)
     // Sender:
     // Reciever:
     // Summary:
@@ -195,7 +192,9 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     CAF_ADD_TYPE_ID(summa, (File_Access_Actor_Settings))
     CAF_ADD_TYPE_ID(summa, (Job_Actor_Settings))
     CAF_ADD_TYPE_ID(summa, (HRU_Actor_Settings))
-    CAF_ADD_TYPE_ID(summa, (serializable_netcdf_gru_actor_info))
+
+    CAF_ADD_TYPE_ID(summa, (hru))
+    CAF_ADD_TYPE_ID(summa, (NumGRUInfo))
 
     // Class Types
     CAF_ADD_TYPE_ID(summa, (Client))
@@ -209,7 +208,8 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     CAF_ADD_TYPE_ID(summa, (std::vector<double>))
     CAF_ADD_TYPE_ID(summa, (std::vector<long int>))
     CAF_ADD_TYPE_ID(summa, (std::vector<std::tuple<caf::actor, std::string>>))
-    CAF_ADD_TYPE_ID(summa, (std::vector<serializable_netcdf_gru_actor_info>))
+    CAF_ADD_TYPE_ID(summa, (std::unordered_map<caf::actor, double>))
+    CAF_ADD_TYPE_ID(summa, (std::unordered_map<caf::actor, caf::actor>))
 
     // GRU Parameter/Attribute Vectors
     CAF_ADD_TYPE_ID(summa, (std::tuple<std::vector<double>, 
@@ -224,13 +224,6 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
 
     CAF_ADD_TYPE_ID(summa, (std::optional<caf::strong_actor_ptr>))
 
-    // error types
-    CAF_ADD_TYPE_ID(summa, (hru_error))
-
-    CAF_ADD_TYPE_ID(summa, (file_access_error))
-
-
 CAF_END_TYPE_ID_BLOCK(summa)
 
-CAF_ERROR_CODE_ENUM(hru_error)
-CAF_ERROR_CODE_ENUM(file_access_error)
+
