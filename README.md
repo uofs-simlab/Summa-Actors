@@ -1,148 +1,144 @@
 # SUMMA-Actors: Structure for Unifying Multiple Modeling Alternatives with Actors
+SUMMA-Actors is a powerful extension of the existing [SUMMA](https://github.com/CH-Earth/summa#readme) hydrological modeling framework, designed to leverage the Actor Model for enhanced scalability and fault-tolerance. SUMMA-Actors is built using the [C++ Actor Framework](https://github.com/actor-framework/actor-framework) and the key highlights include:
+  * Scalability: Actors process messages concurrenty, effortlessly scaling to thousands of HRUs/GRUs.
+  * Fault-Tolerance: Individual HRUs/GRUs can fail without affecting the rest of the simulation.
 
-SUMMA-Actors is a modified version of the already existing SUMMA software that can be found [here](https://github.com/CH-Earth/summa#readme). SUMMA-Actors uses the Actor Model to increase scalability and fault-tolerance. It is built using the [C++ Actor Framework](https://github.com/actor-framework/actor-framework). 
+## Resources
+  * SUMMA-Actors Wiki: https://github.com/uofs-simlab/Summa-Actors/wiki
+  * SUMMA Documentation: https://summa.readthedocs.io/en/latest/
+  * Laugh-test framework: https://git.cs.usask.ca/numerical_simulations_lab/hydrology/laugh_tests
 
-## Documentation
-A more in-depth documentation can be found [here](https://git.cs.usask.ca/numerical_simulations_lab/actors/Summa-Actors/-/wikis/home). SUMMA-Actors depends on many files from the [original SUMMA repo](https://github.com/CH-Earth/summa). Below is a quick start guide for compiling and running SUMMA-Actors, please consult our wiki for more in-depth documentation. Consider creating an issue for any missing documentation, asking questions, or providing suggestions.
+## Bug Reports, Feature Requests, and Questions
+For bug reports, feature requests, and questions, please open an issue on the GitHub at https://github.com/uofs-simlab/Summa-Actors/issues
 
-## Preliminaries
-SUMMA-Actors is meant to wrap around the existing SUMMA implementation. Therefore you will need to clone the SUMMA repo into the SUMMA-Actors build directory. SUMMA-Actors works with the master branch of SUMMA, which can be found [here](https://github.com/CH-Earth/summa). Below the directory structure is explained in more detail and the steps to compiling SUMMA-Actors are explained.
+## Quick Start
+SUMMA-Actors seamlessly integrates with two versions of the SUMMA hydrological modeling framework:
+  * SUMMA version 4.x.x:
+      *  Built on top of the most up-to-data SUMMA codebase: https://github.com/ashleymedin/summa/tree/develop
+      * Includes latest features and bug fixes, including the option to use the Sundials numerical solver.
+  * SUMMA version 3.x.x:
+      * Built on top of the original SUMMA codebase: https://github.com/CH-Earth/summa
+      * Suitable for existing projects and familiar workflows.
 
-## Directory Structure
-SUMMA-Actors is set up with the following sub-directories, we will consider the top level Summa Actors directory the `root_dir`:
- - bin
- - build
-   - includes
-   - source
-   - summa (https://github.com/KyleKlenk/summa/tree/summa-actors, summa-actors branch)
-   - CMakeLists.txt
- - utils
- - README.md
-
-First clone Summa-Actors to your workstation. Then cd into `build/` and clone `summa` into Summa-Actor's build directory as folder summa.
-
-## Compiling SUMMA-Actors
+The build process for both verisions is largely the same, below are the steps common to both versions. For version specific instructions, please refer to the relevant sections below.
+### Directory Structure
+The directory structure for SUMMA-Actors is as follows:
+```
+Summa-Actors/
+├── bin/
+├── build/
+│   ├── includes/
+│   ├── source/
+│   ├── summa/ (Versions Specific - 3.x.x or 4.x.x)
+│   ├── v3_build_scripts/
+│   └── v4_build_scripts/
+├── containers/
+│   ├── apptainer.def
+│   └── Dockerfile
+├── .gitignore
+└── README.md
+```
 
 ### Dependencies
-SUMMA-Actors has only one additional dependency, the [C++ Actor Framework](https://github.com/actor-framework/actor-framework), specifically the [0.18.6 
-release](https://github.com/actor-framework/actor-framework/archive/refs/tags/0.18.6.tar.gz).
+  * g++
+  * gfortran
+  * [OpenBLAS](https://github.com/xianyi/OpenBLAS)
+  * [NetCDF-Fortran](https://github.com/Unidata/netcdf-fortran)
+  * NetCDF-C 
+  * [C++ Actor Framework (0.18.6)](https://github.com/actor-framework/actor-framework/releases/tag/0.18.6)
+  * [Sundials v7.0.0 (Only for SUMMA version 4.x.x)][https://github.com/LLNL/sundials/releases/tag/v7.0.0]
 
-The following steps can be used to install the C++ Actor Framework on a Linux system:
-```bash
-wget https://github.com/actor-framework/actor-framework/archive/refs/tags/0.18.6.tar.gz
-tar -xzf 0.18.6.tar.gz
-cd actor-framework-0.18.6/
-./configure --prefix=/path/to/install
-cd build
-make # [-j]
-make install # [as root if necessary]
-```
+Install most dependencies using your preferred package manager. If you’re using Ubuntu, check our Dockerfile for specific installation examples. 
 
-Additional dependencies required by both SUMMA and SUMMA actors are:
- * g++
- * gfortran
- * [NetCDF-Fortran](https://github.com/Unidata/netcdf-fortran)
- * [OpenBLAS](https://github.com/xianyi/OpenBLAS)
- * [SUNDIALS V6.6](https://github.com/LLNL/sundials/releases/tag/v6.6.0) (optional)
+### Version 4.x.x Build Instructions
+  1) git clone https://github.com/uofs-simlab/Summa-Actors.git
+  2) cd Summa-Actors/build
+  3) git clone -b develop https://github.com/ashleymedin/summa.git
+  4) cd v4_build_scripts
+  5) Modify the environment variables in the `build_v4_local.sh` script to match your system.
+  6) ./build_v4_local.sh
 
-### Steps To Compile
- ```
- git clone https://git.cs.usask.ca/numerical_simulations_lab/actors/Summa-Actors.git
- cd Summa-Actors/build
- git clone -b summa-actors https://github.com/KyleKlenk/summa.git
- cmake -B cmake_build -S . -DCMAKE_BUILD_TYPE=Build_Type
- cmake --build cmake_build --target all -j
- ```
-Available build types are:
-  * BE or BE_Debug: Builds for local machine
-  * BE_Cluster or BE_Cluster_Debug: See below section (Modules for Alliance Machines)
+Note: Modify and use the `build_v4_cluster.sh` script for building on the [Digitial Research Alliance of Canada](https://docs.alliancecan.ca/wiki/Getting_started) clusters.
 
-### Modules for Alliance Machines
-To compile on Alliance machines the following modules can be loaded:
-```bash
-module load StdEnv/2020
-module load gcc/9.3.0
-module load openblas/0.3.17
-module load netcdf-fortran/4.5.2
-module load caf
-```
+### Version 3.x.x Build Instructions
+  1) git clone https://github.com/uofs-simlab/Summa-Actors.git
+  2) cd Summa-Actors/build
+  3) git clone https://github.com/CH-Earth/summa.git
+  4) cd v3_build_scripts
+  5) Modify the environment variables in the `build_v3_local.sh` script to match your system.
+  6) ./build_v3_local.sh
 
+Note: Modify and use the `build_v3_cluster.sh` script for building on the [Digitial Research Alliance of Canada](https://docs.alliancecan.ca/wiki/Getting_started) clusters.
 
 ## Running SUMMA-Actors
-SUMMA-Actors can be run in two modes, distributed and non-distributed. The distributed mode used to create ad-hoc clusters. The command line arguments are kept as close to the original SUMMA as possible. However, there are options not yet available in SUMMA-Actors that are in the original SUMMA. Here is a full list of the available and unavailable options:
+Running SUMMA-Actors is similar to running the original version of SUMMA. **Input and configuration files remain identical** alowing exising projects and `fileManager.txt` files to be used seamlessly with SUMMA-Actors. Please refer to the [SUMMA documentation](https://summa.readthedocs.io/en/latest/) regarding input files and simulation configuration. The only difference, if desired, is the option to use a `config.json` file to fine tune how SUMMA-Actors will perform. Please refer to the [relevant section](###Config-File-and-Advanced-Features) for more information on the `config.json` file and the more advanced features of SUMMA-Actors.
+
+Below is the help message for SUMMA-Actors, which provides a brief overview of both the avialable options and the currently unimplemented options.
 ```   
 Usage: summa_actors -m master_file [-g startGRU countGRU] [-c config_file] [-b backup_server] [-s server_mode]
   Available options:
     -m, --master:         Define path/name of master file (can be specified in config)
     -g, --gru:            Run a subset of countGRU GRUs starting from index startGRU 
     -c, --config:         Path name of the Summa-Actors config file (optional but recommended)
+    -s, --suffix          Add fileSuffix to the output files
         --gen-config:     Generate a config file
     -b, --backup-server:  Start backup server, requires a server and config_file
-    -s, --server-mode:    Enable server mode
+        --server-mode:    Enable server mode
     -h, --help:           Print this help message
   Unimplemented Options:
-    -n --newFile          Define frequency [noNewFiles,newFileEveryOct1] of new output files
-    -s --suffix           Add fileSuffix to the output files
-    -h --hru              Run a single HRU with index of iHRU
-    -r --restart          Define frequency [y,m,d,e,never] to write restart files
-    -p --progress         Define frequency [m,d,h,never] to print progress
-    -v --version          Display version information of the current build
+    -n, --newFile         Define frequency [noNewFiles,newFileEveryOct1] of new output files
+    -h, --hru             Run a single HRU with index of iHRU
+    -r, --restart         Define frequency [y,m,d,e,never] to write restart files
+    -p, --progress        Define frequency [m,d,h,never] to print progress
+    -v, --version         Display version information of the current build
 ```
-Instructions for using each mode are provided below, if you just want to skip ahead and get started using the default options.
 
+### Example Usage
 
-### Non-Distributed Mode (Similar to original SUMMA)
-Using SUMMA-Actors in non-distributed mode is like running the normal SUMMA. The difference is that HRUs will run concurrently in SUMMA-Actors and maximize resource use. Usage is very close to SUMMA, and the same input files are required. In depth documentation for configuring a SUMMA run can be found [here](https://summa.readthedocs.io/en/latest/).
+```bash
+./summa_actors -g 1 10 -m /path/to/master_file.txt
+```
 
-Usage is as follows: ./summa_actors -m master_file [-g startGRU countGRU] [-c config_file]
+### Config File and Advanced Features
 
-The master_file for SUMMA-Actors can either be defined explicitly on the command line or it can be included in the new to SUMMA-Actors config_file. The config_file is optional but it is highly recommended as it does allow users to fine tune how SUMMA-Actor will perform. We are working to automate these aspects but for now its best to define it for the domain and compute environment in use. Using `./summa_actors --gen-config` will generate a configuration file that can then be filled in. See the section on config_file in this readme for more information. 
+#### Config File
+The `config.json` file is a JSON file that is used to configure SUMMA-Actors. It can be generated by running `./summa_actors --gen-config`, and allows some fine tunning of the SUMMA-Actors program including operating SUMMA-Actors in additional modes. The details of the config file can be found on our wiki page [here](https://github.com/uofs-simlab/Summa-Actors/wiki/Config-File). 
 
+Example usage of the `config.json` file is as follows. Note that the `config.json` file has a field for the `file_master.txt` file, so the `-m` flag is not required when using the `config.json` file.
 
-### Distributed Mode
-Using SUMMA-Actors in distributed mode allows SUMMA-Actors to solve batches and dymically assign them to nodes and reassign them in the event of node failures.
+```bash
+./summa_actors -g 1 10 -c /path/to/config.json
+```
 
-To use this feature there are 3 actors that can be spawned to cluster nodes together and add additional redundancy to the system. All settings are to be defined in the config_file for this mode. In the config file the user must set `distributed_mode` to true, define a `port`, and configure the domain to run. The domain is defined by how many total GRUs the user wishes to compute and the number of GRUs that should be assembled into a batch. Finally, the `server_list` should be set to the hostname of the backup_servers that are started.
+#### Advanced Features
+SUMMA-Actors has additional feature that are not covered in this README. For more information on these features, please refer to the [SUMMA-Actors Advanced Features Wiki Page](https://github.com/uofs-simlab/Summa-Actors/wiki/Advanced-Features). Here is a short summary of some of the optional features:
+ 
+ * Distributed Mode: Run SUMMA-Actors across nodes, or create your own ad-hoc cluster.
+ * Data Assimilation Mode: Use SUMMA-Actors to perform data assimilation, restricting all HRUs to complete a timestep before moving to the next.
+ * Asynchronous Mode: Default mode of SUMMA-Actors, where HRUs can complete timesteps concurrently and independently.
 
-To start the system one start the server first with `./summa_actors -c -s`
-Backup servers can be added with `./summa_actors -c -b`
-Clients can simply be added with `./summa_actors -c`
+## Scientific Use:
+Please feel free to contribute to our project by submitting pull requests or opening issues. We only ask that if you use SUMMA-Actors that you kindly cite one of our publications:
+```bibtex
+@article{klenk2024improving,
+  title={Improving resource utilization and fault tolerance in large simulations via actors},
+  author={Klenk, Kyle and Spiteri, Raymond J},
+  journal={Cluster Computing},
+  pages={1--18},
+  year={2024},
+  publisher={Springer}
+}
 
-NOTE: Each system will need a copy of the forcing data or input data, or the data should be in a singular location like on a cluster system.
+@inproceedings{klenk2024high,
+  title={High-Throughput Scientific Computation with Heterogeneous Clusters: A Kitchen-Sink Approach using the Actor Model},
+  author={Klenk, Kyle and Moayeri, Mohammad Mahdi and Spiteri, Raymond J},
+  booktitle={Proceedings of the 2024 SIAM Conference on Parallel Processing for Scientific Computing (PP)},
+  pages={78--89},
+  year={2024},
+  organization={SIAM}
+}
+```
 
-
-### Config File
-The config file is a JSON file that is used to configure SUMMA-Actors. It is highly recommended to use a config file as it allows the user to fine tune how SUMMA-Actors will perform. Using `./summa_actors --gen-config` will generate a configuration file that can then be filled in. Below is a list of the available options and their descriptions.
-
-#### Distributed_Settings
-The distributed settings are used to configure the distributed mode of SUMMA-Actors. The following options are available:
-  - distributed_mode: (true/false) Enables distributed mode
-  - servers_list: (list of strings) List of hostnames for backup servers
-  - port: (int) Port to use for communication
-  - total_hru_count: (int) Total number of HRUs in the entire domain
-  - num_hru_per_batch: (int) Number of HRUs to assemble into a batches
-
-#### Summa_Actor
-The Summa_Actor settings are used to restrict how many HRU actor can run at once. The following options are available:
-  - max_gru_per_job: (int) Maximum number of HRUs that can be run at once
-
-#### Job_Actor
-The Job_Actor settings can specify the file manager path so it does not need to be specified on the command line, and the maximum number of times to attempt an HRU before giving up. The following options are available:
-  - file_manager_path: (string) Path to the file manager file
-  - max_run_attempts: (int) Maximum number of times to attempt an HRU before giving up
-
-#### File_Access_Actor
-The File_Access_Actor settings are used to configure the file access actor. The following options are available:
-  - num_partitions_in_output_buffer: (int) Number of partitions in the output buffer
-  - num_timesteps_in_output_buffer: (int) Number of timesteps in the output buffer
-
-#### HRU_Actor
-The HRU_Actor settings are used to configure the HRU actor. The following options are available:
-  - print_output: (true/false) Print output to the screen
-  - output_frequency: (int) Frequency to print output to the screen
-  - dt_init_factor: (int) Factor to multiply dt_init by
-  - rel_tol: (float) Relative tolerance for the HRU actor (Requires Sundials)
-  - abs_tol: (float) Absolute tolerance for the HRU actor (Requires Sundials)
 
 ## Credits
 The initial implementation of SUMMA is credited to the initial publications below. These 
