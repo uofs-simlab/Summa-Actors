@@ -52,5 +52,15 @@ RUN cmake ../../sundials-7.0.0 -DBUILD_FORTRAN_MODULE_INTERFACE=ON \
 RUN make
 RUN make install
 
-# Change workdir for when we attach to this container
-WORKDIR /Summa-Actors
+WORKDIR /code
+
+# Install the Laugh-Tests
+RUN git clone -b development https://git.cs.usask.ca/numerical_simulations_lab/hydrology/laugh_tests.git
+
+
+RUN git clone https://github.com/uofs-simlab/Summa-Actors.git
+WORKDIR /code/Summa-Actors/build
+RUN git clone -b develop https://github.com/ashleymedin/summa.git
+
+WORKDIR /code/Summa-Actors/
+
