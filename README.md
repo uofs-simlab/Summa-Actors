@@ -14,7 +14,7 @@ For bug reports, feature requests, and questions, please open an issue on the Gi
 ## Quick Start
 SUMMA-Actors seamlessly integrates with two versions of the SUMMA hydrological modeling framework:
   * SUMMA version 4.x.x:
-      *  Built on top of the most up-to-data SUMMA codebase: https://github.com/ashleymedin/summa/tree/develop
+      *  Built on top of the most up-to-data SUMMA codebase: https://github.com/KyleKlenk/summa/tree/develop
       * Includes latest features and bug fixes, including the option to use the Sundials numerical solver.
   * SUMMA version 3.x.x:
       * Built on top of the original SUMMA codebase: https://github.com/CH-Earth/summa
