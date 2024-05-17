@@ -13,9 +13,6 @@ Batch::Batch(int batch_id, int start_hru, int num_hru){
 }
 
 // Getters
-int Batch::getBatchID() { return batch_id_; }
-int Batch::getStartHRU() { return start_hru_; }
-int Batch::getNumHRU() { return num_hru_; }
 double Batch::getRunTime() { return run_time_; }
 double Batch::getReadTime() { return read_time_; }
 double Batch::getWriteTime() { return write_time_; }

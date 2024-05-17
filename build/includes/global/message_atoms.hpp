@@ -7,6 +7,8 @@
 #include "client.hpp"
 #include "client_container.hpp"
 
+#include "logger.hpp"
+
 #include "hru_utils.hpp"
 #include "num_gru_info.hpp"
 #include "settings_functions.hpp"
@@ -201,6 +203,7 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     CAF_ADD_TYPE_ID(summa, (Client_Container))
     CAF_ADD_TYPE_ID(summa, (Batch))
     CAF_ADD_TYPE_ID(summa, (Batch_Container))
+    CAF_ADD_TYPE_ID(summa, (Logger))
 
     CAF_ADD_TYPE_ID(summa, (std::vector<std::vector<double>>))
     CAF_ADD_TYPE_ID(summa, (std::vector<std::vector<int>>))

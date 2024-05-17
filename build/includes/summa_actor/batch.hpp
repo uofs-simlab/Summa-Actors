@@ -19,9 +19,9 @@ class Batch {
     Batch(int batch_id = -1, int start_hru = -1, int num_hru = -1);
         
     // Getters
-    int getBatchID();
-    int getStartHRU();
-    int getNumHRU();
+    inline int getBatchID() const { return batch_id_; }
+    inline int getStartHRU() const { return start_hru_;}
+    inline int getNumHRU() const { return num_hru_;}
     double getRunTime();
     double getReadTime();
     double getWriteTime();

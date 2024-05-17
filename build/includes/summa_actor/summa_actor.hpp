@@ -25,8 +25,8 @@ struct summa_actor_state {
   caf::actor current_job;  // Reference to the current job actor
   caf::actor parent;
 
-  Batch_Container batch_container;
-  int current_batch_id;
+  std::unique_ptr<Batch_Container> batch_container;
+  std::shared_ptr<const Batch> current_batch;
 
   std::unique_ptr<fileManager> file_manager;
   std::unique_ptr<summaGlobalData> global_fortran_state;
@@ -50,7 +50,7 @@ behavior summa_actor(stateful_actor<summa_actor_state>* self,
                      Job_Actor_Settings job_actor_settings, 
                      HRU_Actor_Settings hru_actor_settings, actor parent);
 
-void spawnJob(stateful_actor<summa_actor_state>* self);
+int spawnJob(stateful_actor<summa_actor_state>* self);
 } // namespace caf
 
 // Gets the number of GRUs from the attribute file

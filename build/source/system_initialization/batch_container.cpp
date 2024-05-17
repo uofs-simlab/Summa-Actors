@@ -6,11 +6,13 @@ Batch_Container::Batch_Container(int start_hru, int total_hru_count,
   total_hru_count_ = total_hru_count;
   num_hru_per_batch_ = num_hru_per_batch;
   assembleBatches();
-  batches_remaining_ = batch_list_.size(); // batch_list set in assemble batches
+  batches_remaining_ = batch_list_.size();
+  
+  logger_ = Logger("batch_container.log");
+  logger_.log("----------------Batch List----------------");
+  logger_.log(this->getBatchesAsString());
+  logger_.log("------------------------------------------");
 }
-
-int Batch_Container::getBatchesRemaining() { return batches_remaining_;}
-int Batch_Container::getTotalBatches() { return batch_list_.size();}
 
 void Batch_Container::assembleBatches() {
   int remaining_hru_to_batch = total_hru_count_;
@@ -26,6 +28,23 @@ void Batch_Container::assembleBatches() {
     if (current_batch_size == num_hru_per_batch_)
       batch_id += 1;
   }
+}
+
+void Batch_Container::updateBatchStats(int batch_id, double run_time, 
+                                       double read_time, double write_time,
+                                       int num_success, int num_failed) {
+  batch_list_[batch_id].updateRunTime(run_time);
+  batch_list_[batch_id].updateReadTime(read_time);
+  batch_list_[batch_id].updateWriteTime(write_time);
+  batch_list_[batch_id].updateSolved(true);
+  batches_remaining_--;
+  logger_.log("Batch " + std::to_string(batch_id) + " Solved");
+  logger_.log("\tRun Time: " + std::to_string(run_time));
+  logger_.log("\tRead Time: " + std::to_string(read_time));
+  logger_.log("\tWrite Time: " + std::to_string(write_time));
+  logger_.log("\tNum Success: " + std::to_string(num_success));
+  logger_.log("\tNum Failed: " + std::to_string(num_failed));
+  logger_.log("End");
 }
 
 void Batch_Container::printBatches() {
@@ -50,9 +69,11 @@ std::optional<Batch> Batch_Container::getUnsolvedBatch() {
   for (auto& batch : batch_list_) {
     if (!batch.isAssigned() && !batch.isSolved()) {
       batch.updateAssigned(true);
+      logger_.log("Starting Batch " + std::to_string(batch.getBatchID()));
       return batch;
     }
   }
+  logger_.log("ERROR--Batch_Container: No Unsolved Batches");
   return {};
 }
 
@@ -72,14 +93,9 @@ void Batch_Container::updateBatch_success(Batch successful_batch,
   batches_remaining_--;
 }
 
- void Batch_Container::updateBatch_success(int batch_id, double run_time, 
-                                           double read_time, double write_time) {
-    batch_list_[batch_id].updateRunTime(run_time);
-    batch_list_[batch_id].updateReadTime(read_time);
-    batch_list_[batch_id].updateWriteTime(write_time);
-    batch_list_[batch_id].updateSolved(true);
-    batches_remaining_--;
-  }
+
+
+
 
 void Batch_Container::updateBatch_success(Batch successful_batch) {
   batch_list_[successful_batch.getBatchID()].updateSolved(true);
