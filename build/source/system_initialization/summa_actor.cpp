@@ -6,8 +6,8 @@
 #include <netcdf.h>
 
 using json = nlohmann::json;
+using namespace caf;
 
-namespace caf {
 behavior summa_actor(stateful_actor<summa_actor_state>* self, int start_gru, 
                      int num_gru, Summa_Actor_Settings summa_actor_settings, 
                      File_Access_Actor_Settings file_access_actor_settings,
@@ -61,11 +61,9 @@ behavior summa_actor(stateful_actor<summa_actor_state>* self, int start_gru,
   batch_container = std::make_unique<Batch_Container>(
       self->state.start_gru, self->state.num_gru, 
       summa_actor_settings.max_gru_per_job);
-
-  
   aout(self) << "\n\nStarting SUMMA With " 
              << batch_container->getBatchesRemaining() << " Batches\n\n";
-            
+   
   if (spawnJob(self) != 0) {
     aout(self) << "ERROR--Summa_Actor: Unable To Spawn Job\n";
     self->quit();
@@ -80,56 +78,36 @@ behavior summa_actor(stateful_actor<summa_actor_state>* self, int start_gru,
                                         job_duration, read_duration,
                                         write_duration, num_success, 
                                         num_gru_failed);
-
-      aout(self) << "###########################################\n"
-                 << "Job Finished: " 
-                 << self->state.current_batch->getBatchID() << "\n"
-                 << batch_container->getTotalBatches() - 
-                    batch_container->getBatchesRemaining() 
-                 << "/" << batch_container->getTotalBatches() << "\n"
-                 << "###########################################\n";
       
       self->state.num_gru_failed += num_gru_failed;
       
       if (!batch_container->hasUnsolvedBatches()) {
-        aout(self) << "All Batches Finished\n"
-                   << batch_container->getAllBatchInfoString();
-        self->state.summa_actor_timing.updateEndPoint("total_duration");
-
-        double total_dur_sec = self->state.summa_actor_timing.getDuration(
-            "total_duration").value_or(-1.0);
-        double total_dur_min = total_dur_sec / 60;
-        double total_dur_hr = total_dur_min / 60;
-        double read_dur_sec = batch_container->getTotalReadTime();
-        double write_dur_sec = batch_container->getTotalWriteTime();
-         
-        aout(self) << "\n________________SUMMA INFO________________\n"
-                   << "Total Duration = " << total_dur_sec << " Seconds\n"
-                   << "Total Duration = " << total_dur_min << " Minutes\n"
-                   << "Total Duration = " << total_dur_hr << " Hours\n"
-                   << "Total Read Duration = " << read_dur_sec << "Seconds\n"
-                   << "Total Write Duration = " << write_dur_sec << "Seconds\n"
-                   << "Num Failed = " << self->state.num_gru_failed << "\n"
-                   << "___________________Program Finished__________________\n";
-        
-        self->send(self->state.parent, done_batch_v, total_dur_sec, 
-                   read_dur_sec, write_dur_sec);
-        self->quit();
+        finalizeSumma(self);
         return;
       }
 
-      
+      // Find another batch to solve
       if (spawnJob(self) != 0) {
         aout(self) << "ERROR--Summa_Actor: Unable To Spawn Job\n";
         self->quit();
         exit(EXIT_FAILURE);
       }
-
     },
 
-    [=](err_atom) {
-      aout(self) << "Unrecoverable Error: Attempting To Fail Gracefully\n";
-      self->quit();
+    [=](err_atom, int err_code, std::string err_msg) {
+      if (err_code == -2) { // Unrecoverable Error
+        aout(self) << "Summa-Actor: Unrecoverable Error from job_actor\n" 
+                   << "\t Error Message = " << err_msg << "\n";
+        self->quit();
+        exit(EXIT_FAILURE);
+      } else {
+        aout(self) << "Summa-Actor: Recoverable Error from job_actor\n" 
+                   << "\t Error Message = " << err_msg << "\n"
+                   << "\t Error Code = " << err_code << "\n"
+                   << "IMPLEMENTATION NEEDED\n";
+        self->quit();
+        return;
+      }
     }
   };
 }
@@ -143,16 +121,41 @@ int spawnJob(stateful_actor<summa_actor_state>* self) {
     return -1;
   }
   self->state.current_batch = std::make_shared<Batch>(batch.value());
-  aout(self) << "\n\n\n\nID= "<< self->state.current_batch->getBatchID() << "\n\n\n\n";
   self->state.current_job = self->spawn(
-      job_actor, self->state.current_batch->getStartHRU(), 
-      self->state.current_batch->getNumHRU(), 
+      job_actor, batch.value(),
       self->state.file_access_actor_settings, 
       self->state.job_actor_settings, self->state.hru_actor_settings, self);
   return 0;
 }
 
-} // end namespace
+void finalizeSumma(stateful_actor<summa_actor_state>* self) {
+  auto& batch_container = self->state.batch_container;
+  aout(self) << "All Batches Finished\n"
+              << batch_container->getAllBatchInfoString();
+  self->state.summa_actor_timing.updateEndPoint("total_duration");
+
+  double total_dur_sec = self->state.summa_actor_timing.getDuration(
+      "total_duration").value_or(-1.0);
+  double total_dur_min = total_dur_sec / 60;
+  double total_dur_hr = total_dur_min / 60;
+  double read_dur_sec = batch_container->getTotalReadTime();
+  double write_dur_sec = batch_container->getTotalWriteTime();
+    
+  aout(self) << "\n________________SUMMA INFO________________\n"
+              << "Total Duration = " << total_dur_sec << " Seconds\n"
+              << "Total Duration = " << total_dur_min << " Minutes\n"
+              << "Total Duration = " << total_dur_hr << " Hours\n"
+              << "Total Read Duration = " << read_dur_sec << "Seconds\n"
+              << "Total Write Duration = " << write_dur_sec << "Seconds\n"
+              << "Num Failed = " << self->state.num_gru_failed << "\n"
+              << "___________________Program Finished__________________\n";
+  
+  self->send(self->state.parent, done_batch_v, total_dur_sec, 
+              read_dur_sec, write_dur_sec);
+  self->quit();
+  return;
+}
+
 
 
 int getNumGRUInFile(const std::string &settingsPath, 

@@ -18,7 +18,7 @@
 #include <tuple>
 #include "summa_init_struc.hpp"
 #include "gru_actor.hpp"
-
+#include "logger.hpp"
 
 
 /*********************************************
@@ -40,21 +40,17 @@ struct GRU_Container {
  *********************************************/
 struct job_state {
   TimingInfo job_timing;
+  Logger logger;
   // Actor References
   caf::actor file_access_actor; // actor reference for the file_access_actor
   caf::actor parent;            // actor reference to the top-level SummaActor
 
-  // Job Parameters
-  int start_gru;                // Starting GRU for this job
-  int num_gru;                  // Number of GRUs for this job
-  int num_hru;
-  int max_run_attempts = 1;     // Max number of attempts to solve a GRU
-  
+  Batch batch; // Information about the number of HRUs and starting point 
+
   // TODO: gru_struc can contain the num_gru_info and be the gru_container
   std::unique_ptr<GruStruc> gru_struc; 
   NumGRUInfo num_gru_info;
   GRU_Container gru_container;
-  
 
   std::unique_ptr<SummaInitStruc> summa_init_struc;
 
@@ -63,7 +59,6 @@ struct job_state {
   int num_gru_done = 0;         // The number of GRUs that have completed
   int num_gru_failed = 0;       // Number of GRUs that have failed
 
-  // Timing Variables
   
   std::string hostname;
 
@@ -89,6 +84,7 @@ struct distributed_job_state {
   int start_gru;
   int num_gru;
 
+  Batch batch;
   
   NumGRUInfo num_gru_info;
   std::vector<NumGRUInfo> node_num_gru_info;
@@ -143,8 +139,8 @@ struct distributed_job_state {
 };
 
 /** The Job Actor Behaviors */
-caf::behavior job_actor(caf::stateful_actor<job_state>* self, int start_gru, 
-                        int num_gru, 
+caf::behavior job_actor(caf::stateful_actor<job_state>* self,
+                        Batch batch,
                         File_Access_Actor_Settings file_access_actor_settings, 
                         Job_Actor_Settings job_actor_settings, 
                         HRU_Actor_Settings hru_actor_settings, 
