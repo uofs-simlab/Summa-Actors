@@ -172,4 +172,7 @@ void handleFinishedGRU(caf::stateful_actor<job_state>* self,
 void finalizeJob(caf::stateful_actor<job_state>* self);
 
 void handleGRUError(caf::stateful_actor<job_state>* self, int err_code, 
-                    int index);
+                    int index, std::string& err_msg);
+
+void handleFileAccessError(caf::stateful_actor<job_state>* self, int err_code, 
+                           std::string& err_msg);

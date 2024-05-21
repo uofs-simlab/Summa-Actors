@@ -67,7 +67,10 @@ behavior summa_actor(stateful_actor<summa_actor_state>* self, int start_gru,
   std::stringstream ss;
   ss << std::put_time(now_tm, "%m_%d_%H:%M");
 
-  std::string folder_name = "simulation_" + ss.str();
+  std::string folder_name = "startgru-" + 
+      std::to_string(self->state.start_gru) + "_endgru-" + 
+      std::to_string(self->state.start_gru + self->state.num_gru - 1)
+      + "_" + ss.str();
   std::filesystem::create_directories(folder_name);
 
   auto& batch_container = self->state.batch_container;

@@ -59,18 +59,10 @@ behavior async_mode(stateful_actor<job_state>* self) {
     [=](finalize) { finalizeJob(self); },
 
     /**Error Handling Functions*/
-    [=](err_atom, int err_code, int gru_job_index) {
-      if (gru_job_index == 0) {
-        aout(self) << "Async Mode: File_Access_Actor Error: " 
-                   << err_code << "\n";
-        self->send(self, finalize_v);
-        return;
-      }
-      std::string err_msg = "Async Mode: GRU Error: " + 
-                            std::to_string(gru_job_index);
-      self->state.logger.log(err_msg);
-      aout(self) << err_msg << "\n";
-      handleGRUError(self, err_code, gru_job_index);
+    [=](err_atom, int gru_job_index, int err_code, std::string err_msg) {
+      (gru_job_index == 0) ? 
+          handleFileAccessError(self, err_code, err_msg) :
+          handleGRUError(self, err_code, gru_job_index, err_msg);
     }
     
   };

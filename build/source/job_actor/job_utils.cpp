@@ -137,7 +137,15 @@ void handleFinishedGRU(stateful_actor<job_state>* self, int gru_job_index) {
 }
 
 void handleGRUError(stateful_actor<job_state>* self, int err_code, 
-                    int gru_job_index) {
+                    int gru_job_index, std::string& err_msg) {
+  
+  // Logging Part
+  std::string job_err_msg = "Job Actor: GRU Failure -- " + 
+      std::to_string(gru_job_index) + " Error: " + err_msg + "\n";
+  self->state.logger.log(job_err_msg);
+  aout(self) << job_err_msg << "\n";
+
+  // Error Handling Part
   auto& gru_struc = self->state.gru_struc;
   gru_struc->getGRU(gru_job_index)->setFailed();
   gru_struc->incrementNumGRUFailed();
@@ -146,4 +154,20 @@ void handleGRUError(stateful_actor<job_state>* self, int err_code,
     gru_struc->hasFailures() && gru_struc->shouldRetry() ? 
         self->send(self, restart_failures_v) : self->send(self, finalize_v);
   }
+}
+
+void handleFileAccessError(stateful_actor<job_state>* self, int err_code, 
+                           std::string& err_msg) {
+  // Logging Part
+  self->state.logger.log("Job Actor: File_Access_Actor Error:" + err_msg);
+  aout(self) << "Job Actor: File_Access_Actor Error:" << err_msg << "\n";
+  if (err_code != -1) {
+    self->state.logger.log("Job_Actor: Have to Quit");
+    aout(self) << "Job_Actor: Have to Quit\n";
+    self->quit();
+    return;
+  }
+
+
+  // self->send(self, finalize_v);
 }

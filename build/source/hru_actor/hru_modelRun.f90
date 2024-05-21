@@ -22,7 +22,6 @@ module summa_modelRun
 ! calls the model physics
 USE,intrinsic :: iso_c_binding
 
-
 USE actor_data_types,only:hru_type
 ! access missing values
 USE globalData,only:integerMissing         ! missing integer
@@ -146,7 +145,7 @@ subroutine runPhysics(indxGRU, indxHRU, modelTimeStep, hru_data, &
                       notUsed_canopyDepth,    & ! intent(out): NOT USED: canopy depth (m)
                       notUsed_exposedVAI,     & ! intent(out): NOT USED: exposed vegetation area index (m2 m-2)
                       err,cmessage)                     ! intent(out): error control
-      if(err/=0)then;message=trim(message)//trim(cmessage); print*, message; return; endif
+      if(err/=0)then;message=trim(message)//trim(cmessage); return; endif
 
     
       ! save the flag for computing the vegetation fluxes
@@ -180,7 +179,7 @@ subroutine runPhysics(indxGRU, indxHRU, modelTimeStep, hru_data, &
 
   ! get height at bottom of each soil layer, negative downwards (used in Noah MP)
   allocate(zSoilReverseSign(nSoil),stat=err)
-  if(err/=0)then; message=trim(message)//'problem allocating space for zSoilReverseSign'; print*, message; return; endif
+  if(err/=0)then; message=trim(message)//'problem allocating space for zSoilReverseSign'; return; endif
 
   zSoilReverseSign(:) = -hru_data%progStruct%var(iLookPROG%iLayerHeight)%dat(nSnow+1:nLayers)
  
@@ -196,7 +195,7 @@ subroutine runPhysics(indxGRU, indxHRU, modelTimeStep, hru_data, &
 
   ! deallocate height at bottom of each soil layer(used in Noah MP)
   deallocate(zSoilReverseSign,stat=err)
-  if(err/=0)then;message=trim(message)//'problem deallocating space for zSoilReverseSign'; print*, message; return; endif
+  if(err/=0)then;message=trim(message)//'problem deallocating space for zSoilReverseSign'; return; endif
  
 
   ! overwrite the minimum resistance
@@ -223,7 +222,7 @@ subroutine runPhysics(indxGRU, indxHRU, modelTimeStep, hru_data, &
         hru_data%fluxStruct,         & ! data structure of model fluxes
         hru_data%tmZoneOffsetFracDay,         & ! time zone offset in fractional days
         err,cmessage)                  ! error control
-  if(err/=0)then;err=20; message=trim(message)//cmessage; print*, message; return; endif
+  if(err/=0)then;err=20; message=trim(message)//cmessage; return; endif
  
   ! initialize the number of flux calls
   hru_data%diagStruct%var(iLookDIAG%numFluxCalls)%dat(1) = 0._dp
@@ -253,41 +252,13 @@ subroutine runPhysics(indxGRU, indxHRU, modelTimeStep, hru_data, &
                   hru_data%fluxStruct,         & ! intent(inout): model fluxes for a local HRU
                   ! error control
                   err,cmessage)       ! intent(out): error control
-  if(err/=0)then; err=20; message=trim(message)//trim(cmessage); print*, message; return; endif;
+  if(err/=0)then; err=20; message=trim(message)//trim(cmessage); return; endif;
 
 
   !************************************* End of run_oneHRU *****************************************
   ! save the flag for computing the vegetation fluxes
   if(computeVegFluxFlag)      hru_data%ComputeVegFlux = yes
   if(.not.computeVegFluxFlag) hru_data%ComputeVegFlux = no
-
-
-
-
-  ! ----- compute fluxes across HRUs --------------------------------------------------------------------------------------------------
-
-  ! ! identify lateral connectivity
-  ! ! (Note:  for efficiency, this could this be done as a setup task, not every timestep)
-  ! kHRU = 0
-  ! ! identify the downslope HRU
-  ! dsHRU: do jHRU=1,gruInfo%hruCount
-  !   if(typeHRU%hru(iHRU)%var(iLookTYPE%downHRUindex) == idHRU%hru(jHRU)%var(iLookID%hruId))then
-  !     if(kHRU==0)then  ! check there is a unique match
-  !       kHRU=jHRU
-  !       exit dsHRU
-  !     end if  ! (check there is a unique match)
-  !   end if  ! (if identified a downslope HRU)
-  ! end do dsHRU
-
-  ! ! if lateral flows are active, add inflow to the downslope HRU
-  ! if(kHRU > 0)then  ! if there is a downslope HRU
-  !   fluxHRU%hru(kHRU)%var(iLookFLUX%mLayerColumnInflow)%dat(:) = fluxHRU%hru(kHRU)%var(iLookFLUX%mLayerColumnInflow)%dat(:)  + fluxHRU%hru(iHRU)%var(iLookFLUX%mLayerColumnOutflow)%dat(:)
-  ! ! otherwise just increment basin (GRU) column outflow (m3 s-1) with the hru fraction
-  ! else
-  !   bvarData%var(iLookBVAR%basin__ColumnOutflow)%dat(1) = bvarData%var(iLookBVAR%basin__ColumnOutflow)%dat(1) + sum(fluxHRU%hru(iHRU)%var(iLookFLUX%mLayerColumnOutflow)%dat(:))
-  ! end if
-
-  !************************************* End of run_oneGRU *****************************************
 
 end subroutine runPhysics
 

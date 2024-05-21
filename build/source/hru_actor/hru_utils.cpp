@@ -9,8 +9,8 @@ using namespace caf;
 void serializeHru(stateful_actor<hru_state>* self, hru& serialized_state) {
   // std::vector<std::vector<std::vector<double>>> lookup_struct = 
       // get_lookup_struct(self->state.hru_data);
-  serialized_state.indx_hru = self->state.indxHRU;
-  serialized_state.indx_gru = self->state.indxGRU;
+  serialized_state.indx_hru = self->state.indx_hru;
+  serialized_state.indx_gru = self->state.indx_gru;
   serialized_state.ref_gru = self->state.ref_gru;
   serialized_state.timestep = self->state.timestep;
   serialized_state.forcing_step = self->state.forcingStep;
@@ -73,14 +73,14 @@ void serializeHru(stateful_actor<hru_state>* self, hru& serialized_state) {
 }
 
 void deserializeHru(stateful_actor<hru_state>* self, hru& new_state) {
-  setFinalizeStatsFalse(&self->state.indxGRU);
+  setFinalizeStatsFalse(&self->state.indx_gru);
 
   // Delete the old hru_data in Fortran
   delete_handle_hru_type(self->state.hru_data);
   self->state.hru_data = new_handle_hru_type();
 
-  self->state.indxHRU = new_state.indx_hru;
-  self->state.indxGRU = new_state.indx_gru;
+  self->state.indx_hru = new_state.indx_hru;
+  self->state.indx_gru = new_state.indx_gru;
   self->state.ref_gru = new_state.ref_gru;
   self->state.timestep = new_state.timestep;
   self->state.forcingStep = new_state.forcing_step;
