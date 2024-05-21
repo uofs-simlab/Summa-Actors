@@ -1,28 +1,33 @@
 #include "batch_container.hpp"
 
 Batch_Container::Batch_Container(int start_hru, int total_hru_count, 
-                                 int num_hru_per_batch) {
+                                 int num_hru_per_batch,
+                                 std::string log_dir) {
   start_hru_ = start_hru;
   total_hru_count_ = total_hru_count;
   num_hru_per_batch_ = num_hru_per_batch;
-  assembleBatches();
+  if (!log_dir.empty() && log_dir.back() != '/') {
+    log_dir += "/"; // Ensure log_dir_ is a directory
+  }
+  assembleBatches(log_dir);
   batches_remaining_ = batch_list_.size();
-  
-  logger_ = Logger("batch_container.log");
+  logger_ = Logger(log_dir + "batch_container.log");
   logger_.log("----------------Batch List----------------");
   logger_.log(this->getBatchesAsString());
   logger_.log("------------------------------------------");
 }
 
-void Batch_Container::assembleBatches() {
+void Batch_Container::assembleBatches(std::string log_dir) {
   int remaining_hru_to_batch = total_hru_count_;
   int batch_id = 0;
   int start_hru_local = start_hru_;
 
   while (remaining_hru_to_batch > 0) {
-    int current_batch_size = std::min(num_hru_per_batch_, remaining_hru_to_batch);
+    int current_batch_size = std::min(num_hru_per_batch_, 
+                                      remaining_hru_to_batch);
     batch_list_.push_back(Batch(batch_id, start_hru_local, current_batch_size));
-    
+    batch_list_[batch_id].setLogDir(log_dir);
+
     remaining_hru_to_batch -= current_batch_size;
     start_hru_local += current_batch_size;
     if (current_batch_size == num_hru_per_batch_)

@@ -4,6 +4,10 @@
 #include <iostream>
 #include <fstream>
 #include <netcdf.h>
+#include <filesystem>
+#include <chrono>
+#include <sstream>
+#include <iomanip>
 
 using json = nlohmann::json;
 using namespace caf;
@@ -43,7 +47,6 @@ behavior summa_actor(stateful_actor<summa_actor_state>* self, int start_gru,
     self->quit(); return {};
   }
 
-
   self->state.file_gru = getNumGRUInFile(file_manager->settings_path_, 
                                          file_manager->local_attributes_);
   if (self->state.file_gru  == -1) 
@@ -57,10 +60,22 @@ behavior summa_actor(stateful_actor<summa_actor_state>* self, int start_gru,
     }
   }
 
+  auto now = std::chrono::system_clock::now();
+  auto now_c = std::chrono::system_clock::to_time_t(now);
+  std::tm* now_tm = std::localtime(&now_c);
+
+  std::stringstream ss;
+  ss << std::put_time(now_tm, "%m_%d_%H:%M");
+
+  std::string folder_name = "simulation_" + ss.str();
+  std::filesystem::create_directories(folder_name);
+
   auto& batch_container = self->state.batch_container;
   batch_container = std::make_unique<Batch_Container>(
       self->state.start_gru, self->state.num_gru, 
-      summa_actor_settings.max_gru_per_job);
+      summa_actor_settings.max_gru_per_job,
+      folder_name);
+
   aout(self) << "\n\nStarting SUMMA With " 
              << batch_container->getBatchesRemaining() << " Batches\n\n";
    
@@ -142,13 +157,13 @@ void finalizeSumma(stateful_actor<summa_actor_state>* self) {
   double write_dur_sec = batch_container->getTotalWriteTime();
     
   aout(self) << "\n________________SUMMA INFO________________\n"
-              << "Total Duration = " << total_dur_sec << " Seconds\n"
-              << "Total Duration = " << total_dur_min << " Minutes\n"
-              << "Total Duration = " << total_dur_hr << " Hours\n"
-              << "Total Read Duration = " << read_dur_sec << "Seconds\n"
-              << "Total Write Duration = " << write_dur_sec << "Seconds\n"
-              << "Num Failed = " << self->state.num_gru_failed << "\n"
-              << "___________________Program Finished__________________\n";
+             << "Total Duration = " << total_dur_sec << " Seconds\n"
+             << "Total Duration = " << total_dur_min << " Minutes\n"
+             << "Total Duration = " << total_dur_hr << " Hours\n"
+             << "Total Read Duration = " << read_dur_sec << "Seconds\n"
+             << "Total Write Duration = " << write_dur_sec << "Seconds\n"
+             << "Num Failed = " << self->state.num_gru_failed << "\n"
+             << "___________________Program Finished__________________\n";
   
   self->send(self->state.parent, done_batch_v, total_dur_sec, 
               read_dur_sec, write_dur_sec);

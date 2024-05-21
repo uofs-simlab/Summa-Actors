@@ -13,13 +13,13 @@ class Batch_Container {
     std::vector<Batch> batch_list_;
     Logger logger_;
     
-    void assembleBatches();
+    void assembleBatches(std::string log_dir);
     
   public:
         
     // Initialize Batch_Container -- call assembleBatches() 
     Batch_Container(int start_hru = 1, int total_hru_count = 0, 
-                    int num_hru_per_batch = 0);
+                    int num_hru_per_batch = 0, std::string log_dir = "");
 
 
     // returns the size of the batch list

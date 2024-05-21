@@ -36,7 +36,7 @@ behavior job_actor(stateful_actor<job_state>* self,
   self->state.job_actor_settings = job_actor_settings;
   self->state.hru_actor_settings = hru_actor_settings;
   
-  self->state.logger = Logger(
+  self->state.logger = Logger( self->state.batch.getLogDir() +
       "batch_" + std::to_string(batch.getBatchID()) + ".log");
 
   std::string err_msg;
