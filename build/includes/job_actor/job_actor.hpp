@@ -41,6 +41,8 @@ struct GRU_Container {
 struct job_state {
   TimingInfo job_timing;
   Logger logger;
+  ErrorLogger err_logger;
+  SuccessLogger success_logger;
   // Actor References
   caf::actor file_access_actor; // actor reference for the file_access_actor
   caf::actor parent;            // actor reference to the top-level SummaActor
@@ -172,7 +174,7 @@ void handleFinishedGRU(caf::stateful_actor<job_state>* self,
 void finalizeJob(caf::stateful_actor<job_state>* self);
 
 void handleGRUError(caf::stateful_actor<job_state>* self, int err_code, 
-                    int index, std::string& err_msg);
+                    int index, int timestep, std::string& err_msg);
 
 void handleFileAccessError(caf::stateful_actor<job_state>* self, int err_code, 
                            std::string& err_msg);

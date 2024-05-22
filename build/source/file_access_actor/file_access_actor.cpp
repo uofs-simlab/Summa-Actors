@@ -100,7 +100,7 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
       if (err != 0) {
         aout(self) << "File_Access_Actor: Error loadForcingFile\n"
                    << "\tMessage = Can't load forcing file\n";
-        self->send(self->state.parent, err_atom_v, 0, err, 
+        self->send(self->state.parent, err_atom_v, 0, 0, err, 
                    "Can't load forcing file\n");
         self->quit();
         return;
@@ -122,7 +122,7 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
       if (err != 0) {
         aout(self) << "File_Access_Actor: Error loadForcingFile\n"
                    << "\tMessage = Can't load forcing file\n";
-        self->send(self->state.parent, err_atom_v, 0, err, 
+        self->send(self->state.parent, err_atom_v, 0, 0, err, 
                    "Can't load forcing file\n");
         self->quit();
         return;
@@ -188,7 +188,7 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
       if (err != 0) {
         aout(self) << "File Access Actor: Error writeOutput from job\n"
                    << "\tMessage = " << err_msg.get() << "\n";
-        self->send(self->state.parent, err_atom_v, 0, err, err_msg.get());
+        self->send(self->state.parent, err_atom_v, 0, 0, err, err_msg.get());
       }
 
       if (self->state.write_params_flag) self->state.write_params_flag = false;
@@ -246,7 +246,7 @@ void writeOutput(stateful_actor<file_access_state>* self,
   if (start_gru > max_gru) {
     aout(self) << "File Access Actor: Error writeOutput\n"
                << "\tMessage = start_gru > max_gru\n";
-    self->send(self->state.parent, err_atom_v, 0, NOTIFY_ERR, 
+    self->send(self->state.parent, err_atom_v, 0, 0, NOTIFY_ERR, 
                "start_gru > max_gru");
     return;
   }
@@ -258,7 +258,7 @@ void writeOutput(stateful_actor<file_access_state>* self,
   if (err != 0) {
     aout(self) << "File Access Actor: Error writeOutput\n"
                << "\tMessage = " << err_msg.get() << "\n";
-    self->send(self->state.parent, err_atom_v, 0, NOTIFY_ERR, err_msg.get());
+    self->send(self->state.parent, err_atom_v, 0, 0, NOTIFY_ERR, err_msg.get());
   }
 
   partition->updateTimeSteps();

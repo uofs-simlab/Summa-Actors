@@ -119,6 +119,12 @@ void handleFinishedGRU(stateful_actor<job_state>* self, int gru_job_index) {
   gru_struc->incrementNumGRUDone();
   gru_struc->getGRU(gru_job_index)->setSuccess();
 
+  auto& success_logger = self->state.success_logger;
+  success_logger.logSuccess(gru_struc->getGRU(gru_job_index)->getIndexNetcdf(), 
+                            gru_struc->getGRU(gru_job_index)->getIndexJob(),
+                            self->state.hru_actor_settings.rel_tol,
+                            self->state.hru_actor_settings.abs_tol);
+
   std::string update_str = 
       "GRU Finished: " + std::to_string(gru_struc->getNumGrusDone()) + "/" + 
       std::to_string(gru_struc->getNumGrus()) + " -- GlobalGRU=" + 
@@ -137,18 +143,34 @@ void handleFinishedGRU(stateful_actor<job_state>* self, int gru_job_index) {
 }
 
 void handleGRUError(stateful_actor<job_state>* self, int err_code, 
-                    int gru_job_index, std::string& err_msg) {
-  
-  // Logging Part
-  std::string job_err_msg = "Job Actor: GRU Failure -- " + 
-      std::to_string(gru_job_index) + " Error: " + err_msg + "\n";
-  self->state.logger.log(job_err_msg);
-  aout(self) << job_err_msg << "\n";
-
+                    int gru_job_index, int timestep, std::string& err_msg) {
   // Error Handling Part
   auto& gru_struc = self->state.gru_struc;
   gru_struc->getGRU(gru_job_index)->setFailed();
   gru_struc->incrementNumGRUFailed();
+  auto& err_logger = self->state.err_logger;
+  err_logger.logError(gru_struc->getGRU(gru_job_index)->getIndexNetcdf(), 
+                      gru_struc->getGRU(gru_job_index)->getIndexJob(), 
+                      timestep,
+                      self->state.hru_actor_settings.rel_tol,
+                      self->state.hru_actor_settings.abs_tol,
+                      err_code, err_msg);
+  
+  // Logging Part
+  std::string job_err_msg = "Job Actor: GRU Failure -- " + 
+      std::to_string(gru_job_index) + " Error: " + err_msg;
+  self->state.logger.log(job_err_msg);
+  aout(self) << job_err_msg;
+  std::string update_str = 
+      "\tGRU Finished: " + std::to_string(gru_struc->getNumGrusDone()) + "/" + 
+      std::to_string(gru_struc->getNumGrus()) + " -- GlobalGRU=" + 
+      std::to_string(gru_struc->getGRU(gru_job_index)->getIndexNetcdf()) + 
+      " -- LocalGRU=" + 
+      std::to_string(gru_struc->getGRU(gru_job_index)->getIndexJob()) + 
+      " -- NumFailed=" + std::to_string(gru_struc->getNumGRUFailed());
+  self->state.logger.log(update_str);
+  aout(self) << update_str << "\n";
+
   self->send(self->state.file_access_actor, run_failure_v, gru_job_index);
   if (gru_struc->isDone()) {
     gru_struc->hasFailures() && gru_struc->shouldRetry() ? 

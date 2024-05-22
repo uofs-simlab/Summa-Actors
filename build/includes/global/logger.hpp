@@ -18,19 +18,28 @@ class Logger {
 
 };
 
-
-class CsvLogger {
+class ErrorLogger {
   private:
-    std::string csv_file_;
+    std::string log_file_;
+    std::string log_dir_;
+    int attempt_ = 1;         
   public:
-    CsvLogger(const std::string csv_file_name = "", 
-              const std::string header = "");
-    ~CsvLogger();
-    void log(const std::string &message);
+    ErrorLogger(const std::string error_log_file_name = "");
+    ~ErrorLogger() {};
+    void logError(int ref_gru, int indx_gru, int timestep, double rel_tol, 
+                  double abs_tol, int err_code, const std::string &message);
+    void nextAttempt();
+};
 
-    template <class Inspector>
-    friend bool inspect(Inspector& inspector, CsvLogger& csv_logger) {
-        return inspector.object(csv_logger).fields(
-              inspector.field("csv_file", csv_logger.csv_file_));
-    }
+
+class SuccessLogger {
+  private:
+    std::string log_file_;
+    std::string log_dir_;
+    int attempt_ = 1;
+  public:
+    SuccessLogger(const std::string success_log_file_name = "");
+    ~SuccessLogger() {};
+    void logSuccess(int ref_gru, int indx_gru, double rel_tol, double abs_tol);
+    void nextAttempt();
 };

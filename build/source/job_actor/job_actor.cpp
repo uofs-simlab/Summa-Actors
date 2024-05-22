@@ -5,8 +5,7 @@ using chrono_time = std::chrono::time_point<std::chrono::system_clock>;
 using namespace caf;
 
 // First Actor that is spawned that is not the Coordinator Actor.
-behavior job_actor(stateful_actor<job_state>* self, 
-                   Batch batch,
+behavior job_actor(stateful_actor<job_state>* self, Batch batch,
                    File_Access_Actor_Settings file_access_actor_settings, 
                    Job_Actor_Settings job_actor_settings, 
                    HRU_Actor_Settings hru_actor_settings, 
@@ -36,8 +35,11 @@ behavior job_actor(stateful_actor<job_state>* self,
   self->state.job_actor_settings = job_actor_settings;
   self->state.hru_actor_settings = hru_actor_settings;
   
-  self->state.logger = Logger( self->state.batch.getLogDir() +
-      "batch_" + std::to_string(batch.getBatchID()) + ".log");
+  self->state.logger = Logger(self->state.batch.getLogDir() +
+                              "batch_" + std::to_string(batch.getBatchID()) 
+                              + ".log");
+  self->state.err_logger = ErrorLogger(self->state.batch.getLogDir());
+  self->state.success_logger = SuccessLogger(self->state.batch.getLogDir());
 
   std::string err_msg;
   char host[HOST_NAME_MAX];

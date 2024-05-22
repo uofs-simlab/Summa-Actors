@@ -33,6 +33,9 @@ behavior async_mode(stateful_actor<job_state>* self) {
       // notify file_access_actor
       self->send(self->state.file_access_actor, restart_failures_v); 
 
+      self->state.err_logger.nextAttempt();
+      self->state.success_logger.nextAttempt();
+
       while(self->state.gru_struc->getNumGRUFailed() > 0) {
         int job_index = self->state.gru_struc->getFailedIndex();
         self->state.logger.log("Async Mode: Restarting GRU: " + 
@@ -53,17 +56,16 @@ behavior async_mode(stateful_actor<job_state>* self) {
         self->state.gru_struc->addGRU(std::move(gru_obj));
       }
       self->state.gru_struc->decrementRetryAttempts();
-
     },
 
     [=](finalize) { finalizeJob(self); },
 
     /**Error Handling Functions*/
-    [=](err_atom, int gru_job_index, int err_code, std::string err_msg) {
+    [=](err_atom, int gru_job_index, int timestep, int err_code, 
+        std::string err_msg) {
       (gru_job_index == 0) ? 
           handleFileAccessError(self, err_code, err_msg) :
-          handleGRUError(self, err_code, gru_job_index, err_msg);
+          handleGRUError(self, err_code, gru_job_index, timestep, err_msg);
     }
-    
   };
 }

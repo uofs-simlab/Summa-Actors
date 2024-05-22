@@ -34,8 +34,8 @@ behavior hru_actor(stateful_actor<hru_state>* self, int ref_gru, int indx_gru,
     [=](init_hru) {
       int err = initHRU(self);
       if (err != 0) {
-        self->send(self->state.parent, err_atom_v, self->state.indx_gru, err,
-                   self->state.err_message);
+        self->send(self->state.parent, err_atom_v, self->state.indx_gru, 
+                   self->state.timestep, err, self->state.err_message);
         self->quit(); return;
       }
     },
@@ -68,8 +68,8 @@ behavior hru_actor(stateful_actor<hru_state>* self, int ref_gru, int indx_gru,
         self->state.num_steps_until_write--;
         err = runHRU(self); // Simulate a Timestep
         if (err != 0) {
-          self->send(self->state.parent, err_atom_v, self->state.indx_gru, err,
-                     self->state.err_message);
+          self->send(self->state.parent, err_atom_v, self->state.indx_gru, 
+                     self->state.timestep, err, self->state.err_message);
           self->quit();
           return;
         }
@@ -104,8 +104,8 @@ behavior hru_actor(stateful_actor<hru_state>* self, int ref_gru, int indx_gru,
                    << "\tref_gru = "  << self->state.ref_gru  << "\n"
                    << "\tTimestep = " << self->state.timestep << "\n"
                    << "\tMessage = "  << message.get() << "\n";
-        self->send(self->state.parent, err_atom_v, self->state.indx_gru, err,
-                   message.get());
+        self->send(self->state.parent, err_atom_v, self->state.indx_gru, 
+                   self->state.timestep, err, message.get());
         self->quit(); 
         return;
       }
@@ -138,8 +138,8 @@ behavior hru_actor(stateful_actor<hru_state>* self, int ref_gru, int indx_gru,
                    << "\tref_gru = "  << self->state.ref_gru  << "\n"
                    << "\tTimestep = " << self->state.timestep << "\n"
                    << "\tMessage = "  << message.get() << "\n";
-        self->send(self->state.parent, err_atom_v, self->state.indx_gru, err,
-                   message.get());
+        self->send(self->state.parent, err_atom_v, self->state.indx_gru, 
+                   self->state.timestep, err, message.get());
         self->quit(); 
         return;
       }
@@ -158,8 +158,8 @@ behavior hru_actor(stateful_actor<hru_state>* self, int ref_gru, int indx_gru,
 
       int err = runHRU(self);
       if (err != 0) {
-        self->send(self->state.parent, err_atom_v, self->state.indx_gru, err,
-                   self->state.err_message);
+        self->send(self->state.parent, err_atom_v, self->state.indx_gru, 
+                   self->state.timestep, err, self->state.err_message);
         self->quit();
         return;
       }

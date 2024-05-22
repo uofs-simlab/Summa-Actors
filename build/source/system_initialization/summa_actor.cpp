@@ -60,6 +60,7 @@ behavior summa_actor(stateful_actor<summa_actor_state>* self, int start_gru,
     }
   }
 
+  // Create the log directory
   auto now = std::chrono::system_clock::now();
   auto now_c = std::chrono::system_clock::to_time_t(now);
   std::tm* now_tm = std::localtime(&now_c);
@@ -71,8 +72,11 @@ behavior summa_actor(stateful_actor<summa_actor_state>* self, int start_gru,
       std::to_string(self->state.start_gru) + "_endgru-" + 
       std::to_string(self->state.start_gru + self->state.num_gru - 1)
       + "_" + ss.str();
+  if (!summa_actor_settings.log_dir.empty())
+    folder_name = summa_actor_settings.log_dir + "/" + folder_name;
   std::filesystem::create_directories(folder_name);
 
+  // Create the batch container
   auto& batch_container = self->state.batch_container;
   batch_container = std::make_unique<Batch_Container>(
       self->state.start_gru, self->state.num_gru, 

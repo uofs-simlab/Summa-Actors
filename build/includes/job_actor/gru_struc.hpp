@@ -71,5 +71,6 @@ class GruStruc {
     int num_gru_done_ = 0;
     int num_gru_failed_ = 0;
     int num_retry_attempts_left_ = 0;
+    int attempt_ = 1;
 
 };

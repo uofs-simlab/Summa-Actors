@@ -7,7 +7,7 @@ int default_gru_per_job = 250;
 int default_output_frequency = 1000;
 int default_timesteps_output_buffer = 500;
 int default_dt_init_factor = 1;
-
+std::string log_dir = "";
 
 
 std::optional<std::vector<std::string>> getSettingsArray(
@@ -84,6 +84,8 @@ Summa_Actor_Settings readSummaActorSettings(std::string json_settings_file) {
   summa_actor_settings.max_gru_per_job = getSettings(json_settings_file, 
       parent_key, "max_gru_per_job", 
       summa_actor_settings.max_gru_per_job).value_or(250);
+  summa_actor_settings.log_dir = getSettings(json_settings_file, parent_key,
+      "log_dir", summa_actor_settings.log_dir).value_or("");
 
   return summa_actor_settings;
 }
@@ -233,7 +235,8 @@ void generate_config_file() {
     };
 
     config_file["Summa_Actor"] = {
-        {"max_gru_per_job", default_gru_per_job}
+        {"max_gru_per_job", default_gru_per_job},
+        {"log_dir", log_dir}
     };
     config_file["File_Access_Actor"] = {
         {"num_partitions_in_output_buffer", default_partition_count},
