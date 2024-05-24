@@ -3,13 +3,13 @@
 using namespace caf;
 
 behavior async_mode(stateful_actor<job_state>* self) {
-  self->state.logger.log("Async Mode: Started");
+  self->state.logger->log("Async Mode: Started");
   aout(self) << "Async Mode Started\n";
 
   return {
     /*** From file access actor after it spawns ***/
     [=](file_access_actor_ready, int num_timesteps) {
-      self->state.logger.log("Async Mode: File Access Actor Ready");
+      self->state.logger->log("Async Mode: File Access Actor Ready");
       aout(self) << "Async Mode: File Access Actor Ready\n";
       self->state.num_steps = num_timesteps;
       spawnHRUActors(self);    
@@ -20,7 +20,7 @@ behavior async_mode(stateful_actor<job_state>* self) {
     },
 
     [=] (restart_failures) {
-      self->state.logger.log("Async Mode: Restarting GRUs that Failed");
+      self->state.logger->log("Async Mode: Restarting GRUs that Failed");
       aout(self) << "Async Mode: Restarting GRUs that Failed\n";
       if (self->state.hru_actor_settings.rel_tol > 0 && 
           self->state.hru_actor_settings.abs_tol > 0) {
@@ -33,12 +33,12 @@ behavior async_mode(stateful_actor<job_state>* self) {
       // notify file_access_actor
       self->send(self->state.file_access_actor, restart_failures_v); 
 
-      self->state.err_logger.nextAttempt();
-      self->state.success_logger.nextAttempt();
+      self->state.err_logger->nextAttempt();
+      self->state.success_logger->nextAttempt();
 
       while(self->state.gru_struc->getNumGRUFailed() > 0) {
         int job_index = self->state.gru_struc->getFailedIndex();
-        self->state.logger.log("Async Mode: Restarting GRU: " + 
+        self->state.logger->log("Async Mode: Restarting GRU: " + 
                                std::to_string(job_index));
         aout(self) << "Async Mode: Restarting GRU: " << job_index << "\n";
         int netcdf_index = job_index + self->state.gru_struc->getStartGru() - 1;

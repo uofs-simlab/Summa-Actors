@@ -40,9 +40,9 @@ struct GRU_Container {
  *********************************************/
 struct job_state {
   TimingInfo job_timing;
-  Logger logger;
-  ErrorLogger err_logger;
-  SuccessLogger success_logger;
+  std::unique_ptr<Logger> logger;
+  std::unique_ptr<ErrorLogger> err_logger;
+  std::unique_ptr<SuccessLogger> success_logger;
   // Actor References
   caf::actor file_access_actor; // actor reference for the file_access_actor
   caf::actor parent;            // actor reference to the top-level SummaActor
@@ -141,8 +141,7 @@ struct distributed_job_state {
 };
 
 /** The Job Actor Behaviors */
-caf::behavior job_actor(caf::stateful_actor<job_state>* self,
-                        Batch batch,
+caf::behavior job_actor(caf::stateful_actor<job_state>* self, Batch batch,
                         File_Access_Actor_Settings file_access_actor_settings, 
                         Job_Actor_Settings job_actor_settings, 
                         HRU_Actor_Settings hru_actor_settings, 

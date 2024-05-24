@@ -1,8 +1,8 @@
 #include "logger.hpp"
 
-// ############################
-// Logger
-// ############################
+/*******************************************************************************
+ * Logger
+*******************************************************************************/
 Logger::Logger(const std::string log_file_name) {
   log_file_ = log_file_name;
   std::ofstream file;
@@ -20,7 +20,9 @@ void Logger::log(const std::string &message) {
 }
 
 
-
+/*******************************************************************************
+ * ErrorLogger
+*******************************************************************************/
 ErrorLogger::ErrorLogger(const std::string log_dir) {
   log_dir_ = log_dir;
   log_file_ = log_dir + "failures_attempt_" + std::to_string(attempt_)
@@ -52,6 +54,9 @@ void ErrorLogger::nextAttempt() {
 }
 
 
+/*******************************************************************************
+ * SuccessLogger
+*******************************************************************************/
 SuccessLogger::SuccessLogger(const std::string log_dir) {
   log_dir_ = log_dir;
   log_file_ = log_dir + "successes_attempt_" + std::to_string(attempt_)

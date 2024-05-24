@@ -23,8 +23,8 @@ behavior node_actor(stateful_actor<node_state>* self, std::string host,
   self->state.hru_actor_settings = hru_actor_settings;
 
   if (!host.empty()) {
-    auto server = self->system().middleman().remote_actor(host, 
-                                           distributed_settings.port);
+    auto server = self->system().middleman().remote_actor(
+        host, distributed_settings.port);
     if (!server) {
       aout(self) << "Failed To Connect To Server\n"; 
       return {};

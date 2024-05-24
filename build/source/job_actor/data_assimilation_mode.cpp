@@ -3,7 +3,7 @@
 using namespace caf;
 
 behavior data_assimilation_mode(stateful_actor<job_state>* self) {
-  self->state.logger.log("Data Assimilation Mode: Started");
+  self->state.logger->log("Data Assimilation Mode: Started");
   aout(self) << "Data Assimilation Mode: Started\n";
 
   return {

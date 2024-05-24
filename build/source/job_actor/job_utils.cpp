@@ -43,7 +43,7 @@ void spawnHRUBatches(stateful_actor<job_state>* self) {
 
   if (self->state.job_actor_settings.batch_size == 9999) {
     batch_size = std::ceil(gru_container.num_gru_in_run_domain / 
-        (std::thread::hardware_concurrency() * 2));
+                           (std::thread::hardware_concurrency() * 2));
   } else {
     batch_size = self->state.job_actor_settings.batch_size;
   }
@@ -63,14 +63,16 @@ void spawnHRUBatches(stateful_actor<job_state>* self) {
   while (remaining_hru_to_batch > 0) {
     int current_batch_size = std::min(batch_size, remaining_hru_to_batch);
     auto gru_batch = self->spawn(hru_batch_actor, start_hru_local,
-        start_hru_global, current_batch_size, self->state.hru_actor_settings,
-        self->state.file_access_actor, self);
-
+                                 start_hru_global, current_batch_size, 
+                                 self->state.hru_actor_settings,
+                                 self->state.file_access_actor, self);
+    auto& job_settings = self->state.job_actor_settings;
     gru_container.gru_list.push_back(new GRU(start_hru_global, 
-        start_hru_local, gru_batch, self->state.dt_init_start_factor, 
-        self->state.hru_actor_settings.rel_tol,
-        self->state.hru_actor_settings.abs_tol, 
-        self->state.job_actor_settings.max_run_attempts));  
+                                     start_hru_local, gru_batch, 
+                                     self->state.dt_init_start_factor, 
+                                     self->state.hru_actor_settings.rel_tol,
+                                     self->state.hru_actor_settings.abs_tol, 
+                                     job_settings.max_run_attempts));  
 
     remaining_hru_to_batch -= current_batch_size;
     start_hru_local += current_batch_size;
@@ -86,22 +88,22 @@ void finalizeJob(stateful_actor<job_state>* self) {
       int err = 0;
       self->state.job_timing.updateEndPoint("total_duration");
       aout(self) << "\n________________" 
-                  << "PRINTING JOB_ACTOR TIMING INFO RESULTS"
-                  << "________________\n"
-                  << "Total Duration = "
-                  << self->state.job_timing.getDuration("total_duration")
+                 << "PRINTING JOB_ACTOR TIMING INFO RESULTS"
+                 << "________________\n"
+                 << "Total Duration = "
+                 << self->state.job_timing.getDuration("total_duration")
                       .value_or(-1.0) << " Seconds\n"
-                  << "Total Duration = " 
-                  << self->state.job_timing.getDuration("total_duration")
+                 << "Total Duration = " 
+                 << self->state.job_timing.getDuration("total_duration")
                       .value_or(-1.0) / 60 << " Minutes\n"
-                  << "Total Duration = " 
-                  << (self->state.job_timing.getDuration("total_duration")
+                 << "Total Duration = " 
+                 << (self->state.job_timing.getDuration("total_duration")
                     .value_or(-1.0) / 60) / 60 << " Hours\n"
-                  << "Job Init Duration = " 
-                  << self->state.job_timing.getDuration("init_duration")
+                 << "Job Init Duration = " 
+                 << self->state.job_timing.getDuration("init_duration")
                       .value_or(-1.0) << " Seconds\n"
-                  << "_________________________________" 
-                  << "_______________________________________\n\n";
+                 << "_________________________________" 
+                 << "_______________________________________\n\n";
             
       // Tell Parent we are done
       auto total_duration = self->state.job_timing.getDuration("total_duration")
@@ -120,10 +122,10 @@ void handleFinishedGRU(stateful_actor<job_state>* self, int gru_job_index) {
   gru_struc->getGRU(gru_job_index)->setSuccess();
 
   auto& success_logger = self->state.success_logger;
-  success_logger.logSuccess(gru_struc->getGRU(gru_job_index)->getIndexNetcdf(), 
-                            gru_struc->getGRU(gru_job_index)->getIndexJob(),
-                            self->state.hru_actor_settings.rel_tol,
-                            self->state.hru_actor_settings.abs_tol);
+  success_logger->logSuccess(gru_struc->getGRU(gru_job_index)->getIndexNetcdf(), 
+                             gru_struc->getGRU(gru_job_index)->getIndexJob(),
+                             self->state.hru_actor_settings.rel_tol,
+                             self->state.hru_actor_settings.abs_tol);
 
   std::string update_str = 
       "GRU Finished: " + std::to_string(gru_struc->getNumGrusDone()) + "/" + 
@@ -133,7 +135,7 @@ void handleFinishedGRU(stateful_actor<job_state>* self, int gru_job_index) {
       std::to_string(gru_struc->getGRU(gru_job_index)->getIndexJob()) + 
       " -- NumFailed=" + std::to_string(gru_struc->getNumGRUFailed());
 
-  self->state.logger.log(update_str);
+  self->state.logger->log(update_str);
   aout(self) << update_str << "\n";
 
   if (gru_struc->isDone()) {
@@ -149,17 +151,16 @@ void handleGRUError(stateful_actor<job_state>* self, int err_code,
   gru_struc->getGRU(gru_job_index)->setFailed();
   gru_struc->incrementNumGRUFailed();
   auto& err_logger = self->state.err_logger;
-  err_logger.logError(gru_struc->getGRU(gru_job_index)->getIndexNetcdf(), 
-                      gru_struc->getGRU(gru_job_index)->getIndexJob(), 
-                      timestep,
-                      self->state.hru_actor_settings.rel_tol,
-                      self->state.hru_actor_settings.abs_tol,
-                      err_code, err_msg);
+  err_logger->logError(gru_struc->getGRU(gru_job_index)->getIndexNetcdf(), 
+                       gru_struc->getGRU(gru_job_index)->getIndexJob(), 
+                       timestep, self->state.hru_actor_settings.rel_tol,
+                       self->state.hru_actor_settings.abs_tol, err_code, 
+                       err_msg);
   
   // Logging Part
   std::string job_err_msg = "Job Actor: GRU Failure -- " + 
       std::to_string(gru_job_index) + " Error: " + err_msg;
-  self->state.logger.log(job_err_msg);
+  self->state.logger->log(job_err_msg);
   aout(self) << job_err_msg;
   std::string update_str = 
       "\tGRU Finished: " + std::to_string(gru_struc->getNumGrusDone()) + "/" + 
@@ -168,7 +169,7 @@ void handleGRUError(stateful_actor<job_state>* self, int err_code,
       " -- LocalGRU=" + 
       std::to_string(gru_struc->getGRU(gru_job_index)->getIndexJob()) + 
       " -- NumFailed=" + std::to_string(gru_struc->getNumGRUFailed());
-  self->state.logger.log(update_str);
+  self->state.logger->log(update_str);
   aout(self) << update_str << "\n";
 
   self->send(self->state.file_access_actor, run_failure_v, gru_job_index);
@@ -181,15 +182,12 @@ void handleGRUError(stateful_actor<job_state>* self, int err_code,
 void handleFileAccessError(stateful_actor<job_state>* self, int err_code, 
                            std::string& err_msg) {
   // Logging Part
-  self->state.logger.log("Job Actor: File_Access_Actor Error:" + err_msg);
+  self->state.logger->log("Job Actor: File_Access_Actor Error:" + err_msg);
   aout(self) << "Job Actor: File_Access_Actor Error:" << err_msg << "\n";
   if (err_code != -1) {
-    self->state.logger.log("Job_Actor: Have to Quit");
+    self->state.logger->log("Job_Actor: Have to Quit");
     aout(self) << "Job_Actor: Have to Quit\n";
     self->quit();
     return;
   }
-
-
-  // self->send(self, finalize_v);
 }

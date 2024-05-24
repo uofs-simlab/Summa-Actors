@@ -35,11 +35,13 @@ behavior job_actor(stateful_actor<job_state>* self, Batch batch,
   self->state.job_actor_settings = job_actor_settings;
   self->state.hru_actor_settings = hru_actor_settings;
   
-  self->state.logger = Logger(self->state.batch.getLogDir() +
-                              "batch_" + std::to_string(batch.getBatchID()) 
-                              + ".log");
-  self->state.err_logger = ErrorLogger(self->state.batch.getLogDir());
-  self->state.success_logger = SuccessLogger(self->state.batch.getLogDir());
+  self->state.logger = std::make_unique<Logger>(
+      self->state.batch.getLogDir() + "batch_" + 
+      std::to_string(batch.getBatchID()) + ".log");
+  self->state.err_logger = std::make_unique<ErrorLogger>(
+      self->state.batch.getLogDir());
+  self->state.success_logger = std::make_unique<SuccessLogger>(
+      self->state.batch.getLogDir());
 
   std::string err_msg;
   char host[HOST_NAME_MAX];
@@ -103,7 +105,7 @@ behavior job_actor(stateful_actor<job_state>* self, Batch batch,
     } 
     self->state.job_timing.updateEndPoint("init_duration");
     
-    self->state.logger.log("Job Actor Initialized");
+    self->state.logger->log("Job Actor Initialized");
     aout(self) << "Job Actor Initialized \n";
 
     job_actor_settings.data_assimilation_mode ? 
