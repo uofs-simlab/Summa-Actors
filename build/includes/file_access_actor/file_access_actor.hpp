@@ -23,7 +23,8 @@ extern "C" {
                         char const* output_extention, int* err); 
 
   void writeOutput_fortran(void* handle_ncid, int* num_steps, int* start_gru, 
-                          int* max_gru, bool* writeParamFlag, int* err);
+                          int* max_gru, bool* writeParamFlag, int* err,
+                          void* message);
 
   void writeRestart_fortran(void* handle_ncid, int* start_gru, int* max_gru, 
                             int* timestep, int* year, int* month, int* day, 

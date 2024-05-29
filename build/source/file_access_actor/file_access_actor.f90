@@ -9,9 +9,7 @@ module file_access_actor
   USE globalData
   USE globalData,only:integerMissing      ! missing integer value
   USE globalData,only:realMissing         ! missing double precision value
-
-
-
+  
   implicit none
   public::fileAccessActor_init_fortran
   public::defOutputFortran

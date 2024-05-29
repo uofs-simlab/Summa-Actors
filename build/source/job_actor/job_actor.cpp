@@ -5,17 +5,17 @@ using chrono_time = std::chrono::time_point<std::chrono::system_clock>;
 using namespace caf;
 
 // First Actor that is spawned that is not the Coordinator Actor.
-behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru, 
+behavior job_actor(stateful_actor<job_state>* self, Batch batch,
                    File_Access_Actor_Settings file_access_actor_settings, 
                    Job_Actor_Settings job_actor_settings, 
-                   HRU_Actor_Settings hru_actor_settings, caf::actor parent) {
+                   HRU_Actor_Settings hru_actor_settings, 
+                   caf::actor parent) {
     
   self->set_down_handler([=](const down_msg& dm) {
       aout(self) << "\n\n ********** DOWN HANDLER ********** \n"
                  << "Lost Connection With A Connected Actor\n"
                  << "Reason: " << to_string(dm.reason) << "\n";
   });
-
   self->set_exit_handler([=](const caf::exit_msg& em) {
       aout(self) << "\n\n ********** EXIT HANDLER ********** \n"
                  << "Exit Reason: " << to_string(em.reason) << "\n";
@@ -28,75 +28,84 @@ behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru,
   self->state.job_timing.addTimePoint("init_duration");
   self->state.job_timing.updateStartPoint("init_duration");
   // Set Job Variables
-  self->state.start_gru = start_gru;
-  self->state.num_gru = num_gru;
+  self->state.batch = batch;
   self->state.parent = parent;
   // Set the settings variables
   self->state.file_access_actor_settings = file_access_actor_settings;
   self->state.job_actor_settings = job_actor_settings;
   self->state.hru_actor_settings = hru_actor_settings;
-  self->state.max_run_attempts = job_actor_settings.max_run_attempts;
-  // Init the GRU Container
-  self->state.gru_container.num_gru_in_run_domain = num_gru;
+  
+  self->state.logger = std::make_unique<Logger>(
+      self->state.batch.getLogDir() + "batch_" + 
+      std::to_string(batch.getBatchID()) + ".log");
+  self->state.err_logger = std::make_unique<ErrorLogger>(
+      self->state.batch.getLogDir());
+  self->state.success_logger = std::make_unique<SuccessLogger>(
+      self->state.batch.getLogDir());
 
+  std::string err_msg;
   char host[HOST_NAME_MAX];
   gethostname(host, HOST_NAME_MAX);
   self->state.hostname = host;
 
   auto& gru_struc = self->state.gru_struc;
-  gru_struc = std::make_unique<GruStruc>(self->state.start_gru, 
-                                         self->state.num_gru,
+  gru_struc = std::make_unique<GruStruc>(self->state.batch.getStartHRU(), 
+                                         self->state.batch.getNumHRU(),
                                          job_actor_settings.max_run_attempts);
   if (gru_struc->ReadDimension()) {
-    aout(self) << "ERROR: Job_Actor - ReadDimension\n";
+    err_msg = "ERROR: Job_Actor - ReadDimension\n";
+    self->send(self->state.parent, err_atom_v, -2, err_msg);
     return {};
   }
   if (gru_struc->ReadIcondNlayers()) {
-    aout(self) << "ERROR: Job_Actor - ReadIcondNlayers\n";
+    err_msg = "ERROR: Job_Actor - ReadIcondNlayers\n";
+    self->send(self->state.parent, err_atom_v, -2, err_msg);
     return {};
   }
   gru_struc->getNumHrusPerGru();
 
-  self->state.summa_init_struc = std::make_unique<SummaInitStruc>();
-  if (self->state.summa_init_struc->allocate(self->state.num_gru) != 0) {
-    aout(self) << "ERROR -- Job_Actor: SummaInitStruc allocation failed\n";
+  auto& summa_init_struc = self->state.summa_init_struc;
+  summa_init_struc = std::make_unique<SummaInitStruc>();
+  if (summa_init_struc->allocate(self->state.batch.getNumHRU()) != 0) {
+    err_msg = "ERROR -- Job_Actor: SummaInitStruc allocation failed\n";
+    self->send(self->state.parent, err_atom_v, -2, err_msg);
     return {};
   }
-  if (self->state.summa_init_struc->summa_paramSetup() != 0) {
-    aout(self) << "ERROR -- Job_Actor: SummaInitStruc paramSetup failed\n";
+  if (summa_init_struc->summa_paramSetup() != 0) {
+    err_msg = "ERROR -- Job_Actor: SummaInitStruc paramSetup failed\n";
+    self->send(self->state.parent, err_atom_v, -2, err_msg);
     return {};
   }
-  if (self->state.summa_init_struc->summa_readRestart()!= 0) {
-    aout(self) << "ERROR -- Job_Actor: SummaInitStruc readRestart failed\n";
+  if (summa_init_struc->summa_readRestart()!= 0) {
+    err_msg = "ERROR -- Job_Actor: SummaInitStruc readRestart failed\n";
+    self->send(self->state.parent, err_atom_v, -2, err_msg);
     return {};
   }
-  self->state.summa_init_struc->getInitTolerance(self->state.hru_actor_settings);
+  summa_init_struc->getInitTolerance(self->state.hru_actor_settings);
 
-  self->state.num_gru_info = NumGRUInfo(self->state.start_gru, 
-                                        self->state.start_gru, 
-                                        self->state.num_gru, 
-                                        self->state.num_gru, 
-                                        gru_struc->get_file_gru(), 
-                                        false);
+  self->state.num_gru_info = NumGRUInfo(self->state.batch.getStartHRU(), 
+                                        self->state.batch.getStartHRU(), 
+                                        self->state.batch.getNumHRU(), 
+                                        self->state.batch.getNumHRU(), 
+                                        gru_struc->get_file_gru(), false);
 
-  self->state.file_access_actor = self->spawn(file_access_actor, 
-                                              self->state.num_gru_info, 
-                                              self->state.file_access_actor_settings, 
-                                              self);
+  self->state.file_access_actor = self->spawn(
+      file_access_actor, self->state.num_gru_info, 
+      self->state.file_access_actor_settings, self);
+  
   self->request(self->state.file_access_actor, caf::infinite, 
                 init_file_access_actor_v, gru_struc->get_file_gru(),
                 gru_struc->getNumHrus())
       .await([=](int num_timesteps){
-    
     if (num_timesteps < 0) {
-      aout(self) << "ERROR: Job_Actor: File Access Actor Not Ready\n"
-                 << "\t VALUE: " << num_timesteps << "\n";
+      std::string err_msg = "ERROR: Job_Actor: File Access Actor Not Ready\n";
+      self->send(self->state.parent, err_atom_v, -2, err_msg);
       self->quit();
       return;
-    }
-
-    aout(self) << "Job_Actor: File Access Actor Ready\n";  
+    } 
     self->state.job_timing.updateEndPoint("init_duration");
+    
+    self->state.logger->log("Job Actor Initialized");
     aout(self) << "Job Actor Initialized \n";
 
     job_actor_settings.data_assimilation_mode ? 
@@ -107,87 +116,7 @@ behavior job_actor(stateful_actor<job_state>* self, int start_gru, int num_gru,
     self->send(self, file_access_actor_ready_v, num_timesteps);
   });
       
-
-  /**
-   * TODO: This is where the error handling code can go
-   * We can add a timeout to the receive and if we do not receive it in 
-   * Time then we have to handle that error here
-  */
-
-
   return {};
-  
 
-
-  return {
-
-    [=](reinit_hru) {
-      aout(self) << "Job_Actor: HRU Actor Re-initialized\n";
-      self->send(self, update_hru_v);
-    },
-
-    [=](restart_failures) {
-      aout(self) << "Job_Actor: Restarting GRUs that Failed\n";
-
-      self->state.gru_container.num_gru_done = 0;
-      self->state.gru_container.num_gru_in_run_domain = 
-          self->state.gru_container.num_gru_failed;
-      self->state.gru_container.num_gru_failed = 0;
-      
-      // notify file_access_actor
-      self->send(self->state.file_access_actor, restart_failures_v); 
-
-      // Set Sundials tolerance or decrease timestep length
-      if (self->state.hru_actor_settings.rel_tol > 0 && 
-          self->state.hru_actor_settings.abs_tol > 0) {
-        self->state.hru_actor_settings.rel_tol /= 10;
-        self->state.hru_actor_settings.abs_tol /= 10;
-      } else {
-        self->state.hru_actor_settings.dt_init_factor *= 2;
-      }
-
-
-      for(auto GRU : self->state.gru_container.gru_list) {
-        if(GRU->isFailed()) {
-          GRU->setRunning();
-          GRU->decrementAttemptsLeft();
-          auto gru_actor = self->spawn(hru_actor, GRU->getIndexNetcdf(), 
-                                       GRU->getIndexJob(),
-                                       self->state.hru_actor_settings,
-                                       self->state.file_access_actor, self);
-          self->state.gru_container.gru_list[GRU->getIndexJob()-1]->
-              setActorRef(gru_actor);
-        }
-      }
-    },
-
-    // [=](const error& err, caf::actor src) {
-      
-    //   aout(self) << "\n\n ********** ERROR HANDLER \n";
-      
-    //   switch(err.category()) {
-        
-    //     case type_id_v<hru_error>:
-    //       aout(self) << "HRU Error: " << to_string(err) << "\n";
-    //       handleGRUError(self, src);
-
-    //       break;
-    //     case type_id_v<file_access_error>:
-    //       if (err == file_access_error::mDecisions_error) {
-    //         aout(self) << "Check mDecisions File For Correctness";
-    //       } else {
-    //         aout(self) << "File Access Error: " << to_string(err) << "No Handling Implemented\n";
-    //       }
-    //       for (auto GRU : self->state.gru_container.gru_list) {
-    //         self->send_exit(GRU->getGRUActor(), exit_reason::user_shutdown);
-    //       }
-    //       self->quit();
-    //       break;
-    //     default:
-    //       aout(self) << "Unknown Error: " << to_string(err) << "\n";
-    //       break;
-    //   }
-    // },
-  };
 }
 

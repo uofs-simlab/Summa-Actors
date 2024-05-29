@@ -10,27 +10,31 @@ CXX = /usr/bin/g++
 
 F_INCLUDES = -I/usr/include -I/usr/local/sundials/include -I/usr/local/sundials/fortran
 F_LIBRARIES = -L/usr/lib/x86_64-linux-gnu -lnetcdff -lnetcdf \
-							-L/usr/local/sundials/lib/ -lsundials_fcore_mod \
+	      -L/usr/local/sundials/lib/ -lsundials_fcore_mod \
               -lsundials_fnvecserial_mod -lsundials_fsunlinsoldense_mod \
-							-lsundials_fsunmatrixdense_mod -lsundials_fsunlinsolband_mod \
-							-lsundials_fsunmatrixband_mod -lsundials_fsunnonlinsolnewton_mod \
-						  -lsundials_fida_mod -lsundials_fkinsol_mod
+	      -lsundials_fsunmatrixdense_mod -lsundials_fsunlinsolband_mod \
+	      -lsundials_fsunmatrixband_mod -lsundials_fsunnonlinsolnewton_mod \
+	      -lsundials_fida_mod -lsundials_fkinsol_mod
 
 C_INCLUDES = -I$(ACTORS_INC)/file_access_actor \
-						 -I$(ACTORS_INC)/global \
-						 -I$(ACTORS_INC)/gru_actor \
-						 -I$(ACTORS_INC)/hru_actor \
-						 -I$(ACTORS_INC)/job_actor \
-						 -I$(ACTORS_INC)/summa_actor \
-						 -I/usr/local/include
-C_LIBRARIES = -L$(F_MASTER)/build -lsumma \
-							-L/usr/local/lib -lcaf_core -lcaf_io \
-							-L/usr/lib/x86_64-linux-gnu -lnetcdf -lnetcdff -lopenblas \
-							-L/usr/local/sundials/lib/ -lsundials_fcore_mod \
+	     -I$(ACTORS_INC)/global \
+	     -I$(ACTORS_INC)/gru_actor \
+	     -I$(ACTORS_INC)/hru_actor \
+	     -I$(ACTORS_INC)/job_actor \
+	     -I$(ACTORS_INC)/summa_actor \
+	     -I/usr/local/include
+
+C_LIBRARIES = -L$(F_MASTER)/build/ciroh_build_scripts -lsumma \
+	      -L/usr/local/lib -lcaf_core -lcaf_io \
+	      -L/usr/lib/x86_64-linux-gnu -lnetcdf -lnetcdff -lopenblas \
+	      -L/usr/local/sundials/lib/ -lsundials_fcore_mod \
               -lsundials_fnvecserial_mod -lsundials_fsunlinsoldense_mod \
-							-lsundials_fsunmatrixdense_mod -lsundials_fsunlinsolband_mod \
-							-lsundials_fsunmatrixband_mod -lsundials_fsunnonlinsolnewton_mod \
-						  -lsundials_fida_mod -lsundials_fkinsol_mod
+	      -lsundials_fsunmatrixdense_mod -lsundials_fsunlinsolband_mod \
+	      -lsundials_fsunmatrixband_mod -lsundials_fsunnonlinsolnewton_mod \
+	      -lsundials_fida_mod -lsundials_fkinsol_mod \
+	      -Wl,-rpath,$(F_MASTER)/build/ciroh_build_scripts \
+	      -Wl,-rpath,/usr/local/sundials/lib \
+	      -Wl,-rpath,/usr/local/lib 
 
 FLAGS_NOAH = -O3 -DSUNDIALS_ACTIVE -DV4_ACTIVE -DACTORS_ACTIVE -ffree-form -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors 
 FLAGS_ALL = -O3 -DSUNDIALS_ACTIVE -DV4_ACTIVE -DACTORS_ACTIVE -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors -cpp
@@ -165,7 +169,7 @@ SUMMA_SOLVER = \
 		eval8summa.f90 \
 		summaSolve4kinsol.f90 \
 		summaSolve4ida.f90 \
-		summaSolve4numrec.f90 \
+		summaSolve4homegrown.f90 \
 		diagn_evar.f90 \
 		systemSolv.f90 \
 		varSubstep.f90 \
@@ -220,7 +224,8 @@ ACTORS_GLBOAL = \
 		auxiliary.cpp \
 		fileManager.cpp \
 		settings_functions.cpp \
-		timing_info.cpp
+		timing_info.cpp \
+		logger.cpp
 ACTORS_CPP = $(patsubst %, $(ACTORS_SRC)/global/%, $(ACTORS_GLBOAL))
 
 SYS_INIT_CPP_FILES = \
@@ -298,7 +303,7 @@ actors: $(CPP_ALL)
 	$(CXX) $(FLAGS_CXX) -c $^ $(C_INCLUDES) $(C_LIBRARIES)
 
 link_cpp:
-	$(CXX) -o summa_actors *.o $(C_LIBRARIES)
-
+	$(CXX) -o summa_actors.exe *.o $(C_LIBRARIES)
+	mv summa_actors.exe $(F_MASTER)/bin
 c_clean:
 	rm -f *.o

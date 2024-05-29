@@ -1,6 +1,7 @@
-#include "caf/all.hpp"
 #pragma once
+#include "caf/all.hpp"
 #include "client.hpp"
+#include "logger.hpp"
 
 
 class Batch_Container {
@@ -10,23 +11,24 @@ class Batch_Container {
     int num_hru_per_batch_;
     int batches_remaining_;
     std::vector<Batch> batch_list_;
+    Logger logger_;
     
-    // Assemble the total number of HRUs given by the user into batches.
-    void assembleBatches();
+    void assembleBatches(std::string log_dir);
     
   public:
         
-    // Creating the batch_manager will also create the batches
-    // with the two parameters that are passed in. 
+    // Initialize Batch_Container -- call assembleBatches() 
     Batch_Container(int start_hru = 1, int total_hru_count = 0, 
-                    int num_hru_per_batch = 0);
+                    int num_hru_per_batch = 0, std::string log_dir = "");
+
 
     // returns the size of the batch list
-    int getBatchesRemaining();
-    int getTotalBatches();
-    
-    // Find an unsolved batch, set it to assigned and return it.
+    inline int getBatchesRemaining() {return batches_remaining_;}
+    inline int getTotalBatches() { return batch_list_.size();}
     std::optional<Batch> getUnsolvedBatch();
+
+    void updateBatchStats(int batch_id, double run_time, double read_time, 
+                          double write_time, int num_success, int num_failed);
 
     // Update the batch status to solved and write the output to a file.
     void updateBatch_success(Batch successful_batch, std::string output_csv, std::string hostname);
@@ -83,10 +85,14 @@ class Batch_Container {
     template <class Inspector>
     friend bool inspect(Inspector& inspector, Batch_Container& batch_container) {
         return inspector.object(batch_container).fields(
-            inspector.field("total_hru_count", batch_container.total_hru_count_),
-            inspector.field("num_hru_per_batch", batch_container.num_hru_per_batch_),
-            inspector.field("batches_remaining", batch_container.batches_remaining_),
-            inspector.field("batch_list", batch_container.batch_list_));
+               inspector.field("total_hru_count", 
+                               batch_container.total_hru_count_),
+               inspector.field("num_hru_per_batch", 
+                               batch_container.num_hru_per_batch_),
+               inspector.field("batches_remaining", 
+                               batch_container.batches_remaining_),
+               inspector.field("batch_list", batch_container.batch_list_),
+               inspector.field("logger", batch_container.logger_));
     }
 
 

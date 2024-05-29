@@ -13,14 +13,13 @@ behavior hru_actor(stateful_actor<hru_state>* self, int ref_gru, int indx_gru,
   
   // Actor References
   self->state.file_access_actor = file_access_actor;
-  self->state.parent            = parent;
-  // Indexes into global structures
-  self->state.ref_gru           = ref_gru;
-  self->state.indxGRU           = indx_gru;
-  self->state.indxHRU           = 1;
+  self->state.parent = parent;
+  self->state.ref_gru = ref_gru;
+  self->state.indx_gru = indx_gru;
+  self->state.indx_hru = 1;
   if (hru_extra_logging) {
-    aout(self) << "HRU Actor: indxHRU = " << self->state.indxHRU 
-               << " indxGRU = " << self->state.indxGRU 
+    aout(self) << "HRU Actor: indxHRU = " << self->state.indx_hru 
+               << " indx_gru = " << self->state.indx_gru 
                << " ref_gru = " << self->state.ref_gru << "\n";
   }
   // Get the settings for the HRU
@@ -33,7 +32,12 @@ behavior hru_actor(stateful_actor<hru_state>* self, int ref_gru, int indx_gru,
 
   return {
     [=](init_hru) {
-      Initialize_HRU(self);
+      int err = initHRU(self);
+      if (err != 0) {
+        self->send(self->state.parent, err_atom_v, self->state.indx_gru, 
+                   self->state.timestep, err, self->state.err_message);
+        self->quit(); return;
+      }
     },
 
     /* Run until completion -- only interact with the file access actor */
@@ -62,9 +66,10 @@ behavior hru_actor(stateful_actor<hru_state>* self, int ref_gru, int indx_gru,
         }
 
         self->state.num_steps_until_write--;
-        err = Run_HRU(self); // Simulate a Timestep
+        err = runHRU(self); // Simulate a Timestep
         if (err != 0) {
-          self->send(self->state.parent, err_atom_v, err, self->state.indxGRU);
+          self->send(self->state.parent, err_atom_v, self->state.indx_gru, 
+                     self->state.timestep, err, self->state.err_message);
           self->quit();
           return;
         }
@@ -79,31 +84,29 @@ behavior hru_actor(stateful_actor<hru_state>* self, int ref_gru, int indx_gru,
         }
 
       }
-      // Our output structure is full
+      // Output Structure Full -- Need to request write
       if (self->state.num_steps_until_write <= 0) {
           self->send(self->state.file_access_actor, write_output_v, 
-                     self->state.indxGRU, self->state.indxHRU, self);
+                     self->state.indx_gru, self->state.indx_hru, self);
       }
     },
 
 
     [=](new_forcing_file, int num_forcing_steps_in_iFile, int iFile) {
-      if (hru_extra_logging) {
-        aout(self) << "Recieved New iFile-" << iFile 
-                   << " with " << num_forcing_steps_in_iFile 
-                   << " forcing steps\n";
-      }
       int err;
       self->state.iFile = iFile;
       self->state.stepsInCurrentFFile = num_forcing_steps_in_iFile;
       std::unique_ptr<char[]> message(new char[256]);
       setTimeZoneOffset_fortran(iFile, self->state.hru_data, err, &message);
       if (err != 0) {
-        aout(self) << "Error: HRU_Actor - setTimeZoneOffset - HRU = " 
-                   << self->state.indxHRU << " - indxGRU = " 
-                   << self->state.indxGRU << " - refGRU = " 
-                   << self->state.ref_gru << "\n";
-        self->quit();
+        aout(self) << "HRU_Actor: Error setTimeZoneOffset\n" 
+                   << "\tindx_gru = " << self->state.indx_gru << "\n"
+                   << "\tref_gru = "  << self->state.ref_gru  << "\n"
+                   << "\tTimestep = " << self->state.timestep << "\n"
+                   << "\tMessage = "  << message.get() << "\n";
+        self->send(self->state.parent, err_atom_v, self->state.indx_gru, 
+                   self->state.timestep, err, message.get());
+        self->quit(); 
         return;
       }
       self->state.forcingStep = 1;
@@ -112,13 +115,13 @@ behavior hru_actor(stateful_actor<hru_state>* self, int ref_gru, int indx_gru,
 
     
     [=](done_hru) {
-      self->send(self->state.parent,done_hru_v,self->state.indxGRU);
+      self->send(self->state.parent,done_hru_v,self->state.indx_gru);
       self->quit();
       return;
     },
 
     [=](dt_init_factor, int dt_init_factor) {
-      aout(self) << "Recieved New dt_init_factor to attempt on next run \n";
+      aout(self) << "Received New dt_init_factor to attempt on next run \n";
     },
 
     [=](update_timeZoneOffset, int iFile) {
@@ -129,6 +132,17 @@ behavior hru_actor(stateful_actor<hru_state>* self, int ref_gru, int indx_gru,
       self->state.iFile = iFile;
       std::unique_ptr<char[]> message(new char[256]);
       setTimeZoneOffset_fortran(iFile, self->state.hru_data, err, &message);
+      if (err !=0) {
+        aout(self) << "HRU_Actor: Error setTimeZoneOffset\n" 
+                   << "\tindx_gru = " << self->state.indx_gru << "\n"
+                   << "\tref_gru = "  << self->state.ref_gru  << "\n"
+                   << "\tTimestep = " << self->state.timestep << "\n"
+                   << "\tMessage = "  << message.get() << "\n";
+        self->send(self->state.parent, err_atom_v, self->state.indx_gru, 
+                   self->state.timestep, err, message.get());
+        self->quit(); 
+        return;
+      }
     },
 
     // BMI - Functions
@@ -142,15 +156,16 @@ behavior hru_actor(stateful_actor<hru_state>* self, int ref_gru, int indx_gru,
       self->state.timestep = timestep;
       self->state.forcingStep = forcingstep;
 
-      int err = Run_HRU(self);
+      int err = runHRU(self);
       if (err != 0) {
-        self->send(self->state.parent, err_atom_v, err, self->state.indxGRU);
+        self->send(self->state.parent, err_atom_v, self->state.indx_gru, 
+                   self->state.timestep, err, self->state.err_message);
         self->quit();
         return;
       }
       
       self->send(self->state.parent, done_update_v, 
-                 self->state.walltime_timestep, self->state.indxGRU);
+                 self->state.walltime_timestep, self->state.indx_gru);
     },
 
     // Get Fortran Data into C++
@@ -169,42 +184,45 @@ behavior hru_actor(stateful_actor<hru_state>* self, int ref_gru, int indx_gru,
 
 
 
-void Initialize_HRU(stateful_actor<hru_state>* self) {
+int initHRU(stateful_actor<hru_state>* self) {
   int err = 0;
   std::unique_ptr<char[]> message(new char[256]);
-  initHRU_fortran(self->state.indxGRU, self->state.indxHRU, 
+  initHRU_fortran(self->state.indx_gru, self->state.indx_hru, 
                   self->state.num_steps, self->state.hru_data, err, &message);
   if (err != 0) {
-    aout(self) << "Error: HRU_Actor - Initialize - HRU = " 
-               << self->state.indxHRU  
-               << " - indxGRU = " << self->state.indxGRU 
-               << " - refGRU = "<< self->state.ref_gru
-               << "\nError Code = " << err << "\n";
-    self->quit();
+    aout(self) << "HRU_Actor: Error initHRU\n" 
+               << "\tindx_gru = " << self->state.indx_gru << "\n"
+               << "\tref_gru = "  << self->state.ref_gru  << "\n"
+               << "\tTimestep = " << self->state.timestep << "\n"
+               << "\tMessage = "  << message.get() << "\n";
+    self->state.err_message = message.get();
+    return err;
   }
   
   std::fill(message.get(), message.get() + 256, '\0'); // Clear message
-  setupHRU_fortran(self->state.indxGRU, self->state.indxHRU, 
+  setupHRU_fortran(self->state.indx_gru, self->state.indx_hru, 
                    self->state.hru_data, err, &message);
   if (err != 0) {
-    aout(self) << "Error: HRU_Actor - SetupHRUParam - HRU = " 
-                << self->state.indxHRU
-                << " - indxGRU = " << self->state.indxGRU 
-                << " - refGRU = " << self->state.ref_gru << "\n";
-    self->quit();
-    return;
+    aout(self) << "HRU_Actor: Error setupHRU\n" 
+               << "\tindx_gru = " << self->state.indx_gru << "\n"
+               << "\tref_gru = "  << self->state.ref_gru  << "\n"
+               << "\tTimestep = " << self->state.timestep << "\n"
+               << "\tMessage = "  << message.get() << "\n";
+    self->state.err_message = message.get();
+    return err;
   }
 
   std::fill(message.get(), message.get() + 256, '\0'); // Clear message
-  readHRURestart_fortran(self->state.indxGRU, self->state.indxHRU,
-                        self->state.hru_data, err, &message);
+  readHRURestart_fortran(self->state.indx_gru, self->state.indx_hru,
+                         self->state.hru_data, err, &message);
   if (err != 0) {
-    aout(self) << "Error: HRU_Actor - summa_readRestart - HRU = " 
-               << self->state.indxHRU
-               << " - indxGRU = " << self->state.indxGRU 
-               << " - refGRU = " << self->state.ref_gru << "\n";
-    self->quit();
-    return;
+    aout(self) << "HRU_Actor: Error readHRURestart\n" 
+               << "\tindx_gru = " << self->state.indx_gru << "\n"
+               << "\tref_gru = "  << self->state.ref_gru  << "\n"
+               << "\tTimestep = " << self->state.timestep << "\n"
+               << "\tMessage = "  << message.get() << "\n";
+    self->state.err_message = message.get();
+    return err;
   }
   #ifdef SUNDIALS_ACTIVE
     if (self->state.hru_actor_settings.rel_tol > 0 && 
@@ -213,26 +231,28 @@ void Initialize_HRU(stateful_actor<hru_state>* self) {
                               &self->state.hru_actor_settings.rel_tol, 
                               &self->state.hru_actor_settings.abs_tol);
     }
-  #endif           
+  #endif     
+  
+  return 0;      
 }
 
-int Run_HRU(stateful_actor<hru_state>* self) {
+int runHRU(stateful_actor<hru_state>* self) {
   int err = 0;
   std::unique_ptr<char[]> message(new char[256]);
-  readHRUForcing_fortran(self->state.indxGRU, self->state.indxHRU, 
+  readHRUForcing_fortran(self->state.indx_gru, self->state.indx_hru, 
                          self->state.timestep, self->state.forcingStep, 
                          self->state.iFile, self->state.hru_data, err,
                          &message);
   if (err != 0) {
-    aout(self) << "Error---HRU_Actor: ReadForcingHRU\n" 
-               << "\tIndxGRU = " << self->state.indxGRU << "\n"
-               << "\tRefGRU = " << self->state.ref_gru << "\n"
+    aout(self) << "HRU_Actor: Error readHRUForcing\n" 
+               << "\tindx_gru = "     << self->state.indx_gru    << "\n"
+               << "\tRefGRU = "       << self->state.ref_gru     << "\n"
                << "\tForcing Step = " << self->state.forcingStep << "\n"
-               << "\tTimestep = " << self->state.timestep << "\n"
-               << "\tiFile = " << self->state.iFile << "\n"
+               << "\tTimestep = "     << self->state.timestep    << "\n"
+               << "\tiFile = "        << self->state.iFile       << "\n"
                << "\tSteps in Forcing File = " 
                << self->state.stepsInCurrentFFile << "\n";
-    self->quit();
+    self->state.err_message = message.get();
     return err;
   }
 
@@ -244,15 +264,16 @@ int Run_HRU(stateful_actor<hru_state>* self) {
   }
 
   std::fill(message.get(), message.get() + 256, '\0'); // Clear message
-  runHRU_fortran(self->state.indxGRU, self->state.indxHRU, self->state.timestep, 
+  runHRU_fortran(self->state.indx_gru, self->state.indx_hru, self->state.timestep, 
                  self->state.hru_data, self->state.dt_init_factor, 
                  self->state.walltime_timestep, err, &message);
   if (err != 0) {
-    aout(self) << "Error---RunPhysics:\n"
-               << "\tIndxGRU = "  << self->state.indxGRU 
-               << "\tRefGRU = "   << self->state.ref_gru 
-               << "\tTimestep = " << self->state.timestep <<  "\n";
-    self->quit();
+    aout(self) << "HRU_Actor: Error RunPhysics:\n"
+               << "\tindx_gru = " << self->state.indx_gru << "\n"
+               << "\tref_gru = "   << self->state.ref_gru  << "\n"
+               << "\tTimestep = " << self->state.timestep << "\n"
+               << "\tMessage = "  << message.get() << "\n";
+    self->state.err_message = message.get();
     return err;
   }
 
@@ -261,18 +282,18 @@ int Run_HRU(stateful_actor<hru_state>* self) {
     // fortran side ald save it to the hru's state
     int y,m,d,h;
     std::fill(message.get(), message.get() + 256, '\0'); // Clear message
-    writeHRUOutput_fortran(self->state.indxGRU, self->state.indxHRU,
+    writeHRUOutput_fortran(self->state.indx_gru, self->state.indx_hru,
                            self->state.timestep, 
                            self->state.output_structure_step_index,
                            self->state.hru_data, y, m, d, h, err, &message);
     if (err != 0) {
-      aout(self) << "Error: HRU_Actor - writeHRUToOutputStructure - HRU = " 
-                 << self->state.indxHRU << " - indxGRU = " 
-                 << self->state.indxGRU << " - refGRU = " 
-                 << self->state.ref_gru
-                 << "\nError = " << err  << "\n";
-      self->quit();
-      return 21;
+      aout(self) << "HRU_Actor: Error writeHRUToOutputStructure" 
+                 << "\tindx_gru = " << self->state.indx_gru << "\n"
+                 << "\tref_gru = "   << self->state.ref_gru  << "\n"
+                 << "\tTimestep = " << self->state.timestep << "\n"
+                 << "\tMessage = "  << message.get() << "\n";
+      self->state.err_message = message.get();
+      return err;
     }
 
     self->state.currentDate.y = y;
@@ -290,7 +311,7 @@ int Run_HRU(stateful_actor<hru_state>* self) {
     if (isCheckpoint(self)){
       self->state.checkpoint++;
 
-      hru_writeRestart(&self->state.indxHRU, &self->state.indxGRU,
+      hru_writeRestart(&self->state.indx_hru, &self->state.indx_gru,
                        &self->state.output_structure_step_index,
                        &self->state.output_structure_step_index, //unused
                        self->state.hru_data, &err);
@@ -302,8 +323,6 @@ int Run_HRU(stateful_actor<hru_state>* self) {
                  self->state.currentDate.y, self->state.currentDate.m,
                  self->state.currentDate.d, self->state.currentDate.h);
     }
-
-
   }
 
   return 0;      

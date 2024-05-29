@@ -9,13 +9,9 @@ Batch::Batch(int batch_id, int start_hru, int num_hru){
   write_time_ = 0.0;
   assigned_to_actor_ = false;
   solved_ = false;
-
 }
 
 // Getters
-int Batch::getBatchID() { return batch_id_; }
-int Batch::getStartHRU() { return start_hru_; }
-int Batch::getNumHRU() { return num_hru_; }
 double Batch::getRunTime() { return run_time_; }
 double Batch::getReadTime() { return read_time_; }
 double Batch::getWriteTime() { return write_time_; }
@@ -64,7 +60,7 @@ void Batch::writeBatchToFile(std::string file_name, std::string hostname) {
         batch_id_      << "," <<
         start_hru_     << "," << 
         num_hru_       << "," << 
-        hostname             << "," <<   
+        hostname       << "," <<   
         run_time_      << "," << 
         read_time_     << "," <<
         write_time_    << "\n";

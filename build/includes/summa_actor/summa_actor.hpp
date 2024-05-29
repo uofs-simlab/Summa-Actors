@@ -14,7 +14,6 @@
 #include "summa_global_data.hpp"
 
 
-namespace caf {
 struct summa_actor_state {
   TimingInfo summa_actor_timing;
 
@@ -25,8 +24,8 @@ struct summa_actor_state {
   caf::actor current_job;  // Reference to the current job actor
   caf::actor parent;
 
-  Batch_Container batch_container;
-  int current_batch_id;
+  std::unique_ptr<Batch_Container> batch_container;
+  std::shared_ptr<const Batch> current_batch;
 
   std::unique_ptr<fileManager> file_manager;
   std::unique_ptr<summaGlobalData> global_fortran_state;
@@ -43,15 +42,16 @@ struct summa_actor_state {
  * start_gru index. This actor can split the computation into multiple
  * jobs if needed.
 */
-behavior summa_actor(stateful_actor<summa_actor_state>* self, 
-                     int startGRU, int numGRU, 
-                     Summa_Actor_Settings summa_actor_settings, 
-                     File_Access_Actor_Settings file_access_actor_settings,
-                     Job_Actor_Settings job_actor_settings, 
-                     HRU_Actor_Settings hru_actor_settings, actor parent);
+caf::behavior summa_actor(caf::stateful_actor<summa_actor_state>* self, 
+                          int startGRU, int numGRU, 
+                          Summa_Actor_Settings summa_actor_settings, 
+                          File_Access_Actor_Settings file_access_actor_settings,
+                          Job_Actor_Settings job_actor_settings, 
+                          HRU_Actor_Settings hru_actor_settings, 
+                          caf::actor parent);
 
-void spawnJob(stateful_actor<summa_actor_state>* self);
-} // namespace caf
+int spawnJob(caf::stateful_actor<summa_actor_state>* self);
+void finalizeSumma(caf::stateful_actor<summa_actor_state>* self);
 
 // Gets the number of GRUs from the attribute file
 int getNumGRUInFile(const std::string &settingsPath, 

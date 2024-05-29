@@ -20,83 +20,76 @@
 
 module fileAccess_writeOutput
   USE, intrinsic :: iso_c_binding
+  ! NetCDF types
+  USE netcdf
+  USE netcdf_util_module,only:netcdf_err                    ! netcdf error handling function
+  ! top-level data types
+  USE nrtype
+  ! missing values
+  USE globalData,only: integerMissing, realMissing
+  ! provide access to global data
+  USE globalData,only:gru_struc                             ! gru->hru mapping structure
+  USE output_structure_module,only:summa_struct
+  USE output_structure_module,only:outputTimeStep
+  ! provide access to the derived types to define the data structures
+  USE data_types,only:&
+                      ! final data vectors
+                      dlength,             & ! var%dat
+                      ilength,             & ! var%dat
+                      ! no spatial dimension
+                      var_i,               & ! x%var(:)            (i4b)
+                      var_i8,              & ! x%var(:)            integer(8)
+                      var_d,               & ! x%var(:)            (dp)
+                      var_ilength,         & ! x%var(:)%dat        (i4b)
+                      var_dlength,         & ! x%var(:)%dat        (dp)
+                      ! no variable dimension
+                      hru_i,               & ! x%hru(:)            (i4b)
+                      hru_d,               & ! x%hru(:)            (dp)
+                      ! gru dimension
+                      gru_int,             & ! x%gru(:)%var(:)     (i4b)
+                      gru_double,          & ! x%gru(:)%var(:)     (dp)
+                      gru_intVec,          & ! x%gru(:)%var(:)%dat (i4b)
+                      gru_doubleVec,       & ! x%gru(:)%var(:)%dat (dp)
+                      ! gru+hru dimension
+                      gru_hru_int,         & ! x%gru(:)%hru(:)%var(:)     (i4b)
+                      gru_hru_int8,        & ! x%gru(:)%hru(:)%var(:)     integer(8)
+                      gru_hru_double,      & ! x%gru(:)%hru(:)%var(:)     (dp)
+                      gru_hru_intVec,      & ! x%gru(:)%hru(:)%var(:)%dat (i4b)
+                      gru_hru_doubleVec      ! x%gru(:)%hru(:)%var(:)%dat (dp)
+  USE actor_data_types,only:&
+                      time_dlength,          & ! var(:)%tim(:)%dat (dp)
+                      time_i,                &
+                      gru_hru_time_double,   &
+                      gru_hru_time_doubleVec,&
+                      gru_hru_time_intVec
+  ! vector lengths
+  USE var_lookup, only: maxvarFreq ! number of output frequencies
+  USE var_lookup, only: maxvarStat ! number of statistics
 
-! NetCDF types
-USE netcdf
-USE netcdf_util_module,only:netcdf_err                    ! netcdf error handling function
-
-! top-level data types
-USE nrtype
-
-! missing values
-USE globalData,only: integerMissing, realMissing
-
-! provide access to global data
-USE globalData,only:gru_struc                             ! gru->hru mapping structure
-
-USE output_structure_module,only:summa_struct
-USE output_structure_module,only:outputTimeStep
-
-
-! provide access to the derived types to define the data structures
-USE data_types,only:&
-                    ! final data vectors
-                    dlength,             & ! var%dat
-                    ilength,             & ! var%dat
-                    ! no spatial dimension
-                    var_i,               & ! x%var(:)            (i4b)
-                    var_i8,              & ! x%var(:)            integer(8)
-                    var_d,               & ! x%var(:)            (dp)
-                    var_ilength,         & ! x%var(:)%dat        (i4b)
-                    var_dlength,         & ! x%var(:)%dat        (dp)
-                    ! no variable dimension
-                    hru_i,               & ! x%hru(:)            (i4b)
-                    hru_d,               & ! x%hru(:)            (dp)
-                    ! gru dimension
-                    gru_int,             & ! x%gru(:)%var(:)     (i4b)
-                    gru_double,          & ! x%gru(:)%var(:)     (dp)
-                    gru_intVec,          & ! x%gru(:)%var(:)%dat (i4b)
-                    gru_doubleVec,       & ! x%gru(:)%var(:)%dat (dp)
-                    ! gru+hru dimension
-                    gru_hru_int,         & ! x%gru(:)%hru(:)%var(:)     (i4b)
-                    gru_hru_int8,        & ! x%gru(:)%hru(:)%var(:)     integer(8)
-                    gru_hru_double,      & ! x%gru(:)%hru(:)%var(:)     (dp)
-                    gru_hru_intVec,      & ! x%gru(:)%hru(:)%var(:)%dat (i4b)
-                    gru_hru_doubleVec      ! x%gru(:)%hru(:)%var(:)%dat (dp)
-    
-USE actor_data_types,only:&
-                    time_dlength,          & ! var(:)%tim(:)%dat (dp)
-                    time_i,                &
-                    gru_hru_time_double,   &
-                    gru_hru_time_doubleVec,&
-                    gru_hru_time_intVec
-
-! vector lengths
-USE var_lookup, only: maxvarFreq ! number of output frequencies
-USE var_lookup, only: maxvarStat ! number of statistics
-
-implicit none
-private
-public::writeOutput_fortran
-public::writeParm
-public::writeData
-public::writeBasin
-public::writeTime
-private::writeScalar
-private::writeVector
-! define dimension lengths
-integer(i4b),parameter      :: maxSpectral=2              ! maximum number of spectral bands
-contains
+  implicit none
+  private
+  public::writeOutput_fortran
+  public::writeParm
+  public::writeData
+  public::writeBasin
+  public::writeTime
+  private::writeScalar
+  private::writeVector
+  ! define dimension lengths
+  integer(i4b),parameter      :: maxSpectral=2              ! maximum number of spectral bands
+  contains
 
 ! **********************************************************************************************************
 ! public subroutine writeParm: write model parameters
 ! **********************************************************************************************************
-subroutine writeOutput_fortran(handle_ncid, num_steps, start_gru, max_gru, write_parm_flag, err) bind(C, name="writeOutput_fortran")
+subroutine writeOutput_fortran(handle_ncid, num_steps, start_gru, max_gru, &
+    write_parm_flag, err, message_r) bind(C, name="writeOutput_fortran")
   USE var_lookup,only:maxVarFreq                               ! # of available output frequencies
   USE globalData,only:structInfo
   USE globalData,only:bvarChild_map,forcChild_map,progChild_map,diagChild_map,fluxChild_map,indxChild_map             ! index of the child data structure: stats bvar
   USE globalData,only:attr_meta,bvar_meta,type_meta,time_meta,forc_meta,prog_meta,diag_meta,flux_meta,indx_meta,bpar_meta,mpar_meta
   USE globalData,only:maxLayers
+  USE C_interface_module,only:f_c_string_ptr
   implicit none
   ! dummy variables
   type(c_ptr),intent(in), value        :: handle_ncid       ! ncid of the output file
@@ -105,6 +98,7 @@ subroutine writeOutput_fortran(handle_ncid, num_steps, start_gru, max_gru, write
   integer(c_int),intent(in)            :: max_gru           ! index of HRU we are currently writing for
   logical(c_bool),intent(in)           :: write_parm_flag   ! flag to write parameters
   integer(c_int),intent(out)           :: err               ! Error code
+  type(c_ptr),intent(out)              :: message_r ! message to return to the caller
   ! local variables
   type(var_i),pointer                  :: ncid
   integer(i4b)                         :: iGRU,iHRU         ! loop through GRUs
@@ -113,13 +107,14 @@ subroutine writeOutput_fortran(handle_ncid, num_steps, start_gru, max_gru, write
   integer(i4b)                         :: indxHRU=1         ! index of HRU to write
   integer(i4b), dimension(maxVarFreq)  :: outputTimestepUpdate
   integer(i4b), dimension(maxVarFreq)  :: stepCounter
-  character(LEN=256)                   :: message
+  character(LEN=256)                   :: message = ""
   character(LEN=256)                   :: cmessage
   integer(i4b)                         :: iStruct
   integer(i4b)                         :: numGRU
   
   ! Change the C pointer to a fortran pointer
   call c_f_pointer(handle_ncid, ncid)
+  call f_c_string_ptr(trim(message), message_r)
   
   ! Write the Parameters if first write
   if (write_parm_flag)then
@@ -134,25 +129,36 @@ subroutine writeOutput_fortran(handle_ncid, num_steps, start_gru, max_gru, write
           case('mpar'); call writeParm(ncid,gru_struc(iGRU)%hruInfo(iHRU)%hru_ix, &
             summa_struct(1)%mparStruct%gru(iGRU)%hru(iHRU),mpar_meta,err,cmessage)
           end select
-          if(err/=0)then; message=trim(message)//trim(cmessage)//'['//trim(structInfo(iStruct)%structName)//']'; return; endif
+          if(err/=0)then 
+            message=trim(message)//trim(cmessage)//'['//trim(structInfo(iStruct)%structName)//']'
+            call f_c_string_ptr(trim(message), message_r)
+            return 
+          endif
           call writeParm(ncid,iGRU,summa_struct(1)%bparStruct%gru(iGRU),bpar_meta,err,cmessage)
-          if(err/=0)then; message=trim(message)//trim(cmessage)//'['//trim(structInfo(iStruct)%structName)//']'; return; endif
+          if(err/=0)then
+            message=trim(message)//trim(cmessage)//'['//trim(structInfo(iStruct)%structName)//']' 
+            call f_c_string_ptr(trim(message), message_r)
+            return 
+          endif
         end do ! HRU
       end do ! GRU
     end do ! structInfo
   end if
   
-
-
-
   ! ****************************************************************************
   ! *** write basin data
   ! ****************************************************************************
   do iGRU=start_gru, max_gru
     stepCounter(:) = outputTimeStep(iGRU)%dat(:) ! We want to avoid updating outputTimeStep
     do iStep=1, num_steps
-      call writeTime(ncid,outputTimeStep(iGRU)%dat(:),iStep,time_meta, &
-              summa_struct(1)%timeStruct%gru(iGRU)%hru(indxHRU)%var,err,cmessage)
+      call writeTime(ncid,outputTimeStep(iGRU)%dat(:),iStep,time_meta,  &
+                     summa_struct(1)%timeStruct%gru(iGRU)%hru(indxHRU)%var,&
+                     err,cmessage)
+      if(err/=0)then 
+        message=trim(message)//trim(cmessage)//'[time]'
+        call f_c_string_ptr(trim(message), message_r)
+        return
+      endif
     end do ! istep
   end do ! iGRU
 
@@ -165,6 +171,11 @@ subroutine writeOutput_fortran(handle_ncid, num_steps, start_gru, max_gru, write
                   start_gru, max_gru, numGRU, bvar_meta, &
                   summa_struct(1)%bvarStat,summa_struct(1)%bvarStruct, &
                   bvarChild_map,err,cmessage)
+  if(err/=0)then
+    message=trim(message)//trim(cmessage)//'[bvar]' 
+    call f_c_string_ptr(trim(message), message_r)
+    return 
+  endif
 
   ! ****************************************************************************
   ! *** write data
@@ -197,14 +208,17 @@ subroutine writeOutput_fortran(handle_ncid, num_steps, start_gru, max_gru, write
                         indx_meta,summa_struct(1)%indxStat,summa_struct(1)%indxStruct,'indx', &
                         indxChild_map,summa_struct(1)%indxStruct,err,cmessage)
     end select
-    if(err/=0)then; message=trim(message)//trim(cmessage)//'['//trim(structInfo(iStruct)%structName)//']'; return; endif
+    if(err/=0)then
+      message=trim(message)//trim(cmessage)//'['//trim(structInfo(iStruct)%structName)//']'
+      call f_c_string_ptr(trim(message), message_r)
+      return
+    endif
   end do  ! (looping through structures)
 
 
   do iFreq = 1,maxvarFreq
     outputTimeStep(start_gru)%dat(iFreq) = outputTimeStep(start_gru)%dat(iFreq) + outputTimeStepUpdate(iFreq) 
   end do ! ifreq
-
 end subroutine writeOutput_fortran
 
 
@@ -257,7 +271,7 @@ subroutine writeRestart_fortran(handle_ncid,  start_gru, num_gru, checkpoint, ye
   ! Change the C pointer to a fortran pointer
   call c_f_pointer(handle_ncid, ncid)
 
-! *****************************************************************************
+  ! *****************************************************************************
   ! *** write restart file
   ! *****************************************************************************
   restart_flag = 1 ! temp

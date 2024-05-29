@@ -3,6 +3,7 @@
 using namespace caf;
 
 behavior data_assimilation_mode(stateful_actor<job_state>* self) {
+  self->state.logger->log("Data Assimilation Mode: Started");
   aout(self) << "Data Assimilation Mode: Started\n";
 
   return {
@@ -48,7 +49,8 @@ behavior data_assimilation_mode(stateful_actor<job_state>* self) {
         int steps_to_write = 1;
         int start_gru = 1;
         self->request(self->state.file_access_actor, caf::infinite,
-          write_output_v, steps_to_write, start_gru, self->state.num_gru).await(
+          write_output_v, steps_to_write, start_gru, 
+          self->state.batch.getNumHRU()).await(
           [=](int err) {
             if (err != 0) {
               aout(self) << "Job_Actor: Error Writing Output\n";
