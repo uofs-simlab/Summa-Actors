@@ -8,8 +8,7 @@ module load openblas/0.3.17
 module load netcdf-fortran/4.5.2
 module load caf # actors
 
-export FLAGS_OPT="-flto=1;-fuse-linker-plugin"
-export SUNDIALS_PATH=/globalhome/kck540/HPC/Libraries/sundials/v7.0/instdir
+export CMAKE_PREFIX_PATH="$CMAKE_PREFIX_PATH:/home/kklenk/Libraries/sundials"
 
-cmake -B ./cmake_build -S ../summa/build/cmake/. -DCMAKE_BUILD_TYPE=Sundials_Actors_Cluster
-cmake --build ./cmake_build --target all -j 
+cmake -B ./cmake_build -S ../summa/build/. -DUSE_ACTORS=ON -DUSE_SUNDIALS=ON
+cmake --build ./cmake_build --target all -j
