@@ -42,12 +42,12 @@ if (CMAKE_BUILD_TYPE MATCHES Cluster)
 
     set(INC_ACTORS 
         ${CAF_INCLUDES} 
-        ${PARENT_DIR}/build/includes/global 
-        ${PARENT_DIR}/build/includes/summa_actor 
-        ${PARENT_DIR}/build/includes/job_actor 
-        ${PARENT_DIR}/build/includes/file_access_actor 
-        ${PARENT_DIR}/build/includes/gru_actor
-        ${PARENT_DIR}/build/includes/hru_actor)
+        ${PARENT_DIR}/includes/global 
+        ${PARENT_DIR}/includes/summa_actor 
+        ${PARENT_DIR}/includes/job_actor 
+        ${PARENT_DIR}/includes/file_access_actor 
+        ${PARENT_DIR}/includes/gru_actor
+        ${PARENT_DIR}/includes/hru_actor)
     set(LIB_ACTORS 
         ${CAF_LIBRARIES}
         -lnetcdf 
@@ -70,6 +70,8 @@ else()
     link_directories("/usr/local/lib")
     set(LIB_ACTORS CAF::core CAF::io -lopenblas -lnetcdff -lnetcdf)
 endif()
+
+MESSAGE("\n\nINC_ACTORS:" ${INC_ACTORS})
 
 # Define directories that contains source code
 set(DRIVER_DIR ${F_MASTER}/build/source/driver)
@@ -230,7 +232,8 @@ set(ACTORS_GLOBAL
     ${ACTORS_DIR}/global/auxiliary.cpp
     ${ACTORS_DIR}/global/fileManager.cpp
     ${ACTORS_DIR}/global/settings_functions.cpp
-    ${ACTORS_DIR}/global/timing_info.cpp)
+    ${ACTORS_DIR}/global/timing_info.cpp
+    ${ACTORS_DIR}/global/logger.cpp)
 set(SYS_INIT
     ${SYS_INIT_DIR}/batch.cpp
     ${SYS_INIT_DIR}/batch_container.cpp
