@@ -194,6 +194,7 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     CAF_ADD_TYPE_ID(summa, (File_Access_Actor_Settings))
     CAF_ADD_TYPE_ID(summa, (Job_Actor_Settings))
     CAF_ADD_TYPE_ID(summa, (HRU_Actor_Settings))
+    CAF_ADD_TYPE_ID(summa, (Settings))
 
     CAF_ADD_TYPE_ID(summa, (hru))
     CAF_ADD_TYPE_ID(summa, (NumGRUInfo))

@@ -1,6 +1,7 @@
 // CAF Includes
 #include "caf/all.hpp"
 #include "caf/io/all.hpp"
+#include "settings_functions.hpp"
 
 #include <iostream>
 
@@ -100,29 +101,35 @@ int caf_main(actor_system& sys, const config& cfg) {
   scoped_actor self{sys};
   int err;
   sys.println("Starting SUMMA-Actors");
+
+  Settings settings = Settings(cfg.config_file);
+  if (cfg.generate_config) {
+    settings.generate_config_file();
+    return EXIT_SUCCESS;
+  }
+
+  // Check if the master file was if not check if the config file was specified
+  if (!std::filesystem::exists((std::filesystem::path) cfg.master_file)) {
+    if (!std::filesystem::exists((std::filesystem::path) cfg.config_file)) {
+      aout(self) << "\n\n**** Config (-c) or Master File (-m) "
+                 << "Does Not Exist or Not Specified!! ****\n\n" 
+                 << "Config File: " << cfg.config_file << "\n"
+                 << "Master File: " << cfg.master_file << "\n\n"
+                 << command_line_help << std::endl;
+      exit(EXIT_FAILURE);
+    }
+  }
+
+  settings.read_settings();
+  settings.print_settings();
+  if (cfg.master_file != "")
+    settings.job_actor_settings_.file_manager_path_ = cfg.master_file;
+  if (cfg.output_file_suffix != "")
+    settings.fa_actor_settings_.output_file_suffix_ = cfg.output_file_suffix;
+  
   
   return EXIT_SUCCESS;
 
-
-
-
-  // if (cfg.generate_config) {
-  //   std::cout << "Generating Config File" << std::endl;
-  //   generate_config_file();
-  //   return;
-  // }
-
-  // Check if the master file was if not check if the config file was specified
-  // if (!std::filesystem::exists((std::filesystem::path) cfg.master_file)) {
-  //   if (!std::filesystem::exists((std::filesystem::path) cfg.config_file)) {
-  //     aout(self) << "\n\n**** Config (-c) or Master File (-m) "
-  //                << "Does Not Exist or Not Specified!! ****\n\n" 
-  //                << "Config File: " << cfg.config_file << "\n"
-  //                << "Master File: " << cfg.master_file << "\n\n"
-  //                << command_line_help << std::endl;
-  //     exit(EXIT_FAILURE);
-  //   }
-  // }
 
   // Distributed_Settings distributed_settings = readDistributedSettings(cfg.config_file);
   // Summa_Actor_Settings summa_actor_settings = readSummaActorSettings(cfg.config_file);
@@ -199,13 +206,13 @@ int main(int argc, char** argv) {
         args.insert(std::next(count_gru), "-t");
       } else {
         std::cerr << "Error: -g requires a countGRU argument" << std::endl;
-        return 1;
+        return EXIT_FAILURE;
       }
       break;
     }
     else if (*it == "-h" || *it == "--help") {
       std::cout << command_line_help << std::endl;
-      return 0;
+      return EXIT_SUCCESS;
     }
   }
 
