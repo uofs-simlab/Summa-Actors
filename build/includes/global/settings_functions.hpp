@@ -9,9 +9,6 @@
 
 using json = nlohmann::json;
 
-struct File_Access_Actor_Settings;
-struct Job_Actor_Settings;
-struct HRU_Actor_Settings;
 
 
 // ####################################################################
