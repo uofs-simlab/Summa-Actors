@@ -1,6 +1,6 @@
 #include "batch_container.hpp"
 
-Batch_Container::Batch_Container(int start_hru, int total_hru_count, 
+BatchContainer::BatchContainer(int start_hru, int total_hru_count, 
                                  int num_hru_per_batch,
                                  std::string log_dir) {
   start_hru_ = start_hru;
@@ -17,7 +17,7 @@ Batch_Container::Batch_Container(int start_hru, int total_hru_count,
   logger_.log("------------------------------------------");
 }
 
-void Batch_Container::assembleBatches(std::string log_dir) {
+void BatchContainer::assembleBatches(std::string log_dir) {
   int remaining_hru_to_batch = total_hru_count_;
   int batch_id = 0;
   int start_hru_local = start_hru_;
@@ -35,7 +35,7 @@ void Batch_Container::assembleBatches(std::string log_dir) {
   }
 }
 
-void Batch_Container::updateBatchStats(int batch_id, double run_time, 
+void BatchContainer::updateBatchStats(int batch_id, double run_time, 
                                        double read_time, double write_time,
                                        int num_success, int num_failed) {
   batch_list_[batch_id].updateRunTime(run_time);
@@ -52,13 +52,13 @@ void Batch_Container::updateBatchStats(int batch_id, double run_time,
   logger_.log("End");
 }
 
-void Batch_Container::printBatches() {
+void BatchContainer::printBatches() {
   for (auto& batch : batch_list_) {
     batch.printBatchInfo();
   }
 }
 
-std::string Batch_Container::getBatchesAsString() {
+std::string BatchContainer::getBatchesAsString() {
   std::string out_string = "";
   for (auto& batch : batch_list_) {
     out_string += batch.getBatchInfoString();
@@ -66,11 +66,11 @@ std::string Batch_Container::getBatchesAsString() {
   return out_string;
 }
 
-void Batch_Container::updateBatchStatus_LostClient(int batch_id) {
+void BatchContainer::updateBatchStatus_LostClient(int batch_id) {
   batch_list_[batch_id].updateAssigned(false);
 }
 
-std::optional<Batch> Batch_Container::getUnsolvedBatch() {
+std::optional<Batch> BatchContainer::getUnsolvedBatch() {
   for (auto& batch : batch_list_) {
     if (!batch.isAssigned() && !batch.isSolved()) {
       batch.updateAssigned(true);
@@ -82,15 +82,15 @@ std::optional<Batch> Batch_Container::getUnsolvedBatch() {
   return {};
 }
 
-void Batch_Container::setBatchAssigned(Batch batch) {
+void BatchContainer::setBatchAssigned(Batch batch) {
   batch_list_[batch.getBatchID()].updateAssigned(true);
 }
 
-void Batch_Container::setBatchUnassigned(Batch batch) {
+void BatchContainer::setBatchUnassigned(Batch batch) {
   batch_list_[batch.getBatchID()].updateAssigned(false);
 }
 
-void Batch_Container::updateBatch_success(Batch successful_batch, 
+void BatchContainer::updateBatch_success(Batch successful_batch, 
                                           std::string output_csv, 
                                           std::string hostname) {
   successful_batch.writeBatchToFile(output_csv, hostname);
@@ -102,15 +102,15 @@ void Batch_Container::updateBatch_success(Batch successful_batch,
 
 
 
-void Batch_Container::updateBatch_success(Batch successful_batch) {
+void BatchContainer::updateBatch_success(Batch successful_batch) {
   batch_list_[successful_batch.getBatchID()].updateSolved(true);
   batches_remaining_--;
 }
 
-bool Batch_Container::hasUnsolvedBatches() { return batches_remaining_ > 0;}
+bool BatchContainer::hasUnsolvedBatches() { return batches_remaining_ > 0;}
 
 
-std::string Batch_Container::getAllBatchInfoString() {
+std::string BatchContainer::getAllBatchInfoString() {
   std::string out_string = "";
   for (auto& batch : batch_list_) {
     out_string += "_____________________________\n";
@@ -120,7 +120,7 @@ std::string Batch_Container::getAllBatchInfoString() {
   return out_string;
 }
 
-double Batch_Container::getTotalReadTime() {
+double BatchContainer::getTotalReadTime() {
   double total_read_time = 0.0;
   for (auto& batch : batch_list_) {
     total_read_time += batch.getReadTime();
@@ -128,7 +128,7 @@ double Batch_Container::getTotalReadTime() {
   return total_read_time;
 }
 
-double Batch_Container::getTotalWriteTime() {
+double BatchContainer::getTotalWriteTime() {
   double total_write_time = 0.0;
   for (auto& batch : batch_list_) {
     total_write_time += batch.getWriteTime();

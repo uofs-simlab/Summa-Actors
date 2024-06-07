@@ -2,7 +2,7 @@
 #include "caf/all.hpp"
 #include "caf/io/all.hpp"
 #include "settings_functions.hpp"
-
+#include "summa_actor.hpp"
 #include <iostream>
 
 using namespace caf;
@@ -127,7 +127,8 @@ int caf_main(actor_system& sys, const config& cfg) {
   if (cfg.output_file_suffix != "")
     settings.fa_actor_settings_.output_file_suffix_ = cfg.output_file_suffix;
   
-  
+  self->spawn(actor_from_state<SummaActor>, cfg.startGRU, cfg.countGRU, 
+               settings, self);
   return EXIT_SUCCESS;
 
 

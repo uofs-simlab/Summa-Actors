@@ -5,7 +5,7 @@ extern "C" {
         int* err, void* err_msg);
 }
 
-class fileManager {
+class FileManager {
 
   public:
     std::string file_manager_path_; // path to the file manager file
@@ -35,8 +35,8 @@ class fileManager {
     std::string output_prefix_;     // prefix for the output file
   
     // Constructor - read file_manager_path & populate class variables
-    fileManager(const std::string& file_manager_path);
-    ~fileManager() {};
+    FileManager(const std::string& file_manager_path);
+    ~FileManager() {};
 
     // Set the variables that are used by the summaFileManager (summaFileManager.f90)
     std::string setTimesDirsAndFiles();

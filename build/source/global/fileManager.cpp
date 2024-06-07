@@ -14,7 +14,7 @@ std::string extractEnclosed(const std::string& line) {
   return "";
 }
 
-fileManager::fileManager(const std::string& file_manager_path) {
+FileManager::FileManager(const std::string& file_manager_path) {
   std::cout << "Rading File Manager\n";
   file_manager_path_ = file_manager_path;
 
@@ -76,7 +76,7 @@ fileManager::fileManager(const std::string& file_manager_path) {
 }
 
 
-std::string fileManager::setTimesDirsAndFiles() {
+std::string FileManager::setTimesDirsAndFiles() {
   int err = 0;
   std::unique_ptr<char[]> err_msg(new char[1024]);
   // Calls summa_SetTimesDirsAndFiles() 
@@ -84,7 +84,7 @@ std::string fileManager::setTimesDirsAndFiles() {
   return std::string(err_msg.get());
 }
 
-std::string fileManager::toString() {
+std::string FileManager::toString() {
   std::string str = "Control Version: " + control_vrs_ + "\n";
               str += "Simulation Start Time: " + sim_start_tm_ + "\n";
               str += "Simulation End Time: " + sim_end_tm_ + "\n";
