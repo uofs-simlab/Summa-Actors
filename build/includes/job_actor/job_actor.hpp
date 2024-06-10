@@ -9,7 +9,7 @@
 // #include "hru_actor.hpp"
 // #include "hru_batch_actor.hpp"
 #include "message_atoms.hpp"
-// #include "file_access_actor.hpp"
+#include "file_access_actor.hpp"
 #include <unistd.h>
 #include <limits.h>
 #include <cmath>
@@ -22,6 +22,9 @@
 
 class JobActor {
   caf::event_based_actor* self_;
+
+  char hostname_[HOST_NAME_MAX];
+
   TimingInfo timing_info_;
   std::unique_ptr<Logger> logger_;
   std::unique_ptr<ErrorLogger> err_logger_;
@@ -32,6 +35,11 @@ class JobActor {
   caf::actor parent_;
 
   Batch batch_;
+  std::unique_ptr<GruStruc> gru_struc_;
+  std::unique_ptr<SummaInitStruc> summa_init_struc_;
+  NumGRUInfo num_gru_info_;
+
+
 
   // Settings
   JobActorSettings job_actor_settings_;

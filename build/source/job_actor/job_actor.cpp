@@ -15,6 +15,8 @@ behavior JobActor::make_behavior() {
     self_->println("Exit Reason: {}", to_string(em.reason));
   });
 
+  gethostname(hostname_, HOST_NAME_MAX);
+
   // Timing Information
   timing_info_ = TimingInfo(); 
   timing_info_.addTimePoint("total_duration");
@@ -28,73 +30,49 @@ behavior JobActor::make_behavior() {
   err_logger_ = std::make_unique<ErrorLogger>(batch_.getLogDir());
   success_logger_ = std::make_unique<SuccessLogger>(batch_.getLogDir()); 
 
+  gru_struc_ = std::make_unique<GruStruc>(batch_.getStartHRU(), 
+      batch_.getNumHRU(), job_actor_settings_.max_run_attempts_);
+  if (gru_struc_->ReadDimension()) {
+    std::string err_msg = "ERROR: Job_Actor - ReadDimension\n";
+    self_->send(parent_, err_atom_v, -2, err_msg);
+    return {};
+  }
+  if (gru_struc_->ReadIcondNlayers()) {
+    std::string err_msg = "ERROR: Job_Actor - ReadIcondNlayers\n";
+    self_->send(parent_, err_atom_v, -2, err_msg);
+    return {};
+  }
+  gru_struc_->getNumHrusPerGru();  
 
+  summa_init_struc_ = std::make_unique<SummaInitStruc>();
+  if (summa_init_struc_->allocate(batch_.getNumHRU()) != 0) {
+    std::string err_msg = "ERROR -- Job_Actor: SummaInitStruc allocation failed\n";
+    self_->send(parent_, err_atom_v, -2, err_msg);
+    return {};
+  }
+  if (summa_init_struc_->summa_paramSetup() != 0) {
+    std::string err_msg = "ERROR -- Job_Actor: SummaInitStruc paramSetup failed\n";
+    self_->send(parent_, err_atom_v, -2, err_msg);
+    return {};
+  }
+  if (summa_init_struc_->summa_readRestart()!= 0) {
+    std::string err_msg = "ERROR -- Job_Actor: SummaInitStruc readRestart failed\n";
+    self_->send(parent_, err_atom_v, -2, err_msg);
+    return {};
+  }
+  summa_init_struc_->getInitTolerance(hru_actor_settings_);
+  
 
-  return {};
-}
+  num_gru_info_ = NumGRUInfo(batch_.getStartHRU(), batch_.getStartHRU(), 
+                            batch_.getNumHRU(), batch_.getNumHRU(), 
+                            gru_struc_->get_file_gru(), false);
+  file_access_actor_ = self_->spawn(actor_from_state<FileAccessActor>, 
+                                    num_gru_info_, fa_actor_settings_, self_);
 
-
-
-
-
-
-// // First Actor that is spawned that is not the Coordinator Actor.
-// behavior job_actor(stateful_actor<job_state>* self, Batch batch,
-
-
-
-
-
-//   std::string err_msg;
-//   char host[HOST_NAME_MAX];
-//   gethostname(host, HOST_NAME_MAX);
-//   self->state.hostname = host;
-
-//   auto& gru_struc = self->state.gru_struc;
-//   gru_struc = std::make_unique<GruStruc>(self->state.batch.getStartHRU(), 
-//                                          self->state.batch.getNumHRU(),
-//                                          job_actor_settings.max_run_attempts);
-//   if (gru_struc->ReadDimension()) {
-//     err_msg = "ERROR: Job_Actor - ReadDimension\n";
-//     self->send(self->state.parent, err_atom_v, -2, err_msg);
-//     return {};
-//   }
-//   if (gru_struc->ReadIcondNlayers()) {
-//     err_msg = "ERROR: Job_Actor - ReadIcondNlayers\n";
-//     self->send(self->state.parent, err_atom_v, -2, err_msg);
-//     return {};
-//   }
-//   gru_struc->getNumHrusPerGru();
-
-//   auto& summa_init_struc = self->state.summa_init_struc;
-//   summa_init_struc = std::make_unique<SummaInitStruc>();
-//   if (summa_init_struc->allocate(self->state.batch.getNumHRU()) != 0) {
-//     err_msg = "ERROR -- Job_Actor: SummaInitStruc allocation failed\n";
-//     self->send(self->state.parent, err_atom_v, -2, err_msg);
-//     return {};
-//   }
-//   if (summa_init_struc->summa_paramSetup() != 0) {
-//     err_msg = "ERROR -- Job_Actor: SummaInitStruc paramSetup failed\n";
-//     self->send(self->state.parent, err_atom_v, -2, err_msg);
-//     return {};
-//   }
-//   if (summa_init_struc->summa_readRestart()!= 0) {
-//     err_msg = "ERROR -- Job_Actor: SummaInitStruc readRestart failed\n";
-//     self->send(self->state.parent, err_atom_v, -2, err_msg);
-//     return {};
-//   }
-//   summa_init_struc->getInitTolerance(self->state.hru_actor_settings);
-
-//   self->state.num_gru_info = NumGRUInfo(self->state.batch.getStartHRU(), 
-//                                         self->state.batch.getStartHRU(), 
-//                                         self->state.batch.getNumHRU(), 
-//                                         self->state.batch.getNumHRU(), 
-//                                         gru_struc->get_file_gru(), false);
-
-//   self->state.file_access_actor = self->spawn(
+//   file_access_actor_ = self->spawn(
 //       file_access_actor, self->state.num_gru_info, 
 //       self->state.file_access_actor_settings, self);
-  
+
 //   self->request(self->state.file_access_actor, caf::infinite, 
 //                 init_file_access_actor_v, gru_struc->get_file_gru(),
 //                 gru_struc->getNumHrus())
@@ -120,5 +98,7 @@ behavior JobActor::make_behavior() {
       
 //   return {};
 
-// }
+  return {};
+}
+
 

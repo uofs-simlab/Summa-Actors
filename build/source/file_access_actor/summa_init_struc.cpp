@@ -33,6 +33,6 @@ int SummaInitStruc::summa_readRestart() {
 }
 
 void SummaInitStruc::getInitTolerance(HRUActorSettings& hru_settings) {
-  getInitTolerance_fortran(hru_settings.rel_tol, hru_settings.abs_tol);
+  getInitTolerance_fortran(hru_settings.rel_tol_, hru_settings.abs_tol_);
 }
 
