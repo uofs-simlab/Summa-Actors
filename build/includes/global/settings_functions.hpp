@@ -1,17 +1,16 @@
 #pragma once
 #include <string>
 #include <vector>
-#include <thread>
 #include <optional>
 #include <iostream>
 #include <fstream>
+#include <thread>
 #include "json.hpp"
-// #include <bits/stdc++.h>
-// #include <sys/stat.h>
 
 #define SUCCESS 0
 #define FAILURE -1
 #define MISSING_INT -9999
+#define MISSING_DOUBLE -9999.0
 
 using json = nlohmann::json;
 
@@ -172,12 +171,17 @@ class HRUActorSettings {
     bool print_output_;
     int output_frequency_;
     int dt_init_factor_; 
+    double rel_tol_;
+    double abs_tol_;
 
     HRUActorSettings(bool print_output = false, 
                      int output_frequency = 100, 
-                     int dt_init_factor = 1) 
+                     int dt_init_factor = 1,
+                     double rel_tol = 1e-4,
+                     double abs_tol = 1e-4) 
         : print_output_(print_output), output_frequency_(output_frequency),
-          dt_init_factor_(dt_init_factor) {};
+          dt_init_factor_(dt_init_factor), rel_tol_(rel_tol), 
+          abs_tol_(abs_tol) {};
     ~HRUActorSettings() {};
 
     std::string toString() {
@@ -185,6 +189,8 @@ class HRUActorSettings {
       str += "Print Output: " + std::to_string(print_output_) + "\n";
       str += "Output Frequency: " + std::to_string(output_frequency_) + "\n";
       str += "DT Init Factor: " + std::to_string(dt_init_factor_) + "\n";
+      str += "Relative Tolerance: " + std::to_string(rel_tol_) + "\n";
+      str += "Absolute Tolerance: " + std::to_string(abs_tol_) + "\n";
       return str;
     }
 
@@ -193,7 +199,9 @@ class HRUActorSettings {
       return insp.object(settings).fields(
              insp.field("print_output",     settings.print_output_),
              insp.field("output_frequency", settings.output_frequency_),
-             insp.field("dt_init_factor",   settings.dt_init_factor_));
+             insp.field("dt_init_factor",   settings.dt_init_factor_),
+             insp.field("rel_tol",          settings.rel_tol_),
+             insp.field("abs_tol",          settings.abs_tol_));
     }
 };
 
@@ -210,12 +218,12 @@ class Settings {
 
     Settings(std::string json_file) : json_file_(json_file) {};
     ~Settings() {};
-    int read_settings();
-    void generate_config_file();
-    void print_settings();
+    int readSettings();
+    void generateConfigFile();
+    void printSettings();
 
     template<typename T>
-    std::optional<T> get_settings(std::string key_1, std::string key_2) {
+    std::optional<T> getSettings(std::string key_1, std::string key_2) {
       try {
         if (settings_.find(key_1) != settings_.end()) {
           json key_1_settings = settings_[key_1];
@@ -235,7 +243,7 @@ class Settings {
       }                           
     }
 
-    std::optional<std::vector<std::string>> get_settings_array(
+    std::optional<std::vector<std::string>> getSettingsArray(
         std::string key_1, std::string key_2);
 
     template<class Inspector>
@@ -247,163 +255,4 @@ class Settings {
              insp.field("job_actor_settings", settings.job_actor_settings_),
              insp.field("hru_actor_settings", settings.hru_actor_settings_));
     }
-};  
-
-
-
-
-
-
-
-
-// ####################################################################
-//                    Distributed Settings
-// ####################################################################
-// struct Distributed_Settings {
-//   bool distributed_mode;                    // flag for starting summa in distributed mode
-//   std::vector<std::string> servers_list;    // the hostname of the server actor
-//   int port;                                 // the port number of the server actor
-//   int total_hru_count;
-//   int num_hru_per_batch;
-//   int num_nodes;                            // For the data-assimilation mode
-//   bool load_balancing;                      // For the data-assimilation mode
-// };
-// template<class Inspector>
-// bool inspect(Inspector& inspector, Distributed_Settings& settings) {
-//   return inspector.object(settings).fields(
-//          inspector.field("distributed_mode", settings.distributed_mode),
-//          inspector.field("servers_list",     settings.servers_list),
-//          inspector.field("port",             settings.port),
-//          inspector.field("total_hru_count",  settings.total_hru_count),
-//          inspector.field("num_hru_per_batch",settings.num_hru_per_batch),
-//          inspector.field("num_nodes",        settings.num_nodes),
-//          inspector.field("load_balancing",   settings.load_balancing));
-// }
-// Distributed_Settings readDistributedSettings(std::string json_settings_file);
-
-// ####################################################################
-//                     SUMMA Actor Settings
-// ####################################################################
-// struct Summa_Actor_Settings {
-//   int max_gru_per_job;
-//   std::string log_dir;     // Directory to store log files to
-// };
-// template<class Inspector>
-// bool inspect(Inspector& inspector, Summa_Actor_Settings& settings) {
-//   return inspector.object(settings).fields(
-//          inspector.field("max_gru_per_job", settings.max_gru_per_job),  
-//          inspector.field("log_dir",         settings.log_dir));
-// }
-// Summa_Actor_Settings readSummaActorSettings(std::string json_settings_file);
-
-// ####################################################################
-//                      File Access Actor Settings
-// ####################################################################
-// struct File_Access_Actor_Settings {
-//   int num_partitions_in_output_buffer;
-//   int num_timesteps_in_output_buffer;
-//   std::string output_file_suffix; // option set by -s flag
-// };
-// template<class Inspector>
-// bool inspect(Inspector& inspector, File_Access_Actor_Settings& settings) {
-//   return inspector.object(settings).fields(
-//          inspector.field("num_partitions_in_output_buffer", 
-//             settings.num_partitions_in_output_buffer),
-//          inspector.field("num_timesteps_in_output_buffer", 
-//             settings.num_timesteps_in_output_buffer),
-//           inspector.field("output_file_suffix", settings.output_file_suffix));
-// }
-// File_Access_Actor_Settings readFileAccessActorSettings(
-//     std::string json_settings_file);
-
-// ####################################################################
-//                          Job Actor Settings
-// ####################################################################
-// struct Job_Actor_Settings {
-//   std::string file_manager_path;
-//   int max_run_attempts; // max number of times to try running an HRU
-//   bool data_assimilation_mode; // All HRUs actors much finish before the next time step is started 
-//   int batch_size; // Initial condition for the number of HRUs to run in a batch
-// };
-// template<class Inspector>
-// bool inspect(Inspector& inspector, Job_Actor_Settings& settings) {
-//   return inspector.object(settings).fields(
-//          inspector.field("file_manager_path", settings.file_manager_path),
-//          inspector.field("max_run_attempts", settings.max_run_attempts),
-//          inspector.field("data_assimilation_mode", 
-//             settings.data_assimilation_mode));
-// }
-// Job_Actor_Settings readJobActorSettings(std::string json_settings_file);
-
-// ####################################################################
-//                          HRU Actor Settings
-// ####################################################################
-// struct HRU_Actor_Settings {
-//   bool print_output;
-//   int output_frequency;
-//   int dt_init_factor; // factor to multiply the initial timestep by
-//   double rel_tol;
-//   double abs_tol;
-// };
-// template<class Inspector>
-// bool inspect(Inspector& inspector, HRU_Actor_Settings& settings) {
-//   return inspector.object(settings).fields(
-//          inspector.field("print_output",     settings.print_output),
-//          inspector.field("output_frequency", settings.output_frequency),
-//          inspector.field("dt_init_factor",   settings.dt_init_factor),
-//          inspector.field("rel_tol",          settings.rel_tol),
-//          inspector.field("abs_tol",          settings.abs_tol));
-// }
-// HRU_Actor_Settings readHRUActorSettings(std::string json_settings_file);
-
-// ####################################################################
-//                      Non Actor Specific Settings
-// ####################################################################
-
-// int checkFileExists(std::string file_path);
-
-
-// template <typename T>
-// std::optional<T> getSettings(std::string json_settings_file, std::string key_1, 
-//                              std::string key_2, T return_value) {
-//   json settings;
-//   std::ifstream settings_file(json_settings_file);
-//   if (!settings_file.good()) return {};
-//   settings_file >> settings;
-//   settings_file.close();
-    
-//   // find first key
-//   try {
-//     if (settings.find(key_1) != settings.end()) {
-//       json key_1_settings = settings[key_1];
-
-//       // find value behind second key
-//       if (key_1_settings.find(key_2) != key_1_settings.end()) {
-//         return key_1_settings[key_2];
-//       } else 
-//         return {};
-
-//     } else {
-//       return {}; // return none in the optional (error value)
-//     }
-//   } catch (json::exception& e) {
-//     std::cout << e.what() << "\n";
-//     std::cout << key_1 << "\n";
-//     std::cout << key_2 << "\n";
-//     return {};
-//   }
-// }
-
-// Get settings from settings file in array format
-// std::optional<std::vector<std::string>> getSettingsArray(
-//     std::string json_settings_file, std::string key_1, std::string key_2);
-
-// Check the settings - Print them out to stdout
-// void check_settings_from_json(Distributed_Settings &distributed_settings, 
-//     Summa_Actor_Settings &summa_actor_settings, 
-//     File_Access_Actor_Settings &file_access_actor_settings, 
-//     Job_Actor_Settings &job_actor_settings, 
-//     HRU_Actor_Settings &hru_actor_settings);
-
-// Output a default configuration file
-// void generate_config_file();
+}; 

@@ -2,23 +2,53 @@
 #include "caf/all.hpp"
 #include "caf/io/all.hpp"
 #include "num_gru_info.hpp"
-#include "GRU.hpp"
 #include "gru_struc.hpp"
 #include "timing_info.hpp"
 #include "settings_functions.hpp"
 #include "json.hpp"
-#include "hru_actor.hpp"
-#include "hru_batch_actor.hpp"
+// #include "hru_actor.hpp"
+// #include "hru_batch_actor.hpp"
 #include "message_atoms.hpp"
-#include "file_access_actor.hpp"
+// #include "file_access_actor.hpp"
 #include <unistd.h>
 #include <limits.h>
 #include <cmath>
 #include <vector>
 #include <tuple>
 #include "summa_init_struc.hpp"
-#include "gru_actor.hpp"
+// #include "gru_actor.hpp"
 #include "logger.hpp"
+
+
+class JobActor {
+  caf::event_based_actor* self_;
+  TimingInfo timing_info_;
+  std::unique_ptr<Logger> logger_;
+  std::unique_ptr<ErrorLogger> err_logger_;
+  std::unique_ptr<SuccessLogger> success_logger_;
+
+  // Actor References
+  caf::actor file_access_actor_;
+  caf::actor parent_;
+
+  Batch batch_;
+
+  // Settings
+  JobActorSettings job_actor_settings_;
+  FileAccessActorSettings fa_actor_settings_;
+  HRUActorSettings hru_actor_settings_; 
+  
+  public:
+    JobActor(caf::event_based_actor* self, Batch batch, 
+             JobActorSettings job_settings, FileAccessActorSettings fa_settings,
+             HRUActorSettings hru_settings, caf::actor parent) 
+             : self_(self), batch_(batch), job_actor_settings_(job_settings),
+               fa_actor_settings_(fa_settings), 
+               hru_actor_settings_(hru_settings), parent_(parent) {};
+    caf::behavior make_behavior();
+
+
+};
 
 
 /*********************************************
@@ -65,9 +95,9 @@ struct job_state {
   std::string hostname;
 
   // settings for all child actors (save in case we need to recover)
-  File_Access_Actor_Settings file_access_actor_settings;
-  Job_Actor_Settings job_actor_settings; 
-  HRU_Actor_Settings hru_actor_settings;
+  FileAccessActorSettings file_access_actor_settings;
+  JobActorSettings job_actor_settings; 
+  HRUActorSettings hru_actor_settings;
 
   // Forcing information
   int iFile = 1; // index of current forcing file from forcing file list
@@ -91,10 +121,10 @@ struct distributed_job_state {
   NumGRUInfo num_gru_info;
   std::vector<NumGRUInfo> node_num_gru_info;
   
-  Distributed_Settings distributed_settings;
-  Job_Actor_Settings job_actor_settings; 
-  HRU_Actor_Settings hru_actor_settings;
-  File_Access_Actor_Settings file_access_actor_settings;
+  DistributedSettings distributed_settings;
+  JobActorSettings job_actor_settings; 
+  HRUActorSettings hru_actor_settings;
+  FileAccessActorSettings file_access_actor_settings;
 
   std::vector<caf::actor> connected_nodes;
 
@@ -140,40 +170,40 @@ struct distributed_job_state {
   int num_serialize_messages_received = 0;
 };
 
-/** The Job Actor Behaviors */
-caf::behavior job_actor(caf::stateful_actor<job_state>* self, Batch batch,
-                        File_Access_Actor_Settings file_access_actor_settings, 
-                        Job_Actor_Settings job_actor_settings, 
-                        HRU_Actor_Settings hru_actor_settings, 
-                        caf::actor parent);
+// /** The Job Actor Behaviors */
+// caf::behavior job_actor(caf::stateful_actor<job_state>* self, Batch batch,
+//                         File_Access_Actor_Settings file_access_actor_settings, 
+//                         Job_Actor_Settings job_actor_settings, 
+//                         HRU_Actor_Settings hru_actor_settings, 
+//                         caf::actor parent);
 
-caf::behavior data_assimilation_mode(caf::stateful_actor<job_state>* self);
-caf::behavior async_mode(caf::stateful_actor<job_state>* self); 
+// caf::behavior data_assimilation_mode(caf::stateful_actor<job_state>* self);
+// caf::behavior async_mode(caf::stateful_actor<job_state>* self); 
 
-/** The Job Actor For Internode Communication */
-caf::behavior distributed_job_actor(
-    caf::stateful_actor<distributed_job_state>* self, int start_gru, 
-    int num_gru, Distributed_Settings distributed_settings,
-    File_Access_Actor_Settings file_access_actor_settings,
-    Job_Actor_Settings job_actor_settings, 
-    HRU_Actor_Settings hru_actor_settings);
+// /** The Job Actor For Internode Communication */
+// caf::behavior distributed_job_actor(
+//     caf::stateful_actor<distributed_job_state>* self, int start_gru, 
+//     int num_gru, Distributed_Settings distributed_settings,
+//     File_Access_Actor_Settings file_access_actor_settings,
+//     Job_Actor_Settings job_actor_settings, 
+//     HRU_Actor_Settings hru_actor_settings);
 
 
-/*********************************************
- * Functions for the Job Actor (job_utils.cpp)
- *********************************************/
-// Spawn HRU Actors Individually
-void spawnHRUActors(caf::stateful_actor<job_state>* self);
-// Spawn HRU Batch Actors
-void spawnHRUBatches(caf::stateful_actor<job_state>* self);
+// /*********************************************
+//  * Functions for the Job Actor (job_utils.cpp)
+//  *********************************************/
+// // Spawn HRU Actors Individually
+// void spawnHRUActors(caf::stateful_actor<job_state>* self);
+// // Spawn HRU Batch Actors
+// void spawnHRUBatches(caf::stateful_actor<job_state>* self);
 
-void handleFinishedGRU(caf::stateful_actor<job_state>* self,
-                       int local_gru_index);
+// void handleFinishedGRU(caf::stateful_actor<job_state>* self,
+//                        int local_gru_index);
 
-void finalizeJob(caf::stateful_actor<job_state>* self);
+// void finalizeJob(caf::stateful_actor<job_state>* self);
 
-void handleGRUError(caf::stateful_actor<job_state>* self, int err_code, 
-                    int index, int timestep, std::string& err_msg);
+// void handleGRUError(caf::stateful_actor<job_state>* self, int err_code, 
+//                     int index, int timestep, std::string& err_msg);
 
-void handleFileAccessError(caf::stateful_actor<job_state>* self, int err_code, 
-                           std::string& err_msg);
+// void handleFileAccessError(caf::stateful_actor<job_state>* self, int err_code, 
+//                            std::string& err_msg);

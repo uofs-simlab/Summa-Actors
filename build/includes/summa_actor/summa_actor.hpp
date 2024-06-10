@@ -1,15 +1,15 @@
 #pragma once
-
 #include "caf/all.hpp"
 #include "caf/io/all.hpp"
+#include <chrono>
+#include <string>
+#include <vector>
+#include "job_actor.hpp"
 #include "timing_info.hpp"
 #include "settings_functions.hpp"
 #include "batch_container.hpp"
 #include "fileManager.hpp"
 #include "gru_struc.hpp"
-#include <chrono>
-#include <string>
-#include <vector>
 #include "message_atoms.hpp"
 #include "summa_global_data.hpp"
 
@@ -24,6 +24,7 @@ class SummaActor {
   int num_gru_failed_ = 0;  // Number of GRUs that have failed
   caf::actor current_job_;  // Reference to the current job actor
   caf::actor parent_;
+  std::string log_folder_;
 
   std::unique_ptr<BatchContainer> batch_container_;
   std::shared_ptr<const Batch> current_batch_;
@@ -35,16 +36,19 @@ class SummaActor {
 
   public:
     SummaActor(caf::event_based_actor* self, int start_gru, int num_gru, 
-               Settings settings, caf::actor parent) : self_(self),
-               start_gru_(start_gru), num_gru_(num_gru), settings_(settings),
-               parent_(parent) {};
+               Settings settings, caf::actor parent) 
+               : self_(self), start_gru_(start_gru), num_gru_(num_gru), 
+               settings_(settings), parent_(parent) {};
   
     caf::behavior make_behavior();
 
-    int getNumGRUInFile(const std::string &settingsPath, 
-                        const std::string &attributeFile);
+    // Get number of GRUs from the attributes file
+    int getFileGRU(const std::string &settingsPath, 
+                   const std::string &attributeFile);
 
     int spawnJob();
+
+    int createLogDirectory();
 
     void finalize();
 };

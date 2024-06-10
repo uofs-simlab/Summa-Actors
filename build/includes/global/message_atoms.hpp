@@ -189,11 +189,11 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     CAF_ADD_ATOM(summa, finalize)
     
     // Struct Types
-    // CAF_ADD_TYPE_ID(summa, (Distributed_Settings))
-    // CAF_ADD_TYPE_ID(summa, (Summa_Actor_Settings))
-    // CAF_ADD_TYPE_ID(summa, (File_Access_Actor_Settings))
-    // CAF_ADD_TYPE_ID(summa, (Job_Actor_Settings))
-    // CAF_ADD_TYPE_ID(summa, (HRU_Actor_Settings))
+    CAF_ADD_TYPE_ID(summa, (DistributedSettings))
+    CAF_ADD_TYPE_ID(summa, (SummaActorSettings))
+    CAF_ADD_TYPE_ID(summa, (FileAccessActorSettings))
+    CAF_ADD_TYPE_ID(summa, (JobActorSettings))
+    CAF_ADD_TYPE_ID(summa, (HRUActorSettings))
     CAF_ADD_TYPE_ID(summa, (Settings))
 
     CAF_ADD_TYPE_ID(summa, (hru))

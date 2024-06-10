@@ -104,7 +104,7 @@ int caf_main(actor_system& sys, const config& cfg) {
 
   Settings settings = Settings(cfg.config_file);
   if (cfg.generate_config) {
-    settings.generate_config_file();
+    settings.generateConfigFile();
     return EXIT_SUCCESS;
   }
 
@@ -120,8 +120,8 @@ int caf_main(actor_system& sys, const config& cfg) {
     }
   }
 
-  settings.read_settings();
-  settings.print_settings();
+  settings.readSettings();
+  settings.printSettings();
   if (cfg.master_file != "")
     settings.job_actor_settings_.file_manager_path_ = cfg.master_file;
   if (cfg.output_file_suffix != "")

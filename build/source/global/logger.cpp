@@ -4,7 +4,7 @@
  * Logger
 *******************************************************************************/
 Logger::Logger(const std::string log_file_name) {
-  log_file_ = log_file_name;
+  log_file_ = log_file_name + ".log";
   std::ofstream file;
   file.open(log_file_, std::ios::out);
   file << "####### " << log_file_ << " Start #######\n\n";

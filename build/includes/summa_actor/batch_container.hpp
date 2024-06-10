@@ -11,7 +11,7 @@ class BatchContainer {
     int num_hru_per_batch_;
     int batches_remaining_;
     std::vector<Batch> batch_list_;
-    Logger logger_;
+    std::unique_ptr<Logger> logger_;
     
     void assembleBatches(std::string log_dir);
     

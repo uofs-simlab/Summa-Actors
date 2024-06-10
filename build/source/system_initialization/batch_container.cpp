@@ -1,8 +1,7 @@
 #include "batch_container.hpp"
 
 BatchContainer::BatchContainer(int start_hru, int total_hru_count, 
-                                 int num_hru_per_batch,
-                                 std::string log_dir) {
+                               int num_hru_per_batch, std::string log_dir) {
   start_hru_ = start_hru;
   total_hru_count_ = total_hru_count;
   num_hru_per_batch_ = num_hru_per_batch;
@@ -11,10 +10,10 @@ BatchContainer::BatchContainer(int start_hru, int total_hru_count,
   }
   assembleBatches(log_dir);
   batches_remaining_ = batch_list_.size();
-  logger_ = Logger(log_dir + "batch_container.log");
-  logger_.log("----------------Batch List----------------");
-  logger_.log(this->getBatchesAsString());
-  logger_.log("------------------------------------------");
+  logger_ = std::make_unique<Logger>(log_dir + "batch_container");
+  logger_->log("----------------Batch List----------------");
+  logger_->log(this->getBatchesAsString());
+  logger_->log("------------------------------------------");
 }
 
 void BatchContainer::assembleBatches(std::string log_dir) {
@@ -43,13 +42,13 @@ void BatchContainer::updateBatchStats(int batch_id, double run_time,
   batch_list_[batch_id].updateWriteTime(write_time);
   batch_list_[batch_id].updateSolved(true);
   batches_remaining_--;
-  logger_.log("Batch " + std::to_string(batch_id) + " Solved");
-  logger_.log("\tRun Time: " + std::to_string(run_time));
-  logger_.log("\tRead Time: " + std::to_string(read_time));
-  logger_.log("\tWrite Time: " + std::to_string(write_time));
-  logger_.log("\tNum Success: " + std::to_string(num_success));
-  logger_.log("\tNum Failed: " + std::to_string(num_failed));
-  logger_.log("End");
+  logger_->log("Batch " + std::to_string(batch_id) + " Solved");
+  logger_->log("\tRun Time: " + std::to_string(run_time));
+  logger_->log("\tRead Time: " + std::to_string(read_time));
+  logger_->log("\tWrite Time: " + std::to_string(write_time));
+  logger_->log("\tNum Success: " + std::to_string(num_success));
+  logger_->log("\tNum Failed: " + std::to_string(num_failed));
+  logger_->log("End");
 }
 
 void BatchContainer::printBatches() {
@@ -74,11 +73,11 @@ std::optional<Batch> BatchContainer::getUnsolvedBatch() {
   for (auto& batch : batch_list_) {
     if (!batch.isAssigned() && !batch.isSolved()) {
       batch.updateAssigned(true);
-      logger_.log("Starting Batch " + std::to_string(batch.getBatchID()));
+      logger_->log("Starting Batch " + std::to_string(batch.getBatchID()));
       return batch;
     }
   }
-  logger_.log("ERROR--Batch_Container: No Unsolved Batches");
+  logger_->log("ERROR--Batch_Container: No Unsolved Batches");
   return {};
 }
 
