@@ -33,7 +33,7 @@ class DistributedSettings {
                         bool load_balancing = false)
         : distributed_mode_(distributed_mode), 
           servers_list_(std::move(servers_list)), 
-          port_(port_), 
+          port_(port), 
           total_hru_count_(total_hru_count), 
           num_hru_per_batch_(num_hru_per_batch), 
           num_nodes_(num_nodes), 
@@ -208,7 +208,7 @@ class HRUActorSettings {
 class Settings {
   private:
     std::string json_file_;
-    json settings_;
+    // json settings_;
   public:
     DistributedSettings distributed_settings_;
     SummaActorSettings summa_actor_settings_;
@@ -216,17 +216,17 @@ class Settings {
     JobActorSettings job_actor_settings_;
     HRUActorSettings hru_actor_settings_;
 
-    Settings(std::string json_file) : json_file_(json_file) {};
+    Settings(std::string json_file = "") : json_file_(json_file) {};
     ~Settings() {};
     int readSettings();
     void generateConfigFile();
     void printSettings();
 
     template<typename T>
-    std::optional<T> getSettings(std::string key_1, std::string key_2) {
+    std::optional<T> getSettings(json settings, std::string key_1, std::string key_2) {
       try {
-        if (settings_.find(key_1) != settings_.end()) {
-          json key_1_settings = settings_[key_1];
+        if (settings.find(key_1) != settings.end()) {
+          json key_1_settings = settings[key_1];
 
           // find value behind second key
           if (key_1_settings.find(key_2) != key_1_settings.end()) {
@@ -244,7 +244,7 @@ class Settings {
     }
 
     std::optional<std::vector<std::string>> getSettingsArray(
-        std::string key_1, std::string key_2);
+        json settings, std::string key_1, std::string key_2);
 
     template<class Inspector>
     friend bool inspect(Inspector& insp, Settings& settings) {
@@ -253,6 +253,7 @@ class Settings {
              insp.field("summa_actor_settings", settings.summa_actor_settings_),
              insp.field("fa_actor_settings", settings.fa_actor_settings_),
              insp.field("job_actor_settings", settings.job_actor_settings_),
-             insp.field("hru_actor_settings", settings.hru_actor_settings_));
+             insp.field("hru_actor_settings", settings.hru_actor_settings_),
+             insp.field("json_file", settings.json_file_));
     }
 }; 

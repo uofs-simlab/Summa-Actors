@@ -3,6 +3,7 @@
 #include "caf/io/all.hpp"
 #include "settings_functions.hpp"
 #include "summa_actor.hpp"
+#include "message_atoms.hpp"
 #include <iostream>
 
 using namespace caf;
@@ -225,8 +226,8 @@ int main(int argc, char** argv) {
   }
 
   argc = args.size();
-  exec_main_init_meta_objects<io::middleman>();
+  exec_main_init_meta_objects<id_block::summa, io::middleman>();
   caf::core::init_global_meta_objects(); 
-  return exec_main<io::middleman>(caf_main, argc, argv2);
+  return exec_main<id_block::summa, io::middleman>(caf_main, argc, argv2);
 }
 

@@ -12,64 +12,65 @@ std::string log_dir = "";
 
 int Settings::readSettings() {
   std::ifstream settings_file(json_file_);
+  json json_settings;
   if (!settings_file.good()) {
     std::cerr << "Error: Could not open settings file: " << json_file_ << "\n";
     settings_file.close();
     return FAILURE;
   }
-  settings_file >> settings_;
+  settings_file >> json_settings;
   settings_file.close();
 
   distributed_settings_ = DistributedSettings(
-    getSettings<bool>("Distributed_Settings", "distributed_mode")
+    getSettings<bool>(json_settings, "Distributed_Settings", "distributed_mode")
         .value_or(false),
-    getSettingsArray("Distributed_Settings", "servers_list")
+    getSettingsArray(json_settings, "Distributed_Settings", "servers_list")
         .value_or(std::vector<std::string>()),
-    getSettings<int>("Distributed_Settings", "port")
+    getSettings<int>(json_settings, "Distributed_Settings", "port")
         .value_or(MISSING_INT),
-    getSettings<int>("Distributed_Settings", "total_hru_count")
+    getSettings<int>(json_settings, "Distributed_Settings", "total_hru_count")
         .value_or(MISSING_INT),
-    getSettings<int>("Distributed_Settings", "num_hru_per_batch")
+    getSettings<int>(json_settings, "Distributed_Settings", "num_hru_per_batch")
         .value_or(MISSING_INT),
-    getSettings<int>("Distributed_Settings", "num_nodes")
+    getSettings<int>(json_settings, "Distributed_Settings", "num_nodes")
         .value_or(MISSING_INT),
-    getSettings<bool>("Distributed_Settings", "load_balancing")
+    getSettings<bool>(json_settings, "Distributed_Settings", "load_balancing")
         .value_or(false)
   );
 
   summa_actor_settings_ = SummaActorSettings(
-    getSettings<int>("Summa_Actor", "max_gru_per_job")
+    getSettings<int>(json_settings, "Summa_Actor", "max_gru_per_job")
         .value_or(default_gru_per_job),
-    getSettings<std::string>("Summa_Actor", "log_dir")
+    getSettings<std::string>(json_settings, "Summa_Actor", "log_dir")
         .value_or("")
   );
 
   fa_actor_settings_ = FileAccessActorSettings(
-    getSettings<int>("File_Access_Actor", "num_partitions_in_output_buffer")
-        .value_or(default_partition_count),
-    getSettings<int>("File_Access_Actor", "num_timesteps_in_output_buffer")
-        .value_or(default_timesteps_output_buffer),
-    getSettings<std::string>("File_Access_Actor", "output_file_suffix")
-        .value_or("")
+    getSettings<int>(json_settings, "File_Access_Actor", 
+        "num_partitions_in_output_buffer").value_or(default_partition_count),
+    getSettings<int>(json_settings, "File_Access_Actor", 
+        "num_timesteps_in_output_buffer").value_or(default_timesteps_output_buffer),
+    getSettings<std::string>(json_settings,"File_Access_Actor", 
+        "output_file_suffix").value_or("")
   );
 
   job_actor_settings_ = JobActorSettings(
-    getSettings<std::string>("Job_Actor", "file_manager_path")
+    getSettings<std::string>(json_settings, "Job_Actor", "file_manager_path")
         .value_or(""),
-    getSettings<int>("Job_Actor", "max_run_attempts")
+    getSettings<int>(json_settings, "Job_Actor", "max_run_attempts")
         .value_or(1),
-    getSettings<bool>("Job_Actor", "data_assimilation_mode")
+    getSettings<bool>(json_settings, "Job_Actor", "data_assimilation_mode")
         .value_or(false),
-    getSettings<int>("Job_Actor", "batch_size")
+    getSettings<int>(json_settings, "Job_Actor", "batch_size")
         .value_or(10)
   );
 
   hru_actor_settings_ = HRUActorSettings(
-    getSettings<bool>("HRU_Actor", "print_output").value_or(true),
-    getSettings<int>("HRU_Actor", "output_frequency").value_or(100),
-    getSettings<int>("HRU_Actor", "dt_init_factor").value_or(1),
-    getSettings<double>("HRU_Actor", "rel_tol").value_or(MISSING_DOUBLE),
-    getSettings<double>("HRU_Actor", "abs_tol").value_or(MISSING_DOUBLE)
+    getSettings<bool>(json_settings, "HRU_Actor", "print_output").value_or(true),
+    getSettings<int>(json_settings, "HRU_Actor", "output_frequency").value_or(100),
+    getSettings<int>(json_settings, "HRU_Actor", "dt_init_factor").value_or(1),
+    getSettings<double>(json_settings, "HRU_Actor", "rel_tol").value_or(MISSING_DOUBLE),
+    getSettings<double>(json_settings, "HRU_Actor", "abs_tol").value_or(MISSING_DOUBLE)
   );
 
   return SUCCESS;
@@ -78,12 +79,12 @@ int Settings::readSettings() {
 
 
 std::optional<std::vector<std::string>> Settings::getSettingsArray(
-		std::string key_1, std::string key_2) {
+		json settings, std::string key_1, std::string key_2) {
   std::vector<std::string> return_vector;
   // find first key
   try {
-    if (settings_.find(key_1) != settings_.end()) {
-      json key_1_settings = settings_[key_1];
+    if (settings.find(key_1) != settings.end()) {
+      json key_1_settings = settings[key_1];
 
       // find value behind second key
       if (key_1_settings.find(key_2) != key_1_settings.end()) {

@@ -15,6 +15,10 @@ using namespace caf;
 behavior SummaActor::make_behavior() {
   self_->println("Starting SUMMA Actor, start_gru {}, num_gru {}", start_gru_, 
                  num_gru_);
+  self_->set_down_handler([=](const down_msg& dm) {
+    self_->println("Lost Connection With A Connected Actor\nReason: {}",
+                   to_string(dm.reason));
+  });
   timing_info_ = TimingInfo();
   timing_info_.addTimePoint("total_duration");
   timing_info_.updateStartPoint("total_duration");
@@ -97,7 +101,7 @@ behavior SummaActor::make_behavior() {
         self_->quit();
         return;
       }
-    }
+    },
   };
 }
 

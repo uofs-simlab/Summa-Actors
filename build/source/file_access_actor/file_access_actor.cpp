@@ -26,7 +26,7 @@ behavior FileAccessActor::make_behavior() {
   num_output_steps_ = fa_settings_.num_timesteps_in_output_buffer_;
 
   return {
-    [this](init_file_access_actor, int file_gru, int num_hru) -> int {
+    [this](init_file_access_actor, int file_gru, int num_hru) {
       self_->println("File Access Actor: Initializing\n");
       num_hru_ = num_hru;
 
