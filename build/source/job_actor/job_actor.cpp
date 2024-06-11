@@ -6,6 +6,7 @@ using namespace caf;
 
 
 behavior JobActor::make_behavior() {
+  std::string err_msg;
   self_->println("Job Actor Started");
   self_->set_down_handler([=](const down_msg& dm) {
     self_->println("Lost Connection With A Connected Actor\nReason: {}",
@@ -24,13 +25,14 @@ behavior JobActor::make_behavior() {
   timing_info_.addTimePoint("init_duration");
   timing_info_.updateStartPoint("init_duration");
 
+
   // Create Loggers
   logger_ = std::make_unique<Logger>(batch_.getLogDir() + "batch_" + 
                                      std::to_string(batch_.getBatchID()));
   err_logger_ = std::make_unique<ErrorLogger>(batch_.getLogDir());
   success_logger_ = std::make_unique<SuccessLogger>(batch_.getLogDir()); 
 
-  std::string err_msg;
+  // GruStruc Initialization
   gru_struc_ = std::make_unique<GruStruc>(batch_.getStartHRU(), 
       batch_.getNumHRU(), job_actor_settings_.max_run_attempts_);
   if (gru_struc_->ReadDimension()) {
@@ -45,6 +47,7 @@ behavior JobActor::make_behavior() {
   }
   gru_struc_->getNumHrusPerGru();  
 
+  // SummaInitStruc Initialization
   summa_init_struc_ = std::make_unique<SummaInitStruc>();
   if (summa_init_struc_->allocate(batch_.getNumHRU()) != 0) {
     err_msg = "ERROR -- Job_Actor: SummaInitStruc allocation failed\n";
@@ -67,6 +70,7 @@ behavior JobActor::make_behavior() {
                              batch_.getNumHRU(), batch_.getNumHRU(), 
                              gru_struc_->get_file_gru(), false);
   
+  // Start File Access Actor and Become User Selected Mode
   file_access_actor_ = self_->spawn(actor_from_state<FileAccessActor>, 
                                     num_gru_info_, fa_actor_settings_, self_);
 
@@ -91,7 +95,6 @@ behavior JobActor::make_behavior() {
 
   return {};
 }
-
 
 void JobActor::spawnGRUActors() {
   self_->println("Job Actor: Spawning GRU Actors");

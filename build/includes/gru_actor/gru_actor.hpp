@@ -2,6 +2,7 @@
 #include "caf/all.hpp"
 #include "fortran_data_types.hpp"
 #include "settings_functions.hpp"
+#include "message_atoms.hpp"
 // #include "hru_actor.hpp"
 #include <vector>
 
