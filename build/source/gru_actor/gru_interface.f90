@@ -187,7 +187,8 @@ subroutine readGRUForcing_fortran(indx_gru, iStep, iRead, iFile, &
   call c_f_pointer(handle_gru_data, gru_data)
 
   do iHRU = 1, size(gru_data%hru)
-    call readHRUForcing(indx_gru, iHRU, iStep, iRead, iFile, gru_data%hru(iHRU), err, message)
+    call readHRUForcing(indx_gru, iHRU, iStep, iRead, iFile, &
+                        gru_data%hru(iHRU), err, message)
     if(err /= 0) then; call f_c_string_ptr(trim(message), message_r);return; end if
   end do
 

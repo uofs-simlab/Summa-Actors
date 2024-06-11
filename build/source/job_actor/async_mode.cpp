@@ -10,77 +10,59 @@ behavior JobActor::async_mode() {
       logger_->log("Async Mode: File Access Actor Ready");
       num_steps_ = num_timesteps;
       spawnGRUActors();
-
     },
+
+    [this](done_hru, int job_index) {
+      handleFinishedGRU(job_index);
+    },
+
+    [this](restart_failures) {
+      logger_->log("Async Mode: Restarting Failed GRUs");
+      aout(self_) << "Async Mode: Restarting Failed GRUs\n";
+      if (hru_actor_settings_.rel_tol_ > 0 && 
+          hru_actor_settings_.abs_tol_ > 0) {
+        hru_actor_settings_.rel_tol_ /= 10;
+        hru_actor_settings_.abs_tol_ /= 10;
+      } else {
+        hru_actor_settings_.dt_init_factor_ *= 2;
+      }
+
+      // notify file_access_actor
+      self_->send(file_access_actor_, restart_failures_v);
+      err_logger_->nextAttempt();
+      success_logger_->nextAttempt();
+
+      while(gru_struc_->getNumGRUFailed() > 0) {
+        int job_index = gru_struc_->getFailedIndex();
+        logger_->log("Async Mode: Restarting GRU: " + 
+            std::to_string(job_index));
+        self_->println("Async Mode: Restarting GRU: " + 
+            std::to_string(job_index));
+        int netcdf_index = job_index + gru_struc_->getStartGru() - 1;
+        auto gru_actor =  self_->spawn(actor_from_state<GruActor>, netcdf_index, 
+                                 job_index, num_steps_, hru_actor_settings_, 
+                                 file_access_actor_, self_);
+        gru_struc_->decrementNumGRUFailed();
+        std::unique_ptr<GRU> gru_obj = std::make_unique<GRU>(
+            netcdf_index, job_index, gru_actor, 
+            hru_actor_settings_.dt_init_factor_, 
+            hru_actor_settings_.rel_tol_, 
+            hru_actor_settings_.abs_tol_, 
+            job_actor_settings_.max_run_attempts_);
+        gru_struc_->addGRU(std::move(gru_obj));
+      }
+      gru_struc_->decrementRetryAttempts();
+    },
+
+    [this](finalize) {
+      finalizeJob();
+    },
+
+    [this](err_atom, int job_index, int timestep, int err_code, 
+           std::string err_msg) {
+      (job_index == 0) ? 
+        handleFileAccessError(err_code, err_msg) :
+        handleGRUError(err_code, job_index, timestep, err_msg);
+    }
   };
 }
-
-
-
-// behavior async_mode(stateful_actor<job_state>* self) {
-//   self->state.logger->log("Async Mode: Started");
-//   aout(self) << "Async Mode Started\n";
-
-//   return {
-//     /*** From file access actor after it spawns ***/
-//     [=](file_access_actor_ready, int num_timesteps) {
-//       self->state.logger->log("Async Mode: File Access Actor Ready");
-//       aout(self) << "Async Mode: File Access Actor Ready\n";
-//       self->state.num_steps = num_timesteps;
-//       spawnHRUActors(self);    
-//     },
-
-//     [=](done_hru, int gru_job_index) {
-//       handleFinishedGRU(self, gru_job_index);
-//     },
-
-//     [=] (restart_failures) {
-//       self->state.logger->log("Async Mode: Restarting GRUs that Failed");
-//       aout(self) << "Async Mode: Restarting GRUs that Failed\n";
-//       if (self->state.hru_actor_settings.rel_tol > 0 && 
-//           self->state.hru_actor_settings.abs_tol > 0) {
-//         self->state.hru_actor_settings.rel_tol /= 10;
-//         self->state.hru_actor_settings.abs_tol /= 10;
-//       } else {
-//         self->state.hru_actor_settings.dt_init_factor *= 2;
-//       }
-
-//       // notify file_access_actor
-//       self->send(self->state.file_access_actor, restart_failures_v); 
-
-//       self->state.err_logger->nextAttempt();
-//       self->state.success_logger->nextAttempt();
-
-//       while(self->state.gru_struc->getNumGRUFailed() > 0) {
-//         int job_index = self->state.gru_struc->getFailedIndex();
-//         self->state.logger->log("Async Mode: Restarting GRU: " + 
-//                                std::to_string(job_index));
-//         aout(self) << "Async Mode: Restarting GRU: " << job_index << "\n";
-//         int netcdf_index = job_index + self->state.gru_struc->getStartGru() - 1;
-//         auto gru =  self->spawn(hru_actor, netcdf_index, job_index, 
-//                                 self->state.hru_actor_settings, 
-//                                 self->state.file_access_actor, self);
-//         self->send(gru, init_hru_v);
-//         self->send(gru, update_hru_async_v);
-//         self->state.gru_struc->decrementNumGRUFailed();
-//         std::unique_ptr<GRU> gru_obj = std::make_unique<GRU>(
-//             netcdf_index, job_index, gru, self->state.dt_init_start_factor, 
-//             self->state.hru_actor_settings.rel_tol, 
-//             self->state.hru_actor_settings.abs_tol, 
-//             self->state.job_actor_settings.max_run_attempts);
-//         self->state.gru_struc->addGRU(std::move(gru_obj));
-//       }
-//       self->state.gru_struc->decrementRetryAttempts();
-//     },
-
-//     [=](finalize) { finalizeJob(self); },
-
-//     /**Error Handling Functions*/
-//     [=](err_atom, int gru_job_index, int timestep, int err_code, 
-//         std::string err_msg) {
-//       (gru_job_index == 0) ? 
-//           handleFileAccessError(self, err_code, err_msg) :
-//           handleGRUError(self, err_code, gru_job_index, timestep, err_msg);
-//     }
-//   };
-// }

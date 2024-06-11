@@ -27,6 +27,7 @@ behavior GruActor::make_behavior() {
             self_->send(file_access_actor_, access_forcing_v, iFile_, self_);
           });
     },
+
     [this](new_forcing_file, int num_forc_steps, int iFile) {
       int err;
       std::unique_ptr<char[]> message(new char[256]);
@@ -58,8 +59,9 @@ behavior GruActor::make_behavior() {
           break;
         }
         num_steps_until_write_--;
-        self_->println("GRU Actor: timestep={}", timestep_);
-        readGRUForcing_fortran(job_index_, forcingStep_, timestep_, iFile_, 
+        self_->println("GRU Actor: timestep={}, forcingStep={}, iFile={}", 
+                       timestep_, forcingStep_, iFile_);
+        readGRUForcing_fortran(job_index_, timestep_, forcingStep_, iFile_, 
                                gru_data_, err, &message);
         std::fill(message.get(), message.get() + 256, '\0'); // Clear message
         runGRU_fortran(job_index_, timestep_, gru_data_, dt_init_factor_, 

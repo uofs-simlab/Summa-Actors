@@ -124,7 +124,7 @@ behavior FileAccessActor::make_behavior() {
       output_partition->setGRUReadyToWrite(hru_actor);
         
       if (output_partition->isReadyToWrite()) {
-        // writeOutput(output_partition);
+        writeOutput(output_partition);
       }
 
       timing_info_.updateEndPoint("write_duration");
@@ -146,9 +146,8 @@ behavior FileAccessActor::make_behavior() {
       if (slowest_checkpoint >= completed_checkpoints_) {
         Output_Partition *output_partition = 
             output_container_->getOutputPartition(gru - 1);
-        // writeRestart(output_partition, start_gru_, num_gru_, 
-        //              output_structure_index, year, month, day, hour);
-        // update checkpint counter
+        writeRestart(output_partition, start_gru_, num_gru_, 
+                     output_structure_index, year, month, day, hour);
         completed_checkpoints_++;
       }
     },

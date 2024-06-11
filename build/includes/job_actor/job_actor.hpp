@@ -60,8 +60,12 @@ class JobActor {
     caf::behavior async_mode();
 
     void spawnGRUActors();
-
-
+    void handleFinishedGRU(int job_index);
+    void finalizeJob();
+    // Error Handling Functions
+    void handleGRUError(int err_code, int job_index, int timestep, 
+                        std::string& err_msg);
+    void handleFileAccessError(int err_code, std::string& err_msg);
 };
 
 

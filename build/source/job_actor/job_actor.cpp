@@ -25,7 +25,6 @@ behavior JobActor::make_behavior() {
   timing_info_.addTimePoint("init_duration");
   timing_info_.updateStartPoint("init_duration");
 
-
   // Create Loggers
   logger_ = std::make_unique<Logger>(batch_.getLogDir() + "batch_" + 
                                      std::to_string(batch_.getBatchID()));
@@ -96,6 +95,8 @@ behavior JobActor::make_behavior() {
   return {};
 }
 
+
+
 void JobActor::spawnGRUActors() {
   self_->println("Job Actor: Spawning GRU Actors");
   for (int i = 0; i < gru_struc_->getNumGrus(); i++) {
@@ -109,8 +110,84 @@ void JobActor::spawnGRUActors() {
       hru_actor_settings_.dt_init_factor_,
       hru_actor_settings_.rel_tol_, hru_actor_settings_.abs_tol_,
       job_actor_settings_.max_run_attempts_);
+  gru_struc_->addGRU(std::move(gru_obj));
   }
   gru_struc_->decrementRetryAttempts();
 }
 
 
+
+void JobActor::handleFinishedGRU(int job_index) {
+  gru_struc_->incrementNumGRUDone();
+  gru_struc_->getGRU(job_index)->setSuccess();
+  success_logger_->logSuccess(gru_struc_->getGRU(job_index)->getIndexNetcdf(),
+                              gru_struc_->getGRU(job_index)->getIndexJob(),
+                              hru_actor_settings_.rel_tol_,
+                              hru_actor_settings_.abs_tol_);
+  std::string update_str =
+      "GRU Finished: " + std::to_string(gru_struc_->getNumGrusDone()) + "/" + 
+      std::to_string(gru_struc_->getNumGrus()) + " -- GlobalGRU=" + 
+      std::to_string(gru_struc_->getGRU(job_index)->getIndexNetcdf()) + 
+      " -- LocalGRU=" + 
+      std::to_string(gru_struc_->getGRU(job_index)->getIndexJob()) + 
+      " -- NumFailed=" + std::to_string(gru_struc_->getNumGRUFailed());
+  logger_->log(update_str);
+  self_->println(update_str);
+
+  if (gru_struc_->isDone()) {
+    gru_struc_->hasFailures() && gru_struc_->shouldRetry() ?
+      self_->send(self_, restart_failures_v) : self_->send(self_, finalize_v);
+  }
+}
+
+
+
+void JobActor::finalizeJob() {
+  self_->request(file_access_actor_, infinite, finalize_v).await(
+    [=](std::tuple<double, double> read_write_duration) {
+      int err = 0;
+      timing_info_.updateEndPoint("total_duration");
+      self_->println(
+          "\n_____________PRINTING JOB_ACTOR TIMING INFO RESULTS____________\n"
+          "Total Duration = {} Seconds\n"
+          "Total Duration = {} Minutes\n"
+          "Total Duration = {} Hours\n" 
+          "Job Init Duration = {} Seconds\n" 
+          "_________________________________________________________________\n\n",
+          timing_info_.getDuration("total_duration").value_or(-1.0),
+          timing_info_.getDuration("total_duration").value_or(-1.0) / 60,
+          (timing_info_.getDuration("total_duration").value_or(-1.0) / 60) / 60,
+          timing_info_.getDuration("init_duration").value_or(-1.0));
+      
+        // Tell Parent we are done
+        auto total_duration = timing_info_.getDuration("total_duration").
+            value_or(-1.0);
+        auto num_failed_grus = gru_struc_->getNumGRUFailed();    
+        self_->send(parent_, done_job_v, num_failed_grus, 
+                    total_duration, std::get<0>(read_write_duration), 
+                    std::get<1>(read_write_duration));
+        self_->quit();
+    });
+}
+
+
+
+// ERROR HANDLING FUNCTIONS
+
+void JobActor::handleGRUError(int err_code, int job_index, int timestep, 
+                              std::string& err_msg) {
+  gru_struc_->getGRU(job_index)->setFailed();
+}
+
+
+
+void JobActor::handleFileAccessError(int err_code, std::string& err_msg) {
+  logger_->log("Job Actor: File_Access_Actor Error:" + err_msg);
+  self_->println("Job Actor: File_Access_Actor Error: {}", err_msg);
+  if (err_code != -1) {
+    logger_->log("Job_Actor: Have to Quit");
+    self_->println("Job_Actor: Have to Quit");
+    self_->quit();
+    return;
+  }
+}
