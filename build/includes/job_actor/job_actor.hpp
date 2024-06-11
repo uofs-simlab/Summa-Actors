@@ -16,7 +16,7 @@
 #include <vector>
 #include <tuple>
 #include "summa_init_struc.hpp"
-// #include "gru_actor.hpp"
+#include "gru_actor.hpp"
 #include "logger.hpp"
 
 
@@ -39,12 +39,13 @@ class JobActor {
   std::unique_ptr<SummaInitStruc> summa_init_struc_;
   NumGRUInfo num_gru_info_;
 
-
-
   // Settings
   JobActorSettings job_actor_settings_;
   FileAccessActorSettings fa_actor_settings_;
   HRUActorSettings hru_actor_settings_; 
+
+  // Misc
+  int num_steps_ = 0;
   
   public:
     JobActor(caf::event_based_actor* self, Batch batch, 
@@ -53,7 +54,12 @@ class JobActor {
              : self_(self), batch_(batch), job_actor_settings_(job_settings),
                fa_actor_settings_(fa_settings), 
                hru_actor_settings_(hru_settings), parent_(parent) {};
-    caf::behavior make_behavior();
+    
+    caf::behavior make_behavior(); // Initial Behavior
+    caf::behavior data_assimilation_mode();
+    caf::behavior async_mode();
+
+    void spawnGRUActors();
 
 
 };

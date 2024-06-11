@@ -63,10 +63,9 @@ behavior JobActor::make_behavior() {
   }
   summa_init_struc_->getInitTolerance(hru_actor_settings_);
   
-
   num_gru_info_ = NumGRUInfo(batch_.getStartHRU(), batch_.getStartHRU(), 
-                            batch_.getNumHRU(), batch_.getNumHRU(), 
-                            gru_struc_->get_file_gru(), false);
+                             batch_.getNumHRU(), batch_.getNumHRU(), 
+                             gru_struc_->get_file_gru(), false);
   
   file_access_actor_ = self_->spawn(actor_from_state<FileAccessActor>, 
                                     num_gru_info_, fa_actor_settings_, self_);
@@ -83,16 +82,32 @@ behavior JobActor::make_behavior() {
     timing_info_.updateEndPoint("init_duration");
     logger_->log("Job Actor Initialized");
     self_->println("Job Actor Initialized: Running {} Steps", num_timesteps);
-//     job_actor_settings.data_assimilation_mode ? 
-//         self->become(data_assimilation_mode(self)) : 
-//         self->become(async_mode(self));
+    job_actor_settings_.data_assimilation_mode_ ? 
+        self_->become(data_assimilation_mode()) : 
+        self_->become(async_mode());
     
-//     // Start the specific mode
-//     self->send(self, file_access_actor_ready_v, num_timesteps);
-
+    self_->send(self_, file_access_actor_ready_v, num_timesteps);
   });
 
   return {};
+}
+
+
+void JobActor::spawnGRUActors() {
+  self_->println("Job Actor: Spawning GRU Actors");
+  for (int i = 0; i < gru_struc_->getNumGrus(); i++) {
+    auto netcdf_index = gru_struc_->getStartGru() + i;
+    auto job_index = i + 1;
+    auto gru_actor = self_->spawn(actor_from_state<GruActor>, netcdf_index, 
+                                  job_index, num_steps_, hru_actor_settings_, 
+                                  file_access_actor_, self_);
+  std::unique_ptr<GRU> gru_obj = std::make_unique<GRU>(
+      netcdf_index, job_index, gru_actor, 
+      hru_actor_settings_.dt_init_factor_,
+      hru_actor_settings_.rel_tol_, hru_actor_settings_.abs_tol_,
+      job_actor_settings_.max_run_attempts_);
+  }
+  gru_struc_->decrementRetryAttempts();
 }
 
 

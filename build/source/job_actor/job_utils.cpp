@@ -2,6 +2,9 @@
 
 using namespace caf;
 
+// TODO: This can be moved to job_actor.cpp file
+
+
 void spawnHRUActors(stateful_actor<job_state>* self) {
   auto& gru_struc = self->state.gru_struc;
   for (int i = 0; i < gru_struc->getNumGrus(); i++) {
