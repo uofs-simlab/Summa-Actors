@@ -53,46 +53,19 @@ class GruActor {
   int forcingStep_ = 1;                 // index of current time step in current forcing file
   int output_structure_step_index_ = 1; // index of current time step in output structure
 
+  bool data_assimilation_mode_ = false;             
+
   public:
     GruActor(caf::event_based_actor* self, int netcdf_index, int job_index, 
-             int num_steps, HRUActorSettings hru_actor_settings,
-             caf::actor file_access_actor, caf::actor parent) 
+             int num_steps, HRUActorSettings hru_actor_settings, 
+             bool data_assimilation_mode, caf::actor file_access_actor, 
+             caf::actor parent) 
              : self_(self), netcdf_index_(netcdf_index), job_index_(job_index), 
                num_steps_(num_steps), hru_actor_settings_(hru_actor_settings),
+               data_assimilation_mode_(data_assimilation_mode),
                file_access_actor_(file_access_actor), parent_(parent) {};
 
     caf::behavior make_behavior();
-
+    caf::behavior async_mode();
+    caf::behavior data_assimilation_mode();
 };
-
-
-// struct gru_actor_state {
-//   int netcdf_index;
-//   int gru_job_index;
-//   HRU_Actor_Settings hru_actor_settings;
-//   caf::actor file_access_actor;
-//   caf::actor parent;
-
-//   int num_hrus;
-//   std::vector<void*> hrus;
-//   void* bvar_stat = new_handle_var_dlength();
-//   void* bvar_struct = new_handle_var_dlength();
-
-//   void* gru_data;
-
-//   double dt_init = 0.0;
-//   int dt_init_factor = 1;
-//   int num_steps_until_write;
-//   int num_steps = 0;                    // number of time steps
-//   int timestep = 1;	                   // Current Timestep of HRU simulation
-//   int iFile = 1;
-// 	int stepsInCurrentFFile;             // number of time steps in current forcing file
-//   int forcingStep = 1;                 // index of current time step in current forcing file
-//   int output_structure_step_index = 1; // index of current time step in output structure
-
-// };
-
-// caf::behavior gru_actor(caf::stateful_actor<gru_actor_state>* self, 
-//                         int netcdf_index, int gru_job_index, int num_steps,
-//                         HRU_Actor_Settings hru_actor_settings,
-//                         caf::actor file_access_actor, caf::actor parent);

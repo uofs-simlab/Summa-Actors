@@ -1,7 +1,5 @@
 #include "settings_functions.hpp"
 
-// Default Values
-
 
 int Settings::readSettings() {
   std::ifstream settings_file(json_file_);

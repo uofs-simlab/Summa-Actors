@@ -46,6 +46,11 @@ class JobActor {
 
   // Misc
   int num_steps_ = 0;
+  int iFile_ = 1;
+  int steps_in_ffile_ = 0;
+  int forcing_step_ = 1;
+  int timestep_ = 1;
+  int num_gru_done_timestep_ = 0;
   
   public:
     JobActor(caf::event_based_actor* self, Batch batch, 
@@ -112,7 +117,7 @@ struct job_state {
   
   std::string hostname;
 
-  // settings for all child actors (save in case we need to recover)
+  
   FileAccessActorSettings file_access_actor_settings;
   JobActorSettings job_actor_settings; 
   HRUActorSettings hru_actor_settings;
