@@ -80,12 +80,11 @@ behavior GruActor::make_behavior() {
           self_->send(self_, done_hru_v);
           break;
         }
-
-        // Our output structure is full
-        if (num_steps_until_write_ <= 0) {
-          self_->println("GRU Actor: Writing Output");
-          self_->send(file_access_actor_, write_output_v, job_index_, 1, self_);
-        }
+      }
+      // Our output structure is full
+      if (num_steps_until_write_ <= 0) {
+        self_->println("GRU Actor: Writing Output");
+        self_->send(file_access_actor_, write_output_v, job_index_, 1, self_);
       }
     },
 
