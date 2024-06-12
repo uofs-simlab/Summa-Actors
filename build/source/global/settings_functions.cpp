@@ -1,24 +1,17 @@
 #include "settings_functions.hpp"
 
 // Default Values
-int default_partition_count = std::thread::hardware_concurrency() / 2;
-int default_gru_per_job = 250;
-int default_output_frequency = 1000;
-int default_timesteps_output_buffer = 500;
-int default_dt_init_factor = 1;
-std::string log_dir = "";
-
 
 
 int Settings::readSettings() {
   std::ifstream settings_file(json_file_);
   json json_settings;
   if (!settings_file.good()) {
-    std::cerr << "Error: Could not open settings file: " << json_file_ << "\n";
-    settings_file.close();
-    return FAILURE;
+    std::cout << "Could not open settings file: " << json_file_ << 
+                  "\n\tContinuing with default settings\n";
+  } else {
+    settings_file >> json_settings;
   }
-  settings_file >> json_settings;
   settings_file.close();
 
   distributed_settings_ = DistributedSettings(
@@ -40,16 +33,18 @@ int Settings::readSettings() {
 
   summa_actor_settings_ = SummaActorSettings(
     getSettings<int>(json_settings, "Summa_Actor", "max_gru_per_job")
-        .value_or(default_gru_per_job),
+        .value_or(GRU_PER_JOB),
+    getSettings<bool>(json_settings, "Summa_Actor", "enable_logging")
+        .value_or(false),
     getSettings<std::string>(json_settings, "Summa_Actor", "log_dir")
         .value_or("")
   );
 
   fa_actor_settings_ = FileAccessActorSettings(
     getSettings<int>(json_settings, "File_Access_Actor", 
-        "num_partitions_in_output_buffer").value_or(default_partition_count),
+        "num_partitions_in_output_buffer").value_or(NUM_PARTITIONS),
     getSettings<int>(json_settings, "File_Access_Actor", 
-        "num_timesteps_in_output_buffer").value_or(default_timesteps_output_buffer),
+        "num_timesteps_in_output_buffer").value_or(OUTPUT_TIMESTEPS),
     getSettings<std::string>(json_settings,"File_Access_Actor", 
         "output_file_suffix").value_or("")
   );
@@ -66,11 +61,16 @@ int Settings::readSettings() {
   );
 
   hru_actor_settings_ = HRUActorSettings(
-    getSettings<bool>(json_settings, "HRU_Actor", "print_output").value_or(true),
-    getSettings<int>(json_settings, "HRU_Actor", "output_frequency").value_or(100),
-    getSettings<int>(json_settings, "HRU_Actor", "dt_init_factor").value_or(1),
-    getSettings<double>(json_settings, "HRU_Actor", "rel_tol").value_or(MISSING_DOUBLE),
-    getSettings<double>(json_settings, "HRU_Actor", "abs_tol").value_or(MISSING_DOUBLE)
+    getSettings<bool>(json_settings, "HRU_Actor", "print_output")
+        .value_or(true),
+    getSettings<int>(json_settings, "HRU_Actor", "output_frequency")
+        .value_or(OUTPUT_FREQUENCY),
+    getSettings<int>(json_settings, "HRU_Actor", "dt_init_factor")
+        .value_or(1),
+    getSettings<double>(json_settings, "HRU_Actor", "rel_tol")
+        .value_or(MISSING_DOUBLE),
+    getSettings<double>(json_settings, "HRU_Actor", "abs_tol")
+        .value_or(MISSING_DOUBLE)
   );
 
   return SUCCESS;
@@ -140,12 +140,12 @@ void Settings::generateConfigFile() {
     };
 
     config_file["Summa_Actor"] = {
-        {"max_gru_per_job", default_gru_per_job},
-        {"log_dir", log_dir}
+        {"max_gru_per_job", GRU_PER_JOB},
+        {"log_dir", ""}
     };
     config_file["File_Access_Actor"] = {
-        {"num_partitions_in_output_buffer", default_partition_count},
-        {"num_timesteps_in_output_buffer", default_timesteps_output_buffer}
+        {"num_partitions_in_output_buffer", NUM_PARTITIONS},
+        {"num_timesteps_in_output_buffer", OUTPUT_TIMESTEPS}
     };
     config_file["Job_Actor"] = {
         {"file_manager_path", "/home/username/summa_file_manager"},
@@ -155,7 +155,7 @@ void Settings::generateConfigFile() {
     };
     config_file["HRU_Actor"] = {
         {"print_output", true},
-        {"output_frequency", default_output_frequency},
+        {"output_frequency", OUTPUT_FREQUENCY},
         {"dt_init_factor", 1},
         {"rel_tol", MISSING_DOUBLE},
         {"abs_tol", MISSING_DOUBLE}

@@ -2,10 +2,6 @@
 
 using namespace caf;
 
-
-
-
-
 void spawnHRUBatches(stateful_actor<job_state>* self) {
   aout(self) << "Job_Actor: Spawning HRU Batches\n";
   int batch_size;
@@ -56,86 +52,3 @@ void spawnHRUBatches(stateful_actor<job_state>* self) {
              << gru_container.gru_list.size() << "\n";
 }
 
-void finalizeJob(stateful_actor<job_state>* self) {
-  self->request(self->state.file_access_actor, infinite, finalize_v).await(
-    [=](std::tuple<double, double> read_write_duration) {
-      int err = 0;
-      self->state.job_timing.updateEndPoint("total_duration");
-      aout(self) << "\n________________" 
-                 << "PRINTING JOB_ACTOR TIMING INFO RESULTS"
-                 << "________________\n"
-                 << "Total Duration = "
-                 << self->state.job_timing.getDuration("total_duration")
-                      .value_or(-1.0) << " Seconds\n"
-                 << "Total Duration = " 
-                 << self->state.job_timing.getDuration("total_duration")
-                      .value_or(-1.0) / 60 << " Minutes\n"
-                 << "Total Duration = " 
-                 << (self->state.job_timing.getDuration("total_duration")
-                    .value_or(-1.0) / 60) / 60 << " Hours\n"
-                 << "Job Init Duration = " 
-                 << self->state.job_timing.getDuration("init_duration")
-                      .value_or(-1.0) << " Seconds\n"
-                 << "_________________________________" 
-                 << "_______________________________________\n\n";
-            
-      // Tell Parent we are done
-      auto total_duration = self->state.job_timing.getDuration("total_duration")
-          .value_or(-1.0);
-      auto num_failed_grus = self->state.gru_struc->getNumGRUFailed();    
-      self->send(self->state.parent, done_job_v, num_failed_grus, 
-                 total_duration, std::get<0>(read_write_duration), 
-                 std::get<1>(read_write_duration));
-      self->quit();
-    });
-}
-
-
-
-void handleGRUError(stateful_actor<job_state>* self, int err_code, 
-                    int gru_job_index, int timestep, std::string& err_msg) {
-  // Error Handling Part
-  auto& gru_struc = self->state.gru_struc;
-  gru_struc->getGRU(gru_job_index)->setFailed();
-  gru_struc->incrementNumGRUFailed();
-  auto& err_logger = self->state.err_logger;
-  err_logger->logError(gru_struc->getGRU(gru_job_index)->getIndexNetcdf(), 
-                       gru_struc->getGRU(gru_job_index)->getIndexJob(), 
-                       timestep, self->state.hru_actor_settings.rel_tol,
-                       self->state.hru_actor_settings.abs_tol, err_code, 
-                       err_msg);
-  
-  // Logging Part
-  std::string job_err_msg = "Job Actor: GRU Failure -- " + 
-      std::to_string(gru_job_index) + " Error: " + err_msg;
-  self->state.logger->log(job_err_msg);
-  aout(self) << job_err_msg;
-  std::string update_str = 
-      "\tGRU Finished: " + std::to_string(gru_struc->getNumGrusDone()) + "/" + 
-      std::to_string(gru_struc->getNumGrus()) + " -- GlobalGRU=" + 
-      std::to_string(gru_struc->getGRU(gru_job_index)->getIndexNetcdf()) + 
-      " -- LocalGRU=" + 
-      std::to_string(gru_struc->getGRU(gru_job_index)->getIndexJob()) + 
-      " -- NumFailed=" + std::to_string(gru_struc->getNumGRUFailed());
-  self->state.logger->log(update_str);
-  aout(self) << update_str << "\n";
-
-  self->send(self->state.file_access_actor, run_failure_v, gru_job_index);
-  if (gru_struc->isDone()) {
-    gru_struc->hasFailures() && gru_struc->shouldRetry() ? 
-        self->send(self, restart_failures_v) : self->send(self, finalize_v);
-  }
-}
-
-void handleFileAccessError(stateful_actor<job_state>* self, int err_code, 
-                           std::string& err_msg) {
-  // Logging Part
-  self->state.logger->log("Job Actor: File_Access_Actor Error:" + err_msg);
-  aout(self) << "Job Actor: File_Access_Actor Error:" << err_msg << "\n";
-  if (err_code != -1) {
-    self->state.logger->log("Job_Actor: Have to Quit");
-    aout(self) << "Job_Actor: Have to Quit\n";
-    self->quit();
-    return;
-  }
-}

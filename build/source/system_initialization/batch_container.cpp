@@ -10,10 +10,16 @@ BatchContainer::BatchContainer(int start_hru, int total_hru_count,
   }
   assembleBatches(log_dir);
   batches_remaining_ = batch_list_.size();
-  logger_ = std::make_unique<Logger>(log_dir + "batch_container");
-  logger_->log("----------------Batch List----------------");
-  logger_->log(this->getBatchesAsString());
-  logger_->log("------------------------------------------");
+
+  // Initialize logger
+  if (!log_dir.empty()) {
+    logger_ = std::make_unique<Logger>(log_dir + "batch_container");
+    logger_->log("----------------Batch List----------------");
+    logger_->log(this->getBatchesAsString());
+    logger_->log("------------------------------------------");
+  } else {
+    logger_ = std::make_unique<Logger>("");
+  }
 }
 
 void BatchContainer::assembleBatches(std::string log_dir) {

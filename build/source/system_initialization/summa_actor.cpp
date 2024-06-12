@@ -121,19 +121,21 @@ int SummaActor::spawnJob() {
 }
 
 int SummaActor::createLogDirectory() {
-  auto now = std::chrono::system_clock::now();
-  auto now_c = std::chrono::system_clock::to_time_t(now);
-  std::tm* now_tm = std::localtime(&now_c);
-
-  std::stringstream ss;
-  ss << std::put_time(now_tm, "%m_%d_%H:%M");
-
-  log_folder_ = "startgru-" + std::to_string(start_gru_) + "_endgru-" + 
-      std::to_string(start_gru_ + num_gru_ - 1) + "_" + ss.str();
-  
-  if (!settings_.summa_actor_settings_.log_dir_.empty())
-    log_folder_ = settings_.summa_actor_settings_.log_dir_ + "/" + log_folder_;
-  return (std::filesystem::create_directories(log_folder_)) ? 0 : -1;
+  if (settings_.summa_actor_settings_.enable_logging_) {
+    auto now = std::chrono::system_clock::now();
+    auto now_c = std::chrono::system_clock::to_time_t(now);
+    std::tm* now_tm = std::localtime(&now_c);
+    std::stringstream ss;
+    ss << std::put_time(now_tm, "%m_%d_%H:%M");
+    log_folder_ = "startgru-" + std::to_string(start_gru_) + "_endgru-" + 
+        std::to_string(start_gru_ + num_gru_ - 1) + "_" + ss.str();
+    if (!settings_.summa_actor_settings_.log_dir_.empty())
+        log_folder_ = settings_.summa_actor_settings_.log_dir_ + "/" + log_folder_;
+    return (std::filesystem::create_directories(log_folder_)) ? 0 : -1;
+  } else {
+    log_folder_ = ""; // Empty log to signal no logging
+    return 0;
+  }
 }
 
 int SummaActor::getFileGRU(const std::string &settingsPath, 
