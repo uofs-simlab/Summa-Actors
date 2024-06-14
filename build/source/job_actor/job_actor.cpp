@@ -8,13 +8,6 @@ using namespace caf;
 behavior JobActor::make_behavior() {
   std::string err_msg;
   self_->println("Job Actor Started");
-  self_->set_down_handler([=](const down_msg& dm) {
-    self_->println("Lost Connection With A Connected Actor\nReason: {}",
-                   to_string(dm.reason));
-  });
-  self_->set_exit_handler([=](const caf::exit_msg& em) {
-    self_->println("Exit Reason: {}", to_string(em.reason));
-  });
 
   gethostname(hostname_, HOST_NAME_MAX);
 
@@ -36,12 +29,12 @@ behavior JobActor::make_behavior() {
       batch_.getNumHRU(), job_actor_settings_.max_run_attempts_);
   if (gru_struc_->ReadDimension()) {
     err_msg = "ERROR: Job_Actor - ReadDimension\n";
-    self_->send(parent_, err_atom_v, -2, err_msg);
+    self_->mail(err_atom_v, -2, err_msg).send(parent_);
     return {};
   }
   if (gru_struc_->ReadIcondNlayers()) {
     err_msg = "ERROR: Job_Actor - ReadIcondNlayers\n";
-    self_->send(parent_, err_atom_v, -2, err_msg);
+    self_->mail(err_atom_v, -2, err_msg).send(parent_);
     return {};
   }
   gru_struc_->getNumHrusPerGru();  
@@ -50,17 +43,17 @@ behavior JobActor::make_behavior() {
   summa_init_struc_ = std::make_unique<SummaInitStruc>();
   if (summa_init_struc_->allocate(batch_.getNumHRU()) != 0) {
     err_msg = "ERROR -- Job_Actor: SummaInitStruc allocation failed\n";
-    self_->send(parent_, err_atom_v, -2, err_msg);
+    self_->mail(err_atom_v, -2, err_msg).send(parent_);
     return {};
   }
   if (summa_init_struc_->summa_paramSetup() != 0) {
     err_msg = "ERROR -- Job_Actor: SummaInitStruc paramSetup failed\n";
-    self_->send(parent_, err_atom_v, -2, err_msg);
+    self_->mail(err_atom_v, -2, err_msg).send(parent_);
     return {};
   }
   if (summa_init_struc_->summa_readRestart()!= 0) {
     err_msg = "ERROR -- Job_Actor: SummaInitStruc readRestart failed\n";
-    self_->send(parent_, err_atom_v, -2, err_msg);
+    self_->mail(err_atom_v, -2, err_msg).send(parent_);
     return {};
   }
   summa_init_struc_->getInitTolerance(hru_actor_settings_);
@@ -73,12 +66,13 @@ behavior JobActor::make_behavior() {
   file_access_actor_ = self_->spawn(actor_from_state<FileAccessActor>, 
                                     num_gru_info_, fa_actor_settings_, self_);
 
-  self_->request(file_access_actor_, caf::infinite,
-                 init_file_access_actor_v, gru_struc_->get_file_gru(),
-                 gru_struc_->getNumHrus()).await([=](int num_timesteps){
+  self_->mail(init_file_access_actor_v, gru_struc_->get_file_gru(),
+              gru_struc_->getNumHrus())
+      .request(file_access_actor_, caf::infinite)
+      .await([=](int num_timesteps){
     if (num_timesteps < 0) {
       std::string err_msg = "ERROR: Job_Actor: File Access Actor Not Ready\n";
-      self_->send(parent_, err_atom_v, -2, err_msg);
+      self_->mail(err_atom_v, -2, err_msg).send(parent_);
       self_->quit();
       return;
     }
@@ -89,7 +83,7 @@ behavior JobActor::make_behavior() {
         self_->become(data_assimilation_mode()) : 
         self_->become(async_mode());
     
-    self_->send(self_, file_access_actor_ready_v, num_timesteps);
+    self_->mail(file_access_actor_ready_v, num_timesteps).send(self_);
   });
 
   return {};
@@ -112,7 +106,7 @@ behavior JobActor::async_mode() {
 
     [this](restart_failures) {
       logger_->log("Async Mode: Restarting Failed GRUs");
-      aout(self_) << "Async Mode: Restarting Failed GRUs\n";
+      self_->println("Async Mode: Restarting Failed GRUs\n");
       if (hru_actor_settings_.rel_tol_ > 0 && 
           hru_actor_settings_.abs_tol_ > 0) {
         hru_actor_settings_.rel_tol_ /= 10;
@@ -122,7 +116,7 @@ behavior JobActor::async_mode() {
       }
 
       // notify file_access_actor
-      self_->send(file_access_actor_, restart_failures_v);
+      self_->mail(restart_failures_v).send(file_access_actor_);
       err_logger_->nextAttempt();
       success_logger_->nextAttempt();
 
@@ -153,11 +147,21 @@ behavior JobActor::async_mode() {
       finalizeJob();
     },
 
+    // Error Handling
     [this](err_atom, int job_index, int timestep, int err_code, 
            std::string err_msg) {
       (job_index == 0) ? 
         handleFileAccessError(err_code, err_msg) :
         handleGRUError(err_code, job_index, timestep, err_msg);
+    },
+
+    [this](const down_msg& dm) {
+      self_->println("Lost Connection With A Connected Actor\nReason: {}",
+                     to_string(dm.reason));
+    },
+
+    [this](const caf::exit_msg& em) {
+      self_->println("Exit Reason: {}", to_string(em.reason));
     }
   };
 }
@@ -171,7 +175,7 @@ behavior JobActor::data_assimilation_mode() {
       num_steps_ = num_timesteps;
       spawnGRUActors();
       self_->println("Data Assimilation Mode: GRUs Initialized");
-      self_->send(file_access_actor_, access_forcing_v, iFile_, self_);
+      self_->mail(access_forcing_v, iFile_, self_).send(file_access_actor_);
     },
 
     [this](new_forcing_file, int num_steps_iFile, int next_file) {
@@ -182,15 +186,15 @@ behavior JobActor::data_assimilation_mode() {
 
       for (int i = 1; i <= gru_struc_->getNumGrus(); i++) {
         actor gru_actor = gru_struc_->getGRU(i)->getActorRef();
-        self_->send(gru_actor, update_timeZoneOffset_v, iFile_);
+        self_->mail(update_timeZoneOffset_v, iFile_).send(gru_actor);
       }
-      self_->send(self_, update_hru_v);
+      self_->mail(update_hru_v).send(self_);
     },
 
     [this](update_hru) {
       for (int i = 1; i <= gru_struc_->getNumGrus(); i++) {
-        self_->send(gru_struc_->getGRU(i)->getActorRef(), update_hru_v, 
-                    timestep_, forcing_step_);
+        self_->mail(update_hru_v, timestep_, forcing_step_)
+            .send(gru_struc_->getGRU(i)->getActorRef());
       }
     },
 
@@ -205,18 +209,20 @@ behavior JobActor::data_assimilation_mode() {
         // write output
         int steps_to_write = 1;
         int start_gru = 1;
-        self_->request(file_access_actor_, caf::infinite, write_output_v, 
-                       steps_to_write, start_gru, batch_.getNumHRU()).await(
-          [=](int err) {
-            if (err != 0) {
-              self_->println("Data Assimilation Mode: Error Writing Output");
-              for (int i = 0; i < gru_struc_->getNumGrus(); i++) {
-                self_->send(gru_struc_->getGRU(i)->getActorRef(), exit_msg_v);
+        self_->mail(write_output_v, steps_to_write, start_gru, 
+                    batch_.getNumHRU())
+            .request(file_access_actor_, caf::infinite)
+            .await([=](int err) {
+              if (err != 0) {
+                self_->println("Data Assimilation Mode: Error Writing Output");
+                for (int i = 0; i < gru_struc_->getNumGrus(); i++) {
+                  self_->mail(exit_msg_v)
+                      .send(gru_struc_->getGRU(i)->getActorRef());
+                }
+                self_->send_exit(file_access_actor_, exit_reason::user_shutdown);
+                self_->quit();
               }
-              self_->send_exit(file_access_actor_, exit_reason::user_shutdown);
-              self_->quit();
-            }
-        });
+            });
 
         timestep_++;
         forcing_step_++;
@@ -225,16 +231,17 @@ behavior JobActor::data_assimilation_mode() {
         if (timestep_ > num_steps_) {
           self_->println("Data Assimilation Mode: Done");
           for (int i = 1; i <= gru_struc_->getNumGrus(); i++) {
-            self_->send(gru_struc_->getGRU(i)->getActorRef(), 
-                        exit_reason::user_shutdown);
+            self_->mail(exit_reason::user_shutdown)
+                .send(gru_struc_->getGRU(i)->getActorRef());
           }
-          self_->send(self_, finalize_v);
+          self_->mail(finalize_v).send(self_);
         
         } else if (forcing_step_ > steps_in_ffile_) {
           self_->println("Data Assimilation Mode: Getting New Forcing File");
-          self_->send(file_access_actor_, access_forcing_v, iFile_ + 1, self_);
+          self_->mail(access_forcing_v, iFile_ + 1, self_)
+              .send(file_access_actor_);
         } else {
-          self_->send(self_, update_hru_v);
+          self_->mail(update_hru_v).send(self_);
         }
         num_gru_done_timestep_ = 0;
       }    
@@ -244,6 +251,14 @@ behavior JobActor::data_assimilation_mode() {
       finalizeJob();
     },
 
+    [this](const down_msg& dm) {
+      self_->println("Lost Connection With A Connected Actor\nReason: {}",
+                     to_string(dm.reason));
+    },
+    
+    [this](const caf::exit_msg& em) {
+      self_->println("Exit Reason: {}", to_string(em.reason));
+    }
   };
 }
 
@@ -267,7 +282,7 @@ void JobActor::spawnGRUActors() {
     gru_struc_->addGRU(std::move(gru_obj));
     
     if (!job_actor_settings_.data_assimilation_mode_) {
-      self_->send(gru_actor, update_hru_async_v);
+      self_->mail(update_hru_async_v).send(gru_actor);
     }
   }
   gru_struc_->decrementRetryAttempts();
@@ -294,14 +309,15 @@ void JobActor::handleFinishedGRU(int job_index) {
 
   if (gru_struc_->isDone()) {
     gru_struc_->hasFailures() && gru_struc_->shouldRetry() ?
-      self_->send(self_, restart_failures_v) : self_->send(self_, finalize_v);
+        self_->mail(restart_failures_v).send(self_) 
+        : self_->mail(finalize_v).send(self_);
   }
 }
 
 
 
 void JobActor::finalizeJob() {
-  self_->request(file_access_actor_, infinite, finalize_v).await(
+  self_->mail(finalize_v).request(file_access_actor_, infinite).await(
     [=](std::tuple<double, double> read_write_duration) {
       int err = 0;
       timing_info_.updateEndPoint("total_duration");
@@ -321,9 +337,10 @@ void JobActor::finalizeJob() {
         auto total_duration = timing_info_.getDuration("total_duration").
             value_or(-1.0);
         auto num_failed_grus = gru_struc_->getNumGRUFailed();    
-        self_->send(parent_, done_job_v, num_failed_grus, 
-                    total_duration, std::get<0>(read_write_duration), 
-                    std::get<1>(read_write_duration));
+        self_->mail(done_job_v, num_failed_grus, total_duration, 
+                    std::get<0>(read_write_duration), 
+                    std::get<1>(read_write_duration))
+            .send(parent_);
         self_->quit();
     });
 }

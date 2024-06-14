@@ -7,9 +7,6 @@ const int NOTIFY_ERR = -1;  // Error code for notification but not quitting
 
 behavior FileAccessActor::make_behavior() {
   self_->println("\n----------File_Access_Actor Started----------\n");
-  self_->set_exit_handler([=](const caf::exit_msg& em) {
-    self_->println("File Access Actor: Received Exit Message");
-  });
 
   // Timing Info
   timing_info_ = TimingInfo();
@@ -77,24 +74,24 @@ behavior FileAccessActor::make_behavior() {
 
     [this](access_forcing, int i_file, caf::actor response_ref) {
       if (forcing_files_->allFilesLoaded()) {
-        self_->send(response_ref, new_forcing_file_v, 
-                    forcing_files_->getNumSteps(i_file), i_file);
+        self_->mail(new_forcing_file_v, forcing_files_->getNumSteps(i_file), 
+                    i_file).send(response_ref);
         return;
       }
       auto err = forcing_files_->loadForcingFile(i_file, start_gru_, num_gru_);
       if (err != 0) {
         self_->println("File Access Actor: Error loadForcingFile\n"
                        "\tMessage = Can't load forcing file\n");
-        self_->send(parent_, err_atom_v, 0, 0, err, 
-                    "Can't load forcing file\n");
+        self_->mail(err_atom_v, 0, 0, err, "Can't load forcing file\n")
+            .send(parent_);
         self_->quit();
         return;
       }
 
       // Load files behind the scenes
-      self_->send(self_, access_forcing_internal_v, i_file + 1);
-      self_->send(response_ref, new_forcing_file_v, 
-                  forcing_files_->getNumSteps(i_file), i_file);
+      self_->mail(access_forcing_internal_v, i_file + 1).send(self_);
+      self_->mail(new_forcing_file_v, forcing_files_->getNumSteps(i_file), 
+                  i_file).send(response_ref);
     },
 
     [this](access_forcing_internal, int i_file) {
@@ -103,12 +100,12 @@ behavior FileAccessActor::make_behavior() {
       if (err != 0) {
         self_->println("File Access Actor: Error loadForcingFile\n"
                        "\tMessage = Can't load forcing file\n");
-        self_->send(parent_, err_atom_v, 0, 0, err, 
-                    "Can't load forcing file\n");
+        self_->mail(err_atom_v, 0, 0, err, "Can't load forcing file\n")
+            .send(parent_);
         self_->quit();
         return;
       }
-      self_->send(self_, access_forcing_internal_v, i_file + 1);
+      self_->mail(access_forcing_internal_v, i_file + 1).send(self_);
     },
 
     [this](get_num_output_steps) -> int {
@@ -162,7 +159,7 @@ behavior FileAccessActor::make_behavior() {
       if (err != 0) {
         self_->println("File Access Actor: Error writeOutput from job\n"
                        "\tMessage = {}\n", err_msg.get());
-        self_->send(parent_, err_atom_v, 0, 0, err, err_msg.get());
+        self_->mail(err_atom_v, 0, 0, err, err_msg.get()).send(parent_);
       }
 
       if (write_params_flag_) write_params_flag_ = false;
@@ -203,6 +200,10 @@ behavior FileAccessActor::make_behavior() {
                              .value_or(-1.0));                       
                      
     },
+
+    [=](const caf::exit_msg& em) {
+      self_->println("File Access Actor: Received Exit Message");
+    },
   };
 }
 
@@ -213,7 +214,8 @@ void FileAccessActor::writeOutput(Output_Partition* partition) {
   if (start_gru > max_gru) {
     self_->println("File Access Actor: Error writeOutput\n"
                    "\tMessage = start_gru > max_gru\n");
-    self_->send(parent_, err_atom_v, 0, 0, NOTIFY_ERR, "start_gru > max_gru");
+    self_->mail(err_atom_v, 0, 0, NOTIFY_ERR, "start_gru > max_gru")
+        .send(parent_);
     return;
   }
   bool write_param_flag = partition->isWriteParams();
@@ -224,7 +226,7 @@ void FileAccessActor::writeOutput(Output_Partition* partition) {
   if (err != 0) {
     self_->println("File Access Actor: Error writeOutput\n\tMessage = {} \n", 
                    err_msg.get());
-    self_->send(parent_, err_atom_v, 0, 0, NOTIFY_ERR, err_msg.get());
+    self_->mail(err_atom_v, 0, 0, NOTIFY_ERR, err_msg.get()).send(parent_);
   }
 
   partition->updateTimeSteps();
@@ -233,9 +235,9 @@ void FileAccessActor::writeOutput(Output_Partition* partition) {
 
   std::vector<caf::actor> hrus_to_update = partition->getReadyToWriteList();
   for (int i = 0; i < hrus_to_update.size(); i++) {
-    self_->send(hrus_to_update[i], num_steps_before_write_v, 
-               num_steps_before_next_write);
-    self_->send(hrus_to_update[i], run_hru_v);
+    self_->mail(num_steps_before_write_v, num_steps_before_next_write)
+        .send(hrus_to_update[i]);
+    self_->mail(run_hru_v).send(hrus_to_update[i]);
   }
 
   partition->resetReadyToWriteList();

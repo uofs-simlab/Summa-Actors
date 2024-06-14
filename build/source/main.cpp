@@ -112,11 +112,10 @@ int caf_main(actor_system& sys, const config& cfg) {
   // Check if the master file was if not check if the config file was specified
   if (!std::filesystem::exists((std::filesystem::path) cfg.master_file)) {
     if (!std::filesystem::exists((std::filesystem::path) cfg.config_file)) {
-      aout(self) << "\n\n**** Config (-c) or Master File (-m) "
-                 << "Does Not Exist or Not Specified!! ****\n\n" 
-                 << "Config File: " << cfg.config_file << "\n"
-                 << "Master File: " << cfg.master_file << "\n\n"
-                 << command_line_help << std::endl;
+      self->println("\n\n**** Config (-c) or Master File (-m) Does Not Exist or"
+                    "Not Specified!! ****\n\nConfig File: {} \nMaster File: {}"
+                    "\n\n{}", cfg.config_file, cfg.master_file, 
+                    command_line_help);
       exit(EXIT_FAILURE);
     }
   }
