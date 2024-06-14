@@ -166,9 +166,9 @@ struct distributed_job_state {
   std::unordered_map<caf::actor, std::unordered_map<caf::actor, double>> 
       node_to_hru_map;
 
-  std::vector<std::pair<caf::actor, hru>> hrus_to_balance;
+  std::vector<std::pair<caf::actor, HRU>> hrus_to_balance;
 
-  std::unordered_map<caf::actor, std::vector<std::pair<caf::actor, hru>>> 
+  std::unordered_map<caf::actor, std::vector<std::pair<caf::actor, HRU>>> 
       node_to_hru_to_balance_map;
   std::unordered_map<caf::actor, int> node_to_hru_to_balance_map_size; 
 

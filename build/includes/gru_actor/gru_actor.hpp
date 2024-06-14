@@ -68,4 +68,7 @@ class GruActor {
     caf::behavior make_behavior();
     caf::behavior async_mode();
     caf::behavior data_assimilation_mode();
+
+    std::vector<HRU> serializeGRU();
+    void deserializeGRU(std::vector<HRU>& hrus);
 };

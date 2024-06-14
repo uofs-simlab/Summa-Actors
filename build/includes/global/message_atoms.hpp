@@ -9,7 +9,7 @@
 
 #include "logger.hpp"
 
-#include "hru_utils.hpp"
+#include "gru_data_structure.hpp"
 #include "num_gru_info.hpp"
 #include "settings_functions.hpp"
 
@@ -196,7 +196,8 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     CAF_ADD_TYPE_ID(summa, (HRUActorSettings))
     CAF_ADD_TYPE_ID(summa, (Settings))
 
-    CAF_ADD_TYPE_ID(summa, (hru))
+    CAF_ADD_TYPE_ID(summa, (HRU))
+    CAF_ADD_TYPE_ID(summa, (std::vector<HRU>))
     CAF_ADD_TYPE_ID(summa, (NumGRUInfo))
 
     // Class Types
