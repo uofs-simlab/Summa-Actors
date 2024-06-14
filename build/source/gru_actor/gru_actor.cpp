@@ -46,10 +46,12 @@ behavior GruActor::make_behavior() {
 behavior GruActor::async_mode() {
   return {
     [this](update_hru_async) {
-      self_->request(file_access_actor_, infinite, get_num_output_steps_v)
+      self_->mail(get_num_output_steps_v)
+          .request(file_access_actor_, infinite)
           .await([this](int num_steps) {
             num_steps_until_write_ = num_steps;
-            self_->send(file_access_actor_, access_forcing_v, iFile_, self_);
+            self_->mail(access_forcing_v, iFile_, self_).
+                send(file_access_actor_);
       });
     },
 
@@ -65,7 +67,7 @@ behavior GruActor::async_mode() {
         return;
       }
       forcingStep_ = 1;
-      self_->send(self_, run_hru_v);
+      self_->mail(run_hru_v).send(self_);
     },
 
     [this](num_steps_before_write, int num_steps) {
@@ -80,7 +82,8 @@ behavior GruActor::async_mode() {
       while (num_steps_until_write_ > 0) {
         if (forcingStep_ > stepsInCurrentFFile_) {
           self_->println("GRU Actor: New Forcing File");
-          self_->send(file_access_actor_, access_forcing_v, iFile_ + 1, self_);
+          self_->mail(access_forcing_v, iFile_ + 1, self_)
+              .send(file_access_actor_);
           break;
         }
         num_steps_until_write_--;
@@ -102,19 +105,20 @@ behavior GruActor::async_mode() {
 
         if (timestep_ > num_steps_) {
           self_->println("GRU Actor: Done");
-          self_->send(self_, done_hru_v);
+          self_->mail(done_hru_v).send(self_);
           break;
         }
       }
       // Our output structure is full
       if (num_steps_until_write_ <= 0) {
         self_->println("GRU Actor: Writing Output");
-        self_->send(file_access_actor_, write_output_v, job_index_, 1, self_);
+        self_->mail(write_output_v, job_index_, 1, self_)
+            .send(file_access_actor_);
       }
     },
 
     [this](done_hru) {
-      self_->send(parent_, done_hru_v, job_index_);
+      self_->mail(done_hru_v, job_index_).send(parent_);
       self_->quit();
       return;
     }
@@ -133,8 +137,8 @@ behavior GruActor::data_assimilation_mode() {
       setTimeZoneOffsetGRU_fortran(iFile_, gru_data_, err, &message);
       if (err != 0) {
         self_->println("GRU Actor: Error setting time zone offset");
-        self_->send(parent_, err_atom_v, job_index_, timestep_, err, 
-                    message.get());
+        self_->mail(err_atom_v, job_index_, timestep_, err, message.get())
+            .send(parent_);
         self_->quit();
         return;
       }
@@ -157,7 +161,7 @@ behavior GruActor::data_assimilation_mode() {
       writeGRUOutput_fortran(job_index_, timestep_, 
                              output_structure_step_index_, gru_data_, err, 
                              &message);
-      self_->send(parent_, done_update_v);
+      self_->mail(done_update_v).send(parent_);
     }
   };
 }
