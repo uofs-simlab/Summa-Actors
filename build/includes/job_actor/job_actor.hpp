@@ -49,6 +49,12 @@ class JobActor {
   FileAccessActorSettings fa_actor_settings_;
   HRUActorSettings hru_actor_settings_; 
 
+  // HRU Attributes
+  double rel_tol_ = -9999;
+  double abs_tol_ = -9999;
+  int dt_init_factor_ = 1;
+
+
   // Misc
   int num_steps_ = 0;
   int iFile_ = 1;

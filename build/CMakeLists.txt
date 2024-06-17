@@ -29,6 +29,7 @@ set(F_MASTER "${CMAKE_CURRENT_LIST_DIR}/..")
 get_filename_component(F_MASTER "${F_MASTER}" REALPATH)
 set(EXEC_DIR "${F_MASTER}/bin")
 get_filename_component(EXEC_DIR "${EXEC_DIR}" REALPATH)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${EXEC_DIR})
 set(EXEC_NAME summa_actors.exe)
 
 # NetCDF is found with a custom FindNetCDF.cmake file

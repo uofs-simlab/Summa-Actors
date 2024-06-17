@@ -56,7 +56,7 @@ behavior JobActor::make_behavior() {
     self_->mail(err_atom_v, -2, err_msg).send(parent_);
     return {};
   }
-  summa_init_struc_->getInitTolerance(hru_actor_settings_);
+  summa_init_struc_->getInitTolerance(rel_tol_, abs_tol_);
   
   num_gru_info_ = NumGRUInfo(batch_.getStartHRU(), batch_.getStartHRU(), 
                              batch_.getNumHRU(), batch_.getNumHRU(), 
@@ -107,12 +107,11 @@ behavior JobActor::async_mode() {
     [this](restart_failures) {
       logger_->log("Async Mode: Restarting Failed GRUs");
       self_->println("Async Mode: Restarting Failed GRUs\n");
-      if (hru_actor_settings_.rel_tol_ > 0 && 
-          hru_actor_settings_.abs_tol_ > 0) {
-        hru_actor_settings_.rel_tol_ /= 10;
-        hru_actor_settings_.abs_tol_ /= 10;
+      if (rel_tol_ > 0 && abs_tol_ > 0) {
+        rel_tol_ /= 10;
+        abs_tol_ /= 10;
       } else {
-        hru_actor_settings_.dt_init_factor_ *= 2;
+        dt_init_factor_ *= 2;
       }
 
       // notify file_access_actor
@@ -133,11 +132,8 @@ behavior JobActor::async_mode() {
             self_);
         gru_struc_->decrementNumGRUFailed();
         std::unique_ptr<GRU> gru_obj = std::make_unique<GRU>(
-            netcdf_index, job_index, gru_actor, 
-            hru_actor_settings_.dt_init_factor_, 
-            hru_actor_settings_.rel_tol_, 
-            hru_actor_settings_.abs_tol_, 
-            job_actor_settings_.max_run_attempts_);
+            netcdf_index, job_index, gru_actor, dt_init_factor_, rel_tol_, 
+            abs_tol_, job_actor_settings_.max_run_attempts_);
         gru_struc_->addGRU(std::move(gru_obj));
       }
       gru_struc_->decrementRetryAttempts();
@@ -275,10 +271,8 @@ void JobActor::spawnGRUActors() {
                                   job_actor_settings_.data_assimilation_mode_,
                                   file_access_actor_, self_);
     std::unique_ptr<GRU> gru_obj = std::make_unique<GRU>(
-        netcdf_index, job_index, gru_actor, 
-        hru_actor_settings_.dt_init_factor_,
-        hru_actor_settings_.rel_tol_, hru_actor_settings_.abs_tol_,
-        job_actor_settings_.max_run_attempts_);
+        netcdf_index, job_index, gru_actor, dt_init_factor_, rel_tol_, 
+        abs_tol_, job_actor_settings_.max_run_attempts_);
     gru_struc_->addGRU(std::move(gru_obj));
     
     if (!job_actor_settings_.data_assimilation_mode_) {
@@ -295,8 +289,7 @@ void JobActor::handleFinishedGRU(int job_index) {
   gru_struc_->getGRU(job_index)->setSuccess();
   success_logger_->logSuccess(gru_struc_->getGRU(job_index)->getIndexNetcdf(),
                               gru_struc_->getGRU(job_index)->getIndexJob(),
-                              hru_actor_settings_.rel_tol_,
-                              hru_actor_settings_.abs_tol_);
+                              rel_tol_, abs_tol_);
   std::string update_str =
       "GRU Finished: " + std::to_string(gru_struc_->getNumGrusDone()) + "/" + 
       std::to_string(gru_struc_->getNumGrus()) + " -- GlobalGRU=" + 

@@ -62,14 +62,7 @@ int Settings::readSettings() {
     getSettings<bool>(json_settings, "HRU_Actor", "print_output")
         .value_or(true),
     getSettings<int>(json_settings, "HRU_Actor", "output_frequency")
-        .value_or(OUTPUT_FREQUENCY),
-    getSettings<int>(json_settings, "HRU_Actor", "dt_init_factor")
-        .value_or(1),
-    getSettings<double>(json_settings, "HRU_Actor", "rel_tol")
-        .value_or(MISSING_DOUBLE),
-    getSettings<double>(json_settings, "HRU_Actor", "abs_tol")
-        .value_or(MISSING_DOUBLE)
-  );
+        .value_or(OUTPUT_FREQUENCY));
 
   return SUCCESS;
 }
@@ -153,10 +146,7 @@ void Settings::generateConfigFile() {
     };
     config_file["HRU_Actor"] = {
         {"print_output", true},
-        {"output_frequency", OUTPUT_FREQUENCY},
-        {"dt_init_factor", 1},
-        {"rel_tol", MISSING_DOUBLE},
-        {"abs_tol", MISSING_DOUBLE}
+        {"output_frequency", OUTPUT_FREQUENCY}
     };
 
     std::ofstream config_file_stream("config.json");

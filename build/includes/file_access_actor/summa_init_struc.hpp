@@ -17,7 +17,7 @@ class SummaInitStruc {
     int allocate(int num_gru); // allocate space in Fortran
     int summa_paramSetup();    // call summa_paramSetup
     int summa_readRestart();   // call summa_readRestart
-    void getInitTolerance(HRUActorSettings& hru_settings); 
+    void getInitTolerance(double rel_tol, double abs_tol); 
 };
 
 

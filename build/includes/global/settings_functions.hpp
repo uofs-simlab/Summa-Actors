@@ -179,27 +179,16 @@ class HRUActorSettings {
   public:
     bool print_output_;
     int output_frequency_;
-    int dt_init_factor_; 
-    double rel_tol_;
-    double abs_tol_;
 
     HRUActorSettings(bool print_output = false, 
-                     int output_frequency = 100, 
-                     int dt_init_factor = 1,
-                     double rel_tol = 1e-4,
-                     double abs_tol = 1e-4) 
-        : print_output_(print_output), output_frequency_(output_frequency),
-          dt_init_factor_(dt_init_factor), rel_tol_(rel_tol), 
-          abs_tol_(abs_tol) {};
+                     int output_frequency = 100) 
+        : print_output_(print_output), output_frequency_(output_frequency) {};
     ~HRUActorSettings() {};
 
     std::string toString() {
       std::string str = "HRU Actor Settings:\n";
       str += "Print Output: " + std::to_string(print_output_) + "\n";
       str += "Output Frequency: " + std::to_string(output_frequency_) + "\n";
-      str += "DT Init Factor: " + std::to_string(dt_init_factor_) + "\n";
-      str += "Relative Tolerance: " + std::to_string(rel_tol_) + "\n";
-      str += "Absolute Tolerance: " + std::to_string(abs_tol_) + "\n";
       return str;
     }
 
@@ -207,10 +196,7 @@ class HRUActorSettings {
     friend bool inspect(Inspector& insp, HRUActorSettings& settings) {
       return insp.object(settings).fields(
              insp.field("print_output",     settings.print_output_),
-             insp.field("output_frequency", settings.output_frequency_),
-             insp.field("dt_init_factor",   settings.dt_init_factor_),
-             insp.field("rel_tol",          settings.rel_tol_),
-             insp.field("abs_tol",          settings.abs_tol_));
+             insp.field("output_frequency", settings.output_frequency_));
     }
 };
 
