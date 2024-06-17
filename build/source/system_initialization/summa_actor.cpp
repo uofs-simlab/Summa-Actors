@@ -114,6 +114,7 @@ int SummaActor::spawnJob() {
   }
   current_batch_ = std::make_shared<Batch>(batch.value());
   current_job_ = self_->spawn(actor_from_state<JobActor>, batch.value(),
+                              settings_.summa_actor_settings_.enable_logging_,
                               settings_.job_actor_settings_, 
                               settings_.fa_actor_settings_,
                               settings_.hru_actor_settings_, self_);

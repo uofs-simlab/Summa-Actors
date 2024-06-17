@@ -31,6 +31,7 @@ class JobActor {
   char hostname_[HOST_NAME_MAX];
 
   TimingInfo timing_info_;
+  bool enable_logging_ = false;
   std::unique_ptr<Logger> logger_;
   std::unique_ptr<ErrorLogger> err_logger_;
   std::unique_ptr<SuccessLogger> success_logger_;
@@ -64,10 +65,11 @@ class JobActor {
   int num_gru_done_timestep_ = 0;
   
   public:
-    JobActor(caf::event_based_actor* self, Batch batch, 
+    JobActor(caf::event_based_actor* self, Batch batch, bool enable_logging,
              JobActorSettings job_settings, FileAccessActorSettings fa_settings,
              HRUActorSettings hru_settings, caf::actor parent) 
-             : self_(self), batch_(batch), job_actor_settings_(job_settings),
+             : self_(self), batch_(batch), enable_logging_(enable_logging),
+               job_actor_settings_(job_settings), 
                fa_actor_settings_(fa_settings), 
                hru_actor_settings_(hru_settings), parent_(parent) {};
     

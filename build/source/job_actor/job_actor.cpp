@@ -19,10 +19,16 @@ behavior JobActor::make_behavior() {
   timing_info_.updateStartPoint("init_duration");
 
   // Create Loggers
-  logger_ = std::make_unique<Logger>(batch_.getLogDir() + "batch_" + 
-                                     std::to_string(batch_.getBatchID()));
-  err_logger_ = std::make_unique<ErrorLogger>(batch_.getLogDir());
-  success_logger_ = std::make_unique<SuccessLogger>(batch_.getLogDir()); 
+  if (enable_logging_) {
+    logger_ = std::make_unique<Logger>(batch_.getLogDir() + "batch_" + 
+                                       std::to_string(batch_.getBatchID()));
+    err_logger_ = std::make_unique<ErrorLogger>(batch_.getLogDir());
+    success_logger_ = std::make_unique<SuccessLogger>(batch_.getLogDir()); 
+  } else {
+    logger_ = std::make_unique<Logger>("");
+    err_logger_ = std::make_unique<ErrorLogger>("");
+    success_logger_ = std::make_unique<SuccessLogger>("");
+  }
 
   // GruStruc Initialization
   gru_struc_ = std::make_unique<GruStruc>(batch_.getStartHRU(), 
