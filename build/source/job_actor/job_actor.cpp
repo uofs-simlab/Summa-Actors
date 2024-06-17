@@ -97,7 +97,7 @@ behavior JobActor::async_mode() {
       self_->println("Async Mode: File Access Actor Ready");
       logger_->log("Async Mode: File Access Actor Ready");
       num_steps_ = num_timesteps;
-      spawnGRUActors();
+      spawnGruActors();
     },
 
     [this](done_hru, int job_index) {
@@ -169,7 +169,7 @@ behavior JobActor::data_assimilation_mode() {
     [this](file_access_actor_ready, int num_timesteps) {
       self_->println("Data Assimilation Mode: File Access Actor Ready");
       num_steps_ = num_timesteps;
-      spawnGRUActors();
+      spawnGruBatches();
       self_->println("Data Assimilation Mode: GRUs Initialized");
       self_->mail(access_forcing_v, iFile_, self_).send(file_access_actor_);
     },
@@ -261,7 +261,7 @@ behavior JobActor::data_assimilation_mode() {
 
 
 // ------------------------ Member Functions ------------------------
-void JobActor::spawnGRUActors() {
+void JobActor::spawnGruActors() {
   self_->println("Job Actor: Spawning GRU Actors");
   for (int i = 0; i < gru_struc_->getNumGrus(); i++) {
     auto netcdf_index = gru_struc_->getStartGru() + i;
@@ -280,6 +280,14 @@ void JobActor::spawnGRUActors() {
     }
   }
   gru_struc_->decrementRetryAttempts();
+}
+
+
+
+void JobActor::spawnGruBatches() {
+  self_->println("JobActor: Spawning GRU Batch Actors");
+  self_->println("Num CPU = {}", std::thread::hardware_concurrency());
+
 }
 
 

@@ -24,15 +24,12 @@ set(JOB_INTERFACE
     ${JOB_ACTOR_DIR}/gru_struc.f90
     CACHE INTERNAL "JOB_INTERFACE")
 set(GRU_INTERFACE
+    ${GRU_ACTOR_DIR}/hru_init.f90
+    ${GRU_ACTOR_DIR}/hru_read.f90
+    ${GRU_ACTOR_DIR}/hru_modelRun.f90
+    ${GRU_ACTOR_DIR}/hru_writeOutput.f90
     ${GRU_ACTOR_DIR}/gru_interface.f90
     CACHE INTERNAL "GRU_INTERFACE")
-set(HRU_INTERFACE
-    ${HRU_ACTOR_DIR}/hru_init.f90
-    ${HRU_ACTOR_DIR}/hru_read.f90
-    ${HRU_ACTOR_DIR}/hru_modelRun.f90
-    ${HRU_ACTOR_DIR}/hru_writeOutput.f90
-    ${HRU_ACTOR_DIR}/hru_interface.f90
-    CACHE INTERNAL "HRU_INTERFACE")
 
 # Actors actual actor modules
 set(ACTORS_GLOBAL
@@ -67,9 +64,9 @@ set(JOB_ACTOR
     CACHE INTERNAL "JOB_ACTOR")
 set(GRU_ACTOR
     ${GRU_ACTOR_DIR}/gru_actor.cpp
+    ${GRU_ACTOR_DIR}/gru_batch_actor.cpp
     CACHE INTERNAL "GRU_ACTOR")
 set(HRU_ACTOR
     ${HRU_ACTOR_DIR}/hru_utils.cpp
     ${HRU_ACTOR_DIR}/hru_actor.cpp
-    ${HRU_ACTOR_DIR}/hru_batch_actor.cpp
     CACHE INTERNAL "HRU_ACTOR")

@@ -21,7 +21,6 @@ extern "C" {
                               void* message);
   void runGRU_fortran(int& index_gru, int& timestep, void* gru_data, 
                       int& dt_init_factor, int& err, void* message);
-
   void writeGRUOutput_fortran(int& index_gru, int& timestep, int& output_step, 
                               void* gru_data, int& err, void* message);
 

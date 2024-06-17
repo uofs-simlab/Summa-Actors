@@ -75,7 +75,8 @@ class JobActor {
     caf::behavior data_assimilation_mode();
     caf::behavior async_mode();
 
-    void spawnGRUActors();
+    void spawnGruActors();
+    void spawnGruBatches();
     void handleFinishedGRU(int job_index);
     void finalizeJob();
     // Error Handling Functions

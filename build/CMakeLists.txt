@@ -77,7 +77,6 @@ set(SYS_INIT_DIR    ${ACTORS_DIR}/system_initialization)
 set(FILE_ACCESS_DIR ${ACTORS_DIR}/file_access_actor)
 set(JOB_ACTOR_DIR   ${ACTORS_DIR}/job_actor)
 set(GRU_ACTOR_DIR   ${ACTORS_DIR}/gru_actor)
-set(HRU_ACTOR_DIR   ${ACTORS_DIR}/hru_actor)
 
 #=========================================================================================
 # COMPILE PART 2: Assemble all of the SUMMA sub-routines
@@ -96,7 +95,7 @@ set(COMM_ALL ${NRPROC} ${HOOKUP} ${DATAMS} ${UTILMS})
 set(SUMMA_ALL ${NETCDF} ${PRELIM} ${MODRUN} ${SOLVER} ${DRIVER})
 set(COMM_ALL ${COMM_ALL} ${DATAMS_ACTORS} ${INTERFACE})
 set(SUMMA_ALL ${SUMMA_ALL} ${SYS_INIT_INTERFACE} ${FILE_ACCESS_INTERFACE}
-              ${JOB_INTERFACE} ${GRU_INTERFACE} ${HRU_INTERFACE})
+              ${JOB_INTERFACE} ${GRU_INTERFACE})
 set(MAIN_SUMMA ${ACTORS_DIR}/main.cpp)
 
 if (USE_SUNDIALS)
@@ -115,7 +114,6 @@ target_compile_options(SUMMA_NOAHMP PRIVATE ${FLAGS_NOAH})
 # Build SUMMA_COMM Object
 add_library(SUMMA_COMM OBJECT ${COMM_ALL})
 target_compile_options(SUMMA_COMM PRIVATE ${FLAGS_ALL})
-# target_include_directories(SUMMA_COMM PRIVATE ${INCLUDES})
 target_link_libraries(SUMMA_COMM PUBLIC SUMMA_NOAHMP ${EXT_TARGETS}) # added flags to the link step
 
 # Build SUMMA Object
@@ -134,6 +132,5 @@ target_include_directories(${EXEC_NAME} PUBLIC
                            ${F_MASTER}/build/includes/summa_actor 
                            ${F_MASTER}/build/includes/job_actor 
                            ${F_MASTER}/build/includes/file_access_actor 
-                           ${F_MASTER}/build/includes/gru_actor
-                           ${F_MASTER}/build/includes/hru_actor)
+                           ${F_MASTER}/build/includes/gru_actor)
 target_link_libraries( ${EXEC_NAME} ${EXT_TARGETS} summa)

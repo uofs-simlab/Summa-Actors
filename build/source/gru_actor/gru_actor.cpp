@@ -6,7 +6,6 @@ using namespace caf;
 behavior GruActor::make_behavior() {
   int err = 0;
   getNumHRU(job_index_, num_hrus_);
-  self_->println("GRU Actor Started with {} HRUs", num_hrus_);
   hrus_.resize(num_hrus_);
   gru_data_ = new_handle_gru_type(num_hrus_);
   
@@ -33,8 +32,6 @@ behavior GruActor::make_behavior() {
     self_->quit();
     return {};
   }
-
-  self_->println("GRU Actor: HRUs Initialized");
 
   data_assimilation_mode_ ? self_->become(data_assimilation_mode()) :
                             self_->become(async_mode());
@@ -75,19 +72,20 @@ behavior GruActor::async_mode() {
     },
     
     [this](run_hru) {
-      self_->println("GRU Actor: Running HRUs");
       int err = 0;
       std::unique_ptr<char[]> message(new char[256]);
       while (num_steps_until_write_ > 0) {
         if (forcingStep_ > stepsInCurrentFFile_) {
-          self_->println("GRU Actor: New Forcing File");
           self_->mail(access_forcing_v, iFile_ + 1, self_)
               .send(file_access_actor_);
           break;
         }
         num_steps_until_write_--;
-        self_->println("GRU Actor: timestep={}, forcingStep={}, iFile={}", 
-                       timestep_, forcingStep_, iFile_);
+        if (hru_actor_settings_.print_output_ && 
+            timestep_ % hru_actor_settings_.output_frequency_ == 0) {
+          self_->println("GRU Actor {}: timestep={}, forcingStep={}, iFile={}", 
+                         job_index_, timestep_, forcingStep_, iFile_);
+        }
         readGRUForcing_fortran(job_index_, timestep_, forcingStep_, iFile_, 
                                gru_data_, err, &message);
         std::fill(message.get(), message.get() + 256, '\0'); // Clear message
@@ -103,14 +101,12 @@ behavior GruActor::async_mode() {
         output_structure_step_index_++;
 
         if (timestep_ > num_steps_) {
-          self_->println("GRU Actor: Done");
           self_->mail(done_hru_v).send(self_);
           break;
         }
       }
       // Our output structure is full
       if (num_steps_until_write_ <= 0) {
-        self_->println("GRU Actor: Writing Output");
         self_->mail(write_output_v, job_index_, 1, self_)
             .send(file_access_actor_);
       }
