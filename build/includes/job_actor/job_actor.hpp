@@ -10,8 +10,7 @@
 // #include "hru_batch_actor.hpp"
 #include "message_atoms.hpp"
 #include "file_access_actor.hpp"
-#include <unistd.h>
-#include <limits.h>
+
 #include <cmath>
 #include <vector>
 #include <tuple>
@@ -19,6 +18,12 @@
 #include "gru_actor.hpp"
 #include "logger.hpp"
 
+// For HOST_NAME_MAX
+#include <limits.h>
+#include <unistd.h>
+#ifndef HOST_NAME_MAX
+#define HOST_NAME_MAX 255
+#endif
 
 class JobActor {
   caf::event_based_actor* self_;

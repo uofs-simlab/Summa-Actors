@@ -2,6 +2,7 @@
 #include <chrono>
 #include <algorithm>
 
+
 TimingInfo::TimingInfo() {
     this->num_time_points = 0;
 }

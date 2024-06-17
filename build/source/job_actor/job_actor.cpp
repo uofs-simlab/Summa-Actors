@@ -1,7 +1,7 @@
 #include "job_actor.hpp"
 
 using json = nlohmann::json;
-using chrono_time = std::chrono::time_point<std::chrono::system_clock>;
+using chrono_time = std::chrono::time_point<std::chrono::high_resolution_clock>;
 using namespace caf;
 
 // ------------------------Behaviors------------------------
