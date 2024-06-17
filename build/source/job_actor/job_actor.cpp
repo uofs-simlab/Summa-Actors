@@ -292,7 +292,44 @@ void JobActor::spawnGruActors() {
 
 void JobActor::spawnGruBatches() {
   self_->println("JobActor: Spawning GRU Batch Actors");
-  self_->println("Num CPU = {}", std::thread::hardware_concurrency());
+  int batch_size;
+
+  if (job_actor_settings_.batch_size_ < 0) {
+    // Automatically determine batch size
+    batch_size = std::ceil(gru_struc_->getNumGrus() / 
+                           (std::thread::hardware_concurrency() * 2));
+  } else {
+    // Use the user selected batch size
+    batch_size = job_actor_settings_.batch_size_;
+  }
+
+  self_->println("Job_Actor: Batch Size {}", batch_size);
+  
+  if (batch_size == 0 || batch_size == 1) {
+    batch_size = 1;
+    // Batch Size of 1 is same as having no batch actor
+    spawnGruActors();
+  }
+  int remaining_hru_to_batch = gru_struc_->getNumGrus();
+  int start_hru_global = batch_.getStartHRU();
+  int start_hru_local = 1;
+
+  while (remaining_hru_to_batch > 0) {
+    int current_batch_size = std::min(batch_size, remaining_hru_to_batch);
+    auto gru_batch = self_->spawn(actor_from_state<GruBatchActor>, 
+                                  start_hru_local, start_hru_global, 
+                                  current_batch_size, num_steps_,
+                                  hru_actor_settings_, file_access_actor_, 
+                                  self_);
+    std::unique_ptr<GRU> gru_obj = std::make_unique<GRU>(
+        start_hru_global, start_hru_local, gru_batch, dt_init_factor_, rel_tol_, 
+        abs_tol_, job_actor_settings_.max_run_attempts_);
+    gru_struc_->addGRU(std::move(gru_obj));
+    remaining_hru_to_batch -= current_batch_size;
+    start_hru_local += current_batch_size;
+    start_hru_global += current_batch_size;
+  }
+  self_->println("JobActor: Assembled GRUs into Batches");
 }
 
 

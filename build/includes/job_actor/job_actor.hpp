@@ -7,7 +7,7 @@
 #include "settings_functions.hpp"
 #include "json.hpp"
 // #include "hru_actor.hpp"
-// #include "hru_batch_actor.hpp"
+#include "gru_batch_actor.hpp"
 #include "message_atoms.hpp"
 #include "file_access_actor.hpp"
 
