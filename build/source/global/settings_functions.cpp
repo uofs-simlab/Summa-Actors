@@ -132,6 +132,7 @@ void Settings::generateConfigFile() {
 
     config_file["Summa_Actor"] = {
         {"max_gru_per_job", GRU_PER_JOB},
+        {"enable_logging", false},
         {"log_dir", ""}
     };
     config_file["File_Access_Actor"] = {

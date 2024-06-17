@@ -287,7 +287,6 @@ void JobActor::spawnGruActors() {
 void JobActor::spawnGruBatches() {
   self_->println("JobActor: Spawning GRU Batch Actors");
   self_->println("Num CPU = {}", std::thread::hardware_concurrency());
-
 }
 
 
