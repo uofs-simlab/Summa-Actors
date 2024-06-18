@@ -122,16 +122,13 @@ behavior GruActor::async_mode() {
 
 
 behavior GruActor::data_assimilation_mode() {
-  self_->println("GRU Actor: Data Assimilation Mode");
   return {
     [this](update_timeZoneOffset, int iFile) {
-      self_->println("GRU Actor: Setting Time Zone Offset");
       int err = 0;
       std::unique_ptr<char[]> message(new char[256]);
       iFile_ = iFile;
       setTimeZoneOffsetGRU_fortran(iFile_, gru_data_, err, &message);
       if (err != 0) {
-        self_->println("GRU Actor: Error setting time zone offset");
         self_->mail(err_atom_v, job_index_, timestep_, err, message.get())
             .send(parent_);
         self_->quit();
@@ -145,8 +142,6 @@ behavior GruActor::data_assimilation_mode() {
       output_structure_step_index_ = 1;
       timestep_ = timestep;
       forcingStep_ = forcing_step;
-      self_->println("GRU Actor: timestep={}, forcingStep={}, iFile={}", 
-                     timestep_, forcingStep_, iFile_);
       readGRUForcing_fortran(job_index_, timestep_, forcingStep_, iFile_, 
                              gru_data_, err, &message);
       std::fill(message.get(), message.get() + 256, '\0'); // Clear message

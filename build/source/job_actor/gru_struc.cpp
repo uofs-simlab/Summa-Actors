@@ -6,7 +6,6 @@ GruStruc::GruStruc(int start_gru, int num_gru, int num_retry_attempts) {
   start_gru_ = start_gru;
   num_gru_ = num_gru;
   num_retry_attempts_left_ = num_retry_attempts;
-  gru_info_.resize(num_gru);
 }
 
 int GruStruc::ReadDimension() {
@@ -32,6 +31,15 @@ int GruStruc::ReadIcondNlayers() {
     std::cout << "ERROR: GruStruc - ReadIcondNlayers\n";
   }
   return 0;
+}
+
+int GruStruc::getFailedIndex() {
+  for (int i = 0; i < gru_info_.size(); i++) {
+    if (gru_info_[i]->getStatus() == gru_state::failed) {
+      return gru_info_[i]->getIndexJob();
+    }
+  }
+  return -1;
 }
 
 void GruStruc::getNumHrusPerGru() {

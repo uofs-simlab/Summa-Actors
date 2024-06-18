@@ -77,46 +77,6 @@ class GRU {
 
 
 class GruStruc {
-  
-  public:
-    GruStruc(int start_gru, int num_gru, int num_retry_attempts);
-    ~GruStruc(){deallocate_gru_struc_fortran();};
-    int ReadDimension();
-    int ReadIcondNlayers();
-    inline int getStartGru() const { return start_gru_; }
-    inline int getNumGrus() const { return num_gru_; }
-    inline int get_file_gru() const { return file_gru_; }
-    inline int getNumHrus() const { return num_hru_; }
-    inline int get_gru_info_size() const { return gru_info_.size(); }
-    inline int getNumGrusDone() const { return num_gru_done_; }
-    inline int getNumGRUFailed() const { return num_gru_failed_; }
-
-    inline void addGRU(std::unique_ptr<GRU> gru) {
-      gru_info_[gru->getIndexJob() - 1] = std::move(gru);
-    }
-
-    inline void incrementNumGRUDone() { num_gru_done_++; }
-    inline void incrementNumGRUFailed() { num_gru_failed_++; num_gru_done_++;}
-    inline void decrementRetryAttempts() { num_retry_attempts_left_--; }
-    inline void decrementNumGRUFailed() { num_gru_failed_--; num_gru_done_--;}
-    inline GRU* getGRU(int index) { return gru_info_[index-1].get(); }
-
-    inline bool isDone() { return num_gru_done_ >= num_gru_; }
-    inline bool hasFailures() { return num_gru_failed_ > 0; }
-    inline bool shouldRetry() { return num_retry_attempts_left_ > 0; }
-
-    int getFailedIndex() {
-      for (int i = 0; i < gru_info_.size(); i++) {
-        if (gru_info_[i]->getStatus() == gru_state::failed) {
-          return gru_info_[i]->getIndexJob();
-        }
-      }
-      return -1;
-    }
-
-    void getNumHrusPerGru();
-    inline int getNumHruPerGru(int index) { return num_hru_per_gru_[index]; }
-
   private:
     // Inital Information about the GRUs
     int start_gru_;
@@ -134,5 +94,37 @@ class GruStruc {
     int num_gru_failed_ = 0;
     int num_retry_attempts_left_ = 0;
     int attempt_ = 1;
+  
+  public:
+    GruStruc(int start_gru, int num_gru, int num_retry_attempts);
+    ~GruStruc(){deallocate_gru_struc_fortran();};
+    int ReadDimension();
+    int ReadIcondNlayers();
+    inline std::vector<std::unique_ptr<GRU>>& getGruInfo() { return gru_info_; }
+    inline int getStartGru() const { return start_gru_; }
+    inline int getNumGru() const { return num_gru_; }
+    inline int getFileGru() const { return file_gru_; }
+    inline int getNumHru() const { return num_hru_; }
+    inline int getGruInfoSize() const { return gru_info_.size(); }
+    inline int getNumGruDone() const { return num_gru_done_; }
+    inline int getNumGruFailed() const { return num_gru_failed_; }
 
+    inline void addGRU(std::unique_ptr<GRU> gru) {
+      gru_info_.push_back(std::move(gru));
+      // gru_info_[gru->getIndexJob() - 1] = std::move(gru);
+    }
+
+    inline void incrementNumGruDone() { num_gru_done_++; }
+    inline void incrementNumGruFailed() { num_gru_failed_++; num_gru_done_++;}
+    inline void decrementRetryAttempts() { num_retry_attempts_left_--; }
+    inline void decrementNumGruFailed() { num_gru_failed_--; num_gru_done_--;}
+    inline GRU* getGRU(int index) { return gru_info_[index-1].get(); }
+
+    inline bool isDone() { return num_gru_done_ >= num_gru_; }
+    inline bool hasFailures() { return num_gru_failed_ > 0; }
+    inline bool shouldRetry() { return num_retry_attempts_left_ > 0; }
+
+    int getFailedIndex(); 
+    void getNumHrusPerGru();
+    inline int getNumHruPerGru(int index) { return num_hru_per_gru_[index]; }
 };

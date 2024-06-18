@@ -7,7 +7,7 @@ using namespace caf;
 // ------------------------Behaviors------------------------
 behavior JobActor::make_behavior() {
   std::string err_msg;
-  self_->println("Job Actor Started");
+  self_->println("JobActor Started");
 
   gethostname(hostname_, HOST_NAME_MAX);
 
@@ -66,14 +66,14 @@ behavior JobActor::make_behavior() {
   
   num_gru_info_ = NumGRUInfo(batch_.getStartHRU(), batch_.getStartHRU(), 
                              batch_.getNumHRU(), batch_.getNumHRU(), 
-                             gru_struc_->get_file_gru(), false);
+                             gru_struc_->getFileGru(), false);
   
   // Start File Access Actor and Become User Selected Mode
   file_access_actor_ = self_->spawn(actor_from_state<FileAccessActor>, 
                                     num_gru_info_, fa_actor_settings_, self_);
 
-  self_->mail(init_file_access_actor_v, gru_struc_->get_file_gru(),
-              gru_struc_->getNumHrus())
+  self_->mail(init_file_access_actor_v, gru_struc_->getFileGru(),
+              gru_struc_->getNumHru())
       .request(file_access_actor_, caf::infinite)
       .await([=](int num_timesteps){
     if (num_timesteps < 0) {
@@ -83,8 +83,8 @@ behavior JobActor::make_behavior() {
       return;
     }
     timing_info_.updateEndPoint("init_duration");
-    logger_->log("Job Actor Initialized");
-    self_->println("Job Actor Initialized: Running {} Steps", num_timesteps);
+    logger_->log("JobActor Initialized");
+    self_->println("JobActor Initialized: Running {} Steps", num_timesteps);
     job_actor_settings_.data_assimilation_mode_ ? 
         self_->become(data_assimilation_mode()) : 
         self_->become(async_mode());
@@ -125,7 +125,7 @@ behavior JobActor::async_mode() {
       err_logger_->nextAttempt();
       success_logger_->nextAttempt();
 
-      while(gru_struc_->getNumGRUFailed() > 0) {
+      while(gru_struc_->getNumGruFailed() > 0) {
         int job_index = gru_struc_->getFailedIndex();
         logger_->log("Async Mode: Restarting GRU: " + 
             std::to_string(job_index));
@@ -136,7 +136,7 @@ behavior JobActor::async_mode() {
             job_index, num_steps_, hru_actor_settings_,
             job_actor_settings_.data_assimilation_mode_, file_access_actor_,
             self_);
-        gru_struc_->decrementNumGRUFailed();
+        gru_struc_->decrementNumGruFailed();
         std::unique_ptr<GRU> gru_obj = std::make_unique<GRU>(
             netcdf_index, job_index, gru_actor, dt_init_factor_, rel_tol_, 
             abs_tol_, job_actor_settings_.max_run_attempts_);
@@ -173,40 +173,41 @@ behavior JobActor::data_assimilation_mode() {
   self_->println("Data Assimilation Mode: Started");
   return {
     [this](file_access_actor_ready, int num_timesteps) {
-      self_->println("Data Assimilation Mode: File Access Actor Ready");
+      self_->println("JobActor: File Access Actor Ready");
       num_steps_ = num_timesteps;
       spawnGruBatches();
-      self_->println("Data Assimilation Mode: GRUs Initialized");
+      self_->println("JobActor: GRUs Initialized");
       self_->mail(access_forcing_v, iFile_, self_).send(file_access_actor_);
     },
 
     [this](new_forcing_file, int num_steps_iFile, int next_file) {
-      self_->println("Data Assimilation Mode: New Forcing File");
+      self_->println("JobActor: New Forcing File");
       iFile_ = next_file;
       steps_in_ffile_ = num_steps_iFile;
       forcing_step_ = 1;
-
-      for (int i = 1; i <= gru_struc_->getNumGrus(); i++) {
-        actor gru_actor = gru_struc_->getGRU(i)->getActorRef();
-        self_->mail(update_timeZoneOffset_v, iFile_).send(gru_actor);
+      
+      for (auto& gru : gru_struc_->getGruInfo()) {
+        self_->mail(update_timeZoneOffset_v, iFile_).send(gru->getActorRef());
       }
+
       self_->mail(update_hru_v).send(self_);
     },
 
     [this](update_hru) {
-      for (int i = 1; i <= gru_struc_->getNumGrus(); i++) {
+      for (auto& gru : gru_struc_->getGruInfo()) {
         self_->mail(update_hru_v, timestep_, forcing_step_)
-            .send(gru_struc_->getGRU(i)->getActorRef());
+            .send(gru->getActorRef());
       }
     },
 
     [this](done_update) {
       num_gru_done_timestep_++;
-      self_->println("Data Assimilation Mode: numGRU done timestep: {}", 
-                     num_gru_done_timestep_);
-      if (num_gru_done_timestep_ >= gru_struc_->getNumGrus()) {
-        self_->println("Data Assimilation Mode: Done Update for timestep: {}", 
+      if (num_gru_done_timestep_ >= gru_struc_->getGruInfo().size()) {
+        if (hru_actor_settings_.print_output_ && 
+            timestep_ % hru_actor_settings_.output_frequency_ == 0) {
+          self_->println("JobActor: Done Update for timestep: {}", 
                        timestep_);
+        }
 
         // write output
         int steps_to_write = 1;
@@ -216,12 +217,12 @@ behavior JobActor::data_assimilation_mode() {
             .request(file_access_actor_, caf::infinite)
             .await([=](int err) {
               if (err != 0) {
-                self_->println("Data Assimilation Mode: Error Writing Output");
-                for (int i = 0; i < gru_struc_->getNumGrus(); i++) {
-                  self_->mail(exit_msg_v)
-                      .send(gru_struc_->getGRU(i)->getActorRef());
+                self_->println("JobActor: Error Writing Output");
+                for (auto& gru : gru_struc_->getGruInfo()) {
+                  self_->mail(exit_msg_v).send(gru->getActorRef());
                 }
-                self_->send_exit(file_access_actor_, exit_reason::user_shutdown);
+                self_->send_exit(file_access_actor_, 
+                                 exit_reason::user_shutdown);
                 self_->quit();
               }
             });
@@ -231,15 +232,15 @@ behavior JobActor::data_assimilation_mode() {
 
         // Check if we are done
         if (timestep_ > num_steps_) {
-          self_->println("Data Assimilation Mode: Done");
-          for (int i = 1; i <= gru_struc_->getNumGrus(); i++) {
+          self_->println("JobActor: Done");
+          for (auto& gru : gru_struc_->getGruInfo()) {
             self_->mail(exit_reason::user_shutdown)
-                .send(gru_struc_->getGRU(i)->getActorRef());
+                .send(gru->getActorRef());
           }
           self_->mail(finalize_v).send(self_);
         
         } else if (forcing_step_ > steps_in_ffile_) {
-          self_->println("Data Assimilation Mode: Getting New Forcing File");
+          self_->println("JobActor: Getting New Forcing File");
           self_->mail(access_forcing_v, iFile_ + 1, self_)
               .send(file_access_actor_);
         } else {
@@ -268,8 +269,8 @@ behavior JobActor::data_assimilation_mode() {
 
 // ------------------------ Member Functions ------------------------
 void JobActor::spawnGruActors() {
-  self_->println("Job Actor: Spawning GRU Actors");
-  for (int i = 0; i < gru_struc_->getNumGrus(); i++) {
+  self_->println("JobActor: Spawning GRU Actors");
+  for (int i = 0; i < gru_struc_->getNumGru(); i++) {
     auto netcdf_index = gru_struc_->getStartGru() + i;
     auto job_index = i + 1;
     auto gru_actor = self_->spawn(actor_from_state<GruActor>, netcdf_index, 
@@ -296,21 +297,21 @@ void JobActor::spawnGruBatches() {
 
   if (job_actor_settings_.batch_size_ < 0) {
     // Automatically determine batch size
-    batch_size = std::ceil(gru_struc_->getNumGrus() / 
+    batch_size = std::ceil(gru_struc_->getNumGru() / 
                            (std::thread::hardware_concurrency() * 2));
   } else {
     // Use the user selected batch size
     batch_size = job_actor_settings_.batch_size_;
   }
 
-  self_->println("Job_Actor: Batch Size {}", batch_size);
+  self_->println("JobActor: Batch Size {}", batch_size);
   
   if (batch_size == 0 || batch_size == 1) {
     batch_size = 1;
     // Batch Size of 1 is same as having no batch actor
     spawnGruActors();
   }
-  int remaining_hru_to_batch = gru_struc_->getNumGrus();
+  int remaining_hru_to_batch = gru_struc_->getNumGru();
   int start_hru_global = batch_.getStartHRU();
   int start_hru_local = 1;
 
@@ -335,18 +336,18 @@ void JobActor::spawnGruBatches() {
 
 
 void JobActor::handleFinishedGRU(int job_index) {
-  gru_struc_->incrementNumGRUDone();
+  gru_struc_->incrementNumGruDone();
   gru_struc_->getGRU(job_index)->setSuccess();
   success_logger_->logSuccess(gru_struc_->getGRU(job_index)->getIndexNetcdf(),
                               gru_struc_->getGRU(job_index)->getIndexJob(),
                               rel_tol_, abs_tol_);
   std::string update_str =
-      "GRU Finished: " + std::to_string(gru_struc_->getNumGrusDone()) + "/" + 
-      std::to_string(gru_struc_->getNumGrus()) + " -- GlobalGRU=" + 
+      "GRU Finished: " + std::to_string(gru_struc_->getNumGruDone()) + "/" + 
+      std::to_string(gru_struc_->getNumGru()) + " -- GlobalGRU=" + 
       std::to_string(gru_struc_->getGRU(job_index)->getIndexNetcdf()) + 
       " -- LocalGRU=" + 
       std::to_string(gru_struc_->getGRU(job_index)->getIndexJob()) + 
-      " -- NumFailed=" + std::to_string(gru_struc_->getNumGRUFailed());
+      " -- NumFailed=" + std::to_string(gru_struc_->getNumGruFailed());
   logger_->log(update_str);
   self_->println(update_str);
 
@@ -379,7 +380,7 @@ void JobActor::finalizeJob() {
         // Tell Parent we are done
         auto total_duration = timing_info_.getDuration("total_duration").
             value_or(-1.0);
-        auto num_failed_grus = gru_struc_->getNumGRUFailed();    
+        auto num_failed_grus = gru_struc_->getNumGruFailed();    
         self_->mail(done_job_v, num_failed_grus, total_duration, 
                     std::get<0>(read_write_duration), 
                     std::get<1>(read_write_duration))
@@ -398,11 +399,11 @@ void JobActor::handleGRUError(int err_code, int job_index, int timestep,
 
 
 void JobActor::handleFileAccessError(int err_code, std::string& err_msg) {
-  logger_->log("Job Actor: File_Access_Actor Error:" + err_msg);
-  self_->println("Job Actor: File_Access_Actor Error: {}", err_msg);
+  logger_->log("JobActor: File_Access_Actor Error:" + err_msg);
+  self_->println("JobActor: File_Access_Actor Error: {}", err_msg);
   if (err_code != -1) {
-    logger_->log("Job_Actor: Have to Quit");
-    self_->println("Job_Actor: Have to Quit");
+    logger_->log("JobActor: Have to Quit");
+    self_->println("JobActor: Have to Quit");
     self_->quit();
     return;
   }

@@ -6,10 +6,12 @@ using namespace caf;
 behavior GruBatchActor::make_behavior() {
   bool data_assimilation_mode = true;
   for (int i = 0; i < num_gru_; i++) {
-    gru_actors_.push_back(
-        self_->spawn(actor_from_state<GruActor>, netcdf_start_index_ + i, 
-                     job_start_index_ + i, num_steps_, hru_actor_settings_, 
-                     data_assimilation_mode, file_access_actor_, self_));  
+    gru_actors_.push_back(self_->spawn(actor_from_state<GruActor>, 
+                                       netcdf_start_index_ + i, 
+                                       job_start_index_ + i, 
+                                       num_steps_, hru_actor_settings_, 
+                                       data_assimilation_mode, 
+                                       file_access_actor_, self_));  
   }
   return {
     [this](update_timeZoneOffset, int iFile) {
