@@ -3,6 +3,9 @@
 # All Variables are reachable from the parent scope
 #===============================================================================
 
+
+
+
 # Actors interface modules
 set(INTERFACE
     ${ACTORS_DIR}/global/cppwrap_auxiliary.f90
@@ -32,6 +35,10 @@ set(GRU_INTERFACE
     CACHE INTERNAL "GRU_INTERFACE")
 
 # Actors actual actor modules
+set(DATAMS_ACTORS
+    ${ACTORS_DIR}/global/actor_data_types.f90
+    CACHE INTERNAL "DATAMS_ACTORS")
+
 set(ACTORS_GLOBAL
     ${ACTORS_DIR}/global/auxiliary.cpp
     ${ACTORS_DIR}/global/fileManager.cpp

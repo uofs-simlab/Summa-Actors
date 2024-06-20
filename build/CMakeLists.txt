@@ -7,21 +7,25 @@ message("\nSelected Bulid Type: ${CMAKE_BUILD_TYPE}\n")
 
 # Optional Dependencies
 option(USE_SUNDIALS "Use IDA solver from sundilas suite" OFF)
+option(USE_V4 "Use V4 interface" OFF)
 set(EXT_TARGETS) # list of external targets to link to
 
 if (USE_SUNDIALS)
     message("ENABLING SUNDIALS")
+    set(USE_V4 ON CACHE BOOL "Use V4 interface" FORCE)
     find_package(SUNDIALS REQUIRED)
     list(APPEND EXT_TARGETS SUNDIALS::fida_mod_shared 
                             SUNDIALS::fkinsol_mod_shared)
     add_compile_definitions(SUNDIALS_ACTIVE)
 endif()
 
+if (USE_V4)
+    add_compile_definitions(ACTORS_ACTIVE V4_ACTIVE)
+endif()
 
 # Required Dependencies
 find_package(CAF REQUIRED)
 list(APPEND EXT_TARGETS CAF::core CAF::io)
-add_compile_definitions(ACTORS_ACTIVE V4_ACTIVE)
 include(FortranCInterface)
 FortranCInterface_VERIFY(CXX)
 
@@ -84,10 +88,24 @@ set(GRU_ACTOR_DIR   ${ACTORS_DIR}/gru_actor)
 
 # SUMMA Actors Source Files are defined in the CMakeLists.txt file in the subdirectory ./source
 add_subdirectory(${F_MASTER}/build/source)
-
 # SUMMA Source Files are defined in the CMakeLists.txt file in the subdirectory ./summa/build/source
 add_subdirectory(${F_MASTER}/build/summa/build/source)
 
+# Adjust Summa Source Files
+list(REMOVE_ITEM MODRUN
+        ${ENGINE_DIR}/read_force.f90)
+
+list(REMOVE_ITEM SOLVER
+        ${ENGINE_DIR}/run_oneGRU.f90
+        ${ENGINE_DIR}/run_oneHRU.f90)
+
+list(REMOVE_ITEM DRIVER
+        ${DRIVER_DIR}/summa_util.f90
+        ${DRIVER_DIR}/summa_defineOutput.f90
+        ${DRIVER_DIR}/summa_init.f90
+        ${DRIVER_DIR}/summa_forcing.f90
+        ${DRIVER_DIR}/summa_modelRun.f90
+        ${DRIVER_DIR}/summa_writeOutput.f90)
 #=========================================================================================
 # COMPILE PART 3: Collect the subroutines into build groups depending on build type
 #=========================================================================================
