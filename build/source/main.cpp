@@ -3,6 +3,8 @@
 #include "caf/io/all.hpp"
 #include "settings_functions.hpp"
 #include "summa_actor.hpp"
+#include "data_assimilation_server_actor.hpp"
+#include "data_assimilation_client_actor.hpp"
 #include "message_atoms.hpp"
 #include <iostream>
 
@@ -126,10 +128,21 @@ int caf_main(actor_system& sys, const config& cfg) {
     settings.job_actor_settings_.file_manager_path_ = cfg.master_file;
   if (cfg.output_file_suffix != "")
     settings.fa_actor_settings_.output_file_suffix_ = cfg.output_file_suffix;
-  
-  self->spawn(actor_from_state<SummaActor>, cfg.startGRU, cfg.countGRU, 
-               settings, self);
+
+  if (settings.distributed_settings_.distributed_mode_ &&
+      settings.job_actor_settings_.data_assimilation_mode_) {
+    
+    cfg.server_mode ? 
+        self->spawn(actor_from_state<DataAssimilationServerActor>, 
+                    cfg.startGRU, cfg.countGRU, settings) :
+        self->spawn(actor_from_state<DataAssimilationClientActor>, settings);
+
+  } else {
+    self->spawn(actor_from_state<SummaActor>, cfg.startGRU, cfg.countGRU, 
+                settings, self);
+  }
   return EXIT_SUCCESS;
+  
 
 
   // Distributed_Settings distributed_settings = readDistributedSettings(cfg.config_file);

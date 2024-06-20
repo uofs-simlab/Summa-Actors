@@ -3,7 +3,6 @@
 #include "json.hpp"
 #include <iostream>
 #include <fstream>
-#include <netcdf.h>
 #include <filesystem>
 #include <chrono>
 #include <sstream>
@@ -27,19 +26,21 @@ behavior SummaActor::make_behavior() {
     self_->quit();
     return {};
   }
+  file_gru_ = file_manager_->getFileGru();
+  if (file_gru_ < 0) {
+    self_->println("ERROR--File Manager: Unable To Verify Number Of GRUs");
+    self_->quit();
+    return {};
+  } else if (file_gru_ < start_gru_ + num_gru_) {
+    self_->println("ERROR--File Manager: Number Of GRUs Exceeds File GRUs");
+    self_->quit();
+    return {};
+  }
   
   global_fortran_state_ = std::make_unique<SummaGlobalData>();
   auto err = global_fortran_state_->defineGlobalData();
   if (err != 0) {
     self_->println("ERROR--Global State: Unable To Define Global Data");
-    self_->quit();
-    return {};
-  }
-
-  file_gru_ = getFileGRU(file_manager_->settings_path_, 
-                         file_manager_->local_attributes_);
-  if (file_gru_ < 0) {
-    self_->println("ERROR--File Manager: Unable To Verify Number Of GRUs");
     self_->quit();
     return {};
   }
@@ -137,36 +138,6 @@ int SummaActor::createLogDirectory() {
     log_folder_ = ""; // Empty log to signal no logging
     return 0;
   }
-}
-
-int SummaActor::getFileGRU(const std::string &settingsPath, 
-                           const std::string &attributeFile) {
-  size_t file_gru_ = -1;
-  int ncid, gru_dim;
-
-  if (attributeFile.empty() || settingsPath.empty()) return file_gru_;
-  
-  std::string combined = settingsPath + attributeFile;
-
-  if (NC_NOERR != nc_open(combined.c_str(), NC_NOWRITE, &ncid))
-    return file_gru_;
-
-  if (NC_NOERR != nc_inq_dimid(ncid, "gru", &gru_dim)) {
-    nc_close(ncid);
-    return -1;
-  }
-  if (NC_NOERR != nc_inq_dimlen(ncid, gru_dim, &file_gru_)) {
-    nc_close(ncid);
-    return -1;
-  }
-  nc_close(ncid);
-
-  // Adjust num_gru if it exceeds the number of GRUs in the file
-  if (start_gru_ + num_gru_ > file_gru_) {
-    num_gru_ = file_gru_ - start_gru_ + 1;
-  }
-
-  return file_gru_;
 }
 
 void SummaActor::finalize() {

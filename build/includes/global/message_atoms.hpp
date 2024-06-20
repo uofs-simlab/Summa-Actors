@@ -9,6 +9,8 @@
 
 #include "logger.hpp"
 
+#include "gru_struc.hpp"
+
 #include "gru_data_structure.hpp"
 #include "num_gru_info.hpp"
 #include "settings_functions.hpp"
@@ -199,6 +201,7 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     CAF_ADD_TYPE_ID(summa, (HRU))
     CAF_ADD_TYPE_ID(summa, (std::vector<HRU>))
     CAF_ADD_TYPE_ID(summa, (NumGRUInfo))
+    CAF_ADD_TYPE_ID(summa, (NodeGruInfo))
 
     // Class Types
     // CAF_ADD_TYPE_ID(summa, (Client))

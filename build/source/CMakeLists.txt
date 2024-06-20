@@ -3,9 +3,6 @@
 # All Variables are reachable from the parent scope
 #===============================================================================
 
-
-
-
 # Actors interface modules
 set(INTERFACE
     ${ACTORS_DIR}/global/cppwrap_auxiliary.f90
@@ -41,7 +38,7 @@ set(DATAMS_ACTORS
 
 set(ACTORS_GLOBAL
     ${ACTORS_DIR}/global/auxiliary.cpp
-    ${ACTORS_DIR}/global/fileManager.cpp
+    ${ACTORS_DIR}/global/file_manager.cpp
     ${ACTORS_DIR}/global/settings_functions.cpp
     ${ACTORS_DIR}/global/timing_info.cpp
     ${ACTORS_DIR}/global/logger.cpp
@@ -66,7 +63,8 @@ set(FILE_ACCESS_ACTOR
 set(JOB_ACTOR
     ${JOB_ACTOR_DIR}/gru_struc.cpp
     ${JOB_ACTOR_DIR}/job_actor.cpp
-    # ${JOB_ACTOR_DIR}/distributed_job_actor.cpp
+    ${JOB_ACTOR_DIR}/data_assimilation_server_actor.cpp
+    ${JOB_ACTOR_DIR}/data_assimilation_client_actor.cpp
     # ${JOB_ACTOR_DIR}/node_actor.cpp
     CACHE INTERNAL "JOB_ACTOR")
 set(GRU_ACTOR

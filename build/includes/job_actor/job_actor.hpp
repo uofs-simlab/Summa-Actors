@@ -6,7 +6,6 @@
 #include "timing_info.hpp"
 #include "settings_functions.hpp"
 #include "json.hpp"
-// #include "hru_actor.hpp"
 #include "gru_batch_actor.hpp"
 #include "message_atoms.hpp"
 #include "file_access_actor.hpp"
@@ -76,6 +75,7 @@ class JobActor {
     caf::behavior make_behavior(); // Initial Behavior
     caf::behavior data_assimilation_mode();
     caf::behavior async_mode();
+    
 
     void spawnGruActors();
     void spawnGruBatches();

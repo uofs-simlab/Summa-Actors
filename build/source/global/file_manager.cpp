@@ -1,4 +1,4 @@
-#include "fileManager.hpp"
+#include "file_manager.hpp"
 #include <iostream>
 #include <fstream>
 #include <memory>
@@ -15,7 +15,6 @@ std::string extractEnclosed(const std::string& line) {
 }
 
 FileManager::FileManager(const std::string& file_manager_path) {
-  std::cout << "Rading File Manager\n";
   file_manager_path_ = file_manager_path;
 
   std::ifstream file(file_manager_path);
@@ -82,6 +81,31 @@ std::string FileManager::setTimesDirsAndFiles() {
   // Calls summa_SetTimesDirsAndFiles() 
   setTimesDirsAndFiles_fortran(file_manager_path_.c_str(), &err, &err_msg);
   return std::string(err_msg.get());
+}
+
+
+int FileManager::getFileGru() {
+  size_t file_gru = -1;
+  int ncid, gru_dim;
+
+  if (local_attributes_.empty() || settings_path_.empty()) return file_gru;
+  
+  std::string combined = settings_path_ + local_attributes_;
+
+  if (NC_NOERR != nc_open(combined.c_str(), NC_NOWRITE, &ncid))
+    return file_gru;
+
+  if (NC_NOERR != nc_inq_dimid(ncid, "gru", &gru_dim)) {
+    nc_close(ncid);
+    return -1;
+  }
+  if (NC_NOERR != nc_inq_dimlen(ncid, gru_dim, &file_gru)) {
+    nc_close(ncid);
+    return -1;
+  }
+  nc_close(ncid);
+
+  return file_gru;
 }
 
 std::string FileManager::toString() {

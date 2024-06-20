@@ -43,6 +43,7 @@ behavior JobActor::make_behavior() {
     self_->mail(err_atom_v, -2, err_msg).send(parent_);
     return {};
   }
+  // todo: check if this is necessary
   gru_struc_->getNumHrusPerGru();  
 
   // SummaInitStruc Initialization
@@ -83,6 +84,8 @@ behavior JobActor::make_behavior() {
       return;
     }
     timing_info_.updateEndPoint("init_duration");
+
+    // Start JobActor in User Selected Mode
     logger_->log("JobActor Initialized");
     self_->println("JobActor Initialized: Running {} Steps", num_timesteps);
     job_actor_settings_.data_assimilation_mode_ ? 

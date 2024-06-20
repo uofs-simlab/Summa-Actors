@@ -76,6 +76,29 @@ class GRU {
 };
 
 
+// Class to track Gru Information For Nodes in data assimilation
+struct NodeGruInfo {
+  int node_start_gru_;  // Start Gru for the node
+  int start_gru_sim_;   // Start Gru provided by the user (global)
+  int node_num_gru_;    // Number of GRUs for the node
+  int num_gru_sim_;     // Number of GRUs provided by the user (global)
+  int file_gru_;
+
+  NodeGruInfo(int node_start_gru = -1, int start_gru_sim = -1, 
+              int node_num_gru = -1, int num_gru_sim = -1, int file_gru = -1) 
+              : node_start_gru_(node_start_gru), start_gru_sim_(start_gru_sim),
+                node_num_gru_(node_num_gru), num_gru_sim_(num_gru_sim), 
+                file_gru_(file_gru) {};
+};
+template <class Inspector>
+bool inspect(Inspector& f, NodeGruInfo& x) {
+  return f.object(x).fields(f.field("node_start_gru", x.node_start_gru_),
+                            f.field("start_gru_sim", x.start_gru_sim_),
+                            f.field("node_num_gru", x.node_num_gru_),
+                            f.field("num_gru_sim", x.num_gru_sim_),
+                            f.field("file_gru", x.file_gru_));
+}
+
 class GruStruc {
   private:
     // Inital Information about the GRUs
@@ -87,19 +110,30 @@ class GruStruc {
     
     // GRU specific Information
     std::vector<std::unique_ptr<GRU>> gru_info_;
-    std::vector<int> num_hru_per_gru_;
+    std::vector<NodeGruInfo> node_gru_info_;
 
+  
     // Runtime status of the GRUs
     int num_gru_done_ = 0;
     int num_gru_failed_ = 0;
     int num_retry_attempts_left_ = 0;
     int attempt_ = 1;
-  
+
+    // todo: check if this is necessary
+    std::vector<int> num_hru_per_gru_;
   public:
     GruStruc(int start_gru, int num_gru, int num_retry_attempts);
     ~GruStruc(){deallocate_gru_struc_fortran();};
     int ReadDimension();
     int ReadIcondNlayers();
+
+    // Set the gru information for each node participating in data assimilation
+    int setNodeGruInfo(int num_nodes);
+    std::string getNodeGruInfoString();
+    inline NodeGruInfo getNodeGruInfo(int index) {
+      return node_gru_info_[index];
+    }
+
     inline std::vector<std::unique_ptr<GRU>>& getGruInfo() { return gru_info_; }
     inline int getStartGru() const { return start_gru_; }
     inline int getNumGru() const { return num_gru_; }
@@ -111,7 +145,6 @@ class GruStruc {
 
     inline void addGRU(std::unique_ptr<GRU> gru) {
       gru_info_.push_back(std::move(gru));
-      // gru_info_[gru->getIndexJob() - 1] = std::move(gru);
     }
 
     inline void incrementNumGruDone() { num_gru_done_++; }
@@ -126,5 +159,7 @@ class GruStruc {
 
     int getFailedIndex(); 
     void getNumHrusPerGru();
+
+    // todo: check if this is necessary
     inline int getNumHruPerGru(int index) { return num_hru_per_gru_[index]; }
 };

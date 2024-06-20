@@ -1,4 +1,6 @@
+#pragma once
 #include <string>
+#include <netcdf.h>
 
 extern "C" {
   void setTimesDirsAndFiles_fortran(char const* file_manager_path,  
@@ -37,6 +39,8 @@ class FileManager {
     // Constructor - read file_manager_path & populate class variables
     FileManager(const std::string& file_manager_path);
     ~FileManager() {};
+
+    int getFileGru();
 
     // Set the variables that are used by the summaFileManager (summaFileManager.f90)
     std::string setTimesDirsAndFiles();
