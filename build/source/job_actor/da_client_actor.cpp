@@ -1,8 +1,8 @@
-#include "data_assimilation_client_actor.hpp"
+#include "da_client_actor.hpp"
 
 using namespace caf;
 
-behavior DataAssimilationClientActor::make_behavior() {
+behavior DAClientActor::make_behavior() {
   
   self_->println("DAClientActor: Starting");
   auto strong_server = self_->system().middleman().remote_actor(

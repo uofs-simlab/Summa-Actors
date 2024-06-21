@@ -3,8 +3,8 @@
 #include "caf/io/all.hpp"
 #include "settings_functions.hpp"
 #include "summa_actor.hpp"
-#include "data_assimilation_server_actor.hpp"
-#include "data_assimilation_client_actor.hpp"
+#include "da_server_actor.hpp"
+#include "da_client_actor.hpp"
 #include "message_atoms.hpp"
 #include <iostream>
 
@@ -133,9 +133,9 @@ int caf_main(actor_system& sys, const config& cfg) {
       settings.job_actor_settings_.data_assimilation_mode_) {
     
     cfg.server_mode ? 
-        self->spawn(actor_from_state<DataAssimilationServerActor>, 
-                    cfg.startGRU, cfg.countGRU, settings) :
-        self->spawn(actor_from_state<DataAssimilationClientActor>, settings);
+        self->spawn(actor_from_state<DAServerActor>, cfg.startGRU, cfg.countGRU, 
+                    settings) :
+        self->spawn(actor_from_state<DAClientActor>, settings);
 
   } else {
     self->spawn(actor_from_state<SummaActor>, cfg.startGRU, cfg.countGRU, 

@@ -1,9 +1,9 @@
-#include "data_assimilation_server_actor.hpp"
+#include "da_server_actor.hpp"
 
 
 using namespace caf;
 
-behavior DataAssimilationServerActor::make_behavior() {
+behavior DAServerActor::make_behavior() {
   
   // Publish Actor To port
   self_->println("DAServerActor: Starting");

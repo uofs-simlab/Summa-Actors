@@ -63,8 +63,8 @@ set(FILE_ACCESS_ACTOR
 set(JOB_ACTOR
     ${JOB_ACTOR_DIR}/gru_struc.cpp
     ${JOB_ACTOR_DIR}/job_actor.cpp
-    ${JOB_ACTOR_DIR}/data_assimilation_server_actor.cpp
-    ${JOB_ACTOR_DIR}/data_assimilation_client_actor.cpp
+    ${JOB_ACTOR_DIR}/da_server_actor.cpp
+    ${JOB_ACTOR_DIR}/da_client_actor.cpp
     # ${JOB_ACTOR_DIR}/node_actor.cpp
     CACHE INTERNAL "JOB_ACTOR")
 set(GRU_ACTOR

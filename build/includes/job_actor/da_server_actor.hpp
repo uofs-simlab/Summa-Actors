@@ -6,7 +6,7 @@
 #include "gru_struc.hpp"
 #include "message_atoms.hpp"
 
-class DataAssimilationServerActor {
+class DAServerActor {
   private:
     // Part of the constructor
     caf::event_based_actor* self_;
@@ -22,9 +22,9 @@ class DataAssimilationServerActor {
 
 
   public:
-    DataAssimilationServerActor(caf::event_based_actor* self, int start_gru, 
-                                int num_gru_, Settings settings) 
-                                : self_(self), start_gru_(start_gru), 
-                                  num_gru_(num_gru_), settings_(settings) {};
+    DAServerActor(caf::event_based_actor* self, int start_gru, int num_gru_, 
+                  Settings settings) 
+                  : self_(self), start_gru_(start_gru), num_gru_(num_gru_), 
+                    settings_(settings) {};
     caf::behavior make_behavior();
 };

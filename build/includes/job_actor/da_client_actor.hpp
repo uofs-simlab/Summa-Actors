@@ -12,7 +12,7 @@
 #define HOST_NAME_MAX 255
 #endif
 
-class DataAssimilationClientActor {
+class DAClientActor {
   private:
     // Part of the constructor
     caf::event_based_actor* self_;
@@ -23,8 +23,8 @@ class DataAssimilationClientActor {
     char hostname_[HOST_NAME_MAX];
     NodeGruInfo node_gru_info_;
   public:
-    DataAssimilationClientActor(caf::event_based_actor* self, Settings settings) 
-                                : self_(self), settings_(settings) {};
+    DAClientActor(caf::event_based_actor* self, Settings settings) 
+                  : self_(self), settings_(settings) {};
     caf::behavior make_behavior();
 
     // methods
