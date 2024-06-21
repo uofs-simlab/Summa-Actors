@@ -1,5 +1,4 @@
-#define SUMMA_INIT_STRUC
-#ifdef SUMMA_INIT_STRUC
+#pragma once
 #include "settings_functions.hpp"
 extern "C" {
   void initialize_init_struc(int& num_gru, int& err, void* message);
@@ -20,5 +19,3 @@ class SummaInitStruc {
     void getInitTolerance(double rel_tol, double abs_tol); 
 };
 
-
-#endif

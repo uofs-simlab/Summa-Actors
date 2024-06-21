@@ -1,3 +1,5 @@
+#pragma once
+
 extern "C" {
   void defineGlobalData_fortran(int* err, void* err_msg);
 

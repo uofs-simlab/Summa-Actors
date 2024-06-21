@@ -19,7 +19,16 @@ class DAServerActor {
     int file_gru_; // total number of grus in attributes.nc
     std::unique_ptr<GruStruc> gru_struc_;
     std::vector<caf::actor> connected_clients_;
+    int num_clients_ready_ = 0;
 
+    int iFile = 1;
+    int num_steps_ffile_ = 0;
+    int num_timesteps_ = 0;
+    int timestep_ = 1;
+    int forcing_step_ = 1;
+
+    bool done_ = false;
+    int clients_exited_ = 0;
 
   public:
     DAServerActor(caf::event_based_actor* self, int start_gru, int num_gru_, 

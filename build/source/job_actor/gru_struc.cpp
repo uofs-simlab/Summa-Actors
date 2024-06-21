@@ -15,7 +15,8 @@ int GruStruc::ReadDimension() {
   read_dimension_fortran(start_gru_, num_gru_, num_hru, file_gru, file_hru,
                          err, &err_msg);
   if (err != 0) { 
-    std::cout << "ERROR: GruStruc - ReadDimension\n";
+    std::cout << "ERROR: GruStruc - ReadDimension()\n";
+    std::cout << err_msg.get() << "\n";
   }
   num_hru_ = num_hru;
   file_gru_ = file_gru;
