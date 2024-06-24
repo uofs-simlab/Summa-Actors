@@ -6,7 +6,7 @@ behavior DAClientActor::make_behavior() {
   
   self_->println("DAClientActor: Starting");
   auto strong_server = self_->system().middleman().remote_actor(
-      "localhost", settings_.distributed_settings_.port_);
+      host_, settings_.distributed_settings_.port_);
   if (!strong_server) {
     self_->println("DAClientActor: Failed to connect to server");
     return {};

@@ -62,43 +62,6 @@ class config : public actor_system_config {
 };
 
 
-// void run_client(actor_system& system, const config& cfg, 
-//                 Distributed_Settings distributed_settings) {
-//   scoped_actor self{system};
-
-//   aout(self) << "Starting SUMMA-Client in Distributed Mode\n";
-    
-//   auto client = system.spawn(summa_client, distributed_settings);   
-// }
-
-// void run_server(actor_system& system, const config& cfg, 
-//                 Distributed_Settings distributed_settings, 
-//                 Summa_Actor_Settings summa_actor_settings, 
-//                 File_Access_Actor_Settings file_access_actor_settings,
-//                 Job_Actor_Settings job_actor_settings, 
-//                 HRU_Actor_Settings hru_actor_settings) {
-//   scoped_actor self{system};
-//   int err;
-
-//   if (distributed_settings.port == -1) {
-//     aout(self) << "ERROR: run_server() port - CHECK SETTINGS FILE\n";
-//     return;
-//   }
-
-//   // Check if we have are the backup server
-//   if (cfg.backup_server) {          
-//     auto server = system.spawn(summa_backup_server_init, distributed_settings,
-//                                summa_actor_settings, file_access_actor_settings, 
-//                                job_actor_settings, hru_actor_settings);
-
-//   } else {  
-//     aout(self) << "\n\n*****Starting SUMMA-Server*****\n\n";
-//     auto server = system.spawn(summa_server, distributed_settings,
-//         summa_actor_settings, file_access_actor_settings, job_actor_settings, 
-//         hru_actor_settings);
-//   }
-// }
-
 
 int caf_main(actor_system& sys, const config& cfg) {
   scoped_actor self{sys};
@@ -135,65 +98,14 @@ int caf_main(actor_system& sys, const config& cfg) {
     cfg.server_mode ? 
         self->spawn(actor_from_state<DAServerActor>, cfg.startGRU, cfg.countGRU, 
                     settings) :
-        self->spawn(actor_from_state<DAClientActor>, settings);
+        self->spawn(actor_from_state<DAClientActor>, cfg.host, settings);
 
   } else {
     self->spawn(actor_from_state<SummaActor>, cfg.startGRU, cfg.countGRU, 
                 settings, self);
   }
   return EXIT_SUCCESS;
-  
-
-
-  // Distributed_Settings distributed_settings = readDistributedSettings(cfg.config_file);
-  // Summa_Actor_Settings summa_actor_settings = readSummaActorSettings(cfg.config_file);
-  // File_Access_Actor_Settings file_access_actor_settings = readFileAccessActorSettings(cfg.config_file);
-  // Job_Actor_Settings job_actor_settings = readJobActorSettings(cfg.config_file);
-  // HRU_Actor_Settings hru_actor_settings = readHRUActorSettings(cfg.config_file);
-
-  // -m setting overides config file
-  // if (cfg.master_file != "")
-  //   job_actor_settings.file_manager_path = cfg.master_file;
-  
-  // check_settings_from_json(distributed_settings, summa_actor_settings, 
-  //                          file_access_actor_settings, job_actor_settings, 
-  //                          hru_actor_settings);
-
-  // file_access_actor_settings.output_file_suffix = cfg.output_file_suffix;
-
-  // if (distributed_settings.distributed_mode && 
-  //     !job_actor_settings.data_assimilation_mode) {
-  //   // only command line arguments needed are config_file and server-mode
-  //   if (cfg.server_mode) {
-  //     run_server(sys, cfg, distributed_settings, summa_actor_settings, 
-  //                file_access_actor_settings, job_actor_settings, 
-  //                hru_actor_settings);
-  //   } else {
-  //     run_client(sys,cfg, distributed_settings);
-  //   }
-
-  // } else if (distributed_settings.distributed_mode &&
-  //            job_actor_settings.data_assimilation_mode && cfg.server_mode) {
-    
-  //   auto dist_summa = sys.spawn(distributed_job_actor, cfg.startGRU,
-  //                               cfg.countGRU, distributed_settings, 
-  //                               file_access_actor_settings,
-  //                               job_actor_settings, hru_actor_settings);
-  
-  // } else if (distributed_settings.distributed_mode &&
-  //            job_actor_settings.data_assimilation_mode) {
-    
-  //   auto node = sys.spawn(node_actor, cfg.host, self, distributed_settings, 
-  //                         file_access_actor_settings, job_actor_settings, 
-  //                         hru_actor_settings);
-
-  // } else {
-  //   auto summa = sys.spawn(summa_actor, cfg.startGRU, cfg.countGRU, 
-  //                          summa_actor_settings, file_access_actor_settings, 
-  //                          job_actor_settings, hru_actor_settings, self);
-  // }
-    
-}
+  }
 
 /**
  Command Line Arguments Behavior:

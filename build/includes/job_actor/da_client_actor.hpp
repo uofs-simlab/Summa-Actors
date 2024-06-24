@@ -20,6 +20,7 @@ class DAClientActor {
   private:
     // Part of the constructor
     caf::event_based_actor* self_;
+    std::string host_;
     Settings settings_;
 
     // member variables
@@ -40,8 +41,9 @@ class DAClientActor {
     int num_gru_done_timestep_ = 0;
 
   public:
-    DAClientActor(caf::event_based_actor* self, Settings settings) 
-                  : self_(self), settings_(settings) {};
+    DAClientActor(caf::event_based_actor* self, std::string host, 
+                  Settings settings) 
+                  : self_(self), host_(host), settings_(settings) {};
     caf::behavior make_behavior();
 
     // methods
