@@ -11,20 +11,20 @@ behavior GruActor::make_behavior() {
   
   std::unique_ptr<char[]> message(new char[256]);
   initGRU_fortran(job_index_, gru_data_, err, &message);
-  std::fill(message.get(), message.get() + 256, '\0');
   if (err != 0) {
     self_->println("GRU Actor: Error initializing GRU -- {}", message.get());
     self_->quit();
     return {};
   }
+  std::fill(message.get(), message.get() + 256, '\0');
 
   setupGRU_fortran(job_index_, gru_data_, err, &message);
-  std::fill(message.get(), message.get() + 256, '\0');
   if (err != 0) {
     self_->println("GRU Actor: Error setting up GRU -- {}", message.get());
     self_->quit();
     return {};
   }
+  std::fill(message.get(), message.get() + 256, '\0');
   
   readGRURestart_fortran(job_index_, gru_data_, err, &message);
   if (err != 0) {

@@ -203,7 +203,6 @@ class HRUActorSettings {
 class Settings {
   private:
     std::string json_file_;
-    // json settings_;
   public:
     DistributedSettings distributed_settings_;
     SummaActorSettings summa_actor_settings_;

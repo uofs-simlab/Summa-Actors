@@ -39,6 +39,8 @@ behavior FileAccessActor::make_behavior() {
                        "\tMessage = {}\n\n", message.get());
         return -1;
       }
+      std::fill(message.get(), message.get() + 256, '\0');
+
 
       if (num_steps_ < num_output_steps_) {
         num_output_steps_ = num_steps_;
@@ -63,10 +65,17 @@ behavior FileAccessActor::make_behavior() {
         num_gru_info_.use_global_for_data_structures = true;
       }
 
-      defOutputFortran(handle_ncid_, start_gru_, num_gru_, num_hru_, file_gru, 
-                       num_gru_info_.use_global_for_data_structures,
-                       actor_address.c_str(), err);
-      if (err != 0) return -1;
+      int chunk_size = std::ceil(static_cast<double>(num_gru_) 
+          / fa_settings_.num_partitions_in_output_buffer_);
+      self_->println("Chunk Size = {}", chunk_size);
+      defOutputFortran(handle_ncid_, start_gru_, num_gru_, num_hru_, file_gru,
+                       chunk_size, num_gru_info_.use_global_for_data_structures,
+                       actor_address.c_str(), err, &message);
+      if (err != 0) {
+        self_->println("File Access Actor: Error defOutputFortran\n"
+                       "\tMessage = {}\n", message.get());
+        return -1;
+      }
 
       timing_info_.updateEndPoint("init_duration");
       return num_steps_;

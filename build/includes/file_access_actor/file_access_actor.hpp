@@ -19,8 +19,9 @@ extern "C" {
                                     int& numGRU, int& err, void* message);
 
   void defOutputFortran(void* handle_ncid, int& start_gru, int& num_gru, 
-                        int& num_hru, int& file_gru, bool& use_extention, 
-                        char const* output_extention, int& err); 
+                        int& num_hru, int& file_gru, int& chunk_size,
+                        bool& use_extention, char const* output_extention, 
+                        int& err, void* message); 
 
   void writeOutput_fortran(void* handle_ncid, int& num_steps, int& start_gru, 
                           int& max_gru, bool& writeParamFlag, int& err,
