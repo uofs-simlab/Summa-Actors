@@ -1,4 +1,4 @@
-#include "fileManager.hpp"
+#include "file_manager.hpp"
 #include <iostream>
 #include <fstream>
 #include <memory>
@@ -14,8 +14,7 @@ std::string extractEnclosed(const std::string& line) {
   return "";
 }
 
-fileManager::fileManager(const std::string& file_manager_path) {
-  std::cout << "Rading File Manager\n";
+FileManager::FileManager(const std::string& file_manager_path) {
   file_manager_path_ = file_manager_path;
 
   std::ifstream file(file_manager_path);
@@ -76,7 +75,7 @@ fileManager::fileManager(const std::string& file_manager_path) {
 }
 
 
-std::string fileManager::setTimesDirsAndFiles() {
+std::string FileManager::setTimesDirsAndFiles() {
   int err = 0;
   std::unique_ptr<char[]> err_msg(new char[1024]);
   // Calls summa_SetTimesDirsAndFiles() 
@@ -84,7 +83,32 @@ std::string fileManager::setTimesDirsAndFiles() {
   return std::string(err_msg.get());
 }
 
-std::string fileManager::toString() {
+
+int FileManager::getFileGru() {
+  size_t file_gru = -1;
+  int ncid, gru_dim;
+
+  if (local_attributes_.empty() || settings_path_.empty()) return file_gru;
+  
+  std::string combined = settings_path_ + local_attributes_;
+
+  if (NC_NOERR != nc_open(combined.c_str(), NC_NOWRITE, &ncid))
+    return file_gru;
+
+  if (NC_NOERR != nc_inq_dimid(ncid, "gru", &gru_dim)) {
+    nc_close(ncid);
+    return -1;
+  }
+  if (NC_NOERR != nc_inq_dimlen(ncid, gru_dim, &file_gru)) {
+    nc_close(ncid);
+    return -1;
+  }
+  nc_close(ncid);
+
+  return file_gru;
+}
+
+std::string FileManager::toString() {
   std::string str = "Control Version: " + control_vrs_ + "\n";
               str += "Simulation Start Time: " + sim_start_tm_ + "\n";
               str += "Simulation End Time: " + sim_end_tm_ + "\n";

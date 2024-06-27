@@ -2,11 +2,11 @@
 #include <memory>
 #include <iostream>
 
-summaGlobalData::summaGlobalData() {
+SummaGlobalData::SummaGlobalData() {
   global_data_ready = false;
 }
 
-summaGlobalData::~summaGlobalData() {
+SummaGlobalData::~SummaGlobalData() {
   if (global_data_ready) {
     std::unique_ptr<char[]> err_msg(new char[1024]);
     int err = 0;
@@ -18,7 +18,7 @@ summaGlobalData::~summaGlobalData() {
   }
 }
 
-int summaGlobalData::defineGlobalData() {
+int SummaGlobalData::defineGlobalData() {
   std::unique_ptr<char[]> err_msg(new char[1024]);
   int err = 0;
   defineGlobalData_fortran(&err, &err_msg);

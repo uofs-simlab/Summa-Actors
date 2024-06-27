@@ -10,5 +10,6 @@ bin/summa_be
 build/source/testing/containers/output_container/out.txt
 bin/config.json
 bin/summa_sundials
-build/v4_build_scripts/cmake_build
-build/v3_build_scripts/cmake_build
+build/build_scripts/cmake_build
+.vscode
+bin/

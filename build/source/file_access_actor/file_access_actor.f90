@@ -61,38 +61,45 @@ subroutine fileAccessActor_init_fortran(num_timesteps,&
 end subroutine fileAccessActor_init_fortran
 
 subroutine defOutputFortran(handle_output_ncid, start_gru, num_gru, num_hru, &
-    file_gru, use_extention, file_extention_c, err) bind(C, name="defOutputFortran")
+    file_gru, chunk_size_fa_actor, use_extention, file_extention_c, &
+    err, message_r) bind(C, name="defOutputFortran")
   USE globalData,only:nGRUrun,nHRUrun
   USE globalData,only:fileout,output_fileSuffix
   USE globalData,only:ncid
   USE globalData,only:integerMissing
   USE globalData,only:iRunMode,iRunModeFull,iRunModeGRU,iRunModeHRU ! define the running modes
   USE summaFileManager,only:OUTPUT_PATH,OUTPUT_PREFIX ! define output file
-  USE var_lookup,only:maxvarFreq ! maximum number of output files
-  USE def_output_module,only:def_output ! module to define model output
-  USE cppwrap_auxiliary,only:c_f_string           ! Convert C String to Fortran String
-  
+  USE var_lookup,only:maxvarFreq                      ! maximum number of output files
+  USE def_output_module,only:def_output               ! module to define model output
+  USE cppwrap_auxiliary,only:c_f_string               ! Convert C String to Fortran String
+  USE C_interface_module,only:f_c_string_ptr          ! convert fortran string to c string
+  USE globalData,only:chunksize                       ! chunk size for output file  
   implicit none
-
   ! Dummy Variables
   type(c_ptr),intent(in), value          :: handle_output_ncid
   integer(c_int),intent(in)              :: start_gru
   integer(c_int),intent(in)              :: num_gru
   integer(c_int),intent(in)              :: num_hru
   integer(c_int),intent(in)              :: file_gru
+  integer(c_int),intent(in)              :: chunk_size_fa_actor
   logical(c_bool),intent(in)             :: use_extention
   character(kind=c_char,len=1),intent(in):: file_extention_c
   integer(c_int),intent(out)             :: err
+  type(c_ptr),intent(out)                :: message_r
   ! Local Variables
   type(var_i),pointer                    :: output_ncid
   character(len=128)                     :: fmtGruOutput ! a format string used to write start and end GRU in output file names
   character(len=256)                     :: file_extention
   character(len=256)                     :: message ! error message
-
-
+  
+  err=0; message="defOutputFortran/"
+  call f_c_string_ptr(trim(message), message_r)
   call c_f_pointer(handle_output_ncid, output_ncid)
   call c_f_string(file_extention_c,file_extention, 256)
   file_extention = trim(file_extention)
+
+  ! Adjust the chunk_size based on partitions from file_access_actor
+  if (chunk_size_fa_actor > 0) chunksize = chunk_size_fa_actor
 
   output_fileSuffix = ''
   if (output_fileSuffix(1:1) /= '_') output_fileSuffix='_'//trim(output_fileSuffix)
@@ -112,22 +119,14 @@ subroutine defOutputFortran(handle_output_ncid, start_gru, num_gru, num_hru, &
       write(output_fileSuffix((len_trim(output_fileSuffix)+1):len(output_fileSuffix)),"('_H',i0)") checkHRU
   end select
 
-
-
   nGRUrun = num_gru
   nHRUrun = num_hru
   fileout = trim(OUTPUT_PATH)//trim(OUTPUT_PREFIX)//trim(output_fileSuffix)
   ncid(:) = integerMissing
-  call def_output(summaVersion,                  &
-                  buildTime,                     &
-                  gitBranch,                     &
-                  gitHash,                       &
-                  num_gru,                       &
-                  num_hru,                       &
-                  gru_struc(1)%hruInfo(1)%nSoil, &
-                  fileout,                       &
+  call def_output(summaVersion, buildTime, gitBranch, gitHash, num_gru, &
+                  num_hru, gru_struc(1)%hruInfo(1)%nSoil, fileout, &
                   err,message)
-  if(err/=0)then; print*,trim(message); return; endif
+  if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
   ! allocate space for the output file ID array
   if (.not.allocated(output_ncid%var))then
     allocate(output_ncid%var(maxVarFreq))

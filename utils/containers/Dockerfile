@@ -27,13 +27,11 @@ RUN pip3 install netcdf4
 
 # Install the C++ Actor Framework 0.18.6
 WORKDIR /opt
-RUN wget https://github.com/actor-framework/actor-framework/archive/refs/tags/0.18.6.tar.gz
-RUN tar -xvf 0.18.6.tar.gz
-WORKDIR /opt/actor-framework-0.18.6
+RUN git clone https://github.com/actor-framework/actor-framework.git
+WORKDIR /opt/actor-framework
 RUN ./configure --prefix=/usr/local/caf
-WORKDIR /opt/actor-framework-0.18.6/build
+WORKDIR /opt/actor-framework/build
 RUN make -j 4
-RUN make test
 RUN make install
 
 
@@ -53,13 +51,4 @@ RUN make install
 
 WORKDIR /code
 
-# Install the Laugh-Tests
-RUN git clone -b development https://git.cs.usask.ca/numerical_simulations_lab/hydrology/laugh_tests.git
-
-# Install Summa-Actors
-RUN git clone https://github.com/uofs-simlab/Summa-Actors.git
-WORKDIR /code/Summa-Actors/build
-RUN git clone -b develop https://github.com/KyleKlenk/summa.git
-
-WORKDIR /code/Summa-Actors/
 

@@ -1,5 +1,4 @@
-#define SUMMA_INIT_STRUC
-#ifdef SUMMA_INIT_STRUC
+#pragma once
 #include "settings_functions.hpp"
 extern "C" {
   void initialize_init_struc(int& num_gru, int& err, void* message);
@@ -17,8 +16,6 @@ class SummaInitStruc {
     int allocate(int num_gru); // allocate space in Fortran
     int summa_paramSetup();    // call summa_paramSetup
     int summa_readRestart();   // call summa_readRestart
-    void getInitTolerance(HRU_Actor_Settings& hru_settings); 
+    void getInitTolerance(double rel_tol, double abs_tol); 
 };
 
-
-#endif
