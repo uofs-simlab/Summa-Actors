@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.21 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 project(summa-actors VERSION 1.0.0 LANGUAGES Fortran C CXX)
 
 # Add options for build type

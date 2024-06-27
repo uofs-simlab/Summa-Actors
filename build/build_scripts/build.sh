@@ -7,6 +7,16 @@
 # module load openblas/0.3.17
 # module load netcdf-fortran/4.5.2
 
+# If compiling on Anvil, load the following modules:
+# module load gcc/11.2.0 
+# module load openblas 
+# module load openmpi 
+# module load netcdf-fortran
+
+
+# If a library cannot be found by Cmake, you can specify the path like so:
+# export CMAKE_PREFIX_PATH="$CMAKE_PREFIX_PATH:/path/to/lib
+
 # -----------------------------------
 # If compiling V3 use the folowing
 # -----------------------------------

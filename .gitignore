@@ -13,3 +13,6 @@ bin/summa_sundials
 build/build_scripts/cmake_build
 .vscode
 bin/
+utils/dependencies/1.0.0.tar.gz
+utils/dependencies/caf
+utils/dependencies/actor-framework-1.0.0
