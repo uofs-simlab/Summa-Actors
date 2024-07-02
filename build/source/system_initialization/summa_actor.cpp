@@ -31,7 +31,7 @@ behavior SummaActor::make_behavior() {
     self_->println("ERROR--File Manager: Unable To Verify Number Of GRUs");
     self_->quit();
     return {};
-  } else if (file_gru_ < start_gru_ + num_gru_) {
+  } else if (file_gru_ < num_gru_ + start_gru_ - 1) {
     self_->println("ERROR--File Manager: Number Of GRUs Exceeds File GRUs");
     self_->quit();
     return {};
