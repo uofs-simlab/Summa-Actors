@@ -26,6 +26,11 @@ extern "C" {
 
 }
 
+struct GruDeleter {
+  void operator()(void* ptr) const {
+    delete_handle_gru_type(ptr);
+  }
+};
 
 class GruActor {
   caf::event_based_actor* self_;
@@ -36,11 +41,7 @@ class GruActor {
   caf::actor parent_;
 
   int num_hrus_;
-  std::vector<void*> hrus_;
-  void* bvar_stat_ = new_handle_var_dlength();
-  void* bvar_struct_ = new_handle_var_dlength();
-
-  void* gru_data_;
+  std::unique_ptr<void, GruDeleter> gru_data_;
 
   double dt_init_ = 0.0;
   int dt_init_factor_ = 1;

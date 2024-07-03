@@ -92,8 +92,10 @@ int FileManager::getFileGru() {
   
   std::string combined = settings_path_ + local_attributes_;
 
-  if (NC_NOERR != nc_open(combined.c_str(), NC_NOWRITE, &ncid))
+  if (NC_NOERR != nc_open(combined.c_str(), NC_NOWRITE, &ncid)) {
+    nc_close(ncid);
     return file_gru;
+  }
 
   if (NC_NOERR != nc_inq_dimid(ncid, "gru", &gru_dim)) {
     nc_close(ncid);
