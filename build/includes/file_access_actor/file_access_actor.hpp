@@ -2,26 +2,19 @@
 
 #include "caf/actor.hpp"
 #include "output_container.hpp"
+#include "output_buffer.hpp"
 #include "settings_functions.hpp"
 #include "fortran_data_types.hpp"
 #include "auxilary.hpp"
 #include "message_atoms.hpp"
 #include "forcing_file_info.hpp"
 #include "json.hpp"
-// #include "summa_init_struc.hpp"
 
 /*********************************************
  * File Access Actor Fortran Functions
  *********************************************/
 extern "C" {
-  void fileAccessActor_init_fortran(int& num_timesteps, 
-                                    int& num_timesteps_output_buffer, 
-                                    int& numGRU, int& err, void* message);
-
-  void defOutputFortran(void* handle_ncid, int& start_gru, int& num_gru, 
-                        int& num_hru, int& file_gru, int& chunk_size,
-                        bool& use_extention, char const* output_extention, 
-                        int& err, void* message); 
+  void f_getNumTimeSteps(int& num_timesteps);
 
   void writeOutput_fortran(void* handle_ncid, int& num_steps, int& start_gru, 
                           int& max_gru, bool& writeParamFlag, int& err,
@@ -54,6 +47,7 @@ class FileAccessActor {
   bool write_params_flag_ = true;
   std::unique_ptr<forcingFileContainer> forcing_files_;
   std::unique_ptr<Output_Container> output_container_;
+  std::unique_ptr<OutputBuffer> output_buffer_;
   
   // Checkpointing variables
   int completed_checkpoints_ = 1;   

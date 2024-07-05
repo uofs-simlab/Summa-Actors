@@ -4,6 +4,7 @@ using json = nlohmann::json;
 using namespace caf;
 
 const int NOTIFY_ERR = -1;  // Error code for notification but not quitting
+using chrono_time = std::chrono::time_point<std::chrono::high_resolution_clock>;
 
 behavior FileAccessActor::make_behavior() {
   self_->println("\n----------File_Access_Actor Started----------\n");
@@ -27,55 +28,36 @@ behavior FileAccessActor::make_behavior() {
       self_->println("File Access Actor: Initializing\n");
       num_hru_ = num_hru;
 
-      forcing_files_ = std::make_unique<forcingFileContainer>();
+      f_getNumTimeSteps(num_steps_);
+
+    forcing_files_ = std::make_unique<forcingFileContainer>();
       if (forcing_files_->initForcingFiles() != 0) return -1;
 
-      int err = 0;
-      std::unique_ptr<char[]> message(new char[256]);
-      fileAccessActor_init_fortran(num_steps_, num_output_steps_, num_gru_, err, 
-                                   &message);
-      if (err != 0) {
-        self_->println("\n\nFile Access Actor: Error fileAccessActor_init\n"
-                       "\tMessage = {}\n\n", message.get());
-        return -1;
-      }
-      std::fill(message.get(), message.get() + 256, '\0');
+      // Initialize output buffer
+      output_buffer_ = std::make_unique<OutputBuffer>(
+          fa_settings_, num_gru_info_, num_hru_);
+
+      int chunk_return = output_buffer_->setChunkSize();
+      self_->println("Chunk Size = {}\n", chunk_return);
+
+      int err = output_buffer_->defOutput(to_string(self_->address()));
+
+      err = output_buffer_->allocateOutputBuffer(num_steps_);
 
 
-      if (num_steps_ < num_output_steps_) {
-        num_output_steps_ = num_steps_;
-        fa_settings_.num_timesteps_in_output_buffer_ = num_steps_;
-      }
 
-      // Set up the output container
-      if (!num_gru_info_.use_global_for_data_structures) {
-        output_container_ = std::make_unique<Output_Container>(
-            fa_settings_.num_partitions_in_output_buffer_, num_gru_,
-            fa_settings_.num_timesteps_in_output_buffer_, num_steps_);
-      }
 
-      self_->println("Creating Output File\n");
-      std::string actor_address = "";  
-      if (num_gru_info_.use_global_for_data_structures) {
-        actor_address = "_" + to_string(self_->address());
-      }
+      // if (num_steps_ < num_output_steps_) {
+      //   num_output_steps_ = num_steps_;
+      //   fa_settings_.num_timesteps_in_output_buffer_ = num_steps_;
+      // }
 
-      if (fa_settings_.output_file_suffix_ != "") {
-        actor_address = "_" + fa_settings_.output_file_suffix_;
-        num_gru_info_.use_global_for_data_structures = true;
-      }
-
-      int chunk_size = std::ceil(static_cast<double>(num_gru_) 
-          / fa_settings_.num_partitions_in_output_buffer_);
-      self_->println("Chunk Size = {}", chunk_size);
-      defOutputFortran(handle_ncid_, start_gru_, num_gru_, num_hru_, file_gru,
-                       chunk_size, num_gru_info_.use_global_for_data_structures,
-                       actor_address.c_str(), err, &message);
-      if (err != 0) {
-        self_->println("File Access Actor: Error defOutputFortran\n"
-                       "\tMessage = {}\n", message.get());
-        return -1;
-      }
+      // // Set up the output container
+      // if (!num_gru_info_.use_global_for_data_structures) {
+      //   output_container_ = std::make_unique<Output_Container>(
+      //       fa_settings_.num_partitions_in_output_buffer_, num_gru_,
+      //       fa_settings_.num_timesteps_in_output_buffer_, num_steps_);
+      // }
 
       timing_info_.updateEndPoint("init_duration");
       return num_steps_;

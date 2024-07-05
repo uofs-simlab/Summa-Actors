@@ -44,7 +44,7 @@ behavior JobActor::make_behavior() {
     return {};
   }
   // todo: check if this is necessary
-  gru_struc_->getNumHrusPerGru();  
+  gru_struc_->getNumHrusPerGru();
 
   // SummaInitStruc Initialization
   summa_init_struc_ = std::make_unique<SummaInitStruc>();
@@ -63,6 +63,7 @@ behavior JobActor::make_behavior() {
     self_->mail(err_atom_v, -2, err_msg).send(parent_);
     return {};
   }
+
   summa_init_struc_->getInitTolerance(rel_tol_, abs_tol_);
   
   num_gru_info_ = NumGRUInfo(batch_.getStartHRU(), batch_.getStartHRU(), 
@@ -84,6 +85,7 @@ behavior JobActor::make_behavior() {
       return;
     }
     timing_info_.updateEndPoint("init_duration");
+    exit(EXIT_SUCCESS);  
 
     // Start JobActor in User Selected Mode
     logger_->log("JobActor Initialized");

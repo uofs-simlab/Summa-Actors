@@ -1,6 +1,7 @@
 #include "gru_struc.hpp"
 #include <iostream>
 #include <memory>
+using chrono_time = std::chrono::time_point<std::chrono::high_resolution_clock>;
 
 GruStruc::GruStruc(int start_gru, int num_gru, int num_retry_attempts) {
   start_gru_ = start_gru;
@@ -9,6 +10,7 @@ GruStruc::GruStruc(int start_gru, int num_gru, int num_retry_attempts) {
 }
 
 int GruStruc::ReadDimension() {
+  chrono_time start = std::chrono::high_resolution_clock::now();
   // gru_struc is set up in fortran here
   int err = 0; int num_hru, file_gru, file_hru;
   std::unique_ptr<char[]> err_msg(new char[256]);
@@ -21,16 +23,28 @@ int GruStruc::ReadDimension() {
   num_hru_ = num_hru;
   file_gru_ = file_gru;
   file_hru_ = file_hru;
+
+  chrono_time end = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> elapsed_seconds = end - start;
+  std::cout << "Time taken for ReadDimension: " << elapsed_seconds.count() 
+            << "s\n";
   return err;
 }
 
 int GruStruc::ReadIcondNlayers() {
+  chrono_time start = std::chrono::high_resolution_clock::now();
+
   int err = 0;
   std::unique_ptr<char[]> err_msg(new char[256]);
   read_icond_nlayers_fortran(num_gru_, err, &err_msg);
   if (err != 0) { 
     std::cout << "ERROR: GruStruc - ReadIcondNlayers\n";
   }
+
+  chrono_time end = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> elapsed_seconds = end - start;
+  std::cout << "Time taken for ReadIcondNlayers: " << elapsed_seconds.count() 
+            << "s\n";
   return 0;
 }
 

@@ -18,6 +18,7 @@ set(FILE_ACCESS_INTERFACE
     ${FILE_ACCESS_DIR}/forcing_file_info.f90
     ${FILE_ACCESS_DIR}/file_access_actor.f90
     ${FILE_ACCESS_DIR}/output_structure.f90
+    ${FILE_ACCESS_DIR}/output_buffer.f90
     ${FILE_ACCESS_DIR}/fileAccess_writeOutput.f90
     CACHE INTERNAL "FILE_ACCESS_INTERFACE")
 set(JOB_INTERFACE
@@ -59,6 +60,7 @@ set(FILE_ACCESS_ACTOR
     ${FILE_ACCESS_DIR}/file_access_actor.cpp
     ${FILE_ACCESS_DIR}/forcing_file_info.cpp
     ${FILE_ACCESS_DIR}/output_container.cpp
+    ${FILE_ACCESS_DIR}/output_buffer.cpp
     CACHE INTERNAL "FILE_ACCESS_ACTOR")
 set(JOB_ACTOR
     ${JOB_ACTOR_DIR}/gru_struc.cpp

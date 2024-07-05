@@ -166,4 +166,48 @@ module actor_data_types
     type(var_dlength),pointer  :: bvarStat
     type(var_dlength),pointer  :: bvarStruct
   end type gru_type
+
+  ! Output Structure Type
+  type, public :: summa_output_type
+#ifdef V4_ACTIVE  
+    type(gru_hru_z_vLookup)                          :: lookupStruct                   ! x%gru(:)%hru(:)%z(:)%var(:)%lookup(:) -- lookup tables
+#endif
+    ! define the statistics structures
+    type(gru_hru_time_doubleVec)                      :: forcStat                      ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model forcing data
+    type(gru_hru_time_doubleVec)                      :: progStat                      ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model prognostic (state) variables
+    type(gru_hru_time_doubleVec)                      :: diagStat                      ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model diagnostic variables
+    type(gru_hru_time_doubleVec)                      :: fluxStat                      ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model fluxes
+    type(gru_hru_time_doubleVec)                      :: indxStat                      ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model indices
+    type(gru_hru_time_doubleVec)                      :: bvarStat                      ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- basin-average variabl
+
+    ! define the primary data structures (scalars)
+    type(gru_hru_time_int)                            :: timeStruct                    ! x%gru(:)%hru(:)%var(:)%tim(:)     -- model time data
+    type(gru_hru_time_double)                         :: forcStruct                    ! x%gru(:)%hru(:)%var(:)%tim(:)     -- model forcing data
+    type(gru_hru_double)                              :: attrStruct                    ! x%gru(:)%hru(:)%var(:)            -- local attributes for each HRU, DOES NOT CHANGE OVER TIMESTEPS
+    type(gru_hru_int)                                 :: typeStruct                    ! x%gru(:)%hru(:)%var(:)            -- local classification of soil veg etc. for each HRU, DOES NOT CHANGE OVER TIMESTEPS
+    type(gru_hru_int8)                                :: idStruct                      ! x%gru(:)%hru(:)%var(:)
+
+    ! define the primary data structures (variable length vectors)
+    type(gru_hru_time_intVec)                         :: indxStruct                    ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model indices
+    type(gru_hru_intVec)                              :: indxStruct_init               ! x%gru(:)%hru(:)%var(:)%dat        -- model indices
+    type(gru_hru_doubleVec)                           :: mparStruct                    ! x%gru(:)%hru(:)%var(:)%dat        -- model parameters, DOES NOT CHANGE OVER TIMESTEPS TODO: MAYBE
+    type(gru_hru_time_doubleVec)                      :: progStruct                    ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model prognostic (state) variables
+    type(gru_hru_doubleVec)                           :: progStruct_init               ! x%gru(:)%hru(:)%var(:)%dat        -- model prognostic (state) variables
+    type(gru_hru_time_doubleVec)                      :: diagStruct                    ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model diagnostic variables
+    type(gru_hru_time_doubleVec)                      :: fluxStruct                    ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model fluxes
+
+    ! define the basin-average structures
+    type(gru_double)                                  :: bparStruct                    ! x%gru(:)%var(:)                   -- basin-average parameters, DOES NOT CHANGE OVER TIMESTEPS
+    type(gru_hru_time_doubleVec)                      :: bvarStruct                    ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- basin-average variables
+    type(gru_doubleVec)                               :: bvarStruct_init               ! x%gru(:)%hru(:)%var(:)%dat        -- basin-average variables
+    ! define the ancillary data structures
+    type(gru_hru_double)                              :: dparStruct                    ! x%gru(:)%hru(:)%var(:)
+
+    ! finalize stats structure
+    type(gru_hru_time_flagVec)                        :: finalizeStats                 ! x%gru(:)%hru(:)%tim(:)%dat -- flags on when to write to file
+
+    type(gru_d)                                       :: upArea
+
+    integer(i4b)                                      :: nTimeSteps
+  end type summa_output_type  
 end module

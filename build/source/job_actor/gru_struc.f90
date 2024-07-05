@@ -3,11 +3,20 @@ module gru_struc_module
   USE globalData,only:integerMissing
   implicit none
 
+  ! public::f_initGruStruc
   public::read_dimension_fortran
   public::read_icond_nlayers_fortran
   public::get_num_hru_per_gru_fortran
   public::deallocate_gru_struc_fortran
   contains
+
+
+! subroutine f_initGruStruc() bind(C, name="f_initGruStruc")
+
+
+
+
+! end subroutine f_initGruStruc
 
 subroutine read_dimension_fortran(start_gru, num_gru, num_hru, file_gru, &
                                   file_hru, err, message_r) &
