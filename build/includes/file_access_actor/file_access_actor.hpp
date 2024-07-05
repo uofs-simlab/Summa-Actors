@@ -16,15 +16,13 @@
 extern "C" {
   void f_getNumTimeSteps(int& num_timesteps);
 
-  void writeOutput_fortran(void* handle_ncid, int& num_steps, int& start_gru, 
-                          int& max_gru, bool& writeParamFlag, int& err,
-                          void* message);
+
 
   void writeRestart_fortran(void* handle_ncid, int& start_gru, int& max_gru, 
                             int& timestep, int& year, int& month, int& day, 
                             int& hour, int& err); 
 
-  void FileAccessActor_DeallocateStructures(void* handle_ncid);
+  void FileAccessActor_DeallocateStructures();
 }
 
 class FileAccessActor {
@@ -35,7 +33,6 @@ class FileAccessActor {
   FileAccessActorSettings fa_settings_;
   caf::actor parent_;
 
-  void *handle_ncid_ = new_handle_var_i();  // output file ids
 
 
   int start_gru_;

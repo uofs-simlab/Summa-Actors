@@ -25,39 +25,22 @@ behavior FileAccessActor::make_behavior() {
 
   return {
     [this](init_file_access_actor, int file_gru, int num_hru) {
+      int err = 0;
       self_->println("File Access Actor: Initializing\n");
       num_hru_ = num_hru;
 
       f_getNumTimeSteps(num_steps_);
 
-    forcing_files_ = std::make_unique<forcingFileContainer>();
+      forcing_files_ = std::make_unique<forcingFileContainer>();
       if (forcing_files_->initForcingFiles() != 0) return -1;
 
       // Initialize output buffer
       output_buffer_ = std::make_unique<OutputBuffer>(
-          fa_settings_, num_gru_info_, num_hru_);
-
+          fa_settings_, num_gru_info_, num_hru_, num_steps_);
       int chunk_return = output_buffer_->setChunkSize();
       self_->println("Chunk Size = {}\n", chunk_return);
-
-      int err = output_buffer_->defOutput(to_string(self_->address()));
-
+      err = output_buffer_->defOutput(to_string(self_->address()));
       err = output_buffer_->allocateOutputBuffer(num_steps_);
-
-
-
-
-      // if (num_steps_ < num_output_steps_) {
-      //   num_output_steps_ = num_steps_;
-      //   fa_settings_.num_timesteps_in_output_buffer_ = num_steps_;
-      // }
-
-      // // Set up the output container
-      // if (!num_gru_info_.use_global_for_data_structures) {
-      //   output_container_ = std::make_unique<Output_Container>(
-      //       fa_settings_.num_partitions_in_output_buffer_, num_gru_,
-      //       fa_settings_.num_timesteps_in_output_buffer_, num_steps_);
-      // }
 
       timing_info_.updateEndPoint("init_duration");
       return num_steps_;
@@ -103,16 +86,29 @@ behavior FileAccessActor::make_behavior() {
       return num_output_steps_;
     },
 
-    [this](write_output, int index_gru, int index_hru, caf::actor hru_actor) {
+    [this](write_output, int index_gru, int index_hru, caf::actor gru) {
       timing_info_.updateStartPoint("write_duration");
 
-      Output_Partition *output_partition = 
-          output_container_->getOutputPartition(index_gru);
+      auto update_status = output_buffer_->writeOutput(index_gru, gru);
 
-      output_partition->setGRUReadyToWrite(hru_actor);
-        
-      if (output_partition->isReadyToWrite()) {
-        writeOutput(output_partition);
+      if (!update_status.has_value()) {
+        timing_info_.updateEndPoint("write_duration");
+        return;
+      }
+      
+      if (update_status.value()->err != 0) {
+        self_->println("File Access Actor: Error writeOutput\n"
+                       "\tMessage = {}\n", update_status.value()->message);
+        self_->mail(err_atom_v, 0, 0, update_status.value()->err, 
+                    update_status.value()->message).send(parent_);
+        self_->quit();
+        return;
+      }
+
+      for (auto gru : update_status.value()->actor_to_update) {
+        self_->mail(num_steps_before_write_v, 
+                    update_status.value()->num_steps_update).send(gru);
+        self_->mail(run_hru_v).send(gru);
       }
 
       timing_info_.updateEndPoint("write_duration");
@@ -145,8 +141,8 @@ behavior FileAccessActor::make_behavior() {
       timing_info_.updateStartPoint("write_duration");
       std::unique_ptr<char[]> err_msg(new char[256]);
       int err = 0;
-      writeOutput_fortran(handle_ncid_, steps_to_write, start_gru, max_gru, 
-                          write_params_flag_, err, &err_msg);
+      // writeOutput_fortran(handle_ncid_, steps_to_write, start_gru, max_gru, 
+      //                     write_params_flag_, err, &err_msg);
       if (err != 0) {
         self_->println("File Access Actor: Error writeOutput from job\n"
                        "\tMessage = {}\n", err_msg.get());
@@ -164,20 +160,20 @@ behavior FileAccessActor::make_behavior() {
 
     [this](run_failure, int local_gru_index) {
       timing_info_.updateStartPoint("write_duration");
-      Output_Partition *output_partition = 
-          output_container_->getOutputPartition(local_gru_index);
+      // Output_Partition *output_partition = 
+      //     output_container_->getOutputPartition(local_gru_index);
         
-      output_partition->addFailedGRUIndex(local_gru_index);
+      // output_partition->addFailedGRUIndex(local_gru_index);
 
-      if (output_partition->isReadyToWrite()) {
-        writeOutput(output_partition);
-      }
+      // if (output_partition->isReadyToWrite()) {
+      //   writeOutput(output_partition);
+      // }
       timing_info_.updateEndPoint("write_duration");
     },
 
     [this](finalize) {
       self_->println("File Access Actor: Deallocating Structures\n");
-      FileAccessActor_DeallocateStructures(handle_ncid_);
+      FileAccessActor_DeallocateStructures();
       self_->println("\n________________" 
                      "FILE_ACCESS_ACTOR TIMING INFO RESULTS________________\n"
                       "Total Read Duration = {}\n"
@@ -198,48 +194,48 @@ behavior FileAccessActor::make_behavior() {
   };
 }
 
-void FileAccessActor::writeOutput(Output_Partition* partition) {              
-  int num_timesteps_to_write = partition->getNumStoredTimesteps();
-  int start_gru = partition->getStartGRUIndex();
-  int max_gru = partition->getMaxGRUIndex();
-  if (start_gru > max_gru) {
-    self_->println("File Access Actor: Error writeOutput\n"
-                   "\tMessage = start_gru > max_gru\n");
-    self_->mail(err_atom_v, 0, 0, NOTIFY_ERR, "start_gru > max_gru")
-        .send(parent_);
-    return;
-  }
-  bool write_param_flag = partition->isWriteParams();
-  int err = 0;
-  std::unique_ptr<char[]> err_msg(new char[256]);
-  writeOutput_fortran(handle_ncid_, num_timesteps_to_write, start_gru, max_gru, 
-                      write_param_flag, err, &err_msg);
-  if (err != 0) {
-    self_->println("File Access Actor: Error writeOutput\n\tMessage = {} \n", 
-                   err_msg.get());
-    self_->mail(err_atom_v, 0, 0, NOTIFY_ERR, err_msg.get()).send(parent_);
-  }
+// void FileAccessActor::writeOutput(Output_Partition* partition) {              
+//   int num_timesteps_to_write = partition->getNumStoredTimesteps();
+//   int start_gru = partition->getStartGRUIndex();
+//   int max_gru = partition->getMaxGRUIndex();
+//   if (start_gru > max_gru) {
+//     self_->println("File Access Actor: Error writeOutput\n"
+//                    "\tMessage = start_gru > max_gru\n");
+//     self_->mail(err_atom_v, 0, 0, NOTIFY_ERR, "start_gru > max_gru")
+//         .send(parent_);
+//     return;
+//   }
+//   bool write_param_flag = partition->isWriteParams();
+//   int err = 0;
+//   std::unique_ptr<char[]> err_msg(new char[256]);
+//   writeOutput_fortran(handle_ncid_, num_timesteps_to_write, start_gru, max_gru, 
+//                       write_param_flag, err, &err_msg);
+//   if (err != 0) {
+//     self_->println("File Access Actor: Error writeOutput\n\tMessage = {} \n", 
+//                    err_msg.get());
+//     self_->mail(err_atom_v, 0, 0, NOTIFY_ERR, err_msg.get()).send(parent_);
+//   }
 
-  partition->updateTimeSteps();
+//   partition->updateTimeSteps();
 
-  int num_steps_before_next_write = partition->getNumStoredTimesteps();
+//   int num_steps_before_next_write = partition->getNumStoredTimesteps();
 
-  std::vector<caf::actor> hrus_to_update = partition->getReadyToWriteList();
-  for (int i = 0; i < hrus_to_update.size(); i++) {
-    self_->mail(num_steps_before_write_v, num_steps_before_next_write)
-        .send(hrus_to_update[i]);
-    self_->mail(run_hru_v).send(hrus_to_update[i]);
-  }
+//   std::vector<caf::actor> hrus_to_update = partition->getReadyToWriteList();
+//   for (int i = 0; i < hrus_to_update.size(); i++) {
+//     self_->mail(num_steps_before_write_v, num_steps_before_next_write)
+//         .send(hrus_to_update[i]);
+//     self_->mail(run_hru_v).send(hrus_to_update[i]);
+//   }
 
-  partition->resetReadyToWriteList();
-}
+//   partition->resetReadyToWriteList();
+// }
 
 void FileAccessActor::writeRestart(Output_Partition* partition, int start_gru, 
                                    int num_gru, int timestep, int year, 
                                    int month, int day, int hour){  
   int err = 0;
-  writeRestart_fortran(handle_ncid_, start_gru, num_gru, timestep, year, month, 
-                       day, hour, err);
+  // writeRestart_fortran(handle_ncid_, start_gru, num_gru, timestep, year, month, 
+  //                      day, hour, err);
 }
 
 

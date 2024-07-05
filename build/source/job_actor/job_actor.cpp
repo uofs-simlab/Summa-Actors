@@ -288,9 +288,9 @@ void JobActor::spawnGruActors() {
         abs_tol_, job_actor_settings_.max_run_attempts_);
     gru_struc_->addGRU(std::move(gru_obj));
     
-    // if (!job_actor_settings_.data_assimilation_mode_) {
-    //   self_->mail(update_hru_async_v).send(gru_actor);
-    // }
+    if (!job_actor_settings_.data_assimilation_mode_) {
+      self_->mail(update_hru_async_v).send(gru_actor);
+    }
   }
   gru_struc_->decrementRetryAttempts();
 }

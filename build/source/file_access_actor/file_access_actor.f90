@@ -28,31 +28,11 @@ subroutine f_getNumTimeSteps(num_timesteps) bind(C, name="f_getNumTimeSteps")
   num_timesteps = numtim
 end subroutine f_getNumTimeSteps
 
-subroutine FileAccessActor_DeallocateStructures(handle_ncid) bind(C,name="FileAccessActor_DeallocateStructures")
-  USE netcdf_util_module,only:nc_file_close 
-  USE globalData,only:structInfo                              ! information on the data structures
-  USE var_lookup,only:maxvarFreq                ! maximum number of output files
+subroutine FileAccessActor_DeallocateStructures() bind(C,name="FileAccessActor_DeallocateStructures")
   ! TODO: The index_map is allocated by the job actor, but deallocated by the file access actor
   USE globalData,only:index_map 
   implicit none
-  type(c_ptr),intent(in), value        :: handle_ncid
 
-  type(var_i),pointer                  :: ncid
-  integer(i4b)                         :: iFreq
-  character(LEN=256)                   :: cmessage
-  character(LEN=256)                   :: message
-  integer(i4b)                         :: err
-
-  call c_f_pointer(handle_ncid, ncid)
-  ! close the open output FIle
-  do iFreq=1,maxvarFreq
-    if (ncid%var(iFreq)/=integerMissing) then
-      call nc_file_close(ncid%var(iFreq),err,cmessage)
-      if(err/=0)then; message=trim(message)//trim(cmessage); return; end if
-    endif   
-  end do
-
-  deallocate(ncid)
   ! TODO: The index_map is allocated by the job actor, but deallocated by the file access actor
   deallocate(index_map)
 end subroutine FileAccessActor_DeallocateStructures
