@@ -115,7 +115,6 @@ end subroutine f_setChunkSize
 subroutine f_allocateOutputBuffer(max_steps, num_gru, err, message_r) &
     bind(C, name="f_allocateOutputBuffer")
   USE C_interface_module,only:f_c_string_ptr          ! convert fortran string to c string
-  
   USE var_lookup,only:maxvarFreq                      ! maximum number of output files
   implicit none
   ! Dummy Variables
@@ -140,19 +139,14 @@ subroutine f_allocateOutputBuffer(max_steps, num_gru, err, message_r) &
       outputTimeStep(iGRU)%dat(:) = 1
     end do
   end if
-  if (err /= 0) call f_c_string_ptr(trim(message), message_r); return;
+  ! if (err /= 0) call f_c_string_ptr(trim(message), message_r); return;
 
 
   ! ****************************************************************************
   ! *** Initialize output structure
   ! ****************************************************************************
-  if (.not.allocated(summa_struct))then
-    allocate(summa_struct(1))
-  else
-    print*, "Already Allocated"; return;
-  end if
-
-   ! Statistics Structures
+  allocate(summa_struct(1))
+  ! Statistics Structures
   allocate(summa_struct(1)%forcStat%gru(num_gru))
   allocate(summa_struct(1)%progStat%gru(num_gru))
   allocate(summa_struct(1)%diagStat%gru(num_gru))
@@ -162,17 +156,23 @@ subroutine f_allocateOutputBuffer(max_steps, num_gru, err, message_r) &
   ! Primary Data Structures (scalars)
   allocate(summa_struct(1)%timeStruct%gru(num_gru))
   allocate(summa_struct(1)%forcStruct%gru(num_gru))
+  allocate(summa_struct(1)%attrStruct%gru(num_gru))
+  allocate(summa_struct(1)%typeStruct%gru(num_gru))
+  allocate(summa_struct(1)%idStruct%gru(num_gru))
   ! Primary Data Structures (variable length vectors)
   allocate(summa_struct(1)%indxStruct%gru(num_gru))
+  allocate(summa_struct(1)%mparStruct%gru(num_gru))
   allocate(summa_struct(1)%progStruct%gru(num_gru))
   allocate(summa_struct(1)%diagStruct%gru(num_gru))
   allocate(summa_struct(1)%fluxStruct%gru(num_gru))
   ! Basin-Average structures
   allocate(summa_struct(1)%bvarStruct%gru(num_gru))
+  allocate(summa_struct(1)%bparStruct%gru(num_gru))
   ! Finalize Stats for writing
   allocate(summa_struct(1)%finalizeStats%gru(num_gru))
   ! Extras
   allocate(summa_struct(1)%upArea%gru(num_gru))
+  allocate(summa_struct(1)%dparStruct%gru(num_gru))
 
 end subroutine f_allocateOutputBuffer
 

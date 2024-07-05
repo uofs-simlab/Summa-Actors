@@ -31,8 +31,6 @@ end subroutine f_getNumTimeSteps
 subroutine FileAccessActor_DeallocateStructures(handle_ncid) bind(C,name="FileAccessActor_DeallocateStructures")
   USE netcdf_util_module,only:nc_file_close 
   USE globalData,only:structInfo                              ! information on the data structures
-  USE output_structure_module,only:outputTimeStep
-  USE output_structure_module,only:summa_struct
   USE var_lookup,only:maxvarFreq                ! maximum number of output files
   ! TODO: The index_map is allocated by the job actor, but deallocated by the file access actor
   USE globalData,only:index_map 
@@ -55,8 +53,7 @@ subroutine FileAccessActor_DeallocateStructures(handle_ncid) bind(C,name="FileAc
   end do
 
   deallocate(ncid)
-  ! deallocate(outputTimeStep)
-  ! deallocate(summa_struct)
+  ! TODO: The index_map is allocated by the job actor, but deallocated by the file access actor
   deallocate(index_map)
 end subroutine FileAccessActor_DeallocateStructures
 

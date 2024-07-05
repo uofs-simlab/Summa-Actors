@@ -189,17 +189,14 @@ module actor_data_types
 
     ! define the primary data structures (variable length vectors)
     type(gru_hru_time_intVec)                         :: indxStruct                    ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model indices
-    type(gru_hru_intVec)                              :: indxStruct_init               ! x%gru(:)%hru(:)%var(:)%dat        -- model indices
     type(gru_hru_doubleVec)                           :: mparStruct                    ! x%gru(:)%hru(:)%var(:)%dat        -- model parameters, DOES NOT CHANGE OVER TIMESTEPS TODO: MAYBE
     type(gru_hru_time_doubleVec)                      :: progStruct                    ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model prognostic (state) variables
-    type(gru_hru_doubleVec)                           :: progStruct_init               ! x%gru(:)%hru(:)%var(:)%dat        -- model prognostic (state) variables
     type(gru_hru_time_doubleVec)                      :: diagStruct                    ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model diagnostic variables
     type(gru_hru_time_doubleVec)                      :: fluxStruct                    ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model fluxes
 
     ! define the basin-average structures
     type(gru_double)                                  :: bparStruct                    ! x%gru(:)%var(:)                   -- basin-average parameters, DOES NOT CHANGE OVER TIMESTEPS
     type(gru_hru_time_doubleVec)                      :: bvarStruct                    ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- basin-average variables
-    type(gru_doubleVec)                               :: bvarStruct_init               ! x%gru(:)%hru(:)%var(:)%dat        -- basin-average variables
     ! define the ancillary data structures
     type(gru_hru_double)                              :: dparStruct                    ! x%gru(:)%hru(:)%var(:)
 

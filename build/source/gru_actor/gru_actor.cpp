@@ -5,12 +5,12 @@ using namespace caf;
 
 behavior GruActor::make_behavior() {
   int err = 0;
-  getNumHRU(job_index_, num_hrus_);
+  f_getNumHru(job_index_, num_hrus_);
   gru_data_ = std::unique_ptr<void, GruDeleter>(new_handle_gru_type(num_hrus_));
-  // gru_data_ = new_handle_gru_type(num_hrus_);
   
   std::unique_ptr<char[]> message(new char[256]);
-  initGRU_fortran(job_index_, gru_data_.get(), err, &message);
+  f_initGru(job_index_, gru_data_.get(), num_steps_output_buffer_, err,
+            &message);
   if (err != 0) {
     self_->println("GRU Actor: Error initializing GRU -- {}", message.get());
     self_->quit();

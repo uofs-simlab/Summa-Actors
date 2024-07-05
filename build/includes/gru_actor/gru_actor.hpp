@@ -7,9 +7,10 @@
 #include <vector>
 
 extern "C" {
-  void getNumHRU(int& index_gru, int& num_hru);
+  void f_getNumHru(int& index_gru, int& num_hru);
 
-  void initGRU_fortran(int& index_gru, void* gru_data, int& err, void* message);
+  void f_initGru(int& index_gru, void* gru_data, int& output_buffer_steps, 
+                 int& err, void* message);
   void setupGRU_fortran(int& index_gru, void* gru_data, int& err, 
                         void* message);
   void readGRURestart_fortran(int& index_gru, void* gru_data, int& err, 
@@ -37,8 +38,10 @@ class GruActor {
   int netcdf_index_;
   int job_index_;
   HRUActorSettings hru_actor_settings_;
+  int num_steps_output_buffer_;
   caf::actor file_access_actor_;
   caf::actor parent_;
+
 
   int num_hrus_;
   std::unique_ptr<void, GruDeleter> gru_data_;
@@ -58,11 +61,12 @@ class GruActor {
   public:
     GruActor(caf::event_based_actor* self, int netcdf_index, int job_index, 
              int num_steps, HRUActorSettings hru_actor_settings, 
-             bool data_assimilation_mode, caf::actor file_access_actor, 
-             caf::actor parent) 
+             bool data_assimilation_mode, int num_output_steps, 
+             caf::actor file_access_actor, caf::actor parent) 
              : self_(self), netcdf_index_(netcdf_index), job_index_(job_index), 
                num_steps_(num_steps), hru_actor_settings_(hru_actor_settings),
                data_assimilation_mode_(data_assimilation_mode),
+               num_steps_output_buffer_(num_output_steps),
                file_access_actor_(file_access_actor), parent_(parent) {};
 
     caf::behavior make_behavior();

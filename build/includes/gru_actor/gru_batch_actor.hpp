@@ -13,6 +13,7 @@ class GruBatchActor {
   int num_steps_;
 
   HRUActorSettings hru_actor_settings_;
+  int num_steps_output_buffer_;
   caf::actor file_access_actor_;
   caf::actor parent_;
 
@@ -22,11 +23,12 @@ class GruBatchActor {
   public:
     GruBatchActor(caf::event_based_actor* self, int netcdf_start_index, 
                   int job_start_index, int num_gru, int num_steps,
-                  HRUActorSettings hru_actor_settings, 
+                  HRUActorSettings hru_actor_settings, int num_output_steps, 
                   caf::actor file_access_actor, caf::actor parent) 
       : self_(self), netcdf_start_index_(netcdf_start_index), 
         job_start_index_(job_start_index), num_gru_(num_gru), 
-        num_steps_(num_steps), hru_actor_settings_(hru_actor_settings), 
+        num_steps_(num_steps), hru_actor_settings_(hru_actor_settings),
+        num_steps_output_buffer_(num_output_steps), 
         file_access_actor_(file_access_actor), parent_(parent) {
     }
 
