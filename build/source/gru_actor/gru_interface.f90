@@ -502,7 +502,12 @@ subroutine allocateOutputBuffer(indx_gru, num_hru, output_buffer_steps, &
                                  nSteps=output_buffer_steps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,message=message)
           call alloc_outputStruc(statForc_meta(:)%var_info,summa_struct(1)%forcStat%gru(indx_gru)%hru(iHRU), &
                                  nSteps=output_buffer_steps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,message=message); 
-        case('attr'); call allocLocal(attr_meta,summa_struct(1)%attrStruct%gru(indx_gru)%hru(iHRU),nSnow,nSoil,err,message)
+        case('attr')
+          call allocLocal(attr_meta,summa_struct(1)%attrStruct%gru(indx_gru)%hru(iHRU),nSnow,nSoil,err,message)
+          do iStep = 1, output_buffer_steps
+            summa_struct(1)%attrStruct%gru(indx_gru)%hru(iHRU)%var(:) = realMissing
+          end do ! timeSteps
+
         case('type'); call allocLocal(type_meta,summa_struct(1)%typeStruct%gru(indx_gru)%hru(iHRU),nSnow,nSoil,err,message)
         case('id'  ); call allocLocal(id_meta,  summa_struct(1)%idStruct%gru(indx_gru)%hru(iHRU),  nSnow,nSoil,err,message)
         case('mpar'); call allocLocal(mpar_meta,summa_struct(1)%mparStruct%gru(indx_gru)%hru(iHRU),nSnow,nSoil,err,message); 
@@ -548,6 +553,7 @@ subroutine allocateOutputBuffer(indx_gru, num_hru, output_buffer_steps, &
       allocate(summa_struct(1)%finalizeStats%gru(indx_gru)%hru(iHRU)%tim(output_buffer_steps))
       do iStep = 1, output_buffer_steps
         allocate(summa_struct(1)%finalizeStats%gru(indx_gru)%hru(iHRU)%tim(iStep)%dat(1:maxVarFreq))
+        summa_struct(1)%finalizeStats%gru(indx_gru)%hru(iHRU)%tim(iStep)%dat(1:maxVarFreq) = .false.
       end do ! timeSteps
     end associate
   end do

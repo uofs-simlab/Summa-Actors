@@ -40,6 +40,12 @@ behavior FileAccessActor::make_behavior() {
       int chunk_return = output_buffer_->setChunkSize();
       self_->println("Chunk Size = {}\n", chunk_return);
       err = output_buffer_->defOutput(to_string(self_->address()));
+      if (err != 0) {
+        self_->println("File Access Actor: Error defOutput\n"
+                       "\tMessage = Can't define output file\n");
+        self_->quit();
+        return -1;
+      }
       err = output_buffer_->allocateOutputBuffer(num_steps_);
 
       timing_info_.updateEndPoint("init_duration");
@@ -90,12 +96,14 @@ behavior FileAccessActor::make_behavior() {
       timing_info_.updateStartPoint("write_duration");
 
       auto update_status = output_buffer_->writeOutput(index_gru, gru);
-
+      
+      // Do nothing if optional is emtpy
       if (!update_status.has_value()) {
         timing_info_.updateEndPoint("write_duration");
         return;
       }
       
+      // If error, send error message to parent
       if (update_status.value()->err != 0) {
         self_->println("File Access Actor: Error writeOutput\n"
                        "\tMessage = {}\n", update_status.value()->message);
@@ -105,6 +113,7 @@ behavior FileAccessActor::make_behavior() {
         return;
       }
 
+      // If we get here, we successfully wrote to file
       for (auto gru : update_status.value()->actor_to_update) {
         self_->mail(num_steps_before_write_v, 
                     update_status.value()->num_steps_update).send(gru);
