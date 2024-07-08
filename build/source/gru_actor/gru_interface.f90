@@ -397,7 +397,7 @@ end subroutine runGRU_fortran
 subroutine writeGRUOutput_fortran(indx_gru, timestep, outputstep, &
     handle_gru_data, err, message_r) bind(C, name="writeGRUOutput_fortran")
   USE actor_data_types,only:gru_type
-  ! USE HRUwriteoOutput_module,only:writeHRUOutput
+  USE HRUwriteoOutput_module,only:writeHRUOutput
   USE C_interface_module,only:f_c_string_ptr  ! convert fortran string to c string
   implicit none
   ! Dummy Variables
@@ -415,11 +415,11 @@ subroutine writeGRUOutput_fortran(indx_gru, timestep, outputstep, &
   call f_c_string_ptr(trim(message), message_r)
   call c_f_pointer(handle_gru_data, gru_data)
 
-  ! do iHRU = 1, size(gru_data%hru)
-  !   call writeHRUOutput(indx_gru, iHRU, timestep, outputstep, gru_data%hru(iHRU), & 
-  !                       err, message)
-  !   if(err /= 0) then; call f_c_string_ptr(trim(message), message_r);return; end if
-  ! end do
+  do iHRU = 1, size(gru_data%hru)
+    call writeHRUOutput(indx_gru, iHRU, timestep, outputstep, gru_data%hru(iHRU), & 
+                        err, message)
+    if(err /= 0) then; call f_c_string_ptr(trim(message), message_r);return; end if
+  end do
 
 end subroutine writeGRUOutput_fortran
 
@@ -455,6 +455,7 @@ subroutine allocateOutputBuffer(indx_gru, num_hru, output_buffer_steps, &
   integer(i4b)                      :: iHRU
   integer(i4b)                      :: iStep
   integer(i4b)                      :: iStruct
+  integer(i4b)                      :: iDat
 
   allocate(summa_struct(1)%forcStat%gru(indx_gru)%hru(num_hru))
   allocate(summa_struct(1)%progStat%gru(indx_gru)%hru(num_hru))
@@ -504,13 +505,12 @@ subroutine allocateOutputBuffer(indx_gru, num_hru, output_buffer_steps, &
                                  nSteps=output_buffer_steps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,message=message); 
         case('attr')
           call allocLocal(attr_meta,summa_struct(1)%attrStruct%gru(indx_gru)%hru(iHRU),nSnow,nSoil,err,message)
-          do iStep = 1, output_buffer_steps
-            summa_struct(1)%attrStruct%gru(indx_gru)%hru(iHRU)%var(:) = realMissing
-          end do ! timeSteps
-
-        case('type'); call allocLocal(type_meta,summa_struct(1)%typeStruct%gru(indx_gru)%hru(iHRU),nSnow,nSoil,err,message)
-        case('id'  ); call allocLocal(id_meta,  summa_struct(1)%idStruct%gru(indx_gru)%hru(iHRU),  nSnow,nSoil,err,message)
-        case('mpar'); call allocLocal(mpar_meta,summa_struct(1)%mparStruct%gru(indx_gru)%hru(iHRU),nSnow,nSoil,err,message); 
+        case('type')
+          call allocLocal(type_meta,summa_struct(1)%typeStruct%gru(indx_gru)%hru(iHRU),nSnow,nSoil,err,message)
+        case('id'  )
+          call allocLocal(id_meta,  summa_struct(1)%idStruct%gru(indx_gru)%hru(iHRU),nSnow,nSoil,err,message)
+        case('mpar')
+          call allocLocal(mpar_meta,summa_struct(1)%mparStruct%gru(indx_gru)%hru(iHRU),nSnow,nSoil,err,message)
         case('indx')
           call alloc_outputStruc(indx_meta,summa_struct(1)%indxStruct%gru(indx_gru)%hru(iHRU), &
                                  nSteps=output_buffer_steps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,str_name='indx',message=message);
@@ -548,12 +548,12 @@ subroutine allocateOutputBuffer(indx_gru, num_hru, output_buffer_steps, &
 	    ! NOTE: This is done here, rather than in the loop above, because dpar is not one of the "standard" data structures
       call allocLocal(mpar_meta,summa_struct(1)%dparStruct%gru(indx_gru)%hru(iHRU),nSnow,nSoil,err,message)
 
+
       ! Finalize Stats Structre
       ! NOTE: This is done here, rather than in the loop above, because finalizeStats is not one of the "standard" data structures
       allocate(summa_struct(1)%finalizeStats%gru(indx_gru)%hru(iHRU)%tim(output_buffer_steps))
       do iStep = 1, output_buffer_steps
         allocate(summa_struct(1)%finalizeStats%gru(indx_gru)%hru(iHRU)%tim(iStep)%dat(1:maxVarFreq))
-        summa_struct(1)%finalizeStats%gru(indx_gru)%hru(iHRU)%tim(iStep)%dat(1:maxVarFreq) = .false.
       end do ! timeSteps
     end associate
   end do
