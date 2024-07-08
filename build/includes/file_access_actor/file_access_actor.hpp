@@ -22,7 +22,6 @@ extern "C" {
                             int& timestep, int& year, int& month, int& day, 
                             int& hour, int& err); 
 
-  void FileAccessActor_DeallocateStructures();
 }
 
 class FileAccessActor {

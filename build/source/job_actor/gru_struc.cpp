@@ -1,6 +1,8 @@
 #include "gru_struc.hpp"
 #include <iostream>
 #include <memory>
+#include <omp.h>
+
 using chrono_time = std::chrono::time_point<std::chrono::high_resolution_clock>;
 
 GruStruc::GruStruc(int start_gru, int num_gru, int num_retry_attempts) {
@@ -14,8 +16,8 @@ int GruStruc::ReadDimension() {
   // gru_struc is set up in fortran here
   int err = 0; int num_hru, file_gru, file_hru;
   std::unique_ptr<char[]> err_msg(new char[256]);
-  read_dimension_fortran(start_gru_, num_gru_, num_hru, file_gru, file_hru,
-                         err, &err_msg);
+  f_readDimension(start_gru_, num_gru_, num_hru, file_gru, file_hru, err, 
+                  &err_msg);
   if (err != 0) { 
     std::cout << "ERROR: GruStruc - ReadDimension()\n";
     std::cout << err_msg.get() << "\n";
@@ -23,6 +25,13 @@ int GruStruc::ReadDimension() {
   num_hru_ = num_hru;
   file_gru_ = file_gru;
   file_hru_ = file_hru;
+
+  #pragma omp parallel for
+  for (int i = 1; i <= num_gru_; i++) {
+    f_setHruCount(i, start_gru_);
+  }
+  f_setIndexMap();
+
 
   chrono_time end = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double> elapsed_seconds = end - start;
