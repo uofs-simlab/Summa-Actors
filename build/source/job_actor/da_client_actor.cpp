@@ -52,12 +52,12 @@ behavior DAClientActor::make_behavior() {
       gru_struc_ = std::make_unique<GruStruc>(
           node_gru_info.node_start_gru_, node_gru_info.node_num_gru_,
           settings_.job_actor_settings_.max_run_attempts_);
-      if (gru_struc_->ReadDimension() != 0) {
+      if (gru_struc_->readDimension() != 0) {
         self_->println("DAClientActor: GruStruc ReadDimension() Failed");
         self_->quit();
         return;
       }
-      if (gru_struc_->ReadIcondNlayers() != 0) {
+      if (gru_struc_->readIcondNlayers() != 0) {
         self_->println("DAClientActor: GruStruc ReadIcondNlayers() Failed");
         self_->quit();
         return;

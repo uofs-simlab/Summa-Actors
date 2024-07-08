@@ -33,12 +33,12 @@ behavior JobActor::make_behavior() {
   // GruStruc Initialization
   gru_struc_ = std::make_unique<GruStruc>(batch_.getStartHRU(), 
       batch_.getNumHRU(), job_actor_settings_.max_run_attempts_);
-  if (gru_struc_->ReadDimension()) {
+  if (gru_struc_->readDimension()) {
     err_msg = "ERROR: Job_Actor - ReadDimension\n";
     self_->mail(err_atom_v, -2, err_msg).send(parent_);
     return {};
   }
-  if (gru_struc_->ReadIcondNlayers()) {
+  if (gru_struc_->readIcondNlayers()) {
     err_msg = "ERROR: Job_Actor - ReadIcondNlayers\n";
     self_->mail(err_atom_v, -2, err_msg).send(parent_);
     return {};

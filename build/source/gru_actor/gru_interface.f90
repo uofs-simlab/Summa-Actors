@@ -13,6 +13,7 @@ public::setTimeZoneOffsetGRU_fortran
 public::readGRUForcing_fortran
 public::runGRU_fortran
 public::writeGRUOutput_fortran
+private::setupGRU
 private::allocateOutputBuffer
 private::alloc_outputStruc
 private::allocateDat_rkind
@@ -29,6 +30,148 @@ subroutine f_getNumHru(indx_gru, num_hru) bind(C, name="f_getNumHru")
 
   num_hru = gru_struc(indx_gru)%hruCount
 end subroutine f_getNumHRU
+
+subroutine setupGRU(iGRU, err, message)
+  USE summa_init_struc,only:init_struc
+  USE globalData,only:gru_struc
+  USE globalData,only:model_decisions                         ! model decision structure
+  USE globalData,only:greenVegFrac_monthly                    ! fraction of green vegetation in each month (0-1)
+  
+  USE var_lookup,only:iLookTYPE
+  USE var_lookup,only:iLookID
+  USE var_lookup,only:iLookDECISIONS
+  USE var_lookup,only:iLookPARAM
+  USE var_lookup,only:iLookATTR
+  USE var_lookup,only:iLookBVAR
+  
+  USE NOAHMP_VEG_PARAMETERS,only:HVT,HVB                      ! height at the top and bottom of vegetation (vegType)
+  USE NOAHMP_VEG_PARAMETERS,only:SAIM,LAIM                    ! 2-d tables for stem area index and leaf area index (vegType,month)
+  
+  USE paramCheck_module,only:paramCheck                       ! module to check consistency of model parameters
+  USE ConvE2Temp_module,only:E2T_lookup                       ! module to calculate a look-up table for the temperature-enthalpy conversion
+  USE var_derive_module,only:fracFuture                       ! module to calculate the fraction of runoff in future time steps (time delay histogram)
+  
+  ! named variables to define LAI decisions
+  USE mDecisions_module,only:&
+      monthlyTable,& ! LAI/SAI taken directly from a monthly table for different vegetation classes
+      specified      ! LAI/SAI computed from green vegetation fraction and winterSAI and summerLAI parameters
+  implicit none
+  ! Dum
+  integer(c_int), intent(in)      :: iGRU
+  integer(c_int), intent(out)     :: err
+  character(len=256), intent(out) :: message
+
+  ! Local Variables
+  character(len=256) :: cmessage
+  integer(i4b)        :: iHRU, jHRU, kHRU
+
+  summaVars: associate(&
+#ifdef V4_ACTIVE  
+    lookupStruct         =>init_struc%lookupStruct         , & ! x%gru(:)%hru(:)%z(:)%var(:)%lookup(:) -- lookup tables
+#endif
+    ! statistics structures
+    forcStat             => init_struc%forcStat            , & ! x%gru(:)%hru(:)%var(:)%dat -- model forcing data
+    progStat             => init_struc%progStat            , & ! x%gru(:)%hru(:)%var(:)%dat -- model prognostic (state) variables
+    diagStat             => init_struc%diagStat            , & ! x%gru(:)%hru(:)%var(:)%dat -- model diagnostic variables
+    fluxStat             => init_struc%fluxStat            , & ! x%gru(:)%hru(:)%var(:)%dat -- model fluxes
+    indxStat             => init_struc%indxStat            , & ! x%gru(:)%hru(:)%var(:)%dat -- model indices
+    bvarStat             => init_struc%bvarStat            , & ! x%gru(:)%var(:)%dat        -- basin-average variables
+
+    ! primary data structures (scalars)
+    timeStruct           => init_struc%timeStruct          , & ! x%var(:)                   -- model time data
+    forcStruct           => init_struc%forcStruct          , & ! x%gru(:)%hru(:)%var(:)     -- model forcing data
+    attrStruct           => init_struc%attrStruct          , & ! x%gru(:)%hru(:)%var(:)     -- local attributes for each HRU
+    typeStruct           => init_struc%typeStruct          , & ! x%gru(:)%hru(:)%var(:)     -- local classification of soil veg etc. for each HRU
+    idStruct             => init_struc%idStruct            , & ! x%gru(:)%hru(:)%var(:)     --
+
+    ! primary data structures (variable length vectors)
+    indxStruct           => init_struc%indxStruct          , & ! x%gru(:)%hru(:)%var(:)%dat -- model indices
+    mparStruct           => init_struc%mparStruct          , & ! x%gru(:)%hru(:)%var(:)%dat -- model parameters
+    progStruct           => init_struc%progStruct          , & ! x%gru(:)%hru(:)%var(:)%dat -- model prognostic (state) variables
+    diagStruct           => init_struc%diagStruct          , & ! x%gru(:)%hru(:)%var(:)%dat -- model diagnostic variables
+    fluxStruct           => init_struc%fluxStruct          , & ! x%gru(:)%hru(:)%var(:)%dat -- model fluxes
+
+    ! basin-average structures
+    bparStruct           => init_struc%bparStruct          , & ! x%gru(:)%var(:)            -- basin-average parameters
+    bvarStruct           => init_struc%bvarStruct          , & ! x%gru(:)%var(:)%dat        -- basin-average variables
+
+    ! ancillary data structures
+    dparStruct           => init_struc%dparStruct          , &  ! x%gru(:)%hru(:)%var(:)     -- default model parameters
+
+     ! run time variables
+    computeVegFlux       => init_struc%computeVegFlux      , & ! flag to indicate if we are computing fluxes over vegetation (.false. means veg is buried with snow)
+    dt_init              => init_struc%dt_init             , & ! used to initialize the length of the sub-step for each HRU
+    upArea               => init_struc%upArea              , & ! area upslope of each HRU
+    
+    ! miscellaneous variables
+    nGRU                 => init_struc%nGRU              , & ! number of grouped response units
+    nHRU                 => init_struc%nHRU              , & ! number of global hydrologic response units
+    hruCount             => init_struc%hruCount              & ! number of local hydrologic response units
+  )
+
+
+    ! calculate the fraction of runoff in future time steps
+  call fracFuture(bparStruct%gru(iGRU)%var,    &  ! vector of basin-average model parameters
+                  bvarStruct%gru(iGRU),        &  ! data structure of basin-average variables
+                  err,cmessage)                   ! error control
+  if(err/=0)then; message=trim(message)//trim(cmessage); endif
+
+  ! loop through local HRUs
+  do iHRU=1,gru_struc(iGRU)%hruCount
+
+   kHRU=0
+   ! check the network topology (only expect there to be one downslope HRU)
+   do jHRU=1,gru_struc(iGRU)%hruCount
+    if(typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%downHRUindex) == idStruct%gru(iGRU)%hru(jHRU)%var(iLookID%hruId))then
+     if(kHRU==0)then  ! check there is a unique match
+      kHRU=jHRU
+     else
+      message=trim(message)//'only expect there to be one downslope HRU';
+     end if  ! (check there is a unique match)
+    end if  ! (if identified a downslope HRU)
+   end do
+
+   ! check that the parameters are consistent
+   call paramCheck(mparStruct%gru(iGRU)%hru(iHRU),err,cmessage)
+   if(err/=0)then; message=trim(message)//trim(cmessage); endif
+
+   ! calculate a look-up table for the temperature-enthalpy conversion
+   call E2T_lookup(mparStruct%gru(iGRU)%hru(iHRU),err,cmessage)
+   if(err/=0)then; message=trim(message)//trim(cmessage); endif
+
+   ! overwrite the vegetation height
+   HVT(typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex)) = mparStruct%gru(iGRU)%hru(iHRU)%var(iLookPARAM%heightCanopyTop)%dat(1)
+   HVB(typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex)) = mparStruct%gru(iGRU)%hru(iHRU)%var(iLookPARAM%heightCanopyBottom)%dat(1)
+
+   ! overwrite the tables for LAI and SAI
+   if(model_decisions(iLookDECISIONS%LAI_method)%iDecision == specified)then
+    SAIM(typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex),:) = mparStruct%gru(iGRU)%hru(iHRU)%var(iLookPARAM%winterSAI)%dat(1)
+    LAIM(typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex),:) = mparStruct%gru(iGRU)%hru(iHRU)%var(iLookPARAM%summerLAI)%dat(1)*greenVegFrac_monthly
+   endif
+
+  end do ! HRU
+
+  ! compute total area of the upstream HRUS that flow into each HRU
+  do iHRU=1,gru_struc(iGRU)%hruCount
+   upArea%gru(iGRU)%hru(iHRU) = 0._rkind
+   do jHRU=1,gru_struc(iGRU)%hruCount
+    ! check if jHRU flows into iHRU; assume no exchange between GRUs
+    if(typeStruct%gru(iGRU)%hru(jHRU)%var(iLookTYPE%downHRUindex)==typeStruct%gru(iGRU)%hru(iHRU)%var(iLookID%hruId))then
+     upArea%gru(iGRU)%hru(iHRU) = upArea%gru(iGRU)%hru(iHRU) + attrStruct%gru(iGRU)%hru(jHRU)%var(iLookATTR%HRUarea)
+    endif   ! (if jHRU is an upstream HRU)
+   end do  ! jHRU
+  end do  ! iHRU
+
+  ! identify the total basin area for a GRU (m2)
+  bvarStruct%gru(iGRU)%var(iLookBVAR%basin__totalArea)%dat(1) = 0._rkind
+  do iHRU=1,gru_struc(iGRU)%hruCount
+   bvarStruct%gru(iGRU)%var(iLookBVAR%basin__totalArea)%dat(1) = bvarStruct%gru(iGRU)%var(iLookBVAR%basin__totalArea)%dat(1) + attrStruct%gru(iGRU)%hru(iHRU)%var(iLookATTR%HRUarea)
+  end do
+
+end associate summaVars
+
+
+end subroutine setupGRU
 
 subroutine f_initGru(indx_gru, handle_gru_data, output_buffer_steps, &
     err, message_r) bind(C, name="f_initGru")
@@ -62,6 +205,10 @@ subroutine f_initGru(indx_gru, handle_gru_data, output_buffer_steps, &
   ! ****************************************************************************
   call allocateOutputBuffer(indx_gru, size(gru_data%hru), output_buffer_steps, &
                             err, message)
+  if(err /= 0) then; call f_c_string_ptr(trim(message), message_r);return;end if
+
+  ! Setup the GRU
+  call setupGRU(indx_gru, err, message)
   if(err /= 0) then; call f_c_string_ptr(trim(message), message_r);return;end if
 
 

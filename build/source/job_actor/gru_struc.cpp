@@ -11,7 +11,7 @@ GruStruc::GruStruc(int start_gru, int num_gru, int num_retry_attempts) {
   num_retry_attempts_left_ = num_retry_attempts;
 }
 
-int GruStruc::ReadDimension() {
+int GruStruc::readDimension() {
   chrono_time start = std::chrono::high_resolution_clock::now();
   // gru_struc is set up in fortran here
   int err = 0; int num_hru, file_gru, file_hru;
@@ -40,7 +40,7 @@ int GruStruc::ReadDimension() {
   return err;
 }
 
-int GruStruc::ReadIcondNlayers() {
+int GruStruc::readIcondNlayers() {
   chrono_time start = std::chrono::high_resolution_clock::now();
 
   int err = 0;

@@ -126,8 +126,8 @@ class GruStruc {
   public:
     GruStruc(int start_gru, int num_gru, int num_retry_attempts);
     ~GruStruc(){deallocate_gru_struc_fortran();};
-    int ReadDimension();
-    int ReadIcondNlayers();
+    int readDimension();
+    int readIcondNlayers();
 
     // Set the gru information for each node participating in data assimilation
     int setNodeGruInfo(int num_nodes);
