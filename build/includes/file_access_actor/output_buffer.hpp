@@ -6,13 +6,13 @@
 #include "caf/all.hpp"
 
 extern "C" {
-  void f_defOutput(void *handle_ncid, int& start_gru, int& num_gru, int& num_hru,
-                   int& file_gru, bool& use_extention,
+  void f_defOutput(void *handle_ncid, int& start_gru, int& num_gru, 
+                   int& num_hru, int& file_gru, bool& use_extention,
                    char const* output_extention, int& err, void* message);
   void f_setChunkSize(int& chunk_size);
   void f_allocateOutputBuffer(int& max_steps, int& num_gru, int& err, 
                               void* message);
-  void f_deallocateOutputBuffer();
+  void f_deallocateOutputBuffer(void *handle_ncid_);
 
   void writeOutput_fortran(void* handle_ncid, int& num_steps, int& start_gru, 
                            int& max_gru, bool& writeParamFlag, int& err,
@@ -105,7 +105,7 @@ class OutputBuffer {
     };
 
     ~OutputBuffer() {
-      f_deallocateOutputBuffer();
+      f_deallocateOutputBuffer(handle_ncid_.get());
     };
 
     int defOutput(const std::string& actor_address);

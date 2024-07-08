@@ -176,8 +176,28 @@ subroutine f_allocateOutputBuffer(max_steps, num_gru, err, message_r) &
 
 end subroutine f_allocateOutputBuffer
 
-subroutine f_deallocateOutputBuffer() bind(C, name="f_deallocateOutputBuffer")
+subroutine f_deallocateOutputBuffer(handle_ncid) &
+    bind(C, name="f_deallocateOutputBuffer")
+  USE netcdf_util_module,only:nc_file_close 
+  USE var_lookup,only:maxvarFreq
   implicit none
+  ! Dummy Variables
+  type(c_ptr),intent(in),value           :: handle_ncid
+  ! Local Variables
+  type(var_i),pointer                    :: output_ncid
+  integer(c_int)                         :: iFreq
+  character(LEN=256)                     :: message
+  integer(i4b)                           :: err
+
+
+  call c_f_pointer(handle_ncid, output_ncid)
+  
+  do iFreq = 1, maxVarFreq
+    if (output_ncid%var(iFreq) /= integerMissing) then
+      call nc_file_close(output_ncid%var(iFreq), err, message)
+    end if
+  end do
+
   deallocate(summa_struct)
   deallocate(outputTimeStep)
 end subroutine
