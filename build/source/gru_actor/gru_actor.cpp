@@ -43,7 +43,8 @@ behavior GruActor::make_behavior() {
 behavior GruActor::async_mode() {
   return {
     [this](update_hru_async) {
-      self_->mail(get_num_output_steps_v).request(file_access_actor_, infinite)
+      self_->mail(get_num_output_steps_v, job_index_)
+          .request(file_access_actor_, infinite)
           .await([this](int num_steps) {
             num_steps_until_write_ = num_steps;
             self_->mail(access_forcing_v, iFile_, self_).

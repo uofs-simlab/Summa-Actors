@@ -47,7 +47,13 @@ class OutputPartition {
                     num_gru_(num_gru), num_steps_buffer_(num_steps_buffer), 
                     steps_remaining_(num_timesteps) {
       end_gru_ = start_gru_ + num_gru_ - 1;
+
+      if (num_steps_buffer_ > steps_remaining_) {
+        num_steps_buffer_ = steps_remaining_;
+      }
     };
+
+    inline const int getNumStepsBuffer() { return num_steps_buffer_;};
 
     const std::optional<WriteOutputReturn*> writeOutput(
         caf::actor gru, void* handle_ncid);
@@ -110,6 +116,8 @@ class OutputBuffer {
     ~OutputBuffer() {
       f_deallocateOutputBuffer(handle_ncid_.get());
     };
+
+    int getNumStepsBuffer(int gru_index);
 
     int defOutput(const std::string& actor_address);
     int setChunkSize();

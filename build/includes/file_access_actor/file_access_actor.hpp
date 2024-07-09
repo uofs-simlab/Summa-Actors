@@ -16,8 +16,6 @@
 extern "C" {
   void f_getNumTimeSteps(int& num_timesteps);
 
-
-
   void writeRestart_fortran(void* handle_ncid, int& start_gru, int& max_gru, 
                             int& timestep, int& year, int& month, int& day, 
                             int& hour, int& err); 
@@ -39,7 +37,6 @@ class FileAccessActor {
   int num_hru_;
 
   int num_steps_;
-  int num_output_steps_;
   bool write_params_flag_ = true;
   std::unique_ptr<forcingFileContainer> forcing_files_;
   std::unique_ptr<Output_Container> output_container_;

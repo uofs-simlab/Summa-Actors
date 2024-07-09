@@ -7,6 +7,26 @@ using chrono_time = std::chrono::time_point<std::chrono::high_resolution_clock>;
 // OutputBuffer
 // ****************************************************************************
 
+int OutputBuffer::getNumStepsBuffer(int gru_index) {
+  // GRUs start at 1 but the partitions start at 0
+  int target_index = gru_index - 1; 
+
+  // Find The Partition That Contains the GRU
+  int num_gru = num_gru_info_.num_gru_local;
+  int baseSize = num_gru / partitions_.size();
+  int remainder = num_gru % partitions_.size();
+
+  int partition_index;
+  if (target_index < remainder * (baseSize + 1)) {
+    partition_index = target_index / (baseSize + 1);
+  } else {
+    partition_index = remainder + 
+        (target_index - remainder * (baseSize + 1)) / baseSize;
+  }
+
+  return partitions_[partition_index]->getNumStepsBuffer();
+} 
+
 int OutputBuffer::defOutput(const std::string& actor_address) {
   int err = 0;
   std::unique_ptr<char[]> message(new char[256]);

@@ -21,8 +21,6 @@ behavior FileAccessActor::make_behavior() {
     num_gru_ = num_gru_info_.num_gru_local;
   }
 
-  num_output_steps_ = fa_settings_.num_timesteps_in_output_buffer_;
-
   return {
     [this](init_file_access_actor, int file_gru, int num_hru) {
       int err = 0;
@@ -90,8 +88,8 @@ behavior FileAccessActor::make_behavior() {
       self_->mail(access_forcing_internal_v, i_file + 1).send(self_);
     },
 
-    [this](get_num_output_steps) -> int {
-      return num_output_steps_;
+    [this](get_num_output_steps, int job_index) -> int {
+      return output_buffer_->getNumStepsBuffer(job_index);
     },
 
     [this](write_output, int index_gru, int index_hru, caf::actor gru) {

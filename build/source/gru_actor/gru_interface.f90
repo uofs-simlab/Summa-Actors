@@ -521,14 +521,14 @@ subroutine runGRU_fortran(indx_gru, modelTimeStep, handle_gru_data, &
   endif
 
   call qOverland(&! input
-                  model_decisions(iLookDECISIONS%subRouting)%iDecision,            &  ! intent(in): index for routing method
-                  gru_data%bvarStruct%var(iLookBVAR%basin__TotalRunoff)%dat(1),             &  ! intent(in): total runoff to the channel from all active components (m s-1)
-                  gru_data%bvarStruct%var(iLookBVAR%routingFractionFuture)%dat,             &  ! intent(in): fraction of runoff in future time steps (m s-1)
-                  gru_data%bvarStruct%var(iLookBVAR%routingRunoffFuture)%dat,               &  ! intent(in): runoff in future time steps (m s-1)
-                  ! output
-                  gru_data%bvarStruct%var(iLookBVAR%averageInstantRunoff)%dat(1),           &  ! intent(out): instantaneous runoff (m s-1)
-                  gru_data%bvarStruct%var(iLookBVAR%averageRoutedRunoff)%dat(1),            &  ! intent(out): routed runoff (m s-1)
-                  err,message)                                                                  ! intent(out): error control
+      model_decisions(iLookDECISIONS%subRouting)%iDecision,            &  ! intent(in): index for routing method
+      gru_data%bvarStruct%var(iLookBVAR%basin__TotalRunoff)%dat(1),    &  ! intent(in): total runoff to the channel from all active components (m s-1)
+      gru_data%bvarStruct%var(iLookBVAR%routingFractionFuture)%dat,    &  ! intent(in): fraction of runoff in future time steps (m s-1)
+      gru_data%bvarStruct%var(iLookBVAR%routingRunoffFuture)%dat,      &  ! intent(in): runoff in future time steps (m s-1)
+      ! output
+      gru_data%bvarStruct%var(iLookBVAR%averageInstantRunoff)%dat(1),  &  ! intent(out): instantaneous runoff (m s-1)
+      gru_data%bvarStruct%var(iLookBVAR%averageRoutedRunoff)%dat(1),   &  ! intent(out): routed runoff (m s-1)
+      err,message)                                                        ! intent(out): error control
   if(err/=0)then; err=20; message=trim(message)//trim(cmessage); print*, message; return; endif;
   end associate
 
