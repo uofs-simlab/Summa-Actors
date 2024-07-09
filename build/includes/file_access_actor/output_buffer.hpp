@@ -2,7 +2,6 @@
 #include "settings_functions.hpp"
 #include "fortran_data_types.hpp"
 #include "num_gru_info.hpp"
-#include <cmath>
 #include "caf/all.hpp"
 
 extern "C" {
@@ -97,10 +96,14 @@ class OutputBuffer {
       }
 
       int start_gru = 1;
-      num_gru_partition_ = std::round(num_gru / num_partitions);
+      num_gru_partition_ = num_gru / num_partitions;
+      int remainder = num_gru % num_partitions;
+
       for (int i = 0; i < num_partitions; i++) {
+        int num_gru_container = num_gru_partition_ + (i < remainder ? 1 : 0);
         partitions_.push_back(std::make_unique<OutputPartition>(
-            start_gru, num_gru_partition_, num_buffer_steps, num_timesteps));
+            start_gru, num_gru_container, num_buffer_steps, num_timesteps));
+        start_gru += num_gru_container;
       }
     };
 

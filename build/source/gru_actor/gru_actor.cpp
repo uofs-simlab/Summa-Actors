@@ -93,8 +93,8 @@ behavior GruActor::async_mode() {
                        err, &message);
         std::fill(message.get(), message.get() + 256, '\0'); // Clear message
         writeGRUOutput_fortran(job_index_, timestep_, 
-                               output_structure_step_index_, gru_data_.get(), err, 
-                               &message);
+                               output_structure_step_index_, gru_data_.get(), 
+                               err, &message);
 
         timestep_++;
         forcingStep_++;

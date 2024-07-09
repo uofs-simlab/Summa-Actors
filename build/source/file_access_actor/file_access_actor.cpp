@@ -35,6 +35,8 @@ behavior FileAccessActor::make_behavior() {
       if (forcing_files_->initForcingFiles() != 0) return -1;
 
       // Initialize output buffer
+      // TODO: WHY DOES THE OUTPUT BUFFER NEED TO KNOW THE NUMBER OF HRUs?
+      // TODO: SHOULD IT NOT JUST BE GRUs?
       output_buffer_ = std::make_unique<OutputBuffer>(
           fa_settings_, num_gru_info_, num_hru_, num_steps_);
       int chunk_return = output_buffer_->setChunkSize();
