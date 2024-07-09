@@ -1,8 +1,9 @@
 #include "gru_struc.hpp"
+#include "message_atoms.hpp"
 #include <iostream>
 #include <memory>
-#include <omp.h>
-
+#include <execution>
+#include <algorithm>
 using chrono_time = std::chrono::time_point<std::chrono::high_resolution_clock>;
 
 GruStruc::GruStruc(int start_gru, int num_gru, int num_retry_attempts) {
@@ -10,6 +11,10 @@ GruStruc::GruStruc(int start_gru, int num_gru, int num_retry_attempts) {
   num_gru_ = num_gru;
   num_retry_attempts_left_ = num_retry_attempts;
 }
+
+
+
+
 
 int GruStruc::readDimension() {
   chrono_time start = std::chrono::high_resolution_clock::now();
@@ -26,10 +31,11 @@ int GruStruc::readDimension() {
   file_gru_ = file_gru;
   file_hru_ = file_hru;
 
-  #pragma omp parallel for
-  for (int i = 1; i <= num_gru_; i++) {
-    f_setHruCount(i, start_gru_);
-  }
+  std::vector<int> indicies(num_gru_);
+  std::iota(indicies.begin(), indicies.end(), start_gru_);
+  std::for_each(std::execution::par, indicies.begin(), indicies.end(), 
+    [=](int i) { f_setHruCount(i, start_gru_); 
+  });
   f_setIndexMap();
 
 
@@ -99,5 +105,4 @@ std::string GruStruc::getNodeGruInfoString() {
   }
   return str;
 }
-
 
