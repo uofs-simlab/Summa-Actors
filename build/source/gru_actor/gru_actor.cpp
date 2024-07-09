@@ -5,7 +5,7 @@ using namespace caf;
 
 behavior GruActor::make_behavior() {
   int err = 0;
-  f_getNumHru(job_index_, num_hrus_);
+  f_getNumHruInGru(job_index_, num_hrus_);
   gru_data_ = std::unique_ptr<void, GruDeleter>(new_handle_gru_type(num_hrus_));
   
   std::unique_ptr<char[]> message(new char[256]);

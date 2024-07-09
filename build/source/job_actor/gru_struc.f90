@@ -7,6 +7,7 @@ module gru_struc_module
   public::f_readDimension
   public::f_setHruCount
   public::f_setIndexMap
+  public::f_getNumHru
   public::read_icond_nlayers_fortran
   public::get_num_hru_per_gru_fortran
   public::deallocate_gru_struc_fortran
@@ -18,9 +19,8 @@ module gru_struc_module
   integer(i4b),allocatable,save,public   :: hru_ix(:)
   contains
 
-subroutine f_readDimension(start_gru, num_gru, num_hru, file_gru, &
-                                  file_hru, err, message_r) &
-    bind(C, name="f_readDimension")
+subroutine f_readDimension(start_gru, num_gru, file_gru, file_hru, &
+    err, message_r) bind(C, name="f_readDimension")
   USE globalData,only:startGRU                               ! index of the GRU for a single GRU run
   USE globalData,only:checkHRU                               ! index of the HRU for a single HRU run
   USE globalData,only:iRunMode                               ! define the current running mode    
@@ -42,7 +42,6 @@ subroutine f_readDimension(start_gru, num_gru, num_hru, file_gru, &
   ! Dummy Variables
   integer(c_int), intent(in)      :: start_gru
   integer(c_int), intent(inout)   :: num_gru
-  integer(c_int), intent(inout)   :: num_hru
   integer(c_int), intent(out)     :: file_gru
   integer(c_int), intent(out)     :: file_hru
   integer(c_int), intent(out)     :: err
@@ -150,6 +149,13 @@ subroutine f_setIndexMap() bind(C, name="f_setIndexMap")
   enddo ! iGRU = 1,nGRU
 
 end subroutine f_setIndexMap
+
+subroutine f_getNumHru(num_hru) bind(C, name="f_getNumHru")
+  USE globalData,only:gru_struc
+  implicit none
+  integer(c_int), intent(out)     :: num_hru
+  num_hru = sum(gru_struc(:)%hruCount)
+end subroutine f_getNumHru
 
 subroutine read_icond_nlayers_fortran(num_gru, err, message_r)& 
     bind(C, name="read_icond_nlayers_fortran")

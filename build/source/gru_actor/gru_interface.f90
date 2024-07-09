@@ -5,7 +5,7 @@ USE globalData,only:integerMissing
 USE globalData,only:realMissing
 
 implicit none
-public::f_getNumHru
+public::f_getNumHruInGru
 public::f_initGru
 public::setupGRU_fortran
 public::readGRURestart_fortran
@@ -22,14 +22,14 @@ private::is_var_desired
 
 contains
 
-subroutine f_getNumHru(indx_gru, num_hru) bind(C, name="f_getNumHru")
+subroutine f_getNumHruInGru(indx_gru, num_hru) bind(C, name="f_getNumHruInGru")
   USE globalData,only:gru_struc
   implicit none
   integer(c_int), intent(in)  :: indx_gru
   integer(c_int), intent(out) :: num_hru
 
   num_hru = gru_struc(indx_gru)%hruCount
-end subroutine f_getNumHRU
+end subroutine f_getNumHruInGru
 
 subroutine setupGRU(iGRU, err, message)
   USE summa_init_struc,only:init_struc

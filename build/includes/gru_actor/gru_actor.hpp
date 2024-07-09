@@ -7,7 +7,7 @@
 #include <vector>
 
 extern "C" {
-  void f_getNumHru(int& index_gru, int& num_hru);
+  void f_getNumHruInGru(int& index_gru, int& num_hru);
 
   void f_initGru(int& index_gru, void* gru_data, int& output_buffer_steps, 
                  int& err, void* message);

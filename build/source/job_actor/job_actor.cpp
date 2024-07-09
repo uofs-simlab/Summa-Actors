@@ -316,6 +316,7 @@ void JobActor::spawnGruBatches() {
     batch_size = 1;
     // Batch Size of 1 is same as having no batch actor
     spawnGruActors();
+    return;
   }
   int remaining_hru_to_batch = gru_struc_->getNumGru();
   int start_hru_global = batch_.getStartHRU();

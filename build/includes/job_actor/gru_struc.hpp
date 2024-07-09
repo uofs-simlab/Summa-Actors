@@ -4,10 +4,11 @@
 
 extern "C" {
 
-  void f_readDimension(int& start_gru, int& num_gru, int& num_hru, 
-                       int& file_gru, int& file_hru, int& err, void* message);
+  void f_readDimension(int& start_gru, int& num_gru, int& file_gru, 
+                       int& file_hru, int& err, void* message);
   void f_setHruCount(int& iGRU, int& sGRU);
   void f_setIndexMap();
+  void f_getNumHru(int& num_hru);
 
   void read_icond_nlayers_fortran(int& num_gru, int& err, void* message);
 

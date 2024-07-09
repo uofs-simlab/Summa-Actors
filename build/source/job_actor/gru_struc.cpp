@@ -12,22 +12,17 @@ GruStruc::GruStruc(int start_gru, int num_gru, int num_retry_attempts) {
   num_retry_attempts_left_ = num_retry_attempts;
 }
 
-
-
-
-
 int GruStruc::readDimension() {
   chrono_time start = std::chrono::high_resolution_clock::now();
   // gru_struc is set up in fortran here
-  int err = 0; int num_hru, file_gru, file_hru;
+  int err = 0; int file_gru, file_hru;
   std::unique_ptr<char[]> err_msg(new char[256]);
-  f_readDimension(start_gru_, num_gru_, num_hru, file_gru, file_hru, err, 
+  f_readDimension(start_gru_, num_gru_, file_gru, file_hru, err, 
                   &err_msg);
   if (err != 0) { 
     std::cout << "ERROR: GruStruc - ReadDimension()\n";
     std::cout << err_msg.get() << "\n";
   }
-  num_hru_ = num_hru;
   file_gru_ = file_gru;
   file_hru_ = file_hru;
 
@@ -37,6 +32,7 @@ int GruStruc::readDimension() {
     [=](int i) { f_setHruCount(i, start_gru_); 
   });
   f_setIndexMap();
+  f_getNumHru(num_hru_);
 
 
   chrono_time end = std::chrono::high_resolution_clock::now();
