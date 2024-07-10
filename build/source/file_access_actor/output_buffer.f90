@@ -83,7 +83,7 @@ subroutine f_defOutput(handle_ncid, start_gru, num_gru, num_hru, file_gru, &
 
   nGRUrun = num_gru
   nHRUrun = num_hru
-  fileout = trim(OUTPUT_PATH)//trim(OUTPUT_PREFIX)//trim(output_fileSuffix)
+  fileout = trim(OUTPUT_PATH)//trim(OUTPUT_PREFIX)//trim("_")//trim(output_fileSuffix)
   ncid(:) = integerMissing
   call def_output(summaVersion, buildTime, gitBranch, gitHash, num_gru, &
                   num_hru, gru_struc(1)%hruInfo(1)%nSoil, fileout, &
