@@ -52,10 +52,14 @@ class OutputPartition {
       }
     };
 
+    inline const int getStartGru() { return start_gru_;};
+    inline const int getEndGru() { return end_gru_;};
+
     inline const int getNumStepsBuffer() { return num_steps_buffer_;};
 
     const std::optional<WriteOutputReturn*> writeOutput(
         caf::actor gru, void* handle_ncid);
+
     bool isWriteParams();
 };
 
@@ -77,6 +81,7 @@ class OutputBuffer {
 
     int num_gru_partition_;
 
+    bool write_params_da_ = true;
 
     std::vector<std::unique_ptr<OutputPartition>> partitions_;
     bool rerunning_failed_grus_ = false;
@@ -123,6 +128,7 @@ class OutputBuffer {
     int allocateOutputBuffer(int num_timesteps);
     const std::optional<WriteOutputReturn*> writeOutput(
         int index_gru, caf::actor gru);
+    const int writeOutputDA();
 
 
 };

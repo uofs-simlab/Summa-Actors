@@ -33,8 +33,6 @@ behavior FileAccessActor::make_behavior() {
       if (forcing_files_->initForcingFiles() != 0) return -1;
 
       // Initialize output buffer
-      // TODO: WHY DOES THE OUTPUT BUFFER NEED TO KNOW THE NUMBER OF HRUs?
-      // TODO: SHOULD IT NOT JUST BE GRUs?
       output_buffer_ = std::make_unique<OutputBuffer>(
           fa_settings_, num_gru_info_, num_hru_, num_steps_);
       int chunk_return = output_buffer_->setChunkSize();
@@ -92,7 +90,7 @@ behavior FileAccessActor::make_behavior() {
       return output_buffer_->getNumStepsBuffer(job_index);
     },
 
-    [this](write_output, int index_gru, int index_hru, caf::actor gru) {
+    [this](write_output, int index_gru, caf::actor gru) {
       timing_info_.updateStartPoint("write_duration");
 
       auto update_status = output_buffer_->writeOutput(index_gru, gru);
@@ -145,20 +143,10 @@ behavior FileAccessActor::make_behavior() {
       }
     },
 
-    [this](write_output, int steps_to_write, int start_gru, 
-           int max_gru) -> int {
+    // Write Output From the Job Actor
+    [this](write_output) -> int {
       timing_info_.updateStartPoint("write_duration");
-      std::unique_ptr<char[]> err_msg(new char[256]);
-      int err = 0;
-      // writeOutput_fortran(handle_ncid_, steps_to_write, start_gru, max_gru, 
-      //                     write_params_flag_, err, &err_msg);
-      if (err != 0) {
-        self_->println("File Access Actor: Error writeOutput from job\n"
-                       "\tMessage = {}\n", err_msg.get());
-        self_->mail(err_atom_v, 0, 0, err, err_msg.get()).send(parent_);
-      }
-
-      if (write_params_flag_) write_params_flag_ = false;
+      const int err = output_buffer_->writeOutputDA();
       timing_info_.updateEndPoint("write_duration");
       return err;
     },

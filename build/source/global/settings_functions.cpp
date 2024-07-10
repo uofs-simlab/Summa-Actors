@@ -53,7 +53,7 @@ int Settings::readSettings() {
     getSettings<int>(json_settings, "Job_Actor", "max_run_attempts")
         .value_or(1),
     getSettings<bool>(json_settings, "Job_Actor", "data_assimilation_mode")
-        .value_or(false),
+        .value_or(true),
     getSettings<int>(json_settings, "Job_Actor", "batch_size")
         .value_or(10)
   );

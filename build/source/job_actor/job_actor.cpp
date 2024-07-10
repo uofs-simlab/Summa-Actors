@@ -69,6 +69,13 @@ behavior JobActor::make_behavior() {
   num_gru_info_ = NumGRUInfo(batch_.getStartHRU(), batch_.getStartHRU(), 
                              batch_.getNumHRU(), batch_.getNumHRU(), 
                              gru_struc_->getFileGru(), false);
+
+
+  // Set the file_access_actor settings depending on data assimilation mode
+  if (job_actor_settings_.data_assimilation_mode_) {
+    fa_actor_settings_.num_partitions_in_output_buffer_ = 1;
+    fa_actor_settings_.num_timesteps_in_output_buffer_ = 1;
+  } 
   
   // Start File Access Actor and Become User Selected Mode
   file_access_actor_ = self_->spawn(actor_from_state<FileAccessActor>, 
@@ -217,8 +224,7 @@ behavior JobActor::data_assimilation_mode() {
         // write output
         int steps_to_write = 1;
         int start_gru = 1;
-        self_->mail(write_output_v, steps_to_write, start_gru, 
-                    batch_.getNumHRU())
+        self_->mail(write_output_v)
             .request(file_access_actor_, caf::infinite)
             .await([=](int err) {
               if (err != 0) {
@@ -245,7 +251,7 @@ behavior JobActor::data_assimilation_mode() {
           self_->mail(finalize_v).send(self_);
         
         } else if (forcing_step_ > steps_in_ffile_) {
-          self_->println("JobActor: Getting New Forcing File");
+          self_->println("JobActor: Requesting New Forcing File");
           self_->mail(access_forcing_v, iFile_ + 1, self_)
               .send(file_access_actor_);
         } else {

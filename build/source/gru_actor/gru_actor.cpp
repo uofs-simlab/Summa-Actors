@@ -108,7 +108,7 @@ behavior GruActor::async_mode() {
       }
       // Our output structure is full
       if (num_steps_until_write_ <= 0) {
-        self_->mail(write_output_v, job_index_, 1, self_)
+        self_->mail(write_output_v, job_index_, self_)
             .send(file_access_actor_);
       }
     },
