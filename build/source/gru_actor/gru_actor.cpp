@@ -5,12 +5,12 @@ using namespace caf;
 
 behavior GruActor::make_behavior() {
   int err = 0;
-  getNumHRU(job_index_, num_hrus_);
+  f_getNumHruInGru(job_index_, num_hrus_);
   gru_data_ = std::unique_ptr<void, GruDeleter>(new_handle_gru_type(num_hrus_));
-  // gru_data_ = new_handle_gru_type(num_hrus_);
   
   std::unique_ptr<char[]> message(new char[256]);
-  initGRU_fortran(job_index_, gru_data_.get(), err, &message);
+  f_initGru(job_index_, gru_data_.get(), num_steps_output_buffer_, err,
+            &message);
   if (err != 0) {
     self_->println("GRU Actor: Error initializing GRU -- {}", message.get());
     self_->quit();
@@ -43,7 +43,8 @@ behavior GruActor::make_behavior() {
 behavior GruActor::async_mode() {
   return {
     [this](update_hru_async) {
-      self_->mail(get_num_output_steps_v).request(file_access_actor_, infinite)
+      self_->mail(get_num_output_steps_v, job_index_)
+          .request(file_access_actor_, infinite)
           .await([this](int num_steps) {
             num_steps_until_write_ = num_steps;
             self_->mail(access_forcing_v, iFile_, self_).
@@ -93,8 +94,8 @@ behavior GruActor::async_mode() {
                        err, &message);
         std::fill(message.get(), message.get() + 256, '\0'); // Clear message
         writeGRUOutput_fortran(job_index_, timestep_, 
-                               output_structure_step_index_, gru_data_.get(), err, 
-                               &message);
+                               output_structure_step_index_, gru_data_.get(), 
+                               err, &message);
 
         timestep_++;
         forcingStep_++;

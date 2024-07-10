@@ -52,12 +52,12 @@ behavior DAClientActor::make_behavior() {
       gru_struc_ = std::make_unique<GruStruc>(
           node_gru_info.node_start_gru_, node_gru_info.node_num_gru_,
           settings_.job_actor_settings_.max_run_attempts_);
-      if (gru_struc_->ReadDimension() != 0) {
+      if (gru_struc_->readDimension() != 0) {
         self_->println("DAClientActor: GruStruc ReadDimension() Failed");
         self_->quit();
         return;
       }
-      if (gru_struc_->ReadIcondNlayers() != 0) {
+      if (gru_struc_->readIcondNlayers() != 0) {
         self_->println("DAClientActor: GruStruc ReadIcondNlayers() Failed");
         self_->quit();
         return;
@@ -205,7 +205,8 @@ void DAClientActor::spawnGruBatches() {
     int current_batch_size = std::min(batch_size, remaining_hru_to_batch);
     auto gru_batch = self_->spawn(
         actor_from_state<GruBatchActor>, start_hru_global, start_hru_local,  
-        current_batch_size, num_steps_, settings_.hru_actor_settings_, 
+        current_batch_size, num_steps_, settings_.hru_actor_settings_,
+        settings_.fa_actor_settings_.num_timesteps_in_output_buffer_, 
         file_access_actor_, self_);
     std::unique_ptr<GRU> gru_obj = std::make_unique<GRU>(
         start_hru_global, start_hru_local, gru_batch, 1, 1.0e-10, 1.0e-10,

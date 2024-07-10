@@ -52,7 +52,7 @@ module output_structure_module
   USE var_lookup,only:iLookINDEX
   USE, intrinsic :: iso_c_binding
   implicit none
-  public::initOutputTimeStep
+  ! public::initOutputTimeStep
   public::initOutputStructure
   public::deallocateOutputStructure
   public::deallocateData_output
@@ -110,24 +110,7 @@ module output_structure_module
   
   contains
 
-subroutine initOutputTimeStep(num_gru, err)
-  USE var_lookup,only:maxvarFreq                ! maximum number of output files
-  implicit none
-  integer(i4b), intent(in)  :: num_gru
-  integer(i4b), intent(out) :: err
-  ! local variables
-  integer(i4b)                :: iGRU
 
-  ! initalize outputTimeStep - keeps track of the step the GRU is writing for
-  if (.not.allocated(outputTimeStep))then
-    allocate(outputTimeStep(num_gru))
-    do iGRU = 1, num_gru
-      allocate(outputTimeStep(iGRU)%dat(maxVarFreq))
-      outputTimeStep(iGRU)%dat(:) = 1
-    end do
-  end if
-
-end subroutine initOutputTimeStep
 
 subroutine initOutputStructure(maxSteps, num_gru, err)
   USE globalData,only:time_meta,forc_meta,attr_meta,type_meta ! metadata structures
@@ -276,15 +259,15 @@ subroutine initOutputStructure(maxSteps, num_gru, err)
         ! allocate space structures
           select case(trim(structInfo(iStruct)%structName))    
             case('time')
-              call alloc_outputStruc(time_meta,summa_struct(1)%timeStruct%gru(iGRU)%hru(iHRU), &
-                                      nSteps=maxSteps,err=err,message=message)     ! model forcing data
+              ! call alloc_outputStruc(time_meta,summa_struct(1)%timeStruct%gru(iGRU)%hru(iHRU), &
+              !                         nSteps=maxSteps,err=err,message=message)     ! model forcing data
             case('forc')
-              ! Structure
-              call alloc_outputStruc(forc_meta,summa_struct(1)%forcStruct%gru(iGRU)%hru(iHRU), &
-                                      nSteps=maxSteps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,message=message);    ! model forcing data
-              ! Statistics
-              call alloc_outputStruc(statForc_meta(:)%var_info,summa_struct(1)%forcStat%gru(iGRU)%hru(iHRU), &
-                                      nSteps=maxSteps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,message=message);    ! model forcing data
+              ! ! Structure
+              ! call alloc_outputStruc(forc_meta,summa_struct(1)%forcStruct%gru(iGRU)%hru(iHRU), &
+              !                         nSteps=maxSteps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,message=message);    ! model forcing data
+              ! ! Statistics
+              ! call alloc_outputStruc(statForc_meta(:)%var_info,summa_struct(1)%forcStat%gru(iGRU)%hru(iHRU), &
+              !                         nSteps=maxSteps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,message=message);    ! model forcing data
             case('attr'); cycle;
               ! call alloc_outputStruc(attr_meta, summa_struct(1)%attrStruct(1)%gru(iGRU)%hru(iHRU),&
               !                         nSteps=1,err=err,message=message)
@@ -292,19 +275,19 @@ subroutine initOutputStructure(maxSteps, num_gru, err)
             case('id'  ); cycle;
             case('mpar'); cycle;
             case('indx')
-              ! Structure
-              call alloc_outputStruc(indx_meta,summa_struct(1)%indxStruct%gru(iGRU)%hru(iHRU), &
-                                      nSteps=maxSteps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,str_name='indx',message=message);    ! model variables
-              ! Statistics
-              call alloc_outputStruc(statIndx_meta(:)%var_info,summa_struct(1)%indxStat%gru(iGRU)%hru(iHRU), &
-                                      nSteps=maxSteps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,message=message);    ! index vars
+              ! ! Structure
+              ! call alloc_outputStruc(indx_meta,summa_struct(1)%indxStruct%gru(iGRU)%hru(iHRU), &
+              !                         nSteps=maxSteps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,str_name='indx',message=message);    ! model variables
+              ! ! Statistics
+              ! call alloc_outputStruc(statIndx_meta(:)%var_info,summa_struct(1)%indxStat%gru(iGRU)%hru(iHRU), &
+              !                         nSteps=maxSteps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,message=message);    ! index vars
             case('prog')
-              ! Structure
-              call alloc_outputStruc(prog_meta,summa_struct(1)%progStruct%gru(iGRU)%hru(iHRU), &
-                                      nSteps=maxSteps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,str_name='prog',message=message);    ! model prognostic (state) variables
-              ! Statistics
-              call alloc_outputStruc(statProg_meta(:)%var_info,summa_struct(1)%progStat%gru(iGRU)%hru(iHRU), &
-                                      nSteps=maxSteps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,str_name='prog',message=message);    ! model prognostic 
+              ! ! Structure
+              ! call alloc_outputStruc(prog_meta,summa_struct(1)%progStruct%gru(iGRU)%hru(iHRU), &
+              !                         nSteps=maxSteps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,str_name='prog',message=message);    ! model prognostic (state) variables
+              ! ! Statistics
+              ! call alloc_outputStruc(statProg_meta(:)%var_info,summa_struct(1)%progStat%gru(iGRU)%hru(iHRU), &
+              !                         nSteps=maxSteps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,str_name='prog',message=message);    ! model prognostic 
             case('diag')
               ! Structure
               call alloc_outputStruc(diag_meta,summa_struct(1)%diagStruct%gru(iGRU)%hru(iHRU), &

@@ -1,6 +1,10 @@
 #include "gru_struc.hpp"
+#include "message_atoms.hpp"
 #include <iostream>
 #include <memory>
+#include <execution>
+#include <algorithm>
+using chrono_time = std::chrono::time_point<std::chrono::high_resolution_clock>;
 
 GruStruc::GruStruc(int start_gru, int num_gru, int num_retry_attempts) {
   start_gru_ = start_gru;
@@ -8,29 +12,50 @@ GruStruc::GruStruc(int start_gru, int num_gru, int num_retry_attempts) {
   num_retry_attempts_left_ = num_retry_attempts;
 }
 
-int GruStruc::ReadDimension() {
+int GruStruc::readDimension() {
+  chrono_time start = std::chrono::high_resolution_clock::now();
   // gru_struc is set up in fortran here
-  int err = 0; int num_hru, file_gru, file_hru;
+  int err = 0; int file_gru, file_hru;
   std::unique_ptr<char[]> err_msg(new char[256]);
-  read_dimension_fortran(start_gru_, num_gru_, num_hru, file_gru, file_hru,
-                         err, &err_msg);
+  f_readDimension(start_gru_, num_gru_, file_gru, file_hru, err, 
+                  &err_msg);
   if (err != 0) { 
     std::cout << "ERROR: GruStruc - ReadDimension()\n";
     std::cout << err_msg.get() << "\n";
   }
-  num_hru_ = num_hru;
   file_gru_ = file_gru;
   file_hru_ = file_hru;
+
+  std::vector<int> indicies(num_gru_);
+  std::iota(indicies.begin(), indicies.end(), start_gru_);
+  std::for_each(std::execution::par, indicies.begin(), indicies.end(), 
+    [=](int i) { f_setHruCount(i, start_gru_); 
+  });
+  f_setIndexMap();
+  f_getNumHru(num_hru_);
+
+
+  chrono_time end = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> elapsed_seconds = end - start;
+  std::cout << "Time taken for ReadDimension: " << elapsed_seconds.count() 
+            << "s\n";
   return err;
 }
 
-int GruStruc::ReadIcondNlayers() {
+int GruStruc::readIcondNlayers() {
+  chrono_time start = std::chrono::high_resolution_clock::now();
+
   int err = 0;
   std::unique_ptr<char[]> err_msg(new char[256]);
   read_icond_nlayers_fortran(num_gru_, err, &err_msg);
   if (err != 0) { 
     std::cout << "ERROR: GruStruc - ReadIcondNlayers\n";
   }
+
+  chrono_time end = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> elapsed_seconds = end - start;
+  std::cout << "Time taken for ReadIcondNlayers: " << elapsed_seconds.count() 
+            << "s\n";
   return 0;
 }
 
@@ -76,5 +101,4 @@ std::string GruStruc::getNodeGruInfoString() {
   }
   return str;
 }
-
 

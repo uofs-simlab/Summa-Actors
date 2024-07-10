@@ -7,11 +7,9 @@ behavior GruBatchActor::make_behavior() {
   bool data_assimilation_mode = true;
   for (int i = 0; i < num_gru_; i++) {
     gru_actors_.push_back(self_->spawn(actor_from_state<GruActor>, 
-                                       netcdf_start_index_ + i, 
-                                       job_start_index_ + i, 
-                                       num_steps_, hru_actor_settings_, 
-                                       data_assimilation_mode, 
-                                       file_access_actor_, self_));  
+        netcdf_start_index_ + i, job_start_index_ + i, 
+        num_steps_, hru_actor_settings_, data_assimilation_mode, 
+        num_steps_output_buffer_, file_access_actor_, self_));  
   }
   return {
     [this](update_timeZoneOffset, int iFile) {
@@ -34,45 +32,3 @@ behavior GruBatchActor::make_behavior() {
   };
 }
 
-// namespace caf {
-
-
-
-
-
-//     [=](serialize_hru, int indx_gru) {
-//       self->send(self->state.hru_actors[indx_gru], serialize_hru_v);
-//     },
-
-//     [=](serialize_hru, caf::actor actor_ref) {
-//       self->send(actor_ref, serialize_hru_v);
-//     },
-
-//     [=](hru hru_data) {
-//       auto sender = actor_cast<actor>(self->current_sender());
-//       self->send(self->state.parent, sender, hru_data);
-//     },
-
-//     [=](reinit_hru, hru hru_data) {
-//       self->state.hru_actors.push_back(
-//         self->spawn(hru_actor, hru_data.ref_gru, hru_data.indx_gru,
-//             self->state.hru_actor_settings, self->state.file_access_actor, 
-//             self)
-//       );
-//       self->send(self->state.hru_actors.back(), reinit_hru_v, hru_data);
-//     },
- 
-//     [=](reinit_hru, caf::actor target_actor, hru hru_data) {
-//       self->send(target_actor, reinit_hru_v, hru_data);
-//     },
-
-//     [=](reinit_hru) {
-//       self->send(self->state.parent, reinit_hru_v);
-//     }
-//   };
-
-// }
-                            
-
-
-// }

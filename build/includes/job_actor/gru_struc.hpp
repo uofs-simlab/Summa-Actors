@@ -3,9 +3,12 @@
 #include <string>
 
 extern "C" {
-  void read_dimension_fortran(int& start_gru, int& num_gru, int& num_hru, 
-                              int& file_gru, int& file_hru, int& err, 
-                              void* message);
+
+  void f_readDimension(int& start_gru, int& num_gru, int& file_gru, 
+                       int& file_hru, int& err, void* message);
+  void f_setHruCount(int& iGRU, int& sGRU);
+  void f_setIndexMap();
+  void f_getNumHru(int& num_hru);
 
   void read_icond_nlayers_fortran(int& num_gru, int& err, void* message);
 
@@ -124,8 +127,8 @@ class GruStruc {
   public:
     GruStruc(int start_gru, int num_gru, int num_retry_attempts);
     ~GruStruc(){deallocate_gru_struc_fortran();};
-    int ReadDimension();
-    int ReadIcondNlayers();
+    int readDimension();
+    int readIcondNlayers();
 
     // Set the gru information for each node participating in data assimilation
     int setNodeGruInfo(int num_nodes);

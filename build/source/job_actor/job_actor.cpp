@@ -33,18 +33,18 @@ behavior JobActor::make_behavior() {
   // GruStruc Initialization
   gru_struc_ = std::make_unique<GruStruc>(batch_.getStartHRU(), 
       batch_.getNumHRU(), job_actor_settings_.max_run_attempts_);
-  if (gru_struc_->ReadDimension()) {
+  if (gru_struc_->readDimension()) {
     err_msg = "ERROR: Job_Actor - ReadDimension\n";
     self_->mail(err_atom_v, -2, err_msg).send(parent_);
     return {};
   }
-  if (gru_struc_->ReadIcondNlayers()) {
+  if (gru_struc_->readIcondNlayers()) {
     err_msg = "ERROR: Job_Actor - ReadIcondNlayers\n";
     self_->mail(err_atom_v, -2, err_msg).send(parent_);
     return {};
   }
   // todo: check if this is necessary
-  gru_struc_->getNumHrusPerGru();  
+  gru_struc_->getNumHrusPerGru();
 
   // SummaInitStruc Initialization
   summa_init_struc_ = std::make_unique<SummaInitStruc>();
@@ -63,6 +63,7 @@ behavior JobActor::make_behavior() {
     self_->mail(err_atom_v, -2, err_msg).send(parent_);
     return {};
   }
+
   summa_init_struc_->getInitTolerance(rel_tol_, abs_tol_);
   
   num_gru_info_ = NumGRUInfo(batch_.getStartHRU(), batch_.getStartHRU(), 
@@ -137,8 +138,9 @@ behavior JobActor::async_mode() {
         int netcdf_index = job_index + gru_struc_->getStartGru() - 1;
         auto gru_actor = self_->spawn(actor_from_state<GruActor>, netcdf_index, 
             job_index, num_steps_, hru_actor_settings_,
-            job_actor_settings_.data_assimilation_mode_, file_access_actor_,
-            self_);
+            job_actor_settings_.data_assimilation_mode_, 
+            fa_actor_settings_.num_timesteps_in_output_buffer_,
+            file_access_actor_, self_);
         gru_struc_->decrementNumGruFailed();
         std::unique_ptr<GRU> gru_obj = std::make_unique<GRU>(
             netcdf_index, job_index, gru_actor, dt_init_factor_, rel_tol_, 
@@ -277,9 +279,10 @@ void JobActor::spawnGruActors() {
     auto netcdf_index = gru_struc_->getStartGru() + i;
     auto job_index = i + 1;
     auto gru_actor = self_->spawn(actor_from_state<GruActor>, netcdf_index, 
-                                  job_index, num_steps_, hru_actor_settings_,
-                                  job_actor_settings_.data_assimilation_mode_,
-                                  file_access_actor_, self_);
+        job_index, num_steps_, hru_actor_settings_,
+        job_actor_settings_.data_assimilation_mode_,
+        fa_actor_settings_.num_timesteps_in_output_buffer_, file_access_actor_, 
+        self_);
     std::unique_ptr<GRU> gru_obj = std::make_unique<GRU>(
         netcdf_index, job_index, gru_actor, dt_init_factor_, rel_tol_, 
         abs_tol_, job_actor_settings_.max_run_attempts_);
@@ -313,6 +316,7 @@ void JobActor::spawnGruBatches() {
     batch_size = 1;
     // Batch Size of 1 is same as having no batch actor
     spawnGruActors();
+    return;
   }
   int remaining_hru_to_batch = gru_struc_->getNumGru();
   int start_hru_global = batch_.getStartHRU();
@@ -321,10 +325,9 @@ void JobActor::spawnGruBatches() {
   while (remaining_hru_to_batch > 0) {
     int current_batch_size = std::min(batch_size, remaining_hru_to_batch);
     auto gru_batch = self_->spawn(actor_from_state<GruBatchActor>, 
-                                  start_hru_local, start_hru_global, 
-                                  current_batch_size, num_steps_,
-                                  hru_actor_settings_, file_access_actor_, 
-                                  self_);
+        start_hru_local, start_hru_global, current_batch_size, num_steps_,
+        hru_actor_settings_, fa_actor_settings_.num_timesteps_in_output_buffer_,
+        file_access_actor_, self_);
     std::unique_ptr<GRU> gru_obj = std::make_unique<GRU>(
         start_hru_global, start_hru_local, gru_batch, dt_init_factor_, rel_tol_, 
         abs_tol_, job_actor_settings_.max_run_attempts_);

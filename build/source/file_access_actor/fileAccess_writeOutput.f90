@@ -29,8 +29,8 @@ module fileAccess_writeOutput
   USE globalData,only: integerMissing, realMissing
   ! provide access to global data
   USE globalData,only:gru_struc                             ! gru->hru mapping structure
-  USE output_structure_module,only:summa_struct
-  USE output_structure_module,only:outputTimeStep
+  USE output_buffer,only:summa_struct
+  USE output_buffer,only:outputTimeStep
   ! provide access to the derived types to define the data structures
   USE data_types,only:&
                       ! final data vectors
