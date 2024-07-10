@@ -112,6 +112,7 @@ list(REMOVE_ITEM DRIVER
         ${DRIVER_DIR}/summa_init.f90
         ${DRIVER_DIR}/summa_forcing.f90
         ${DRIVER_DIR}/summa_modelRun.f90
+        ${DRIVER_DIR}/summa_setup.f90
         ${DRIVER_DIR}/summa_writeOutput.f90)
 #=========================================================================================
 # COMPILE PART 3: Collect the subroutines into build groups depending on build type
