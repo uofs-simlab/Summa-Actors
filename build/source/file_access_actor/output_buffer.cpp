@@ -66,7 +66,6 @@ int OutputBuffer::setChunkSize() {
 
 
 int OutputBuffer::allocateOutputBuffer(int num_timesteps) {
-  chrono_time start_time = std::chrono::high_resolution_clock::now();
   int err = 0;
   std::unique_ptr<char[]> message(new char[256]);
   int num_gru = num_gru_info_.num_gru_local;
@@ -81,10 +80,6 @@ int OutputBuffer::allocateOutputBuffer(int num_timesteps) {
     std::cout << "Error: FileAccessActor -- f_allocateOutputBuffer: " 
               << message.get() << "\n";
   }
-  chrono_time end_time = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> elapsed_seconds = end_time - start_time;
-  std::cout << "Time taken for allocateOutputBuffer: " 
-            << elapsed_seconds.count() << "s\n";
   return err;
 }
 
@@ -126,9 +121,10 @@ const std::optional<WriteOutputReturn*> OutputPartition::writeOutput(
     int err = 0;
     std::unique_ptr<char[]> message(new char[256]);
     bool write_params = isWriteParams();
+    
     writeOutput_fortran(handle_ncid, num_steps_buffer_, start_gru_, end_gru_, 
                         write_params, err, &message);
-
+    
     // recalculate the number of steps to send to grus
     steps_remaining_ -= num_steps_buffer_;
     if (steps_remaining_ < num_steps_buffer_) {

@@ -12,9 +12,8 @@ GruStruc::GruStruc(int start_gru, int num_gru, int num_retry_attempts) {
   num_retry_attempts_left_ = num_retry_attempts;
 }
 
+// gru_struc is set up in fortran here
 int GruStruc::readDimension() {
-  chrono_time start = std::chrono::high_resolution_clock::now();
-  // gru_struc is set up in fortran here
   int err = 0; int file_gru, file_hru;
   std::unique_ptr<char[]> err_msg(new char[256]);
   f_readDimension(start_gru_, num_gru_, file_gru, file_hru, err, 
@@ -34,17 +33,10 @@ int GruStruc::readDimension() {
   f_setIndexMap();
   f_getNumHru(num_hru_);
 
-
-  chrono_time end = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> elapsed_seconds = end - start;
-  std::cout << "Time taken for ReadDimension: " << elapsed_seconds.count() 
-            << "s\n";
   return err;
 }
 
 int GruStruc::readIcondNlayers() {
-  chrono_time start = std::chrono::high_resolution_clock::now();
-
   int err = 0;
   std::unique_ptr<char[]> err_msg(new char[256]);
   read_icond_nlayers_fortran(num_gru_, err, &err_msg);
@@ -52,11 +44,7 @@ int GruStruc::readIcondNlayers() {
     std::cout << "ERROR: GruStruc - ReadIcondNlayers\n";
   }
 
-  chrono_time end = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> elapsed_seconds = end - start;
-  std::cout << "Time taken for ReadIcondNlayers: " << elapsed_seconds.count() 
-            << "s\n";
-  return 0;
+  return err;
 }
 
 int GruStruc::getFailedIndex() {

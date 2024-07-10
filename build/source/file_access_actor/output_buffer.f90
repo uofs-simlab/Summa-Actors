@@ -18,7 +18,7 @@ module output_buffer
   character(len=64), parameter     :: gitHash = ''
 
   type(summa_output_type),allocatable,save,public     :: summa_struct(:)    ! summa_OutputStructure(1)%struc%var(:)%dat(nTimeSteps) 
-  type(ilength),allocatable,save,public               :: outputTimeStep(:)             ! timestep in output files
+  type(ilength),allocatable,save,public               :: outputTimeStep(:)  ! timestep in output files
 
 
   contains
@@ -105,7 +105,7 @@ subroutine f_setChunkSize(chunk_size_in) bind(C, name="f_setChunkSize")
   ! Dummy Varaibles
   integer(c_int),intent(inout)              :: chunk_size_in
 
-  if (chunk_size_in > 0) then 
+  if (chunk_size_in > 0 .and. chunk_size_in > chunksize) then 
     chunksize = chunk_size_in
   else
     chunk_size_in = chunksize

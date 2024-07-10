@@ -38,7 +38,6 @@ class OutputPartition {
     bool write_params_ = true;
 
     std::vector<caf::actor> ready_to_write_;
-
     WriteOutputReturn write_status_;
 
   public:
