@@ -241,24 +241,8 @@ behavior JobActor::data_assimilation_mode() {
         return;
       }
        
+      processTimestep();
 
-      // Check if we are done
-      if (timestep_ > num_steps_) {
-        self_->println("JobActor: Done");
-        for (auto& gru : gru_struc_->getGruInfo()) {
-          self_->mail(exit_reason::user_shutdown)
-              .send(gru->getActorRef());
-        }
-        self_->mail(finalize_v).send(self_);
-      // Check if new forcing file is needed
-      } else if (forcing_step_ > steps_in_ffile_) {
-        self_->println("JobActor: Requesting New Forcing File");
-        self_->mail(access_forcing_v, iFile_ + 1, self_)
-            .send(file_access_actor_);
-      // Just update the HRUs
-      } else {
-        self_->mail(update_hru_v).send(self_);
-      }
     },
     
     // Err
@@ -273,24 +257,10 @@ behavior JobActor::data_assimilation_mode() {
       num_write_msgs_--;
 
       if (!da_paused_) return;
+      da_paused_ = false;
 
       // We need to unpause
-      if (timestep_ > num_steps_) {
-        self_->println("JobActor: Done");
-        for (auto& gru : gru_struc_->getGruInfo()) {
-          self_->mail(exit_reason::user_shutdown)
-              .send(gru->getActorRef());
-        }
-        self_->mail(finalize_v).send(self_);
-      // Check if new forcing file is needed
-      } else if (forcing_step_ > steps_in_ffile_) {
-        self_->println("JobActor: Requesting New Forcing File");
-        self_->mail(access_forcing_v, iFile_ + 1, self_)
-            .send(file_access_actor_);
-      // Just update the HRUs
-      } else {
-        self_->mail(update_hru_v).send(self_);
-      }
+      processTimestep();
     },
 
     [this](finalize) {
@@ -375,6 +345,26 @@ void JobActor::spawnGruBatches() {
     start_hru_global += current_batch_size;
   }
   self_->println("JobActor: Assembled GRUs into Batches");
+}
+
+
+void JobActor::processTimestep() {
+  if (timestep_ > num_steps_) {
+    self_->println("JobActor: Done");
+    for (auto& gru : gru_struc_->getGruInfo()) {
+      self_->mail(exit_reason::user_shutdown)
+          .send(gru->getActorRef());
+    }
+    self_->mail(finalize_v).send(self_);
+  // Check if new forcing file is needed
+  } else if (forcing_step_ > steps_in_ffile_) {
+    self_->println("JobActor: Requesting New Forcing File");
+    self_->mail(access_forcing_v, iFile_ + 1, self_)
+        .send(file_access_actor_);
+  // Just update the HRUs
+  } else {
+    self_->mail(update_hru_v).send(self_);
+  }
 }
 
 

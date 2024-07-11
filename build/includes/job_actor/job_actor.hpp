@@ -82,6 +82,7 @@ class JobActor {
 
     void spawnGruActors();
     void spawnGruBatches();
+    void processTimestep();
     void handleFinishedGRU(int job_index);
     void finalizeJob();
     // Error Handling Functions
