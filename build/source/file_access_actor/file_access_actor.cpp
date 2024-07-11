@@ -189,41 +189,6 @@ behavior FileAccessActor::make_behavior() {
   };
 }
 
-// void FileAccessActor::writeOutput(Output_Partition* partition) {              
-//   int num_timesteps_to_write = partition->getNumStoredTimesteps();
-//   int start_gru = partition->getStartGRUIndex();
-//   int max_gru = partition->getMaxGRUIndex();
-//   if (start_gru > max_gru) {
-//     self_->println("File Access Actor: Error writeOutput\n"
-//                    "\tMessage = start_gru > max_gru\n");
-//     self_->mail(err_atom_v, 0, 0, NOTIFY_ERR, "start_gru > max_gru")
-//         .send(parent_);
-//     return;
-//   }
-//   bool write_param_flag = partition->isWriteParams();
-//   int err = 0;
-//   std::unique_ptr<char[]> err_msg(new char[256]);
-//   writeOutput_fortran(handle_ncid_, num_timesteps_to_write, start_gru, max_gru, 
-//                       write_param_flag, err, &err_msg);
-//   if (err != 0) {
-//     self_->println("File Access Actor: Error writeOutput\n\tMessage = {} \n", 
-//                    err_msg.get());
-//     self_->mail(err_atom_v, 0, 0, NOTIFY_ERR, err_msg.get()).send(parent_);
-//   }
-
-//   partition->updateTimeSteps();
-
-//   int num_steps_before_next_write = partition->getNumStoredTimesteps();
-
-//   std::vector<caf::actor> hrus_to_update = partition->getReadyToWriteList();
-//   for (int i = 0; i < hrus_to_update.size(); i++) {
-//     self_->mail(num_steps_before_write_v, num_steps_before_next_write)
-//         .send(hrus_to_update[i]);
-//     self_->mail(run_hru_v).send(hrus_to_update[i]);
-//   }
-
-//   partition->resetReadyToWriteList();
-// }
 
 void FileAccessActor::writeRestart(Output_Partition* partition, int start_gru, 
                                    int num_gru, int timestep, int year, 

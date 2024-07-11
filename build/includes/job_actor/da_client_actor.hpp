@@ -42,8 +42,9 @@ class DAClientActor {
 
   public:
     DAClientActor(caf::event_based_actor* self, std::string host, 
-                  Settings settings) 
-                  : self_(self), host_(host), settings_(settings) {};
+                  Settings settings, caf::actor server = nullptr) 
+                  : self_(self), host_(host), settings_(settings),
+                    server_(server) {};
     caf::behavior make_behavior();
 
     // methods

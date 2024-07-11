@@ -5,6 +5,7 @@
 #include "file_manager.hpp"
 #include "gru_struc.hpp"
 #include "message_atoms.hpp"
+#include "da_client_actor.hpp"
 
 class DAServerActor {
   private:

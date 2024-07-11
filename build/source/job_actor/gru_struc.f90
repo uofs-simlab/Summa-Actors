@@ -127,7 +127,7 @@ subroutine f_setHruCount(iGRU,sGRU) bind(C, name="f_setHruCount")
   gru_struc(iGRU)%hruCount = count(hru2gru_id == gru_id(iGRU))                 ! number of HRUs in each GRU
   gru_struc(iGRU)%gru_id   = gru_id(iGRU+sGRU-1)
   gru_struc(iGRU)%gru_nc   = iGRU+sGRU-1 
-
+  print*, 'iGRU', iGRU, 'sGRU', sGRU
   allocate(gru_struc(iGRU)%hruInfo(gru_struc(iGRU)%hruCount))
   gru_struc(iGRU)%hruInfo(:)%hru_nc = pack(hru_ix,hru2gru_id == gru_struc(iGRU)%gru_id)
   gru_struc(iGRU)%hruInfo(:)%hru_ix = arth(iGRU,1,gru_struc(iGRU)%hruCount)                    ! set index of hru in run domain

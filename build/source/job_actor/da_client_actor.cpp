@@ -4,19 +4,24 @@ using namespace caf;
 
 behavior DAClientActor::make_behavior() {
   
-  self_->println("DAClientActor: Starting");
-  auto strong_server = self_->system().middleman().remote_actor(
-      host_, settings_.distributed_settings_.port_);
-  if (!strong_server) {
-    self_->println("DAClientActor: Failed to connect to server");
-    return {};
+  if (!host_.empty()) {
+    self_->println("DAClientActor: Starting");
+    auto strong_server = self_->system().middleman().remote_actor(
+        host_, settings_.distributed_settings_.port_);
+    if (!strong_server) {
+      self_->println("DAClientActor: Failed to connect to server");
+      return {};
+    }
+    server_ = *strong_server;
+    self_->monitor(server_, [this](const error& err){
+      self_->println("DAClientActor: Server went down");
+      exit(EXIT_FAILURE);
+    });
+    self_->println("DAClientActor: Connected to server");
   }
-  server_ = *strong_server;
-  self_->monitor(server_, [this](const error& err){
-    self_->println("DAClientActor: Server went down");
-    exit(EXIT_FAILURE);
-  });
-  self_->println("DAClientActor: Connected to server");
+
+  // else server was passed in as an argument
+
 
   gethostname(hostname_, HOST_NAME_MAX);
   self_->mail(connect_atom_v, hostname_).send(server_);
@@ -157,8 +162,7 @@ behavior DAClientActor::make_behavior() {
         // write output
         int steps_to_write = 1;
         int start_gru = 1;
-        self_->mail(write_output_v, steps_to_write, start_gru, 
-                    gru_struc_->getNumHru())
+        self_->mail(write_output_v)
             .request(file_access_actor_, caf::infinite)
             .await([=](int err) {
           if (err != 0) {

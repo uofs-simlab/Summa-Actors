@@ -7,6 +7,7 @@
 using chrono_time = std::chrono::time_point<std::chrono::high_resolution_clock>;
 
 GruStruc::GruStruc(int start_gru, int num_gru, int num_retry_attempts) {
+  std::cout << "Start_GRU: " << start_gru << " Num_GRU: " << num_gru << "\n";
   start_gru_ = start_gru;
   num_gru_ = num_gru;
   num_retry_attempts_left_ = num_retry_attempts;
@@ -25,10 +26,13 @@ int GruStruc::readDimension() {
   file_gru_ = file_gru;
   file_hru_ = file_hru;
 
+
+  // Index of GRU struc must always start at 1
   std::vector<int> indicies(num_gru_);
-  std::iota(indicies.begin(), indicies.end(), start_gru_);
+  std::iota(indicies.begin(), indicies.end(), 1);
   std::for_each(std::execution::par, indicies.begin(), indicies.end(), 
-    [=](int i) { f_setHruCount(i, start_gru_); 
+    [=](int i) { 
+      f_setHruCount(i, start_gru_); 
   });
   f_setIndexMap();
   f_getNumHru(num_hru_);

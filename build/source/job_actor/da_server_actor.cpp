@@ -36,6 +36,10 @@ behavior DAServerActor::make_behavior() {
   self_->println("DAServerActor: Node GRU Info: {}",
                  gru_struc_->getNodeGruInfoString());
 
+  // Spawn the local node actor
+  auto local_client = self_->spawn(actor_from_state<DAClientActor>, "", 
+                                   settings_, self_);
+
   return {
     [this](connect_atom, const std::string& hostname) {
       auto client = actor_cast<actor>(self_->current_sender());
