@@ -74,7 +74,7 @@ behavior JobActor::make_behavior() {
   // Set the file_access_actor settings depending on data assimilation mode
   if (job_actor_settings_.data_assimilation_mode_) {
     fa_actor_settings_.num_partitions_in_output_buffer_ = 1;
-    fa_actor_settings_.num_timesteps_in_output_buffer_ = 1;
+    fa_actor_settings_.num_timesteps_in_output_buffer_ = 2;
   } 
   
   // Start File Access Actor and Become User Selected Mode
@@ -207,7 +207,7 @@ behavior JobActor::data_assimilation_mode() {
 
     [this](update_hru) {
       for (auto& gru : gru_struc_->getGruInfo()) {
-        self_->mail(update_hru_v, timestep_, forcing_step_)
+        self_->mail(update_hru_v, timestep_, forcing_step_, output_step_ + 1)
             .send(gru->getActorRef());
       }
     },
@@ -217,6 +217,7 @@ behavior JobActor::data_assimilation_mode() {
       if (num_gru_done_timestep_ < gru_struc_->getGruInfo().size()) {
         return;
       }
+
       if (hru_actor_settings_.print_output_ && 
           timestep_ % hru_actor_settings_.output_frequency_ == 0) {
         self_->println("JobActor: Done Update for timestep: {}", 
@@ -226,7 +227,7 @@ behavior JobActor::data_assimilation_mode() {
       // write output
       int steps_to_write = 1;
       int start_gru = 1;
-      self_->mail(write_output_v)
+      self_->mail(write_output_v, output_step_ + 1)
           .request(file_access_actor_, caf::infinite)
           .await([=](int err) {
         if (err != 0) {
@@ -241,6 +242,8 @@ behavior JobActor::data_assimilation_mode() {
 
       timestep_++;
       forcing_step_++;
+      output_step_ = (output_step_ + 1) % 2;
+       
 
       // Check if we are done
       if (timestep_ > num_steps_) {
@@ -250,11 +253,12 @@ behavior JobActor::data_assimilation_mode() {
               .send(gru->getActorRef());
         }
         self_->mail(finalize_v).send(self_);
-      
+      // Check if new forcing file is needed
       } else if (forcing_step_ > steps_in_ffile_) {
         self_->println("JobActor: Requesting New Forcing File");
         self_->mail(access_forcing_v, iFile_ + 1, self_)
             .send(file_access_actor_);
+      // Just update the HRUs
       } else {
         self_->mail(update_hru_v).send(self_);
       }

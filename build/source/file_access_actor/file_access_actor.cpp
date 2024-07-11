@@ -144,9 +144,9 @@ behavior FileAccessActor::make_behavior() {
     },
 
     // Write Output From the Job Actor
-    [this](write_output) -> int {
+    [this](write_output, int output_step) -> int {
       timing_info_.updateStartPoint("write_duration");
-      const int err = output_buffer_->writeOutputDA();
+      const int err = output_buffer_->writeOutputDA(output_step);
       timing_info_.updateEndPoint("write_duration");
       return err;
     },

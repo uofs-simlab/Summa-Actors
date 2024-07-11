@@ -19,6 +19,7 @@ set(FILE_ACCESS_INTERFACE
     ${FILE_ACCESS_DIR}/file_access_actor.f90
     # ${FILE_ACCESS_DIR}/output_structure.f90
     ${FILE_ACCESS_DIR}/output_buffer.f90
+    ${FILE_ACCESS_DIR}/output_buffer_write.f90
     ${FILE_ACCESS_DIR}/fileAccess_writeOutput.f90
     CACHE INTERNAL "FILE_ACCESS_INTERFACE")
 if (USE_V4)

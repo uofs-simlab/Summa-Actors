@@ -17,9 +17,10 @@ behavior GruBatchActor::make_behavior() {
         self_->mail(update_timeZoneOffset_v, iFile).send(gru_actor);
       }
     },
-    [this](update_hru, int timestep, int forcing_step) {
+    [this](update_hru, int time_step, int forcing_step, int output_step) {
       for (auto& gru_actor : gru_actors_) {
-        self_->mail(update_hru_v, timestep, forcing_step).send(gru_actor);
+        self_->mail(update_hru_v, time_step, forcing_step, output_step)
+            .send(gru_actor);
       }
     },
     [this](done_update) {

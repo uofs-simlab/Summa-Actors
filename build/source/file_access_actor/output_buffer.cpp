@@ -83,14 +83,13 @@ int OutputBuffer::allocateOutputBuffer(int num_timesteps) {
   return err;
 }
 
-const int OutputBuffer::writeOutputDA() {
+const int OutputBuffer::writeOutputDA(const int output_step) {
   int err = 0;
   std::unique_ptr<char[]> message(new char[256]);
   int start_gru = partitions_[0]->getStartGru();
   int end_gru = partitions_[0]->getEndGru();
-  int num_steps_buffer = partitions_[0]->getNumStepsBuffer();
-  writeOutput_fortran(handle_ncid_.get(), num_steps_buffer, start_gru, end_gru, 
-                      write_params_da_, err, &message);
+  f_writeOutputDA(handle_ncid_.get(), output_step, start_gru, end_gru, 
+                  write_params_da_, err, &message);
   if (err != 0) {
     std::cout << "Error: FileAccessActor -- f_writeOutputDA: " 
               << message.get() << "\n";
