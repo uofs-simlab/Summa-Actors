@@ -214,51 +214,51 @@ behavior JobActor::data_assimilation_mode() {
 
     [this](done_update) {
       num_gru_done_timestep_++;
-      if (num_gru_done_timestep_ >= gru_struc_->getGruInfo().size()) {
-        if (hru_actor_settings_.print_output_ && 
-            timestep_ % hru_actor_settings_.output_frequency_ == 0) {
-          self_->println("JobActor: Done Update for timestep: {}", 
-                       timestep_);
-        }
+      if (num_gru_done_timestep_ < gru_struc_->getGruInfo().size()) {
+        return;
+      }
+      if (hru_actor_settings_.print_output_ && 
+          timestep_ % hru_actor_settings_.output_frequency_ == 0) {
+        self_->println("JobActor: Done Update for timestep: {}", 
+                      timestep_);
+      }
 
-        // write output
-        int steps_to_write = 1;
-        int start_gru = 1;
-        self_->mail(write_output_v)
-            .request(file_access_actor_, caf::infinite)
-            .await([=](int err) {
-              if (err != 0) {
-                self_->println("JobActor: Error Writing Output");
-                for (auto& gru : gru_struc_->getGruInfo()) {
-                  self_->mail(exit_msg_v).send(gru->getActorRef());
-                }
-                self_->send_exit(file_access_actor_, 
-                                 exit_reason::user_shutdown);
-                self_->quit();
-              }
-            });
-
-        timestep_++;
-        forcing_step_++;
-
-        // Check if we are done
-        if (timestep_ > num_steps_) {
-          self_->println("JobActor: Done");
+      // write output
+      int steps_to_write = 1;
+      int start_gru = 1;
+      self_->mail(write_output_v)
+          .request(file_access_actor_, caf::infinite)
+          .await([=](int err) {
+        if (err != 0) {
+          self_->println("JobActor: Error Writing Output");
           for (auto& gru : gru_struc_->getGruInfo()) {
-            self_->mail(exit_reason::user_shutdown)
-                .send(gru->getActorRef());
+            self_->mail(exit_msg_v).send(gru->getActorRef());
           }
-          self_->mail(finalize_v).send(self_);
-        
-        } else if (forcing_step_ > steps_in_ffile_) {
-          self_->println("JobActor: Requesting New Forcing File");
-          self_->mail(access_forcing_v, iFile_ + 1, self_)
-              .send(file_access_actor_);
-        } else {
-          self_->mail(update_hru_v).send(self_);
+          self_->send_exit(file_access_actor_, exit_reason::user_shutdown);
+          self_->quit();
         }
-        num_gru_done_timestep_ = 0;
-      }    
+      });
+
+      timestep_++;
+      forcing_step_++;
+
+      // Check if we are done
+      if (timestep_ > num_steps_) {
+        self_->println("JobActor: Done");
+        for (auto& gru : gru_struc_->getGruInfo()) {
+          self_->mail(exit_reason::user_shutdown)
+              .send(gru->getActorRef());
+        }
+        self_->mail(finalize_v).send(self_);
+      
+      } else if (forcing_step_ > steps_in_ffile_) {
+        self_->println("JobActor: Requesting New Forcing File");
+        self_->mail(access_forcing_v, iFile_ + 1, self_)
+            .send(file_access_actor_);
+      } else {
+        self_->mail(update_hru_v).send(self_);
+      }
+      num_gru_done_timestep_ = 0;
     },
 
     [this](finalize) {
@@ -309,8 +309,8 @@ void JobActor::spawnGruBatches() {
 
   if (job_actor_settings_.batch_size_ < 0) {
     // Automatically determine batch size
-    batch_size = std::ceil(gru_struc_->getNumGru() / 
-                           (std::thread::hardware_concurrency() * 2));
+    batch_size = std::ceil(static_cast<double>(gru_struc_->getNumGru()) / 
+        static_cast<double>(std::thread::hardware_concurrency()));
   } else {
     // Use the user selected batch size
     batch_size = job_actor_settings_.batch_size_;
