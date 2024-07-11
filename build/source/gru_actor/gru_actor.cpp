@@ -69,7 +69,7 @@ behavior GruActor::async_mode() {
 
     [this](num_steps_before_write, int num_steps) {
       num_steps_until_write_ = num_steps;
-      output_structure_step_index_ = 1;
+      output_step_ = 1;
     },
     
     [this](run_hru) {
@@ -94,12 +94,12 @@ behavior GruActor::async_mode() {
                        err, &message);
         std::fill(message.get(), message.get() + 256, '\0'); // Clear message
         writeGRUOutput_fortran(job_index_, timestep_, 
-                               output_structure_step_index_, gru_data_.get(), 
+                               output_step_, gru_data_.get(), 
                                err, &message);
 
         timestep_++;
         forcingStep_++;
-        output_structure_step_index_++;
+        output_step_++;
 
         if (timestep_ > num_steps_) {
           self_->mail(done_hru_v).send(self_);
@@ -137,21 +137,17 @@ behavior GruActor::data_assimilation_mode() {
       }
     },
 
-    [this](update_hru, int timestep, int forcing_step) {
+    [this](update_hru, int time_step, int forcing_step, int output_step) {
       int err = 0;
       std::unique_ptr<char[]> message(new char[256]);
-      output_structure_step_index_ = 1;
-      timestep_ = timestep;
-      forcingStep_ = forcing_step;
-      readGRUForcing_fortran(job_index_, timestep_, forcingStep_, iFile_, 
+      readGRUForcing_fortran(job_index_, time_step, forcing_step, iFile_, 
                              gru_data_.get(), err, &message);
       std::fill(message.get(), message.get() + 256, '\0'); // Clear message
-      runGRU_fortran(job_index_, timestep_, gru_data_.get(), dt_init_factor_, 
+      runGRU_fortran(job_index_, time_step, gru_data_.get(), dt_init_factor_, 
                      err, &message);
       std::fill(message.get(), message.get() + 256, '\0'); // Clear message
-      writeGRUOutput_fortran(job_index_, timestep_, 
-                             output_structure_step_index_, gru_data_.get(), err, 
-                             &message);
+      writeGRUOutput_fortran(job_index_, time_step, output_step, 
+                             gru_data_.get(), err, &message);
       self_->mail(done_update_v).send(parent_);
     }
   };

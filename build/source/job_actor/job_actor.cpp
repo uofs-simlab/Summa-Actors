@@ -74,7 +74,7 @@ behavior JobActor::make_behavior() {
   // Set the file_access_actor settings depending on data assimilation mode
   if (job_actor_settings_.data_assimilation_mode_) {
     fa_actor_settings_.num_partitions_in_output_buffer_ = 1;
-    fa_actor_settings_.num_timesteps_in_output_buffer_ = 1;
+    fa_actor_settings_.num_timesteps_in_output_buffer_ = 2;
   } 
   
   // Start File Access Actor and Become User Selected Mode
@@ -207,7 +207,7 @@ behavior JobActor::data_assimilation_mode() {
 
     [this](update_hru) {
       for (auto& gru : gru_struc_->getGruInfo()) {
-        self_->mail(update_hru_v, timestep_, forcing_step_)
+        self_->mail(update_hru_v, timestep_, forcing_step_, output_step_ + 1)
             .send(gru->getActorRef());
       }
     },
@@ -217,6 +217,7 @@ behavior JobActor::data_assimilation_mode() {
       if (num_gru_done_timestep_ < gru_struc_->getGruInfo().size()) {
         return;
       }
+
       if (hru_actor_settings_.print_output_ && 
           timestep_ % hru_actor_settings_.output_frequency_ == 0) {
         self_->println("JobActor: Done Update for timestep: {}", 
@@ -226,39 +227,40 @@ behavior JobActor::data_assimilation_mode() {
       // write output
       int steps_to_write = 1;
       int start_gru = 1;
-      self_->mail(write_output_v)
-          .request(file_access_actor_, caf::infinite)
-          .await([=](int err) {
-        if (err != 0) {
-          self_->println("JobActor: Error Writing Output");
-          for (auto& gru : gru_struc_->getGruInfo()) {
-            self_->mail(exit_msg_v).send(gru->getActorRef());
-          }
-          self_->send_exit(file_access_actor_, exit_reason::user_shutdown);
-          self_->quit();
-        }
-      });
-
+      self_->mail(write_output_v, output_step_ + 1).send(file_access_actor_);
+      num_write_msgs_++;
+      
       timestep_++;
       forcing_step_++;
-
-      // Check if we are done
-      if (timestep_ > num_steps_) {
-        self_->println("JobActor: Done");
-        for (auto& gru : gru_struc_->getGruInfo()) {
-          self_->mail(exit_reason::user_shutdown)
-              .send(gru->getActorRef());
-        }
-        self_->mail(finalize_v).send(self_);
-      
-      } else if (forcing_step_ > steps_in_ffile_) {
-        self_->println("JobActor: Requesting New Forcing File");
-        self_->mail(access_forcing_v, iFile_ + 1, self_)
-            .send(file_access_actor_);
-      } else {
-        self_->mail(update_hru_v).send(self_);
-      }
+      output_step_ = (output_step_ + 1) % 2;
       num_gru_done_timestep_ = 0;
+
+      if (num_write_msgs_ >= fa_actor_settings_.num_timesteps_in_output_buffer_) {
+        self_->println("JobActor: Waiting for Write Output to Finish");
+        da_paused_ = true;
+        return;
+      }
+       
+      processTimestep();
+
+    },
+    
+    // Err
+    [this](write_output, int err) {
+      if (err != 0) {
+        self_->println("JobActor: Error Writing Output");
+        for (auto& gru : gru_struc_->getGruInfo())
+          self_->mail(exit_msg_v).send(gru->getActorRef());
+        self_->send_exit(file_access_actor_, exit_reason::user_shutdown);
+        self_->quit();
+      }
+      num_write_msgs_--;
+
+      if (!da_paused_) return;
+      da_paused_ = false;
+
+      // We need to unpause
+      processTimestep();
     },
 
     [this](finalize) {
@@ -343,6 +345,26 @@ void JobActor::spawnGruBatches() {
     start_hru_global += current_batch_size;
   }
   self_->println("JobActor: Assembled GRUs into Batches");
+}
+
+
+void JobActor::processTimestep() {
+  if (timestep_ > num_steps_) {
+    self_->println("JobActor: Done");
+    for (auto& gru : gru_struc_->getGruInfo()) {
+      self_->mail(exit_reason::user_shutdown)
+          .send(gru->getActorRef());
+    }
+    self_->mail(finalize_v).send(self_);
+  // Check if new forcing file is needed
+  } else if (forcing_step_ > steps_in_ffile_) {
+    self_->println("JobActor: Requesting New Forcing File");
+    self_->mail(access_forcing_v, iFile_ + 1, self_)
+        .send(file_access_actor_);
+  // Just update the HRUs
+  } else {
+    self_->mail(update_hru_v).send(self_);
+  }
 }
 
 

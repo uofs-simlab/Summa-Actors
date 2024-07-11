@@ -13,6 +13,10 @@ extern "C" {
                               void* message);
   void f_deallocateOutputBuffer(void *handle_ncid_);
 
+  void f_writeOutputDA(void* handle_ncid, const int& output_step, int& start_gru, 
+                       int& max_gru, bool& writeParamFlag, int& err,
+                       void* message);
+
   void writeOutput_fortran(void* handle_ncid, int& num_steps, int& start_gru, 
                            int& max_gru, bool& writeParamFlag, int& err,
                            void* message);
@@ -128,7 +132,7 @@ class OutputBuffer {
     int allocateOutputBuffer(int num_timesteps);
     const std::optional<WriteOutputReturn*> writeOutput(
         int index_gru, caf::actor gru);
-    const int writeOutputDA();
+    const int writeOutputDA(const int output_step);
 
 
 };

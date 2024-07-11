@@ -144,11 +144,11 @@ behavior FileAccessActor::make_behavior() {
     },
 
     // Write Output From the Job Actor
-    [this](write_output) -> int {
+    [this](write_output, int output_step) {
       timing_info_.updateStartPoint("write_duration");
-      const int err = output_buffer_->writeOutputDA();
+      const int err = output_buffer_->writeOutputDA(output_step);
       timing_info_.updateEndPoint("write_duration");
-      return err;
+      self_->mail(write_output_v, err).send(parent_);
     },
 
     [this](restart_failures) {

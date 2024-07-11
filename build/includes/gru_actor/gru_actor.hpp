@@ -54,7 +54,7 @@ class GruActor {
   int iFile_ = 1;
   int stepsInCurrentFFile_;             // number of time steps in current forcing file
   int forcingStep_ = 1;                 // index of current time step in current forcing file
-  int output_structure_step_index_ = 1; // index of current time step in output structure
+  int output_step_ = 1; // index of current time step in output structure
 
   bool data_assimilation_mode_ = false;             
 
