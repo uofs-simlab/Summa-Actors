@@ -21,10 +21,17 @@ set(FILE_ACCESS_INTERFACE
     ${FILE_ACCESS_DIR}/output_buffer.f90
     ${FILE_ACCESS_DIR}/fileAccess_writeOutput.f90
     CACHE INTERNAL "FILE_ACCESS_INTERFACE")
-set(JOB_INTERFACE
-    ${JOB_ACTOR_DIR}/summa_setup.f90
-    ${JOB_ACTOR_DIR}/gru_struc.f90
-    CACHE INTERNAL "JOB_INTERFACE")
+if (USE_V4)
+    set(JOB_INTERFACE
+        ${JOB_ACTOR_DIR}/summa_setup_sundials.f90
+        ${JOB_ACTOR_DIR}/gru_struc.f90
+        CACHE INTERNAL "JOB_INTERFACE")
+else()
+    set(JOB_INTERFACE
+        ${JOB_ACTOR_DIR}/summa_setup.f90
+        ${JOB_ACTOR_DIR}/gru_struc.f90
+        CACHE INTERNAL "JOB_INTERFACE")
+endif()        
 set(GRU_INTERFACE
     ${GRU_ACTOR_DIR}/hru_init.f90
     ${GRU_ACTOR_DIR}/hru_read.f90
