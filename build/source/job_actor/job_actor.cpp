@@ -227,22 +227,19 @@ behavior JobActor::data_assimilation_mode() {
       // write output
       int steps_to_write = 1;
       int start_gru = 1;
-      self_->mail(write_output_v, output_step_ + 1)
-          .request(file_access_actor_, caf::infinite)
-          .await([=](int err) {
-        if (err != 0) {
-          self_->println("JobActor: Error Writing Output");
-          for (auto& gru : gru_struc_->getGruInfo()) {
-            self_->mail(exit_msg_v).send(gru->getActorRef());
-          }
-          self_->send_exit(file_access_actor_, exit_reason::user_shutdown);
-          self_->quit();
-        }
-      });
-
+      self_->mail(write_output_v, output_step_ + 1).send(file_access_actor_);
+      num_write_msgs_++;
+      
       timestep_++;
       forcing_step_++;
       output_step_ = (output_step_ + 1) % 2;
+      num_gru_done_timestep_ = 0;
+
+      if (num_write_msgs_ >= fa_actor_settings_.num_timesteps_in_output_buffer_) {
+        self_->println("JobActor: Waiting for Write Output to Finish");
+        da_paused_ = true;
+        return;
+      }
        
 
       // Check if we are done
@@ -262,7 +259,38 @@ behavior JobActor::data_assimilation_mode() {
       } else {
         self_->mail(update_hru_v).send(self_);
       }
-      num_gru_done_timestep_ = 0;
+    },
+    
+    // Err
+    [this](write_output, int err) {
+      if (err != 0) {
+        self_->println("JobActor: Error Writing Output");
+        for (auto& gru : gru_struc_->getGruInfo())
+          self_->mail(exit_msg_v).send(gru->getActorRef());
+        self_->send_exit(file_access_actor_, exit_reason::user_shutdown);
+        self_->quit();
+      }
+      num_write_msgs_--;
+
+      if (!da_paused_) return;
+
+      // We need to unpause
+      if (timestep_ > num_steps_) {
+        self_->println("JobActor: Done");
+        for (auto& gru : gru_struc_->getGruInfo()) {
+          self_->mail(exit_reason::user_shutdown)
+              .send(gru->getActorRef());
+        }
+        self_->mail(finalize_v).send(self_);
+      // Check if new forcing file is needed
+      } else if (forcing_step_ > steps_in_ffile_) {
+        self_->println("JobActor: Requesting New Forcing File");
+        self_->mail(access_forcing_v, iFile_ + 1, self_)
+            .send(file_access_actor_);
+      // Just update the HRUs
+      } else {
+        self_->mail(update_hru_v).send(self_);
+      }
     },
 
     [this](finalize) {

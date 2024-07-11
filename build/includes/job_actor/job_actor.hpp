@@ -63,6 +63,8 @@ class JobActor {
   int timestep_ = 1;
   int num_gru_done_timestep_ = 0;
   int output_step_ = 1; // Index in the output structure
+  int num_write_msgs_ = 0;
+  bool da_paused_ = false;
   
   public:
     JobActor(caf::event_based_actor* self, Batch batch, bool enable_logging,

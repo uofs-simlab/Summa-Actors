@@ -140,11 +140,6 @@ behavior GruActor::data_assimilation_mode() {
     [this](update_hru, int time_step, int forcing_step, int output_step) {
       int err = 0;
       std::unique_ptr<char[]> message(new char[256]);
-
-      self_->println("GRU Actor {}: time_step={}, forcing_step={}, "
-                     "output_step={}", 
-                     job_index_, time_step, forcing_step, output_step);
-
       readGRUForcing_fortran(job_index_, time_step, forcing_step, iFile_, 
                              gru_data_.get(), err, &message);
       std::fill(message.get(), message.get() + 256, '\0'); // Clear message
