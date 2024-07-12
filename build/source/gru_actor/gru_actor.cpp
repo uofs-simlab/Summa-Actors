@@ -4,6 +4,9 @@
 using namespace caf;
 
 behavior GruActor::make_behavior() {
+  self_->println("GRU Actor: Initializing -- job_index = {}, netCDF_index = {} "
+                  , job_index_, netcdf_index_);
+  
   int err = 0;
   f_getNumHruInGru(job_index_, num_hrus_);
   gru_data_ = std::unique_ptr<void, GruDeleter>(new_handle_gru_type(num_hrus_));
