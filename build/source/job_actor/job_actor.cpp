@@ -320,29 +320,29 @@ void JobActor::spawnGruBatches() {
 
   self_->println("JobActor: Batch Size {}", batch_size);
   
-  if (batch_size == 0 || batch_size == 1) {
-    batch_size = 1;
-    // Batch Size of 1 is same as having no batch actor
+  if (batch_size <= 1) {
     spawnGruActors();
     return;
   }
+
   int remaining_hru_to_batch = gru_struc_->getNumGru();
-  int start_hru_global = batch_.getStartHRU();
-  int start_hru_local = 1;
+  int netcdf_start_index = batch_.getStartHRU();
+  int job_start_index = 1;
 
   while (remaining_hru_to_batch > 0) {
     int current_batch_size = std::min(batch_size, remaining_hru_to_batch);
     auto gru_batch = self_->spawn(actor_from_state<GruBatchActor>, 
-        start_hru_local, start_hru_global, current_batch_size, num_steps_,
+        netcdf_start_index, job_start_index, current_batch_size, num_steps_,
         hru_actor_settings_, fa_actor_settings_.num_timesteps_in_output_buffer_,
         file_access_actor_, self_);
+
     std::unique_ptr<GRU> gru_obj = std::make_unique<GRU>(
-        start_hru_global, start_hru_local, gru_batch, dt_init_factor_, rel_tol_, 
+        netcdf_start_index, job_start_index, gru_batch, dt_init_factor_, rel_tol_, 
         abs_tol_, job_actor_settings_.max_run_attempts_);
     gru_struc_->addGRU(std::move(gru_obj));
     remaining_hru_to_batch -= current_batch_size;
-    start_hru_local += current_batch_size;
-    start_hru_global += current_batch_size;
+    job_start_index += current_batch_size;
+    netcdf_start_index += current_batch_size;
   }
   self_->println("JobActor: Assembled GRUs into Batches");
 }
