@@ -23,7 +23,7 @@ behavior DAServerActor::make_behavior() {
     self_->println("ERROR--File Manager: Unable To Verify Number Of GRUs");
     self_->quit();
     return {};
-  } else if (file_gru_ < start_gru_ + num_gru_) {
+  } else if (file_gru_ < num_gru_ + start_gru_ - 1) {
     self_->println("ERROR--File Manager: Number Of GRUs Exceeds File GRUs");
     self_->quit();
     return {};
@@ -94,19 +94,23 @@ behavior DAServerActor::make_behavior() {
 
     [this](update_hru) {
       for (auto& client : connected_clients_) {
-        self_->mail(update_hru_v, timestep_, forcing_step_).send(client);
+        self_->mail(update_hru_v, timestep_, forcing_step_, output_step_).send(client);
       }
     },
 
     [this](done_update) {
       num_clients_ready_++;
+      self_->println("DAServerActor: Received done update: {}/{}",
+                     num_clients_ready_, 
+                     settings_.distributed_settings_.num_nodes_);
       if (num_clients_ready_ == settings_.distributed_settings_.num_nodes_) {
         num_clients_ready_ = 0;
         self_->println("DAServerActor: All clients done updating {}",
                        timestep_);
         forcing_step_++;
         timestep_++;
-
+        output_step_ = 1;
+        
         if (timestep_ > num_timesteps_) {
           self_->println("DAServerActor: Done");
           done_ = true;

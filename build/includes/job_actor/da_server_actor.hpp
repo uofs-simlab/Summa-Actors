@@ -27,6 +27,7 @@ class DAServerActor {
     int num_timesteps_ = 0;
     int timestep_ = 1;
     int forcing_step_ = 1;
+    int output_step_ = 1; // Index in the output structure
 
     bool done_ = false;
     int clients_exited_ = 0;

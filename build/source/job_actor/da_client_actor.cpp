@@ -133,7 +133,7 @@ behavior DAClientActor::make_behavior() {
           .send(server_);
     },
 
-    [this](update_hru, int timestep, int forcing_step) {
+    [this](update_hru, int timestep, int forcing_step, int output_step) {
       timestep_ = timestep;
       forcing_step_ = forcing_step;
       if (forcing_step > num_steps_ffile_) {
@@ -143,7 +143,7 @@ behavior DAClientActor::make_behavior() {
         return;
       }
       for (auto& gru : gru_struc_->getGruInfo()) {
-        self_->mail(update_hru_v, timestep_, forcing_step_)
+        self_->mail(update_hru_v, timestep_, forcing_step_, output_step)
             .send(gru->getActorRef());
       }
     },
@@ -162,21 +162,22 @@ behavior DAClientActor::make_behavior() {
         // write output
         int steps_to_write = 1;
         int start_gru = 1;
-        self_->mail(write_output_v)
-            .request(file_access_actor_, caf::infinite)
-            .await([=](int err) {
-          if (err != 0) {
-            self_->println("DAClientActor: Error Writing Output");
-            for (auto& gru : gru_struc_->getGruInfo()) {
-              self_->mail(exit_msg_v).send(gru->getActorRef());
-            }
-            self_->send_exit(file_access_actor_, exit_reason::user_shutdown);
-            self_->quit();
-          } else {
-            self_->mail(done_update_v).send(server_);
-          }
-        });
+        self_->mail(write_output_v, 1)
+            .send(file_access_actor_);
       }
+    },
+    [this](write_output, int err) {
+
+      if (err != 0) {
+        for (auto& gru : gru_struc_->getGruInfo()) {
+          self_->mail(exit_msg_v).send(gru->getActorRef());
+        }
+        self_->send_exit(file_access_actor_, exit_reason::user_shutdown);
+        self_->quit();
+      } else {
+        self_->mail(done_update_v).send(server_);
+      }
+
     },
     [this](finalize) {
       self_->println("DAClientActor: Exiting Successfully");
@@ -192,11 +193,15 @@ void DAClientActor::spawnGruBatches() {
 
   if (settings_.job_actor_settings_.batch_size_ < 0) {
     // Automatically determine batch size
-    batch_size = std::ceil(gru_struc_->getNumGru() / 
-                           (std::thread::hardware_concurrency() * 2));
+    batch_size = std::ceil(static_cast<double>(gru_struc_->getNumGru()) / 
+        static_cast<double>(std::thread::hardware_concurrency()));
   } else {
     // Use the user selected batch size
     batch_size = settings_.job_actor_settings_.batch_size_;
+  }
+
+  if (batch_size <= 1) {
+    batch_size = 1;
   }
 
   self_->println("DAClientActor: Batch Size {}", batch_size);
