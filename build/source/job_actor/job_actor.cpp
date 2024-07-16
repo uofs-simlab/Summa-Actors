@@ -74,7 +74,7 @@ behavior JobActor::make_behavior() {
   // Set the file_access_actor settings depending on data assimilation mode
   if (job_actor_settings_.data_assimilation_mode_) {
     fa_actor_settings_.num_partitions_in_output_buffer_ = 1;
-    fa_actor_settings_.num_timesteps_in_output_buffer_ = 5;
+    fa_actor_settings_.num_timesteps_in_output_buffer_ = 2;
   } 
   
   // Start File Access Actor and Become User Selected Mode
