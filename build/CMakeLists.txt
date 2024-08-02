@@ -29,8 +29,6 @@ list(APPEND EXT_TARGETS CAF::core CAF::io)
 include(FortranCInterface)
 FortranCInterface_VERIFY(CXX)
 
-find_package(OpenMP REQUIRED)
-list(APPEND EXT_TARGETS OpenMP::OpenMP_CXX)
 
 # Find the TBB package
 # Attempt to find TBB
@@ -57,10 +55,9 @@ LIST(APPEND CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/cmake/")
 find_package(NetCDF REQUIRED)
 list(APPEND EXT_TARGETS NetCDF::NetCDF)
 
-# OpenBLAS
-set(BLA_VENDOR OpenBLAS) # MKL
-find_package(OpenBLAS REQUIRED)
-list(APPEND EXT_TARGETS OpenBLAS::OpenBLAS)
+# LAPACK
+find_package(LAPACK REQUIRED)
+list(APPEND EXT_TARGETS LAPACK::LAPACK)
 
 # Set compiler flags
 set(FLAGS_OPT $ENV{FLAGS_OPT}) # get optional user-specified flags from environment variables
