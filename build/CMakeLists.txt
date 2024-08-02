@@ -33,8 +33,16 @@ find_package(OpenMP REQUIRED)
 list(APPEND EXT_TARGETS OpenMP::OpenMP_CXX)
 
 # Find the TBB package
-find_package(TBB REQUIRED)
-list(APPEND EXT_TARGETS TBB::tbb)
+# Attempt to find TBB
+find_package(TBB QUIET)
+
+if(TBB_FOUND)
+    list(APPEND EXT_TARGETS TBB::tbb)
+    message(STATUS "TBB found and will be used.")
+else()
+    message(WARNING "TBB not found. Proceeding without TBB.")
+endif()
+
 
 set(F_MASTER "${CMAKE_CURRENT_LIST_DIR}/..")
 get_filename_component(F_MASTER "${F_MASTER}" REALPATH)
