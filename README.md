@@ -14,7 +14,7 @@ For bug reports, feature requests, and questions, please open an issue on the Gi
 ## Quick Start
 SUMMA-Actors seamlessly integrates with two versions of the SUMMA hydrological modeling framework:
   * SUMMA version 4.x.x:
-      *  Built on top of the most up-to-data SUMMA codebase: https://github.com/KyleKlenk/summa/tree/develop
+      *  Built on top of the most up-to-data SUMMA codebase: https://github.com/ashleymedin/summa/tree/develop
       * Includes latest features and bug fixes, including the option to use the Sundials numerical solver.
   * SUMMA version 3.x.x:
       * Built on top of the original SUMMA codebase: https://github.com/CH-Earth/summa
@@ -27,10 +27,12 @@ The directory structure for SUMMA-Actors is as follows:
 Summa-Actors/
 ├── bin/
 ├── build/
+|   ├── build_scripts/
+│   |   ├── build.sh
+|   ├── cmake/
 │   ├── includes/
 │   ├── source/
 │   ├── summa/ (Versions Specific - 3.x.x or 4.x.x)
-│   ├── v3_build_scripts/
 │   └── v4_build_scripts/
 ├── containers/
 │   ├── apptainer.def
@@ -45,30 +47,30 @@ Summa-Actors/
   * [OpenBLAS](https://github.com/xianyi/OpenBLAS)
   * [NetCDF-Fortran](https://github.com/Unidata/netcdf-fortran)
   * NetCDF-C 
-  * [C++ Actor Framework (0.18.6)](https://github.com/actor-framework/actor-framework/releases/tag/0.18.6)
+  * [tbb](https://github.com/oneapi-src/oneTBB) (Threading Building Blocks) 
+  * [C++ Actor Framework (1.0.0)](https://github.com/actor-framework/actor-framework/releases/tag/1.0.0)
   * [Sundials v7.0.0 (Only for SUMMA version 4.x.x)](https://github.com/LLNL/sundials/releases/tag/v7.0.0)
 
 Install most dependencies using your preferred package manager. If you’re using Ubuntu, check our Dockerfile for specific installation examples. 
 
 ### Version 4.x.x Build Instructions
   1) git clone https://github.com/uofs-simlab/Summa-Actors.git
-  2) cd Summa-Actors/build
+  2) cd Summa-Actors/build/
   3) git clone -b develop https://github.com/ashleymedin/summa.git
-  4) cd v4_build_scripts
-  5) Modify the environment variables in the `build_v4_local.sh` script to match your system.
-  6) ./build_v4_local.sh
-
-Note: Modify and use the `build_v4_cluster.sh` script for building on the [Digitial Research Alliance of Canada](https://docs.alliancecan.ca/wiki/Getting_started) clusters.
+  4) cd build_scripts/
+  5) Modify the `build.sh` script to match your system.
+     - Set `CMAKE_PREFIX_PATH` to the location of dependencies not installed in default locations.
+     - Build with SUNDIALS using the `-DUSE_SUNDIALS=ON` option
+     - Build V4 without SUNDIALS using `-DUSE_V4=ON` option. If using sundials this option is automatically set to ON.
+  6) ./build.sh
 
 ### Version 3.x.x Build Instructions
   1) git clone https://github.com/uofs-simlab/Summa-Actors.git
   2) cd Summa-Actors/build
   3) git clone https://github.com/CH-Earth/summa.git
-  4) cd v3_build_scripts
-  5) Modify the environment variables in the `build_v3_local.sh` script to match your system.
-  6) ./build_v3_local.sh
-
-Note: Modify and use the `build_v3_cluster.sh` script for building on the [Digitial Research Alliance of Canada](https://docs.alliancecan.ca/wiki/Getting_started) clusters.
+  4) cd build_scripts/
+  5) Modify the `build.sh` script to match your system.
+  6) ./build.sh
 
 ## Running SUMMA-Actors
 Running SUMMA-Actors is similar to running the original version of SUMMA. **Input and configuration files remain identical** alowing exising projects and `fileManager.txt` files to be used seamlessly with SUMMA-Actors. Please refer to the [SUMMA documentation](https://summa.readthedocs.io/en/latest/) regarding input files and simulation configuration. The only difference, if desired, is the option to use a `config.json` file to fine tune how SUMMA-Actors will perform. Please refer to the [relevant section](###Config-File-and-Advanced-Features) for more information on the `config.json` file and the more advanced features of SUMMA-Actors.
