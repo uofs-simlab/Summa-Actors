@@ -797,12 +797,12 @@ subroutine allocateOutputBuffer(indx_gru, num_hru, output_buffer_steps, &
 	    ! NOTE: This is done here, rather than in the loop above, because dpar is not one of the "standard" data structures
       call allocLocal(mpar_meta,summa_struct(1)%dparStruct%gru(indx_gru)%hru(iHRU),nSnow,nSoil,err,message)
 
-
       ! Finalize Stats Structre
       ! NOTE: This is done here, rather than in the loop above, because finalizeStats is not one of the "standard" data structures
       allocate(summa_struct(1)%finalizeStats%gru(indx_gru)%hru(iHRU)%tim(output_buffer_steps))
       do iStep = 1, output_buffer_steps
         allocate(summa_struct(1)%finalizeStats%gru(indx_gru)%hru(iHRU)%tim(iStep)%dat(1:maxVarFreq))
+        summa_struct(1)%finalizeStats%gru(indx_gru)%hru(iHRU)%tim(iStep)%dat(:) = .false.
       end do ! timeSteps
     end associate
   end do
