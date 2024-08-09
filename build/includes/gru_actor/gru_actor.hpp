@@ -75,4 +75,6 @@ class GruActor {
 
     std::vector<HRU> serializeGRU();
     void deserializeGRU(std::vector<HRU>& hrus);
+
+    void handleErr(int err, std::unique_ptr<char[]>& message);
 };

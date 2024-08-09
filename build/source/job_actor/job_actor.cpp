@@ -398,6 +398,7 @@ void JobActor::finalizeJob() {
   self_->mail(finalize_v).request(file_access_actor_, infinite).await(
     [=](std::tuple<double, double> read_write_duration) {
       int err = 0;
+      auto num_failed_grus = gru_struc_->getNumGruFailed();    
       timing_info_.updateEndPoint("total_duration");
       self_->println(
           "\n_____________PRINTING JOB_ACTOR TIMING INFO RESULTS____________\n"
@@ -414,7 +415,6 @@ void JobActor::finalizeJob() {
         // Tell Parent we are done
         auto total_duration = timing_info_.getDuration("total_duration").
             value_or(-1.0);
-        auto num_failed_grus = gru_struc_->getNumGruFailed();    
         self_->mail(done_job_v, num_failed_grus, total_duration, 
                     std::get<0>(read_write_duration), 
                     std::get<1>(read_write_duration))
@@ -429,6 +429,12 @@ void JobActor::finalizeJob() {
 void JobActor::handleGRUError(int err_code, int job_index, int timestep, 
                               std::string& err_msg) {
   gru_struc_->getGRU(job_index)->setFailed();
+  gru_struc_->incrementNumGruFailed();
+  if (gru_struc_->isDone()) {
+    gru_struc_->hasFailures() && gru_struc_->shouldRetry() ?
+        self_->mail(restart_failures_v).send(self_) 
+        : self_->mail(finalize_v).send(self_);
+  }
 }
 
 

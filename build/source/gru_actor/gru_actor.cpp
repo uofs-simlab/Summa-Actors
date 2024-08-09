@@ -89,13 +89,25 @@ behavior GruActor::async_mode() {
         }
         readGRUForcing_fortran(job_index_, timestep_, forcingStep_, iFile_, 
                                gru_data_.get(), err, &message);
+        if (err != 0) {
+          handleErr(err, message);
+          return;
+        }
         std::fill(message.get(), message.get() + 256, '\0'); // Clear message
         runGRU_fortran(job_index_, timestep_, gru_data_.get(), dt_init_factor_, 
                        err, &message);
+        if (err != 0) {
+          handleErr(err, message);
+          return;
+        }
         std::fill(message.get(), message.get() + 256, '\0'); // Clear message
         writeGRUOutput_fortran(job_index_, timestep_, 
                                output_step_, gru_data_.get(), 
                                err, &message);
+        if (err != 0) {
+          handleErr(err, message);
+          return;
+        }
 
         timestep_++;
         forcingStep_++;
@@ -145,6 +157,10 @@ behavior GruActor::data_assimilation_mode() {
       std::fill(message.get(), message.get() + 256, '\0'); // Clear message
       runGRU_fortran(job_index_, time_step, gru_data_.get(), dt_init_factor_, 
                      err, &message);
+      if (err !=0 ) {
+        self_->println("GRU Actor {}: Error running GRU -- {}", 
+                       job_index_, message.get());
+      }
       std::fill(message.get(), message.get() + 256, '\0'); // Clear message
       writeGRUOutput_fortran(job_index_, time_step, output_step, 
                              gru_data_.get(), err, &message);
@@ -157,4 +173,12 @@ behavior GruActor::data_assimilation_mode() {
 
 // Utility Functions
 
+void GruActor::handleErr(int err, 
+    std::unique_ptr<char[]>& message) {
+  self_->println("GRU Actor {}-{}: Error running GRU at timestep {}", 
+                 job_index_, netcdf_index_, timestep_);
+  self_->mail(err_atom_v, job_index_, timestep_, err, message.get())
+      .send(parent_);
+  self_->quit();
+}
   
