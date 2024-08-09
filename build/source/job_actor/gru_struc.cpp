@@ -43,7 +43,7 @@ int GruStruc::readDimension() {
 int GruStruc::readIcondNlayers() {
   int err = 0;
   std::unique_ptr<char[]> err_msg(new char[256]);
-  read_icond_nlayers_fortran(num_gru_, err, &err_msg);
+  f_readIcondNlayers(num_gru_, err, &err_msg);
   if (err != 0) { 
     std::cout << "ERROR: GruStruc - ReadIcondNlayers\n";
   }
@@ -62,7 +62,7 @@ int GruStruc::getFailedIndex() {
 
 void GruStruc::getNumHrusPerGru() {
   num_hru_per_gru_.resize(num_gru_, 0);
-  get_num_hru_per_gru_fortran(num_gru_, num_hru_per_gru_[0]);
+  f_getNumHruPerGru(num_gru_, num_hru_per_gru_[0]);
 }
 
 int GruStruc::setNodeGruInfo(int num_nodes) {

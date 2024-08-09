@@ -170,12 +170,15 @@ behavior FileAccessActor::make_behavior() {
 
     [this](finalize) {
       self_->println("\n________________" 
-          "FILE_ACCESS_ACTOR TIMING INFO RESULTS________________\n"
-          "Total Read Duration = {}\n"
-          "Total Write Duration = {}\n"
-          "\n__________________________________________________\n",
-          forcing_files_->getReadDuration(),
-          timing_info_.getDuration("write_duration").value_or(-1.0));
+                     "FILE_ACCESS_ACTOR TIMING INFO RESULTS________________\n"
+                     "Total Read Duration = {}\n"
+                     "Total Write Duration = {}\n"
+                     "\n__________________________________________________\n",
+                     forcing_files_->getReadDuration(),
+                     timing_info_.getDuration("write_duration").value_or(-1.0));
+      
+      output_buffer_.reset();
+
       self_->quit();
       return std::make_tuple(forcing_files_->getReadDuration(),
                              timing_info_.getDuration("write_duration")

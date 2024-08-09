@@ -8,9 +8,9 @@ module gru_struc_module
   public::f_setHruCount
   public::f_setIndexMap
   public::f_getNumHru
-  public::read_icond_nlayers_fortran
-  public::get_num_hru_per_gru_fortran
-  public::deallocate_gru_struc_fortran
+  public::f_readIcondNlayers
+  public::f_getNumHruPerGru
+  public::f_deallocateGruStruc
 
 
   integer(8),allocatable,save,public     :: gru_id(:)
@@ -27,7 +27,6 @@ subroutine f_readDimension(start_gru, num_gru, file_gru, file_hru, &
   USE globalData,only:iRunModeFull, iRunModeGRU, iRunModeHRU ! define the running modes
   
   USE summaFileManager,only:SETTINGS_PATH, LOCAL_ATTRIBUTES
-  ! USE read_attrb_module,only:read_dimension
   
   USE netcdf
   USE netcdf_util_module,only:nc_file_open                   ! open netcdf file
@@ -48,7 +47,7 @@ subroutine f_readDimension(start_gru, num_gru, file_gru, file_hru, &
   type(c_ptr),    intent(out)     :: message_r
   ! Local Variables
   integer(i4b)                    :: ncID         ! NetCDF file ID
- integer(i4b)                     :: varID        ! NetCDF variable ID
+  integer(i4b)                    :: varID        ! NetCDF variable ID
   integer(i4b)                    :: gruDimId     ! variable id of GRU dimension from netcdf file
   integer(i4b)                    :: hruDimId     ! variable id of HRU dimension from netcdf file
 
@@ -134,7 +133,6 @@ subroutine f_setHruCount(iGRU,sGRU) bind(C, name="f_setHruCount")
   gru_struc(iGRU)%hruInfo(:)%hru_id = hru_id(gru_struc(iGRU)%hruInfo(:)%hru_nc)                ! set id of hru
 end subroutine f_setHruCount
 
-
 subroutine f_setIndexMap() bind(C, name="f_setIndexMap")
   USE globalData,only:gru_struc,index_map
   implicit none
@@ -157,8 +155,8 @@ subroutine f_getNumHru(num_hru) bind(C, name="f_getNumHru")
   num_hru = sum(gru_struc(:)%hruCount)
 end subroutine f_getNumHru
 
-subroutine read_icond_nlayers_fortran(num_gru, err, message_r)& 
-    bind(C, name="read_icond_nlayers_fortran")
+subroutine f_readIcondNlayers(num_gru, err, message_r)& 
+    bind(C, name="f_readIcondNlayers")
   USE globalData,only:indx_meta                     ! metadata structures
   
   USE summaFileManager,only:SETTINGS_PATH,STATE_PATH,MODEL_INITCOND                    
@@ -189,10 +187,10 @@ subroutine read_icond_nlayers_fortran(num_gru, err, message_r)&
   call read_icond_nlayers(trim(restartFile),num_gru,indx_meta,err,message)
   if(err/=0)then; call f_c_string_ptr(trim(message), message_r); endif
 
-end subroutine read_icond_nlayers_fortran
+end subroutine f_readIcondNlayers
 
-subroutine get_num_hru_per_gru_fortran(num_gru, num_hru_per_gru_array) &
-    bind(C, name="get_num_hru_per_gru_fortran")
+subroutine f_getNumHruPerGru(num_gru, num_hru_per_gru_array) &
+    bind(C, name="f_getNumHruPerGru")
   USE globalData,only:gru_struc           ! gru->hru mapping structure
   implicit none
   ! Dummy Variables
@@ -205,14 +203,18 @@ subroutine get_num_hru_per_gru_fortran(num_gru, num_hru_per_gru_array) &
     num_hru_per_gru_array(iGRU) = gru_struc(iGRU)%hruCount
   end do
   
-end subroutine 
+end subroutine f_getNumHruPerGru
 
-subroutine deallocate_gru_struc_fortran() bind(C, name="deallocate_gru_struc_fortran")
+subroutine f_deallocateGruStruc() bind(C, name="f_deallocateGruStruc")
     USE globalData,only:gru_struc           ! gru->hru mapping structure
     USE globalData,only:index_map
     implicit none
     if(allocated(gru_struc))then; deallocate(gru_struc);endif
     if(allocated(index_map))then; deallocate(index_map);endif
+    if(allocated(gru_id))then; deallocate(gru_id);endif
+    if(allocated(hru_id))then; deallocate(hru_id);endif
+    if(allocated(hru2gru_id))then; deallocate(hru2gru_id);endif
+    if(allocated(hru_ix))then; deallocate(hru_ix);endif
 end subroutine
 
 

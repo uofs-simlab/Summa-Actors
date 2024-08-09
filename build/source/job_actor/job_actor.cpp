@@ -43,7 +43,6 @@ behavior JobActor::make_behavior() {
     self_->mail(err_atom_v, -2, err_msg).send(parent_);
     return {};
   }
-  // todo: check if this is necessary
   gru_struc_->getNumHrusPerGru();
 
   // SummaInitStruc Initialization
@@ -63,7 +62,6 @@ behavior JobActor::make_behavior() {
     self_->mail(err_atom_v, -2, err_msg).send(parent_);
     return {};
   }
-
   summa_init_struc_->getInitTolerance(rel_tol_, abs_tol_);
   
   num_gru_info_ = NumGRUInfo(batch_.getStartHRU(), batch_.getStartHRU(), 
@@ -411,14 +409,18 @@ void JobActor::finalizeJob() {
           timing_info_.getDuration("total_duration").value_or(-1.0) / 60,
           (timing_info_.getDuration("total_duration").value_or(-1.0) / 60) / 60,
           timing_info_.getDuration("init_duration").value_or(-1.0));
-      
-        // Tell Parent we are done
-        auto total_duration = timing_info_.getDuration("total_duration").
-            value_or(-1.0);
-        self_->mail(done_job_v, num_failed_grus, total_duration, 
-                    std::get<0>(read_write_duration), 
-                    std::get<1>(read_write_duration))
-            .send(parent_);
+
+      // Deallocate GRU_Struc
+      gru_struc_.reset();    
+      summa_init_struc_.reset();
+  
+      // Tell Parent we are done
+      auto total_duration = timing_info_.getDuration("total_duration").
+          value_or(-1.0);
+      self_->mail(done_job_v, num_failed_grus, total_duration, 
+                  std::get<0>(read_write_duration), 
+                  std::get<1>(read_write_duration))
+          .send(parent_);
         self_->quit();
     });
 }

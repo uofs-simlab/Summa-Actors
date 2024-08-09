@@ -1,6 +1,7 @@
 #pragma once
 #include "caf/all.hpp"
 #include <string>
+#include <iostream>
 
 extern "C" {
 
@@ -10,11 +11,11 @@ extern "C" {
   void f_setIndexMap();
   void f_getNumHru(int& num_hru);
 
-  void read_icond_nlayers_fortran(int& num_gru, int& err, void* message);
+  void f_readIcondNlayers(int& num_gru, int& err, void* message);
 
-  void get_num_hru_per_gru_fortran(int& arr_size, int& num_hru_per_gru_array);
+  void f_getNumHruPerGru(int& arr_size, int& num_hru_per_gru_array);
 
-  void deallocate_gru_struc_fortran();
+  void f_deallocateGruStruc();
 }
 
 /** Determine the state of the GRU */
@@ -126,7 +127,7 @@ class GruStruc {
     std::vector<int> num_hru_per_gru_;
   public:
     GruStruc(int start_gru, int num_gru, int num_retry_attempts);
-    ~GruStruc(){deallocate_gru_struc_fortran();};
+    ~GruStruc(){f_deallocateGruStruc();};
     int readDimension();
     int readIcondNlayers();
 
