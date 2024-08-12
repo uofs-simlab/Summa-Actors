@@ -4,21 +4,21 @@
 #include "logger.hpp"
 
 
-class Batch_Container {
+class BatchContainer {
   private:
     int start_hru_;  
     int total_hru_count_;
     int num_hru_per_batch_;
     int batches_remaining_;
     std::vector<Batch> batch_list_;
-    Logger logger_;
+    std::unique_ptr<Logger> logger_;
     
     void assembleBatches(std::string log_dir);
     
   public:
         
-    // Initialize Batch_Container -- call assembleBatches() 
-    Batch_Container(int start_hru = 1, int total_hru_count = 0, 
+    // Initialize BatchContainer -- call assembleBatches() 
+    BatchContainer(int start_hru = 1, int total_hru_count = 0, 
                     int num_hru_per_batch = 0, std::string log_dir = "");
 
 
@@ -83,7 +83,7 @@ class Batch_Container {
     void updateBatchStatus_LostClient(int batch_id);
 
     template <class Inspector>
-    friend bool inspect(Inspector& inspector, Batch_Container& batch_container) {
+    friend bool inspect(Inspector& inspector, BatchContainer& batch_container) {
         return inspector.object(batch_container).fields(
                inspector.field("total_hru_count", 
                                batch_container.total_hru_count_),

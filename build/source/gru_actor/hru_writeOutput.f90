@@ -54,7 +54,7 @@ USE var_lookup,only:iLookBVAR                 ! named variables for basin parame
 USE var_lookup, only: maxvarFreq ! number of output frequencies
 USE var_lookup, only: maxvarStat ! number of statistics
 USE get_ixname_module,only:get_freqName       ! get name of frequency from frequency index
-USE output_structure_module,only:summa_struct
+USE output_buffer,only:summa_struct
 
 
 implicit none
@@ -86,7 +86,7 @@ subroutine writeHRUOutput(indxGRU, indxHRU, timestep, outputStep, hru_data, err,
   USE output_stats,only:calcStats                             ! module for compiling output statistics
   USE time_utils_module,only:elapsedSec                       ! calculate the elapsed time
   USE globalData,only:elapsedWrite                            ! elapsed time to write data
-  USE output_structure_module,only:summa_struct
+  USE output_buffer,only:summa_struct
   USE netcdf_util_module,only:nc_file_close                   ! close netcdf file
   USE netcdf_util_module,only:nc_file_open                    ! open netcdf file
   USE var_lookup,only:maxvarFreq                              ! maximum number of output files
@@ -200,7 +200,7 @@ subroutine writeHRUOutput(indxGRU, indxHRU, timestep, outputStep, hru_data, err,
   ! *** write data
   ! ****************************************************************************
   call writeTime(indxGRU,indxHRU,outputStep,hru_data%finalizeStats%dat, &
-                time_meta,hru_data%timeStruct%var,err,message)
+                 time_meta,hru_data%timeStruct%var,err,message)
 
   ! write the model output to the OutputStructure
   ! Passes the full metadata structure rather than the stats metadata structure because
@@ -289,7 +289,7 @@ subroutine hru_writeRestart(&
   USE output_stats,only:calcStats                             ! module for compiling output statistics
   USE time_utils_module,only:elapsedSec                       ! calculate the elapsed time
   USE globalData,only:elapsedWrite                            ! elapsed time to write data
-  USE output_structure_module,only:summa_struct
+  USE output_buffer,only:summa_struct
   USE netcdf_util_module,only:nc_file_close                   ! close netcdf file
   USE netcdf_util_module,only:nc_file_open                    ! open netcdf file
   USE var_lookup,only:maxvarFreq                              ! maximum number of output files
@@ -990,7 +990,7 @@ end subroutine writeRestart
 ! ****************************************************************************** 
 subroutine setFinalizeStatsFalse(indx_gru) & 
   bind(C, name='setFinalizeStatsFalse')
-  USE output_structure_module,only:summa_struct
+  USE output_buffer,only:summa_struct
   implicit none
   integer(c_int), intent(in)        :: indx_gru
 

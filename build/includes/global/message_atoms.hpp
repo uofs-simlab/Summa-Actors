@@ -4,12 +4,14 @@
 #include "batch.hpp"
 #include "batch_container.hpp"
 
-#include "client.hpp"
-#include "client_container.hpp"
+// #include "client.hpp"
+// #include "client_container.hpp"
 
 #include "logger.hpp"
 
-#include "hru_utils.hpp"
+#include "gru_struc.hpp"
+
+#include "gru_data_structure.hpp"
 #include "num_gru_info.hpp"
 #include "settings_functions.hpp"
 
@@ -189,20 +191,23 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     CAF_ADD_ATOM(summa, finalize)
     
     // Struct Types
-    CAF_ADD_TYPE_ID(summa, (Distributed_Settings))
-    CAF_ADD_TYPE_ID(summa, (Summa_Actor_Settings))
-    CAF_ADD_TYPE_ID(summa, (File_Access_Actor_Settings))
-    CAF_ADD_TYPE_ID(summa, (Job_Actor_Settings))
-    CAF_ADD_TYPE_ID(summa, (HRU_Actor_Settings))
+    CAF_ADD_TYPE_ID(summa, (DistributedSettings))
+    CAF_ADD_TYPE_ID(summa, (SummaActorSettings))
+    CAF_ADD_TYPE_ID(summa, (FileAccessActorSettings))
+    CAF_ADD_TYPE_ID(summa, (JobActorSettings))
+    CAF_ADD_TYPE_ID(summa, (HRUActorSettings))
+    CAF_ADD_TYPE_ID(summa, (Settings))
 
-    CAF_ADD_TYPE_ID(summa, (hru))
+    CAF_ADD_TYPE_ID(summa, (HRU))
+    CAF_ADD_TYPE_ID(summa, (std::vector<HRU>))
     CAF_ADD_TYPE_ID(summa, (NumGRUInfo))
+    CAF_ADD_TYPE_ID(summa, (NodeGruInfo))
 
     // Class Types
-    CAF_ADD_TYPE_ID(summa, (Client))
-    CAF_ADD_TYPE_ID(summa, (Client_Container))
+    // CAF_ADD_TYPE_ID(summa, (Client))
+    // CAF_ADD_TYPE_ID(summa, (Client_Container))
     CAF_ADD_TYPE_ID(summa, (Batch))
-    CAF_ADD_TYPE_ID(summa, (Batch_Container))
+    // CAF_ADD_TYPE_ID(summa, (BatchContainer))
     CAF_ADD_TYPE_ID(summa, (Logger))
 
     CAF_ADD_TYPE_ID(summa, (std::vector<std::vector<double>>))
