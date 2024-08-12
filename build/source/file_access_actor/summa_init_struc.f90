@@ -3,15 +3,16 @@ module summa_init_struc
   USE nrtype
   USE summa_type, only:summa1_type_dec                        ! master summa data type
   implicit none
-  public :: initialize_init_struc
-  public :: paramSetup_fortran
-  public :: deallocate_init_struc
-  public :: getInitTolerance_fortran 
+  public :: f_allocate
+  public :: f_paramSetup
+  public :: f_readRestart
+  public :: f_getInitTolerance 
+  public :: f_deallocateInitStruc
   ! Used to get all the inital conditions for the model -- allows calling summa_setup.f90
   type(summa1_type_dec),allocatable,save,public :: init_struc 
 
   contains
-subroutine initialize_init_struc(num_gru, err, message_r) bind(C, name="initialize_init_struc")
+subroutine f_allocate(num_gru, err, message_r) bind(C, name="f_allocate")
   USE globalData,only:structInfo            ! information on the data structures
   USE globalData,only:gru_struc                               ! gru-hru mapping structures
   USE globalData,only:time_meta, &                       
@@ -169,9 +170,9 @@ subroutine initialize_init_struc(num_gru, err, message_r) bind(C, name="initiali
   call allocLocal(time_meta, oldTime,   err=err, message=message)
   if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
 
-end subroutine initialize_init_struc
+end subroutine f_allocate
 
-subroutine paramSetup_fortran(err, message_r) bind(C, name="paramSetup_fortran")
+subroutine f_paramSetup(err, message_r) bind(C, name="f_paramSetup")
   USE C_interface_module,only:f_c_string_ptr  ! convert fortran string to c string
   USE summa_setup,only:summa_paramSetup
   implicit none
@@ -187,9 +188,9 @@ subroutine paramSetup_fortran(err, message_r) bind(C, name="paramSetup_fortran")
   call summa_paramSetup(init_struc, err, message)
   call f_c_string_ptr(trim(message), message_r)
 
-end subroutine paramSetup_fortran
+end subroutine f_paramSetup
 
-subroutine readRestart_fortran(err, message_r) bind(C, name="readRestart_fortran")
+subroutine f_readRestart(err, message_r) bind(C, name="f_readRestart")
   USE C_interface_module,only:f_c_string_ptr  ! convert fortran string to c string
   USE summa_restart,only:summa_readRestart
   implicit none
@@ -204,10 +205,10 @@ subroutine readRestart_fortran(err, message_r) bind(C, name="readRestart_fortran
   call summa_readRestart(init_struc, err, message)
   call f_c_string_ptr(trim(message), message_r)
 
-end subroutine readRestart_fortran
+end subroutine f_readRestart
 
-subroutine getInitTolerance_fortran(rtol, atol) &
-    bind(C, name="getInitTolerance_fortran")
+subroutine f_getInitTolerance(rtol, atol) &
+    bind(C, name="f_getInitTolerance")
    USE globalData,only:model_decisions                         ! model decision structure
   USE var_lookup,only:iLookDECISIONS
   USE var_lookup,only:iLookPARAM
@@ -225,17 +226,17 @@ subroutine getInitTolerance_fortran(rtol, atol) &
   end if
 #endif
 
-end subroutine getInitTolerance_fortran
+end subroutine f_getInitTolerance
 
-subroutine deallocate_init_struc() bind(C, name="deallocate_init_struc")
+subroutine f_deallocateInitStruc() bind(C, name="f_deallocateInitStruc")
   USE globalData,only:startTime,finshTime,refTime,oldTime
   implicit none
-  deallocate(init_struc)
-  deallocate(startTime%var);
-  deallocate(finshTime%var);
-  deallocate(refTime%var);
-  deallocate(oldTime%var);
+  if(allocated(init_struc)) then; deallocate(init_struc); endif
+  if(allocated(startTime%var)) then; deallocate(startTime%var); endif
+  if(allocated(finshTime%var)) then; deallocate(finshTime%var); endif
+  if(allocated(refTime%var)) then; deallocate(refTime%var); endif
+  if(allocated(oldTime%var)) then; deallocate(oldTime%var); endif
   
-end subroutine deallocate_init_struc
+end subroutine f_deallocateInitStruc
 
 end module summa_init_struc

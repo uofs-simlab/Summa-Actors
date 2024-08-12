@@ -41,8 +41,6 @@ extern "C" {
   void setTimeZoneOffset_fortran(int& iFile, void* hru_data, int& err, 
                                  void* message);
 
-
-  
   // hru_writeOutput.f90
   void setFinalizeStatsFalse(int* indx_gru);
 

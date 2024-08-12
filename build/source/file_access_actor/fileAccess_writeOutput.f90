@@ -29,8 +29,8 @@ module fileAccess_writeOutput
   USE globalData,only: integerMissing, realMissing
   ! provide access to global data
   USE globalData,only:gru_struc                             ! gru->hru mapping structure
-  USE output_structure_module,only:summa_struct
-  USE output_structure_module,only:outputTimeStep
+  USE output_buffer,only:summa_struct
+  USE output_buffer,only:outputTimeStep
   ! provide access to the derived types to define the data structures
   USE data_types,only:&
                       ! final data vectors
@@ -70,11 +70,13 @@ module fileAccess_writeOutput
   private
   public::writeOutput_fortran
   public::writeParm
-  public::writeData
   public::writeBasin
   public::writeTime
+  public::writeData
+  private::writeForcTime
   private::writeScalar
   private::writeVector
+
   ! define dimension lengths
   integer(i4b),parameter      :: maxSpectral=2              ! maximum number of spectral bands
   contains
@@ -428,17 +430,10 @@ subroutine writeData(ncid,outputTimestep,outputTimestepUpdate,maxLayers,nSteps, 
 
       if (meta(iVar)%varName=='time' .and. structName == 'forc')then
         ! get variable index
-        err = nf90_inq_varid(ncid%var(iFreq),trim(meta(iVar)%varName),ncVarID)
-        call netcdf_err(err,message); if (err/=0) return
-        do iStep = 1, nSteps
-          if(.not.summa_struct(1)%finalizeStats%gru(minGRU)%hru(1)%tim(iStep)%dat(iFreq)) cycle
-          stepCounter = stepCounter+1
-          timeVec(stepCounter) = summa_struct(1)%forcStruct%gru(minGRU)%hru(1)%var(iVar)%tim(iStep)
-        end do ! iStep
-        err = nf90_put_var(ncid%var(iFreq),ncVarID,timeVec(1:stepCounter),start=(/outputTimestep(iFreq)/),count=(/stepCounter/))
-        call netcdf_err(err,message); if (err/=0)then; print*, "err"; return; endif
-        ! save the value of the number of steps to update outputTimestep at the end of the function
-        outputTimeStepUpdate(iFreq) = stepCounter
+        call writeForcTime(ncid, minGRU, maxGRU, outputTimestep, &
+                           outputTimestepUpdate, nSteps, iFreq, iVar, meta, &
+                           err, message)
+        if(err/=0)then; return; endif
         cycle
       end if  ! id time
 
@@ -473,6 +468,59 @@ subroutine writeData(ncid,outputTimestep,outputTimestepUpdate,maxLayers,nSteps, 
   end do ! iFreq
 
 end subroutine writeData
+
+! Write the time var from the forcStruct
+subroutine writeForcTime(ncid, minGRU, maxGRU, outputTimestep, &
+    outputTimestepUpdate, nSteps, iFreq, iVar, meta, err, message)
+  USE data_types,only:var_info ! metadata type
+  implicit none
+  ! dummy variables
+  type(var_i),   intent(in)        :: ncid
+  integer(i4b),  intent(in)        :: minGRU
+  integer(i4b),  intent(in)        :: maxGRU
+  integer(i4b)  ,intent(inout)     :: outputTimestep(:) 
+  integer(i4b)  ,intent(inout)     :: outputTimestepUpdate(:) 
+  integer(i4b),  intent(in)        :: nSteps
+  integer(i4b),  intent(in)        :: iFreq
+  integer(i4b),  intent(in)        :: iVar
+  type(var_info),intent(in)        :: meta(:)
+  integer(i4b),  intent(out)       :: err
+  character(*),  intent(out)       :: message
+  ! local variables
+  integer(i4b)                     :: iGRU
+  integer(i4b)                     :: vGRU ! verified GRU (i.e. not a gru that has failed)
+  integer(i4b)                     :: iStep
+  integer(i4b)                     :: stepCounter
+  real(rkind)                      :: timeVec(nSteps)
+  integer(i4b)                     :: ncVarID
+  
+  message = "writeForcTime/"
+  stepCounter = 0
+  vGRU = -9999
+
+  do iGRU = minGRU, maxGRU
+    if (.not. summa_struct(1)%failedGrus(iGRU)) then
+      vGRU = iGRU
+      exit
+    end if
+  end do
+
+  if (vGRU == -9999) then; message = message // " All GRUs have failed"; err = 1; return; end if
+  
+  err = nf90_inq_varid(ncid%var(iFreq),trim(meta(iVar)%varName),ncVarID)
+  call netcdf_err(err,message); if (err/=0) return
+
+  do iStep = 1, nSteps
+    if(.not.summa_struct(1)%finalizeStats%gru(vGRU)%hru(1)%tim(iStep)%dat(iFreq)) cycle
+    stepCounter = stepCounter+1
+    timeVec(stepCounter) = summa_struct(1)%forcStruct%gru(vGRU)%hru(1)%var(iVar)%tim(iStep)
+  end do ! iStep
+
+  err = nf90_put_var(ncid%var(iFreq),ncVarID,timeVec(1:stepCounter),start=(/outputTimestep(iFreq)/),count=(/stepCounter/))
+  call netcdf_err(err,message); if (err/=0)then; return; endif
+  ! save the value of the number of steps to update outputTimestep at the end of the function
+  outputTimeStepUpdate(iFreq) = stepCounter
+end subroutine writeForcTime
 
 subroutine writeScalar(ncid, outputTimestep, outputTimestepUpdate, nSteps, minGRU, maxGRU, &
   nHRUrun, iFreq, iVar, meta, stat, map, err, message)
@@ -698,10 +746,13 @@ subroutine writeBasin(ncid,outputTimestep,outputTimestepUpdate,nSteps,&
   integer(i4b)                  :: step_counter
   integer(i4b)                  :: gru_counter
   integer(i4b)                  :: iGRU, iStep
-  real(rkind)                   :: realVec(numGRU, nSteps)! real vector for all HRUs in the run domain
+  real(rkind)                   :: realVec(numGRU, nSteps)  ! real vector for all HRUs in the run domain
 
   ! initialize error control
   err=0;message="f-writeBasin/"
+
+  ! initialize realVec array
+  realVec = realMissing
 
   ! loop through output frequencies
   do iFreq=1,maxvarFreq
@@ -728,7 +779,7 @@ subroutine writeBasin(ncid,outputTimestep,outputTimestepUpdate,nSteps,&
                   outputTimeStepUpdate(iFreq) = step_counter
                 end do ! iStep
               end do ! iGRU
-              err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq), &
+              err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),  &
                                  realVec(1:numGRU,1:step_counter),           &
                                  start=(/minGRU,outputTimestep(iFreq)/),     & 
                                  count=(/numGRU,step_counter/))
@@ -739,8 +790,8 @@ subroutine writeBasin(ncid,outputTimestep,outputTimestepUpdate,nSteps,&
             class is (gru_hru_time_doubleVec)
               if (iFreq==1 .and. outputTimestep(iFreq)==1) then
                 do iGRU = minGRU, maxGRU
-                  err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq), &
-                                     dat%gru(iGRU)%hru(1)%var(iVar)%tim(1)%dat,        &
+                  err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),&
+                                     dat%gru(iGRU)%hru(1)%var(iVar)%tim(1)%dat,&
                                      start=(/1/), count=(/1000/))
                 end do
               end if
@@ -790,7 +841,7 @@ subroutine writeTime(ncid,outputTimestep,iStep,meta,dat,err,message)
     do iVar = 1,size(meta)
 
       ! check instantaneous
-    if (meta(iVar)%statIndex(iFreq)/=iLookStat%inst) cycle
+      if (meta(iVar)%statIndex(iFreq)/=iLookStat%inst) cycle
       ! get variable id in file
       err = nf90_inq_varid(ncid%var(iFreq),trim(meta(iVar)%varName),ncVarID)
       if (err/=0) message=trim(message)//trim(meta(iVar)%varName); call netcdf_err(err,message)
@@ -803,8 +854,6 @@ subroutine writeTime(ncid,outputTimestep,iStep,meta,dat,err,message)
 
     end do ! iVar
   end do ! iFreq
-
-
 end subroutine writeTime   
 
 subroutine writeRestart(filename,          & ! intent(in): name of restart file

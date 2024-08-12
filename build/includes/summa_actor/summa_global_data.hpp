@@ -1,3 +1,5 @@
+#pragma once
+
 extern "C" {
   void defineGlobalData_fortran(int* err, void* err_msg);
 
@@ -6,10 +8,10 @@ extern "C" {
 
 // This is a class that wraps around the data created in 
 // defineGlobalData()
-class summaGlobalData {
+class SummaGlobalData {
   public:
-    summaGlobalData();
-    ~summaGlobalData();
+    SummaGlobalData();
+    ~SummaGlobalData();
 
     int defineGlobalData();
   private:

@@ -4,283 +4,215 @@ using json = nlohmann::json;
 using namespace caf;
 
 const int NOTIFY_ERR = -1;  // Error code for notification but not quitting
+using chrono_time = std::chrono::time_point<std::chrono::high_resolution_clock>;
 
-behavior file_access_actor(stateful_actor<file_access_state>* self, 
-                           NumGRUInfo num_gru_info,
-                           File_Access_Actor_Settings file_access_actor_settings, 
-                           actor parent) {
-  aout(self) << "\n----------File_Access_Actor Started----------\n";
+behavior FileAccessActor::make_behavior() {
+  self_->println("\n----------File_Access_Actor Started----------\n");
 
-  self->set_exit_handler([=](const caf::exit_msg& em) {
-    aout(self) << "File Access Actor: Received Exit Message\n";
-  });
-    
-  // Set Up timing Info we wish to track
-  self->state.file_access_timing = TimingInfo();
-  self->state.file_access_timing.addTimePoint("write_duration");
-  // Save the parameters passed from job_actor
-  self->state.file_access_actor_settings = file_access_actor_settings;
-  auto& fa_settings = self->state.file_access_actor_settings;
-  self->state.parent = parent;
-  self->state.num_gru_info = num_gru_info;
+  // Timing Info
+  timing_info_ = TimingInfo();
+  timing_info_.addTimePoint("write_duration");
 
-  if (self->state.num_gru_info.use_global_for_data_structures) {
-    self->state.start_gru = self->state.num_gru_info.start_gru_global;
-    self->state.num_gru = self->state.num_gru_info.num_gru_global;
+  if (num_gru_info_.use_global_for_data_structures) {
+    start_gru_ = num_gru_info_.start_gru_global;
+    num_gru_ = num_gru_info_.num_gru_global;
   } else {
-    self->state.start_gru = self->state.num_gru_info.start_gru_local;
-    self->state.num_gru = self->state.num_gru_info.num_gru_local;
+    start_gru_ = num_gru_info_.start_gru_local;
+    num_gru_ = num_gru_info_.num_gru_local;
   }
-  self->state.num_output_steps = fa_settings.num_timesteps_in_output_buffer;
-  
-  return {
-    [=](init_file_access_actor, int file_gru, int num_hru) {
-      aout(self) << "File Access Actor: Initializing\n";
-      auto& fa_settings = self->state.file_access_actor_settings;
-      self->state.num_hru = num_hru;
-      
-      // Get the information about the forcing files
-      self->state.forcing_files = std::make_unique<forcingFileContainer>();
-      if (self->state.forcing_files->initForcingFiles() != 0) return -1;
 
+  return {
+    [this](init_file_access_actor, int file_gru, int num_hru) {
       int err = 0;
-      std::unique_ptr<char[]> message(new char[256]);
-      fileAccessActor_init_fortran(&self->state.num_steps,
-                                   &fa_settings.num_timesteps_in_output_buffer, 
-                                   &self->state.num_gru, &err, &message);
+      self_->println("File Access Actor: Initializing\n");
+      num_hru_ = num_hru;
+
+      f_getNumTimeSteps(num_steps_);
+
+      forcing_files_ = std::make_unique<forcingFileContainer>();
+      if (forcing_files_->initForcingFiles() != 0) return -1;
+
+      // Initialize output buffer
+      output_buffer_ = std::make_unique<OutputBuffer>(
+          fa_settings_, num_gru_info_, num_hru_, num_steps_);
+      int chunk_return = output_buffer_->setChunkSize();
+      self_->println("Chunk Size = {}\n", chunk_return);
+      err = output_buffer_->defOutput(to_string(self_->address()));
       if (err != 0) {
-        aout(self) << "\n\nFile Access Actor: Error fileAccessActor_init\n" 
-                   << "\tMessage = " << message.get() << "\n\n";
+        self_->println("File Access Actor: Error defOutput\n"
+                       "\tMessage = Can't define output file\n");
+        self_->quit();
         return -1;
       }
-   
-      // Ensure output buffer size is less than the number of simulation timesteps
-      if (self->state.num_steps < fa_settings.num_timesteps_in_output_buffer) {
-        self->state.num_output_steps = self->state.num_steps;
-        fa_settings.num_timesteps_in_output_buffer = self->state.num_steps;
-      }
+      err = output_buffer_->allocateOutputBuffer(num_steps_);
 
-      // Set up the output container
-      if (!self->state.num_gru_info.use_global_for_data_structures) {
-        self->state.output_container = new Output_Container(
-            fa_settings.num_partitions_in_output_buffer, self->state.num_gru,
-            fa_settings.num_timesteps_in_output_buffer, self->state.num_steps);
-      }
-
-      aout(self) << "Creating Output File\n";
-      std::string actor_address = "";  
-      if (self->state.num_gru_info.use_global_for_data_structures) {
-        actor_address = "_" + to_string(self->address());
-      }
-
-      if (fa_settings.output_file_suffix != "") {
-        actor_address = "_" + fa_settings.output_file_suffix;
-        self->state.num_gru_info.use_global_for_data_structures = true;
-      }
-
-      defOutputFortran(self->state.handle_ncid, &self->state.start_gru, 
-                       &self->state.num_gru, &self->state.num_hru, &file_gru, 
-                       &self->state.num_gru_info.use_global_for_data_structures,
-                       actor_address.c_str(), &err);
-      if (err != 0) return -1;
-
-      self->state.file_access_timing.updateEndPoint("init_duration");
-      return self->state.num_steps;
+      timing_info_.updateEndPoint("init_duration");
+      return num_steps_;
     },
 
-    // Message from the HRU actor to get the forcing file that is loaded
-    [=](access_forcing, int iFile, caf::actor refToRespondTo) {
-      if (self->state.forcing_files->allFilesLoaded()) {
-        self->send(refToRespondTo, new_forcing_file_v, 
-          self->state.forcing_files->getNumSteps(iFile), iFile);
+    [this](access_forcing, int i_file, caf::actor response_ref) {
+      if (forcing_files_->allFilesLoaded()) {
+        self_->mail(new_forcing_file_v, forcing_files_->getNumSteps(i_file), 
+                    i_file).send(response_ref);
         return;
       }
-      auto err = self->state.forcing_files->
-          loadForcingFile(iFile, self->state.start_gru, self->state.num_gru);
+      auto err = forcing_files_->loadForcingFile(i_file, start_gru_, num_gru_);
       if (err != 0) {
-        aout(self) << "File_Access_Actor: Error loadForcingFile\n"
-                   << "\tMessage = Can't load forcing file\n";
-        self->send(self->state.parent, err_atom_v, 0, 0, err, 
-                   "Can't load forcing file\n");
-        self->quit();
+        self_->println("File Access Actor: Error loadForcingFile\n"
+                       "\tMessage = Can't load forcing file\n");
+        self_->mail(err_atom_v, 0, 0, err, "Can't load forcing file\n")
+            .send(parent_);
+        self_->quit();
+        return;
+      }
+
+      // Load files behind the scenes
+      self_->mail(access_forcing_internal_v, i_file + 1).send(self_);
+      self_->mail(new_forcing_file_v, forcing_files_->getNumSteps(i_file), 
+                  i_file).send(response_ref);
+    },
+
+    [this](access_forcing_internal, int i_file) {
+      if (forcing_files_->allFilesLoaded()) return;
+      auto err = forcing_files_->loadForcingFile(i_file, start_gru_, num_gru_);
+      if (err != 0) {
+        self_->println("File Access Actor: Error loadForcingFile\n"
+                       "\tMessage = Can't load forcing file\n");
+        self_->mail(err_atom_v, 0, 0, err, "Can't load forcing file\n")
+            .send(parent_);
+        self_->quit();
+        return;
+      }
+      self_->mail(access_forcing_internal_v, i_file + 1).send(self_);
+    },
+
+    [this](get_num_output_steps, int job_index) -> int {
+      return output_buffer_->getNumStepsBuffer(job_index);
+    },
+
+    [this](write_output, int index_gru, caf::actor gru) {
+      timing_info_.updateStartPoint("write_duration");
+
+      auto update_status = output_buffer_->writeOutput(index_gru, gru);
+      
+      // Do nothing if optional is emtpy
+      if (!update_status.has_value()) {
+        timing_info_.updateEndPoint("write_duration");
         return;
       }
       
-      // Load files behind the scenes
-      self->send(self, access_forcing_internal_v, iFile + 1);
-      self->send(refToRespondTo, new_forcing_file_v, 
-                 self->state.forcing_files->getNumSteps(iFile), iFile);
-    },
-
-    // Internal message to load the forcing files in the background    
-    [=](access_forcing_internal, int iFile) {
-      if (self->state.forcing_files->allFilesLoaded()) {
+      // If error, send error message to parent
+      if (update_status.value()->err != 0) {
+        self_->println("File Access Actor: Error writeOutput\n"
+                       "\tMessage = {}\n", update_status.value()->message);
+        self_->mail(err_atom_v, 0, 0, update_status.value()->err, 
+                    update_status.value()->message).send(parent_);
+        self_->quit();
         return;
       }
-      auto err = self->state.forcing_files->loadForcingFile(iFile, 
-          self->state.start_gru, self->state.num_gru);
-      if (err != 0) {
-        aout(self) << "File_Access_Actor: Error loadForcingFile\n"
-                   << "\tMessage = Can't load forcing file\n";
-        self->send(self->state.parent, err_atom_v, 0, 0, err, 
-                   "Can't load forcing file\n");
-        self->quit();
-        return;
-      }
-      self->send(self, access_forcing_internal_v, iFile + 1);
-    },
-        
-    // Number of steps an HRU can compute before needing to write
-    [=] (get_num_output_steps) { 
-      return self->state.num_output_steps; 
-    },
 
-    [=](write_output, int index_gru, int index_hru, caf::actor hru_actor) {
-      self->state.file_access_timing.updateStartPoint("write_duration");
-
-      Output_Partition *output_partition = 
-          self->state.output_container->getOutputPartition(index_gru);
-
-      output_partition->setGRUReadyToWrite(hru_actor);
-        
-      if (output_partition->isReadyToWrite()) {
-        writeOutput(self, output_partition);
+      // If we get here, we successfully wrote to file
+      for (auto gru : update_status.value()->actor_to_update) {
+        self_->mail(num_steps_before_write_v, 
+                    update_status.value()->num_steps_update).send(gru);
+        self_->mail(run_hru_v).send(gru);
       }
 
-      self->state.file_access_timing.updateEndPoint("write_duration");
+      timing_info_.updateEndPoint("write_duration");
     },
 
-    [=](write_restart, int gru, int gru_timestep, int gru_checkpoint, 
-         int output_stucture_index, int year, int month, int day, int hour){
-      // update hru progress vecs 
-      int gru_index = abs(self->state.start_gru - gru); 
-      self->state.hru_timesteps[gru_index] = gru_timestep;
-      self->state.hru_checkpoints[gru_index] = gru_checkpoint;
-
-      // find slowest time step of all hrus in job, stored in self->state.hru_timesteps
+    [this](write_restart, int gru, int gru_timestep, int gru_checkpoint, 
+          int output_structure_index, int year, int month, int day, int hour) {
+      // update hru progress vecs
+      int gru_index = abs(start_gru_ - gru);
+      hru_timesteps_[gru_index] = gru_timestep;
+      hru_checkpoints_[gru_index] = gru_checkpoint;
+      // find slowest time step of all hrus in job, stored hru_timesteps_
       int slowest_timestep = *std::min_element(
-          self->state.hru_timesteps.begin(), 
-          self->state.hru_timesteps.end());  
+          hru_timesteps_.begin(), hru_timesteps_.end());
       int slowest_checkpoint = *std::min_element(
-          self->state.hru_checkpoints.begin(), 
-          self->state.hru_checkpoints.end());  
-
-      // if the slowest hru is past the ith checkpoint (current threshold)            
-      if ( slowest_checkpoint >= (self->state.completed_checkpoints)){// temp for dubuging
+          hru_checkpoints_.begin(), hru_checkpoints_.end());
+    
+      // if the slowest hru is past the ith checkpoint (current threshold)
+      if (slowest_checkpoint >= completed_checkpoints_) {
         Output_Partition *output_partition = 
-            self->state.output_container->getOutputPartition(gru-1);
-        writeRestart(self, output_partition, self->state.start_gru, 
-                     self->state.hru_timesteps.size(), output_stucture_index,
-                     year, month, day, hour);
-        // update checkpint counter
-        self->state.completed_checkpoints++;
+            output_container_->getOutputPartition(gru - 1);
+        writeRestart(output_partition, start_gru_, num_gru_, 
+                     output_structure_index, year, month, day, hour);
+        completed_checkpoints_++;
       }
     },
 
-    // Write message from the job actor TODO: This could be async
-    [=](write_output, int steps_to_write, int start_gru, int max_gru) {
-      self->state.file_access_timing.updateStartPoint("write_duration");
-      std::unique_ptr<char[]> err_msg(new char[256]);
-      int err = 0;
-      writeOutput_fortran(self->state.handle_ncid, &steps_to_write, &start_gru, 
-                          &max_gru, &self->state.write_params_flag, &err,
-                          &err_msg);
-      if (err != 0) {
-        aout(self) << "File Access Actor: Error writeOutput from job\n"
-                   << "\tMessage = " << err_msg.get() << "\n";
-        self->send(self->state.parent, err_atom_v, 0, 0, err, err_msg.get());
-      }
-
-      if (self->state.write_params_flag) self->state.write_params_flag = false;
-      self->state.file_access_timing.updateEndPoint("write_duration");
-      return err;
+    // Write Output From the Job Actor
+    [this](write_output, int output_step) {
+      timing_info_.updateStartPoint("write_duration");
+      const int err = output_buffer_->writeOutputDA(output_step);
+      timing_info_.updateEndPoint("write_duration");
+      self_->mail(write_output_v, err).send(parent_);
     },
 
-    [=](restart_failures) {
-      self->state.output_container->reconstruct();
+    [this](restart_failures) {
+      output_container_->reconstruct();
     },
 
-    [=](run_failure, int local_gru_index) {
-      self->state.file_access_timing.updateStartPoint("write_duration");
-      Output_Partition *output_partition = 
-          self->state.output_container->getOutputPartition(local_gru_index);
-        
-      output_partition->addFailedGRUIndex(local_gru_index);
+    [this](run_failure, int index_gru_job) {
+      timing_info_.updateStartPoint("write_duration");
+      auto update_status = output_buffer_->addFailedGRU(index_gru_job);
 
-      if (output_partition->isReadyToWrite()) {
-        writeOutput(self, output_partition);
+      if (!update_status.has_value()) {
+        timing_info_.updateEndPoint("write_duration");
+        return;
       }
-      self->state.file_access_timing.updateEndPoint("write_duration");
+
+      if (update_status.value()->err != 0) {
+        self_->println("File Access Actor: Error writeOutput\n"
+                       "\tMessage = {}\n", update_status.value()->message);
+        self_->mail(err_atom_v, 0, 0, update_status.value()->err, 
+                    update_status.value()->message).send(parent_);
+        self_->quit();
+        return;
+      }
+
+      for (auto gru : update_status.value()->actor_to_update) {
+        self_->mail(num_steps_before_write_v, 
+                    update_status.value()->num_steps_update).send(gru);
+        self_->mail(run_hru_v).send(gru);
+      }
+
+      timing_info_.updateEndPoint("write_duration");
     },
 
-    [=](finalize) {
-        
-      aout(self) << "File Access Actor: Deallocating Structures\n";
-      // TODO: output container can be wrapped in a smart pointer
-      if (!self->state.num_gru_info.use_global_for_data_structures) {
-        delete self->state.output_container;
-      }
-      FileAccessActor_DeallocateStructures(self->state.handle_ncid);
-      aout(self) << "\n________________" 
-                 << "FILE_ACCESS_ACTOR TIMING INFO RESULTS________________\n"
-                 << "Total Read Duration = "
-                 << self->state.forcing_files->getReadDuration() << " Seconds\n"
-                 << "Total Write Duration = "
-                 << self->state.file_access_timing.getDuration("write_duration")
-                     .value_or(-1.0) << " Seconds\n"
-                 << "\n__________________________________________________\n"; 
-      self->quit();
-      return std::make_tuple(self->state.forcing_files->getReadDuration(),
-                             self->state.file_access_timing
-                             .getDuration("write_duration").value_or(-1.0));
+    [this](finalize) {
+      self_->println("\n________________" 
+                     "FILE_ACCESS_ACTOR TIMING INFO RESULTS________________\n"
+                     "Total Read Duration = {}\n"
+                     "Total Write Duration = {}\n"
+                     "\n__________________________________________________\n",
+                     forcing_files_->getReadDuration(),
+                     timing_info_.getDuration("write_duration").value_or(-1.0));
+      
+      output_buffer_.reset();
+
+      self_->quit();
+      return std::make_tuple(forcing_files_->getReadDuration(),
+                             timing_info_.getDuration("write_duration")
+                             .value_or(-1.0));                       
+                     
+    },
+
+    [=](const caf::exit_msg& em) {
+      self_->println("File Access Actor: Received Exit Message");
     },
   };
 }
 
 
-void writeOutput(stateful_actor<file_access_state>* self, 
-                 Output_Partition* partition) {              
-  int num_timesteps_to_write = partition->getNumStoredTimesteps();
-  int start_gru = partition->getStartGRUIndex();
-  int max_gru = partition->getMaxGRUIndex();
-  if (start_gru > max_gru) {
-    aout(self) << "File Access Actor: Error writeOutput\n"
-               << "\tMessage = start_gru > max_gru\n";
-    self->send(self->state.parent, err_atom_v, 0, 0, NOTIFY_ERR, 
-               "start_gru > max_gru");
-    return;
-  }
-  bool write_param_flag = partition->isWriteParams();
+void FileAccessActor::writeRestart(Output_Partition* partition, int start_gru, 
+                                   int num_gru, int timestep, int year, 
+                                   int month, int day, int hour){  
   int err = 0;
-  std::unique_ptr<char[]> err_msg(new char[256]);
-  writeOutput_fortran(self->state.handle_ncid, &num_timesteps_to_write,
-                      &start_gru, &max_gru, &write_param_flag, &err, &err_msg);
-  if (err != 0) {
-    aout(self) << "File Access Actor: Error writeOutput\n"
-               << "\tMessage = " << err_msg.get() << "\n";
-    self->send(self->state.parent, err_atom_v, 0, 0, NOTIFY_ERR, err_msg.get());
-  }
-
-  partition->updateTimeSteps();
-
-  int num_steps_before_next_write = partition->getNumStoredTimesteps();
-
-  std::vector<caf::actor> hrus_to_update = partition->getReadyToWriteList();
-  for (int i = 0; i < hrus_to_update.size(); i++) {
-    self->send(hrus_to_update[i], num_steps_before_write_v, 
-               num_steps_before_next_write);
-    self->send(hrus_to_update[i], run_hru_v);
-  }
-
-  partition->resetReadyToWriteList();
-}
-
-void writeRestart(stateful_actor<file_access_state>* self , 
-                  Output_Partition* partition, int start_gru, int num_gru, 
-                  int timestep, int year, int month, int day, int hour){  
-  
-  writeRestart_fortran(self->state.handle_ncid, &start_gru, &num_gru, &timestep, 
-                       &year, &month, &day, &hour, &self->state.err);
+  // writeRestart_fortran(handle_ncid_, start_gru, num_gru, timestep, year, month, 
+  //                      day, hour, err);
 }
 
 
