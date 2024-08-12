@@ -155,16 +155,30 @@ behavior FileAccessActor::make_behavior() {
       output_container_->reconstruct();
     },
 
-    [this](run_failure, int local_gru_index) {
+    [this](run_failure, int index_gru_job) {
       timing_info_.updateStartPoint("write_duration");
-      // Output_Partition *output_partition = 
-      //     output_container_->getOutputPartition(local_gru_index);
-        
-      // output_partition->addFailedGRUIndex(local_gru_index);
+      auto update_status = output_buffer_->addFailedGRU(index_gru_job);
 
-      // if (output_partition->isReadyToWrite()) {
-      //   writeOutput(output_partition);
-      // }
+      if (!update_status.has_value()) {
+        timing_info_.updateEndPoint("write_duration");
+        return;
+      }
+
+      if (update_status.value()->err != 0) {
+        self_->println("File Access Actor: Error writeOutput\n"
+                       "\tMessage = {}\n", update_status.value()->message);
+        self_->mail(err_atom_v, 0, 0, update_status.value()->err, 
+                    update_status.value()->message).send(parent_);
+        self_->quit();
+        return;
+      }
+
+      for (auto gru : update_status.value()->actor_to_update) {
+        self_->mail(num_steps_before_write_v, 
+                    update_status.value()->num_steps_update).send(gru);
+        self_->mail(run_hru_v).send(gru);
+      }
+
       timing_info_.updateEndPoint("write_duration");
     },
 

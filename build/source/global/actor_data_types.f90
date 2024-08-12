@@ -204,7 +204,7 @@ module actor_data_types
     type(gru_hru_time_flagVec)                        :: finalizeStats                 ! x%gru(:)%hru(:)%tim(:)%dat -- flags on when to write to file
 
     type(gru_d)                                       :: upArea
-
     integer(i4b)                                      :: nTimeSteps
+    logical(lgt), allocatable                         :: failedGrus(:)                  ! flag to indicate if the GRU failed
   end type summa_output_type  
 end module

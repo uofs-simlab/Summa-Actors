@@ -1,4 +1,4 @@
-module gru_interface
+module gru_actor
 USE,intrinsic :: iso_c_binding
 USE nrtype
 USE globalData,only:integerMissing
@@ -669,7 +669,6 @@ subroutine writeGRUOutput_fortran(indx_gru, timestep, outputstep, &
 
 end subroutine writeGRUOutput_fortran
 
-
 ! Local Subroutines
 subroutine allocateOutputBuffer(indx_gru, num_hru, output_buffer_steps, &
     err, message)
@@ -1135,7 +1134,7 @@ subroutine allocateDat_int(metadata,varData,nSnow, nSoil, &
       return
     end select
   end do ! loop through time steps
-end subroutine
+end subroutine allocateDat_int
 
 
-end module gru_interface
+end module gru_actor

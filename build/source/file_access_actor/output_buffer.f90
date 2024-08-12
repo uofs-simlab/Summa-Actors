@@ -8,6 +8,8 @@ module output_buffer
   implicit none
   public::f_defOutput
   public::f_setChunkSize
+  public::f_addFailedGru
+  public::f_setFailedGruMissing
   public::f_allocateOutputBuffer
   public::f_deallocateOutputBuffer
 
@@ -112,6 +114,183 @@ subroutine f_setChunkSize(chunk_size_in) bind(C, name="f_setChunkSize")
   endif 
 end subroutine f_setChunkSize
 
+subroutine f_addFailedGru(gru_index) bind(C, name="f_addFailedGru")
+  implicit none
+  ! Dummy Varaibles
+  integer(c_int),intent(in)              :: gru_index
+  if (allocated(summa_struct)) then
+    summa_struct(1)%failedGrus(gru_index) = .true.
+  endif
+end subroutine f_addFailedGru
+
+subroutine f_setFailedGruMissing(start_gru, end_gru) bind(C, name="f_setFailedGruMissing")
+  USE var_lookup,only:maxvarFreq                ! number of output frequencies
+  USE var_lookup,only:iLookVarType              ! named variables for structure elements
+  USE var_lookup,only:iLookStat                 ! index into stat structure
+
+  USE globalData,only:realMissing
+  USE globalData,only:integerMissing
+  USE globalData,only:outFreq                   ! output file information
+  USE globalData,only:gru_struc                 ! gru structure
+  ! Meta Structures
+  USE globalData,only:time_meta                 ! metadata on the model time
+  USE globalData,only:forc_meta                 ! metadata on the model forcing data
+  USE globalData,only:diag_meta                 ! metadata on the model diagnostic variables
+  USE globalData,only:prog_meta                 ! metadata on the model prognostic variables
+  USE globalData,only:flux_meta                 ! metadata on the model fluxes
+  USE globalData,only:indx_meta                 ! metadata on the model index variables
+  USE globalData,only:bvar_meta                 ! metadata on basin-average variables
+  USE globalData,only:bpar_meta                 ! basin parameter metadata structure
+  USE globalData,only:mpar_meta                 ! local parameter metadata structure
+  ! index of the child data structure
+  USE globalData,only:forcChild_map             ! index of the child data structure: stats forc
+  USE globalData,only:progChild_map             ! index of the child data structure: stats prog
+  USE globalData,only:diagChild_map             ! index of the child data structure: stats diag
+  USE globalData,only:fluxChild_map             ! index of the child data structure: stats flux
+  USE globalData,only:indxChild_map             ! index of the child data structure: stats indx
+  USE globalData,only:bvarChild_map             ! index of the child data structure: stats bvar
+  implicit none
+  ! Dummy Varaibles
+  integer(c_int),intent(in)              :: start_gru
+  integer(c_int),intent(in)              :: end_gru
+  ! local variables
+  integer(i4b)                           :: iGRU
+  integer(i4b)                           :: iHRU
+  integer(i4b)                           :: iFreq
+  integer(i4b)                           :: iVar      
+  integer(i4b)                           :: iStat
+  integer(i4b)                           :: iStep       
+
+  if (.not.allocated(summa_struct)) then; return; endif
+
+  do iGRU = start_gru, end_gru
+    if (summa_struct(1)%failedGrus(iGRU)) then
+      do iFreq=1, maxVarFreq
+        if(.not. outFreq(iFreq)) cycle
+        ! forc
+        do iVar=1, size(forc_meta)
+          if (forc_meta(iVar)%varName == 'time') then
+            do iHRU=1, gru_struc(iGRU)%hruCount
+              summa_struct(1)%forcStruct%gru(iGRU)%hru(iHRU)%var(iVar)%tim(:) = realMissing
+            end do
+            cycle
+          endif
+
+          iStat = forc_meta(iVar)%statIndex(iFreq)
+          if (iStat==integerMissing.or.trim(forc_meta(iVar)%varName)=='unknown') cycle
+
+          do iHRU=1, gru_struc(iGRU)%hruCount
+            if(forc_meta(iVar)%varType==iLookVarType%scalarv) then
+              do iStep=1, summa_struct(1)%nTimeSteps
+                summa_struct(1)%forcStat%gru(iGRU)%hru(iHRU)%var(forcChild_map(iVar))%tim(iStep)%dat(iFreq) = realMissing
+              end do ! iStep
+            else ! vector
+              summa_struct(1)%forcStruct%gru(iGRU)%hru(iHRU)%var(iVar)%tim(:) = realMissing
+            endif 
+          end do ! iHRU
+        end do ! ivar
+
+        ! prog
+        do iVar = 1, size(prog_meta)
+          iStat = prog_meta(iVar)%statIndex(iFreq)
+          if (iStat==integerMissing.or.trim(prog_meta(iVar)%varName)=='unknown') cycle
+          
+          do iHRU=1, gru_struc(iGRU)%hruCount
+            if (prog_meta(iVar)%varType==iLookVarType%scalarv) then
+              do iStep=1, summa_struct(1)%nTimeSteps
+                summa_struct(1)%progStat%gru(iGRU)%hru(iHRU)%var(progChild_map(iVar))%tim(iStep)%dat(iFreq) = realMissing
+              end do ! iStep
+            else ! vector
+              do iStep=1, summa_struct(1)%nTimeSteps
+                summa_struct(1)%progStruct%gru(iGRU)%hru(iHRU)%var(iVar)%tim(iStep)%dat(:) = realMissing
+              end do ! iStep
+            endif
+          end do ! iHRU
+        end do ! iVar
+
+        ! diag
+        do iVar = 1, size(diag_meta)
+          iStat = diag_meta(iVar)%statIndex(iFreq)
+          if (iStat==integerMissing.or.trim(diag_meta(iVar)%varName)=='unknown') cycle
+          do iHRU=1, gru_struc(iGRU)%hruCount
+            if (diag_meta(iVar)%varType==iLookVarType%scalarv) then
+              do iStep=1, summa_struct(1)%nTimeSteps
+                summa_struct(1)%diagStat%gru(iGRU)%hru(iHRU)%var(diagChild_map(iVar))%tim(iStep)%dat(iFreq) = realMissing
+              end do ! iStep
+            else ! vector
+              do iStep=1, summa_struct(1)%nTimeSteps
+                summa_struct(1)%diagStruct%gru(iGRU)%hru(iHRU)%var(iVar)%tim(iStep)%dat(:) = realMissing
+              end do ! iStep
+            endif
+          end do ! iHRU
+        end do ! iVar
+
+        ! flux
+        do iVar = 1, size(flux_meta)
+          iStat = flux_meta(iVar)%statIndex(iFreq)
+          if (iStat==integerMissing.or.trim(flux_meta(iVar)%varName)=='unknown') cycle
+          do iHRU=1, gru_struc(iGRU)%hruCount
+            if (flux_meta(iVar)%varType==iLookVarType%scalarv) then
+              do iStep=1, summa_struct(1)%nTimeSteps
+                summa_struct(1)%fluxStat%gru(iGRU)%hru(iHRU)%var(fluxChild_map(iVar))%tim(iStep)%dat(iFreq) = realMissing
+              end do ! iStep
+            else ! vector
+              do iStep=1, summa_struct(1)%nTimeSteps
+                summa_struct(1)%fluxStruct%gru(iGRU)%hru(iHRU)%var(iVar)%tim(iStep)%dat(:) = realMissing
+              end do ! iStep
+            endif
+          end do ! iHRU
+        end do ! iVar
+
+        ! indx
+        do iVar = 1, size(indx_meta)
+          iStat = indx_meta(iVar)%statIndex(iFreq)
+          if (iStat==integerMissing.or.trim(indx_meta(iVar)%varName)=='unknown') cycle
+          do iHRU=1, gru_struc(iGRU)%hruCount
+            if (indx_meta(iVar)%varType==iLookVarType%scalarv) then
+              do iStep=1, summa_struct(1)%nTimeSteps
+                summa_struct(1)%indxStat%gru(iGRU)%hru(iHRU)%var(indxChild_map(iVar))%tim(iStep)%dat(iFreq) = realMissing
+              end do ! iStep
+            else ! vector
+              do iStep=1, summa_struct(1)%nTimeSteps
+                summa_struct(1)%indxStruct%gru(iGRU)%hru(iHRU)%var(iVar)%tim(iStep)%dat(:) = integerMissing
+              end do ! iStep
+            endif
+          end do ! iHRU
+        end do ! iVar
+
+        ! bvar
+        do iVar = 1, size(bvar_meta)
+          iStat = bvar_meta(iVar)%statIndex(iFreq)
+          if (iStat==integerMissing.or.trim(bvar_meta(iVar)%varName)=='unknown') cycle
+          do iHRU=1, gru_struc(iGRU)%hruCount
+            if (bvar_meta(iVar)%varType==iLookVarType%scalarv) then
+              do iStep=1, summa_struct(1)%nTimeSteps
+                summa_struct(1)%bvarStat%gru(iGRU)%hru(iHRU)%var(bvarChild_map(iVar))%tim(iStep)%dat(iFreq) = realMissing
+              end do ! iStep
+            else ! vector
+              do iStep=1, summa_struct(1)%nTimeSteps
+                summa_struct(1)%bvarStruct%gru(iGRU)%hru(iHRU)%var(iVar)%tim(iStep)%dat(:) = realMissing
+              end do ! iStep
+            endif
+          end do ! iHRU
+        end do ! iVar
+
+        ! time
+        do iVar=1,size(time_meta)
+          if (time_meta(iVar)%statIndex(iFreq)/=iLookStat%inst) cycle
+          do iHRU=1, gru_struc(iGRU)%hruCount
+            summa_struct(1)%timeStruct%gru(iGRU)%hru(iHRU)%var(iVar)%tim(:) = realMissing
+          end do ! iHRU
+        end do ! iVar
+      end do ! iFreq
+    
+    end if ! failed gru
+  end do ! iGRU
+
+
+end subroutine
+
 subroutine f_allocateOutputBuffer(max_steps, num_gru, err, message_r) &
     bind(C, name="f_allocateOutputBuffer")
   USE C_interface_module,only:f_c_string_ptr          ! convert fortran string to c string
@@ -168,11 +347,14 @@ subroutine f_allocateOutputBuffer(max_steps, num_gru, err, message_r) &
   ! Basin-Average structures
   allocate(summa_struct(1)%bvarStruct%gru(num_gru))
   allocate(summa_struct(1)%bparStruct%gru(num_gru))
+  allocate(summa_struct(1)%dparStruct%gru(num_gru))
   ! Finalize Stats for writing
   allocate(summa_struct(1)%finalizeStats%gru(num_gru))
   ! Extras
   allocate(summa_struct(1)%upArea%gru(num_gru))
-  allocate(summa_struct(1)%dparStruct%gru(num_gru))
+  allocate(summa_struct(1)%failedGrus(num_gru))
+  summa_struct(1)%failedGrus(:) = .false.
+  summa_struct(1)%nTimeSteps = max_steps
 
 end subroutine f_allocateOutputBuffer
 

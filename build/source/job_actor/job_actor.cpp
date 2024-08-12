@@ -240,10 +240,8 @@ behavior JobActor::data_assimilation_mode() {
       }
        
       processTimestep();
-
     },
     
-    // Err
     [this](write_output, int err) {
       if (err != 0) {
         self_->println("JobActor: Error Writing Output");
@@ -301,8 +299,6 @@ void JobActor::spawnGruActors() {
   gru_struc_->decrementRetryAttempts();
 }
 
-
-
 void JobActor::spawnGruBatches() {
   self_->println("JobActor: Spawning GRU Batch Actors");
   int batch_size;
@@ -335,8 +331,8 @@ void JobActor::spawnGruBatches() {
         file_access_actor_, self_);
 
     std::unique_ptr<GRU> gru_obj = std::make_unique<GRU>(
-        netcdf_start_index, job_start_index, gru_batch, dt_init_factor_, rel_tol_, 
-        abs_tol_, job_actor_settings_.max_run_attempts_);
+        netcdf_start_index, job_start_index, gru_batch, dt_init_factor_, 
+        rel_tol_, abs_tol_, job_actor_settings_.max_run_attempts_);
     gru_struc_->addGRU(std::move(gru_obj));
     remaining_hru_to_batch -= current_batch_size;
     job_start_index += current_batch_size;
@@ -344,7 +340,6 @@ void JobActor::spawnGruBatches() {
   }
   self_->println("JobActor: Assembled GRUs into Batches");
 }
-
 
 void JobActor::processTimestep() {
   if (timestep_ > num_steps_) {
@@ -364,8 +359,6 @@ void JobActor::processTimestep() {
     self_->mail(update_hru_v).send(self_);
   }
 }
-
-
 
 void JobActor::handleFinishedGRU(int job_index) {
   gru_struc_->incrementNumGruDone();
@@ -389,8 +382,6 @@ void JobActor::handleFinishedGRU(int job_index) {
         : self_->mail(finalize_v).send(self_);
   }
 }
-
-
 
 void JobActor::finalizeJob() {
   self_->mail(finalize_v).request(file_access_actor_, infinite).await(
@@ -425,13 +416,12 @@ void JobActor::finalizeJob() {
     });
 }
 
-
-
 // ------------------------ERROR HANDLING FUNCTIONS ------------------------
 void JobActor::handleGRUError(int err_code, int job_index, int timestep, 
                               std::string& err_msg) {
   gru_struc_->getGRU(job_index)->setFailed();
   gru_struc_->incrementNumGruFailed();
+  self_->mail(run_failure_v, job_index).send(file_access_actor_);
   if (gru_struc_->isDone()) {
     gru_struc_->hasFailures() && gru_struc_->shouldRetry() ?
         self_->mail(restart_failures_v).send(self_) 

@@ -124,6 +124,27 @@ const std::optional<WriteOutputReturn*> OutputBuffer::writeOutput(
   return partitions_[partition_index]->writeOutput(gru, handle_ncid_.get());
 }
 
+const std::optional<WriteOutputReturn*> OutputBuffer::addFailedGRU(int index) {
+  f_addFailedGru(index);
+  
+  // GRUs start at 1 but the partitions start at 0
+  int target_index = index - 1;
+  
+  // Find The Partition That Contains the GRU
+  int num_gru = num_gru_info_.num_gru_local;
+  int baseSize = num_gru / partitions_.size();
+  int remainder = num_gru % partitions_.size();
+
+  int partition_index;
+  if (target_index < remainder * (baseSize + 1)) {
+    partition_index = target_index / (baseSize + 1);
+  } else {
+    partition_index = remainder + 
+        (target_index - remainder * (baseSize + 1)) / baseSize;
+  }
+  partitions_[partition_index]->decrementNumGRU();
+  return partitions_[partition_index]->writeOutput(handle_ncid_.get());
+}
 
 
 
@@ -155,7 +176,36 @@ const std::optional<WriteOutputReturn*> OutputPartition::writeOutput(
 
     // Reset the partition for the next set of writes
     ready_to_write_.clear();
+
+    f_setFailedGruMissing(start_gru_, end_gru_);
     
+    return std::optional<WriteOutputReturn*>(&write_status_);
+  }
+  return {};
+}
+
+const std::optional<WriteOutputReturn*> OutputPartition::writeOutput(
+    void* handle_ncid) {
+  if (isReadyToWrite()) {
+    // Write the output
+    int err = 0;
+    std::unique_ptr<char[]> message(new char[256]);
+    bool write_params = isWriteParams();
+    writeOutput_fortran(handle_ncid, num_steps_buffer_, start_gru_, end_gru_, 
+                        write_params, err, &message);
+    // recalculate the number of steps to send to grus
+    steps_remaining_ -= num_steps_buffer_;
+    if (steps_remaining_ < num_steps_buffer_) {
+      num_steps_buffer_ = steps_remaining_;
+    }
+
+    write_status_.err = err;
+    write_status_.message = message.get();
+    write_status_.actor_to_update = ready_to_write_;
+    write_status_.num_steps_update = num_steps_buffer_;
+
+    // Reset the partition for the next set of writes
+    ready_to_write_.clear();
     return std::optional<WriteOutputReturn*>(&write_status_);
   }
   return {};

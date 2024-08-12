@@ -38,7 +38,7 @@ set(GRU_INTERFACE
     ${GRU_ACTOR_DIR}/hru_read.f90
     ${GRU_ACTOR_DIR}/hru_modelRun.f90
     ${GRU_ACTOR_DIR}/hru_writeOutput.f90
-    ${GRU_ACTOR_DIR}/gru_interface.f90
+    ${GRU_ACTOR_DIR}/gru_actor.f90
     CACHE INTERNAL "GRU_INTERFACE")
 
 # Actors actual actor modules

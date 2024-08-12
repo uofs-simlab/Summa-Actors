@@ -200,7 +200,7 @@ subroutine writeHRUOutput(indxGRU, indxHRU, timestep, outputStep, hru_data, err,
   ! *** write data
   ! ****************************************************************************
   call writeTime(indxGRU,indxHRU,outputStep,hru_data%finalizeStats%dat, &
-                time_meta,hru_data%timeStruct%var,err,message)
+                 time_meta,hru_data%timeStruct%var,err,message)
 
   ! write the model output to the OutputStructure
   ! Passes the full metadata structure rather than the stats metadata structure because

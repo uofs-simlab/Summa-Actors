@@ -101,9 +101,8 @@ behavior GruActor::async_mode() {
           return;
         }
         std::fill(message.get(), message.get() + 256, '\0'); // Clear message
-        writeGRUOutput_fortran(job_index_, timestep_, 
-                               output_step_, gru_data_.get(), 
-                               err, &message);
+        writeGRUOutput_fortran(job_index_, timestep_, output_step_,
+                               gru_data_.get(), err, &message);
         if (err != 0) {
           handleErr(err, message);
           return;
@@ -173,10 +172,14 @@ behavior GruActor::data_assimilation_mode() {
 
 // Utility Functions
 
-void GruActor::handleErr(int err, 
-    std::unique_ptr<char[]>& message) {
+void GruActor::handleErr(int err, std::unique_ptr<char[]>& message) {
   self_->println("GRU Actor {}-{}: Error running GRU at timestep {}", 
                  job_index_, netcdf_index_, timestep_);
+  // int local_err = 0;
+  // std::unique_ptr<char[]> local_message(new char[256]);
+  // f_fillOutputWithErrs(job_index_, timestep_, output_step_, gru_data_.get(), 
+  //                      local_err, &local_message);
+
   self_->mail(err_atom_v, job_index_, timestep_, err, message.get())
       .send(parent_);
   self_->quit();

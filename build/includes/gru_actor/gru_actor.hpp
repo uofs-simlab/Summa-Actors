@@ -8,7 +8,6 @@
 
 extern "C" {
   void f_getNumHruInGru(int& index_gru, int& num_hru);
-
   void f_initGru(int& index_gru, void* gru_data, int& output_buffer_steps, 
                  int& err, void* message);
   void setupGRU_fortran(int& index_gru, void* gru_data, int& err, 
@@ -24,7 +23,6 @@ extern "C" {
                       int& dt_init_factor, int& err, void* message);
   void writeGRUOutput_fortran(int& index_gru, int& timestep, int& output_step, 
                               void* gru_data, int& err, void* message);
-
 }
 
 struct GruDeleter {

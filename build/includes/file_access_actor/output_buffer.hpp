@@ -13,10 +13,13 @@ extern "C" {
                               void* message);
   void f_deallocateOutputBuffer(void *handle_ncid_);
 
+  void f_addFailedGru(int& gru_index);
+  
+  void f_setFailedGruMissing(int& start_gru, int& end_gru);
+
   void f_writeOutputDA(void* handle_ncid, const int& output_step, int& start_gru, 
                        int& max_gru, bool& writeParamFlag, int& err,
                        void* message);
-
   void writeOutput_fortran(void* handle_ncid, int& num_steps, int& start_gru, 
                            int& max_gru, bool& writeParamFlag, int& err,
                            void* message);
@@ -44,6 +47,10 @@ class OutputPartition {
     std::vector<caf::actor> ready_to_write_;
     WriteOutputReturn write_status_;
 
+    inline const bool isReadyToWrite() {
+      return ready_to_write_.size() == num_gru_ && ready_to_write_.size() > 0;
+    }
+
   public:
     OutputPartition(int start_gru, int num_gru, int num_steps_buffer, 
                     int num_timesteps) : start_gru_(start_gru), 
@@ -58,11 +65,12 @@ class OutputPartition {
 
     inline const int getStartGru() { return start_gru_;};
     inline const int getEndGru() { return end_gru_;};
-
     inline const int getNumStepsBuffer() { return num_steps_buffer_;};
+    inline void decrementNumGRU() { num_gru_--;};
 
     const std::optional<WriteOutputReturn*> writeOutput(
         caf::actor gru, void* handle_ncid);
+    const std::optional<WriteOutputReturn*> writeOutput(void* handle_ncid);
 
     bool isWriteParams();
 };
@@ -130,6 +138,7 @@ class OutputBuffer {
     int defOutput(const std::string& actor_address);
     int setChunkSize();
     int allocateOutputBuffer(int num_timesteps);
+    const std::optional<WriteOutputReturn*> addFailedGRU(int index_gru);
     const std::optional<WriteOutputReturn*> writeOutput(
         int index_gru, caf::actor gru);
     const int writeOutputDA(const int output_step);
