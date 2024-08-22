@@ -64,6 +64,8 @@ struct file_access_state {
   std::vector<int> hru_checkpoints;
   std::vector<int> hru_timesteps;
 
+caf:: actor openwq;
+bool openwq_registered = false;
 };
 
 // called to spawn a file_access_actor

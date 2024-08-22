@@ -3,7 +3,7 @@ extern "C" {
 
   void deallocateGlobalData_fortran(int* err, void* err_msg);
 }
-
+#pragma once
 // This is a class that wraps around the data created in 
 // defineGlobalData()
 class summaGlobalData {

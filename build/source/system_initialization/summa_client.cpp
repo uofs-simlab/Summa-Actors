@@ -49,7 +49,7 @@ behavior summa_client(stateful_actor<summa_client_state>* self,
             File_Access_Actor_Settings file_access_actor_settings,
             Job_Actor_Settings job_actor_settings, 
             HRU_Actor_Settings hru_actor_settings,
-            std::vector<std::tuple<caf::actor, std::string>> backup_servers) {
+            std::vector<std::tuple<caf::actor, std::string>> backup_servers, caf::actor openwq) {
             
             aout(self) << "Successfully Connected to Server Actor \n"; 
             self->state.summa_actor_settings = summa_actor_settings;
@@ -57,6 +57,8 @@ behavior summa_client(stateful_actor<summa_client_state>* self,
             self->state.job_actor_settings = job_actor_settings;
             self->state.hru_actor_settings = hru_actor_settings;
             self->state.backup_servers_list = backup_servers;
+            self->state.openwq_actor= openwq;
+            self->state.openwq = actor_cast<strong_actor_ptr>(openwq);
         },
 
         [=] (connect_atom, const std::string& host, uint16_t port) {
@@ -107,6 +109,7 @@ behavior summa_client(stateful_actor<summa_client_state>* self,
                 self->state.job_actor_settings,
                 self->state.hru_actor_settings,
                 self);
+            self->send(self->state.openwq_actor, start_step_openwq_v, 0, 0, 0);
         },
         
         // Received completed batch information from the summa_actor 
@@ -125,6 +128,9 @@ behavior summa_client(stateful_actor<summa_client_state>* self,
                 self->state.saved_batch = true;
             } else {
                 self->send(self->state.current_server_actor, done_batch_v, self, self->state.current_batch);
+            }
+            if (self->state.openwq != nullptr) {
+            //self->send(self->state.openwq_actor, space_step_openwq_v, 0, 0, 0);
             }
         },
 

@@ -6,6 +6,7 @@
 #include "settings_functions.hpp"
 #include "batch_container.hpp"
 #include "fileManager.hpp"
+#include "openwq_actor.hpp"
 #include "gru_struc.hpp"
 #include <chrono>
 #include <string>
@@ -23,6 +24,8 @@ struct summa_actor_state {
   int num_gru_failed = 0;  // Number of GRUs that have failed
   caf::actor current_job;  // Reference to the current job actor
   caf::actor parent;
+
+  caf::actor openwq_actor;
 
   std::unique_ptr<Batch_Container> batch_container;
   std::shared_ptr<const Batch> current_batch;
@@ -50,8 +53,8 @@ caf::behavior summa_actor(caf::stateful_actor<summa_actor_state>* self,
                           HRU_Actor_Settings hru_actor_settings, 
                           caf::actor parent);
 
-int spawnJob(caf::stateful_actor<summa_actor_state>* self);
-void finalizeSumma(caf::stateful_actor<summa_actor_state>* self);
+int spawnJob(caf::stateful_actor<summa_actor_state>* self, caf::actor openwq);
+void finalizeSumma(caf::stateful_actor<summa_actor_state>* self, caf::actor openwq);
 
 // Gets the number of GRUs from the attribute file
 int getNumGRUInFile(const std::string &settingsPath, 

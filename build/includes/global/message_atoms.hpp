@@ -187,6 +187,11 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     // Reciever:
     // Summary:
     CAF_ADD_ATOM(summa, finalize)
+
+    CAF_ADD_ATOM(summa, start_step_openwq)
+    CAF_ADD_ATOM(summa, space_step_openwq)
+    CAF_ADD_ATOM(summa, space_step_done)
+    CAF_ADD_ATOM(summa, openwq_initialize)
     
     // Struct Types
     CAF_ADD_TYPE_ID(summa, (Distributed_Settings))

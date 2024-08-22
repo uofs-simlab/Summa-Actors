@@ -145,7 +145,7 @@ caf::behavior job_actor(caf::stateful_actor<job_state>* self, Batch batch,
                         File_Access_Actor_Settings file_access_actor_settings, 
                         Job_Actor_Settings job_actor_settings, 
                         HRU_Actor_Settings hru_actor_settings, 
-                        caf::actor parent);
+                        caf::actor parent, caf::actor openwq);
 
 caf::behavior data_assimilation_mode(caf::stateful_actor<job_state>* self);
 caf::behavior async_mode(caf::stateful_actor<job_state>* self); 

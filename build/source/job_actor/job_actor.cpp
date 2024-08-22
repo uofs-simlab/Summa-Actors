@@ -9,7 +9,7 @@ behavior job_actor(stateful_actor<job_state>* self, Batch batch,
                    File_Access_Actor_Settings file_access_actor_settings, 
                    Job_Actor_Settings job_actor_settings, 
                    HRU_Actor_Settings hru_actor_settings, 
-                   caf::actor parent) {
+                   caf::actor parent, caf::actor openwq) {
     
   self->set_down_handler([=](const down_msg& dm) {
       aout(self) << "\n\n ********** DOWN HANDLER ********** \n"
@@ -107,7 +107,8 @@ behavior job_actor(stateful_actor<job_state>* self, Batch batch,
     
     self->state.logger->log("Job Actor Initialized");
     aout(self) << "Job Actor Initialized \n";
-
+    self->send(openwq, openwq_initialize_v);
+    self->send(self->state.file_access_actor, openwq_initialize_v, openwq);
     job_actor_settings.data_assimilation_mode ? 
         self->become(data_assimilation_mode(self)) : 
         self->become(async_mode(self));

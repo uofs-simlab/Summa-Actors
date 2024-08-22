@@ -277,7 +277,7 @@ subroutine initOutputStructure(maxSteps, num_gru, err)
           select case(trim(structInfo(iStruct)%structName))    
             case('time')
               call alloc_outputStruc(time_meta,summa_struct(1)%timeStruct%gru(iGRU)%hru(iHRU), &
-                                      nSteps=maxSteps,err=err,message=message)     ! model forcing data
+                                      nSteps=maxSteps,err=err,message=message, str_name='time')     ! model forcing data
             case('forc')
               ! Structure
               call alloc_outputStruc(forc_meta,summa_struct(1)%forcStruct%gru(iGRU)%hru(iHRU), &
@@ -315,7 +315,7 @@ subroutine initOutputStructure(maxSteps, num_gru, err)
             case('flux')
               ! Structure
               call alloc_outputStruc(flux_meta,summa_struct(1)%fluxStruct%gru(iGRU)%hru(iHRU), &
-                                      nSteps=maxSteps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,message=message);    ! model fluxes
+                                      nSteps=maxSteps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,message=message, str_name='flux');    ! model fluxes
               ! Statistics
               call alloc_outputStruc(statFlux_meta(:)%var_info,summa_struct(1)%fluxStat%gru(iGRU)%hru(iHRU), &
                                       nSteps=maxSteps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,message=message);    ! model fluxes

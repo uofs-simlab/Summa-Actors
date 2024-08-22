@@ -11,6 +11,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int ref_gru, int indx_gru,
     aout(self) << "HRU Actor: Received Exit Message\n";
   });
   
+  
   // Actor References
   self->state.file_access_actor = file_access_actor;
   self->state.parent = parent;
@@ -27,7 +28,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int ref_gru, int indx_gru,
   self->state.dt_init_factor = hru_actor_settings.dt_init_factor;
 
   // Set the restart frequency
-  self->state.restartFrequency = 0; // TODO: obtain this value from command line arg
+  self->state.restartFrequency = 1; // TODO: obtain this value from command line arg
 
 
   return {
@@ -286,6 +287,7 @@ int runHRU(stateful_actor<hru_state>* self) {
                            self->state.timestep, 
                            self->state.output_structure_step_index,
                            self->state.hru_data, y, m, d, h, err, &message);
+
     if (err != 0) {
       aout(self) << "HRU_Actor: Error writeHRUToOutputStructure" 
                  << "\tindx_gru = " << self->state.indx_gru << "\n"
@@ -315,7 +317,7 @@ int runHRU(stateful_actor<hru_state>* self) {
                        &self->state.output_structure_step_index,
                        &self->state.output_structure_step_index, //unused
                        self->state.hru_data, &err);
-                
+     
       self->send(self->state.file_access_actor, write_restart_v,
                  self->state.ref_gru, self->state.timestep,
                  self->state.checkpoint,

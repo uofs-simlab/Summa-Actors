@@ -6,6 +6,7 @@
 #include "batch_container.hpp"
 #include "client.hpp"
 #include "client_container.hpp"
+#include "openwq_actor.hpp"
 #include "settings_functions.hpp"
 #include "message_atoms.hpp"
 #include <string>
@@ -22,6 +23,9 @@ struct summa_server_state {
   strong_actor_ptr current_server;
   actor current_server_actor;
   
+  strong_actor_ptr openwq = nullptr;
+  actor openwq_actor;
+
   // Our hostnme
   std::string hostname;
 
