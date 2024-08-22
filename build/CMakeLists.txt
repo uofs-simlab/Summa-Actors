@@ -32,13 +32,17 @@ FortranCInterface_VERIFY(CXX)
 
 # Find the TBB package
 # Attempt to find TBB
-find_package(TBB QUIET)
-
-if(TBB_FOUND)
-    list(APPEND EXT_TARGETS TBB::tbb)
-    message(STATUS "TBB found and will be used.")
-else()
-    message(WARNING "TBB not found. Proceeding without TBB.")
+option(USE_TBB "Use TBB" OFF)
+if (USE_TBB)
+    add_compile_definitions(ACTORS_ACTIVE TBB_ACTIVE)
+    message("Attempting to enable TBB")
+    find_package(TBB QUIET)
+    if(TBB_FOUND)
+        list(APPEND EXT_TARGETS TBB::tbb)
+        message(STATUS "TBB found and will be used.")
+    else()
+        message(WARNING "TBB not found. Proceeding without TBB.")
+    endif()
 endif()
 
 

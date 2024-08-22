@@ -2,8 +2,11 @@
 #include "message_atoms.hpp"
 #include <iostream>
 #include <memory>
-#include <execution>
 #include <algorithm>
+#ifdef TBB_ACTIVE
+  #include <execution>
+#endif
+
 using chrono_time = std::chrono::time_point<std::chrono::high_resolution_clock>;
 
 GruStruc::GruStruc(int start_gru, int num_gru, int num_retry_attempts) {
@@ -30,10 +33,17 @@ int GruStruc::readDimension() {
   // Index of GRU struc must always start at 1
   std::vector<int> indicies(num_gru_);
   std::iota(indicies.begin(), indicies.end(), 1);
+#ifdef TBB_ACTIVE
   std::for_each(std::execution::par, indicies.begin(), indicies.end(), 
     [=](int i) { 
       f_setHruCount(i, start_gru_); 
   });
+#else
+  std::for_each(indicies.begin(), indicies.end(), 
+    [=](int i) { 
+      f_setHruCount(i, start_gru_); 
+  });
+#endif
   f_setIndexMap();
   f_getNumHru(num_hru_);
 
