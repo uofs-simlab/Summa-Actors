@@ -3,13 +3,43 @@
 #include "json.hpp"
 #include <iostream>
 #include <fstream>
-#include <filesystem>
+// #include <filesystem>
 #include <chrono>
 #include <sstream>
 #include <iomanip>
 
+// Create directories
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <errno.h>
+#include <cstring>
+#include <iostream>
+
 using json = nlohmann::json;
 using namespace caf;
+
+// TODO: This is meant to be a temporary solution for users that don't have
+// TODO: a compiler with std::filesystem support
+bool create_directories(const std::string& path) {
+    struct stat info;
+
+    if (stat(path.c_str(), &info) != 0) {
+        // Directory does not exist
+        if (errno == ENOENT) {
+            if (mkdir(path.c_str(), 0755) != 0) {
+                std::cerr << "Error creating directory: " << strerror(errno) << std::endl;
+                return false;
+            }
+        } else {
+            std::cerr << "Error checking directory: " << strerror(errno) << std::endl;
+            return false;
+        }
+    } else if (!(info.st_mode & S_IFDIR)) {
+        std::cerr << "Path exists but is not a directory" << std::endl;
+        return false;
+    }
+    return true;
+}
 
 behavior SummaActor::make_behavior() {
   self_->println("Starting SUMMA Actor, start_gru {}, num_gru {}", start_gru_, 
@@ -134,7 +164,8 @@ int SummaActor::createLogDirectory() {
         std::to_string(start_gru_ + num_gru_ - 1) + "_" + ss.str();
     if (!settings_.summa_actor_settings_.log_dir_.empty())
         log_folder_ = settings_.summa_actor_settings_.log_dir_ + "/" + log_folder_;
-    return (std::filesystem::create_directories(log_folder_)) ? 0 : -1;
+      
+    return (create_directories(log_folder_)) ? 0 : -1;
   } else {
     log_folder_ = ""; // Empty log to signal no logging
     return 0;

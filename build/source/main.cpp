@@ -7,6 +7,7 @@
 #include "da_client_actor.hpp"
 #include "message_atoms.hpp"
 #include <iostream>
+#include <fstream>
 
 using namespace caf;
 
@@ -75,8 +76,8 @@ int caf_main(actor_system& sys, const config& cfg) {
   }
 
   // Check if the master file was if not check if the config file was specified
-  if (!std::filesystem::exists((std::filesystem::path) cfg.master_file)) {
-    if (!std::filesystem::exists((std::filesystem::path) cfg.config_file)) {
+  if (!std::ifstream(cfg.master_file)) {
+    if (!std::ifstream(cfg.config_file)) {
       self->println("\n\n**** Config (-c) or Master File (-m) Does Not Exist or"
                     "Not Specified!! ****\n\nConfig File: {} \nMaster File: {}"
                     "\n\n{}", cfg.config_file, cfg.master_file, 
