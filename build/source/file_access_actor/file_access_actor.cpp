@@ -88,6 +88,11 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
       return self->state.num_steps;
     },
 
+    [=](openwq_initialize, caf::actor openwq) {
+      self->state.openwq = openwq;
+      self->state.openwq_registered = true;
+    },
+
     // Message from the HRU actor to get the forcing file that is loaded
     [=](access_forcing, int iFile, caf::actor refToRespondTo) {
       if (self->state.forcing_files->allFilesLoaded()) {
@@ -154,7 +159,10 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
          int output_stucture_index, int year, int month, int day, int hour){
       // update hru progress vecs 
       int gru_index = abs(self->state.start_gru - gru); 
-      self->state.hru_timesteps[gru_index] = gru_timestep;
+      if (self->state.openwq_registered) {
+        self->send(self->state.openwq, space_step_openwq_v, gru, gru_checkpoint, output_stucture_index);
+      }
+      /*self->state.hru_timesteps[gru_index] = gru_timestep;
       self->state.hru_checkpoints[gru_index] = gru_checkpoint;
 
       // find slowest time step of all hrus in job, stored in self->state.hru_timesteps
@@ -173,8 +181,8 @@ behavior file_access_actor(stateful_actor<file_access_state>* self,
                      self->state.hru_timesteps.size(), output_stucture_index,
                      year, month, day, hour);
         // update checkpint counter
-        self->state.completed_checkpoints++;
-      }
+        self->state.completed_checkpoints++;*/
+      
     },
 
     // Write message from the job actor TODO: This could be async

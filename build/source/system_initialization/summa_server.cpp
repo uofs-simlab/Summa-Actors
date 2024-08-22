@@ -22,6 +22,7 @@ behavior summa_server(stateful_actor<summa_server_state>* self,
       resolveLostBackupServer(self, dm);
   });
 
+
   self->state.distributed_settings = distributed_settings;
   self->state.summa_actor_settings = summa_actor_settings; 
   self->state.file_access_actor_settings = file_access_actor_settings;
@@ -85,7 +86,8 @@ behavior summa_server(stateful_actor<summa_server_state>* self,
                    self->state.file_access_actor_settings, 
                    self->state.job_actor_settings, 
                    self->state.hru_actor_settings,
-                   self->state.backup_servers_list);
+                   self->state.backup_servers_list, 
+                   self->state.openwq_actor);
             
         std::optional<Batch> batch = self->state.batch_container.getUnsolvedBatch();
         if (batch.has_value()) {

@@ -17,6 +17,9 @@ struct summa_client_state {
   strong_actor_ptr current_server = nullptr;
   actor current_server_actor;
   std::vector<strong_actor_ptr> servers;
+
+  strong_actor_ptr openwq = nullptr;
+  actor openwq_actor;
   
   std::string hostname;
   actor summa_actor_ref;

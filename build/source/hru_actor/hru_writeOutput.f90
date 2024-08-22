@@ -324,11 +324,13 @@ subroutine hru_writeRestart(&
   ! convert the C pointers to Fortran pointers
   call c_f_pointer(handle_hru_data, hru_data)
   err=0; message='summa_manageOutputFiles/'
-  
   ! ****************************************************************************
   ! *** write restart data
   ! ****************************************************************************
-  
+  do iVar = 1, size(hru_data%timeStruct%var(:))
+    summa_struct(1)%timeStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(checkPoint) = hru_data%timeStruct%var(iVar)
+  end do ! iVar
+
   ! write prog vars
   do iVar = 1, size(hru_data%progstruct%var(:))
     select case (prog_meta(iVar)%varType)

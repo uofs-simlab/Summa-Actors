@@ -59,6 +59,8 @@ behavior summa_actor(stateful_actor<summa_actor_state>* self, int start_gru,
       self->state.num_gru = self->state.file_gru - self->state.start_gru + 1;
     }
   }
+  self->state.openwq_actor = self->spawn(openwq_actor, self->state.start_gru, self->state.num_gru);
+
 
   // Create the log directory
   auto now = std::chrono::system_clock::now();
@@ -86,7 +88,7 @@ behavior summa_actor(stateful_actor<summa_actor_state>* self, int start_gru,
   aout(self) << "\n\nStarting SUMMA With " 
              << batch_container->getBatchesRemaining() << " Batches\n\n";
    
-  if (spawnJob(self) != 0) {
+  if (spawnJob(self, self->state.openwq_actor) != 0) {
     aout(self) << "ERROR--Summa_Actor: Unable To Spawn Job\n";
     self->quit();
     exit(EXIT_FAILURE);
@@ -102,14 +104,14 @@ behavior summa_actor(stateful_actor<summa_actor_state>* self, int start_gru,
                                         num_gru_failed);
       
       self->state.num_gru_failed += num_gru_failed;
-      
+      //self->send(self->state.openwq_actor, space_step_openwq_v, 0, 0, 0);
       if (!batch_container->hasUnsolvedBatches()) {
-        finalizeSumma(self);
+        finalizeSumma(self, self->state.openwq_actor);
         return;
       }
 
       // Find another batch to solve
-      if (spawnJob(self) != 0) {
+      if (spawnJob(self, self->state.openwq_actor) != 0) {
         aout(self) << "ERROR--Summa_Actor: Unable To Spawn Job\n";
         self->quit();
         exit(EXIT_FAILURE);
@@ -135,7 +137,7 @@ behavior summa_actor(stateful_actor<summa_actor_state>* self, int start_gru,
 }
 
 
-int spawnJob(stateful_actor<summa_actor_state>* self) {
+int spawnJob(stateful_actor<summa_actor_state>* self, caf::actor openwq) {
   std::optional<Batch> batch = self->state.batch_container->getUnsolvedBatch();
   if (!batch.has_value()) {
     aout(self) << "ERROR--Summa_Actor: No Batches To Solve\n";
@@ -143,14 +145,15 @@ int spawnJob(stateful_actor<summa_actor_state>* self) {
     return -1;
   }
   self->state.current_batch = std::make_shared<Batch>(batch.value());
+  self->send(openwq, start_step_openwq_v, 0, 0, 0);
   self->state.current_job = self->spawn(
       job_actor, batch.value(),
       self->state.file_access_actor_settings, 
-      self->state.job_actor_settings, self->state.hru_actor_settings, self);
+      self->state.job_actor_settings, self->state.hru_actor_settings, self, openwq);
   return 0;
 }
 
-void finalizeSumma(stateful_actor<summa_actor_state>* self) {
+void finalizeSumma(stateful_actor<summa_actor_state>* self, caf::actor openwq) {
   auto& batch_container = self->state.batch_container;
   aout(self) << "All Batches Finished\n"
               << batch_container->getAllBatchInfoString();
@@ -171,7 +174,7 @@ void finalizeSumma(stateful_actor<summa_actor_state>* self) {
              << "Total Write Duration = " << write_dur_sec << "Seconds\n"
              << "Num Failed = " << self->state.num_gru_failed << "\n"
              << "___________________Program Finished__________________\n";
-  
+  self->send(openwq, time_to_exit_v);
   self->send(self->state.parent, done_batch_v, total_dur_sec, 
               read_dur_sec, write_dur_sec);
   self->quit();
