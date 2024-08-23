@@ -18,29 +18,6 @@
 using json = nlohmann::json;
 using namespace caf;
 
-// TODO: This is meant to be a temporary solution for users that don't have
-// TODO: a compiler with std::filesystem support
-bool create_directories(const std::string& path) {
-    struct stat info;
-
-    if (stat(path.c_str(), &info) != 0) {
-        // Directory does not exist
-        if (errno == ENOENT) {
-            if (mkdir(path.c_str(), 0755) != 0) {
-                std::cerr << "Error creating directory: " << strerror(errno) << std::endl;
-                return false;
-            }
-        } else {
-            std::cerr << "Error checking directory: " << strerror(errno) << std::endl;
-            return false;
-        }
-    } else if (!(info.st_mode & S_IFDIR)) {
-        std::cerr << "Path exists but is not a directory" << std::endl;
-        return false;
-    }
-    return true;
-}
-
 behavior SummaActor::make_behavior() {
   self_->println("Starting SUMMA Actor, start_gru {}, num_gru {}", start_gru_, 
                  num_gru_);
@@ -151,6 +128,30 @@ int SummaActor::spawnJob() {
                               settings_.fa_actor_settings_,
                               settings_.hru_actor_settings_, self_);
   return 0;
+}
+
+
+// TODO: This is meant to be a temporary solution for users that don't have
+// TODO: a compiler with std::filesystem support
+bool create_directories(const std::string& path) {
+    struct stat info;
+
+    if (stat(path.c_str(), &info) != 0) {
+        // Directory does not exist
+        if (errno == ENOENT) {
+            if (mkdir(path.c_str(), 0755) != 0) {
+                std::cerr << "Error creating directory: " << strerror(errno) << std::endl;
+                return false;
+            }
+        } else {
+            std::cerr << "Error checking directory: " << strerror(errno) << std::endl;
+            return false;
+        }
+    } else if (!(info.st_mode & S_IFDIR)) {
+        std::cerr << "Path exists but is not a directory" << std::endl;
+        return false;
+    }
+    return true;
 }
 
 int SummaActor::createLogDirectory() {
