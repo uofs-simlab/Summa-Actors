@@ -1,5 +1,28 @@
 #! /bin/bash
 
+#####################################################################
+# NetCDF Installation Script
+#
+# This script installs NetCDF-C and NetCDF-Fortran along with their dependencies (zlib and HDF5).
+# The libraries will be installed in the directory where this script is executed.
+#
+# Usage:
+#   ./install_netcdf.sh
+#
+# If you encounter any issues, please post an issue on the Summa-Actors repository:
+#   https://github.com/uofs-simlab/Summa-Actors/issues
+#
+# After installation, update the CMAKE_PREFIX_PATH environment variable:
+#   export CMAKE_PREFIX_PATH="$CMAKE_PREFIX_PATH:/path/to/netcdf-c"
+#   export CMAKE_PREFIX_PATH="$CMAKE_PREFIX_PATH:/path/to/netcdf-fortran"
+#
+# Then, run cmake as you normally would.
+#####################################################################
+
+
+
+
+
 ROOTDIR=$PWD
 export CC=gcc
 export FC=gfortran
