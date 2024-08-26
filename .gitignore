@@ -20,3 +20,4 @@ utils/dependencies/hdf5*
 utils/dependencies/netcdf*
 utils/dependencies/zlib*
 utils/dependencies/v*
+utils/dependencies/lapack*

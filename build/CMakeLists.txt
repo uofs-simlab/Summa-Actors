@@ -60,8 +60,18 @@ find_package(NetCDF REQUIRED)
 list(APPEND EXT_TARGETS NetCDF::NetCDF)
 
 # LAPACK
-find_package(LAPACK REQUIRED)
-list(APPEND EXT_TARGETS LAPACK::LAPACK)
+option(USE_CUSTOM_LAPACK "Use custom LAPACK" OFF)
+if (USE_CUSTOM_LAPACK)
+    message("Using custom LAPACK installation")
+    # Set the LAPACK library and include directories explicitly
+    set(LAPACK_LIBRARIES $ENV{LAPACK_PATH})
+    message("LAPACK_LIBRARIES: ${LAPACK_LIBRARIES}")
+    list(APPEND EXT_TARGETS ${LAPACK_LIBRARIES})
+else()
+    find_package(LAPACK REQUIRED)
+    list(APPEND EXT_TARGETS ${LAPACK_LIBRARIES})
+endif()
+
 
 # Set compiler flags
 set(FLAGS_OPT $ENV{FLAGS_OPT}) # get optional user-specified flags from environment variables

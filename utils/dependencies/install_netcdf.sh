@@ -19,10 +19,6 @@
 # Then, run cmake as you normally would.
 #####################################################################
 
-
-
-
-
 ROOTDIR=$PWD
 export CC=gcc
 export FC=gfortran
