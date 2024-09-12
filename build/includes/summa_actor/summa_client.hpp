@@ -19,10 +19,11 @@ class SummaClientActor {
     std::string server_hostname_;
     
     char hostname_[HOST_NAME_MAX];
-    caf::actor server_;
+    caf::actor server_ = nullptr;
 
     Batch current_batch_;
     caf::actor current_worker_;
+    bool saved_batch_ = false;
 
 
   public:

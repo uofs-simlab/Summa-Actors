@@ -33,6 +33,21 @@ behavior SummaClientActor::make_behavior() {
 
       self_->spawn(actor_from_state<SummaActor>, current_batch_.getStartHRU(),
           current_batch_.getNumHRU(), settings_, self_);
+    },
+
+    [=](done_batch, double run_time, double read_time, double write_time) {
+      self_->println("SummaClientActor: SummaActor finished batch");
+      self_->println("\tStats: run_time = {}, read_time = {}, write_time = {}",
+                     run_time, read_time, write_time);
+      current_batch_.updateRunTime(run_time);
+      current_batch_.updateReadTime(read_time);
+      current_batch_.updateWriteTime(write_time);
+      if(server_ == nullptr) {
+        self_->println("Saving batch until we find a new lead server\n");
+        saved_batch_ = true;
+      } else {
+        self_->mail(done_batch_v, current_batch_).send(server_);
+      }
     }
   };
 }

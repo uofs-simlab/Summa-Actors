@@ -198,6 +198,11 @@ void SummaActor::finalize() {
                  total_dur_sec, total_dur_min, total_dur_hr, read_dur_sec, 
                  write_dur_sec, num_gru_failed_);
 
+  if (settings_.distributed_settings_.distributed_mode_) {
+    self_->mail(done_batch_v, total_dur_min, read_dur_sec, write_dur_sec)
+        .send(parent_); 
+  }
+
 }
 
 

@@ -49,6 +49,28 @@ behavior SummaServerActor::make_behavior() {
       }
     },
 
+    [=](done_batch, Batch& batch) {
+      auto client = actor_cast<actor>(self_->current_sender());
+      self_->println("SummaServerActor: Received Completed Batch From Client");
+
+      batch_container_->updateBatchStats(batch.getBatchID(), batch.getRunTime(), 
+          batch.getReadTime(), batch.getWriteTime(), 10, 0);
+      self_->println("SummaServerActor: Batch Stats: {}", batch.toString());
+
+      if(!batch_container_->hasUnsolvedBatches()) {
+        self_->println("SummaServerActor: All Batches Completed");
+        self_->quit();
+        return;
+      }
+      std::optional<Batch> new_batch = batch_container_->getUnsolvedBatch();
+      if (new_batch.has_value()) {
+        self_->mail(new_batch.value()).send(client);
+      } else {
+        self_->println("No batches left to assign"
+                      "- Waiting for All Clients to finish");
+      }
+    },
+
   };
 }
 

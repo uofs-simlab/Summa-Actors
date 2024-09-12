@@ -32,7 +32,14 @@ subroutine setTimesDirsAndFiles_fortran(summaFileManagerIn_C,err,message_r) &
 
   ! Initialize the file manager
   call summa_SetTimesDirsAndFiles(summaFileManagerIn, err, message)
-  if (err /= 0) then; call f_c_string_ptr(trim(message), message_r); return; endif
+  print*, "err: ", err
+  print*, "message_r", message_r
+  if (err /= 0) then; 
+    call f_c_string_ptr(trim(message), message_r); 
+    return; 
+  else
+    call f_c_string_ptr("", message_r);
+  endif
 end subroutine setTimesDirsAndFiles_fortran
 
 
