@@ -19,7 +19,7 @@ class BatchContainer {
         
     // Initialize BatchContainer -- call assembleBatches() 
     BatchContainer(int start_hru = 1, int total_hru_count = 0, 
-                    int num_hru_per_batch = 0, std::string log_dir = "");
+                   int num_hru_per_batch = 0, std::string log_dir = "");
 
 
     // returns the size of the batch list

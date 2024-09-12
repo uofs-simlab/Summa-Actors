@@ -11,40 +11,62 @@
 #include <unistd.h>
 #include <limits.h>
 
-namespace caf {
 
-struct summa_client_state {
-  strong_actor_ptr current_server = nullptr;
-  actor current_server_actor;
-  std::vector<strong_actor_ptr> servers;
-  
-  std::string hostname;
-  actor summa_actor_ref;
-  uint16_t port;
-  int batch_id;
-  int client_id; // id held by server
-  bool running = false; // initalized to false - flipped to true when client returns behavior summa_client
+class SummaClientActor {
+  private:
+    caf::event_based_actor* self_;
+    Settings settings_;
+    std::string server_hostname_;
+    
+    char hostname_[HOST_NAME_MAX];
+    caf::actor server_;
+
+    Batch current_batch_;
+    caf::actor current_worker_;
 
 
-  // tuple is the actor ref and hostname of the backup server
-  std::vector<std::tuple<caf::actor, std::string>> backup_servers_list;
-
-  Batch current_batch;
-  bool saved_batch = false;
-  
-  Distributed_Settings distributed_settings;
-
-  Summa_Actor_Settings summa_actor_settings;
-  File_Access_Actor_Settings file_access_actor_settings;
-  Job_Actor_Settings job_actor_settings;
-  HRU_Actor_Settings hru_actor_settings;
+  public:
+    SummaClientActor(caf::event_based_actor* self, std::string server_hostname, 
+        Settings settings, caf::actor server = nullptr) :
+        self_(self), server_hostname_(server_hostname), settings_(settings),
+        server_(server) {};
+    caf::behavior make_behavior();
 };
 
-behavior summa_client(stateful_actor<summa_client_state>* self, Distributed_Settings Distributed_Settings);
+// namespace caf {
 
-void connecting(stateful_actor<summa_client_state>*, const std::string& host, uint16_t port);
+// struct summa_client_state {
+//   strong_actor_ptr current_server = nullptr;
+//   actor current_server_actor;
+//   std::vector<strong_actor_ptr> servers;
+  
+//   std::string hostname;
+//   actor summa_actor_ref;
+//   uint16_t port;
+//   int batch_id;
+//   int client_id; // id held by server
+//   bool running = false; // initalized to false - flipped to true when client returns behavior summa_client
 
-void findLeadServer(stateful_actor<summa_client_state>* self, strong_actor_ptr serv);
+
+//   // tuple is the actor ref and hostname of the backup server
+//   std::vector<std::tuple<caf::actor, std::string>> backup_servers_list;
+
+//   Batch current_batch;
+//   bool saved_batch = false;
+  
+//   Distributed_Settings distributed_settings;
+
+//   Summa_Actor_Settings summa_actor_settings;
+//   File_Access_Actor_Settings file_access_actor_settings;
+//   Job_Actor_Settings job_actor_settings;
+//   HRU_Actor_Settings hru_actor_settings;
+// };
+
+// behavior summa_client(stateful_actor<summa_client_state>* self, Distributed_Settings Distributed_Settings);
+
+// void connecting(stateful_actor<summa_client_state>*, const std::string& host, uint16_t port);
+
+// void findLeadServer(stateful_actor<summa_client_state>* self, strong_actor_ptr serv);
 
 
-}
+// }

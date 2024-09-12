@@ -3,6 +3,8 @@
 #include "caf/io/all.hpp"
 #include "settings_functions.hpp"
 #include "summa_actor.hpp"
+#include "summa_server.hpp"
+#include "summa_client.hpp"
 #include "da_server_actor.hpp"
 #include "da_client_actor.hpp"
 #include "message_atoms.hpp"
@@ -100,6 +102,13 @@ int caf_main(actor_system& sys, const config& cfg) {
         self->spawn(actor_from_state<DAServerActor>, cfg.startGRU, cfg.countGRU, 
                     settings) :
         self->spawn(actor_from_state<DAClientActor>, cfg.host, settings);
+
+  } else if(settings.distributed_settings_.distributed_mode_) {
+    
+    cfg.server_mode ?
+        self->spawn(actor_from_state<SummaServerActor>, settings) :
+        self->spawn(actor_from_state<SummaClientActor>, cfg.host, settings);
+
 
   } else {
     self->spawn(actor_from_state<SummaActor>, cfg.startGRU, cfg.countGRU, 

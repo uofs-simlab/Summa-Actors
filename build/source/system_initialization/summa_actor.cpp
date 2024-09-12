@@ -164,7 +164,8 @@ int SummaActor::createLogDirectory() {
     log_folder_ = "startgru-" + std::to_string(start_gru_) + "_endgru-" + 
         std::to_string(start_gru_ + num_gru_ - 1) + "_" + ss.str();
     if (!settings_.summa_actor_settings_.log_dir_.empty())
-        log_folder_ = settings_.summa_actor_settings_.log_dir_ + "/" + log_folder_;
+        log_folder_ = settings_.summa_actor_settings_.log_dir_ + "/" 
+        + log_folder_;
       
     return (create_directories(log_folder_)) ? 0 : -1;
   } else {
