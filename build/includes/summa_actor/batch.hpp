@@ -30,7 +30,6 @@ class Batch {
     double getWriteTime();
     bool isAssigned();
     bool isSolved();
-    std::string getBatchInfoString();
     // Setters
     inline void setLogDir(std::string log_dir) { log_dir_ = log_dir; }
     void updateRunTime(double run_time);
@@ -38,7 +37,6 @@ class Batch {
     void updateWriteTime(double write_time);
     void updateAssigned(bool boolean);
     void updateSolved(bool boolean);
-    void printBatchInfo();
     void writeBatchToFile(std::string csv_output, std::string hostname);
 
     std::string toString();
@@ -49,14 +47,14 @@ class Batch {
     template <class Inspector>
     friend bool inspect(Inspector& inspector, Batch& batch) {
         return inspector.object(batch).fields(
-                    inspector.field("batch_id", batch.batch_id_), 
-                    inspector.field("start_hru", batch.start_hru_),
-                    inspector.field("num_hru", batch.num_hru_),
-                    inspector.field("run_time", batch.run_time_),
-                    inspector.field("read_time", batch.read_time_),
-                    inspector.field("write_time", batch.write_time_),
-                    inspector.field("assigned_to_actor", batch.assigned_to_actor_),
-                    inspector.field("solved", batch.solved_),
-                    inspector.field("log_dir", batch.log_dir_));
+               inspector.field("batch_id", batch.batch_id_), 
+               inspector.field("start_hru", batch.start_hru_),
+               inspector.field("num_hru", batch.num_hru_),
+               inspector.field("run_time", batch.run_time_),
+               inspector.field("read_time", batch.read_time_),
+               inspector.field("write_time", batch.write_time_),
+               inspector.field("assigned_to_actor", batch.assigned_to_actor_),
+               inspector.field("solved", batch.solved_),
+               inspector.field("log_dir", batch.log_dir_));
     }
 };

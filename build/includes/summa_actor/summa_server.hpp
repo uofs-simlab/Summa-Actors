@@ -9,6 +9,7 @@
 #include "summa_client.hpp"
 #include "settings_functions.hpp"
 #include "message_atoms.hpp"
+#include "json.hpp"
 #include <string>
 #include <optional>
 #include <thread>
@@ -32,12 +33,17 @@ class SummaServerActor {
     // Containers
     std::vector<caf::actor> connected_clients_;
     Client_Container client_container;
+    std::vector<std::unique_ptr<BatchContainer>> simulations_;
     std::unique_ptr<BatchContainer> batch_container_;
     // Actor Reference, Hostname
     std::vector<std::tuple<caf::actor, std::string>> backup_servers_list;
 
     // Settings Structures
     Settings settings_;
+
+    std::unique_ptr<Logger> logger_;
+
+    bool simulation_finished_ = false;
 
     // Timing vars
     using chrono_time = std::chrono::time_point<std::chrono::system_clock>;
@@ -49,6 +55,11 @@ class SummaServerActor {
     SummaServerActor(caf::event_based_actor* self, Settings settings) :
         self_(self), settings_(settings) {};
     caf::behavior make_behavior();
+    
+    int createLogger();
+    int publishServer();
+    int createBatchContainers(std::string simulations_config);
+
   
 };
 

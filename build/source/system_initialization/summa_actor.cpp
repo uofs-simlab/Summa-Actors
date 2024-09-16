@@ -59,8 +59,12 @@ behavior SummaActor::make_behavior() {
     return {};
   }
 
-  batch_container_ = std::make_unique<BatchContainer>(start_gru_, num_gru_, 
-      settings_.summa_actor_settings_.max_gru_per_job_, log_folder_);
+  std::string name = "";
+  std::string file_manager = settings_.job_actor_settings_.file_manager_path_;
+  batch_container_ = std::make_unique<BatchContainer>(name, file_manager,
+      start_gru_, num_gru_, settings_.summa_actor_settings_.max_gru_per_job_,
+      settings_);
+
   self_->println("\n\nStarting SUMMA With {} Batches\n\n", 
                  batch_container_->getBatchesRemaining());
 
@@ -131,28 +135,6 @@ int SummaActor::spawnJob() {
 }
 
 
-// TODO: This is meant to be a temporary solution for users that don't have
-// TODO: a compiler with std::filesystem support
-bool create_directories(const std::string& path) {
-    struct stat info;
-
-    if (stat(path.c_str(), &info) != 0) {
-        // Directory does not exist
-        if (errno == ENOENT) {
-            if (mkdir(path.c_str(), 0755) != 0) {
-                std::cerr << "Error creating directory: " << strerror(errno) << std::endl;
-                return false;
-            }
-        } else {
-            std::cerr << "Error checking directory: " << strerror(errno) << std::endl;
-            return false;
-        }
-    } else if (!(info.st_mode & S_IFDIR)) {
-        std::cerr << "Path exists but is not a directory" << std::endl;
-        return false;
-    }
-    return true;
-}
 
 int SummaActor::createLogDirectory() {
   if (settings_.summa_actor_settings_.enable_logging_) {
@@ -167,7 +149,7 @@ int SummaActor::createLogDirectory() {
         log_folder_ = settings_.summa_actor_settings_.log_dir_ + "/" 
         + log_folder_;
       
-    return (create_directories(log_folder_)) ? 0 : -1;
+    return (createDirectory(log_folder_)) ? 0 : -1;
   } else {
     log_folder_ = ""; // Empty log to signal no logging
     return 0;

@@ -90,6 +90,7 @@ int caf_main(actor_system& sys, const config& cfg) {
 
   settings.readSettings();
   settings.printSettings();
+
   if (cfg.master_file != "")
     settings.job_actor_settings_.file_manager_path_ = cfg.master_file;
   if (cfg.output_file_suffix != "")

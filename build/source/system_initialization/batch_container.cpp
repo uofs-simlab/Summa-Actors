@@ -1,10 +1,12 @@
 #include "batch_container.hpp"
 
-BatchContainer::BatchContainer(int start_hru, int total_hru_count, 
-                               int num_hru_per_batch, std::string log_dir) {
-  start_hru_ = start_hru;
-  total_hru_count_ = total_hru_count;
-  num_hru_per_batch_ = num_hru_per_batch;
+BatchContainer::BatchContainer(std::string name, std::string file_manager, 
+    int start_gru, int num_gru, int num_gru_per_batch, Settings settings) : 
+    name_(name), file_manager_(file_manager), start_gru_(start_gru),
+    num_gru_(num_gru), num_gru_per_batch_(num_gru_per_batch),
+    settings_(settings) {
+  
+  std::string log_dir = "";
   if (!log_dir.empty() && log_dir.back() != '/') {
     log_dir += "/"; // Ensure log_dir_ is a directory
   }
@@ -23,26 +25,45 @@ BatchContainer::BatchContainer(int start_hru, int total_hru_count,
 }
 
 void BatchContainer::assembleBatches(std::string log_dir) {
-  int remaining_hru_to_batch = total_hru_count_;
+  int remaining_gru_to_batch = num_gru_;
   int batch_id = 0;
-  int start_hru_local = start_hru_;
+  int start_gru_local = start_gru_;
 
-  while (remaining_hru_to_batch > 0) {
-    int current_batch_size = std::min(num_hru_per_batch_, 
-                                      remaining_hru_to_batch);
-    batch_list_.push_back(Batch(batch_id, start_hru_local, current_batch_size));
+  while (remaining_gru_to_batch > 0) {
+    int current_batch_size = std::min(num_gru_per_batch_, 
+                                      remaining_gru_to_batch);
+    batch_list_.push_back(Batch(batch_id, start_gru_local, current_batch_size));
     batch_list_[batch_id].setLogDir(log_dir);
 
-    remaining_hru_to_batch -= current_batch_size;
-    start_hru_local += current_batch_size;
-    if (current_batch_size == num_hru_per_batch_)
+    remaining_gru_to_batch -= current_batch_size;
+    start_gru_local += current_batch_size;
+    if (current_batch_size == num_gru_per_batch_)
       batch_id += 1;
   }
 }
 
+std::string BatchContainer::toString() {
+  std::string out_string = "BatchContainer: " + name_ + "\n";
+  out_string += "File Manager: " + file_manager_ + "\n";
+  out_string += "Start GRU: " + std::to_string(start_gru_) + "\n";
+  out_string += "Num GRU: " + std::to_string(num_gru_) + "\n";
+  out_string += "Num GRU Per Batch: "+std::to_string(num_gru_per_batch_)+"\n";
+  out_string += "Batches Remaining: "+std::to_string(batches_remaining_)+"\n";
+  return out_string;
+}
+
+std::string BatchContainer::getBatchesAsString() {
+  std::string out_string = "";
+  for (auto& batch : batch_list_) {
+    out_string += batch.toString();
+  }
+  return out_string;
+}
+
+
+
 void BatchContainer::updateBatchStats(int batch_id, double run_time, 
-                                       double read_time, double write_time,
-                                       int num_success, int num_failed) {
+    double read_time, double write_time, int num_success, int num_failed) {
   batch_list_[batch_id].updateRunTime(run_time);
   batch_list_[batch_id].updateReadTime(read_time);
   batch_list_[batch_id].updateWriteTime(write_time);
@@ -57,19 +78,7 @@ void BatchContainer::updateBatchStats(int batch_id, double run_time,
   logger_->log("End");
 }
 
-void BatchContainer::printBatches() {
-  for (auto& batch : batch_list_) {
-    batch.printBatchInfo();
-  }
-}
 
-std::string BatchContainer::getBatchesAsString() {
-  std::string out_string = "";
-  for (auto& batch : batch_list_) {
-    out_string += batch.getBatchInfoString();
-  }
-  return out_string;
-}
 
 void BatchContainer::updateBatchStatus_LostClient(int batch_id) {
   batch_list_[batch_id].updateAssigned(false);

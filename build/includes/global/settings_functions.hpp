@@ -204,6 +204,10 @@ class Settings {
   private:
     std::string json_file_;
   public:
+    std::string simulations_file_;
+    bool enable_logging_;
+    std::string log_dir_;
+    
     DistributedSettings distributed_settings_;
     SummaActorSettings summa_actor_settings_;
     FileAccessActorSettings fa_actor_settings_;
@@ -218,8 +222,17 @@ class Settings {
 
     template<typename T>
     std::optional<T> getSettings(json settings, std::string key_1, 
-                                 std::string key_2) {
+                                 std::string key_2 = "") {
       try {
+        // Find first key when second key is empty
+        if (key_2.empty()) {
+          if (settings.find(key_1) != settings.end()) {
+            return settings[key_1];
+          } else 
+            return {};
+        }
+
+
         if (settings.find(key_1) != settings.end()) {
           json key_1_settings = settings[key_1];
 
@@ -244,6 +257,7 @@ class Settings {
     template<class Inspector>
     friend bool inspect(Inspector& insp, Settings& settings) {
       return insp.object(settings).fields(
+             insp.field("simulations_file", settings.simulations_file_),
              insp.field("distributed_settings", settings.distributed_settings_),
              insp.field("summa_actor_settings", settings.summa_actor_settings_),
              insp.field("fa_actor_settings", settings.fa_actor_settings_),

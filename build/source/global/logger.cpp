@@ -7,15 +7,19 @@ Logger::Logger(const std::string log_file_name) {
   if (log_file_name.empty()) {
     log_file_ = "";
     enable_logging_ = false;
+    std::cout << "Error: No log file name provided. Logging disabled.\n";
     return;
   }
 
+  enable_logging_ = true;
   log_file_ = log_file_name + ".log";
   std::ofstream file;
   file.open(log_file_, std::ios::out);
   file << "####### " << log_file_ << " Start #######\n\n";
   file.close();
+  std::cout << "Logger created: " << log_file_ << "\n";
 }
+
 Logger::~Logger() {}
 
 void Logger::log(const std::string &message) {

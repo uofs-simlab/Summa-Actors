@@ -17,7 +17,6 @@ set(FILE_ACCESS_INTERFACE
     ${FILE_ACCESS_DIR}/summa_init_struc.f90
     ${FILE_ACCESS_DIR}/forcing_file_info.f90
     ${FILE_ACCESS_DIR}/file_access_actor.f90
-    # ${FILE_ACCESS_DIR}/output_structure.f90
     ${FILE_ACCESS_DIR}/output_buffer.f90
     ${FILE_ACCESS_DIR}/output_buffer_write.f90
     ${FILE_ACCESS_DIR}/fileAccess_writeOutput.f90
@@ -52,6 +51,7 @@ set(ACTORS_GLOBAL
     ${ACTORS_DIR}/global/settings_functions.cpp
     ${ACTORS_DIR}/global/timing_info.cpp
     ${ACTORS_DIR}/global/logger.cpp
+    ${ACTORS_DIR}/global/utility.cpp
     CACHE INTERNAL "ACTORS_GLOBAL")
 set(SYS_INIT
     ${SYS_INIT_DIR}/batch.cpp
@@ -76,7 +76,6 @@ set(JOB_ACTOR
     ${JOB_ACTOR_DIR}/job_actor.cpp
     ${JOB_ACTOR_DIR}/da_server_actor.cpp
     ${JOB_ACTOR_DIR}/da_client_actor.cpp
-    # ${JOB_ACTOR_DIR}/node_actor.cpp
     CACHE INTERNAL "JOB_ACTOR")
 set(GRU_ACTOR
     ${GRU_ACTOR_DIR}/gru_actor.cpp

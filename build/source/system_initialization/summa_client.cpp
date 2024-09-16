@@ -48,6 +48,11 @@ behavior SummaClientActor::make_behavior() {
       } else {
         self_->mail(done_batch_v, current_batch_).send(server_);
       }
+    },
+
+    [=](time_to_exit) {
+      self_->println("Client Exiting");
+      self_->quit();
     }
   };
 }

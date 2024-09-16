@@ -12,6 +12,7 @@
 #include "gru_struc.hpp"
 #include "message_atoms.hpp"
 #include "summa_global_data.hpp"
+#include "utility.hpp"
 
 
 class SummaActor {

@@ -1,24 +1,16 @@
 #include "summa_server.hpp"
 
-
 using namespace caf;
 
 behavior SummaServerActor::make_behavior() {
-  auto res = self_->system().middleman().publish(
-      self_, settings_.distributed_settings_.port_);
-  if (!res) {
-    self_->println("SummaServerActor: Failed to publish actor on port {}",
-                   settings_.distributed_settings_.port_);
-    return {};
-  }
-  self_->println("SummaServerActor Started on port {}", 
-                 settings_.distributed_settings_.port_);
+  auto err = createLogger();
+  if (err == FAILURE) return {};
 
-  batch_container_ = std::make_unique<BatchContainer>(
-      1, settings_.distributed_settings_.total_hru_count_,
-      settings_.distributed_settings_.num_hru_per_batch_);
-  self_->println("SummaServerActor: Starting with {} Batches", 
-                 batch_container_->getBatchesRemaining());
+  err = publishServer();
+  if (err == FAILURE) return {};
+
+  err = createBatchContainers(settings_.simulations_file_);
+  if (err == FAILURE) return {};
 
   // Spawn local node actor
   auto local_client = self_->spawn(actor_from_state<SummaClientActor>, "", 
@@ -30,12 +22,14 @@ behavior SummaServerActor::make_behavior() {
       self_->println("Actor trying to connect with hostname {}", hostname);
       
       self_->monitor(client, [this, client](const error& err) {
-        self_->println("Lost Connection With A Connected Actor");
+        if (!simulation_finished_) {
+          self_->println("Lost Connection With A Connected Actor");
 
-        connected_clients_.erase(std::remove(connected_clients_.begin(), 
-            connected_clients_.end(), client), connected_clients_.end());
-        self_->println("SummaServerActor: {} Clients Remaining", 
-                       connected_clients_.size());
+          connected_clients_.erase(std::remove(connected_clients_.begin(), 
+              connected_clients_.end(), client), connected_clients_.end());
+          self_->println("SummaServerActor: {} Clients Remaining", 
+                         connected_clients_.size());
+        }
       });
 
       connected_clients_.push_back(client);
@@ -59,6 +53,10 @@ behavior SummaServerActor::make_behavior() {
 
       if(!batch_container_->hasUnsolvedBatches()) {
         self_->println("SummaServerActor: All Batches Completed");
+        simulation_finished_ = true;
+        for (auto& client : connected_clients_) {
+          self_->mail(time_to_exit_v).send(client);
+        }
         self_->quit();
         return;
       }
@@ -70,8 +68,95 @@ behavior SummaServerActor::make_behavior() {
                       "- Waiting for All Clients to finish");
       }
     },
-
   };
+}
+
+int SummaServerActor::createLogger() {
+  if (settings_.enable_logging_) {
+    self_->println("SummaServerActor: Logging Enabled");
+
+    bool err = createDirectory(settings_.log_dir_);
+    if (!err) {
+      self_->println("SummaServerActor: Error Creating Log Directory");
+      return FAILURE;
+    }
+    std::string log_file = settings_.log_dir_ + "summa_server";
+    logger_ = std::make_unique<Logger>(log_file);
+    logger_->log("SummaServerActor: Logger Created");
+
+  } else {
+    self_->println("SummaServerActor: Logging Disabled");
+  }
+  return SUCCESS;
+}
+
+int SummaServerActor::publishServer() {
+  // Publish the server actor to the network
+  auto res = self_->system().middleman().publish(
+      self_, settings_.distributed_settings_.port_);
+  if (!res) {
+    self_->println("SummaServerActor: Failed to publish actor on port {}",
+                   settings_.distributed_settings_.port_);
+    return FAILURE;
+  }
+  self_->println("SummaServerActor Started on port {}", 
+                 settings_.distributed_settings_.port_);
+  return SUCCESS;
+}
+
+int SummaServerActor::createBatchContainers(std::string simulations_config) {
+  using json = nlohmann::json;
+  self_->println("SummaServerActor: Creating Batch Containers From {}",
+      simulations_config);
+
+  std::string name, file_manager;
+  int start_gru, num_gru, batch_size;
+
+  // Open Json File and Create Json Object
+  std::ifstream sim_file(simulations_config);
+  json json_obj;
+  if (!sim_file.is_open()) {
+    self_->println("SummaServerActor: Error opening simulations file");
+    return FAILURE;
+  }
+  sim_file >> json_obj;
+  sim_file.close();
+
+  // Parse Json File
+  try {
+    // Check if the Simulations_Configurations key exists
+    if (json_obj.find("Simulations_Configurations") == json_obj.end()) {
+      self_->println("SummaServerActor: Error reading simulations file");
+      return FAILURE;
+    }
+
+    json simulations = json_obj["Simulations_Configurations"];
+    for (auto& simulation : simulations) {
+      name = simulation["name"];
+      file_manager = simulation["file_manager"];
+      start_gru = simulation["start_gru"];
+      num_gru = simulation["num_gru"];
+      batch_size = simulation["batch_size"];
+
+      simulations_.push_back(std::make_unique<BatchContainer>(name, 
+          file_manager, start_gru, num_gru, batch_size, settings_));
+      self_->println(simulations_.back()->toString());
+    } 
+
+  } catch (json::exception& e) {
+    self_->println("SummaServerActor: Error reading simulations file: {}", 
+        e.what());
+    return FAILURE;
+  }
+  
+  logger_->log("SummaServerActor: Batch Containers Created");
+  logger_->log("\tTotal Simulations: " + std::to_string(simulations_.size()));
+  for (auto& simulation : simulations_) {
+    logger_->log(simulation->toString());
+    logger_->log(simulation->getBatchesAsString());
+  }
+  
+  exit(SUCCESS);
 }
 
 // behavior summa_server(stateful_actor<summa_server_state>* self,

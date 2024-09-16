@@ -12,6 +12,13 @@ int Settings::readSettings() {
   }
   settings_file.close();
 
+  simulations_file_ = getSettings<std::string>(
+      json_settings, "Simulations_File").value_or("");
+  enable_logging_ = getSettings<bool>(
+      json_settings, "Enable_Logging").value_or(false);
+  log_dir_ = getSettings<std::string>(
+      json_settings, "Log_Directory").value_or("");
+
   distributed_settings_ = DistributedSettings(
     getSettings<bool>(json_settings, "Distributed_Settings", "distributed_mode")
         .value_or(false),
