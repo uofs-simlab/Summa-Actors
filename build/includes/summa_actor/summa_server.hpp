@@ -15,6 +15,7 @@
 #include <thread>
 #include <chrono>
 #include <iostream>
+#include <unordered_set>
 
 
 class SummaServerActor {
@@ -31,10 +32,23 @@ class SummaServerActor {
     std::string csv_output_name = "/batch_results.csv";
 
     // Containers
-    std::vector<caf::actor> connected_clients_;
-    Client_Container client_container;
+    struct ClientPtrHash {
+      std::size_t operator()(const std::unique_ptr<Client>& ptr) const {
+        return std::hash<caf::actor>{}(ptr->getActor());
+      }
+    };
+    struct ClientPtrEqual {
+      // Custom equality function for std::unique_ptr<Client>
+      bool operator()(const std::unique_ptr<Client>& lhs, 
+                      const std::unique_ptr<Client>& rhs) const {
+        return lhs->getActor() == rhs->getActor();
+      }
+    };
+    std::unordered_set<std::unique_ptr<Client>, ClientPtrHash, ClientPtrEqual> 
+        connected_clients_;
+        
     std::vector<std::unique_ptr<BatchContainer>> simulations_;
-    std::unique_ptr<BatchContainer> batch_container_;
+    
     // Actor Reference, Hostname
     std::vector<std::tuple<caf::actor, std::string>> backup_servers_list;
 

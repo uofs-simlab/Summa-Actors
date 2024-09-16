@@ -8,7 +8,6 @@
 class BatchContainer {
   private:
     // Inital Configuration 
-    int id_;
     std::string name_;
     std::string file_manager_;
     int start_gru_;  
@@ -35,15 +34,22 @@ class BatchContainer {
     BatchContainer(std::string name = "", std::string file_manager = "", 
         int start_gru = 0, int num_gru = 0, int num_gru_per_batch = 0, 
         Settings settings = Settings());
+    // ####################################################################
+    //                              Getters
+    // ####################################################################
+    inline const std::string getName() { return name_; }
+    inline const int getBatchesRemaining() {return batches_remaining_;}
+    inline const int getTotalBatches() { return batch_list_.size();}
+
+
+    std::optional<Batch> getUnsolvedBatch();
+
 
     std::string toString();
     void printBatches();
     std::string getBatchesAsString();
     
 
-    inline int getBatchesRemaining() {return batches_remaining_;}
-    inline int getTotalBatches() { return batch_list_.size();}
-    std::optional<Batch> getUnsolvedBatch();
 
 
     void updateBatchStats(int batch_id, double run_time, double read_time, 
@@ -101,7 +107,6 @@ class BatchContainer {
     friend bool inspect(Inspector& inspector, BatchContainer& bc) {
       return inspector.object(bc).fields(
           // Inital Configuration 
-          inspector.field("id", bc.id_),
           inspector.field("name", bc.name_),
           inspector.field("file_manager", bc.file_manager_),
           inspector.field("start_gru", bc.start_gru_),

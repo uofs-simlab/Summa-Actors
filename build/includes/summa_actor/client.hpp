@@ -4,42 +4,49 @@
 #include "batch.hpp"
 
 class Client {
-    private:
-        caf::actor client_actor;
-        std::string hostname;
+  private:
+    // Info
+    std::string hostname_;
+    caf::actor client_actor_;
+    
+    // State
+    std::optional<Batch> current_batch_;
+    
+    // Stats
+    int batches_solved_;
 
-        int id;
-        int batches_solved;
-        std::optional<Batch> current_batch;
+  public:
+    Client(caf::actor client_actor = nullptr, std::string hostname = "");
+    // ####################################################################
+    //                              Getters
+    // ####################################################################
+    inline caf::actor getActor() { return client_actor_; }
+    inline std::string getHostname() { return hostname_; }
+    inline std::optional<Batch> getBatch() { return current_batch_; }
+    
+    // ####################################################################
+    //                              Setters
+    // ####################################################################
+    void setBatch(std::optional<Batch> batch) { current_batch_ = batch; }
+    
+    // ####################################################################
+    //                              Methods
+    // ####################################################################
+    std::string toString();
 
-
-    public:
-        Client(int id = -1, caf::actor client_actor = nullptr, std::string hostname = "");
-        // ####################################################################
-        //                              Getters
-        // ####################################################################
-        caf::actor getActor();
-        int getID();
-        std::string getHostname();
-        std::optional<Batch> getBatch();
-        // ####################################################################
-        //                              Setters
-        // ####################################################################
-        void setBatch(std::optional<Batch> batch);
-        // ####################################################################
-        //                              Methods
-        // ####################################################################
-        std::string toString();
-
-        // Serialization so CAF can send an object of this class to another actor
-        template <class Inspector>
-        friend bool inspect(Inspector& inspector, Client& client) {
-            return inspector.object(client).fields(
-                inspector.field("client_actor",client.client_actor),
-                inspector.field("hostname",client.hostname),
-                inspector.field("id",client.id),
-                inspector.field("batches_solved",client.batches_solved),
-                inspector.field("current_batch",client.current_batch));
-            }
+    // ####################################################################
+    //                           Serialization
+    // ####################################################################
+    template <class Inspector>
+    friend bool inspect(Inspector& inspector, Client& client) {
+        return inspector.object(client).fields(
+               // Info
+               inspector.field("hostname",client.hostname_),
+               inspector.field("client_actor",client.client_actor_),
+               // State
+               inspector.field("current_batch",client.current_batch_),
+               // Stats
+               inspector.field("batches_solved",client.batches_solved_));
+        }
 
 };

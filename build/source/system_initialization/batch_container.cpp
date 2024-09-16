@@ -32,7 +32,8 @@ void BatchContainer::assembleBatches(std::string log_dir) {
   while (remaining_gru_to_batch > 0) {
     int current_batch_size = std::min(num_gru_per_batch_, 
                                       remaining_gru_to_batch);
-    batch_list_.push_back(Batch(batch_id, start_gru_local, current_batch_size));
+    batch_list_.push_back(Batch(name_, batch_id, file_manager_, start_gru_local, 
+        current_batch_size));
     batch_list_[batch_id].setLogDir(log_dir);
 
     remaining_gru_to_batch -= current_batch_size;
@@ -44,11 +45,11 @@ void BatchContainer::assembleBatches(std::string log_dir) {
 
 std::string BatchContainer::toString() {
   std::string out_string = "BatchContainer: " + name_ + "\n";
-  out_string += "File Manager: " + file_manager_ + "\n";
-  out_string += "Start GRU: " + std::to_string(start_gru_) + "\n";
-  out_string += "Num GRU: " + std::to_string(num_gru_) + "\n";
-  out_string += "Num GRU Per Batch: "+std::to_string(num_gru_per_batch_)+"\n";
-  out_string += "Batches Remaining: "+std::to_string(batches_remaining_)+"\n";
+    out_string += "File Manager: " + file_manager_ + "\n";
+    out_string += "Start GRU: " + std::to_string(start_gru_) + "\n";
+    out_string += "Num GRU: " + std::to_string(num_gru_) + "\n";
+    out_string += "Num GRU Per Batch: "+std::to_string(num_gru_per_batch_)+"\n";
+    out_string += "Batches Remaining: "+std::to_string(batches_remaining_)+"\n";
   return out_string;
 }
 

@@ -30,7 +30,7 @@ behavior SummaClientActor::make_behavior() {
     [=](Batch& batch) {
       current_batch_ = batch;
       self_->println("\nReceived batch to compute\n");
-
+      settings_.job_actor_settings_.file_manager_path_ = batch.getFileManager();
       self_->spawn(actor_from_state<SummaActor>, current_batch_.getStartHRU(),
           current_batch_.getNumHRU(), settings_, self_);
     },
