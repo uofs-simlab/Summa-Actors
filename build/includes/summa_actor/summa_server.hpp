@@ -46,6 +46,7 @@ class SummaServerActor {
     };
     std::unordered_set<std::unique_ptr<Client>, ClientPtrHash, ClientPtrEqual> 
         connected_clients_;
+    int active_clients_ = 0;
         
     std::vector<std::unique_ptr<BatchContainer>> simulations_;
     
@@ -61,8 +62,8 @@ class SummaServerActor {
 
     // Timing vars
     using chrono_time = std::chrono::time_point<std::chrono::system_clock>;
-    chrono_time start_time;
-    chrono_time end_time;
+    chrono_time start_;
+    chrono_time end_;
     bool started_simulation = false;
   
   public:
@@ -73,6 +74,7 @@ class SummaServerActor {
     int createLogger();
     int publishServer();
     int createBatchContainers(std::string simulations_config);
+    int assignBatch(caf::actor client_actor);
 
   
 };

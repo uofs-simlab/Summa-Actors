@@ -1,8 +1,11 @@
 #include "summa_server.hpp"
 
+#define NOBATCH 2
+
 using namespace caf;
 
 behavior SummaServerActor::make_behavior() {
+  start_ = std::chrono::system_clock::now();
   auto err = createLogger();
   if (err == FAILURE) return {};
 
@@ -61,32 +64,41 @@ behavior SummaServerActor::make_behavior() {
         }
       });
 
-      // Assign a batch to the client
-      for (auto& sim : simulations_) {
-        std::optional<Batch> batch = sim->getUnsolvedBatch();
-        if (batch.has_value()) {
-          auto it = std::find_if(connected_clients_.begin(), 
-              connected_clients_.end(), 
-              [&client_actor](const std::unique_ptr<Client>& client) {
-                return client->getActor() == client_actor;
-          });
-          if (it != connected_clients_.end()) {
-            it->get()->setBatch(batch.value());
-            logger_->log("SummaServerActor: Assigning Batch to Client");
-            logger_->log("\t" + batch.value().toString());
-          } else {
-            logger_->log("SummaServerActor: Error Assigning Batch to Client");
-            return;
-          }
-          self_->mail(batch.value()).send(client_actor);
+      auto res = assignBatch(client_actor);
+      switch (res) {
+        case SUCCESS:
+          active_clients_++;
           break;
-        }
+        case NOBATCH:
+          self_->println("SummaServerActor: No Batches Left to Assign");
+          if (active_clients_ == 0) {
+            simulation_finished_ = true;
+            self_->println("SummaServerActor: Simulation Finished");
+            logger_->log("SummaServerActor: Simulation Finished");
+            end_ = std::chrono::system_clock::now();
+            auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(
+                end_ - start_);
+            self_->println("SummaServerActor: Simulation Time: {} seconds", 
+                           elapsed.count());
+            logger_->log("SummaServerActor: Simulation Time: " +
+                          std::to_string(elapsed.count()) + " seconds");
+            for (auto& c : connected_clients_) {
+              self_->mail(time_to_exit_v).send(c->getActor());
+            }
+          }
+          break;
+        case FAILURE:
+          self_->println("SummaServerActor: Error Assigning Batch to Client");
+          break;
       }
+
     },
 
     [=](done_batch, Batch& batch) {
+      active_clients_--;
       auto client_actor = actor_cast<actor>(self_->current_sender());
       logger_->log("SummaServerActor: Received Completed Batch From Client");
+      logger_->log("\t" + std::to_string(active_clients_) + " Active Clients");
 
       for (auto& sim : simulations_) {
         if (batch.getName() == sim->getName()) {
@@ -98,30 +110,33 @@ behavior SummaServerActor::make_behavior() {
       }
 
       // Find the client a new batch
-      std::optional<Batch> new_batch;
-      for (auto& sim : simulations_) {
-        new_batch = sim->getUnsolvedBatch();
-        if (new_batch.has_value()) {
-          auto it = std::find_if(connected_clients_.begin(), 
-              connected_clients_.end(), 
-              [&client_actor](const std::unique_ptr<Client>& client) {
-                return client->getActor() == client_actor;
-          });
-          if (it != connected_clients_.end()) {
-            it->get()->setBatch(new_batch.value());
-            logger_->log("SummaServerActor: Assigning Batch to Client");
-            logger_->log("\t" + new_batch.value().toString());
-          } else {
-            logger_->log("SummaServerActor: Error Assigning Batch to Client");
-            return;
-          }
-          self_->mail(new_batch.value()).send(client_actor);
+      auto res = assignBatch(client_actor);
+      switch (res) {
+        case SUCCESS:
+          active_clients_++;
           break;
-        }
-      }
-
-      if (!new_batch.has_value()) {
-        logger_->log("SummaServerActor: No Batches Left to Assign");
+        case NOBATCH:
+          self_->println("SummaServerActor: No Batches Left to Assign");
+          if (active_clients_ == 0) {
+            simulation_finished_ = true;
+            self_->println("SummaServerActor: Simulation Finished");
+            logger_->log("SummaServerActor: Simulation Finished");
+            end_ = std::chrono::system_clock::now();
+            auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(
+                end_ - start_);
+            self_->println("SummaServerActor: Simulation Time: {} seconds", 
+                           elapsed.count());
+            logger_->log("SummaServerActor: Simulation Time: " +
+                          std::to_string(elapsed.count()) + " seconds");
+            for (auto& c : connected_clients_) {
+              self_->mail(time_to_exit_v).send(c->getActor());
+            }
+            exit(EXIT_SUCCESS);
+          }
+          break;
+        case FAILURE:
+          self_->println("SummaServerActor: Error Assigning Batch to Client");
+          break;
       }
 
     },
@@ -211,5 +226,30 @@ int SummaServerActor::createBatchContainers(std::string simulations_config) {
   for (auto& simulation : simulations_) {
     logger_->log(simulation->toString());
     logger_->log(simulation->getBatchesAsString());
-  }  
+  } 
+  return SUCCESS; 
+}
+
+int SummaServerActor::assignBatch(caf::actor client_actor) {
+  for (auto& sim : simulations_) {
+    std::optional<Batch> batch = sim->getUnsolvedBatch();
+    if (batch.has_value()) {
+      auto it = std::find_if(connected_clients_.begin(), 
+          connected_clients_.end(), 
+          [&client_actor](const std::unique_ptr<Client>& client) {
+            return client->getActor() == client_actor;
+      });
+      if (it != connected_clients_.end()) {
+        it->get()->setBatch(batch.value());
+        logger_->log("SummaServerActor: Assigning Batch to Client");
+        logger_->log("\t" + batch.value().toString());
+      } else {
+        logger_->log("SummaServerActor: Error Assigning Batch to Client");
+        return FAILURE;
+      }
+      self_->mail(batch.value()).send(client_actor);
+      return SUCCESS;
+    }
+  }
+  return NOBATCH;
 }

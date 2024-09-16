@@ -57,7 +57,9 @@ class Batch {
     template <class Inspector>
     friend bool inspect(Inspector& inspector, Batch& batch) {
         return inspector.object(batch).fields(
+               inspector.field("name", batch.name_),
                inspector.field("batch_id", batch.batch_id_), 
+               inspector.field("file_manager", batch.file_manager_),
                inspector.field("start_hru", batch.start_hru_),
                inspector.field("num_hru", batch.num_hru_),
                inspector.field("run_time", batch.run_time_),
