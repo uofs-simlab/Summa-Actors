@@ -38,8 +38,8 @@ class BatchContainer {
     //                              Getters
     // ####################################################################
     inline const std::string getName() { return name_; }
-    inline const int getBatchesRemaining() {return batches_remaining_;}
-    inline const int getTotalBatches() { return batch_list_.size();}
+    inline const int getBatchesRemaining() {return batches_remaining_; }
+    inline const int getTotalBatches() { return batch_list_.size(); }
 
 
     std::optional<Batch> getUnsolvedBatch();

@@ -113,3 +113,36 @@ void SuccessLogger::nextAttempt() {
   file.close();
 }
 
+/*******************************************************************************
+ * BatchLogger
+*******************************************************************************/
+
+BatchLogger::BatchLogger(const std::string file_name) {
+  if (file_name.empty()) {
+    log_file_ = "";
+    return;
+  }
+
+  log_file_ = file_name;
+
+  std::ofstream file;
+  file.open(log_file_, std::ios::out);
+  file << "s/r,name,batch_id,start_gru,num_gru,status\n";
+  file.close();
+}
+
+void BatchLogger::logBatch(const std::string &s_or_r, const Batch &batch, 
+                           const std::string &status) {
+  if (log_file_.empty()) return;
+
+  std::ofstream file;
+  file.open(log_file_, std::ios::out | std::ios::app);
+  file << s_or_r << "," 
+       << batch.getName() << "," 
+       << batch.getBatchID() << "," 
+       << batch.getStartHRU() << "," 
+       << batch.getNumHRU() << "," 
+       << status << "\n";
+  file.close();
+}
+  

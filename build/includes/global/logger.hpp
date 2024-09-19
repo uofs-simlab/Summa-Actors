@@ -2,6 +2,7 @@
 #include <string>
 #include <fstream>
 #include <iostream>
+#include "batch.hpp"
 
 class Logger {
   private:
@@ -46,4 +47,16 @@ class SuccessLogger {
     ~SuccessLogger() {};
     void logSuccess(int ref_gru, int indx_gru, double rel_tol, double abs_tol);
     void nextAttempt();
+};
+
+
+class BatchLogger {
+  private:
+    std::string log_file_;
+
+  public:
+    BatchLogger(const std::string file_name = "");
+    ~BatchLogger() {};
+    void logBatch(const std::string &s_or_r, const Batch &batch, 
+        const std::string &status);
 };
