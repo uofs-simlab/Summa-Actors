@@ -49,7 +49,7 @@ class Batch {
     void updateSolved(bool boolean) { solved_ = boolean; }
     void writeBatchToFile(std::string csv_output, std::string hostname);
 
-    std::string toString();
+    std::string toString() const;
 
     void assignToActor(std::string hostname, caf::actor assigned_actor);
 

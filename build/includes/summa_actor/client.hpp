@@ -20,7 +20,7 @@ class Client {
     // ####################################################################
     //                              Getters
     // ####################################################################
-    inline caf::actor getActor() { return client_actor_; }
+    inline caf::actor getActor() const { return client_actor_; }
     inline std::string getHostname() { return hostname_; }
     inline std::optional<Batch> getBatch() { return current_batch_; }
     
@@ -32,7 +32,7 @@ class Client {
     // ####################################################################
     //                              Methods
     // ####################################################################
-    std::string toString();
+    std::string toString() const;
 
     // ####################################################################
     //                           Serialization
@@ -48,5 +48,17 @@ class Client {
                // Stats
                inspector.field("batches_solved",client.batches_solved_));
         }
+};
 
+struct ClientPtrHash {
+  std::size_t operator()(const Client& client) const {
+    return std::hash<caf::actor>{}(client.getActor());
+  }
+};
+struct ClientPtrEqual {
+  // Custom equality function for std::unique_ptr<Client>
+  bool operator()(const Client& lhs, 
+                  const Client& rhs) const {
+    return lhs.getActor() == rhs.getActor();
+  }
 };

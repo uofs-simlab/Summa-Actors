@@ -27,20 +27,90 @@ class BatchContainer {
     double write_time_;
     
     // Misc
-    std::unique_ptr<Logger> logger_;
+    Logger logger_;
     Settings settings_;
 
   public:
     BatchContainer(std::string name = "", std::string file_manager = "", 
         int start_gru = 0, int num_gru = 0, int num_gru_per_batch = 0, 
         Settings settings = Settings());
+
+    // Move constructor
+    BatchContainer(BatchContainer&& other) noexcept :
+    name_(std::move(other.name_)),
+    file_manager_(std::move(other.file_manager_)),
+    start_gru_(other.start_gru_),
+    num_gru_(other.num_gru_),
+    num_gru_per_batch_(other.num_gru_per_batch_),
+    settings_(std::move(other.settings_)),
+    logger_(std::move(other.logger_)),
+    batch_list_(std::move(other.batch_list_)),
+    batches_remaining_(other.batches_remaining_) {
+    // Reset the moved-from object
+    other.start_gru_ = 0;
+    other.num_gru_ = 0;
+    other.num_gru_per_batch_ = 0;
+    other.batches_remaining_ = 0;
+}
+
+// Move assignment operator
+BatchContainer& operator=(BatchContainer&& other) noexcept {
+    if (this != &other) {
+        // Transfer resources
+        name_ = std::move(other.name_);
+        file_manager_ = std::move(other.file_manager_);
+        start_gru_ = other.start_gru_;
+        num_gru_ = other.num_gru_;
+        num_gru_per_batch_ = other.num_gru_per_batch_;
+        settings_ = std::move(other.settings_);
+        logger_ = std::move(other.logger_);
+        batch_list_ = std::move(other.batch_list_);
+        batches_remaining_ = other.batches_remaining_;
+
+        // Reset the moved-from object
+        other.start_gru_ = 0;
+        other.num_gru_ = 0;
+        other.num_gru_per_batch_ = 0;
+        other.batches_remaining_ = 0;
+    }
+    return *this;
+}
+
+// Implementation of the copy constructor
+BatchContainer(const BatchContainer& other) :
+    name_(other.name_),
+    file_manager_(other.file_manager_),
+    start_gru_(other.start_gru_),
+    num_gru_(other.num_gru_),
+    num_gru_per_batch_(other.num_gru_per_batch_),
+    settings_(other.settings_),
+    logger_(other.logger_),
+    batch_list_(other.batch_list_),
+    batches_remaining_(other.batches_remaining_) {}
+
+// Implementation of the copy assignment operator
+BatchContainer& operator=(const BatchContainer& other) {
+    if (this != &other) {
+        name_ = other.name_;
+        file_manager_ = other.file_manager_;
+        start_gru_ = other.start_gru_;
+        num_gru_ = other.num_gru_;
+        num_gru_per_batch_ = other.num_gru_per_batch_;
+        settings_ = other.settings_;
+        logger_ = other.logger_;
+        batch_list_ = other.batch_list_;
+        batches_remaining_ = other.batches_remaining_;
+    }
+    return *this;
+}
+
+
     // ####################################################################
     //                              Getters
     // ####################################################################
     inline const std::string getName() { return name_; }
     inline const int getBatchesRemaining() {return batches_remaining_; }
     inline const int getTotalBatches() { return batch_list_.size(); }
-
 
     std::optional<Batch> getUnsolvedBatch();
 
@@ -92,9 +162,6 @@ class BatchContainer {
      * Create the csv file for the completed batches.
      */
     void inititalizeCSVOutput(std::string csv_output_name);
-
-
-
 
     /**
      * @brief Find the batch with the batch_id parameter

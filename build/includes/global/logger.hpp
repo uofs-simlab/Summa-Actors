@@ -9,7 +9,7 @@ class Logger {
     std::string log_file_;
     bool enable_logging_;
   public:
-    Logger(const std::string log_file_name = "");
+    Logger(const std::string log_file_name = "", bool create_file = true);
     ~Logger();
     void log(const std::string &message);
 
@@ -55,7 +55,7 @@ class BatchLogger {
     std::string log_file_;
 
   public:
-    BatchLogger(const std::string file_name = "");
+    BatchLogger(const std::string file_name = "", bool create_file = true);
     ~BatchLogger() {};
     void logBatch(const std::string &s_or_r, const Batch &batch, 
         const std::string &status);

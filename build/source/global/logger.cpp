@@ -3,7 +3,7 @@
 /*******************************************************************************
  * Logger
 *******************************************************************************/
-Logger::Logger(const std::string log_file_name) {
+Logger::Logger(const std::string log_file_name, bool create_file) {
   if (log_file_name.empty()) {
     log_file_ = "";
     enable_logging_ = false;
@@ -14,6 +14,14 @@ Logger::Logger(const std::string log_file_name) {
   enable_logging_ = true;
   log_file_ = log_file_name + ".log";
   std::ofstream file;
+
+  // Check if file exists
+  std::ifstream f(log_file_);
+  bool file_exists = f.good();
+  f.close();
+
+  if (!create_file || file_exists) return;
+
   file.open(log_file_, std::ios::out);
   file << "####### " << log_file_ << " Start #######\n\n";
   file.close();
@@ -117,13 +125,20 @@ void SuccessLogger::nextAttempt() {
  * BatchLogger
 *******************************************************************************/
 
-BatchLogger::BatchLogger(const std::string file_name) {
+BatchLogger::BatchLogger(const std::string file_name, bool create_file) {
   if (file_name.empty()) {
     log_file_ = "";
     return;
   }
 
   log_file_ = file_name;
+
+  // Check if file exists
+  std::ifstream f(log_file_);
+  bool file_exists = f.good();
+  f.close();
+
+  if (!create_file || file_exists) return;
 
   std::ofstream file;
   file.open(log_file_, std::ios::out);

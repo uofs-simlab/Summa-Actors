@@ -106,10 +106,12 @@ int caf_main(actor_system& sys, const config& cfg) {
 
   } else if(settings.distributed_settings_.distributed_mode_) {
     
-    cfg.server_mode ?
-        self->spawn(actor_from_state<SummaServerActor>, settings) :
-        self->spawn(actor_from_state<SummaClientActor>, cfg.host, settings);
-
+    if (cfg.server_mode) {
+      auto server = self->spawn(actor_from_state<SummaServerActor>, settings);
+      self->mail(init_v).send(server);
+    } else {
+      self->spawn(actor_from_state<SummaClientActor>, cfg.host, settings);
+    }
 
   } else {
     self->spawn(actor_from_state<SummaActor>, cfg.startGRU, cfg.countGRU, 

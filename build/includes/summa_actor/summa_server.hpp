@@ -15,7 +15,7 @@
 #include <thread>
 #include <chrono>
 #include <iostream>
-#include <unordered_set>
+#include <unordered_map>
 
 
 class SummaServerActor {
@@ -32,23 +32,10 @@ class SummaServerActor {
     std::string csv_output_name = "/batch_results.csv";
 
     // Containers
-    struct ClientPtrHash {
-      std::size_t operator()(const std::unique_ptr<Client>& ptr) const {
-        return std::hash<caf::actor>{}(ptr->getActor());
-      }
-    };
-    struct ClientPtrEqual {
-      // Custom equality function for std::unique_ptr<Client>
-      bool operator()(const std::unique_ptr<Client>& lhs, 
-                      const std::unique_ptr<Client>& rhs) const {
-        return lhs->getActor() == rhs->getActor();
-      }
-    };
-    std::unordered_set<std::unique_ptr<Client>, ClientPtrHash, ClientPtrEqual> 
-        connected_clients_;
+    std::unordered_map<caf::actor, Client> connected_clients_;
     int active_clients_ = 0;
         
-    std::vector<std::unique_ptr<BatchContainer>> simulations_;
+    std::vector<BatchContainer> simulations_;
     
     // Actor Reference, Hostname
     std::vector<std::tuple<caf::actor, std::string>> backup_servers_list;
@@ -73,6 +60,7 @@ class SummaServerActor {
     caf::behavior make_behavior();
     
     int createLogger();
+    int recreateLogger();
     int publishServer();
     int createBatchContainers(std::string simulations_config);
     int assignBatch(caf::actor client_actor);

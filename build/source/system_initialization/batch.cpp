@@ -6,7 +6,7 @@ Batch::Batch(std::string name, int batch_id, std::string file_manager,
   start_hru_(start_hru), num_hru_(num_hru), run_time_(0.0), read_time_(0.0),
   write_time_(0.0), assigned_to_actor_(false), solved_(false) {};
 
-std::string Batch::toString() {
+std::string Batch::toString() const {
   std::string out_string = "batch_id: " + std::to_string(batch_id_) + "\n" +
       "\tname: " + name_ + "\n" +
       "\tstart_hru: " + std::to_string(start_hru_) + "\n" +

@@ -9,7 +9,7 @@ Client::Client(caf::actor client_actor, std::string hostname) {
 // ####################################################################
 //                              Methods
 // ####################################################################
-std::string Client::toString() {
+std::string Client::toString() const {
   std::string out_string = "Actor Addr: " + to_string(client_actor_.address()) +
                            "\n\tHostname: " + hostname_;
   if (current_batch_.has_value()) {

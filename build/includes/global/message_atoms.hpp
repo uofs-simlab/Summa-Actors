@@ -4,18 +4,17 @@
 #include "batch.hpp"
 #include "batch_container.hpp"
 
-// #include "client.hpp"
+#include "client.hpp"
 // #include "client_container.hpp"
 
 #include "logger.hpp"
-
 #include "gru_struc.hpp"
-
 #include "gru_data_structure.hpp"
 #include "num_gru_info.hpp"
 #include "settings_functions.hpp"
 
 #include <vector>
+#include <unordered_set>
 #include <unordered_map>
 
 
@@ -34,6 +33,9 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     CAF_ADD_ATOM(summa, load_balance)
     CAF_ADD_ATOM(summa, file_access_actor_ready)
     CAF_ADD_ATOM(summa, global_data_ready)
+
+    CAF_ADD_ATOM(summa, init)
+    CAF_ADD_ATOM(summa, reinit)
 
     // Sender: job_actor 
     // Reciever: summa_actor
@@ -204,11 +206,12 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     CAF_ADD_TYPE_ID(summa, (NodeGruInfo))
 
     // Class Types
-    // CAF_ADD_TYPE_ID(summa, (Client))
-    // CAF_ADD_TYPE_ID(summa, (Client_Container))
+    CAF_ADD_TYPE_ID(summa, (Client))
+    CAF_ADD_TYPE_ID(summa, (std::unordered_map<caf::actor, Client>))
     CAF_ADD_TYPE_ID(summa, (Batch))
-    // CAF_ADD_TYPE_ID(summa, (BatchContainer))
     CAF_ADD_TYPE_ID(summa, (Logger))
+    CAF_ADD_TYPE_ID(summa, (BatchContainer))
+    CAF_ADD_TYPE_ID(summa, (std::vector<BatchContainer>))
 
     CAF_ADD_TYPE_ID(summa, (std::vector<std::vector<double>>))
     CAF_ADD_TYPE_ID(summa, (std::vector<std::vector<int>>))
@@ -218,6 +221,7 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     CAF_ADD_TYPE_ID(summa, (std::vector<std::tuple<caf::actor, std::string>>))
     CAF_ADD_TYPE_ID(summa, (std::unordered_map<caf::actor, double>))
     CAF_ADD_TYPE_ID(summa, (std::unordered_map<caf::actor, caf::actor>))
+
 
     // GRU Parameter/Attribute Vectors
     CAF_ADD_TYPE_ID(summa, (std::tuple<std::vector<double>, 
