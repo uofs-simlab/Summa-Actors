@@ -26,6 +26,8 @@ class SummaServerActor {
     caf::actor current_server_actor;
     
     std::string hostname;
+    char hostname_[HOST_NAME_MAX];
+
 
     // Output CSV file
     std::string csv_file_path;
@@ -33,7 +35,6 @@ class SummaServerActor {
 
     // Containers
     std::unordered_map<caf::actor, Client> connected_clients_;
-    int active_clients_ = 0;
         
     std::vector<BatchContainer> simulations_;
     

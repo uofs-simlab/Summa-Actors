@@ -28,6 +28,7 @@ class Client {
     //                              Setters
     // ####################################################################
     void setBatch(std::optional<Batch> batch) { current_batch_ = batch; }
+    void setLocal() { hostname_ = "local"; }
     
     // ####################################################################
     //                              Methods

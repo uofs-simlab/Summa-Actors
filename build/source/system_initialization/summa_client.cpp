@@ -14,6 +14,7 @@ behavior SummaClientActor::make_behavior() {
       return {};
     }
     server_ = actor_cast<actor>(*strong_server);
+
     self_->monitor(server_, [this](const error& err) {
       self_->println("Lost Connection to Server");
       server_ = nullptr;
@@ -25,43 +26,36 @@ behavior SummaClientActor::make_behavior() {
         self_->println("I AM THE SERVER NOW");
         auto test_server = self_->spawn(actor_from_state<SummaServerActor>, 
             settings_);
-        self_->mail(reinit_v).send(test_server);
-        // auto res = self_->system().middleman().publish(
-        //     self_, settings_.distributed_settings_.port_);
-        // if (!res) {
-        //   self_->println("SummaServerActor: Failed to publish actor on port {}",
-        //                 settings_.distributed_settings_.port_);
-        // }
-        // self_->println("SummaServerActor Started on port {}", 
-        //               settings_.distributed_settings_.port_);
-      } else {
-        // Sleep for a few seconds then attempt to connect
-        // std::this_thread::sleep_for(std::chrono::seconds(5));
-        // self_->println("Attempting to reconnect to server");
-        // auto strong_server = self_->system().middleman().remote_actor(
-        //     elem->second.getHostname(), settings_.distributed_settings_.port_);
-        // if (!strong_server) {
-        //   self_->println("Failed to connect to server");
-        //   return;
-        // }
-        // server_ = actor_cast<actor>(*strong_server);
-        // self_->mail("Hello").send(server_);
+        self_->mail(reinit_v, connected_clients_, simulations_)
+            .send(test_server);
+      } 
+      // Sleep for a few seconds then attempt to connect
+      std::this_thread::sleep_for(std::chrono::seconds(5));
+      self_->println("Attempting to reconnect to server");
+      auto strong_server = self_->system().middleman().remote_actor(
+          elem->second.getHostname(), settings_.distributed_settings_.port_);
+      if (!strong_server) {
+        self_->println("Failed to connect to server");
+        return;
       }
-      // self_->println("Trying to designate a new server");
-      // self_->println("How about {} \n\twith hostname {}", 
-      //     to_string(elem->second.getActor().address()), 
-      //     elem->second.getHostname());
 
-      // self_->mail("Hello").send(elem->second.getActor());
-      
+      server_ = actor_cast<actor>(*strong_server);
+      self_->monitor(server_, [this](const error& err) {
+        self_->println("Lost Connection to Server");
+        server_ = nullptr;
+      });
+
+      self_->println("SummaClientActor: Connected to Server");
+      gethostname(hostname_, HOST_NAME_MAX);
+      self_->mail(reconnect_v, hostname_).send(server_);
 
     });
 
     self_->println("SummaClientActor: Connected to Server");
     gethostname(hostname_, HOST_NAME_MAX);
   } else {
-    std::strncpy(hostname_, "local", sizeof(hostname_) - 1); // Use std::strncpy to copy the string literal
-    hostname_[sizeof(hostname_) - 1] = '\0'; // Ensure null-termination
+    std::strncpy(hostname_, "local", sizeof(hostname_) - 1); 
+    hostname_[sizeof(hostname_) - 1] = '\0'; 
   }
   
   self_->mail(connect_atom_v, hostname_).send(server_);
