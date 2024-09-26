@@ -37,6 +37,7 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     CAF_ADD_ATOM(summa, init)
     CAF_ADD_ATOM(summa, reinit)
     CAF_ADD_ATOM(summa, reconnect)
+    CAF_ADD_ATOM(summa, client_published)
 
     // Sender: job_actor 
     // Reciever: summa_actor

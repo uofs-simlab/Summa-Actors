@@ -1,11 +1,16 @@
 #include "summa_server.hpp"
-
+#include <netcdf.h>
 #define NOBATCH 2
 
 using namespace caf;
 
 behavior SummaServerActor::make_behavior() {
   start_ = std::chrono::system_clock::now();
+  gethostname(hostname_, HOST_NAME_MAX);
+  
+
+  self_->println("SummaServerActor: Started");
+  
 
   return {
     // Initalize server from main
@@ -39,27 +44,9 @@ behavior SummaServerActor::make_behavior() {
       connected_clients_ = connected_clients;
       simulations_ = std::move(simulations);
 
-      // Remove old local client based on hostname
-      for (auto& c : connected_clients_) {
-        if (c.second.getHostname() == "local") {
-          // Check if the client has a batch assigned
-          auto client_batch = c.second.getBatch();
-          if (client_batch.has_value()) {
-            for (auto& sim : simulations_) {
-              if (client_batch.value().getName() == sim.getName()) {
-                sim.setBatchUnassigned(client_batch.value());
-                batch_logger_->logBatch("r", client_batch.value(), 
-                    "disconnect");
-                break;
-              }
-            }
-          }
-          connected_clients_.erase(c.first);
-        }
-      }
+      removeLocalClient();
 
       // Set the client with our hostname to local
-      gethostname(hostname_, HOST_NAME_MAX);
       for (auto& c : connected_clients_) {
         if (c.second.getHostname() == hostname_) {
           c.second.setLocal();
@@ -70,66 +57,7 @@ behavior SummaServerActor::make_behavior() {
     // Initial Connection from Client
     [this](connect_atom, const std::string& hostname) {
       auto client_actor = actor_cast<actor>(self_->current_sender());
-      self_->println("Actor trying to connect with hostname {}", hostname);
-
-      // Check if the client is already connected
-      auto insert_result = connected_clients_.emplace(client_actor, 
-          Client(client_actor, hostname));
-
-      auto client_it = insert_result.first;
-      if (!insert_result.second) {
-        self_->println("SummaServerActor: Client Already Connected");
-        logger_->log("SummaServerActor: Client Already Connected");
-        logger_->log("\t" + client_it->second.toString());
-        logger_->log("\t" + std::to_string(connected_clients_.size()) + 
-                     " Clients Connected\n"); 
-      } else {
-        self_->println("SummaServerActor: Client Connected");
-        logger_->log("SummaServerActor: Client Connected");
-        logger_->log("\t" + client_it->second.toString());
-        logger_->log("\t" + std::to_string(connected_clients_.size()) + 
-                     " Clients Connected\n");  
-      }
-      
-      // Monitor the client actor for connection loss
-      self_->monitor(client_actor, [this, client_actor](const error& err) {
-        if (simulation_finished_) return;
-        // Report the client disconnection        
-        self_->println("SummaServerActor: Actor Connection Lost");
-        logger_->log("SummaServerActor: Actor Connection Lost");
-
-        // Find the client in the connected clients map
-        auto client_handle = connected_clients_.extract(client_actor); 
-        if (!client_handle) {
-          self_->println("SummaServerActor: Error Extracting Client"
-                        " \tClient Not Found in Connected Clients");
-          return;
-        }
-
-        // Find batch the client had so it can be reassigned
-        auto client = client_handle.mapped();
-        logger_->log("SummaServerActor: " + client.toString() + 
-            " Disconnected");
-        logger_->log("\t" + std::to_string(connected_clients_.size()) + 
-            " Clients Connected\n");
-        auto client_batch = client.getBatch();
-        if (client_batch.has_value()) {
-          for (auto& sim : simulations_) {
-            if (client_batch.value().getName() == sim.getName()) {
-              sim.setBatchUnassigned(client_batch.value());
-              batch_logger_->logBatch("r", client_batch.value(), "disconnect");
-              break;
-            }
-          }
-        }
-        
-        // Send the connected clients list to all clients
-        for (auto& c : connected_clients_) {
-          self_->mail(simulations_).send(c.second.getActor());
-          self_->mail(connected_clients_).send(c.second.getActor());
-        }
-      }); // End Monitor
-
+      addClient(client_actor, hostname);
       auto res = assignBatch(client_actor);
       if (res == FAILURE) {
         self_->println("SummaServerActor: Error Assigning Batch to Client");
@@ -139,46 +67,31 @@ behavior SummaServerActor::make_behavior() {
 
     [=](reconnect, const std::string& hostname) {
       auto client_actor = actor_cast<actor>(self_->current_sender());
-      self_->println("Actor trying to reconnect with hostname {}", hostname);
-
-      // Check if the client is already connected
-      auto insert_result = connected_clients_.emplace(client_actor, 
-          Client(client_actor, hostname));
-
-      auto client_it = insert_result.first;
-      if (!insert_result.second) {
-        self_->println("SummaServerActor: Client Already Connected");
-        logger_->log("SummaServerActor: Client Already Connected");
-        logger_->log("\t" + client_it->second.toString());
-        logger_->log("\t" + std::to_string(connected_clients_.size()) + 
-                     " Clients Connected\n"); 
-      } else {
-        self_->println("SummaServerActor: Client Connected");
-        logger_->log("SummaServerActor: Client Connected");
-        logger_->log("\t" + client_it->second.toString());
-        logger_->log("\t" + std::to_string(connected_clients_.size()) + 
-                     " Clients Connected\n");  
-      }
-      
-      // Monitor the client actor for connection loss
-      self_->monitor(client_actor, [this, client_actor](const error& err) {
-        if (simulation_finished_) return;
-        // Report the client disconnection        
-        self_->println("SummaServerActor: Actor Connection Lost");
-        logger_->log("SummaServerActor: Actor Connection Lost");
-
-        // Find the client in the connected clients map
-        auto client_handle = connected_clients_.extract(client_actor); 
-        if (!client_handle) {
-          self_->println("SummaServerActor: Error Extracting Client"
-                        " \tClient Not Found in Connected Clients");
-          return;
-        }
-      }); // End Monitor
-
-      // Send the state to the client
+      addClient(client_actor, hostname);
+      // Update Client State
       self_->mail(simulations_).send(client_actor);
       self_->mail(connected_clients_).send(client_actor);
+    },
+
+    [=](client_published, const std::string& hostname, int port) {
+      auto client_actor = actor_cast<actor>(self_->current_sender());
+      self_->println("SummaServerActor: Client Published");
+      logger_->log("SummaServerActor: Client " + hostname + " Published"
+                   "\tPort: " + std::to_string(port));
+      
+      auto client_it = connected_clients_.find(client_actor);
+      if (client_it == connected_clients_.end()) {
+        self_->println("SummaServerActor: Error Adding Client to"
+                       "connected_clients_");
+        logger_->log("SummaServerActor: Error Adding Client to"
+                     "connected_clients_");
+        return;
+      }
+      auto& client = client_it->second;
+      client.setPublished(port);
+      for (auto& c : connected_clients_) {
+        self_->mail(connected_clients_).send(c.second.getActor());
+      }      
     },
 
     [=](done_batch, Batch& batch) {
@@ -189,12 +102,14 @@ behavior SummaServerActor::make_behavior() {
       // Find the simulation that the batch belongs to and update the stats
       for (auto& sim : simulations_) {
         if (batch.getName() == sim.getName()) {
-          sim.updateBatchStats(batch.getBatchID(), batch.getRunTime(), 
-              batch.getReadTime(), batch.getWriteTime(), 10, 0);
+          sim.updateBatch(batch);
           logger_->log("SummaServerActor: Batch Stats: " + batch.toString());
           logger_->log("SummaServerActor: " + sim.getName() + " Simulation\n"
               "\tBatches Remaining: " + 
               std::to_string(sim.getBatchesRemaining()));
+
+          nc_open(settings_.state_file_.c_str(), NC_WRITE, &state_file_ncid_);
+          nc_close(state_file_ncid_);
 
           batch_logger_->logBatch("r", batch, "completed");
           break;
@@ -323,6 +238,7 @@ int SummaServerActor::createBatchContainers(std::string simulations_config) {
   for (auto& simulation : simulations_) {
     logger_->log(simulation.toString());
     logger_->log(simulation.getBatchesAsString());
+    simulation.createStateFile();
   } 
   return SUCCESS; 
 }
@@ -352,7 +268,6 @@ int SummaServerActor::assignBatch(caf::actor client_actor) {
       break;
     }
   }
-
 
   if (res == NOBATCH) {
     bool simulation_finished_ = true;
@@ -400,4 +315,92 @@ int SummaServerActor::assignBatch(caf::actor client_actor) {
   }
 
   return res;
+}
+
+int SummaServerActor::handleDisconnect(caf::actor client_actor) {
+  if (simulation_finished_) return SUCCESS;
+  // Report the client disconnection        
+  self_->println("SummaServerActor: Actor Connection Lost");
+  logger_->log("SummaServerActor: Actor Connection Lost");
+
+  // Find the client in the connected clients map
+  auto client_handle = connected_clients_.extract(client_actor); 
+  if (!client_handle) {
+    self_->println("SummaServerActor: Error Extracting Client"
+                   " \tClient Not Found in Connected Clients");
+    return FAILURE;
+  }
+
+  // Find batch the client had so it can be reassigned
+  auto client = client_handle.mapped();
+  logger_->log("SummaServerActor: " + client.toString() + 
+      " Disconnected");
+  logger_->log("\t" + std::to_string(connected_clients_.size()) + 
+      " Clients Connected\n");
+
+  auto client_batch = client.getBatch();
+  if (client_batch.has_value()) {
+    for (auto& sim : simulations_) {
+      if (client_batch.value().getName() == sim.getName()) {
+        sim.setBatchUnassigned(client_batch.value());
+        batch_logger_->logBatch("r", client_batch.value(), "disconnect");
+        break;
+      }
+    }
+  }
+  
+  // Send the connected clients list to all clients
+  for (auto& c : connected_clients_) {
+    self_->mail(simulations_).send(c.second.getActor());
+    self_->mail(connected_clients_).send(c.second.getActor());
+  }
+  return SUCCESS;
+}
+
+void SummaServerActor::addClient(caf::actor client_actor, 
+    const std::string &hostname) {
+  self_->println("Actor trying to reconnect with hostname {}", hostname);
+
+  // Check if the client is already connected
+  auto insert_result = connected_clients_.emplace(client_actor, 
+      Client(client_actor, hostname));
+
+  auto client_it = insert_result.first;
+  if (!insert_result.second) {
+    self_->println("SummaServerActor: Client Already Connected");
+    logger_->log("SummaServerActor: Client Already Connected");
+    logger_->log("\t" + client_it->second.toString());
+    logger_->log("\t" + std::to_string(connected_clients_.size()) + 
+                  " Clients Connected\n"); 
+  } else {
+    self_->println("SummaServerActor: Client Connected");
+    logger_->log("SummaServerActor: Client Connected");
+    logger_->log("\t" + client_it->second.toString());
+    logger_->log("\t" + std::to_string(connected_clients_.size()) + 
+                  " Clients Connected\n");  
+  }
+
+    // Monitor the client actor for connection loss
+  self_->monitor(client_actor, [this, client_actor](const error& err) {
+    auto disconnect_err = handleDisconnect(client_actor);
+    if (disconnect_err == FAILURE) {
+      self_->println("SummaServerActor: Error Handling Disconnect");
+      logger_->log("SummaServerActor: Error Handling Disconnect");
+    }
+  }); // End Monitor
+}
+
+void SummaServerActor::removeLocalClient() {
+  for (auto& c : connected_clients_) {
+    if (c.second.getHostname() != "local") continue;
+    auto client_batch = c.second.getBatch();
+    if (!client_batch.has_value()) continue;
+    for (auto& sim : simulations_) {
+      if (client_batch.value().getName() != sim.getName()) continue;
+      sim.setBatchUnassigned(client_batch.value());
+      batch_logger_->logBatch("r", client_batch.value(), "disconnect");
+      break;
+    }
+    connected_clients_.erase(c.first);
+  }
 }

@@ -5,60 +5,12 @@ using namespace caf;
 
 behavior SummaClientActor::make_behavior() {
 
-  if (!server_hostname_.empty()) {
-    self_->println("SummaClientActor Starting...");
-    auto strong_server = self_->system().middleman().remote_actor(
-        server_hostname_, settings_.distributed_settings_.port_);
-    if (!strong_server) {
-      self_->println("Failed to connect to server");
-      return {};
-    }
-    server_ = actor_cast<actor>(*strong_server);
-
-    self_->monitor(server_, [this](const error& err) {
-      self_->println("Lost Connection to Server");
-      server_ = nullptr;
-
-      auto elem = connected_clients_.begin();
-      elem = std::next(elem);
-
-      if (elem->second.getActor().address() == self_->address()) {
-        self_->println("I AM THE SERVER NOW");
-        auto test_server = self_->spawn(actor_from_state<SummaServerActor>, 
-            settings_);
-        self_->mail(reinit_v, connected_clients_, simulations_)
-            .send(test_server);
-      } 
-      // Sleep for a few seconds then attempt to connect
-      std::this_thread::sleep_for(std::chrono::seconds(5));
-      self_->println("Attempting to reconnect to server");
-      auto strong_server = self_->system().middleman().remote_actor(
-          elem->second.getHostname(), settings_.distributed_settings_.port_);
-      if (!strong_server) {
-        self_->println("Failed to connect to server");
-        return;
-      }
-
-      server_ = actor_cast<actor>(*strong_server);
-      self_->monitor(server_, [this](const error& err) {
-        self_->println("Lost Connection to Server");
-        server_ = nullptr;
-      });
-
-      self_->println("SummaClientActor: Connected to Server");
-      gethostname(hostname_, HOST_NAME_MAX);
-      self_->mail(reconnect_v, hostname_).send(server_);
-
-    });
-
-    self_->println("SummaClientActor: Connected to Server");
-    gethostname(hostname_, HOST_NAME_MAX);
-  } else {
-    std::strncpy(hostname_, "local", sizeof(hostname_) - 1); 
-    hostname_[sizeof(hostname_) - 1] = '\0'; 
+  auto err = connectToServer();
+  if (err == FAILURE) {
+    self_->println("SummaClientActor: Failed to connect to server");
+    return {};
   }
-  
-  self_->mail(connect_atom_v, hostname_).send(server_);
+  err = publishClient();
 
   return {
     [=](Batch& batch) {
@@ -67,8 +19,8 @@ behavior SummaClientActor::make_behavior() {
       settings_.job_actor_settings_.file_manager_path_ = batch.getFileManager();
       self_->println("File Manager: {}", 
           settings_.job_actor_settings_.file_manager_path_);
-      self_->spawn(actor_from_state<SummaActor>, current_batch_.getStartHRU(),
-          current_batch_.getNumHRU(), settings_, self_);
+      self_->spawn(actor_from_state<SummaActor>, current_batch_.getStartGru(),
+          current_batch_.getNumGru(), settings_, self_);
     },
 
     [=](done_batch, double run_time, double read_time, double write_time) {
@@ -111,7 +63,85 @@ behavior SummaClientActor::make_behavior() {
       }
       self_->println("SummaClientActor: Received Message: {}", msg);
     }
-
-
   };
+}
+
+
+int SummaClientActor::connectToServer() {
+  if (!server_hostname_.empty()) {
+    self_->println("SummaClientActor Starting...");
+    auto strong_server = self_->system().middleman().remote_actor(
+        server_hostname_, settings_.distributed_settings_.port_);
+    if (!strong_server) {
+      self_->println("Failed to connect to server");
+      return FAILURE;
+    }
+    server_ = actor_cast<actor>(*strong_server);
+
+    self_->monitor(server_, [this](const error& err) {
+      self_->println("Lost Connection to Server");
+      server_ = nullptr;
+
+      auto elem = connected_clients_.begin();
+      elem = std::next(elem);
+
+      if (elem->second.getActor().address() == self_->address()) {
+        self_->println("I AM THE SERVER NOW");
+        auto test_server = self_->spawn(actor_from_state<SummaServerActor>, 
+            settings_);
+        self_->mail(reinit_v, connected_clients_, simulations_)
+            .send(test_server);
+      } 
+      // Sleep for a few seconds then attempt to connect
+      std::this_thread::sleep_for(std::chrono::seconds(5));
+      self_->println("Attempting to reconnect to server");
+      auto strong_server = self_->system().middleman().remote_actor(
+          elem->second.getHostname(), settings_.distributed_settings_.port_);
+      if (!strong_server) {
+        self_->println("Failed to connect to server");
+        return FAILURE;
+      }
+
+      server_ = actor_cast<actor>(*strong_server);
+      self_->monitor(server_, [this](const error& err) {
+        self_->println("Lost Connection to Server");
+        server_ = nullptr;
+      });
+
+      self_->println("SummaClientActor: Connected to Server");
+      gethostname(hostname_, HOST_NAME_MAX);
+      self_->mail(reconnect_v, hostname_).send(server_);
+      return SUCCESS;
+    });
+
+    self_->println("SummaClientActor: Connected to Server");
+    gethostname(hostname_, HOST_NAME_MAX);
+  } else {
+    std::strncpy(hostname_, "local", sizeof(hostname_) - 1); 
+    hostname_[sizeof(hostname_) - 1] = '\0'; 
+  }
+  self_->mail(connect_atom_v, hostname_).send(server_);
+  return SUCCESS;
+}
+
+int SummaClientActor::publishClient() {
+  bool published = false;
+  // Attempt to publish 5 times
+  for (int i = 0; i < 5; i++) {
+    auto res = self_->system().middleman().publish(self_, 
+        settings_.distributed_settings_.port_);
+    if (!res) {
+      self_->println("SummaClientActor: Failed to publish actor on port {}",
+                   settings_.distributed_settings_.port_);
+      settings_.distributed_settings_.port_++;
+    } else {
+      published = true;
+      self_->println("SummaClientActor Started on port {}", 
+        settings_.distributed_settings_.port_);
+      self_->mail(client_published_v, hostname_, 
+          settings_.distributed_settings_.port_).send(server_);
+      return SUCCESS;
+    }
+  }
+  return FAILURE;
 }

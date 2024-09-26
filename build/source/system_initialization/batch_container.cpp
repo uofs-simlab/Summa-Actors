@@ -1,5 +1,8 @@
 #include "batch_container.hpp"
 
+// ####################################################################
+//                              Constructors
+// ####################################################################
 BatchContainer::BatchContainer(std::string name, std::string file_manager, 
     int start_gru, int num_gru, int num_gru_per_batch, Settings settings) : 
     name_(name), file_manager_(file_manager), start_gru_(start_gru),
@@ -24,6 +27,9 @@ BatchContainer::BatchContainer(std::string name, std::string file_manager,
   }
 }
 
+// ####################################################################
+//                              Private Methods
+// ####################################################################
 void BatchContainer::assembleBatches(std::string log_dir) {
   int remaining_gru_to_batch = num_gru_;
   int batch_id = 0;
@@ -43,46 +49,15 @@ void BatchContainer::assembleBatches(std::string log_dir) {
   }
 }
 
-std::string BatchContainer::toString() {
-  std::string out_string = "BatchContainer: " + name_ + "\n";
-    out_string += "File Manager: " + file_manager_ + "\n";
-    out_string += "Start GRU: " + std::to_string(start_gru_) + "\n";
-    out_string += "Num GRU: " + std::to_string(num_gru_) + "\n";
-    out_string += "Num GRU Per Batch: "+std::to_string(num_gru_per_batch_)+"\n";
-    out_string += "Batches Remaining: "+std::to_string(batches_remaining_)+"\n";
-  return out_string;
-}
-
+// ####################################################################
+//                              Getters
+// ####################################################################
 std::string BatchContainer::getBatchesAsString() {
   std::string out_string = "";
   for (auto& batch : batch_list_) {
     out_string += batch.toString();
   }
   return out_string;
-}
-
-
-
-void BatchContainer::updateBatchStats(int batch_id, double run_time, 
-    double read_time, double write_time, int num_success, int num_failed) {
-  batch_list_[batch_id].updateRunTime(run_time);
-  batch_list_[batch_id].updateReadTime(read_time);
-  batch_list_[batch_id].updateWriteTime(write_time);
-  batch_list_[batch_id].updateSolved(true);
-  batches_remaining_--;
-  logger_.log("Batch " + std::to_string(batch_id) + " Solved");
-  logger_.log("\tRun Time: " + std::to_string(run_time));
-  logger_.log("\tRead Time: " + std::to_string(read_time));
-  logger_.log("\tWrite Time: " + std::to_string(write_time));
-  logger_.log("\tNum Success: " + std::to_string(num_success));
-  logger_.log("\tNum Failed: " + std::to_string(num_failed));
-  logger_.log("End");
-}
-
-
-
-void BatchContainer::updateBatchStatus_LostClient(int batch_id) {
-  batch_list_[batch_id].updateAssigned(false);
 }
 
 std::optional<Batch> BatchContainer::getUnsolvedBatch() {
@@ -96,34 +71,6 @@ std::optional<Batch> BatchContainer::getUnsolvedBatch() {
   logger_.log("ERROR--Batch_Container: No Unsolved Batches");
   return {};
 }
-
-void BatchContainer::setBatchAssigned(Batch batch) {
-  batch_list_[batch.getBatchID()].updateAssigned(true);
-}
-
-void BatchContainer::setBatchUnassigned(Batch batch) {
-  batch_list_[batch.getBatchID()].updateAssigned(false);
-}
-
-void BatchContainer::updateBatch_success(Batch successful_batch, 
-                                          std::string output_csv, 
-                                          std::string hostname) {
-  successful_batch.writeBatchToFile(output_csv, hostname);
-  batch_list_[successful_batch.getBatchID()].updateSolved(true);
-  batches_remaining_--;
-}
-
-
-
-
-
-void BatchContainer::updateBatch_success(Batch successful_batch) {
-  batch_list_[successful_batch.getBatchID()].updateSolved(true);
-  batches_remaining_--;
-}
-
-bool BatchContainer::hasUnsolvedBatches() { return batches_remaining_ > 0;}
-
 
 std::string BatchContainer::getAllBatchInfoString() {
   std::string out_string = "";
@@ -150,6 +97,55 @@ double BatchContainer::getTotalWriteTime() {
   }
   return total_write_time;
 }
+
+// ####################################################################
+//                              Setters
+// ####################################################################
+void BatchContainer::setBatchAssigned(Batch batch) {
+  batch_list_[batch.getBatchID()].updateAssigned(true);
+}
+
+void BatchContainer::setBatchUnassigned(Batch batch) {
+  batch_list_[batch.getBatchID()].updateAssigned(false);
+}
+
+// ####################################################################
+//                          Public Methods
+// ####################################################################
+std::string BatchContainer::toString() {
+  std::string out_string = "BatchContainer: " + name_ + "\n";
+    out_string += "File Manager: " + file_manager_ + "\n";
+    out_string += "Start GRU: " + std::to_string(start_gru_) + "\n";
+    out_string += "Num GRU: " + std::to_string(num_gru_) + "\n";
+    out_string += "Num GRU Per Batch: "+std::to_string(num_gru_per_batch_)+"\n";
+    out_string += "Batches Remaining: "+std::to_string(batches_remaining_)+"\n";
+  return out_string;
+}
+
+void BatchContainer::updateBatch(Batch batch) {
+  batch_list_[batch.getBatchID()] = batch;
+  batch_list_[batch.getBatchID()].updateSolved(true);
+  batches_remaining_--;
+}
+
+bool BatchContainer::hasUnsolvedBatches() { return batches_remaining_ > 0;}
+
+void BatchContainer::createStateFile() {
+  std::string state_file_ = name_ + "_state.csv";
+  
+  std::ofstream file;
+  file.open(state_file_, std::ios::out);
+  file << "batch_id,start_gru,num_gru,assigned,solved\n";
+  
+  for (auto& batch : batch_list_) {
+    file << batch.getBatchID() << "," << batch.getStartGru() << "," 
+         << batch.getNumGru() << "," << batch.isAssigned() << "," 
+         << batch.isSolved() << "\n";
+  }
+  file.close();  
+}
+
+
 
 
 

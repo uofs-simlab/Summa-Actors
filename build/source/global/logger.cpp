@@ -20,7 +20,7 @@ Logger::Logger(const std::string log_file_name, bool create_file) {
   bool file_exists = f.good();
   f.close();
 
-  if (!create_file || file_exists) return;
+  if (!create_file && file_exists) return;
 
   file.open(log_file_, std::ios::out);
   file << "####### " << log_file_ << " Start #######\n\n";
@@ -138,7 +138,7 @@ BatchLogger::BatchLogger(const std::string file_name, bool create_file) {
   bool file_exists = f.good();
   f.close();
 
-  if (!create_file || file_exists) return;
+  if (!create_file && file_exists) return;
 
   std::ofstream file;
   file.open(log_file_, std::ios::out);
@@ -155,8 +155,8 @@ void BatchLogger::logBatch(const std::string &s_or_r, const Batch &batch,
   file << s_or_r << "," 
        << batch.getName() << "," 
        << batch.getBatchID() << "," 
-       << batch.getStartHRU() << "," 
-       << batch.getNumHRU() << "," 
+       << batch.getStartGru() << "," 
+       << batch.getNumGru() << "," 
        << status << "\n";
   file.close();
 }

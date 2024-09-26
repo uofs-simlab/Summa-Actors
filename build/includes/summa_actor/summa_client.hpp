@@ -35,4 +35,9 @@ class SummaClientActor {
         self_(self), server_hostname_(server_hostname), settings_(settings),
         server_(server) {};
     caf::behavior make_behavior();
+
+    int connectToServer();
+    void connectToClient();
+    int publishClient();
+    void handleDisconnect(caf::actor client_actor);
 };

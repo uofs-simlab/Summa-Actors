@@ -11,6 +11,8 @@ class Client {
     
     // State
     std::optional<Batch> current_batch_;
+    bool published_;
+    uint16_t port_;
     
     // Stats
     int batches_solved_;
@@ -23,12 +25,17 @@ class Client {
     inline caf::actor getActor() const { return client_actor_; }
     inline std::string getHostname() { return hostname_; }
     inline std::optional<Batch> getBatch() { return current_batch_; }
-    
+    inline bool isPublished() { return published_; }
+    inline uint16_t getPort() { return port_; }
     // ####################################################################
     //                              Setters
     // ####################################################################
     void setBatch(std::optional<Batch> batch) { current_batch_ = batch; }
     void setLocal() { hostname_ = "local"; }
+    void setPublished(u_int16_t port) { 
+      published_ = true; 
+      port_ = port;
+    }
     
     // ####################################################################
     //                              Methods

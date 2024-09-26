@@ -31,8 +31,8 @@ behavior JobActor::make_behavior() {
   }
 
   // GruStruc Initialization
-  gru_struc_ = std::make_unique<GruStruc>(batch_.getStartHRU(), 
-      batch_.getNumHRU(), job_actor_settings_.max_run_attempts_);
+  gru_struc_ = std::make_unique<GruStruc>(batch_.getStartGru(), 
+      batch_.getNumGru(), job_actor_settings_.max_run_attempts_);
   if (gru_struc_->readDimension()) {
     err_msg = "ERROR: Job_Actor - ReadDimension\n";
     self_->mail(err_atom_v, -2, err_msg).send(parent_);
@@ -47,7 +47,7 @@ behavior JobActor::make_behavior() {
 
   // SummaInitStruc Initialization
   summa_init_struc_ = std::make_unique<SummaInitStruc>();
-  if (summa_init_struc_->allocate(batch_.getNumHRU()) != 0) {
+  if (summa_init_struc_->allocate(batch_.getNumGru()) != 0) {
     err_msg = "ERROR -- Job_Actor: SummaInitStruc allocation failed\n";
     self_->mail(err_atom_v, -2, err_msg).send(parent_);
     return {};
@@ -64,8 +64,8 @@ behavior JobActor::make_behavior() {
   }
   summa_init_struc_->getInitTolerance(rel_tol_, abs_tol_);
   
-  num_gru_info_ = NumGRUInfo(batch_.getStartHRU(), batch_.getStartHRU(), 
-                             batch_.getNumHRU(), batch_.getNumHRU(), 
+  num_gru_info_ = NumGRUInfo(batch_.getStartGru(), batch_.getStartGru(), 
+                             batch_.getNumGru(), batch_.getNumGru(), 
                              gru_struc_->getFileGru(), false);
 
 
@@ -320,7 +320,7 @@ void JobActor::spawnGruBatches() {
   }
 
   int remaining_hru_to_batch = gru_struc_->getNumGru();
-  int netcdf_start_index = batch_.getStartHRU();
+  int netcdf_start_index = batch_.getStartGru();
   int job_start_index = 1;
 
   while (remaining_hru_to_batch > 0) {
@@ -404,15 +404,18 @@ void JobActor::finalizeJob() {
       // Deallocate GRU_Struc
       gru_struc_.reset();    
       summa_init_struc_.reset();
-  
+
       // Tell Parent we are done
       auto total_duration = timing_info_.getDuration("total_duration").
           value_or(-1.0);
-      self_->mail(done_job_v, num_failed_grus, total_duration, 
-                  std::get<0>(read_write_duration), 
-                  std::get<1>(read_write_duration))
-          .send(parent_);
-        self_->quit();
+
+      batch_.setNumFailed(num_failed_grus);
+      batch_.updateRunTime(total_duration);
+      batch_.updateReadTime(std::get<0>(read_write_duration));
+      batch_.updateWriteTime(std::get<1>(read_write_duration));
+
+      self_->mail(done_job_v, batch_).send(parent_);
+      self_->quit();
     });
 }
 

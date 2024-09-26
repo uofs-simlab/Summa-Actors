@@ -76,15 +76,11 @@ behavior SummaActor::make_behavior() {
   }
 
   return {
-    [this](done_job, int num_gru_failed, double job_duration, 
-           double read_duration, double write_duration) {
-      int num_success = current_batch_->getNumHRU() - num_gru_failed;
-
-      batch_container_->updateBatchStats(current_batch_->getBatchID(), 
-                                         job_duration, read_duration,
-                                         write_duration, num_success, 
-                                         num_gru_failed);
-      num_gru_failed_ += num_gru_failed;
+    [this](done_job, Batch batch) {
+      batch_container_->updateBatch(batch);
+      int num_success = batch.getNumGru() - batch.getNumFailed();
+      num_gru_failed_ += batch.getNumFailed();
+      
       if (!batch_container_->hasUnsolvedBatches()) {
         finalize();
         return;

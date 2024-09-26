@@ -28,6 +28,7 @@ class SummaServerActor {
     std::string hostname;
     char hostname_[HOST_NAME_MAX];
 
+    int state_file_ncid_;
 
     // Output CSV file
     std::string csv_file_path;
@@ -35,7 +36,6 @@ class SummaServerActor {
 
     // Containers
     std::unordered_map<caf::actor, Client> connected_clients_;
-        
     std::vector<BatchContainer> simulations_;
     
     // Actor Reference, Hostname
@@ -65,4 +65,7 @@ class SummaServerActor {
     int publishServer();
     int createBatchContainers(std::string simulations_config);
     int assignBatch(caf::actor client_actor);
+    int handleDisconnect(caf::actor client_actor);
+    void addClient(caf::actor client_actor, const std::string &hostname);
+    void removeLocalClient();
 };

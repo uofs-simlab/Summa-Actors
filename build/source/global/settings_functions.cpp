@@ -14,6 +14,8 @@ int Settings::readSettings() {
 
   simulations_file_ = getSettings<std::string>(
       json_settings, "Simulations_File").value_or("");
+  state_file_ = getSettings<std::string>(
+      json_settings, "State_File").value_or("");
   enable_logging_ = getSettings<bool>(
       json_settings, "Enable_Logging").value_or(false);
   log_dir_ = getSettings<std::string>(

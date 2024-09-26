@@ -17,7 +17,7 @@ class BatchContainer {
     // Batch Info
     int batches_remaining_;
     std::vector<Batch> batch_list_;
-    void assembleBatches(std::string log_dir);
+    std::string state_file_;
 
     // Statistics
     int num_success_;
@@ -30,6 +30,9 @@ class BatchContainer {
     Logger logger_;
     Settings settings_;
 
+    // Private Methods
+    void assembleBatches(std::string log_dir);
+  
   public:
     BatchContainer(std::string name = "", std::string file_manager = "", 
         int start_gru = 0, int num_gru = 0, int num_gru_per_batch = 0, 
@@ -37,25 +40,25 @@ class BatchContainer {
 
     // Move constructor
     BatchContainer(BatchContainer&& other) noexcept :
-    name_(std::move(other.name_)),
-    file_manager_(std::move(other.file_manager_)),
-    start_gru_(other.start_gru_),
-    num_gru_(other.num_gru_),
-    num_gru_per_batch_(other.num_gru_per_batch_),
-    settings_(std::move(other.settings_)),
-    logger_(std::move(other.logger_)),
-    batch_list_(std::move(other.batch_list_)),
-    batches_remaining_(other.batches_remaining_) {
-    // Reset the moved-from object
-    other.start_gru_ = 0;
-    other.num_gru_ = 0;
-    other.num_gru_per_batch_ = 0;
-    other.batches_remaining_ = 0;
-}
+        name_(std::move(other.name_)),
+        file_manager_(std::move(other.file_manager_)),
+        start_gru_(other.start_gru_),
+        num_gru_(other.num_gru_),
+        num_gru_per_batch_(other.num_gru_per_batch_),
+        settings_(std::move(other.settings_)),
+        logger_(std::move(other.logger_)),
+        batch_list_(std::move(other.batch_list_)),
+        batches_remaining_(other.batches_remaining_) {
+          // Reset the moved-from object
+          other.start_gru_ = 0;
+          other.num_gru_ = 0;
+          other.num_gru_per_batch_ = 0;
+          other.batches_remaining_ = 0;
+        }
 
-// Move assignment operator
-BatchContainer& operator=(BatchContainer&& other) noexcept {
-    if (this != &other) {
+    // Move assignment operator
+    BatchContainer& operator=(BatchContainer&& other) noexcept {
+      if (this != &other) {
         // Transfer resources
         name_ = std::move(other.name_);
         file_manager_ = std::move(other.file_manager_);
@@ -72,25 +75,25 @@ BatchContainer& operator=(BatchContainer&& other) noexcept {
         other.num_gru_ = 0;
         other.num_gru_per_batch_ = 0;
         other.batches_remaining_ = 0;
+      }
+      return *this;
     }
-    return *this;
-}
 
-// Implementation of the copy constructor
-BatchContainer(const BatchContainer& other) :
-    name_(other.name_),
-    file_manager_(other.file_manager_),
-    start_gru_(other.start_gru_),
-    num_gru_(other.num_gru_),
-    num_gru_per_batch_(other.num_gru_per_batch_),
-    settings_(other.settings_),
-    logger_(other.logger_),
-    batch_list_(other.batch_list_),
-    batches_remaining_(other.batches_remaining_) {}
+    // Implementation of the copy constructor
+    BatchContainer(const BatchContainer& other) :
+        name_(other.name_),
+        file_manager_(other.file_manager_),
+        start_gru_(other.start_gru_),
+        num_gru_(other.num_gru_),
+        num_gru_per_batch_(other.num_gru_per_batch_),
+        settings_(other.settings_),
+        logger_(other.logger_),
+        batch_list_(other.batch_list_),
+        batches_remaining_(other.batches_remaining_) {}
 
-// Implementation of the copy assignment operator
-BatchContainer& operator=(const BatchContainer& other) {
-    if (this != &other) {
+    // Implementation of the copy assignment operator
+    BatchContainer& operator=(const BatchContainer& other) {
+      if (this != &other) {
         name_ = other.name_;
         file_manager_ = other.file_manager_;
         start_gru_ = other.start_gru_;
@@ -100,9 +103,9 @@ BatchContainer& operator=(const BatchContainer& other) {
         logger_ = other.logger_;
         batch_list_ = other.batch_list_;
         batches_remaining_ = other.batches_remaining_;
+      }
+      return *this;
     }
-    return *this;
-}
 
 
     // ####################################################################
@@ -111,64 +114,24 @@ BatchContainer& operator=(const BatchContainer& other) {
     inline const std::string getName() { return name_; }
     inline const int getBatchesRemaining() {return batches_remaining_; }
     inline const int getTotalBatches() { return batch_list_.size(); }
-
     std::optional<Batch> getUnsolvedBatch();
-
-
-    std::string toString();
-    void printBatches();
     std::string getBatchesAsString();
-    
-
-
-
-    void updateBatchStats(int batch_id, double run_time, double read_time, 
-        double write_time, int num_success, int num_failed);
-
-    // Update the batch status to solved and write the output to a file.
-    void updateBatch_success(Batch successful_batch, std::string output_csv, std::string hostname);
-    // Update the batch status but do not write the output to a file.
-    void updateBatch_success(Batch successful_batch);
-    // Update batch by id
-    void updateBatch_success(int batch_id, double run_time, double read_time, 
-        double write_time);
-
-    // Update the batch to assigned = true
-    void setBatchAssigned(Batch batch);
-    // Update the batch to assigned = false
-    void setBatchUnassigned(Batch batch);
-    
-    // Check if there are batches left to solve
-    bool hasUnsolvedBatches();
-
-    // TODO: Needs implementation
-    void updateBatch_failure(Batch failed_batch);
-
     std::string getAllBatchInfoString();
-
-
     double getTotalReadTime();
     double getTotalWriteTime();
-
-
-    /**
-     * A client has found to be disconnected. Unassign all batches
-     * that were assigned to the disconnected client. The client id 
-     * is passed in as a parameter
-     */
-    void updatedBatch_disconnectedClient(int client_id);
-
-    /**
-     * Create the csv file for the completed batches.
-     */
-    void inititalizeCSVOutput(std::string csv_output_name);
-
-    /**
-     * @brief Find the batch with the batch_id parameter
-     * update the batches assigned actor member variable to false
-     * 
-     */
-    void updateBatchStatus_LostClient(int batch_id);
+    // ####################################################################
+    //                              Setters
+    // ####################################################################
+    void setBatchAssigned(Batch batch);
+    void setBatchUnassigned(Batch batch);
+    // ####################################################################
+    //                              Methods
+    // ####################################################################
+    void createStateFile(); 
+    std::string toString();
+    void printBatches();    
+    void updateBatch(Batch batch);
+    bool hasUnsolvedBatches();
 
     template <class Inspector>
     friend bool inspect(Inspector& inspector, BatchContainer& bc) {
