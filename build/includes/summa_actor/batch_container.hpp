@@ -3,6 +3,7 @@
 #include "client.hpp"
 #include "logger.hpp"
 #include "settings_functions.hpp"
+#include <sys/stat.h>  
 
 
 class BatchContainer {
@@ -13,9 +14,10 @@ class BatchContainer {
     int start_gru_;  
     int num_gru_;
     int num_gru_per_batch_;
+    bool use_state_file_;
 
     // Batch Info
-    int batches_remaining_;
+    int batches_remaining_ = 0;
     std::vector<Batch> batch_list_;
     std::string state_file_;
 
@@ -36,7 +38,7 @@ class BatchContainer {
   public:
     BatchContainer(std::string name = "", std::string file_manager = "", 
         int start_gru = 0, int num_gru = 0, int num_gru_per_batch = 0, 
-        Settings settings = Settings());
+        Settings settings = Settings(), bool use_state_file = false);
 
     // Move constructor
     BatchContainer(BatchContainer&& other) noexcept :
@@ -127,11 +129,19 @@ class BatchContainer {
     // ####################################################################
     //                              Methods
     // ####################################################################
-    void createStateFile(); 
     std::string toString();
     void printBatches();    
     void updateBatch(Batch batch);
     bool hasUnsolvedBatches();
+    // ####################################################################
+    //                            State File
+    // ####################################################################
+    void createStateFile(const std::string &state_dir); 
+    // Returns 0 if successful read, -1 if not (file does not exist)
+    int readStateFile();
+    void assignBatchSF(const Batch &batch);
+    void unassignBatchSF(const Batch &batch);
+    void solvedBatchSF(const Batch &batch);
 
     template <class Inspector>
     friend bool inspect(Inspector& inspector, BatchContainer& bc) {

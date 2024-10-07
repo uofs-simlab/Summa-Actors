@@ -205,7 +205,8 @@ class Settings {
     std::string json_file_;
   public:
     std::string simulations_file_;
-    std::string state_file_;
+    std::string state_dir_;
+    std::string servers_file_;
     bool enable_logging_;
     std::string log_dir_;
     
@@ -259,7 +260,8 @@ class Settings {
     friend bool inspect(Inspector& insp, Settings& settings) {
       return insp.object(settings).fields(
              insp.field("simulations_file", settings.simulations_file_),
-             insp.field("state_file", settings.state_file_),
+             insp.field("state_file", settings.state_dir_),
+              insp.field("servers_file", settings.servers_file_),
              insp.field("distributed_settings", settings.distributed_settings_),
              insp.field("summa_actor_settings", settings.summa_actor_settings_),
              insp.field("fa_actor_settings", settings.fa_actor_settings_),

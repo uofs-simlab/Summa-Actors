@@ -40,4 +40,5 @@ class SummaClientActor {
     void connectToClient();
     int publishClient();
     void handleDisconnect(caf::actor client_actor);
+    std::string getServerSF(); // SF = Server File 
 };

@@ -5,12 +5,30 @@ using namespace caf;
 
 behavior SummaClientActor::make_behavior() {
 
+  auto hostname_and_port = getServerSF();
+  if (hostname_and_port.empty()) {
+    self_->println("SummaClientActor: Failed to get server file");
+    return {};
+  }
+  auto pos = hostname_and_port.find(":");
+  if (pos == std::string::npos) {
+    self_->println("SummaClientActor: Invalid server file format");
+    return {};
+  }
+  auto server_host = hostname_and_port.substr(0, pos);
+  auto server_port = std::stoi(hostname_and_port.substr(pos + 1));
+  settings_.distributed_settings_.port_ = server_port;
+
+  self_->println("SummaClientActor: Connecting to server at {}:{}", 
+      server_host, server_port);
+
+
   auto err = connectToServer();
   if (err == FAILURE) {
     self_->println("SummaClientActor: Failed to connect to server");
     return {};
   }
-  err = publishClient();
+  // err = publishClient();
 
   return {
     [=](Batch& batch) {
@@ -144,4 +162,23 @@ int SummaClientActor::publishClient() {
     }
   }
   return FAILURE;
+}
+
+std::string SummaClientActor::getServerSF() {
+  std::string server_file = settings_.state_dir_ + "servers_state.txt";
+  std::ifstream server_state_file(server_file);
+  if (!server_state_file.good()) {
+    self_->println("SummaClientActor: Failed to open server state file");
+    return "";
+  }
+  // Read the second line of the file
+  std::string line;
+  std::getline(server_state_file, line);
+  std::getline(server_state_file, line);
+  server_state_file.close();
+  // Remove tabs, spaces, and newlines
+  line.erase(std::remove(line.begin(), line.end(), '\t'), line.end());
+  line.erase(std::remove(line.begin(), line.end(), ' '), line.end());
+  line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
+  return line;
 }

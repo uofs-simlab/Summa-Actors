@@ -8,9 +8,7 @@ behavior SummaServerActor::make_behavior() {
   start_ = std::chrono::system_clock::now();
   gethostname(hostname_, HOST_NAME_MAX);
   
-
   self_->println("SummaServerActor: Started");
-  
 
   return {
     // Initalize server from main
@@ -21,7 +19,13 @@ behavior SummaServerActor::make_behavior() {
       err = publishServer();
       if (err == FAILURE) return;
 
-      err = createBatchContainers(settings_.simulations_file_);
+      err = updateServerSF();
+      if (err == FAILURE) return;
+
+      err = readSimulationsFile(settings_.simulations_file_);
+      if (err == FAILURE) return;
+
+      err = createBatchContainers();
       if (err == FAILURE) return;
 
       // Spawn local node actor
@@ -99,17 +103,15 @@ behavior SummaServerActor::make_behavior() {
       logger_->log("SummaServerActor: Received Completed Batch From " + 
           to_string(client_actor.address()));
 
-      // Find the simulation that the batch belongs to and update the stats
+      // Find the simulation that the batch belongs to and update
       for (auto& sim : simulations_) {
         if (batch.getName() == sim.getName()) {
           sim.updateBatch(batch);
+          sim.solvedBatchSF(batch);
           logger_->log("SummaServerActor: Batch Stats: " + batch.toString());
           logger_->log("SummaServerActor: " + sim.getName() + " Simulation\n"
               "\tBatches Remaining: " + 
               std::to_string(sim.getBatchesRemaining()));
-
-          nc_open(settings_.state_file_.c_str(), NC_WRITE, &state_file_ncid_);
-          nc_close(state_file_ncid_);
 
           batch_logger_->logBatch("r", batch, "completed");
           break;
@@ -188,19 +190,16 @@ int SummaServerActor::publishServer() {
   return SUCCESS;
 }
 
-int SummaServerActor::createBatchContainers(std::string simulations_config) {
+int SummaServerActor::setSimulationState(const std::string &sim_config) {
+
+}
+
+int SummaServerActor::readSimulationsFile(const std::string &sim_config) {
   using json = nlohmann::json;
-  self_->println("SummaServerActor: Creating Batch Containers From {}",
-      simulations_config);
-
-  std::string name, file_manager;
-  int start_gru, num_gru, batch_size;
-
-  // Open Json File and Create Json Object
-  std::ifstream sim_file(simulations_config);
+  std::ifstream sim_file(sim_config);
   json json_obj;
   if (!sim_file.is_open()) {
-    self_->println("SummaServerActor: Error opening simulations file");
+    std::cout << "Error opening simulations file" << std::endl;
     return FAILURE;
   }
   sim_file >> json_obj;
@@ -210,27 +209,37 @@ int SummaServerActor::createBatchContainers(std::string simulations_config) {
   try {
     // Check if the Simulations_Configurations key exists
     if (json_obj.find("Simulations_Configurations") == json_obj.end()) {
-      self_->println("SummaServerActor: Error reading simulations file");
+      std::cout << "Error reading simulations file\n";
       return FAILURE;
     }
 
     json simulations = json_obj["Simulations_Configurations"];
-    for (auto& simulation : simulations) {
-      name = simulation["name"];
-      file_manager = simulation["file_manager"];
-      start_gru = simulation["start_gru"];
-      num_gru = simulation["num_gru"];
-      batch_size = simulation["batch_size"];
-
-      simulations_.push_back(BatchContainer(name, file_manager, start_gru, 
-          num_gru, batch_size, settings_));
-      self_->println(simulations_.back().toString());
+    for (auto& sim : simulations) {
+      auto insert_result = sim_meta_data_.emplace(sim["name"], 
+          Simulation_Meta(sim["name"], sim["file_manager"], sim["start_gru"], 
+              sim["num_gru"], sim["batch_size"]));
+      if (!insert_result.second) {
+        std::cout << "Error Adding Simulation to sim_meta_data_\n";
+        return FAILURE;
+      }
     } 
 
   } catch (json::exception& e) {
-    self_->println("SummaServerActor: Error reading simulations file: {}", 
-        e.what());
+    std::cout << "Error reading simulations file: " << e.what() << std::endl;
     return FAILURE;
+  }
+
+  return SUCCESS;
+}
+
+int SummaServerActor::createBatchContainers() {
+  self_->println("SummaServerActor: Creating Batch Containers");
+  bool use_state_file = true;
+  for (auto& sim : sim_meta_data_) {
+    simulations_.push_back(BatchContainer(sim.second.name_, 
+        sim.second.file_manager_, sim.second.start_gru_, 
+        sim.second.num_gru_, sim.second.batch_size_, settings_, use_state_file));
+    self_->println(simulations_.back().toString());
   }
   
   logger_->log("SummaServerActor: Batch Containers Created");
@@ -238,7 +247,7 @@ int SummaServerActor::createBatchContainers(std::string simulations_config) {
   for (auto& simulation : simulations_) {
     logger_->log(simulation.toString());
     logger_->log(simulation.getBatchesAsString());
-    simulation.createStateFile();
+    // simulation.createStateFile(settings_.state_dir_);
   } 
   return SUCCESS; 
 }
@@ -255,7 +264,10 @@ int SummaServerActor::assignBatch(caf::actor client_actor) {
         res = FAILURE;
         break;
       }
-      
+
+      sim.assignBatchSF(batch.value()); // SF = State File
+
+      // Assign the batch to the client
       auto& client = client_it->second;
       client.setBatch(batch.value());
       self_->mail(batch.value()).send(client_actor);
@@ -343,6 +355,7 @@ int SummaServerActor::handleDisconnect(caf::actor client_actor) {
     for (auto& sim : simulations_) {
       if (client_batch.value().getName() == sim.getName()) {
         sim.setBatchUnassigned(client_batch.value());
+        sim.unassignBatchSF(client_batch.value());
         batch_logger_->logBatch("r", client_batch.value(), "disconnect");
         break;
       }
@@ -403,4 +416,52 @@ void SummaServerActor::removeLocalClient() {
     }
     connected_clients_.erase(c.first);
   }
+}
+
+int SummaServerActor::updateServerSF() {
+  struct stat info;
+  if (stat(settings_.state_dir_.c_str(), &info) != 0) {
+    if (!createDirectory(settings_.state_dir_)) {
+      self_->println("SummaServerActor: Error Creating State Directory");
+      return FAILURE;
+    }
+  }
+
+  std::string server_file = settings_.state_dir_ + "servers_state.txt";
+  std::ifstream server_state_file(server_file);
+  if (server_state_file.good()) {
+    // Read the server state file
+    std::vector<std::string> lines;
+    std::string line;
+
+    while (std::getline(server_state_file, line)) {
+      lines.push_back(line);
+    }
+    server_state_file.close();
+
+    // Find the line after "Server:" and write our hostname and port
+    for (size_t i = 0; i < lines.size(); i++) {
+      if (lines[i] == "Server:") {
+        lines[i + 1] = "\t" + std::string(hostname_) + ":" + std::to_string(
+            settings_.distributed_settings_.port_);
+        break;
+      }
+    }
+
+    // Write the updated server state file
+    std::ofstream server_state(server_file, std::ios::out);
+    for (auto& l : lines) {
+      server_state << l << "\n";
+    }
+    server_state.close();
+
+  } else {
+    // Create the server state file
+    std::ofstream server_state(server_file, std::ios::out);
+    server_state << "Server:\n" << "\t" << hostname_ << ":" 
+                 << settings_.distributed_settings_.port_ << "\n"
+                 << "Backups:\n";
+    server_state.close();
+  }
+  return SUCCESS;
 }
