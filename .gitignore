@@ -13,11 +13,12 @@ bin/summa_sundials
 build/build_scripts/cmake_build
 .vscode
 bin/
-utils/dependencies/1.0.0.tar.gz
+utils/dependencies/1.0.2.tar.gz
 utils/dependencies/caf
-utils/dependencies/actor-framework-1.0.0
+utils/dependencies/actor-framework-1.0.2/*
 utils/dependencies/hdf5*
 utils/dependencies/netcdf*
 utils/dependencies/zlib*
 utils/dependencies/v*
 utils/dependencies/lapack*
+utils/dependencies/sundials*
