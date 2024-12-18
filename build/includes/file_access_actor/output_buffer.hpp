@@ -16,6 +16,7 @@ extern "C" {
   void f_addFailedGru(int& gru_index);
 
   void f_resetFailedGru();
+  void f_resetOutputTimestep(int& index_gru);
   
   void f_setFailedGruMissing(int& start_gru, int& end_gru);
 

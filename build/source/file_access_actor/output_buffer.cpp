@@ -141,6 +141,7 @@ void OutputBuffer::reconstruct() {
 
   f_resetFailedGru();
   for (int gru : failed_grus_) {
+    f_resetOutputTimestep(gru);
     partitions_.push_back(std::make_unique<OutputPartition>(
         gru, 1, num_buffer_steps_, num_timesteps_));
   }
