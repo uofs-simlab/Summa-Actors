@@ -131,6 +131,10 @@ behavior JobActor::async_mode() {
 
       // notify file_access_actor
       self_->mail(restart_failures_v).send(file_access_actor_);
+
+      // Give time for the file_access_actor to reconstruct 
+      std::this_thread::sleep_for(std::chrono::seconds(2));
+
       err_logger_->nextAttempt();
       success_logger_->nextAttempt();
 
@@ -151,6 +155,7 @@ behavior JobActor::async_mode() {
             netcdf_index, job_index, gru_actor, dt_init_factor_, rel_tol_, 
             abs_tol_, job_actor_settings_.max_run_attempts_);
         gru_struc_->addGRU(std::move(gru_obj));
+        self_->mail(update_hru_async_v).send(gru_actor);
       }
       gru_struc_->decrementRetryAttempts();
     },

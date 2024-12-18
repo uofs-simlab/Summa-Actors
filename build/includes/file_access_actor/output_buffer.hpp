@@ -14,6 +14,8 @@ extern "C" {
   void f_deallocateOutputBuffer(void *handle_ncid_);
 
   void f_addFailedGru(int& gru_index);
+
+  void f_resetFailedGru();
   
   void f_setFailedGruMissing(int& start_gru, int& end_gru);
 
@@ -93,22 +95,27 @@ class OutputBuffer {
 
     int num_gru_partition_;
 
+    int num_buffer_steps_;
+    int num_timesteps_;
+
     bool write_params_da_ = true;
 
     std::vector<std::unique_ptr<OutputPartition>> partitions_;
     bool rerunning_failed_grus_ = false;
+    std::vector<int> failed_grus_;
 
 
   public:
     OutputBuffer(FileAccessActorSettings fa_settings, NumGRUInfo num_gru_info,
-                 int num_hru, int num_timesteps) : fa_settings_(fa_settings), 
-                 num_gru_info_(num_gru_info), num_hru_(num_hru) {
-
+        int num_hru, int num_timesteps) : fa_settings_(fa_settings), 
+        num_gru_info_(num_gru_info), num_hru_(num_hru), 
+        num_timesteps_(num_timesteps) {
+      
       // Construct internal data structures            
       handle_ncid_ = std::unique_ptr<void, OutputFileDeleter>(
           new_handle_var_i(), OutputFileDeleter());
       
-      int num_buffer_steps = fa_settings_.num_timesteps_in_output_buffer_;
+      num_buffer_steps_ = fa_settings_.num_timesteps_in_output_buffer_;
       int num_partitions = fa_settings_.num_partitions_in_output_buffer_;
       int num_gru = num_gru_info_.num_gru_local;
       
@@ -124,7 +131,7 @@ class OutputBuffer {
       for (int i = 0; i < num_partitions; i++) {
         int num_gru_container = num_gru_partition_ + (i < remainder ? 1 : 0);
         partitions_.push_back(std::make_unique<OutputPartition>(
-            start_gru, num_gru_container, num_buffer_steps, num_timesteps));
+            start_gru, num_gru_container, num_buffer_steps_, num_timesteps_));
         start_gru += num_gru_container;
       }
     };
@@ -142,6 +149,8 @@ class OutputBuffer {
     const std::optional<WriteOutputReturn*> writeOutput(
         int index_gru, caf::actor gru);
     const int writeOutputDA(const int output_step);
+    void reconstruct();
+    int findPartitionIndex(int index);
 
 
 };

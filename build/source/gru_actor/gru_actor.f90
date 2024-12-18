@@ -705,6 +705,10 @@ subroutine allocateOutputBuffer(indx_gru, num_hru, output_buffer_steps, &
   integer(i4b)                      :: iStruct
   integer(i4b)                      :: iDat
 
+  if (allocated(summa_struct(1)%timeStruct%gru(indx_gru)%hru)) then 
+    return 
+  endif
+
   allocate(summa_struct(1)%forcStat%gru(indx_gru)%hru(num_hru))
   allocate(summa_struct(1)%progStat%gru(indx_gru)%hru(num_hru))
   allocate(summa_struct(1)%diagStat%gru(indx_gru)%hru(num_hru))

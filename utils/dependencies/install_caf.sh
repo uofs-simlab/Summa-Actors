@@ -6,13 +6,13 @@ INSTALL_DIR=$PWD/caf
 # module load netlib-lapack
 # module load netcdf-fortran
 
-wget https://github.com/actor-framework/actor-framework/archive/refs/tags/1.0.0.tar.gz
-tar -xvf 1.0.0.tar.gz
+wget https://github.com/actor-framework/actor-framework/archive/refs/tags/1.0.2.tar.gz
+tar -xvf 1.0.2.tar.gz
 
 
 echo "Installing CAF to $INSTALL_DIR"
 
-cd actor-framework-1.0.0
+cd actor-framework-1.0.2
 ./configure --prefix=$INSTALL_DIR
 cd build
 make -j 8
