@@ -4,8 +4,8 @@ bool hru_extra_logging = false;
 
 using namespace caf;
 behavior hru_actor(stateful_actor<hru_state>* self, int ref_gru, int indx_gru,
-                   HRU_Actor_Settings hru_actor_settings, 
-                   actor file_access_actor, actor parent) {
+    HRU_Actor_Settings hru_actor_settings, actor file_access_actor, 
+    actor parent) {
             
   self->set_exit_handler([=](const caf::exit_msg& msg) {
     aout(self) << "HRU Actor: Received Exit Message\n";
@@ -228,8 +228,8 @@ int initHRU(stateful_actor<hru_state>* self) {
     if (self->state.hru_actor_settings.rel_tol > 0 && 
         self->state.hru_actor_settings.abs_tol > 0) {
       set_sundials_tolerances(self->state.hru_data, 
-                              &self->state.hru_actor_settings.rel_tol, 
-                              &self->state.hru_actor_settings.abs_tol);
+          &self->state.hru_actor_settings.rel_tol, 
+          self->state.hru_actor_settings.abs_tol);
     }
   #endif     
   

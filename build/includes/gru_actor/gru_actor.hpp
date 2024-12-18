@@ -9,20 +9,20 @@
 extern "C" {
   void f_getNumHruInGru(int& index_gru, int& num_hru);
   void f_initGru(int& index_gru, void* gru_data, int& output_buffer_steps, 
-                 int& err, void* message);
+      int& err, void* message);
   void setupGRU_fortran(int& index_gru, void* gru_data, int& err, 
-                        void* message);
+      void* message);
   void readGRURestart_fortran(int& index_gru, void* gru_data, int& err, 
-                              void* message);
+      void* message);
   void setTimeZoneOffsetGRU_fortran(int& iFile, void* gru_data, int& err, 
-                                    void* message);
+      void* message);
   void readGRUForcing_fortran(int& index_gru, int& iStep, int& iRead, 
-                              int& iFile, void* gru_data, int& err, 
-                              void* message);
+      int& iFile, void* gru_data, int& err, void* message);
   void runGRU_fortran(int& index_gru, int& timestep, void* gru_data, 
-                      int& dt_init_factor, int& err, void* message);
+      int& dt_init_factor, int& err, void* message);
   void writeGRUOutput_fortran(int& index_gru, int& timestep, int& output_step, 
-                              void* gru_data, int& err, void* message);
+      void* gru_data, int& err, void* message);
+  void f_setGruTolerances(void* gru_data, double& rel_tol, double& abs_tol);
 }
 
 struct GruDeleter {

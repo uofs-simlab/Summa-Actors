@@ -7,6 +7,7 @@ USE globalData,only:realMissing
 implicit none
 public::f_getNumHruInGru
 public::f_initGru
+public::f_setGruTolerances
 public::setupGRU_fortran
 public::readGRURestart_fortran
 public::setTimeZoneOffsetGRU_fortran
@@ -30,6 +31,50 @@ subroutine f_getNumHruInGru(indx_gru, num_hru) bind(C, name="f_getNumHruInGru")
 
   num_hru = gru_struc(indx_gru)%hruCount
 end subroutine f_getNumHruInGru
+
+subroutine f_setGruTolerances(handle_gru_data, rel_tol, abs_tol) bind(C, name="f_setGruTolerances")
+  USE actor_data_types,only:gru_type
+  USE var_lookup,only: iLookPARAM
+
+  implicit none
+  type(c_ptr), intent(in),value :: handle_gru_data
+  real(c_double), intent(in)    :: rel_tol
+  real(c_double), intent(in)    :: abs_tol
+  ! Local Varaibles
+  integer(i4b)                  :: iHRU
+
+  type(gru_type),pointer :: gru_data
+  call c_f_pointer(handle_gru_data, gru_data)
+
+  do iHRU = 1, size(gru_data%hru)
+    ! Set rtols
+    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relConvTol_liquid)%dat(1) = rel_tol
+    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relConvTol_matric)%dat(1) = rel_tol
+    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relConvTol_energy)%dat(1) = rel_tol
+    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relConvTol_aquifr)%dat(1) = rel_tol
+    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relTolTempCas)%dat(1) = rel_tol
+    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relTolTempVeg)%dat(1) = rel_tol
+    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relTolWatVeg)%dat(1) = rel_tol
+    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relTolTempSoilSnow)%dat(1) = rel_tol
+    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relTolWatSnow)%dat(1) = rel_tol
+    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relTolMatric)%dat(1) = rel_tol
+    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relTolAquifr)%dat(1) = rel_tol
+  
+    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absConvTol_liquid)%dat(1) = abs_tol 
+    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absConvTol_matric)%dat(1) = abs_tol 
+    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absConvTol_energy)%dat(1) = abs_tol 
+    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absConvTol_aquifr)%dat(1) = abs_tol 
+    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absTolTempCas)%dat(1) = abs_tol 
+    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absTolTempVeg)%dat(1) = abs_tol 
+    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absTolWatVeg)%dat(1) = abs_tol 
+    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absTolTempSoilSnow)%dat(1) = abs_tol 
+    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absTolWatSnow)%dat(1) = abs_tol 
+    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absTolMatric)%dat(1) = abs_tol 
+    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absTolAquifr)%dat(1) = abs_tol 
+  end do
+
+
+end subroutine f_setGruTolerances
 
 subroutine setupGRU(iGRU, err, message)
   USE summa_init_struc,only:init_struc
