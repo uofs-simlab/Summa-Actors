@@ -72,6 +72,7 @@ behavior FileAccessActor::make_behavior() {
                   i_file).send(response_ref);
     },
 
+    //
     [this](access_forcing_internal, int i_file) {
       if (forcing_files_->allFilesLoaded()) return;
       auto err = forcing_files_->loadForcingFile(i_file, start_gru_, num_gru_);
@@ -86,10 +87,12 @@ behavior FileAccessActor::make_behavior() {
       self_->mail(access_forcing_internal_v, i_file + 1).send(self_);
     },
 
+    //
     [this](get_num_output_steps, int job_index) -> int {
       return output_buffer_->getNumStepsBuffer(job_index);
     },
 
+    //
     [this](write_output, int index_gru, caf::actor gru) {
       timing_info_.updateStartPoint("write_duration");
 
@@ -152,9 +155,11 @@ behavior FileAccessActor::make_behavior() {
     },
 
     [this](restart_failures) {
-      output_container_->reconstruct();
+      self_->println("File Access Actor: Restarting Failed GRUs\n");
+      output_buffer_->reconstruct();
     },
 
+    //
     [this](run_failure, int index_gru_job) {
       timing_info_.updateStartPoint("write_duration");
       auto update_status = output_buffer_->addFailedGRU(index_gru_job);

@@ -180,15 +180,21 @@ class HRUActorSettings {
     bool print_output_;
     int output_frequency_;
 
-    HRUActorSettings(bool print_output = false, 
-                     int output_frequency = 100) 
-        : print_output_(print_output), output_frequency_(output_frequency) {};
+    double abs_tol_;
+    double rel_tol_;
+
+    HRUActorSettings(bool print_output = false, int output_frequency = 100,
+        double abs_tol = 0.0, double rel_tol = 0.0) 
+        : print_output_(print_output), output_frequency_(output_frequency), 
+        abs_tol_(abs_tol), rel_tol_(rel_tol)  {};
     ~HRUActorSettings() {};
 
     std::string toString() {
       std::string str = "HRU Actor Settings:\n";
       str += "Print Output: " + std::to_string(print_output_) + "\n";
       str += "Output Frequency: " + std::to_string(output_frequency_) + "\n";
+      str += "Abs Tol: " + std::to_string(abs_tol_) + "\n";
+      str += "Rel Tol: " + std::to_string(rel_tol_) + "\n";
       return str;
     }
 
@@ -196,7 +202,9 @@ class HRUActorSettings {
     friend bool inspect(Inspector& insp, HRUActorSettings& settings) {
       return insp.object(settings).fields(
              insp.field("print_output",     settings.print_output_),
-             insp.field("output_frequency", settings.output_frequency_));
+             insp.field("output_frequency", settings.output_frequency_),
+             insp.field("abs_tol",          settings.abs_tol_),
+             insp.field("rel_tol",          settings.rel_tol_));
     }
 };
 

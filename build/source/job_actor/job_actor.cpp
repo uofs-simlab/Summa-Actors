@@ -124,13 +124,20 @@ behavior JobActor::async_mode() {
       self_->println("Async Mode: Restarting Failed GRUs\n");
       if (rel_tol_ > 0 && abs_tol_ > 0) {
         rel_tol_ /= 10;
+        hru_actor_settings_.rel_tol_ = rel_tol_;
         abs_tol_ /= 10;
+        hru_actor_settings_.abs_tol_ = abs_tol_;
       } else {
         dt_init_factor_ *= 2;
       }
 
+
       // notify file_access_actor
       self_->mail(restart_failures_v).send(file_access_actor_);
+
+      // Give time for the file_access_actor to reconstruct 
+      std::this_thread::sleep_for(std::chrono::seconds(2));
+
       err_logger_->nextAttempt();
       success_logger_->nextAttempt();
 
@@ -151,6 +158,7 @@ behavior JobActor::async_mode() {
             netcdf_index, job_index, gru_actor, dt_init_factor_, rel_tol_, 
             abs_tol_, job_actor_settings_.max_run_attempts_);
         gru_struc_->addGRU(std::move(gru_obj));
+        self_->mail(update_hru_async_v).send(gru_actor);
       }
       gru_struc_->decrementRetryAttempts();
     },
@@ -279,6 +287,17 @@ behavior JobActor::data_assimilation_mode() {
 // ------------------------ Member Functions ------------------------
 void JobActor::spawnGruActors() {
   self_->println("JobActor: Spawning GRU Actors");
+    // TODO: Implement f_getRelTol and f_getAbsTol
+  if (hru_actor_settings_.rel_tol_ > 0) {
+    // f_getRelTol();
+    rel_tol_ = hru_actor_settings_.rel_tol_;
+  }
+
+  if (hru_actor_settings_.abs_tol_ > 0) {
+    // f_getAbsTol();
+    abs_tol_ = hru_actor_settings_.abs_tol_;
+  }
+
   for (int i = 0; i < gru_struc_->getNumGru(); i++) {
     auto netcdf_index = gru_struc_->getStartGru() + i;
     auto job_index = i + 1;
@@ -302,6 +321,24 @@ void JobActor::spawnGruActors() {
 void JobActor::spawnGruBatches() {
   self_->println("JobActor: Spawning GRU Batch Actors");
   int batch_size;
+
+  // TODO: Implement f_getRelTol and f_getAbsTol
+  if (hru_actor_settings_.rel_tol_ <= 0) {
+    // f_getRelTol();
+    rel_tol_ = hru_actor_settings_.rel_tol_;
+  }
+
+  if (hru_actor_settings_.abs_tol_ <= 0) {
+    // f_getAbsTol();
+    abs_tol_ = hru_actor_settings_.abs_tol_;
+  }
+
+  // if (rel_tol_ <= 0) {
+  // }
+
+  // if (abs_tol_ <= 0) {
+  //   f_getAbsTol();
+  // }
 
   if (job_actor_settings_.batch_size_ < 0) {
     // Automatically determine batch size

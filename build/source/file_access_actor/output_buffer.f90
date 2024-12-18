@@ -9,6 +9,8 @@ module output_buffer
   public::f_defOutput
   public::f_setChunkSize
   public::f_addFailedGru
+  public::f_resetFailedGru
+  public::f_resetOutputTimestep
   public::f_setFailedGruMissing
   public::f_allocateOutputBuffer
   public::f_deallocateOutputBuffer
@@ -122,6 +124,21 @@ subroutine f_addFailedGru(gru_index) bind(C, name="f_addFailedGru")
     summa_struct(1)%failedGrus(gru_index) = .true.
   endif
 end subroutine f_addFailedGru
+
+subroutine f_resetFailedGru() bind(C, name="f_resetFailedGru")
+  implicit none
+  if (allocated(summa_struct)) then
+    summa_struct(1)%failedGrus(:) = .false.
+  endif
+end subroutine f_resetFailedGru
+
+subroutine f_resetOutputTimestep(index_gru) bind(C, name="f_resetOutputTimestep")
+  implicit none
+  integer(c_int),intent(in)              :: index_gru
+
+  outputTimeStep(index_gru)%dat(:) = 1
+
+end subroutine f_resetOutputTimestep
 
 subroutine f_setFailedGruMissing(start_gru, end_gru) bind(C, name="f_setFailedGruMissing")
   USE var_lookup,only:maxvarFreq                ! number of output frequencies

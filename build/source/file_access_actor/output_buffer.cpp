@@ -8,21 +8,13 @@ using chrono_time = std::chrono::time_point<std::chrono::high_resolution_clock>;
 // ****************************************************************************
 
 int OutputBuffer::getNumStepsBuffer(int gru_index) {
-  // GRUs start at 1 but the partitions start at 0
-  int target_index = gru_index - 1; 
-
-  // Find The Partition That Contains the GRU
-  int num_gru = num_gru_info_.num_gru_local;
-  int baseSize = num_gru / partitions_.size();
-  int remainder = num_gru % partitions_.size();
-
-  int partition_index;
-  if (target_index < remainder * (baseSize + 1)) {
-    partition_index = target_index / (baseSize + 1);
-  } else {
-    partition_index = remainder + 
-        (target_index - remainder * (baseSize + 1)) / baseSize;
+  int partition_index = findPartitionIndex(gru_index);
+  if (partition_index == -1) {
+    std::cout << "Error: FileAccessActor -- addFailedGRU: "
+              << "Could not find partition for GRU: " << gru_index << "\n";
+    return -1;
   }
+
 
   return partitions_[partition_index]->getNumStepsBuffer();
 } 
@@ -102,23 +94,12 @@ const int OutputBuffer::writeOutputDA(const int output_step) {
 
 const std::optional<WriteOutputReturn*> OutputBuffer::writeOutput(
     int index_gru, caf::actor gru) {
-  
-  // GRUs start at 1 but the partitions start at 0
-  int target_index = index_gru - 1; 
-
-  // Find The Partition That Contains the GRU
-  int num_gru = num_gru_info_.num_gru_local;
-  int baseSize = num_gru / partitions_.size();
-  int remainder = num_gru % partitions_.size();
-
-  int partition_index;
-  if (target_index < remainder * (baseSize + 1)) {
-    partition_index = target_index / (baseSize + 1);
-  } else {
-    partition_index = remainder + 
-        (target_index - remainder * (baseSize + 1)) / baseSize;
+  int partition_index = findPartitionIndex(index_gru);
+  if (partition_index == -1) {
+    std::cout << "Error: FileAccessActor -- addFailedGRU: "
+              << "Could not find partition for GRU: " << index_gru << "\n";
+    return {};
   }
-
   // Will write if the partition is full
   // TODO: This is a bit of a hack, the handle_ncid should be a shared pointer
   return partitions_[partition_index]->writeOutput(gru, handle_ncid_.get());
@@ -127,23 +108,43 @@ const std::optional<WriteOutputReturn*> OutputBuffer::writeOutput(
 const std::optional<WriteOutputReturn*> OutputBuffer::addFailedGRU(int index) {
   f_addFailedGru(index);
   
-  // GRUs start at 1 but the partitions start at 0
-  int target_index = index - 1;
-  
-  // Find The Partition That Contains the GRU
-  int num_gru = num_gru_info_.num_gru_local;
-  int baseSize = num_gru / partitions_.size();
-  int remainder = num_gru % partitions_.size();
+  failed_grus_.push_back(index);
 
-  int partition_index;
-  if (target_index < remainder * (baseSize + 1)) {
-    partition_index = target_index / (baseSize + 1);
-  } else {
-    partition_index = remainder + 
-        (target_index - remainder * (baseSize + 1)) / baseSize;
+  int partition_index = findPartitionIndex(index);
+  if (partition_index == -1) {
+    std::cout << "Error: FileAccessActor -- addFailedGRU: "
+              << "Could not find partition for GRU: " << index << "\n";
+    return {};
   }
+
+
   partitions_[partition_index]->decrementNumGRU();
   return partitions_[partition_index]->writeOutput(handle_ncid_.get());
+}
+
+// 
+int OutputBuffer::findPartitionIndex(int index) {
+  for (int i = 0; i < partitions_.size(); i++) {
+    if (index >= partitions_[i]->getStartGru() && 
+        index <= partitions_[i]->getEndGru()) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+
+// Reconstruction of the partitions for rerunning failed GRUs
+void OutputBuffer::reconstruct() {
+  // clear all partitons
+  partitions_.clear();
+
+  f_resetFailedGru();
+  for (int gru : failed_grus_) {
+    f_resetOutputTimestep(gru);
+    partitions_.push_back(std::make_unique<OutputPartition>(
+        gru, 1, num_buffer_steps_, num_timesteps_));
+  }
 }
 
 
@@ -218,3 +219,4 @@ bool OutputPartition::isWriteParams() {
   }
   return write_params_;
 }
+
