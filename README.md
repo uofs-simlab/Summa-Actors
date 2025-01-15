@@ -55,14 +55,16 @@ Install most dependencies using your preferred package manager. If you’re usin
 
 ### Version 4.x.x Build Instructions
   1) git clone https://github.com/uofs-simlab/Summa-Actors.git
-  2) cd Summa-Actors/build/
-  3) git clone -b develop https://github.com/ashleymedin/summa.git
-  4) cd build_scripts/
-  5) Modify the `build.sh` script to match your system.
+  2) cd Summa-Actors/utils/dependencies  
+  3) ./install_caf.sh and install_sundials.sh  
+  4) cd Summa-Actors/build/
+  5) git clone -b develop https://github.com/ashleymedin/summa.git
+  6) cd build_scripts/
+  7) Modify the `build.sh` script to match your system.
      - Set `CMAKE_PREFIX_PATH` to the location of dependencies not installed in default locations.
      - Build with SUNDIALS using the `-DUSE_SUNDIALS=ON` option
      - Build V4 without SUNDIALS using `-DUSE_V4=ON` option. If using sundials this option is automatically set to ON.
-  6) ./build.sh
+  8) ./build.sh
 
 ### Version 3.x.x Build Instructions
   1) git clone https://github.com/uofs-simlab/Summa-Actors.git
