@@ -182,11 +182,39 @@ class HRUActorSettings {
 
     double abs_tol_;
     double rel_tol_;
+    double relTolTempCas;
+    double relTolTempVeg;
+    double relTolWatVeg;
+    double relTolTempSoilSnow;
+    double relTolWaterSoil;
+    double relTolMatric ;
+    double relTolAquifr; 
+    double absTolTempCas;
+    double absTolTempVeg;
+    double absTolWatVeg ;
+    double absTolTempSoilSnow;
+    double absTolWaterSoil;
+    double absTolMatric ;
+    double absTolAquifr ;
 
     HRUActorSettings(bool print_output = false, int output_frequency = 100,
-        double abs_tol = 0.0, double rel_tol = 0.0) 
+        double abs_tol = 0.0, double rel_tol = 0.0, double relTolTempVeg =0.0,
+        double relTolTempCas = 0.0, double relTolWatVeg = 0.0,
+        double relTolTempSoilSnow = 0.0, double relTolWaterSoil = 0.0,
+        double relTolMatric = 0.0, double relTolAquifr = 0.0,
+        double absTolTempCas = 0.0, double absTolTempVeg = 0.0,
+        double absWaterVeg = 0.0, double absTolTempSoilSnow = 0.0,
+        double absTolWaterSoil = 0.0, double absTolMatric = 0.0,
+        double absTolAquifr = 0.0) 
         : print_output_(print_output), output_frequency_(output_frequency), 
-        abs_tol_(abs_tol), rel_tol_(rel_tol)  {};
+        abs_tol_(abs_tol), rel_tol_(rel_tol) relTolTempVeg_(relTolTempVeg),
+        relTolTempCas_(relTolTempCas), relTolWatVeg_(relTolWatVeg),
+        relTolTempSoilSnow_(relTolTempSoilSnow), 
+        relTolWaterSoil_(relTolWaterSoil), relTolMatric_(relTolMatric),
+        relTolAquifr_(relTolAquifr), absTolTempCas_(absTolTempCas),
+        absTolTempVeg_(absTolTempVeg), absTolTempSoilSnow_(absTolTempSoilSnow),
+        absTolWaterSoil_(absTolWaterSoil), absTolMatric_(absTolMatric),
+        absTolAquifr_(absTolAquifr), absTolWatVeg_(absTolWatVeg) {};
     ~HRUActorSettings() {};
 
     std::string toString() {
@@ -195,6 +223,21 @@ class HRUActorSettings {
       str += "Output Frequency: " + std::to_string(output_frequency_) + "\n";
       str += "Abs Tol: " + std::to_string(abs_tol_) + "\n";
       str += "Rel Tol: " + std::to_string(rel_tol_) + "\n";
+      str += "Specific Tolerances:\n";
+      str += "relTolTempVeg: " + std::to_string(relTolTempVeg_) + "\n";
+      str += "relTolTempCas: " + std::to_string(relTolTempCas_) + "\n";
+      str += "relTolWatVeg: " + std::to_string(relTolWatVeg_) + "\n";
+      str += "relTolTempSoilSnow: "+ std::to_string(relTolTempSoilSnow_) +"\n";
+      str += "relTolWaterSoil: " + std::to_string(relTolWaterSoil_) + "\n";
+      str += "relTolMatric: " + std::to_string(relTolMatric_) + "\n";
+      str += "relTolAquifr: " + std::to_string(relTolAquifr_) + "\n";
+      str += "absTolTempCas: " + std::to_string(absTolTempCas_) + "\n";
+      str += "absTolTempVeg: " + std::to_string(absTolTempVeg_) + "\n";
+      str += "absTolWatVeg: " + std::to_string(absTolWatVeg_) + "\n";
+      str += "absTolTempSoilSnow: " + std::to_string(absTolTempSoilSnow_)+"\n";
+      str += "absTolWaterSoil: " + std::to_string(absTolWaterSoil_) + "\n";
+      str += "absTolMatric: " + std::to_string(absTolMatric_) + "\n";
+      str += "absTolAquifr: " + std::to_string(absTolAquifr_) + "\n";
       return str;
     }
 
@@ -204,7 +247,21 @@ class HRUActorSettings {
              insp.field("print_output",     settings.print_output_),
              insp.field("output_frequency", settings.output_frequency_),
              insp.field("abs_tol",          settings.abs_tol_),
-             insp.field("rel_tol",          settings.rel_tol_));
+             insp.field("rel_tol",          settings.rel_tol_),
+             insp.field("relTolTempVeg",    settings.relTolTempVeg_),
+             insp.field("relTolTempCas",    settings.relTolTempCas_),
+             insp.field("relTolWatVeg",     settings.relTolWatVeg_),
+             insp.field("relTolTempSoilSnow", settings.relTolTempSoilSnow_),
+             insp.field("relTolWaterSoil",  settings.relTolWaterSoil_), 
+             insp.field("relTolMatric",     settings.relTolMatric_),
+             insp.field("relTolAquifr",     settings.relTolAquifr_),
+             insp.field("absTolTempCas",    settings.absTolTempCas_),
+             insp.field("absTolTempVeg",    settings.absTolTempVeg_),
+             insp.field("absTolWatVeg",     settings.absTolWatVeg_),
+             insp.field("absTolTempSoilSnow", settings.absTolTempSoilSnow_),
+             insp.field("absTolWaterSoil",  settings.absTolWaterSoil_),
+             insp.field("absTolMatric",     settings.absTolMatric_),
+             insp.field("absTolAquifr",     settings.absTolAquifr_));
     }
 };
 
