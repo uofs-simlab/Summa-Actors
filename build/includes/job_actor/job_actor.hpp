@@ -54,7 +54,7 @@ class JobActor {
   double abs_tol_ = -9999;
   double rel_tol_temp_cas_ = -9999;
   double rel_tol_temp_veg_ = -9999;
-  double rel_to_wat_veg_ = -9999;
+  double rel_tol_wat_veg_ = -9999;
   double rel_tol_temp_soil_snow_ = -9999;
   double rel_tol_wat_snow_ = -9999;
   double rel_tol_matric_ = -9999;
