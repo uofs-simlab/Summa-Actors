@@ -52,6 +52,20 @@ class JobActor {
   // HRU Attributes
   double rel_tol_ = -9999;
   double abs_tol_ = -9999;
+  double rel_tol_temp_cas_ = -9999;
+  double rel_tol_temp_veg_ = -9999;
+  double rel_to_wat_veg_ = -9999;
+  double rel_tol_temp_soil_snow_ = -9999;
+  double rel_tol_wat_snow_ = -9999;
+  double rel_tol_matric_ = -9999;
+  double rel_tol_aquifr_ = -9999;
+  double abs_tol_temp_cas_ = -9999;
+  double abs_tol_temp_veg_ = -9999;
+  double abs_tol_wat_veg_ = -9999;
+  double abs_tol_temp_soil_snow_ = -9999;
+  double abs_tol_wat_snow_ = -9999;
+  double abs_tol_matric_ = -9999;
+  double abs_tol_aquifr_ = -9999;
   int dt_init_factor_ = 1;
 
 
