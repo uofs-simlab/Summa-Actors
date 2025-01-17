@@ -47,7 +47,11 @@ class JobActor {
   // Settings
   JobActorSettings job_actor_settings_;
   FileAccessActorSettings fa_actor_settings_;
-  HRUActorSettings hru_actor_settings_; 
+  HRUActorSettings hru_actor_settings_;
+
+  //Min rel and abs tol values
+  const double MIN_REL_TOL = 1e-6;
+  const double MIN_ABS_TOL = 1e-6;
 
   // HRU Attributes
   double rel_tol_ = -9999;
