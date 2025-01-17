@@ -29,7 +29,14 @@ int SummaInitStruc::summa_readRestart() {
   return err;
 }
 
-void SummaInitStruc::getInitTolerance(double rel_tol, double abs_tol) {
+void SummaInitStruc::getInitTolerance(double rel_tol, double abs_tol, double rel_tol_temp_cas,
+                                      double rel_tol_temp_veg, double rel_tol_wat_veg, 
+                                      double rel_tol_temp_soil_snow, double rel_tol_wat_snow, 
+                                      double rel_tol_matric, double rel_tol_aquifr,
+                                      double abs_tol_temp_cas, double abs_tol_temp_veg, 
+                                      double abs_tol_wat_veg, double abs_tol_temp_soil_snow, 
+                                      double abs_tol_wat_snow, double abs_tol_matric,
+                                      double abs_tol_aquifr) {
   f_getInitTolerance(rel_tol, abs_tol);
 }
 
