@@ -32,7 +32,11 @@ subroutine f_getNumHruInGru(indx_gru, num_hru) bind(C, name="f_getNumHruInGru")
   num_hru = gru_struc(indx_gru)%hruCount
 end subroutine f_getNumHruInGru
 
-subroutine f_setGruTolerances(handle_gru_data, rel_tol, abs_tol) bind(C, name="f_setGruTolerances")
+subroutine f_setGruTolerances(handle_gru_data, rel_tol, abs_tol, rel_tol_temp_cas, &
+  rel_tol_temp_veg, rel_tol_wat_veg, rel_tol_temp_soil_snow, rel_tol_wat_snow, &
+  rel_tol_matric, rel_tol_aquifr, abs_tol_temp_cas, abs_tol_temp_veg, &
+  abs_tol_wat_veg, abs_tol_temp_snow_soil, abs_tol_wat_snow, abs_tol_matric, &
+  abs_tol_aquifr)  bind(C, name="f_setGruTolerances")
   USE actor_data_types,only:gru_type
   USE var_lookup,only: iLookPARAM
 
@@ -40,6 +44,20 @@ subroutine f_setGruTolerances(handle_gru_data, rel_tol, abs_tol) bind(C, name="f
   type(c_ptr), intent(in),value :: handle_gru_data
   real(c_double), intent(in)    :: rel_tol
   real(c_double), intent(in)    :: abs_tol
+  real(c_double), intent(in)    :: rel_tol_temp_cas
+  real(c_double), intent(in)    :: rel_tol_temp_veg
+  real(c_double), intent(in)    :: rel_tol_wat_veg
+  real(c_double), intent(in)    :: rel_tol_temp_soil_snow
+  real(c_double), intent(in)    :: rel_tol_wat_snow
+  real(c_double), intent(in)    :: rel_tol_matric
+  real(c_double), intent(in)    :: rel_tol_aquifr
+  real(c_double), intent(in)    :: abs_tol_temp_cas
+  real(c_double), intent(in)    :: abs_tol_temp_veg
+  real(c_double), intent(in)    :: abs_tol_wat_veg
+  real(c_double), intent(in)    :: abs_tol_temp_snow_soil
+  real(c_double), intent(in)    :: abs_tol_wat_snow
+  real(c_double), intent(in)    :: abs_tol_matric
+  real(c_double), intent(in)    :: abs_tol_aquifr
   ! Local Varaibles
   integer(i4b)                  :: iHRU
 
@@ -52,25 +70,25 @@ subroutine f_setGruTolerances(handle_gru_data, rel_tol, abs_tol) bind(C, name="f
     gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relConvTol_matric)%dat(1) = rel_tol
     gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relConvTol_energy)%dat(1) = rel_tol
     gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relConvTol_aquifr)%dat(1) = rel_tol
-    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relTolTempCas)%dat(1) = rel_tol
-    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relTolTempVeg)%dat(1) = rel_tol
-    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relTolWatVeg)%dat(1) = rel_tol
-    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relTolTempSoilSnow)%dat(1) = rel_tol
-    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relTolWatSnow)%dat(1) = rel_tol
-    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relTolMatric)%dat(1) = rel_tol
-    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relTolAquifr)%dat(1) = rel_tol
+    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relTolTempCas)%dat(1) = rel_tol_temp_cas
+    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relTolTempVeg)%dat(1) = rel_tol_temp_veg
+    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relTolWatVeg)%dat(1) = rel_tol_wat_veg
+    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relTolTempSoilSnow)%dat(1) = rel_tol_temp_soil_snow
+    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relTolWatSnow)%dat(1) = rel_tol_wat_snow
+    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relTolMatric)%dat(1) = rel_tol_matric
+    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relTolAquifr)%dat(1) = rel_tol_aquifr
   
     gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absConvTol_liquid)%dat(1) = abs_tol 
     gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absConvTol_matric)%dat(1) = abs_tol 
     gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absConvTol_energy)%dat(1) = abs_tol 
     gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absConvTol_aquifr)%dat(1) = abs_tol 
-    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absTolTempCas)%dat(1) = abs_tol 
-    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absTolTempVeg)%dat(1) = abs_tol 
-    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absTolWatVeg)%dat(1) = abs_tol 
-    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absTolTempSoilSnow)%dat(1) = abs_tol 
-    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absTolWatSnow)%dat(1) = abs_tol 
-    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absTolMatric)%dat(1) = abs_tol 
-    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absTolAquifr)%dat(1) = abs_tol 
+    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absTolTempCas)%dat(1) = abs_tol_temp_cas
+    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absTolTempVeg)%dat(1) = abs_tol_temp_veg
+    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absTolWatVeg)%dat(1) = abs_tol_wat_veg 
+    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absTolTempSoilSnow)%dat(1) = abs_tol_temp_snow_soil 
+    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absTolWatSnow)%dat(1) = abs_tol_wat_snow
+    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absTolMatric)%dat(1) = abs_tol_matric 
+    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absTolAquifr)%dat(1) = abs_tol_aquifr 
   end do
 
 
