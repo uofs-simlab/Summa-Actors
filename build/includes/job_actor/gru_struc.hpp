@@ -34,6 +34,20 @@ class GRU {
     int dt_init_factor_;     // The initial dt for the GRU
     double rel_tol_;         // The relative tolerance for the GRU
     double abs_tol_;         // The absolute tolerance for the GRU
+    double rel_tol_temp_cas_; // The relative tolerance for the temperature of the cas
+    double rel_tol_temp_veg_; // The relative tolerance for the temperature of the veg
+    double rel_tol_wat_veg_;  // The relative tolerance for the water content of the veg
+    double rel_tol_temp_soil_snow_; // The relative tolerance for the temperature of the soil snow
+    double rel_tol_wat_snow_; // The relative tolerance for the water content of the snow
+    double rel_tol_matric_;   // The relative tolerance for the matric potential
+    double rel_tol_aquifr_;   // The relative tolerance for the aquifer
+    double abs_tol_temp_cas_; // The absolute tolerance for the temperature of the cas
+    double abs_tol_temp_veg_; // The absolute tolerance for the temperature of the veg
+    double abs_tol_wat_veg_;  // The absolute tolerance for the water content of the veg
+    double abs_tol_temp_soil_snow_; // The absolute tolerance for the temperature of the soil snow
+    double abs_tol_wat_snow_; // The absolute tolerance for the water content of the snow
+    double abs_tol_matric_;   // The absolute tolerance for the matric potential
+    double abs_tol_aquifr_;   // The absolute tolerance for the aquifer
 
     // Status Information
     int attempts_left_;      // The number of attempts left for the GRU to succeed
@@ -46,10 +60,15 @@ class GRU {
   public:
     // Constructor
     GRU(int index_netcdf, int index_job, caf::actor actor_ref, 
-        int dt_init_factor, double rel_tol, double abs_tol, int max_attempts) 
+        int dt_init_factor, double rel_tol, double abs_tol, double rel_tol_temp_cas,
+        double rel_tol_temp_veg, double rel_tol_temp_soil_snow, double rel_tol_wat_veg,
+        double rel_tol_wat_snow, double rel_tol_matric, double rel_tol_aquifr,int max_attempts) 
         : index_netcdf_(index_netcdf), index_job_(index_job), 
           actor_ref_(actor_ref), dt_init_factor_(dt_init_factor),
-          rel_tol_(rel_tol), abs_tol_(abs_tol), attempts_left_(max_attempts),
+          rel_tol_(rel_tol), abs_tol_(abs_tol), rel_tol_temp_cas_(rel_tol_temp_cas),
+          rel_tol_temp_veg_(rel_tol_temp_veg), rel_tol_temp_soil_snow_(rel_tol_soil_snow),
+          rel_tol_wat_veg_(rel_tol_wat_veg), rel_tol_wat_snow_(rel_tol_wat_snow),
+          rel_tol_matric_(rel_tol_matric), rel_tol_aquifr_(rel_tol_aquifr),attempts_left_(max_attempts),
           state_(gru_state::running) {};
 
     // Deconstructor
@@ -62,13 +81,46 @@ class GRU {
     inline double getRunTime() const { return run_time_; }
     inline double getRelTol() const { return rel_tol_; }
     inline double getAbsTol() const { return abs_tol_; }
+    inline double getRelTolTempCas() const { return rel_tol_temp_cas; }
+    inline double getRelTolTempVeg() const { return rel_tol_temp_veg;}
+    inline double getRelTolWatVeg() const { return rel_tol_wat_veg;}
+    inline double getRelTolTempSoilSnow() const { return rel_tol_temp_soil_snow;}
+    inline double getRelTolWatSnow() const { return rel_tol_wat_snow;}
+    inline double getRelTolMatric() const { return rel_tol_matric;}
+    inline double getRelTolAquifr() const { return rel_tol_aquifr;}
+    inline double getAbsTolTempCas() const { return abs_tol_temp_cas;}
+    inline double getAbsTolTempVeg() const { return abs_tol_temp_veg;}
+    inline double getAbsTolWatVeg() const { return abs_tol_wat_veg;}
+    inline double getAbsTolTempSoilSnow() const { return abs_tol_temp_soil_snow;}
+    inline double getAbsTolWatSnow() const { return abs_tol_wat_snow;}
+    inline double getAbsTolMatric() const { return abs_tol_matric;}
+    inline double getAbsTolAquifr() const { return abs_tol_aquifr;}
     inline int getAttemptsLeft() const { return attempts_left_; }
     inline gru_state getStatus() const { return state_; }
 
     // Setters
     inline void setRunTime(double run_time) { run_time_ = run_time; }
-    inline void setRelTol(double rel_tol) { rel_tol_ = rel_tol; }
-    inline void setAbsTol(double abs_tol) { abs_tol_ = abs_tol; }
+    //Setting rel_tol will set all rel_tol_* to the same value
+    inline void setRelTol(double rel_tol){
+      rel_tol_ = rel_tol;
+      rel_tol_temp_cas = rel_tol;
+      rel_tol_temp_veg = rel_tol;
+      rel_tol_temp_soil_snow = rel_tol;
+      rel_tol_wat_veg = rel_tol;
+      rel_tol_wat_snow = rel_tol;
+      rel_tol_matric = rel_tol;
+      rel_tol_aquifr = rel_tol;
+       }
+    inline void setAbsTol(double abs_tol) { 
+      abs_tol_ = abs_tol;
+      abs_tol_temp_cas = abs_tol;
+      abs_tol_temp_veg = abs_tol;
+      abs_tol_temp_soil_snow = abs_tol;
+      abs_tol_wat_veg = abs_tol;
+      abs_tol_wat_snow = abs_tol;
+      abs_tol_matric = abs_tol;
+      abs_tol_aquifr = abs_tol;
+        }
     inline void setSuccess() { state_ = gru_state::succeeded; }
     inline void setFailed() { state_ = gru_state::failed; }
     inline void setRunning() { state_ = gru_state::running; }
