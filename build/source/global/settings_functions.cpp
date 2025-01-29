@@ -152,7 +152,7 @@ void Settings::generateConfigFile() {
         {"file_manager_path", "/home/username/summa_file_manager"},
         {"max_run_attempts", 1},
         {"data_assimilation_mode", false},
-        {"batch_size", 10}
+        {"batch_size", 4000}
     };
     config_file["HRU_Actor"] = {
         {"print_output", true},
