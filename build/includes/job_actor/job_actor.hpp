@@ -51,7 +51,8 @@ class JobActor {
 
   // HRU Attributes
   double rel_tol_ = -9999;
-  double abs_tol_ = -9999;
+  double abs_tolWat_ = -9999;
+  double abs_tolNrg_ = -9999;
   int dt_init_factor_ = 1;
 
 

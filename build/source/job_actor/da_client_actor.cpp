@@ -85,7 +85,7 @@ behavior DAClientActor::make_behavior() {
         self_->quit();
         return;
       }
-      // summa_init_struc_->getInitTolerance(rel_tol_, abs_tol_);
+      // summa_init_struc_->getInitBEStepsIDATol(be_steps_, rel_tol_, abs_tolWat_, abs_tolNrg_);
 
       NumGRUInfo num_gru_info = NumGRUInfo(
           node_gru_info.node_start_gru_, node_gru_info.node_start_gru_,

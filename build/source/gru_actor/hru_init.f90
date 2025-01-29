@@ -412,7 +412,8 @@ subroutine readHRURestart(indxGRU, indxHRU, hru_data, err, message)
 end subroutine readHRURestart
 
 ! Set the HRU's relative and absolute tolerances
-subroutine setIDATolerances(handle_hru_data,    &
+subroutine setBEStepsIDATol(handle_hru_data,    &
+                            be_steps,           &
                             relTolTempCas,      &
                             absTolTempCas,      &
                             relTolTempVeg,      &
@@ -426,13 +427,14 @@ subroutine setIDATolerances(handle_hru_data,    &
                             relTolMatric,       &
                             absTolMatric,       &
                             relTolAquifr,       &
-                            absTolAquifr) bind(C, name="setIDATolerances")
+                            absTolAquifr) bind(C, name="setBEStepsIDATol")
   USE data_types,only:var_dlength
   USE var_lookup,only:iLookPARAM
 
   implicit none
 
   type(c_ptr), intent(in), value          :: handle_hru_data    !  model time data
+  real(int),intent(in)                    :: be_steps
   real(c_double),intent(in)               :: relTolTempCas
   real(c_double),intent(in)               :: absTolTempCas
   real(c_double),intent(in)               :: relTolTempVeg
@@ -452,7 +454,8 @@ subroutine setIDATolerances(handle_hru_data,    &
 
   call c_f_pointer(handle_hru_data, hru_data)
 
-#ifdef SUNDIALS_ACTIVE
+#ifdef V4_ACTIVE
+  hru_data%mparStruct%var(iLookPARAM%be_steps)%dat(1)            = be_steps
   hru_data%mparStruct%var(iLookPARAM%relTolTempCas)%dat(1)       = relTolTempCas 
   hru_data%mparStruct%var(iLookPARAM%absTolTempCas)%dat(1)       = absTolTempCas
   hru_data%mparStruct%var(iLookPARAM%relTolTempVeg)%dat(1)       = relTolTempVeg
@@ -468,5 +471,5 @@ subroutine setIDATolerances(handle_hru_data,    &
   hru_data%mparStruct%var(iLookPARAM%relTolAquifr)%dat(1)        = relTolAquifr
   hru_data%mparStruct%var(iLookPARAM%absTolAquifr)%dat(1)        = absTolAquifr
 #endif
-end subroutine setIDATolerances
+end subroutine setBEStepsIDATol
 end module INIT_HRU_ACTOR

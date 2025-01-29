@@ -44,10 +44,12 @@ extern "C" {
   // hru_writeOutput.f90
   void setFinalizeStatsFalse(int* indx_gru);
 
-  void get_sundials_tolerances(void* hru_data, double* relTol, double* absTol);
-  void set_sundials_tolerances(void* hru_data, double* relTol, double* absTol);
+  void get_steps_tolerances(void* hru_data, int* beSteps, double* rtol, double* atolWat, 
+                               double* atolNrg);
+  void set_steps_tolerances(void* hru_data, int* beSteps, double* rtol, double* atolWat, 
+                               double* atolNrg);
 
-  void setIDATolerances(void* hru_data, double* relTolTempCas, 
+  void setBEStepsIDATol(void* hru_data, int* be_steps, double* relTolTempCas, 
                         double* absTolTempCas, double* relTolTempVeg, 
                         double* absTolTempVeg, double* relTolWatVeg, 
                         double* absTolWatVeg, double* relTolTempSoilSnow,
@@ -96,8 +98,10 @@ struct hru_state {
   std::string err_message;
 
   // Sundials variables
+  int beSteps = -9999; // -9999 uses default
   double rtol = -9999; // -9999 uses default
-  double atol = -9999; // -9999 uses default
+  double atolWat = -9999; // -9999 uses default
+  double atolNrg = -9999; // -9999 uses default
 
   double walltime_timestep = 0.0; // walltime for the current timestep		
 

@@ -28,8 +28,8 @@ class ErrorLogger {
   public:
     ErrorLogger(const std::string error_log_file_name = "");
     ~ErrorLogger() {};
-    void logError(int ref_gru, int indx_gru, int timestep, double rel_tol, 
-                  double abs_tol, int err_code, const std::string &message);
+    void logError(int ref_gru, int indx_gru, int timestep, int be_steps, double rel_tol, 
+                  double abs_tolWat, double abs_tolNrg, int err_code, const std::string &message);
     void nextAttempt();
 };
 
@@ -43,6 +43,6 @@ class SuccessLogger {
   public:
     SuccessLogger(const std::string success_log_file_name = "");
     ~SuccessLogger() {};
-    void logSuccess(int ref_gru, int indx_gru, double rel_tol, double abs_tol);
+    void logSuccess(int ref_gru, int indx_gru, int be_steps, double rel_tol, double abs_tolWat, double abs_tolNrg);
     void nextAttempt();
 };

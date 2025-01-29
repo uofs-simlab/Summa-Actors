@@ -29,7 +29,7 @@ int SummaInitStruc::summa_readRestart() {
   return err;
 }
 
-void SummaInitStruc::getInitTolerance(double rel_tol, double abs_tol) {
-  f_getInitTolerance(rel_tol, abs_tol);
+void SummaInitStruc::getInitBEStepsIDATol(int be_steps, double rel_tol, double abs_tolWat, double abs_tolNrg) {
+  f_getInitBEStepsIDATol(be_steps, rel_tol, abs_tolWat, abs_tolNrg);
 }
 

@@ -34,7 +34,7 @@ behavior GruActor::make_behavior() {
   }
 
   f_setGruTolerances(gru_data_.get(), hru_actor_settings_.rel_tol_,
-      hru_actor_settings_.abs_tol_);
+      hru_actor_settings_.abs_tolWat_,hru_actor_settings_.abs_tolNrg_);
 
   data_assimilation_mode_ ? self_->become(data_assimilation_mode()) :
                             self_->become(async_mode());

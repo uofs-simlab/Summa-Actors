@@ -63,10 +63,14 @@ int Settings::readSettings() {
         .value_or(true),
     getSettings<int>(json_settings, "HRU_Actor", "output_frequency")
         .value_or(OUTPUT_FREQUENCY),
-    getSettings<double>(json_settings, "HRU_Actor", "abs_tol")
-        .value_or(1e-3),
+    getSettings<double>(json_settings, "HRU_Actor", "abs_tolWat")
+        .value_or(0),
+    getSettings<double>(json_settings, "HRU_Actor", "abs_tolNrg")
+        .value_or(0),
     getSettings<double>(json_settings, "HRU_Actor", "rel_tol")
-        .value_or(1e-3));
+        .value_or(0),
+        getSettings<int>(json_settings, "HRU_Actor", "be_steps")
+        .value_or(0));
 
 
   return SUCCESS;
