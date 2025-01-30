@@ -455,7 +455,7 @@ subroutine setBEStepsIDATol(handle_hru_data,    &
   call c_f_pointer(handle_hru_data, hru_data)
 
 #ifdef V4_ACTIVE
-  hru_data%mparStruct%var(iLookPARAM%be_steps)%dat(1)            = be_steps
+  hru_data%mparStruct%var(iLookPARAM%be_steps)%dat(1)            = REAL(be_steps)
   hru_data%mparStruct%var(iLookPARAM%relTolTempCas)%dat(1)       = relTolTempCas 
   hru_data%mparStruct%var(iLookPARAM%absTolTempCas)%dat(1)       = absTolTempCas
   hru_data%mparStruct%var(iLookPARAM%relTolTempVeg)%dat(1)       = relTolTempVeg
