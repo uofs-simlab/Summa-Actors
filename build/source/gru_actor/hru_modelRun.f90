@@ -274,7 +274,7 @@ subroutine get_steps_tolerances(handle_hru_data, beSteps, rtol, atolWat, atolNrg
 
   ! dummy variables
   type(c_ptr),    intent(in), value         :: handle_hru_data        ! c_ptr to -- hru data
-  real(c_int),    intent(out)               :: beSteps                ! number of backward Euler steps in data window
+  integer(c_int), intent(out)               :: beSteps                ! number of backward Euler steps in data window
   real(c_double), intent(out)               :: rtol                   ! relative tolerance
   real(c_double), intent(out)               :: atolWat                ! absolute tolerance for water states
   real(c_double), intent(out)               :: atolNrg                ! absolute tolerance for energy states
@@ -285,23 +285,23 @@ subroutine get_steps_tolerances(handle_hru_data, beSteps, rtol, atolWat, atolNrg
   if (trim(model_decisions(iLookDECISIONS%num_method)%cDecision)=='ida') then
     beSteps = 1 ! IDA should have full step size (value isn't used anyhow)
     ! IDA tolerances, which are set in the model decision file
-    rtol = (hru_data%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolTempCas)%dat(1) &
-          + hru_data%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolWatVeg)%dat(1) &
-          + hru_data%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolTempVeg)%dat(1) &
-          + hru_data%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolWatSnow)%dat(1) &
-          + hru_data%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolTempSoilSnow)%dat(1) &
-          + hru_data%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolMatric)%dat(1) &
-          + hru_data%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolAquifr)%dat(1))/7._rkind
+    rtol = (hru_data%mparStruct%var(iLookPARAM%relTolTempCas)%dat(1) &
+          + hru_data%mparStruct%var(iLookPARAM%relTolWatVeg)%dat(1) &
+          + hru_data%mparStruct%var(iLookPARAM%relTolTempVeg)%dat(1) &
+          + hru_data%mparStruct%var(iLookPARAM%relTolWatSnow)%dat(1) &
+          + hru_data%mparStruct%var(iLookPARAM%relTolTempSoilSnow)%dat(1) &
+          + hru_data%mparStruct%var(iLookPARAM%relTolMatric)%dat(1) &
+          + hru_data%mparStruct%var(iLookPARAM%relTolAquifr)%dat(1))/7._rkind
 
-    atolWat = (hru_data%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolWatVeg)%dat(1) &
-             + hru_data%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolWatSnow)%dat(1) &
-             + hru_data%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolMatric)%dat(1) &
-             + hru_data%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolAquifr)%dat(1))/4._rkind
-    atolNrg = (hru_data%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolTempCas)%dat(1) &
-             + hru_data%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolTempVeg)%dat(1) &
-             + hru_data%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolTempSoilSnow)%dat(1))/3._rkind
+    atolWat = (hru_data%mparStruct%var(iLookPARAM%absTolWatVeg)%dat(1) &
+             + hru_data%mparStruct%var(iLookPARAM%absTolWatSnow)%dat(1) &
+             + hru_data%mparStruct%var(iLookPARAM%absTolMatric)%dat(1) &
+             + hru_data%mparStruct%var(iLookPARAM%absTolAquifr)%dat(1))/4._rkind
+    atolNrg = (hru_data%mparStruct%var(iLookPARAM%absTolTempCas)%dat(1) &
+             + hru_data%mparStruct%var(iLookPARAM%absTolTempVeg)%dat(1) &
+             + hru_data%mparStruct%var(iLookPARAM%absTolTempSoilSnow)%dat(1))/3._rkind
   else ! all other methods are currently BE -- 'homegrown' ('itertive'), 'kinsol'
-    beSteps = NINT(hru_data%mparStruct%gru(1)%hru(1)%var(iLookPARAM%be_stepss)%dat(1))
+    beSteps = NINT(hru_data%mparStruct%var(iLookPARAM%be_steps)%dat(1))
     rtol = -9999    ! BE doesn't use these
     atolWat = -9999
     atolNrg = -9999
@@ -317,7 +317,7 @@ subroutine set_steps_tolerances(handle_hru_data, beSteps, rtol, atolWat, atolNrg
 
   ! dummy variables
   type(c_ptr), intent(in), value           :: handle_hru_data        ! c_ptr to -- hru data
-  real(c_int), intent(in)                  :: beSteps                ! number of backward Euler steps in data window
+  integer(c_int), intent(in)               :: beSteps                ! number of backward Euler steps in data window
   real(c_double), intent(in)               :: rtol                   ! relative tolerance
   real(c_double), intent(in)               :: atolWat                ! absolute tolerance for water
   real(c_double), intent(in)               :: atolNrg                ! absolute tolerance for energy

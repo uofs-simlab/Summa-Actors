@@ -243,7 +243,7 @@ subroutine f_getInitBEStepsIDATol(beSteps, rtol, atolWat, atolNrg) &
              + init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolTempVeg)%dat(1) &
              + init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolTempSoilSnow)%dat(1))/3._rkind
   else ! all other methods are currently BE -- 'homegrown' ('itertive'), 'kinsol'
-    beSteps = NINT(init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%be_stepss)%dat(1))
+    beSteps = NINT(init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%be_steps)%dat(1))
   endif
 #endif
 

@@ -434,7 +434,7 @@ subroutine setBEStepsIDATol(handle_hru_data,    &
   implicit none
 
   type(c_ptr), intent(in), value          :: handle_hru_data    !  model time data
-  real(int),intent(in)                    :: be_steps
+  integer(c_int),intent(in)               :: be_steps
   real(c_double),intent(in)               :: relTolTempCas
   real(c_double),intent(in)               :: absTolTempCas
   real(c_double),intent(in)               :: relTolTempVeg
