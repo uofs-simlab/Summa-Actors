@@ -32,6 +32,7 @@ class GRU {
 
     // Modifyable Parameters
     int dt_init_factor_;     // The initial dt for the GRU
+    int be_steps_;           // The number of BE steps for the GRU
     double rel_tol_;         // The relative tolerance for the GRU
     double abs_tolWat_;      // The absolute tolerance for the GRU water states
     double abs_tolNrg_;      // The absolute tolerance for the GRU energy states
@@ -61,9 +62,10 @@ class GRU {
     inline int getIndexJob() const { return index_job_; }
     inline caf::actor getActorRef() const { return actor_ref_; }
     inline double getRunTime() const { return run_time_; }
+    inline int getBeSteps() const { return be_steps_; }
     inline double getRelTol() const { return rel_tol_; }
-    inline double getAbsTol() const { return abs_tolWat_; }
-    inline double getAbsTol() const { return abs_tolNrg_; }
+    inline double getAbsTolWat() const { return abs_tolWat_; }
+    inline double getAbsTolNrg() const { return abs_tolNrg_; }
     inline int getAttemptsLeft() const { return attempts_left_; }
     inline gru_state getStatus() const { return state_; }
 
@@ -71,8 +73,8 @@ class GRU {
     inline void setRunTime(double run_time) { run_time_ = run_time; }
     inline void setBeSteps(int be_steps) { be_steps_ = be_steps; }
     inline void setRelTol(double rel_tol) { rel_tol_ = rel_tol; }
-    inline void setAbsTol(double abs_tolWat) { abs_tolWat_ = abs_tolWat; }
-    inline void setAbsTol(double abs_tolNrg) { abs_tolNrg_ = abs_tolNrg; }    
+    inline void setAbsTolWat(double abs_tolWat) { abs_tolWat_ = abs_tolWat; }
+    inline void setAbsTolNrg(double abs_tolNrg) { abs_tolNrg_ = abs_tolNrg; }    
     inline void setSuccess() { state_ = gru_state::succeeded; }
     inline void setFailed() { state_ = gru_state::failed; }
     inline void setRunning() { state_ = gru_state::running; }
