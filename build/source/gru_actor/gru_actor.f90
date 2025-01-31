@@ -38,7 +38,7 @@ subroutine f_setGruTolerances(handle_gru_data, be_steps, rel_tol, abs_tolWat, ab
 
   implicit none
   type(c_ptr), intent(in),value :: handle_gru_data
-  real(c_int), intent(in)       :: be_steps
+  integer(c_int), intent(in)    :: be_steps
   real(c_double), intent(in)    :: rel_tol
   real(c_double), intent(in)    :: abs_tolWat
   real(c_double), intent(in)    :: abs_tolNrg

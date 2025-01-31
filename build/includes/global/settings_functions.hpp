@@ -183,6 +183,7 @@ class HRUActorSettings {
     double abs_tolWat_;
     double abs_tolNrg_;    
     double rel_tol_;
+    int be_steps_;
 
     HRUActorSettings(bool print_output = false, int output_frequency = 100,
         double abs_tolWat = 0.0, double abs_tolNrg = 0.0, double rel_tol = 0.0, int be_steps = 0) 
