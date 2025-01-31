@@ -132,12 +132,12 @@ behavior JobActor::async_mode() {
         abs_tolNrg_ /= 10;
         hru_actor_settings_.abs_tolNrg_ = abs_tolNrg_;
         be_steps_ = 1;
-        hru_actor_settings_.be_steps = be_steps_;
+        hru_actor_settings_.be_steps_ = be_steps_;
       } else if (be_steps_ >0) {
         logger_->log("Increasing BE Steps by * 2");
         self_->println("Increasing BE Steps by * 2\n");
         be_steps_ *= 2;
-        hru_actor_settings_.be_steps = be_steps_;
+        hru_actor_settings_.be_steps_ = be_steps_;
       } else {
         logger_->log("Initial IDA Tolerances and BE Steps not set, increasing dt_init_factor by * 2 (not recommended)");
         self_->println("Initial IDA Tolerances and BE Steps not set, increasing dt_init_factor by * 2 (not recommended)\n");
@@ -168,7 +168,7 @@ behavior JobActor::async_mode() {
             file_access_actor_, self_);
         gru_struc_->decrementNumGruFailed();
         std::unique_ptr<GRU> gru_obj = std::make_unique<GRU>(
-            netcdf_index, job_index, gru_actor, dt_init_factor_, rel_tol_, 
+            netcdf_index, job_index, gru_actor, dt_init_factor_, be_steps_, rel_tol_, 
             abs_tolWat_, abs_tolNrg_, job_actor_settings_.max_run_attempts_);
         gru_struc_->addGRU(std::move(gru_obj));
         self_->mail(update_hru_async_v).send(gru_actor);
@@ -300,7 +300,13 @@ behavior JobActor::data_assimilation_mode() {
 // ------------------------ Member Functions ------------------------
 void JobActor::spawnGruActors() {
   self_->println("JobActor: Spawning GRU Actors");
-    // TODO: Implement f_getRelTol and f_getAbsTol
+  // TODO: Implement f_getBeSteps, f_getRelTol, and f_getAbsTol
+
+  if (hru_actor_settings_.be_steps_ > 0) {
+    // f_getBeSteps();
+    be_steps_ = hru_actor_settings_.be_steps_;
+  }
+
   if (hru_actor_settings_.rel_tol_ > 0) {
     // f_getRelTol();
     rel_tol_ = hru_actor_settings_.rel_tol_;
@@ -325,7 +331,7 @@ void JobActor::spawnGruActors() {
         fa_actor_settings_.num_timesteps_in_output_buffer_, file_access_actor_, 
         self_);
     std::unique_ptr<GRU> gru_obj = std::make_unique<GRU>(
-        netcdf_index, job_index, gru_actor, dt_init_factor_, rel_tol_, 
+        netcdf_index, job_index, gru_actor, dt_init_factor_, be_steps_, rel_tol_, 
         abs_tolWat_, abs_tolNrg_, job_actor_settings_.max_run_attempts_);
     gru_struc_->addGRU(std::move(gru_obj));
     
@@ -339,8 +345,13 @@ void JobActor::spawnGruActors() {
 void JobActor::spawnGruBatches() {
   self_->println("JobActor: Spawning GRU Batch Actors");
   int batch_size;
+  // TODO: Implement f_getBeSteps, f_getRelTol, and f_getAbsTol
 
-  // TODO: Implement f_getRelTol and f_getAbsTol
+  if (hru_actor_settings_.be_steps_ <= 0) {
+    // f_getBeSteps();
+    be_steps_ = hru_actor_settings_.be_steps_;
+  }
+
   if (hru_actor_settings_.rel_tol_ <= 0) {
     // f_getRelTol();
     rel_tol_ = hru_actor_settings_.rel_tol_;
@@ -355,13 +366,6 @@ void JobActor::spawnGruBatches() {
     // f_getAbsTol();
     abs_tolNrg_ = hru_actor_settings_.abs_tolNrg_;
   }
-
-  // if (rel_tol_ <= 0) {
-  // }
-
-  // if (abs_tolWat_ <= 0) {
-  //   f_getAbsTol();
-  // }
 
   if (job_actor_settings_.batch_size_ < 0) {
     // Automatically determine batch size
@@ -391,7 +395,7 @@ void JobActor::spawnGruBatches() {
         file_access_actor_, self_);
 
     std::unique_ptr<GRU> gru_obj = std::make_unique<GRU>(
-        netcdf_start_index, job_start_index, gru_batch, dt_init_factor_, 
+        netcdf_start_index, job_start_index, gru_batch, dt_init_factor_, be_steps_,
         rel_tol_, abs_tolWat_, abs_tolNrg_, job_actor_settings_.max_run_attempts_);
     gru_struc_->addGRU(std::move(gru_obj));
     remaining_hru_to_batch -= current_batch_size;
@@ -425,7 +429,7 @@ void JobActor::handleFinishedGRU(int job_index) {
   gru_struc_->getGRU(job_index)->setSuccess();
   success_logger_->logSuccess(gru_struc_->getGRU(job_index)->getIndexNetcdf(),
                               gru_struc_->getGRU(job_index)->getIndexJob(),
-                              rel_tol_, abs_tolWat_, abs_tolNrg_);
+                              be_steps_, rel_tol_, abs_tolWat_, abs_tolNrg_);
   std::string update_str =
       "GRU Finished: " + std::to_string(gru_struc_->getNumGruDone()) + "/" + 
       std::to_string(gru_struc_->getNumGru()) + " -- GlobalGRU=" + 

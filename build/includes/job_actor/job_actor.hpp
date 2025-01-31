@@ -50,6 +50,7 @@ class JobActor {
   HRUActorSettings hru_actor_settings_; 
 
   // HRU Attributes
+  int be_steps_ = -9999;
   double rel_tol_ = -9999;
   double abs_tolWat_ = -9999;
   double abs_tolNrg_ = -9999;
