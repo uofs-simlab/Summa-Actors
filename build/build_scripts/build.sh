@@ -36,5 +36,5 @@ export CMAKE_PREFIX_PATH="$CMAKE_PREFIX_PATH:/u1/kck540/Projects/hydrology/Summa
 # If compiling V4 with sundials use the folowing (default)
 # -----------------------------------
 
-cmake -B ./cmake_build -S .. -DUSE_SUNDIALS=ON -DCMAKE_BUILD_TYPE=Debug
+cmake -B ./cmake_build -S .. -DUSE_SUNDIALS=ON -DCMAKE_BUILD_TYPE=Release
 cmake --build ./cmake_build --target all -j
