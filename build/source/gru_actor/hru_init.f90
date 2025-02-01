@@ -277,9 +277,18 @@ subroutine setupHRU(indxGRU, indxHRU, hru_data, err, message)
   enddo
 #ifdef V4_ACTIVE
   if (allocated(init_struc%lookupStruct%gru(indxGRU)%hru(indxHRU)%z)) then
-    do i_z=1, size(init_struc%lookupStruct%gru(indxGRU)%hru(indxHRU)%z(:))
-      do iVar=1, size(init_struc%lookupStruct%gru(indxGRU)%hru(indxHRU)%z(i_z)%var(:))
-        hru_data%lookupStruct%z(i_z)%var(ivar)%lookup(:) = init_struc%lookupStruct%gru(indxGRU)%hru(indxHRU)%z(i_z)%var(iVar)%lookup(:)
+    if (.not. allocated(hru_data%lookupStruct%z)) then
+      allocate(hru_data%lookupStruct%z(size(init_struc%lookupStruct%gru(indxGRU)%hru(indxHRU)%z)))
+    end if
+    do i_z = 1, size(init_struc%lookupStruct%gru(indxGRU)%hru(indxHRU)%z(:))
+      if (.not. allocated(hru_data%lookupStruct%z(i_z)%var)) then
+        allocate(hru_data%lookupStruct%z(i_z)%var(size(init_struc%lookupStruct%gru(indxGRU)%hru(indxHRU)%z(i_z)%var)))
+      end if
+      do ivar = 1, size(init_struc%lookupStruct%gru(indxGRU)%hru(indxHRU)%z(i_z)%var(:))
+        if (.not. allocated(hru_data%lookupStruct%z(i_z)%var(ivar)%lookup)) then
+          allocate(hru_data%lookupStruct%z(i_z)%var(ivar)%lookup(size(init_struc%lookupStruct%gru(indxGRU)%hru(indxHRU)%z(i_z)%var(ivar)%lookup)))
+        end if
+        hru_data%lookupStruct%z(i_z)%var(ivar)%lookup(:) = init_struc%lookupStruct%gru(indxGRU)%hru(indxHRU)%z(i_z)%var(ivar)%lookup(:)
       end do
     end do
   endif
