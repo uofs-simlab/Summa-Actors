@@ -325,6 +325,16 @@ subroutine readHRURestart(indxGRU, indxHRU, hru_data, err, message)
   USE mDecisions_module,only:&                                ! look-up values for the choice of method for the spatial representation of groundwater
   localColumn, & ! separate groundwater representation in each local soil column
   singleBasin    ! single groundwater store over the entire basin
+#ifdef V4_ACTIVE
+  USE mDecisions_module,only:&
+  fullStart,      & ! start with full aquifer
+  emptyStart        ! start with empty aquifer
+  ! look-up values for the choice of variable in energy equations (BE residual or IDA state variable)
+  USE mDecisions_module,only:&
+  closedForm,     & ! use temperature with closed form heat capacity
+  enthalpyFormLU, & ! use enthalpy with soil temperature-enthalpy lookup tables
+  enthalpyForm      ! use enthalpy with soil temperature-enthalpy analytical solution
+#endif
   implicit none
   ! Dummy variables
   integer(c_int),intent(in)               :: indxGRU            !  index of GRU in gru_struc
@@ -337,9 +347,33 @@ subroutine readHRURestart(indxGRU, indxHRU, hru_data, err, message)
   character(LEN=256)                      :: cmessage           ! error message of downwind routine
   character(LEN=256)                      :: restartFile        ! restart file name
   integer(i4b)                            :: nGRU
+  real(double)                            :: aquifer_start      ! initial aquifer storage
+  logical(lgt)                            :: checkEnthalpy      ! flag if checking enthalpy for consistency
+  logical(lgt)                            :: use_lookup         ! flag to use the lookup table for soil enthalpy, otherwise use analytical solution
+ 
   ! ---------------------------------------------------------------------------------------
   ! initialize error control
   err=0; message='hru_actor_readRestart/'
+
+! check initial conditions
+  checkEnthalpy = .false.
+  use_lookup    = .false.
+#ifdef V4_ACTIVE
+  if(model_decisions(iLookDECISIONS%num_method)%iDecision .ne. closedForm) checkEnthalpy = .true. ! check enthalpy either for mixed form energy equation or enthalpy state variable
+  if(model_decisions(iLookDECISIONS%num_method)%iDecision==enthalpyFormLU) use_lookup = .true.    ! use lookup tables for soil temperature-enthalpy instead of analytical solution
+  call check_icond(1,                         & ! intent(in):    number of response units
+                   hru_data%progStruct,                   & ! intent(inout): model prognostic variables
+                   hru_data%diagStruct,                   & ! intent(inout): model diagnostic variables
+                   hru_data%mparStruct,                   & ! intent(in):    model parameters
+                   hru_data%indxStruct,                   & ! intent(in):    layer indexes
+                   hru_data%lookupStruct,                 & ! intent(in):    lookup tables
+                   checkEnthalpy,                & ! intent(in):    flag if need to start with consistent enthalpy
+                   .false.,                      & ! intent(in):    flag that enthalpy not in initial conditions
+                   use_lookup,                   & ! intent(in):    flag to use the lookup table for soil enthalpy
+                   err,cmessage)                   ! intent(out):   error control
+  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+#endif
+ 
 
   ! *****************************************************************************
   ! *** compute ancillary variables
@@ -391,18 +425,37 @@ subroutine readHRURestart(indxGRU, indxHRU, hru_data, err, message)
   ! For water balance calculations it is important to ensure that the local aquifer storage is zero if groundwater is treated as a basin-average state variable (singleBasin);
   !  and ensure that basin-average aquifer storage is zero when groundwater is included in the local columns (localColumn).
 
+  aquifer_start  = 1._dp
+#ifdef V4_ACTIVE
+  ! select aquifer option
+  select case(model_decisions(iLookDECISIONS%aquiferIni)%iDecision)
+   case(fullStart)
+    aquifer_start  = 1._dp ! Start with full aquifer, since easier to spin up by draining than filling (filling we need to wait for precipitation) 
+   case(emptyStart)
+    aquifer_start  = 0._dp ! Start with empty aquifer ! If want to compare model method outputs, empty start leads to quicker equilibrium
+   case default
+    message=trim(message)//'unable to identify decision for initial aquifer storage'
+   return
+  end select  ! aquifer option
+#endif
+
   ! select groundwater option
   select case(model_decisions(iLookDECISIONS%spatial_gw)%iDecision)
 
   ! the basin-average aquifer storage is not used if the groundwater is included in the local column
   case(localColumn)
-  hru_data%bvarStruct%var(iLookBVAR%basin__AquiferStorage)%dat(1) = 0._dp ! set to zero to be clear that there is no basin-average aquifer storage in this configuration
+   hru_data%bvarStruct%var(iLookBVAR%basin__AquiferStorage)%dat(1) = 0._dp ! set to zero to be clear that there is no basin-average aquifer storage in this configuration
+#ifdef V4_ACTIVE
+   if(model_decisions(iLookDECISIONS%aquiferIni)%iDecision==emptyStart) &
+     hru_data%progStruct%var(iLookPROG%scalarAquiferStorage)%dat(1) = aquifer_start ! leave at initialized values if fullStart
+   end do
+#endif
 
   ! the local column aquifer storage is not used if the groundwater is basin-average
   ! (i.e., where multiple HRUs drain to a basin-average aquifer)
   case(singleBasin)
-  hru_data%bvarStruct%var(iLookBVAR%basin__AquiferStorage)%dat(1) = 1._dp
-  hru_data%progStruct%var(iLookPROG%scalarAquiferStorage)%dat(1) = 0._dp  ! set to zero to be clear that there is no local aquifer storage in this configuration
+   hru_data%bvarStruct%var(iLookBVAR%basin__AquiferStorage)%dat(1) = aquifer_start
+   hru_data%progStruct%var(iLookPROG%scalarAquiferStorage)%dat(1) = 0._dp  ! set to zero to be clear that there is no local aquifer storage in this configuration
 
   ! error check
   case default
