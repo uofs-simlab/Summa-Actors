@@ -299,6 +299,9 @@ subroutine setupHRU(indxGRU, indxHRU, hru_data, err, message)
   do ivar=1, size(init_struc%indxStruct%gru(indxGRU)%hru(indxHRU)%var(:))
     hru_data%indxStruct%var(ivar)%dat(:) = init_struc%indxStruct%gru(indxGRU)%hru(indxHRU)%var(ivar)%dat(:)
   enddo
+  do ivar=1, size(diag_struc%indxStruct%gru(indxGRU)%hru(indxHRU)%var(:))
+    hru_data%diagStruct%var(ivar)%dat(:) = init_struc%diagStruct%gru(indxGRU)%hru(indxHRU)%var(ivar)%dat(:)
+  enddo
 end subroutine setupHRU
 
 
