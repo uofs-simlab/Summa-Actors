@@ -367,7 +367,7 @@ void JobActor::spawnGruBatches() {
     abs_tolNrg_ = hru_actor_settings_.abs_tolNrg_;
   }
 
-  if (job_actor_settings_.batch_size_ < 0) {
+  if (job_actor_settings_.batch_size_ <= 0) {
     // Automatically determine batch size
     batch_size = std::ceil(static_cast<double>(gru_struc_->getNumGru()) / 
         static_cast<double>(std::thread::hardware_concurrency()));
