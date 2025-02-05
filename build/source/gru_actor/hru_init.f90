@@ -265,6 +265,7 @@ subroutine setupHRU(indxGRU, indxHRU, hru_data, err, message)
   ! initialize error control
   err=0; message='setupHRU'
 
+  ! update all structures
   hru_data%oldTime_hru%var(:) = hru_data%startTime_hru%var(:)
   hru_data%attrStruct%var(:) = init_struc%attrStruct%gru(indxGRU)%hru(indxHRU)%var(:)
   hru_data%typeStruct%var(:) = init_struc%typeStruct%gru(indxGRU)%hru(indxHRU)%var(:)
@@ -301,6 +302,9 @@ subroutine setupHRU(indxGRU, indxHRU, hru_data, err, message)
   enddo
   do ivar=1, size(init_struc%diagStruct%gru(indxGRU)%hru(indxHRU)%var(:))
     hru_data%diagStruct%var(ivar)%dat(:) = init_struc%diagStruct%gru(indxGRU)%hru(indxHRU)%var(ivar)%dat(:)
+  enddo
+  do ivar=1, size(init_struc%fluxStruct%gru(indxGRU)%hru(indxHRU)%var(:))
+    hru_data%fluxStruct%var(ivar)%dat(:) = init_struc%fluxStruct%gru(indxGRU)%hru(indxHRU)%var(ivar)%dat(:)
   enddo
 end subroutine setupHRU
 
