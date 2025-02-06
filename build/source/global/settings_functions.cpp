@@ -55,7 +55,7 @@ int Settings::readSettings() {
     getSettings<bool>(json_settings, "Job_Actor", "data_assimilation_mode")
         .value_or(false),
     getSettings<int>(json_settings, "Job_Actor", "batch_size")
-        .value_or(10)
+        .value_or(-9999)
   );
 
   hru_actor_settings_ = HRUActorSettings(
@@ -64,13 +64,13 @@ int Settings::readSettings() {
     getSettings<int>(json_settings, "HRU_Actor", "output_frequency")
         .value_or(OUTPUT_FREQUENCY),
     getSettings<double>(json_settings, "HRU_Actor", "abs_tolWat")
-        .value_or(0),
+        .value_or(-9999),
     getSettings<double>(json_settings, "HRU_Actor", "abs_tolNrg")
-        .value_or(0),
+        .value_or(-9999),
     getSettings<double>(json_settings, "HRU_Actor", "rel_tol")
-        .value_or(0),
+        .value_or(-9999),
         getSettings<int>(json_settings, "HRU_Actor", "be_steps")
-        .value_or(0));
+        .value_or(-9999));
 
 
   return SUCCESS;
