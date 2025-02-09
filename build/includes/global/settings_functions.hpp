@@ -196,6 +196,7 @@ class HRUActorSettings {
     double abs_tol_wat_snow_;
     double abs_tol_matric_ ;
     double abs_tol_aquifr_ ;
+    bool default_tol_;
 
     HRUActorSettings(bool print_output = false, int output_frequency = 100,
         double abs_tol = 0.0, double rel_tol = 0.0, double rel_tol_temp_veg =0.0,
@@ -205,7 +206,7 @@ class HRUActorSettings {
         double abs_tol_temp_cas = 0.0, double abs_tol_temp_veg = 0.0,
         double abs_tol_wat_veg = 0.0, double abs_tol_temp_soil_snow = 0.0,
         double abs_tol_wat_snow = 0.0, double abs_tol_matric = 0.0,
-        double abs_tol_aquifr = 0.0) 
+        double abs_tol_aquifr = 0.0, bool default_tol = false) 
         : print_output_(print_output), output_frequency_(output_frequency), 
         abs_tol_(abs_tol), rel_tol_(rel_tol), rel_tol_temp_veg_(rel_tol_temp_veg),
         rel_tol_temp_cas_(rel_tol_temp_cas), rel_tol_wat_veg_(rel_tol_wat_veg),
@@ -214,7 +215,7 @@ class HRUActorSettings {
         rel_tol_aquifr_(rel_tol_aquifr), abs_tol_temp_cas_(abs_tol_temp_cas),
         abs_tol_temp_veg_(abs_tol_temp_veg), abs_tol_temp_soil_snow_(abs_tol_temp_soil_snow),
         abs_tol_wat_snow_(abs_tol_wat_snow), abs_tol_matric_(abs_tol_matric),
-        abs_tol_aquifr_(abs_tol_aquifr), abs_tol_wat_veg_(abs_tol_wat_veg) {};
+        abs_tol_aquifr_(abs_tol_aquifr), abs_tol_wat_veg_(abs_tol_wat_veg), default_tol_(default_tol) {};
     ~HRUActorSettings() {};
 
     std::string toString() {
@@ -238,6 +239,7 @@ class HRUActorSettings {
       str += "Abs Tol Wat Snow: " + std::to_string(abs_tol_wat_snow_) + "\n";
       str += "Abs Tol Matric: " + std::to_string(abs_tol_matric_) + "\n";
       str += "Abs Tol Aquifr: " + std::to_string(abs_tol_aquifr_) + "\n";
+      str += "Default Tolerances: " + std::to_string(default_tol_) + "\n";
       return str;
     }
 
@@ -262,6 +264,7 @@ class HRUActorSettings {
              insp.field("abs_tol_wat_snow", settings.abs_tol_wat_snow_),
              insp.field("abs_tol_matric", settings.abs_tol_matric_),
              insp.field("abs_tol_aquifr", settings.abs_tol_aquifr_));
+             insp.field("default_tol", settings.default_tol_);
     }
 };
 

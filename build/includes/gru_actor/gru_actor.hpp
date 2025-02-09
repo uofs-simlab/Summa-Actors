@@ -27,7 +27,7 @@ extern "C" {
       double& rel_tol_temp_soil_snow, double& rel_tol_wat_snow, double& rel_tol_matric, 
       double& rel_tol_aquifr, double& abs_tol_temp_cas, double& abs_tol_temp_veg, 
       double& abs_tol_wat_veg, double& abs_tol_temp_soil_snow, double& abs_tol_wat_snow, 
-      double& abs_tol_matric, double& abs_tol_aquifr, double& default_tol);
+      double& abs_tol_matric, double& abs_tol_aquifr, bool& default_tol);
 }
 
 struct GruDeleter {

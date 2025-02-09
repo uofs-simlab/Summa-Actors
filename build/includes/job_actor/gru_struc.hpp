@@ -66,7 +66,7 @@ class GRU {
         : index_netcdf_(index_netcdf), index_job_(index_job), 
           actor_ref_(actor_ref), dt_init_factor_(dt_init_factor),
           rel_tol_(rel_tol), abs_tol_(abs_tol), rel_tol_temp_cas_(rel_tol_temp_cas),
-          rel_tol_temp_veg_(rel_tol_temp_veg), rel_tol_temp_soil_snow_(rel_tol_soil_snow),
+          rel_tol_temp_veg_(rel_tol_temp_veg), rel_tol_temp_soil_snow_(rel_tol_temp_soil_snow),
           rel_tol_wat_veg_(rel_tol_wat_veg), rel_tol_wat_snow_(rel_tol_wat_snow),
           rel_tol_matric_(rel_tol_matric), rel_tol_aquifr_(rel_tol_aquifr),attempts_left_(max_attempts),
           state_(gru_state::running) {};
@@ -81,20 +81,20 @@ class GRU {
     inline double getRunTime() const { return run_time_; }
     inline double getRelTol() const { return rel_tol_; }
     inline double getAbsTol() const { return abs_tol_; }
-    inline double getRelTolTempCas() const { return rel_tol_temp_cas; }
-    inline double getRelTolTempVeg() const { return rel_tol_temp_veg;}
-    inline double getRelTolWatVeg() const { return rel_tol_wat_veg;}
-    inline double getRelTolTempSoilSnow() const { return rel_tol_temp_soil_snow;}
-    inline double getRelTolWatSnow() const { return rel_tol_wat_snow;}
-    inline double getRelTolMatric() const { return rel_tol_matric;}
-    inline double getRelTolAquifr() const { return rel_tol_aquifr;}
-    inline double getAbsTolTempCas() const { return abs_tol_temp_cas;}
-    inline double getAbsTolTempVeg() const { return abs_tol_temp_veg;}
-    inline double getAbsTolWatVeg() const { return abs_tol_wat_veg;}
-    inline double getAbsTolTempSoilSnow() const { return abs_tol_temp_soil_snow;}
-    inline double getAbsTolWatSnow() const { return abs_tol_wat_snow;}
-    inline double getAbsTolMatric() const { return abs_tol_matric;}
-    inline double getAbsTolAquifr() const { return abs_tol_aquifr;}
+    inline double getRelTolTempCas() const { return rel_tol_temp_cas_; }
+    inline double getRelTolTempVeg() const { return rel_tol_temp_veg_;}
+    inline double getRelTolWatVeg() const { return rel_tol_wat_veg_;}
+    inline double getRelTolTempSoilSnow() const { return rel_tol_temp_soil_snow_;}
+    inline double getRelTolWatSnow() const { return rel_tol_wat_snow_;}
+    inline double getRelTolMatric() const { return rel_tol_matric_;}
+    inline double getRelTolAquifr() const { return rel_tol_aquifr_;}
+    inline double getAbsTolTempCas() const { return abs_tol_temp_cas_;}
+    inline double getAbsTolTempVeg() const { return abs_tol_temp_veg_;}
+    inline double getAbsTolWatVeg() const { return abs_tol_wat_veg_;}
+    inline double getAbsTolTempSoilSnow() const { return abs_tol_temp_soil_snow_;}
+    inline double getAbsTolWatSnow() const { return abs_tol_wat_snow_;}
+    inline double getAbsTolMatric() const { return abs_tol_matric_;}
+    inline double getAbsTolAquifr() const { return abs_tol_aquifr_;}
     inline int getAttemptsLeft() const { return attempts_left_; }
     inline gru_state getStatus() const { return state_; }
 
@@ -103,23 +103,23 @@ class GRU {
     //Setting rel_tol will set all rel_tol_* to the same value
     inline void setRelTol(double rel_tol){
       rel_tol_ = rel_tol;
-      rel_tol_temp_cas = rel_tol;
-      rel_tol_temp_veg = rel_tol;
-      rel_tol_temp_soil_snow = rel_tol;
-      rel_tol_wat_veg = rel_tol;
-      rel_tol_wat_snow = rel_tol;
-      rel_tol_matric = rel_tol;
-      rel_tol_aquifr = rel_tol;
+      rel_tol_temp_cas_ = rel_tol;
+      rel_tol_temp_veg_ = rel_tol;
+      rel_tol_temp_soil_snow_ = rel_tol;
+      rel_tol_wat_veg_ = rel_tol;
+      rel_tol_wat_snow_ = rel_tol;
+      rel_tol_matric_ = rel_tol;
+      rel_tol_aquifr_ = rel_tol;
        }
     inline void setAbsTol(double abs_tol) { 
       abs_tol_ = abs_tol;
-      abs_tol_temp_cas = abs_tol;
-      abs_tol_temp_veg = abs_tol;
-      abs_tol_temp_soil_snow = abs_tol;
-      abs_tol_wat_veg = abs_tol;
-      abs_tol_wat_snow = abs_tol;
-      abs_tol_matric = abs_tol;
-      abs_tol_aquifr = abs_tol;
+      abs_tol_temp_cas_ = abs_tol;
+      abs_tol_temp_veg_ = abs_tol;
+      abs_tol_temp_soil_snow_ = abs_tol;
+      abs_tol_wat_veg_ = abs_tol;
+      abs_tol_wat_snow_ = abs_tol;
+      abs_tol_matric_ = abs_tol;
+      abs_tol_aquifr_ = abs_tol;
         }
     inline void setSuccess() { state_ = gru_state::succeeded; }
     inline void setFailed() { state_ = gru_state::failed; }

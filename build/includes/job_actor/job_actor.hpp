@@ -71,6 +71,8 @@ class JobActor {
   double abs_tol_matric_ = -9999;
   double abs_tol_aquifr_ = -9999;
   int dt_init_factor_ = 1;
+  // Default tolerances flag
+  bool default_tol_ = true;
 
 
   // Misc
@@ -91,7 +93,8 @@ class JobActor {
              : self_(self), batch_(batch), enable_logging_(enable_logging),
                job_actor_settings_(job_settings), 
                fa_actor_settings_(fa_settings), 
-               hru_actor_settings_(hru_settings), parent_(parent) {};
+               hru_actor_settings_(hru_settings), parent_(parent),
+               default_tol_(default_tol_) {};
     
     caf::behavior make_behavior(); // Initial Behavior
     caf::behavior data_assimilation_mode();

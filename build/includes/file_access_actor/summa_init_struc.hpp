@@ -4,7 +4,14 @@ extern "C" {
   void f_allocate(int& num_gru, int& err, void* message);
   void f_paramSetup(int& err, void* message);
   void f_readRestart(int& err, void* message);
-  void f_getInitTolerance(double& rtol, double& atol);
+  void f_getInitTolerance(double& rtol, double& atol, double& rtol_temp_cas,
+                          double& rtol_temp_veg, double& rtol_wat_veg, 
+                          double& rtol_temp_soil_snow, double& rtol_wat_snow, 
+                          double& rtol_matric, double& rtol_aquifr,
+                          double& atol_temp_cas, double& atol_temp_veg, 
+                          double& atol_wat_veg, double& atol_temp_soil_snow, 
+                          double& atol_wat_snow, double& atol_matric,
+                          double& atol_aquifr);
   void f_deallocateInitStruc();
 }
 
