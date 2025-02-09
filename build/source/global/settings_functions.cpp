@@ -12,23 +12,6 @@ int Settings::readSettings() {
   }
   settings_file.close();
 
-  distributed_settings_ = DistributedSettings(
-    getSettings<bool>(json_settings, "Distributed_Settings", "distributed_mode")
-        .value_or(false),
-    getSettingsArray(json_settings, "Distributed_Settings", "servers_list")
-        .value_or(std::vector<std::string>()),
-    getSettings<int>(json_settings, "Distributed_Settings", "port")
-        .value_or(MISSING_INT),
-    getSettings<int>(json_settings, "Distributed_Settings", "total_hru_count")
-        .value_or(MISSING_INT),
-    getSettings<int>(json_settings, "Distributed_Settings", "num_hru_per_batch")
-        .value_or(MISSING_INT),
-    getSettings<int>(json_settings, "Distributed_Settings", "num_nodes")
-        .value_or(MISSING_INT),
-    getSettings<bool>(json_settings, "Distributed_Settings", "load_balancing")
-        .value_or(false)
-  );
-
   summa_actor_settings_ = SummaActorSettings(
     getSettings<int>(json_settings, "Summa_Actor", "max_gru_per_job")
         .value_or(GRU_PER_JOB),
@@ -66,7 +49,37 @@ int Settings::readSettings() {
     getSettings<double>(json_settings, "HRU_Actor", "abs_tol")
         .value_or(1e-3),
     getSettings<double>(json_settings, "HRU_Actor", "rel_tol")
+        .value_or(1e-3),
+    getSettings<double>(json_settings, "HRU_Actor", "rel_tol_temp_cas")
+        .value_or(1e-3),
+    getSettings<double>(json_settings, "HRU_Actor", "rel_tol_temp_veg")
+        .value_or(1e-3),
+    getSettings<double>(json_settings, "HRU_Actor", "rel_tol_wat_veg")
+        .value_or(1e-3),
+    getSettings<double>(json_settings, "HRU_Actor", "rel_tol_temp_soil_snow")
+        .value_or(1e-3),
+    getSettings<double>(json_settings, "HRU_Actor", "rel_tol_wat_snow")
+        .value_or(1e-3),
+    getSettings<double>(json_settings, "HRU_Actor", "rel_tol_matric")
+        .value_or(1e-3),
+    getSettings<double>(json_settings, "HRU_Actor", "rel_tol_aquifr")
+        .value_or(1e-3),
+    getSettings<double>(json_settings, "HRU_Actor", "abs_tol_temp_cas")
+        .value_or(1e-3),
+    getSettings<double>(json_settings, "HRU_Actor", "abs_tol_temp_veg")
+        .value_or(1e-3),
+    getSettings<double>(json_settings, "HRU_Actor", "abs_tol_wat_veg")
+        .value_or(1e-3),
+    getSettings<double>(json_settings, "HRU_Actor", "abs_tol_temp_soil_snow")
+        .value_or(1e-3),
+    getSettings<double>(json_settings, "HRU_Actor", "abs_tol_wat_snow")
+        .value_or(1e-3),
+    getSettings<double>(json_settings, "HRU_Actor", "abs_tol_matric")
+        .value_or(1e-3),
+    getSettings<double>(json_settings, "HRU_Actor", "abs_tol_aquifr")
         .value_or(1e-3));
+    getSettings<bool>(json_settings, "HRU_Actor", "default_tol")
+        .value_or(true);
 
 
   return SUCCESS;
@@ -121,20 +134,6 @@ void Settings::printSettings() {
 void Settings::generateConfigFile() {
     using json = nlohmann::ordered_json;
     json config_file; 
-    config_file["Distributed_Settings"] = {
-        {"distributed_mode", false},
-        {"port", MISSING_INT},
-        {"total_hru_count", MISSING_INT},
-        {"num_hru_per_batch", MISSING_INT},
-        {"load_balancing", false},
-        {"num_nodes", MISSING_INT},
-        {"servers_list", {
-            {{"hostname", "host_1"}},
-            {{"hostname", "host_2"}},
-            {{"hostname", "host_3"}}
-        }}
-    };
-
     config_file["Summa_Actor"] = {
         {"max_gru_per_job", GRU_PER_JOB},
         {"enable_logging", false},
@@ -152,7 +151,24 @@ void Settings::generateConfigFile() {
     };
     config_file["HRU_Actor"] = {
         {"print_output", true},
-        {"output_frequency", OUTPUT_FREQUENCY}
+        {"output_frequency", OUTPUT_FREQUENCY},
+        {"abs_tol", 1e1},
+        {"rel_tol", 1e1},
+        {"rel_tol_temp_cas", 1e1},
+        {"rel_tol_temp_veg", 1e1},
+        {"rel_tol_wat_veg", 1e1},
+        {"rel_tol_temp_soil_snow", 1e1},
+        {"rel_tol_wat_snow", 1e1},
+        {"rel_tol_matric", 1e1},
+        {"rel_tol_aquifr", 1e1},
+        {"abs_tol_temp_cas", 1e1},
+        {"abs_tol_temp_veg", 1e1},
+        {"abs_tol_wat_veg", 1e1},
+        {"abs_tol_temp_soil_snow", 1e1},
+        {"abs_tol_wat_snow", 1e1},
+        {"abs_tol_matric", 1e1},
+        {"abs_tol_aquifr", 1e1},
+        {"default_tol", true}
     };
 
     std::ofstream config_file_stream("config.json");
