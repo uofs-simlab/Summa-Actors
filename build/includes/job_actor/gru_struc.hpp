@@ -60,15 +60,22 @@ class GRU {
   public:
     // Constructor
     GRU(int index_netcdf, int index_job, caf::actor actor_ref, 
-        int dt_init_factor, double rel_tol, double abs_tol, double rel_tol_temp_cas,
-        double rel_tol_temp_veg, double rel_tol_temp_soil_snow, double rel_tol_wat_veg,
-        double rel_tol_wat_snow, double rel_tol_matric, double rel_tol_aquifr,int max_attempts) 
+        int dt_init_factor, double rel_tol, double abs_tol, double rel_tol_temp_cas=0.0,
+        double rel_tol_temp_veg=0.0, double rel_tol_wat_veg=0.0, double rel_tol_temp_soil_snow=0.0,
+        double rel_tol_wat_snow=0.0, double rel_tol_matric=0.0, double rel_tol_aquifr=0.0,
+        double abs_tol_temp_cas=0.0, double abs_tol_temp_veg=0.0, double abs_tol_wat_veg=0.0,
+        double abs_tol_temp_soil_snow=0.0, double abs_tol_wat_snow=0.0, double abs_tol_matric=0.0,
+        double abs_tol_aquifr=0.0, int max_attempts =5)
         : index_netcdf_(index_netcdf), index_job_(index_job), 
           actor_ref_(actor_ref), dt_init_factor_(dt_init_factor),
           rel_tol_(rel_tol), abs_tol_(abs_tol), rel_tol_temp_cas_(rel_tol_temp_cas),
-          rel_tol_temp_veg_(rel_tol_temp_veg), rel_tol_temp_soil_snow_(rel_tol_temp_soil_snow),
-          rel_tol_wat_veg_(rel_tol_wat_veg), rel_tol_wat_snow_(rel_tol_wat_snow),
-          rel_tol_matric_(rel_tol_matric), rel_tol_aquifr_(rel_tol_aquifr),attempts_left_(max_attempts),
+          rel_tol_temp_veg_(rel_tol_temp_veg), rel_tol_wat_veg_(rel_tol_wat_veg),
+          rel_tol_temp_soil_snow_(rel_tol_temp_soil_snow), rel_tol_wat_snow_(rel_tol_wat_snow),
+          rel_tol_matric_(rel_tol_matric), rel_tol_aquifr_(rel_tol_aquifr), 
+          abs_tol_temp_cas_(abs_tol_temp_cas), abs_tol_temp_veg_(abs_tol_temp_veg),
+          abs_tol_wat_veg_(abs_tol_wat_veg), abs_tol_temp_soil_snow_(abs_tol_temp_soil_snow),
+          abs_tol_wat_snow_(abs_tol_wat_snow), abs_tol_matric_(abs_tol_matric),
+          abs_tol_aquifr_(abs_tol_aquifr), attempts_left_(max_attempts),
           state_(gru_state::running) {};
 
     // Deconstructor
@@ -121,6 +128,20 @@ class GRU {
       abs_tol_matric_ = abs_tol;
       abs_tol_aquifr_ = abs_tol;
         }
+    inline void setRelTolTempCas(double tol){ rel_tol_temp_cas_ = tol;}
+    inline void setRelTolTempVeg(double tol){ rel_tol_temp_veg_ = tol;}
+    inline void setRelTolWatVeg(double tol){ rel_tol_wat_veg_ = tol;}
+    inline void setRelTolTempSoilSnow(double tol){ rel_tol_temp_soil_snow_ = tol;}
+    inline void setRelTolWatSnow(double tol){ rel_tol_wat_snow_ = tol;}
+    inline void setRelTolMatric(double tol){ rel_tol_matric_ = tol;}
+    inline void setRelTolAquifr(double tol){ rel_tol_aquifr_ = tol;}
+    inline void setAbsTolTempCas(double tol){ abs_tol_temp_cas_ = tol;}
+    inline void setAbsTolTempVeg(double tol){ abs_tol_temp_veg_ = tol;}
+    inline void setAbsTolWatVeg(double tol){ abs_tol_wat_veg_ = tol;}
+    inline void setAbsTolTempSoilSnow(double tol){ abs_tol_temp_soil_snow_ = tol;}
+    inline void setAbsTolWatSnow(double tol){ abs_tol_wat_snow_ = tol;}
+    inline void setAbsTolMatric(double tol){ abs_tol_matric_ = tol;}
+    inline void setAbsTolAquifr(double tol){ abs_tol_aquifr_ = tol;}
     inline void setSuccess() { state_ = gru_state::succeeded; }
     inline void setFailed() { state_ = gru_state::failed; }
     inline void setRunning() { state_ = gru_state::running; }

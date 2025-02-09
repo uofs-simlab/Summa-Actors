@@ -139,58 +139,58 @@ behavior JobActor::async_mode() {
           return true;
         }
         return false;
-      }
+      };
 
       // Update tolerances (general and specific)
       bool tol_updated = false;
 
       tol_updated |= tighten_tol(rel_tol_, MIN_REL_TOL, "rel_tol_");
-      hru_actor_settings.rel_tol_ = rel_tol_;
+      hru_actor_settings_.rel_tol_ = rel_tol_;
 
       tol_updated |= tighten_tol(abs_tol_, MIN_ABS_TOL, "abs_tol_");
-      hru_actor_settings.abs_tol_ = abs_tol_;
+      hru_actor_settings_.abs_tol_ = abs_tol_;
 
       tol_updated |= tighten_tol(rel_tol_temp_cas_, MIN_REL_TOL, "rel_tol_temp_cas_");
-      hru_actor_settings.rel_tol_temp_cas_ = rel_tol_temp_cas_;
+      hru_actor_settings_.rel_tol_temp_cas_ = rel_tol_temp_cas_;
 
       tol_updated |= tighten_tol(rel_tol_temp_veg_, MIN_REL_TOL, "rel_tol_temp_veg_");
-      hru_actor_settings.rel_tol_temp_veg_ = rel_tol_temp_veg_;
+      hru_actor_settings_.rel_tol_temp_veg_ = rel_tol_temp_veg_;
 
       tol_updated |= tighten_tol(rel_tol_wat_veg_, MIN_REL_TOL, "rel_tol_wat_veg_");
-      hru_actor_settings.rel_tol_wat_veg_ = rel_tol_wat_veg_;
+      hru_actor_settings_.rel_tol_wat_veg_ = rel_tol_wat_veg_;
 
       tol_updated |= tighten_tol(rel_tol_temp_soil_snow_, MIN_REL_TOL, "rel_tol_temp_soil_snow_");
-      hru_actor_settings.rel_tol_temp_soil_snow_ = rel_tol_temp_soil_snow_;
+      hru_actor_settings_.rel_tol_temp_soil_snow_ = rel_tol_temp_soil_snow_;
 
       tol_updated |= tighten_tol(rel_tol_wat_snow_, MIN_REL_TOL, "rel_tol_wat_snow_");
-      hru_actor_settings.rel_tol_wat_snow_ = rel_tol_wat_snow_;
+      hru_actor_settings_.rel_tol_wat_snow_ = rel_tol_wat_snow_;
 
       tol_updated |= tighten_tol(rel_tol_matric_, MIN_REL_TOL, "rel_tol_matric_");
-      hru_actor_settings.rel_tol_matric_ = rel_tol_matric_;
+      hru_actor_settings_.rel_tol_matric_ = rel_tol_matric_;
 
       tol_updated |= tighten_tol(rel_tol_aquifr_, MIN_REL_TOL, "rel_tol_aquifr_");
-      hru_actor_settings.rel_tol_aquifr_ = rel_tol_aquifr_;
+      hru_actor_settings_.rel_tol_aquifr_ = rel_tol_aquifr_;
 
       tol_updated |= tighten_tol(abs_tol_temp_cas_, MIN_ABS_TOL, "abs_tol_temp_cas_");
-      hru_actor_settings.abs_tol_temp_cas_ = abs_tol_temp_cas_;
+      hru_actor_settings_.abs_tol_temp_cas_ = abs_tol_temp_cas_;
 
       tol_updated |= tighten_tol(abs_tol_temp_veg_, MIN_ABS_TOL, "abs_tol_temp_veg_");
-      hru_actor_settings.abs_tol_temp_veg_ = abs_tol_temp_veg_;
+      hru_actor_settings_.abs_tol_temp_veg_ = abs_tol_temp_veg_;
 
       tol_updated |= tighten_tol(abs_tol_wat_veg_, MIN_ABS_TOL, "abs_tol_wat_veg_");
-      hru_actor_settings.abs_tol_wat_veg_ = abs_tol_wat_veg_;
+      hru_actor_settings_.abs_tol_wat_veg_ = abs_tol_wat_veg_;
 
       tol_updated |= tighten_tol(abs_tol_temp_soil_snow_, MIN_ABS_TOL, "abs_tol_temp_soil_snow_");
-      hru_actor_settings.abs_tol_temp_soil_snow_ = abs_tol_temp_soil_snow_;
+      hru_actor_settings_.abs_tol_temp_soil_snow_ = abs_tol_temp_soil_snow_;
 
       tol_updated |= tighten_tol(abs_tol_wat_snow_, MIN_ABS_TOL, "abs_tol_wat_snow_");
-      hru_actor_settings.abs_tol_wat_snow_ = abs_tol_wat_snow_;
+      hru_actor_settings_.abs_tol_wat_snow_ = abs_tol_wat_snow_;
 
       tol_updated |= tighten_tol(abs_tol_matric_, MIN_ABS_TOL, "abs_tol_matric_");
-      hru_actor_settings.abs_tol_matric_ = abs_tol_matric_;
+      hru_actor_settings_.abs_tol_matric_ = abs_tol_matric_;
 
       tol_updated |= tighten_tol(abs_tol_aquifr_, MIN_ABS_TOL, "abs_tol_aquifr_");
-      hru_actor_settings.abs_tol_aquifr_ = abs_tol_aquifr_; 
+      hru_actor_settings_.abs_tol_aquifr_ = abs_tol_aquifr_; 
 
       // notify file_access_actor
       self_->mail(restart_failures_v).send(file_access_actor_);
