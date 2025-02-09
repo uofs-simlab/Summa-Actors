@@ -131,11 +131,12 @@ behavior JobActor::async_mode() {
       logger_->log("Async Mode: Restarting Failed GRUs");
       self_->println("Async Mode: Restarting Failed GRUs");
 
-      auto tighten_tol = [&](double& tol, double& min_tol, const std::string& name){
+      auto tighten_tol = [&](double& tol, const double& min_tol, const std::string& name){
         if (tol > min_tol) {
           tol /= 10;
-          logger_->("Async Mode: Tightening {} Tolerance to {}", name, tol);
-          return true
+          self_->println("Async Mode: Tightening tolerance");
+          self_->println("Async Mode: {} = {}", name, tol);
+          return true;
         }
         return false;
       }
@@ -568,7 +569,7 @@ void JobActor::handleFinishedGRU(int job_index) {
                               rel_tol_aquifr_, abs_tol_temp_cas_,
                               abs_tol_temp_veg_, abs_tol_wat_veg_,
                               abs_tol_temp_soil_snow_, abs_tol_wat_snow_,
-                              abs_tol_matric_, abs_tol_aquifr_);
+                              abs_tol_matric_, abs_tol_aquifr_, default_tol_);
   std::string update_str =
       "GRU Finished: " + std::to_string(gru_struc_->getNumGruDone()) + "/" + 
       std::to_string(gru_struc_->getNumGru()) + " -- GlobalGRU=" + 
