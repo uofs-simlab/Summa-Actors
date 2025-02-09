@@ -266,7 +266,11 @@ end subroutine runPhysics
 ! *** get_sundials_tolerances
 ! *******************************************************************************************
 #ifdef SUNDIALS_ACTIVE
-subroutine get_sundials_tolerances(handle_hru_data, rtol, atol) bind(C, name='get_sundials_tolerances')
+subroutine get_sundials_tolerances(handle_hru_data, rtol, atol,rtol_temp_cas,&
+          rtol_temp_veg, rtol_wat_veg, rtol_temp_soil_snow, rtol_wat_snow,&
+          rtol_matric, rtol_aquifr, atol_temp_cas, atol_temp_veg, atol_wat_veg,&
+          atol_temp_soil_snow, atol_wat_snow, atol_matric, atol_aquifr) & 
+          bind(C, name='get_sundials_tolerances')
   USE var_lookup,only: iLookPARAM
   implicit none
 
@@ -274,6 +278,20 @@ subroutine get_sundials_tolerances(handle_hru_data, rtol, atol) bind(C, name='ge
   type(c_ptr),    intent(in), value         :: handle_hru_data        ! c_ptr to -- hru data
   real(c_double), intent(out)               :: rtol                   ! relative tolerance
   real(c_double), intent(out)               :: atol                   ! absolute tolerance
+  real(c_double), intent(out)               :: rtol_temp_cas          
+  real(c_double), intent(out)               :: rtol_temp_veg 
+  real(c_double), intent(out)               :: rtol_wat_veg 
+  real(c_double), intent(out)               :: rtol_temp_soil_snow
+  real(c_double), intent(out)               :: rtol_wat_snow
+  real(c_double), intent(out)               :: rtol_matric
+  real(c_double), intent(out)               :: rtol_aquifr
+  real(c_double), intent(out)               :: atol_temp_cas          
+  real(c_double), intent(out)               :: atol_temp_veg 
+  real(c_double), intent(out)               :: atol_wat_veg 
+  real(c_double), intent(out)               :: atol_temp_soil_snow
+  real(c_double), intent(out)               :: atol_wat_snow
+  real(c_double), intent(out)               :: atol_matric
+  real(c_double), intent(out)               :: atol_aquifr
   ! local variables
   type(hru_type),pointer                    :: hru_data               ! hru data
   call c_f_pointer(handle_hru_data, hru_data)
@@ -281,19 +299,51 @@ subroutine get_sundials_tolerances(handle_hru_data, rtol, atol) bind(C, name='ge
   ! get tolerances
   rtol = hru_data%mparStruct%var(iLookPARAM%relTolWatSnow)%dat(1) 
   atol = hru_data%mparStruct%var(iLookPARAM%absTolWatSnow)%dat(1)
+  rtol_temp_cas = hru_data%mparStruct%var(iLookPARAM%relTolTempCas)%dat(1)
+  rtol_temp_veg = hru_data%mparStruct%var(iLookPARAM%relTolTempVeg)%dat(1)
+  rtol_wat_veg = hru_data%mparStruct%var(iLookPARAM%relTolWatVeg)%dat(1)
+  rtol_temp_soil_snow = hru_data%mparStruct%var(iLookPARAM%relTolTempSoilSnow)%dat(1)
+  rtol_wat_snow = hru_data%mparStruct%var(iLookPARAM%relTolWatSnow)%dat(1)
+  rtol_matric = hru_data%mparStruct%var(iLookPARAM%relTolMatric)%dat(1)
+  rtol_aquifr = hru_data%mparStruct%var(iLookPARAM%relTolAquifr)%dat(1)
+  atol_temp_cas = hru_data%mparStruct%var(iLookPARAM%absTolTempCas)%dat(1)
+  atol_temp_veg = hru_data%mparStruct%var(iLookPARAM%absTolTempVeg)%dat(1)
+  atol_wat_veg = hru_data%mparStruct%var(iLookPARAM%absTolWatVeg)%dat(1)
+  atol_temp_soil_snow = hru_data%mparStruct%var(iLookPARAM%absTolTempSoilSnow)%dat(1)
+  atol_wat_snow = hru_data%mparStruct%var(iLookPARAM%absTolWatSnow)%dat(1)
+  atol_matric = hru_data%mparStruct%var(iLookPARAM%absTolMatric)%dat(1)
+  atol_aquifr = hru_data%mparStruct%var(iLookPARAM%absTolAquifr)%dat(1)
 end subroutine get_sundials_tolerances
 
 ! *******************************************************************************************
 ! *** get_sundials_tolerances
 ! *******************************************************************************************
-subroutine set_sundials_tolerances(handle_hru_data, rtol, atol) bind(C, name='set_sundials_tolerances')
+subroutine set_sundials_tolerances(handle_hru_data, rtol, atol,rtol_temp_cas,&
+          rtol_temp_veg, rtol_wat_veg, rtol_temp_soil_snow, rtol_wat_snow,&
+          rtol_matric, rtol_aquifr, atol_temp_cas, atol_temp_veg, atol_wat_veg,&
+          atol_temp_soil_snow, atol_wat_snow, atol_matric, atol_aquifr) &
+          bind(C, name='set_sundials_tolerances')
   USE var_lookup,only: iLookPARAM
   implicit none
 
   ! dummy variables
   type(c_ptr),    intent(in), value         :: handle_hru_data        ! c_ptr to -- hru data
-  real(c_double), intent(in)               :: rtol                   ! relative tolerance
-  real(c_double), intent(in)               :: atol                   ! absolute tolerance
+  real(c_double), intent(in)                :: rtol                   ! relative tolerance
+  real(c_double), intent(in)                :: atol                   ! absolute tolerance
+  real(c_double), intent(out)               :: rtol_temp_cas          
+  real(c_double), intent(out)               :: rtol_temp_veg 
+  real(c_double), intent(out)               :: rtol_wat_veg 
+  real(c_double), intent(out)               :: rtol_temp_soil_snow
+  real(c_double), intent(out)               :: rtol_wat_snow
+  real(c_double), intent(out)               :: rtol_matric
+  real(c_double), intent(out)               :: rtol_aquifr
+  real(c_double), intent(out)               :: atol_temp_cas          
+  real(c_double), intent(out)               :: atol_temp_veg 
+  real(c_double), intent(out)               :: atol_wat_veg 
+  real(c_double), intent(out)               :: atol_temp_soil_snow
+  real(c_double), intent(out)               :: atol_wat_snow
+  real(c_double), intent(out)               :: atol_matric
+  real(c_double), intent(out)               :: atol_aquifr
   ! local variables
   type(hru_type),pointer                    :: hru_data               ! hru data
   call c_f_pointer(handle_hru_data, hru_data)
@@ -304,25 +354,25 @@ subroutine set_sundials_tolerances(handle_hru_data, rtol, atol) bind(C, name='se
   hru_data%mparStruct%var(iLookPARAM%relConvTol_matric)%dat(1) = rtol  
   hru_data%mparStruct%var(iLookPARAM%relConvTol_energy)%dat(1) = rtol  
   hru_data%mparStruct%var(iLookPARAM%relConvTol_aquifr)%dat(1) = rtol  
-  hru_data%mparStruct%var(iLookPARAM%relTolTempCas)%dat(1) = rtol  
-  hru_data%mparStruct%var(iLookPARAM%relTolTempVeg)%dat(1) = rtol  
-  hru_data%mparStruct%var(iLookPARAM%relTolWatVeg)%dat(1) = rtol  
-  hru_data%mparStruct%var(iLookPARAM%relTolTempSoilSnow)%dat(1) = rtol  
-  hru_data%mparStruct%var(iLookPARAM%relTolWatSnow)%dat(1) = rtol  
-  hru_data%mparStruct%var(iLookPARAM%relTolMatric)%dat(1) = rtol  
-  hru_data%mparStruct%var(iLookPARAM%relTolAquifr)%dat(1) = rtol  
+  hru_data%mparStruct%var(iLookPARAM%relTolTempCas)%dat(1) = rtol_temp_cas 
+  hru_data%mparStruct%var(iLookPARAM%relTolTempVeg)%dat(1) = rtol_temp_veg
+  hru_data%mparStruct%var(iLookPARAM%relTolWatVeg)%dat(1) = rtol_wat_veg
+  hru_data%mparStruct%var(iLookPARAM%relTolTempSoilSnow)%dat(1) = rtol_temp_soil_snow
+  hru_data%mparStruct%var(iLookPARAM%relTolWatSnow)%dat(1) = rtol_wat_snow
+  hru_data%mparStruct%var(iLookPARAM%relTolMatric)%dat(1) = rtol_matric
+  hru_data%mparStruct%var(iLookPARAM%relTolAquifr)%dat(1) = rtol_aquifr
   ! Set atols
   hru_data%mparStruct%var(iLookPARAM%absConvTol_liquid)%dat(1) = atol 
   hru_data%mparStruct%var(iLookPARAM%absConvTol_matric)%dat(1) = atol 
   hru_data%mparStruct%var(iLookPARAM%absConvTol_energy)%dat(1) = atol 
   hru_data%mparStruct%var(iLookPARAM%absConvTol_aquifr)%dat(1) = atol 
-  hru_data%mparStruct%var(iLookPARAM%absTolTempCas)%dat(1) = atol 
-  hru_data%mparStruct%var(iLookPARAM%absTolTempVeg)%dat(1) = atol 
-  hru_data%mparStruct%var(iLookPARAM%absTolWatVeg)%dat(1) = atol 
-  hru_data%mparStruct%var(iLookPARAM%absTolTempSoilSnow)%dat(1) = atol 
-  hru_data%mparStruct%var(iLookPARAM%absTolWatSnow)%dat(1) = atol 
-  hru_data%mparStruct%var(iLookPARAM%absTolMatric)%dat(1) = atol 
-  hru_data%mparStruct%var(iLookPARAM%absTolAquifr)%dat(1) = atol 
+  hru_data%mparStruct%var(iLookPARAM%absTolTempCas)%dat(1) = atol_temp_cas 
+  hru_data%mparStruct%var(iLookPARAM%absTolTempVeg)%dat(1) = atol_temp_veg
+  hru_data%mparStruct%var(iLookPARAM%absTolWatVeg)%dat(1) = atol_wat_veg
+  hru_data%mparStruct%var(iLookPARAM%absTolTempSoilSnow)%dat(1) = atol_temp_soil_snow
+  hru_data%mparStruct%var(iLookPARAM%absTolWatSnow)%dat(1) = atol_wat_snow
+  hru_data%mparStruct%var(iLookPARAM%absTolMatric)%dat(1) = atol_matric
+  hru_data%mparStruct%var(iLookPARAM%absTolAquifr)%dat(1) = atol_aquifr
 end subroutine set_sundials_tolerances
 #endif
 
