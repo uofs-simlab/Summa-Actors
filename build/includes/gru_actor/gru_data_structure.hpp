@@ -18,6 +18,20 @@ struct HRU {
   // Sundials variables
   double rtol;
   double atol;
+  double rtol_temp_cas;
+  double rtol_temp_veg;
+  double rtol_wat_veg;
+  double rtol_temp_soil_snow;
+  double rtol_wat_snow;
+  double rtol_matric;
+  double rtol_aquifr;
+  double atol_temp_cas;
+  double atol_temp_veg;
+  double atol_wat_veg;
+  double atol_temp_soil_snow;
+  double atol_wat_snow;
+  double atol_matric;
+  double atol_aquifr;
 
   // HRU data structures
   // Statistic Structure
@@ -78,6 +92,20 @@ bool inspect(Inspector& inspector, HRU& hru_data) {
                          hru_data.output_structure_step_index),
          inspector.field("rtol", hru_data.rtol),
          inspector.field("atol", hru_data.atol),
+         inspector.field("rtol_temp_cas", hru_data.rtol_temp_cas),
+         inspector.field("rtol_temp_veg", hru_data.rtol_temp_veg),
+         inspector.field("rtol_wat_veg", hru_data.rtol_wat_veg),
+         inspector.field("rtol_temp_soil_snow", hru_data.rtol_temp_soil_snow),
+         inspector.field("rtol_wat_snow", hru_data.rtol_wat_snow),
+         inspector.field("rtol_matric", hru_data.rtol_matric),
+         inspector.field("rtol_aquifr", hru_data.rtol_aquifr),
+         inspector.field("atol_temp_cas", hru_data.atol_temp_cas),
+         inspector.field("atol_temp_veg", hru_data.atol_temp_veg),
+         inspector.field("atol_wat_veg", hru_data.atol_wat_veg),
+         inspector.field("atol_temp_soil_snow", hru_data.atol_temp_soil_snow),
+         inspector.field("atol_wat_snow", hru_data.atol_wat_snow),
+         inspector.field("atol_matric", hru_data.atol_matric),
+         inspector.field("atol_aquifr", hru_data.atol_aquifr),
          inspector.field("forc_stat", hru_data.forc_stat),
          inspector.field("prog_stat", hru_data.prog_stat),
          inspector.field("diag_stat", hru_data.diag_stat),

@@ -44,16 +44,30 @@ extern "C" {
   // hru_writeOutput.f90
   void setFinalizeStatsFalse(int* indx_gru);
 
-  void get_sundials_tolerances(void* hru_data, double* relTol, double* absTol);
-  void set_sundials_tolerances(void* hru_data, double* relTol, double* absTol);
-
-  void setIDATolerances(void* hru_data, double* relTolTempCas, 
-                        double* absTolTempCas, double* relTolTempVeg, 
-                        double* absTolTempVeg, double* relTolWatVeg, 
-                        double* absTolWatVeg, double* relTolTempSoilSnow,
-                        double* absTolTempSoilSnow, double* relTolWatSnow, 
-                        double* absTolWatSnow, double* relTolMatric,
-                        double* absTolMatric, double* relTolAquifr, 
+  void get_sundials_tolerances(void* hru_data, double* relTol, double* absTol,
+                              double* relTolTempCas, double* relTolTempVeg, double* relToWatVeg,
+                              double* relTolTempSoilSnow, double* relTolWatSnow,
+                              double* relTolMatric, double* relTolAquifr,
+                              double* absTolTempCas, double* absTolTempVeg,
+                              double* absToWatVeg, double* absTolTempSoilSnow,
+                              double* absTolWatSnow, double* absTolMatric,
+                              double* absTolAquifr);
+  void set_sundials_tolerances(void* hru_data, double* relTol, double* absTol, 
+                              double* relTolTempCas, double* relTolTempVeg, double* relToWatVeg,
+                              double* relTolTempSoilSnow, double* relTolWatSnow,
+                              double* relTolMatric, double* relTolAquifr,
+                              double* absTolTempCas, double* absTolTempVeg,
+                              double* absToWatVeg, double* absTolTempSoilSnow,
+                              double* absTolWatSnow, double* absTolMatric,
+                              double* absTolAquifr);
+ 
+  void setIDATolerances(void* hru_data, double* relTol, double* absTol,
+                        double* relTolTempCas, double* relTolTempVeg, double* relToWatVeg,
+                        double* relTolTempSoilSnow, double* relTolWatSnow,
+                        double* relTolMatric, double* relTolAquifr,
+                        double* absTolTempCas, double* absTolTempVeg,
+                        double* absToWatVeg, double* absTolTempSoilSnow,
+                        double* absTolWatSnow, double* absTolMatric,
                         double* absTolAquifr);
 }
 
@@ -98,7 +112,21 @@ struct hru_state {
   // Sundials variables
   double rtol = -9999; // -9999 uses default
   double atol = -9999; // -9999 uses default
-
+  double rtol_temp_cas = -9999;
+  double rtol_temp_veg = -9999;
+  double rtol_wat_veg = -9999;
+  double rtol_temp_soil_snow = -9999;
+  double rtol_wat_snow = -9999;
+  double rtol_matric = -9999;
+  double rtol_aquifr = -9999;
+  double atol_temp_cas = -9999;
+  double atol_temp_veg = -9999;
+  double atol_wat_veg = -9999;
+  double atol_temp_soil_snow = -9999;
+  double atol_wat_snow = -9999;
+  double atol_matric = -9999;
+  double atol_aquifr = -9999;
+  
   double walltime_timestep = 0.0; // walltime for the current timestep		
 
   // Checkpointing variables

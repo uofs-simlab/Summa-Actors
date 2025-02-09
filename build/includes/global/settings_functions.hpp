@@ -199,8 +199,8 @@ class HRUActorSettings {
     bool default_tol_;
 
     HRUActorSettings(bool print_output = false, int output_frequency = 100,
-        double abs_tol = 0.0, double rel_tol = 0.0, double rel_tol_temp_veg =0.0,
-        double rel_tol_temp_cas = 0.0, double rel_tol_wat_veg = 0.0,
+        double abs_tol = 0.0, double rel_tol = 0.0, double rel_tol_temp_cas =0.0,
+        double rel_tol_temp_veg = 0.0, double rel_tol_wat_veg = 0.0,
         double rel_tol_temp_soil_snow = 0.0, double rel_tol_wat_snow = 0.0,
         double rel_tol_matric = 0.0, double rel_tol_aquifr = 0.0,
         double abs_tol_temp_cas = 0.0, double abs_tol_temp_veg = 0.0,
@@ -208,14 +208,15 @@ class HRUActorSettings {
         double abs_tol_wat_snow = 0.0, double abs_tol_matric = 0.0,
         double abs_tol_aquifr = 0.0, bool default_tol = false) 
         : print_output_(print_output), output_frequency_(output_frequency), 
-        abs_tol_(abs_tol), rel_tol_(rel_tol), rel_tol_temp_veg_(rel_tol_temp_veg),
-        rel_tol_temp_cas_(rel_tol_temp_cas), rel_tol_wat_veg_(rel_tol_wat_veg),
+        abs_tol_(abs_tol), rel_tol_(rel_tol), rel_tol_temp_cas_(rel_tol_temp_cas),
+        rel_tol_temp_veg_(rel_tol_temp_veg), rel_tol_wat_veg_(rel_tol_wat_veg),
         rel_tol_temp_soil_snow_(rel_tol_temp_soil_snow), 
         rel_tol_wat_snow_(rel_tol_wat_snow), rel_tol_matric_(rel_tol_matric),
         rel_tol_aquifr_(rel_tol_aquifr), abs_tol_temp_cas_(abs_tol_temp_cas),
-        abs_tol_temp_veg_(abs_tol_temp_veg), abs_tol_temp_soil_snow_(abs_tol_temp_soil_snow),
+        abs_tol_temp_veg_(abs_tol_temp_veg), abs_tol_wat_veg_(abs_tol_wat_veg), 
+        abs_tol_temp_soil_snow_(abs_tol_temp_soil_snow),
         abs_tol_wat_snow_(abs_tol_wat_snow), abs_tol_matric_(abs_tol_matric),
-        abs_tol_aquifr_(abs_tol_aquifr), abs_tol_wat_veg_(abs_tol_wat_veg), default_tol_(default_tol) {};
+        abs_tol_aquifr_(abs_tol_aquifr), default_tol_(default_tol) {};
     ~HRUActorSettings() {};
 
     std::string toString() {
