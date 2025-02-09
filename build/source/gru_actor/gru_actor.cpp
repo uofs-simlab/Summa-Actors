@@ -34,7 +34,14 @@ behavior GruActor::make_behavior() {
   }
 
   f_setGruTolerances(gru_data_.get(), hru_actor_settings_.rel_tol_,
-      hru_actor_settings_.abs_tol_);
+      hru_actor_settings_.abs_tol_, hru_actor_settings_.rel_tol_temp_cas_,
+      hru_actor_settings_.rel_tol_temp_veg_, hru_actor_settings_.rel_tol_wat_veg_,
+      hru_actor_settings_.rel_tol_temp_soil_snow_, hru_actor_settings_.rel_tol_wat_snow_,
+      hru_actor_settings_.rel_tol_matric_, hru_actor_settings_.rel_tol_aquifr_,
+      hru_actor_settings_.abs_tol_temp_cas_, hru_actor_settings_.abs_tol_temp_veg_,
+      hru_actor_settings_.abs_tol_wat_veg_, hru_actor_settings_.abs_tol_temp_soil_snow_,
+      hru_actor_settings_.abs_tol_wat_snow_, hru_actor_settings_.abs_tol_matric_,
+      hru_actor_settings_.abs_tol_aquifr_, hru_actor_settings_.default_tol_);
 
   data_assimilation_mode_ ? self_->become(data_assimilation_mode()) :
                             self_->become(async_mode());

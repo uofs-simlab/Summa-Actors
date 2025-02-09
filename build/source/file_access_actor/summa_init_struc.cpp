@@ -37,6 +37,9 @@ void SummaInitStruc::getInitTolerance(double rel_tol, double abs_tol, double rel
                                       double abs_tol_wat_veg, double abs_tol_temp_soil_snow, 
                                       double abs_tol_wat_snow, double abs_tol_matric,
                                       double abs_tol_aquifr) {
-  f_getInitTolerance(rel_tol, abs_tol);
+  f_getInitTolerance(rel_tol, abs_tol, rel_tol_temp_cas, rel_tol_temp_veg, rel_tol_wat_veg, 
+                     rel_tol_temp_soil_snow, rel_tol_wat_snow, rel_tol_matric, rel_tol_aquifr,
+                     abs_tol_temp_cas, abs_tol_temp_veg, abs_tol_wat_veg, abs_tol_temp_soil_snow, 
+                     abs_tol_wat_snow, abs_tol_matric, abs_tol_aquifr);
 }
 

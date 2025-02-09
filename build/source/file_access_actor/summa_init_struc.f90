@@ -207,7 +207,10 @@ subroutine f_readRestart(err, message_r) bind(C, name="f_readRestart")
 
 end subroutine f_readRestart
 
-subroutine f_getInitTolerance(rtol, atol) &
+subroutine f_getInitTolerance(rtol, atol, rtol_temp_cas, rtol_temp_veg, rtol_wat_veg, &
+            rtol_temp_soil_snow, rtol_wat_snow, rtol_matric, rtol_aquifr, atol_temp_cas, &
+            atol_temp_veg, atol_wat_veg, atol_temp_soil_snow, atol_wat_snow, atol_matric, & 
+            atol_aquifr) &
     bind(C, name="f_getInitTolerance")
    USE globalData,only:model_decisions                         ! model decision structure
   USE var_lookup,only:iLookDECISIONS
@@ -216,13 +219,55 @@ subroutine f_getInitTolerance(rtol, atol) &
   ! dummy variables
   real(c_double),       intent(out)       :: rtol 
   real(c_double),       intent(out)       :: atol
+  real(c_double),       intent(out)       :: rtol_temp_cas
+  real(c_double),       intent(out)       :: rtol_temp_veg
+  real(c_double),       intent(out)       :: rtol_wat_veg
+  real(c_double),       intent(out)       :: rtol_temp_soil_snow
+  real(c_double),       intent(out)       :: rtol_wat_snow
+  real(c_double),       intent(out)       :: rtol_matric
+  real(c_double),       intent(out)       :: rtol_aquifr
+  real(c_double),       intent(out)       :: atol_temp_cas
+  real(c_double),       intent(out)       :: atol_temp_veg
+  real(c_double),       intent(out)       :: atol_wat_veg
+  real(c_double),       intent(out)       :: atol_temp_soil_snow
+  real(c_double),       intent(out)       :: atol_wat_snow
+  real(c_double),       intent(out)       :: atol_matric
+  real(c_double),       intent(out)       :: atol_aquifr
 
   rtol = -9999
   atol = -9999
+  rtol_temp_cas = -9999
+  rtol_temp_veg = -9999
+  rtol_temp_soil_snow = -9999
+  rtol_wat_snow = -9999
+  rtol_wat_veg = -9999
+  rtol_matric = -9999
+  rtol_aquifr = -9999
+  atol_temp_cas = -9999
+  atol_temp_veg = -9999
+  atol_temp_soil_snow = -9999
+  atol_wat_snow = -9999
+  atol_wat_veg = -9999
+  atol_matric = -9999
+  atol_aquifr = -9999
 #ifdef V4_ACTIVE
   if (model_decisions(iLookDECISIONS%num_method)%iDecision == 83) then
     rtol = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolWatSnow)%dat(1)
     atol = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolWatSnow)%dat(1)
+    rtol_temp_cas = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolTempCas)%dat(1)
+    rtol_temp_veg = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolTempveg)%dat(1)
+    rtol_wat_snow = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolWatSnow)%dat(1)
+    rtol_temp_soil_snow = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolTempSoilSnow)%dat(1)
+    rtol_wat_veg = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolWatVeg)%dat(1)
+    rtol_matric = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolMatric)%dat(1)
+    rtol_aquifr = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolAquifr)%dat(1)
+    atol_temp_cas = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolTempCas)%dat(1)
+    atol_temp_veg = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolTempVeg)%dat(1)
+    atol_wat_snow = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolWatSnow)%dat(1)
+    atol_temp_soil_snow = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolTempSoilSnow)%dat(1)
+    atol_wat_veg = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolWatVeg)%dat(1)
+    atol_matric = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolMatric)%dat(1)
+    atol_aquifr = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolAquifr)%dat(1)
   end if
 #endif
 

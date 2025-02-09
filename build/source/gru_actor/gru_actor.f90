@@ -36,7 +36,7 @@ subroutine f_setGruTolerances(handle_gru_data, rel_tol, abs_tol, rel_tol_temp_ca
   rel_tol_temp_veg, rel_tol_wat_veg, rel_tol_temp_soil_snow, rel_tol_wat_snow, &
   rel_tol_matric, rel_tol_aquifr, abs_tol_temp_cas, abs_tol_temp_veg, &
   abs_tol_wat_veg, abs_tol_temp_snow_soil, abs_tol_wat_snow, abs_tol_matric, &
-  abs_tol_aquifr)  bind(C, name="f_setGruTolerances")
+  abs_tol_aquifr, default_tol)  bind(C, name="f_setGruTolerances")
 
   USE actor_data_types,only:gru_type
   USE var_lookup,only: iLookPARAM
@@ -45,20 +45,20 @@ subroutine f_setGruTolerances(handle_gru_data, rel_tol, abs_tol, rel_tol_temp_ca
   type(c_ptr), intent(in),value :: handle_gru_data
   real(c_double), intent(in)    :: rel_tol
   real(c_double), intent(in)    :: abs_tol
-  real(c_double), intent(in)    :: rel_tol_temp_cas
-  real(c_double), intent(in)    :: rel_tol_temp_veg
-  real(c_double), intent(in)    :: rel_tol_wat_veg
-  real(c_double), intent(in)    :: rel_tol_temp_soil_snow
-  real(c_double), intent(in)    :: rel_tol_wat_snow
-  real(c_double), intent(in)    :: rel_tol_matric
-  real(c_double), intent(in)    :: rel_tol_aquifr
-  real(c_double), intent(in)    :: abs_tol_temp_cas
-  real(c_double), intent(in)    :: abs_tol_temp_veg
-  real(c_double), intent(in)    :: abs_tol_wat_veg
-  real(c_double), intent(in)    :: abs_tol_temp_snow_soil
-  real(c_double), intent(in)    :: abs_tol_wat_snow
-  real(c_double), intent(in)    :: abs_tol_matric
-  real(c_double), intent(in)    :: abs_tol_aquifr
+  real(c_double), intent(inout)    :: rel_tol_temp_cas
+  real(c_double), intent(inout)    :: rel_tol_temp_veg
+  real(c_double), intent(inout)    :: rel_tol_wat_veg
+  real(c_double), intent(inout)    :: rel_tol_temp_soil_snow
+  real(c_double), intent(inout)    :: rel_tol_wat_snow
+  real(c_double), intent(inout)    :: rel_tol_matric
+  real(c_double), intent(inout)    :: rel_tol_aquifr
+  real(c_double), intent(inout)    :: abs_tol_temp_cas
+  real(c_double), intent(inout)    :: abs_tol_temp_veg
+  real(c_double), intent(inout)    :: abs_tol_wat_veg
+  real(c_double), intent(inout)    :: abs_tol_temp_snow_soil
+  real(c_double), intent(inout)    :: abs_tol_wat_snow
+  real(c_double), intent(inout)    :: abs_tol_matric
+  real(c_double), intent(inout)    :: abs_tol_aquifr
   ! A flag to indicate whether the values of rel_tol_* and abs_tol_* should follow 
   ! the values of rel_tol and abs_tol
   logical, intent(in)           :: default_tol
@@ -85,7 +85,7 @@ subroutine f_setGruTolerances(handle_gru_data, rel_tol, abs_tol, rel_tol_temp_ca
     abs_tol_wat_veg = abs_tol
     abs_tol_matric = abs_tol
     abs_tol_aquifr = abs_tol
-    
+  end if
   do iHRU = 1, size(gru_data%hru)
     ! Set rtols
     gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relConvTol_liquid)%dat(1) = rel_tol
@@ -112,7 +112,6 @@ subroutine f_setGruTolerances(handle_gru_data, rel_tol, abs_tol, rel_tol_temp_ca
     gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absTolMatric)%dat(1) = abs_tol_matric 
     gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absTolAquifr)%dat(1) = abs_tol_aquifr 
   end do
-
 
 end subroutine f_setGruTolerances
 
