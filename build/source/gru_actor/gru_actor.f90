@@ -811,7 +811,7 @@ subroutine allocateOutputBuffer(indx_gru, num_hru, output_buffer_steps, &
           call alloc_outputStruc(indx_meta,summa_struct(1)%indxStruct%gru(indx_gru)%hru(iHRU), &
                                  nSteps=output_buffer_steps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,str_name='indx',message=message);
           call alloc_outputStruc(statIndx_meta(:)%var_info,summa_struct(1)%indxStat%gru(indx_gru)%hru(iHRU), &
-                                 nSteps=output_buffer_steps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,message=message);
+                                 nSteps=output_buffer_steps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,str_name='indx',message=message);
         case('prog')
           call alloc_outputStruc(prog_meta,summa_struct(1)%progStruct%gru(indx_gru)%hru(iHRU), &
                                   nSteps=output_buffer_steps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,str_name='prog',message=message);
