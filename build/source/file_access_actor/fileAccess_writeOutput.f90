@@ -554,20 +554,31 @@ subroutine writeScalar(ncid, outputTimestep, outputTimestepUpdate, nSteps, minGR
   real(rkind)                       :: val
 
   err=0; message="writeOutput.f90-writeScalar/"
+  realVec = realMissing
 
   select type(stat)
     class is (gru_hru_time_doubleVec)
       gruCounter=0
       hru_counter=0
       do iGRU = minGRU, maxGRU
-          ! gruCounter = gruCounter + 1
+        ! gruCounter = gruCounter + 1
         do iHRU = 1, size(gru_struc(iGRU)%hruInfo)
           hru_counter = hru_counter + 1
           stepCounter = 0
           do iStep = 1, nSteps
             if(.not.summa_struct(1)%finalizeStats%gru(iGRU)%hru(iHRU)%tim(iStep)%dat(iFreq)) cycle
             stepCounter = stepCounter + 1
-            realVec(hru_counter, stepCounter) = stat%gru(iGRU)%hru(iHRU)%var(map(iVar))%tim(iStep)%dat(iFreq)
+            val = stat%gru(iGRU)%hru(iHRU)%var(map(iVar))%tim(iStep)%dat(iFreq)
+            ! Handle missing values
+            if (ieee_is_nan(val)) then
+              val = realMissing
+            end if
+            ! Handle numeric conversion issues
+            if (val < -1.0e37 .or. val > 1.0e37) then
+              print *, "Warning: Value out of range for NetCDF variable: ", val
+              val = realMissing
+            end if
+            realVec(hru_counter, stepCounter) = val
             outputTimeStepUpdate(iFreq) = stepCounter
           end do ! iStep
         end do ! iHRU
@@ -592,6 +603,16 @@ subroutine writeScalar(ncid, outputTimestep, outputTimestepUpdate, nSteps, minGR
                          realVec(1:hru_counter, 1:stepCounter),    &
                          start=(/minGRU,outputTimestep(iFreq)/),   & 
                          count=(/nHRUrun,stepCounter/))
+      if(err/=0)then
+        print*, trim(nf90_strerror(err))
+        print *, "Variable: ", trim(meta(iVar)%varName)
+        print*,iFreq,meta(iVar)%ncVarID(iFreq),ncid%var(iFreq),minGRU
+        print*,outputTimestep(iFreq),stepCounter,nSteps
+        print*,size(gru_struc(iGRU)%hruInfo),nHRUrun,hru_counter
+        ! Print size and mean of realVec
+        print *, "Size of realVec: ", size(realVec)
+        print *, "Mean of realVec: ", sum(realVec(1:hru_counter, 1:stepCounter)) / (hru_counter * stepCounter)
+      endif
     class default; err=20; message=trim(message)//'stats must be scalarv and of type gru_hru_doubleVec'; return
   end select  ! stat
 
