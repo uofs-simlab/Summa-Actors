@@ -183,6 +183,7 @@ void GruActor::handleErr(int err, std::unique_ptr<char[]>& message) {
   // f_fillOutputWithErrs(job_index_, timestep_, output_step_, gru_data_.get(), 
   //                      local_err, &local_message);
 
+  self_->println("GRU Actor: SUMMA error message -- {}", message.get());
   self_->mail(err_atom_v, job_index_, timestep_, err, message.get())
       .send(parent_);
   self_->quit();
