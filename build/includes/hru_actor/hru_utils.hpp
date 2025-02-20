@@ -32,6 +32,7 @@ struct hru {
   double atol_matric;
   double rtol_aquifr;
   double atol_aquifr;
+  bool def_tol;
 
 
   // HRU data structures
@@ -107,6 +108,7 @@ bool inspect(Inspector& inspector, hru& hru_data) {
          inspector.field("atol_wat_snow", hru_data.atol_wat_snow),
          inspector.field("atol_matric", hru_data.atol_matric),
          inspector.field("atol_aquifr", hru_data.atol_aquifr),
+         inspector.field("def_tol", hru_data.def_tol),
          inspector.field("forc_stat", hru_data.forc_stat),
          inspector.field("prog_stat", hru_data.prog_stat),
          inspector.field("diag_stat", hru_data.diag_stat),
