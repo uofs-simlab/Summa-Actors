@@ -42,7 +42,11 @@ ErrorLogger::ErrorLogger(const std::string log_dir) {
               + ".csv";
   std::ofstream file;
   file.open(log_file_, std::ios::out);
-  file << "ref_gru,indx_gru,timestep,rel_tol,abs_tol,err_code,err_msg\n";
+  file << "ref_gru,indx_gru,timestep,rel_tol,abs_tol,rel_tol_temp_cas,rel_tol_temp_veg,"
+          "rel_tol_wat_veg,rel_tol_temp_soil_snow,rel_tol_wat_snow,rel_tol_matric,"
+          "rel_tol_aquifr,abs_tol_temp_cas,abs_tol_temp_veg,abs_tol_wat_veg,"
+          "abs_tol_temp_soil_snow,abs_tol_wat_snow,abs_tol_matric,abs_tol_aquifr,"
+          "default_tol,err_code,err_msg\n";
   file.close();
 }
 
@@ -76,7 +80,11 @@ void ErrorLogger::nextAttempt() {
               + ".csv";
   std::ofstream file;
   file.open(log_file_, std::ios::out);
-    file << "ref_gru,indx_gru,timestep,rel_tol,abs_tol,err_code,err_msg\n";
+  file << "ref_gru,indx_gru,timestep,rel_tol,abs_tol,rel_tol_temp_cas,rel_tol_temp_veg,"
+          "rel_tol_wat_veg,rel_tol_temp_soil_snow,rel_tol_wat_snow,rel_tol_matric,"
+          "rel_tol_aquifr,abs_tol_temp_cas,abs_tol_temp_veg,abs_tol_wat_veg,"
+          "abs_tol_temp_soil_snow,abs_tol_wat_snow,abs_tol_matric,abs_tol_aquifr,"
+          "default_tol,err_code,err_msg\n";
   file.close();
 }
 
@@ -96,7 +104,11 @@ SuccessLogger::SuccessLogger(const std::string log_dir) {
               + ".csv";
   std::ofstream file;
   file.open(log_file_, std::ios::out);
-    file << "ref_gru,indx_gru,rel_tol,abs_tol\n";
+  file << "ref_gru,indx_gru,rel_tol,abs_tol,rel_tol_temp_cas,rel_tol_temp_veg,"
+          "rel_tol_wat_veg,rel_tol_temp_soil_snow,rel_tol_wat_snow,rel_tol_matric,"
+          "rel_tol_aquifr,abs_tol_temp_cas,abs_tol_temp_veg,abs_tol_wat_veg,"
+          "abs_tol_temp_soil_snow,abs_tol_wat_snow,abs_tol_matric,abs_tol_aquifr,"
+          "default_tol\n";
   file.close();
 }
 
@@ -131,7 +143,11 @@ void SuccessLogger::nextAttempt() {
               + ".csv";
   std::ofstream file;
   file.open(log_file_, std::ios::out);
-    file << "ref_gru,indx_gru,rel_tol,abs_tol\n";
+    file << "ref_gru,indx_gru,rel_tol,abs_tol,rel_tol_temp_cas,rel_tol_temp_veg,"
+          "rel_tol_wat_veg,rel_tol_temp_soil_snow,rel_tol_wat_snow,rel_tol_matric,"
+          "rel_tol_aquifr,abs_tol_temp_cas,abs_tol_temp_veg,abs_tol_wat_veg,"
+          "abs_tol_temp_soil_snow,abs_tol_wat_snow,abs_tol_matric,abs_tol_aquifr,"
+          "default_tol\n";
   file.close();
 }
 
