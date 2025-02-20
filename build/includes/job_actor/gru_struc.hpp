@@ -16,6 +16,8 @@ extern "C" {
   void f_getNumHruPerGru(int& arr_size, int& num_hru_per_gru_array);
 
   void f_deallocateGruStruc();
+   bool f_get_default_tol();
+  void f_set_default_tol(bool new_tol);
 }
 
 /** Determine the state of the GRU */
@@ -31,6 +33,7 @@ class GRU {
     int num_hrus_;           // The number of HRUs in the GRU
 
     // Modifyable Parameters
+    bool def_tol_;            // Default tol
     int dt_init_factor_;     // The initial dt for the GRU
     double rel_tol_;         // The relative tolerance for the GRU
     double abs_tol_;         // The absolute tolerance for the GRU
@@ -65,7 +68,7 @@ class GRU {
         double rel_tol_wat_snow=0.0, double rel_tol_matric=0.0, double rel_tol_aquifr=0.0,
         double abs_tol_temp_cas=0.0, double abs_tol_temp_veg=0.0, double abs_tol_wat_veg=0.0,
         double abs_tol_temp_soil_snow=0.0, double abs_tol_wat_snow=0.0, double abs_tol_matric=0.0,
-        double abs_tol_aquifr=0.0, int max_attempts =5)
+        double abs_tol_aquifr=0.0, bool /*def_tol*/ = true,int max_attempts =5)
         : index_netcdf_(index_netcdf), index_job_(index_job), 
           actor_ref_(actor_ref), dt_init_factor_(dt_init_factor),
           rel_tol_(rel_tol), abs_tol_(abs_tol), rel_tol_temp_cas_(rel_tol_temp_cas),
@@ -75,7 +78,7 @@ class GRU {
           abs_tol_temp_cas_(abs_tol_temp_cas), abs_tol_temp_veg_(abs_tol_temp_veg),
           abs_tol_wat_veg_(abs_tol_wat_veg), abs_tol_temp_soil_snow_(abs_tol_temp_soil_snow),
           abs_tol_wat_snow_(abs_tol_wat_snow), abs_tol_matric_(abs_tol_matric),
-          abs_tol_aquifr_(abs_tol_aquifr), attempts_left_(max_attempts),
+          abs_tol_aquifr_(abs_tol_aquifr), def_tol_(f_get_default_tol()),attempts_left_(max_attempts),
           state_(gru_state::running) {};
 
     // Deconstructor
@@ -86,6 +89,7 @@ class GRU {
     inline int getIndexJob() const { return index_job_; }
     inline caf::actor getActorRef() const { return actor_ref_; }
     inline double getRunTime() const { return run_time_; }
+    inline bool getDefTol() const { return def_tol_; }
     inline double getRelTol() const { return rel_tol_; }
     inline double getAbsTol() const { return abs_tol_; }
     inline double getRelTolTempCas() const { return rel_tol_temp_cas_; }
