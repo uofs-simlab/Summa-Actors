@@ -1,5 +1,7 @@
 #include "settings_functions.hpp"
-
+extern "C" { 
+  void set_default_tol(bool new_tol);
+}
 
 int Settings::readSettings() {
   std::ifstream settings_file(json_file_);
@@ -77,9 +79,10 @@ int Settings::readSettings() {
     getSettings<double>(json_settings, "HRU_Actor", "abs_tol_matric")
         .value_or(1e-3),
     getSettings<double>(json_settings, "HRU_Actor", "abs_tol_aquifr")
-        .value_or(1e-3));
+        .value_or(1e-3),
     getSettings<bool>(json_settings, "HRU_Actor", "default_tol")
-        .value_or(true);
+        .value_or(true));
+    set_default_tol(hru_actor_settings_.default_tol_);
 
 
   return SUCCESS;
