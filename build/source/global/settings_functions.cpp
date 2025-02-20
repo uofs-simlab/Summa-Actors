@@ -1,6 +1,6 @@
 #include "settings_functions.hpp"
 extern "C" { 
-  void set_default_tol(bool new_tol);
+  void f_set_default_tol(bool new_tol);
 }
 
 int Settings::readSettings() {
@@ -82,7 +82,7 @@ int Settings::readSettings() {
         .value_or(1e-3),
     getSettings<bool>(json_settings, "HRU_Actor", "default_tol")
         .value_or(true));
-    set_default_tol(hru_actor_settings_.default_tol_);
+    f_set_default_tol(hru_actor_settings_.default_tol_);
 
 
   return SUCCESS;

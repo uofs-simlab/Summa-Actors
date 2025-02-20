@@ -69,7 +69,7 @@ behavior JobActor::make_behavior() {
                                       abs_tol_temp_cas_, abs_tol_temp_veg_, 
                                       abs_tol_wat_veg_, abs_tol_temp_soil_snow_, 
                                       abs_tol_wat_snow_, abs_tol_matric_, 
-                                      abs_tol_aquifr_);
+                                      abs_tol_aquifr_, default_tol_);
 
   
   num_gru_info_ = NumGRUInfo(batch_.getStartHRU(), batch_.getStartHRU(), 

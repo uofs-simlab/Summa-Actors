@@ -224,16 +224,27 @@ int initHRU(stateful_actor<hru_state>* self) {
     self->state.err_message = message.get();
     return err;
   }
-  #ifdef SUNDIALS_ACTIVE
-    if (self->state.hru_actor_settings.rel_tol > 0 && 
-        self->state.hru_actor_settings.abs_tol > 0) {
-      set_sundials_tolerances(self->state.hru_data, 
-          &self->state.hru_actor_settings.rel_tol, 
-          self->state.hru_actor_settings.abs_tol);
-    }
-  #endif     
-  
-  return 0;      
+#ifdef SUNDIALS_ACTIVE
+  !-- Always call set_sundials_tolerances with the HRU settings --
+  set_sundials_tolerances(self->state.hru_data, 
+                          self->state.hru_actor_settings.rel_tol,
+                          self->state.hru_actor_settings.abs_tol,
+                          self->state.hru_actor_settings.rel_tol_temp_cas,
+                          self->state.hru_actor_settings.rel_tol_temp_veg,
+                          self->state.hru_actor_settings.rel_tol_wat_veg,
+                          self->state.hru_actor_settings.rel_tol_temp_soil_snow,
+                          self->state.hru_actor_settings.rel_tol_wat_snow,
+                          self->state.hru_actor_settings.rel_tol_matric,
+                          self->state.hru_actor_settings.rel_tol_aquifr,
+                          self->state.hru_actor_settings.abs_tol_temp_cas,
+                          self->state.hru_actor_settings.abs_tol_temp_veg,
+                          self->state.hru_actor_settings.abs_tol_wat_veg,
+                          self->state.hru_actor_settings.abs_tol_temp_soil_snow,
+                          self->state.hru_actor_settings.abs_tol_wat_snow,
+                          self->state.hru_actor_settings.abs_tol_matric,
+                          self->state.hru_actor_settings.abs_tol_aquifr);
+#endif     
+  return 0;
 }
 
 int runHRU(stateful_actor<hru_state>* self) {
