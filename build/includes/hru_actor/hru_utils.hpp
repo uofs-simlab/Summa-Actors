@@ -16,8 +16,10 @@ struct hru {
   int output_structure_step_index;
 
   // Sundials variables
+  int beSteps;
   double rtol;
-  double atol;
+  double atolWat;
+  double atolNrg;
 
   // HRU data structures
   // Statistic Structure
@@ -76,8 +78,10 @@ bool inspect(Inspector& inspector, hru& hru_data) {
          inspector.field("dt_init_factor", hru_data.dt_init_factor),
          inspector.field("output_structure_step_index", 
                          hru_data.output_structure_step_index),
+         inspector.field("beSteps", hru_data.beSteps),
          inspector.field("rtol", hru_data.rtol),
-         inspector.field("atol", hru_data.atol),
+         inspector.field("atolWat", hru_data.atolWat),
+         inspector.field("atolNrg", hru_data.atolNrg),
          inspector.field("forc_stat", hru_data.forc_stat),
          inspector.field("prog_stat", hru_data.prog_stat),
          inspector.field("diag_stat", hru_data.diag_stat),

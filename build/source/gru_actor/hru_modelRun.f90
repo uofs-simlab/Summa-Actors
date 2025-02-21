@@ -21,7 +21,7 @@
 module summa_modelRun
 ! calls the model physics
 USE,intrinsic :: iso_c_binding
-
+USE nrtype
 USE actor_data_types,only:hru_type
 ! access missing values
 USE globalData,only:integerMissing         ! missing integer
@@ -68,9 +68,9 @@ USE mDecisions_module,only:&               ! look-up values for LAI decisions
 implicit none
 private
 public::runPhysics
-#ifdef SUNDIALS_ACTIVE
-public::get_sundials_tolerances
-public::set_sundials_tolerances
+#ifdef V4_ACTIVE
+public::get_steps_tolerances
+public::set_steps_tolerances
 #endif
 contains
 
@@ -263,47 +263,72 @@ subroutine runPhysics(indxGRU, indxHRU, modelTimeStep, hru_data, &
 end subroutine runPhysics
 
 ! *******************************************************************************************
-! *** get_sundials_tolerances
+! *** get_steps_tolerances
 ! *******************************************************************************************
-#ifdef SUNDIALS_ACTIVE
-subroutine get_sundials_tolerances(handle_hru_data, rtol, atol) bind(C, name='get_sundials_tolerances')
-  USE var_lookup,only: iLookPARAM
+#ifdef V4_ACTIVE
+subroutine get_steps_tolerances(handle_hru_data, beSteps, rtol, atolWat, atolNrg) bind(C, name='get_steps_tolerances')
+  USE globalData,only:model_decisions                         ! model decision structure
+  USE var_lookup,only:iLookDECISIONS                          ! look-up values for model decisions
+  USE var_lookup,only:iLookPARAM                              ! look-up values for local column model parameters
   implicit none
 
   ! dummy variables
   type(c_ptr),    intent(in), value         :: handle_hru_data        ! c_ptr to -- hru data
+  integer(c_int), intent(out)               :: beSteps                ! number of backward Euler steps in data window
   real(c_double), intent(out)               :: rtol                   ! relative tolerance
-  real(c_double), intent(out)               :: atol                   ! absolute tolerance
+  real(c_double), intent(out)               :: atolWat                ! absolute tolerance for water states
+  real(c_double), intent(out)               :: atolNrg                ! absolute tolerance for energy states
   ! local variables
   type(hru_type),pointer                    :: hru_data               ! hru data
   call c_f_pointer(handle_hru_data, hru_data)
 
-  ! get tolerances
-  rtol = hru_data%mparStruct%var(iLookPARAM%relTolWatSnow)%dat(1) 
-  atol = hru_data%mparStruct%var(iLookPARAM%absTolWatSnow)%dat(1)
-end subroutine get_sundials_tolerances
+  if (trim(model_decisions(iLookDECISIONS%num_method)%cDecision)=='ida') then
+    beSteps = 1 ! IDA should have full step size (value isn't used anyhow)
+    ! IDA tolerances, which are set in the model decision file
+    rtol = (hru_data%mparStruct%var(iLookPARAM%relTolTempCas)%dat(1) &
+          + hru_data%mparStruct%var(iLookPARAM%relTolWatVeg)%dat(1) &
+          + hru_data%mparStruct%var(iLookPARAM%relTolTempVeg)%dat(1) &
+          + hru_data%mparStruct%var(iLookPARAM%relTolWatSnow)%dat(1) &
+          + hru_data%mparStruct%var(iLookPARAM%relTolTempSoilSnow)%dat(1) &
+          + hru_data%mparStruct%var(iLookPARAM%relTolMatric)%dat(1) &
+          + hru_data%mparStruct%var(iLookPARAM%relTolAquifr)%dat(1))/7._rkind
+
+    atolWat = (hru_data%mparStruct%var(iLookPARAM%absTolWatVeg)%dat(1) &
+             + hru_data%mparStruct%var(iLookPARAM%absTolWatSnow)%dat(1) &
+             + hru_data%mparStruct%var(iLookPARAM%absTolMatric)%dat(1) &
+             + hru_data%mparStruct%var(iLookPARAM%absTolAquifr)%dat(1))/4._rkind
+    atolNrg = (hru_data%mparStruct%var(iLookPARAM%absTolTempCas)%dat(1) &
+             + hru_data%mparStruct%var(iLookPARAM%absTolTempVeg)%dat(1) &
+             + hru_data%mparStruct%var(iLookPARAM%absTolTempSoilSnow)%dat(1))/3._rkind
+  else ! all other methods are currently BE -- 'homegrown' ('itertive'), 'kinsol'
+    beSteps = NINT(hru_data%mparStruct%var(iLookPARAM%be_steps)%dat(1))
+    rtol = -9999    ! BE doesn't use these
+    atolWat = -9999
+    atolNrg = -9999
+  endif
+end subroutine get_steps_tolerances
 
 ! *******************************************************************************************
-! *** get_sundials_tolerances
+! *** get_steps_tolerances
 ! *******************************************************************************************
-subroutine set_sundials_tolerances(handle_hru_data, rtol, atol) bind(C, name='set_sundials_tolerances')
-  USE var_lookup,only: iLookPARAM
+subroutine set_steps_tolerances(handle_hru_data, beSteps, rtol, atolWat, atolNrg) bind(C, name='set_steps_tolerances')
+  USE var_lookup,only:iLookPARAM                              ! look-up values for local column model parameters
   implicit none
 
   ! dummy variables
-  type(c_ptr),    intent(in), value         :: handle_hru_data        ! c_ptr to -- hru data
+  type(c_ptr), intent(in), value           :: handle_hru_data        ! c_ptr to -- hru data
+  integer(c_int), intent(in)               :: beSteps                ! number of backward Euler steps in data window
   real(c_double), intent(in)               :: rtol                   ! relative tolerance
-  real(c_double), intent(in)               :: atol                   ! absolute tolerance
+  real(c_double), intent(in)               :: atolWat                ! absolute tolerance for water
+  real(c_double), intent(in)               :: atolNrg                ! absolute tolerance for energy
+
   ! local variables
-  type(hru_type),pointer                    :: hru_data               ! hru data
+  type(hru_type),pointer                    :: hru_data              ! hru data
   call c_f_pointer(handle_hru_data, hru_data)
 
-
+  ! set beSteps
+  hru_data%mparStruct%var(iLookPARAM%be_steps)%dat(1) = REAL(beSteps)
   ! Set rtols
-  hru_data%mparStruct%var(iLookPARAM%relConvTol_liquid)%dat(1) = rtol  
-  hru_data%mparStruct%var(iLookPARAM%relConvTol_matric)%dat(1) = rtol  
-  hru_data%mparStruct%var(iLookPARAM%relConvTol_energy)%dat(1) = rtol  
-  hru_data%mparStruct%var(iLookPARAM%relConvTol_aquifr)%dat(1) = rtol  
   hru_data%mparStruct%var(iLookPARAM%relTolTempCas)%dat(1) = rtol  
   hru_data%mparStruct%var(iLookPARAM%relTolTempVeg)%dat(1) = rtol  
   hru_data%mparStruct%var(iLookPARAM%relTolWatVeg)%dat(1) = rtol  
@@ -312,18 +337,15 @@ subroutine set_sundials_tolerances(handle_hru_data, rtol, atol) bind(C, name='se
   hru_data%mparStruct%var(iLookPARAM%relTolMatric)%dat(1) = rtol  
   hru_data%mparStruct%var(iLookPARAM%relTolAquifr)%dat(1) = rtol  
   ! Set atols
-  hru_data%mparStruct%var(iLookPARAM%absConvTol_liquid)%dat(1) = atol 
-  hru_data%mparStruct%var(iLookPARAM%absConvTol_matric)%dat(1) = atol 
-  hru_data%mparStruct%var(iLookPARAM%absConvTol_energy)%dat(1) = atol 
-  hru_data%mparStruct%var(iLookPARAM%absConvTol_aquifr)%dat(1) = atol 
-  hru_data%mparStruct%var(iLookPARAM%absTolTempCas)%dat(1) = atol 
-  hru_data%mparStruct%var(iLookPARAM%absTolTempVeg)%dat(1) = atol 
-  hru_data%mparStruct%var(iLookPARAM%absTolWatVeg)%dat(1) = atol 
-  hru_data%mparStruct%var(iLookPARAM%absTolTempSoilSnow)%dat(1) = atol 
-  hru_data%mparStruct%var(iLookPARAM%absTolWatSnow)%dat(1) = atol 
-  hru_data%mparStruct%var(iLookPARAM%absTolMatric)%dat(1) = atol 
-  hru_data%mparStruct%var(iLookPARAM%absTolAquifr)%dat(1) = atol 
-end subroutine set_sundials_tolerances
+  hru_data%mparStruct%var(iLookPARAM%absTolTempCas)%dat(1) = atolNrg
+  hru_data%mparStruct%var(iLookPARAM%absTolTempVeg)%dat(1) = atolNrg 
+  hru_data%mparStruct%var(iLookPARAM%absTolWatVeg)%dat(1) = atolWat
+  hru_data%mparStruct%var(iLookPARAM%absTolTempSoilSnow)%dat(1) = atolNrg
+  hru_data%mparStruct%var(iLookPARAM%absTolWatSnow)%dat(1) = atolWat 
+  hru_data%mparStruct%var(iLookPARAM%absTolMatric)%dat(1) = atolWat
+  hru_data%mparStruct%var(iLookPARAM%absTolAquifr)%dat(1) = atolWat
+
+end subroutine set_steps_tolerances
 #endif
 
 end module summa_modelRun

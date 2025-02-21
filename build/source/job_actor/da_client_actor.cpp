@@ -85,7 +85,7 @@ behavior DAClientActor::make_behavior() {
         self_->quit();
         return;
       }
-      // summa_init_struc_->getInitTolerance(rel_tol_, abs_tol_);
+      // summa_init_struc_->getInitBEStepsIDATol(be_steps_, rel_tol_, abs_tolWat_, abs_tolNrg_);
 
       NumGRUInfo num_gru_info = NumGRUInfo(
           node_gru_info.node_start_gru_, node_gru_info.node_start_gru_,
@@ -218,7 +218,7 @@ void DAClientActor::spawnGruBatches() {
         settings_.fa_actor_settings_.num_timesteps_in_output_buffer_, 
         file_access_actor_, self_);
     std::unique_ptr<GRU> gru_obj = std::make_unique<GRU>(
-        start_hru_global, start_hru_local, gru_batch, 1, 1.0e-10, 1.0e-10,
+        start_hru_global, start_hru_local, gru_batch, 1, 1, 1.0e-10, 1.0e-10, 1.0e-10,
         settings_.job_actor_settings_.max_run_attempts_);
     gru_struc_->addGRU(std::move(gru_obj));
     remaining_hru_to_batch -= current_batch_size;

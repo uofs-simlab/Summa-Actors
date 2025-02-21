@@ -15,8 +15,8 @@
 
 
 # If a library cannot be found by Cmake, you can specify the path like so:
-export CMAKE_PREFIX_PATH="$CMAKE_PREFIX_PATH:/u1/kck540/Projects/hydrology/Summa-Actors/utils/dependencies/caf/"
-export CMAKE_PREFIX_PATH="$CMAKE_PREFIX_PATH:/u1/kck540/Projects/hydrology/Summa-Actors/utils/dependencies/sundials/"
+export CMAKE_PREFIX_PATH="$CMAKE_PREFIX_PATH:$HOME/Summa-Actors/utils/dependencies/caf/"
+export CMAKE_PREFIX_PATH="$CMAKE_PREFIX_PATH:$HOME/Summa-Actors/utils/dependencies/sundials/"
 
 
 # -----------------------------------
@@ -36,5 +36,5 @@ export CMAKE_PREFIX_PATH="$CMAKE_PREFIX_PATH:/u1/kck540/Projects/hydrology/Summa
 # If compiling V4 with sundials use the folowing (default)
 # -----------------------------------
 
-cmake -B ./cmake_build -S .. -DUSE_SUNDIALS=ON -DCMAKE_BUILD_TYPE=Debug
+cmake -B ./cmake_build -S .. -DUSE_SUNDIALS=ON -DCMAKE_BUILD_TYPE=Release
 cmake --build ./cmake_build --target all -j

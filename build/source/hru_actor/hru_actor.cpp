@@ -224,12 +224,16 @@ int initHRU(stateful_actor<hru_state>* self) {
     self->state.err_message = message.get();
     return err;
   }
-  #ifdef SUNDIALS_ACTIVE
-    if (self->state.hru_actor_settings.rel_tol > 0 && 
-        self->state.hru_actor_settings.abs_tol > 0) {
-      set_sundials_tolerances(self->state.hru_data, 
+  #ifdef V4_ACTIVE
+    if (self->state.hru_actor_settings.be_steps > 0 &&
+        self->state.hru_actor_settings.rel_tol > 0 && 
+        self->state.hru_actor_settings.abs_tolWat > 0 &&
+        self->state.hru_actor_settings.abs_tolNrg > 0) {
+      set_steps_tolerances(self->state.hru_data, 
+          &self->state.hru_actor_settings.be_steps,
           &self->state.hru_actor_settings.rel_tol, 
-          self->state.hru_actor_settings.abs_tol);
+          &self->state.hru_actor_settings.abs_tolWat,
+          self->state.hru_actor_settings.abs_tolNrg);
     }
   #endif     
   

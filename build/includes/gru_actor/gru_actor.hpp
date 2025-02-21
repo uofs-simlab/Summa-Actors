@@ -22,7 +22,7 @@ extern "C" {
       int& dt_init_factor, int& err, void* message);
   void writeGRUOutput_fortran(int& index_gru, int& timestep, int& output_step, 
       void* gru_data, int& err, void* message);
-  void f_setGruTolerances(void* gru_data, double& rel_tol, double& abs_tol);
+  void f_setGruTolerances(void* gru_data, int& be_steps, double& rel_tol, double& abs_tolWat, double& abs_tolNrg);
 }
 
 struct GruDeleter {

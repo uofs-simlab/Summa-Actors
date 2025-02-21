@@ -79,7 +79,7 @@ class SummaActorSettings {
     bool enable_logging_;
     std::string log_dir_;     
 
-    SummaActorSettings(int max_gru_per_job = 0, bool enable_logging = false, 
+    SummaActorSettings(int max_gru_per_job = GRU_PER_JOB, bool enable_logging = false, 
                        std::string log_dir = "")
         : max_gru_per_job_(max_gru_per_job), enable_logging_(enable_logging),
           log_dir_(log_dir) {};
@@ -108,8 +108,8 @@ class FileAccessActorSettings {
     int num_timesteps_in_output_buffer_;
     std::string output_file_suffix_; 
 
-    FileAccessActorSettings(int num_partitions_in_output_buffer = 0, 
-                            int num_timesteps_in_output_buffer = 0, 
+    FileAccessActorSettings(int num_partitions_in_output_buffer = NUM_PARTITIONS, 
+                            int num_timesteps_in_output_buffer = OUTPUT_TIMESTEPS, 
                             std::string output_file_suffix = "")
         : num_partitions_in_output_buffer_(num_partitions_in_output_buffer),
           num_timesteps_in_output_buffer_(num_timesteps_in_output_buffer),
@@ -147,7 +147,7 @@ class JobActorSettings {
     JobActorSettings(std::string file_manager_path = "", 
                      int max_run_attempts = 1, 
                      bool data_assimilation_mode = false, 
-                     int batch_size = 10)
+                     int batch_size = MISSING_INT)
         : file_manager_path_(file_manager_path), 
           max_run_attempts_(max_run_attempts),
           data_assimilation_mode_(data_assimilation_mode),
@@ -180,21 +180,25 @@ class HRUActorSettings {
     bool print_output_;
     int output_frequency_;
 
-    double abs_tol_;
+    double abs_tolWat_;
+    double abs_tolNrg_;    
     double rel_tol_;
+    int be_steps_;
 
-    HRUActorSettings(bool print_output = false, int output_frequency = 100,
-        double abs_tol = 0.0, double rel_tol = 0.0) 
+    HRUActorSettings(bool print_output = false, int output_frequency = OUTPUT_FREQUENCY,
+        double abs_tolWat = MISSING_DOUBLE, double abs_tolNrg = MISSING_DOUBLE, double rel_tol = MISSING_DOUBLE, int be_steps = MISSING_INT) 
         : print_output_(print_output), output_frequency_(output_frequency), 
-        abs_tol_(abs_tol), rel_tol_(rel_tol)  {};
+        abs_tolWat_(abs_tolWat), abs_tolNrg_(abs_tolNrg), rel_tol_(rel_tol), be_steps_(be_steps)  {};
     ~HRUActorSettings() {};
 
     std::string toString() {
       std::string str = "HRU Actor Settings:\n";
       str += "Print Output: " + std::to_string(print_output_) + "\n";
       str += "Output Frequency: " + std::to_string(output_frequency_) + "\n";
-      str += "Abs Tol: " + std::to_string(abs_tol_) + "\n";
+      str += "Abs Tol Water: " + std::to_string(abs_tolWat_) + "\n";
+      str += "Abs Tol Energy: " + std::to_string(abs_tolNrg_) + "\n";
       str += "Rel Tol: " + std::to_string(rel_tol_) + "\n";
+      str += "BE Steps: " + std::to_string(be_steps_) + "\n";
       return str;
     }
 
@@ -203,8 +207,10 @@ class HRUActorSettings {
       return insp.object(settings).fields(
              insp.field("print_output",     settings.print_output_),
              insp.field("output_frequency", settings.output_frequency_),
-             insp.field("abs_tol",          settings.abs_tol_),
+             insp.field("abs_tolWat",       settings.abs_tolWat_),
+             insp.field("abs_tolNrg",       settings.abs_tolNrg_),
              insp.field("rel_tol",          settings.rel_tol_));
+             insp.field("be_steps",         settings.be_steps_);
     }
 };
 
