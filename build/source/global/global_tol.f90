@@ -6,7 +6,7 @@ contains
   subroutine f_set_default_tol(new_tol) bind(C, name="f_set_default_tol")
     use iso_c_binding
     implicit none
-    logical(c_bool), intent(in) :: new_tol
+    logical(c_bool), intent(in), value :: new_tol
     default_tol = new_tol
   end subroutine f_set_default_tol
 
