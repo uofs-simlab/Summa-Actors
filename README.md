@@ -12,17 +12,20 @@ SUMMA-Actors is a powerful extension of the existing [SUMMA](https://github.com/
 For bug reports, feature requests, and questions, please open an issue on the GitHub at https://github.com/uofs-simlab/Summa-Actors/issues
 
 ## Quick Start
-SUMMA-Actors seamlessly integrates with two versions of the SUMMA hydrological modeling framework:
-  * SUMMA version 4.x.x:
-      *  Built on top of the most up-to-data SUMMA codebase: https://github.com/ashleymedin/summa/tree/develop
-      * Includes latest features and bug fixes, including the option to use the Sundials numerical solver.
-  * SUMMA version 3.x.x:
-      * Built on top of the original SUMMA codebase: https://github.com/CH-Earth/summa
-      * Suitable for existing projects and familiar workflows.
+SUMMA-Actors is separate from the original SUMMA codebase and requires a 
+"Fortran" version of SUMMA to be downloaded from GitHub. For those new to 
+SUMMA, we recommend using the latest version of SUMMA (4.x.x), as it includes 
+the most up-to-date features and bug fixes. Below, we only provide steps for 
+both version 4.x.x of SUMMA and the specific steps for version 3.x.x can be 
+found in our wiki: https://github.com/uofs-simlab/Summa-Actors/wiki
 
-The build process for both verisions is largely the same, below are the steps common to both versions. For version specific instructions, please refer to the relevant sections below.
+Below we provide some background to SUMMA-Actors' structure, but for those 
+who do not like long documentation you can skip to compilation steps here:
+[Version 4.x.x Build Instructions](###Version-4.x.x-Build-Instructions)
+
 ### Directory Structure
-The directory structure for SUMMA-Actors is as follows:
+Upon downloading the SUMMA-Actors repository, you will be presented with 
+the following directory structure:
 ```
 Summa-Actors/
 ├── bin/
@@ -32,16 +35,26 @@ Summa-Actors/
 |   ├── cmake/
 │   ├── includes/
 │   ├── source/
-│   ├── summa/ (Versions Specific - 3.x.x or 4.x.x)
-│   └── v4_build_scripts/
-├── containers/
-│   ├── apptainer.def
-│   └── Dockerfile
+├── utils/
+|   ├── ciroh_build_scripts
+|   ├── containers/
+│   ├── dependencies/
+│   └── docs
 ├── .gitignore
 └── README.md
 ```
+ * `bin/`: Contains the compiled SUMMA-Actors executable after building
+ * `build/`: Contains the build scripts, the Summa-Actors specific source code, 
+            and a Fortran version of SUMMA.
+ * `utils/`: Contains utility scripts and Dockerfiles for building and running 
+            SUMMA-Actors. **This folder also contains `dependencies`, 
+            which has scripts for installing many of the libraries needed**             
+
 
 ### Dependencies
+  SUMMA-Actors requires the following dependencies to be installed on you 
+  system:
+  * [SUMMA](https://github.com/ashleymedin/summa/tree/develop) 
   * g++
   * gfortran
   * [OpenBLAS](https://github.com/xianyi/OpenBLAS)
@@ -51,26 +64,42 @@ Summa-Actors/
   * [C++ Actor Framework (1.0.0)](https://github.com/actor-framework/actor-framework/releases/tag/1.0.0)
   * [Sundials v7.0.0 (Only for SUMMA version 4.x.x)](https://github.com/LLNL/sundials/releases/tag/v7.0.0)
 
-Install most dependencies using your preferred package manager. If you’re using Ubuntu, check our Dockerfile for specific installation examples. 
+#### Installing Dependencies
+We assume for these instructions that you have a C++ compiler and a 
+Fortran compiler. This code is tested with g++ and gfortran, but other
+compilers may work.
 
+For LAPACK, NetCDF-Fortran, NetCDF-C, C++ Actor Framework, and Sundials, we 
+have prepared scripts located in the `utils/dependencies` folder. These scripts 
+will automatically download and install the dependencies in the 
+`utils/dependencies/install` folder. We have configured a script to 
+automatically look here for the dependencies.
+
+If you are using a module system, you can modify the `build.sh` script in the 
+`build/build_scripts` folder to point to the correct locations.
+
+To install each dependency, follow these steps, some libraries will take some 
+time to compile: 
+  1) `cd utils/dependencies`
+  2) `./install_lapack.sh`
+  3) `./install_netcdf.sh`
+  5) `./install_caf.sh`
+  6) `./install_sundials.sh`
+
+**NOTE: Installing SUMMA is part of the build instructions below**
+ 
 ### Version 4.x.x Build Instructions
   1) git clone https://github.com/uofs-simlab/Summa-Actors.git
   2) cd Summa-Actors/build/
   3) git clone -b develop https://github.com/ashleymedin/summa.git
   4) cd build_scripts/
-  5) Modify the `build.sh` script to match your system.
-     - Set `CMAKE_PREFIX_PATH` to the location of dependencies not installed in default locations.
-     - Build with SUNDIALS using the `-DUSE_SUNDIALS=ON` option
-     - Build V4 without SUNDIALS using `-DUSE_V4=ON` option. If using sundials this option is automatically set to ON.
   6) ./build.sh
 
-### Version 3.x.x Build Instructions
-  1) git clone https://github.com/uofs-simlab/Summa-Actors.git
-  2) cd Summa-Actors/build
-  3) git clone https://github.com/CH-Earth/summa.git
-  4) cd build_scripts/
-  5) Modify the `build.sh` script to match your system.
-  6) ./build.sh
+Note: If you did not install the dependencies in the `utils/dependencies` folder,
+you will need to modify append to the $CMAKE_PREFIX_PATH environment variables
+to include the location of where you installed the dependencies. If you use
+a module system, this should handle appending the correct paths.
+
 
 ## Running SUMMA-Actors
 Running SUMMA-Actors is similar to running the original version of SUMMA. **Input and configuration files remain identical** alowing exising projects and `fileManager.txt` files to be used seamlessly with SUMMA-Actors. Please refer to the [SUMMA documentation](https://summa.readthedocs.io/en/latest/) regarding input files and simulation configuration. The only difference, if desired, is the option to use a `config.json` file to fine tune how SUMMA-Actors will perform. Please refer to the [relevant section](###Config-File-and-Advanced-Features) for more information on the `config.json` file and the more advanced features of SUMMA-Actors.
@@ -160,6 +189,5 @@ below.
  * Charousset, D., Schmidt, T. C., Hiesgen, R., 2016: Revisiting actor programming in 
  C++. _Computer Languages, Systems & Structures_, [doi:10.1016/j.cl.2016.01.002](http://
  dx.doi.org/10.1016/j.cl.2016.01.002)
-
 
 
