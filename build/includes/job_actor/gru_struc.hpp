@@ -21,7 +21,7 @@ extern "C" {
 }
 
 /** Determine the state of the GRU */
-enum class gru_state { running, failed, succeeded };
+enum class gru_state { running, failed, succeeded , restarted};
 
 /** Gru Information (meant to mimic gru_struc)*/
 class GRU {
@@ -149,6 +149,7 @@ class GRU {
     inline void setSuccess() { state_ = gru_state::succeeded; }
     inline void setFailed() { state_ = gru_state::failed; }
     inline void setRunning() { state_ = gru_state::running; }
+    inline void setRestarted() { state_ = gru_state::restarted; }
 
     // Methods
     inline bool isFailed() const { return state_ == gru_state::failed; }
@@ -231,6 +232,7 @@ class GruStruc {
     inline void incrementNumGruDone() { num_gru_done_++; }
     inline void incrementNumGruFailed() { num_gru_failed_++; num_gru_done_++;}
     inline void decrementRetryAttempts() { num_retry_attempts_left_--; }
+    inline int getRetryAttemptsLeft(){return num_retry_attempts_left_ ;}
     inline void decrementNumGruFailed() { num_gru_failed_--; num_gru_done_--;}
     inline GRU* getGRU(int index) { return gru_info_[index-1].get(); }
 

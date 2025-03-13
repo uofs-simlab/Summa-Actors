@@ -213,6 +213,7 @@ behavior JobActor::async_mode() {
             job_actor_settings_.data_assimilation_mode_, 
             fa_actor_settings_.num_timesteps_in_output_buffer_,
             file_access_actor_, self_);
+        gru_struc_->getGRU(job_index)->setRestarted();
         gru_struc_->decrementNumGruFailed();
         std::unique_ptr<GRU> gru_obj = std::make_unique<GRU>(
             netcdf_index, job_index, gru_actor, dt_init_factor_, rel_tol_, 
@@ -225,6 +226,7 @@ behavior JobActor::async_mode() {
         self_->mail(update_hru_async_v).send(gru_actor);
       }
       gru_struc_->decrementRetryAttempts();
+      self_->println("Retries left: {}",gru_struc_->getRetryAttemptsLeft());
     },
 
     [this](finalize) {
@@ -351,6 +353,23 @@ behavior JobActor::data_assimilation_mode() {
 // ------------------------ Member Functions ------------------------
 void JobActor::spawnGruActors() {
   self_->println("JobActor: Spawning GRU Actors");
+  if (hru_actor_settings_.default_tol_ == true){
+    rel_tol_temp_cas_     = hru_actor_settings_.rel_tol_;
+    rel_tol_temp_veg_     = hru_actor_settings_.rel_tol_;
+    rel_tol_wat_veg_      = hru_actor_settings_.rel_tol_;
+    rel_tol_temp_soil_snow_= hru_actor_settings_.rel_tol_;
+    rel_tol_wat_snow_     = hru_actor_settings_.rel_tol_;
+    rel_tol_matric_       = hru_actor_settings_.rel_tol_;
+    rel_tol_aquifr_       = hru_actor_settings_.rel_tol_;
+
+    abs_tol_temp_cas_     = hru_actor_settings_.abs_tol_;
+    abs_tol_temp_veg_     = hru_actor_settings_.abs_tol_;
+    abs_tol_wat_veg_      = hru_actor_settings_.abs_tol_;
+    abs_tol_temp_soil_snow_= hru_actor_settings_.abs_tol_;
+    abs_tol_wat_snow_     = hru_actor_settings_.abs_tol_;
+    abs_tol_matric_       = hru_actor_settings_.abs_tol_;
+    abs_tol_aquifr_       = hru_actor_settings_.abs_tol_;
+  } else {
   if (hru_actor_settings_.rel_tol_ > 0) {
     rel_tol_ = hru_actor_settings_.rel_tol_;
   }
@@ -402,6 +421,7 @@ void JobActor::spawnGruActors() {
   if (hru_actor_settings_.abs_tol_aquifr_ > 0) {
     abs_tol_aquifr_ = hru_actor_settings_.abs_tol_aquifr_;
   }
+}
 
   for (int i = 0; i < gru_struc_->getNumGru(); i++) {
     auto netcdf_index = gru_struc_->getStartGru() + i;

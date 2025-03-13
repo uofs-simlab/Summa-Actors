@@ -252,7 +252,10 @@ subroutine runPhysics(indxGRU, indxHRU, modelTimeStep, hru_data, &
                   hru_data%fluxStruct,         & ! intent(inout): model fluxes for a local HRU
                   ! error control
                   err,cmessage)       ! intent(out): error control
-  if(err/=0)then; err=20; message=trim(message)//trim(cmessage); return; endif;
+  if(err/=0)then; err=20; message=trim(message)//trim(cmessage);
+  print *,message
+  flush(6)
+  return; endif;
 
 
   !************************************* End of run_oneHRU *****************************************
