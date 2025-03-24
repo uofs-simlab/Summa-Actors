@@ -33,17 +33,24 @@ behavior GruActor::make_behavior() {
     return {};
   }
 
-  f_setGruTolerances(gru_data_.get(), hru_actor_settings_.rel_tol_,
-      hru_actor_settings_.abs_tol_, hru_actor_settings_.rel_tol_temp_cas_,
-      hru_actor_settings_.rel_tol_temp_veg_, hru_actor_settings_.rel_tol_wat_veg_,
-      hru_actor_settings_.rel_tol_temp_soil_snow_, hru_actor_settings_.rel_tol_wat_snow_,
+  f_setGruTolerances(gru_data_.get(), hru_actor_settings_.be_steps_,
+      // Relative Tolerances
+      hru_actor_settings_.rel_tol_, hru_actor_settings_.rel_tol_temp_cas_,
+      hru_actor_settings_.rel_tol_temp_veg_, 
+      hru_actor_settings_.rel_tol_wat_veg_,
+      hru_actor_settings_.rel_tol_temp_soil_snow_, 
+      hru_actor_settings_.rel_tol_wat_snow_,
       hru_actor_settings_.rel_tol_matric_, hru_actor_settings_.rel_tol_aquifr_,
-      hru_actor_settings_.abs_tol_temp_cas_, hru_actor_settings_.abs_tol_temp_veg_,
-      hru_actor_settings_.abs_tol_wat_veg_, hru_actor_settings_.abs_tol_temp_soil_snow_,
-      hru_actor_settings_.abs_tol_wat_snow_, hru_actor_settings_.abs_tol_matric_,
+      // Absolute Tolerances
+      hru_actor_settings_.abs_tol_,
+      hru_actor_settings_.abs_tolWat_, hru_actor_settings_.abs_tolNrg_,
+      hru_actor_settings_.abs_tol_temp_cas_, 
+      hru_actor_settings_.abs_tol_temp_veg_,
+      hru_actor_settings_.abs_tol_wat_veg_, 
+      hru_actor_settings_.abs_tol_temp_soil_snow_,
+      hru_actor_settings_.abs_tol_wat_snow_, 
+      hru_actor_settings_.abs_tol_matric_,
       hru_actor_settings_.abs_tol_aquifr_);
-  // f_setGruTolerances(gru_data_.get(),hru_actor_settings_.be_steps_,hru_actor_settings_.rel_tol_,
-  //     hru_actor_settings_.abs_tolWat_,hru_actor_settings_.abs_tolNrg_);
 
   data_assimilation_mode_ ? self_->become(data_assimilation_mode()) :
                             self_->become(async_mode());

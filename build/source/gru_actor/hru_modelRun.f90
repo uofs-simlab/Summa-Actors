@@ -310,26 +310,38 @@ end subroutine runPhysics
   ! If the global default tolerance flag is set, then all specific tolerances
   ! are set equal to the general tolerances.
   !**********************************************************************
-  subroutine set_sundials_tolerances(handle_hru_data, rtol, atol, rtol_temp_cas, &
-                                     rtol_temp_veg, rtol_wat_veg, rtol_temp_soil_snow, &
-                                     rtol_wat_snow, rtol_matric, rtol_aquifr, &
-                                     atol_temp_cas, atol_temp_veg, atol_wat_veg, &
-                                     atol_temp_soil_snow, atol_wat_snow, atol_matric, &
-                                     atol_aquifr) bind(C, name='set_sundials_tolerances')
-    use var_lookup, only: iLookPARAM
-    use global_tol  ! Use the module that contains the default_tol flag and its accessor
+  subroutine set_sundials_tolerances(handle_hru_data, be_steps, &
+      ! relative tolerances
+      rtol, rtol_temp_cas, rtol_temp_veg, rtol_wat_veg, rtol_temp_soil_snow, &
+      rtol_wat_snow, rtol_matric, rtol_aquifr, &
+      ! absolute tolerances
+      atol, abs_tolWat, abstolNrg, atol_temp_cas, atol_temp_veg, atol_wat_veg, &
+      atol_temp_soil_snow, atol_wat_snow, atol_matric, &
+      atol_aquifr) bind(C, name='set_sundials_tolerances')
+
+    USE globalData,only:model_decisions                         ! model decision structure
+    USE var_lookup,only:iLookDECISIONS                          ! look-up values for model decisions
+    USE var_lookup, only: iLookPARAM
+    USE global_tol  ! Use the module that contains the default_tol flag and its accessor
     implicit none
     type(c_ptr), intent(in), value :: handle_hru_data
-    real(c_double), intent(in) :: rtol, atol
+    integer(c_int), intent(out)   :: be_steps
+    real(c_double), intent(in)    :: rtol
     real(c_double), intent(inout) :: rtol_temp_cas, rtol_temp_veg, rtol_wat_veg
     real(c_double), intent(inout) :: rtol_temp_soil_snow, rtol_wat_snow
     real(c_double), intent(inout) :: rtol_matric, rtol_aquifr
-    real(c_double), intent(inout) :: atol_temp_cas, atol_temp_veg, atol_wat_veg
+    real(c_double), intent(inout) :: atol, abs_tolWat, abstolNrg 
+    real(c_double), intent(inout) :: atol_wat_veg,atol_temp_cas, atol_temp_veg 
     real(c_double), intent(inout) :: atol_temp_soil_snow, atol_wat_snow
     real(c_double), intent(inout) :: atol_matric, atol_aquifr
     type(hru_type), pointer :: hru_data
     call c_f_pointer(handle_hru_data, hru_data)
-  
+
+    if (trim(model_decisions(iLookDECISIONS%num_method)%cDecision)=='ida') then
+      be_steps = 1
+    else
+      be_steps = NINT(hru_data%mparStruct%var(iLookPARAM%be_steps)%dat(1))
+    endif
     ! First, set the general conversion tolerances
     hru_data%mparStruct%var(iLookPARAM%relConvTol_liquid)%dat(1) = rtol  
     hru_data%mparStruct%var(iLookPARAM%relConvTol_matric)%dat(1) = rtol  

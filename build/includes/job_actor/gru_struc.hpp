@@ -36,8 +36,8 @@ class GRU {
     bool def_tol_;            // Default tol
     int dt_init_factor_;     // The initial dt for the GRU
     int be_steps_;           // The number of BE steps for the GRU
+    // Relative Tolerances
     double rel_tol_;         // The relative tolerance for the GRU
-    double abs_tol_;         // The absolute tolerance for the GRU
     double rel_tol_temp_cas_; // The relative tolerance for the temperature of the cas
     double rel_tol_temp_veg_; // The relative tolerance for the temperature of the veg
     double rel_tol_wat_veg_;  // The relative tolerance for the water content of the veg
@@ -45,6 +45,10 @@ class GRU {
     double rel_tol_wat_snow_; // The relative tolerance for the water content of the snow
     double rel_tol_matric_;   // The relative tolerance for the matric potential
     double rel_tol_aquifr_;   // The relative tolerance for the aquifer
+    // Absolute Tolerances
+    double abs_tol_;         // The absolute tolerance for the GRU
+    double abs_tolWat_;      // The absolute tolerance for the GRU water states
+    double abs_tolNrg_;      // The absolute tolerance for the GRU energy states
     double abs_tol_temp_cas_; // The absolute tolerance for the temperature of the cas
     double abs_tol_temp_veg_; // The absolute tolerance for the temperature of the veg
     double abs_tol_wat_veg_;  // The absolute tolerance for the water content of the veg
@@ -52,9 +56,6 @@ class GRU {
     double abs_tol_wat_snow_; // The absolute tolerance for the water content of the snow
     double abs_tol_matric_;   // The absolute tolerance for the matric potential
     double abs_tol_aquifr_;   // The absolute tolerance for the aquifer
-    // TODO: Ashely's New Variables
-    double abs_tolWat_;      // The absolute tolerance for the GRU water states
-    double abs_tolNrg_;      // The absolute tolerance for the GRU energy states
 
     // Status Information
     int attempts_left_;      // The number of attempts left for the GRU to succeed
@@ -67,29 +68,38 @@ class GRU {
   public:
     // Constructor
     GRU(int index_netcdf, int index_job, caf::actor actor_ref, 
-        int dt_init_factor, double rel_tol, double abs_tol, double rel_tol_temp_cas=0.0,
-        double rel_tol_temp_veg=0.0, double rel_tol_wat_veg=0.0, double rel_tol_temp_soil_snow=0.0,
-        double rel_tol_wat_snow=0.0, double rel_tol_matric=0.0, double rel_tol_aquifr=0.0,
-        double abs_tol_temp_cas=0.0, double abs_tol_temp_veg=0.0, double abs_tol_wat_veg=0.0,
-        double abs_tol_temp_soil_snow=0.0, double abs_tol_wat_snow=0.0, double abs_tol_matric=0.0,
-        double abs_tol_aquifr=0.0, bool /*def_tol*/ = true,int max_attempts =5)
+        int dt_init_factor, int be_steps,
+        // Relative Tolerances 
+        double rel_tol, double rel_tol_temp_cas=0.0,
+        double rel_tol_temp_veg=0.0, double rel_tol_wat_veg=0.0, 
+        double rel_tol_temp_soil_snow=0.0, double rel_tol_wat_snow=0.0, 
+        double rel_tol_matric=0.0, double rel_tol_aquifr=0.0,
+        // Absolute Tolerances
+        double abs_tol = 0.0, double abs_tolWat=0.0, double abs_tolNrg=0.0,
+        double abs_tol_temp_cas=0.0, double abs_tol_temp_veg=0.0, 
+        double abs_tol_wat_veg=0.0, double abs_tol_temp_soil_snow=0.0, 
+        double abs_tol_wat_snow=0.0, double abs_tol_matric=0.0,
+        double abs_tol_aquifr=0.0, 
+        bool /*def_tol*/ = true, int max_attempts = 5)
         : index_netcdf_(index_netcdf), index_job_(index_job), 
           actor_ref_(actor_ref), dt_init_factor_(dt_init_factor),
-          rel_tol_(rel_tol), abs_tol_(abs_tol), rel_tol_temp_cas_(rel_tol_temp_cas),
-          rel_tol_temp_veg_(rel_tol_temp_veg), rel_tol_wat_veg_(rel_tol_wat_veg),
-          rel_tol_temp_soil_snow_(rel_tol_temp_soil_snow), rel_tol_wat_snow_(rel_tol_wat_snow),
-          rel_tol_matric_(rel_tol_matric), rel_tol_aquifr_(rel_tol_aquifr), 
-          abs_tol_temp_cas_(abs_tol_temp_cas), abs_tol_temp_veg_(abs_tol_temp_veg),
-          abs_tol_wat_veg_(abs_tol_wat_veg), abs_tol_temp_soil_snow_(abs_tol_temp_soil_snow),
+          be_steps_(be_steps),
+          // Relative Tolerances
+          rel_tol_(rel_tol), rel_tol_temp_cas_(rel_tol_temp_cas),
+          rel_tol_temp_veg_(rel_tol_temp_veg), 
+          rel_tol_wat_veg_(rel_tol_wat_veg),
+          rel_tol_temp_soil_snow_(rel_tol_temp_soil_snow), 
+          rel_tol_wat_snow_(rel_tol_wat_snow),
+          rel_tol_matric_(rel_tol_matric), rel_tol_aquifr_(rel_tol_aquifr),
+          abs_tol_(abs_tol), abs_tolWat_(abs_tolWat), abs_tolNrg_(abs_tolNrg), 
+          abs_tol_temp_cas_(abs_tol_temp_cas), 
+          abs_tol_temp_veg_(abs_tol_temp_veg),
+          abs_tol_wat_veg_(abs_tol_wat_veg), 
+          abs_tol_temp_soil_snow_(abs_tol_temp_soil_snow),
           abs_tol_wat_snow_(abs_tol_wat_snow), abs_tol_matric_(abs_tol_matric),
-          abs_tol_aquifr_(abs_tol_aquifr), def_tol_(f_get_default_tol()),attempts_left_(max_attempts),
-
-        // TODO: Ashley's New Variables  
-        // int dt_init_factor, int be_steps, double rel_tol, double abs_tolWat, double abs_tolNrg, int max_attempts) 
-        // : index_netcdf_(index_netcdf), index_job_(index_job), 
-        //   actor_ref_(actor_ref), dt_init_factor_(dt_init_factor), be_steps_(be_steps),
-        //   rel_tol_(rel_tol), abs_tolWat_(abs_tolWat), abs_tolNrg_(abs_tolNrg), attempts_left_(max_attempts),
-          state_(gru_state::running) {};
+          abs_tol_aquifr_(abs_tol_aquifr), 
+          def_tol_(f_get_default_tol()),
+          attempts_left_(max_attempts), state_(gru_state::running) {};
 
     // Deconstructor
     ~GRU() {};

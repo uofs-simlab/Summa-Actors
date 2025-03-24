@@ -240,14 +240,17 @@ behavior JobActor::async_mode() {
         gru_struc_->getGRU(job_index)->setRestarted();
         gru_struc_->decrementNumGruFailed();
         std::unique_ptr<GRU> gru_obj = std::make_unique<GRU>(
-            netcdf_index, job_index, gru_actor, dt_init_factor_, rel_tol_, 
-            abs_tol_, rel_tol_temp_cas_, rel_tol_temp_veg_, rel_tol_wat_veg_,
+            netcdf_index, job_index, gru_actor, dt_init_factor_, be_steps_,
+            // Relative Tolerances
+            rel_tol_, rel_tol_temp_cas_, rel_tol_temp_veg_, rel_tol_wat_veg_,
             rel_tol_temp_soil_snow_, rel_tol_wat_snow_, rel_tol_matric_,
-            rel_tol_aquifr_, abs_tol_temp_cas_, abs_tol_temp_veg_, abs_tol_wat_veg_,
+            rel_tol_aquifr_,
+            // Absolute Tolerances 
+            abs_tol_, abs_tolWat_, abs_tolNrg_, abs_tol_temp_cas_, 
+            abs_tol_temp_veg_, abs_tol_wat_veg_,
             abs_tol_temp_soil_snow_, abs_tol_wat_snow_, abs_tol_matric_,
-            abs_tol_aquifr_, job_actor_settings_.max_run_attempts_);
-            // netcdf_index, job_index, gru_actor, dt_init_factor_, be_steps_, rel_tol_, 
-            // abs_tolWat_, abs_tolNrg_, job_actor_settings_.max_run_attempts_);
+            abs_tol_aquifr_, 
+            job_actor_settings_.max_run_attempts_);
         gru_struc_->addGRU(std::move(gru_obj));
         self_->mail(update_hru_async_v).send(gru_actor);
       }

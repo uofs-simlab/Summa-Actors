@@ -225,10 +225,10 @@ int initHRU(stateful_actor<hru_state>* self) {
     return err;
   }
 #ifdef SUNDIALS_ACTIVE
-  !-- Always call set_sundials_tolerances with the HRU settings --
-  set_sundials_tolerances(self->state.hru_data, 
+  // Always call set_sundials_tolerances with the HRU settings
+  set_sundials_tolerances(self->state.hru_data, hru_actor_settings.be_steps,
+                          // Relative Tolerances
                           self->state.hru_actor_settings.rel_tol,
-                          self->state.hru_actor_settings.abs_tol,
                           self->state.hru_actor_settings.rel_tol_temp_cas,
                           self->state.hru_actor_settings.rel_tol_temp_veg,
                           self->state.hru_actor_settings.rel_tol_wat_veg,
@@ -236,6 +236,10 @@ int initHRU(stateful_actor<hru_state>* self) {
                           self->state.hru_actor_settings.rel_tol_wat_snow,
                           self->state.hru_actor_settings.rel_tol_matric,
                           self->state.hru_actor_settings.rel_tol_aquifr,
+                          // Absolute Tolerances
+                          self->state.hru_actor_settings.abs_tol,
+                          self->state.hru_actor_settings.abs_tolWat,
+                          self->state.hru_actor_settings.abs_tolNrg,
                           self->state.hru_actor_settings.abs_tol_temp_cas,
                           self->state.hru_actor_settings.abs_tol_temp_veg,
                           self->state.hru_actor_settings.abs_tol_wat_veg,
