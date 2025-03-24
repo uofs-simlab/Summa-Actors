@@ -6,7 +6,7 @@ module summa_init_struc
   public :: f_allocate
   public :: f_paramSetup
   public :: f_readRestart
-  public :: f_getInitTolerance 
+  ! public :: f_getInitBEStepsIDATol 
   public :: f_deallocateInitStruc
   ! Used to get all the inital conditions for the model -- allows calling summa_setup.f90
   type(summa1_type_dec),allocatable,save,public :: init_struc 
@@ -215,8 +215,14 @@ subroutine f_getInitTolerance(rtol, atol, rtol_temp_cas, rtol_temp_veg, rtol_wat
    USE globalData,only:model_decisions                         ! model decision structure
   USE var_lookup,only:iLookDECISIONS
   USE var_lookup,only:iLookPARAM
+! subroutine f_getInitBEStepsIDATol(beSteps, rtol, atolWat, atolNrg) &
+!     bind(C, name="f_getInitBEStepsIDATol")
+!   USE globalData,only:model_decisions                         ! model decision structure
+!   USE var_lookup,only:iLookDECISIONS                          ! lookup table for model decisions
+!   USE var_lookup,only:iLookPARAM                              ! lookup table for model parameters
   implicit none
   ! dummy variables
+  ! integer(c_int),       intent(out)       :: beSteps
   real(c_double),       intent(out)       :: rtol 
   real(c_double),       intent(out)       :: atol
   real(c_double),       intent(out)       :: rtol_temp_cas
@@ -234,7 +240,10 @@ subroutine f_getInitTolerance(rtol, atol, rtol_temp_cas, rtol_temp_veg, rtol_wat
   real(c_double),       intent(out)       :: atol_matric
   real(c_double),       intent(out)       :: atol_aquifr
   logical(c_bool),       intent(out)       :: def_tol
+  ! real(c_double),       intent(out)       :: atolWat
+  ! real(c_double),       intent(out)       :: atolNrg
 
+  ! beSteps = -9999
   rtol = -9999
   atol = -9999
   rtol_temp_cas = -9999
@@ -274,6 +283,33 @@ subroutine f_getInitTolerance(rtol, atol, rtol_temp_cas, rtol_temp_veg, rtol_wat
 #endif
 endif
 end subroutine f_getInitTolerance
+!   atolWat = -9999
+!   atolNrg = -9999
+! #ifdef V4_ACTIVE
+!   if (trim(model_decisions(iLookDECISIONS%num_method)%cDecision)=='ida') then
+!     beSteps = 1 ! IDA should have full step size (value isn't used anyhow)
+!     ! IDA tolerances, which are set in the model decision file
+!     rtol = (init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolTempCas)%dat(1) &
+!           + init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolWatVeg)%dat(1) &
+!           + init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolTempVeg)%dat(1) &
+!           + init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolWatSnow)%dat(1) &
+!           + init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolTempSoilSnow)%dat(1) &
+!           + init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolMatric)%dat(1) &
+!           + init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolAquifr)%dat(1))/7._rkind
+
+!     atolWat = (init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolWatVeg)%dat(1) &
+!              + init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolWatSnow)%dat(1) &
+!              + init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolMatric)%dat(1) &
+!              + init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolAquifr)%dat(1))/4._rkind
+!     atolNrg = (init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolTempCas)%dat(1) &
+!              + init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolTempVeg)%dat(1) &
+!              + init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolTempSoilSnow)%dat(1))/3._rkind
+!   else ! all other methods are currently BE -- 'homegrown' ('itertive'), 'kinsol'
+!     beSteps = NINT(init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%be_steps)%dat(1))
+!   endif
+! #endif
+
+! end subroutine f_getInitBEStepsIDATol
 
 subroutine f_deallocateInitStruc() bind(C, name="f_deallocateInitStruc")
   USE globalData,only:startTime,finshTime,refTime,oldTime

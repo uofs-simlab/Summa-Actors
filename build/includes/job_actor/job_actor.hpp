@@ -54,6 +54,7 @@ class JobActor {
   const double MIN_ABS_TOL = 1e-6;
 
   // HRU Attributes
+  int be_steps_ = -9999;
   double rel_tol_ = -9999;
   double abs_tol_ = -9999;
   double rel_tol_temp_cas_ = -9999;
@@ -70,6 +71,10 @@ class JobActor {
   double abs_tol_wat_snow_ = -9999;
   double abs_tol_matric_ = -9999;
   double abs_tol_aquifr_ = -9999;
+  // TODO: Ashley's New Variables
+  double abs_tolWat_ = -9999;
+  double abs_tolNrg_ = -9999;
+  
   int dt_init_factor_ = 1;
   // Default tolerances flag
   bool default_tol_ = true;

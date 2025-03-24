@@ -245,6 +245,20 @@ int initHRU(stateful_actor<hru_state>* self) {
                           self->state.hru_actor_settings.abs_tol_aquifr);
 #endif     
   return 0;
+  // #ifdef V4_ACTIVE
+  //   if (self->state.hru_actor_settings.be_steps > 0 &&
+  //       self->state.hru_actor_settings.rel_tol > 0 && 
+  //       self->state.hru_actor_settings.abs_tolWat > 0 &&
+  //       self->state.hru_actor_settings.abs_tolNrg > 0) {
+  //     set_steps_tolerances(self->state.hru_data, 
+  //         &self->state.hru_actor_settings.be_steps,
+  //         &self->state.hru_actor_settings.rel_tol, 
+  //         &self->state.hru_actor_settings.abs_tolWat,
+  //         self->state.hru_actor_settings.abs_tolNrg);
+  //   }
+  // #endif     
+  
+  // return 0;      
 }
 
 int runHRU(stateful_actor<hru_state>* self) {

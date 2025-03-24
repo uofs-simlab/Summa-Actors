@@ -70,6 +70,18 @@ void ErrorLogger::logError(int ref_gru, int indx_gru, int timestep,
           "," << abs_tol_temp_soil_snow<< "," << abs_tol_wat_snow<< "," << 
           abs_tol_matric<< "," << abs_tol_aquifr<< "," << default_tol << ","
           << err_code << "," << message << "\n";
+//   file << "ref_gru,indx_gru,timestep,be_steps,rel_tol,abs_tolWat,abs_tolNrg,err_code,err_msg\n";
+//   file.close();
+// }
+
+// void ErrorLogger::logError(int ref_gru, int indx_gru, int timestep, int be_steps,
+//                            double rel_tol, double abs_tolWat, double abs_tolNrg, int err_code, 
+//                            const std::string &message) {
+//   if (!enable_logging_) return;
+//   std::ofstream file;
+//   file.open(log_file_, std::ios::out | std::ios::app);
+//   file << ref_gru << "," << indx_gru << "," << timestep << "," << be_steps << "," << rel_tol << 
+//           "," << abs_tolWat << "," << abs_tolNrg << "," << err_code << "," << message << "\n";
   file.close();
 }
 
@@ -85,6 +97,7 @@ void ErrorLogger::nextAttempt() {
           "rel_tol_aquifr,abs_tol_temp_cas,abs_tol_temp_veg,abs_tol_wat_veg,"
           "abs_tol_temp_soil_snow,abs_tol_wat_snow,abs_tol_matric,abs_tol_aquifr,"
           "default_tol,err_code,err_msg\n";
+    // file << "ref_gru,indx_gru,timestep,be_steps,rel_tol,abs_tolWat,abs_tolNrg,err_code,err_msg\n";
   file.close();
 }
 
@@ -133,6 +146,17 @@ void SuccessLogger::logSuccess(int ref_gru, int indx_gru, double rel_tol,
             abs_tol_temp_soil_snow<< "," << abs_tol_wat_snow<< "," <<
             abs_tol_matric<< "," << abs_tol_aquifr<< "," << default_tol << "\n";
 
+//     file << "ref_gru,indx_gru,be_steps,rel_tol,abs_tolWat,abs_tolNrg\n";
+//   file.close();
+// }
+
+// void SuccessLogger::logSuccess(int ref_gru, int indx_gru, int be_steps, double rel_tol, 
+//                                double abs_tolWat, double abs_tolNrg) {
+//   if (!enable_logging_) return;
+//   std::ofstream file;
+//   file.open(log_file_, std::ios::out | std::ios::app);
+//     file << ref_gru << "," << indx_gru << "," << be_steps << "," << rel_tol << 
+//             "," << abs_tolWat << "," << abs_tolNrg << "\n";
   file.close();
 }
 
@@ -148,6 +172,7 @@ void SuccessLogger::nextAttempt() {
           "rel_tol_aquifr,abs_tol_temp_cas,abs_tol_temp_veg,abs_tol_wat_veg,"
           "abs_tol_temp_soil_snow,abs_tol_wat_snow,abs_tol_matric,abs_tol_aquifr,"
           "default_tol\n";
+    // file << "ref_gru,indx_gru,be_steps,rel_tol,abs_tolWat,abs_tolNrg\n";
   file.close();
 }
 

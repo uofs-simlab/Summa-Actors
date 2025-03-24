@@ -70,6 +70,21 @@ extern "C" {
                         double* absToWatVeg, double* absTolTempSoilSnow,
                         double* absTolWatSnow, double* absTolMatric,
                         double* absTolAquifr, bool* def_tol);
+  
+                        // TODO: Ashley's New Variables                        
+  void get_steps_tolerances(void* hru_data, int* beSteps, double* rtol, double* atolWat, 
+                               double* atolNrg);
+  void set_steps_tolerances(void* hru_data, int* beSteps, double* rtol, double* atolWat, 
+                               double* atolNrg);
+
+  void setBEStepsIDATol(void* hru_data, int* be_steps, double* relTolTempCas, 
+                        double* absTolTempCas, double* relTolTempVeg, 
+                        double* absTolTempVeg, double* relTolWatVeg, 
+                        double* absTolWatVeg, double* relTolTempSoilSnow,
+                        double* absTolTempSoilSnow, double* relTolWatSnow, 
+                        double* absTolWatSnow, double* relTolMatric,
+                        double* absTolMatric, double* relTolAquifr, 
+                        double* absTolAquifr);
 }
 
 
@@ -126,7 +141,12 @@ struct hru_state {
   double atol_wat_snow = -9999;
   double atol_matric = -9999;
   double atol_aquifr = -9999;
-  
+  // TODO: Ashley's New Variables
+  int beSteps = -9999; // -9999 uses default
+  double rtol = -9999; // -9999 uses default
+  double atolWat = -9999; // -9999 uses default
+  double atolNrg = -9999; // -9999 uses default
+
   double walltime_timestep = 0.0; // walltime for the current timestep		
 
   // Checkpointing variables

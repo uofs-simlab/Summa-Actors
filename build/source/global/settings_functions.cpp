@@ -40,7 +40,7 @@ int Settings::readSettings() {
     getSettings<bool>(json_settings, "Job_Actor", "data_assimilation_mode")
         .value_or(false),
     getSettings<int>(json_settings, "Job_Actor", "batch_size")
-        .value_or(10)
+        .value_or(MISSING_INT)
   );
 
   hru_actor_settings_ = HRUActorSettings(
@@ -48,8 +48,8 @@ int Settings::readSettings() {
         .value_or(true),
     getSettings<int>(json_settings, "HRU_Actor", "output_frequency")
         .value_or(OUTPUT_FREQUENCY),
-    getSettings<double>(json_settings, "HRU_Actor", "abs_tol")
-        .value_or(1e-3),
+    getSettings<int>(json_settings, "HRU_Actor", "be_steps")
+        .value_or(MISSING_INT),
     getSettings<double>(json_settings, "HRU_Actor", "rel_tol")
         .value_or(1e-3),
     getSettings<double>(json_settings, "HRU_Actor", "rel_tol_temp_cas")
@@ -66,6 +66,12 @@ int Settings::readSettings() {
         .value_or(1e-3),
     getSettings<double>(json_settings, "HRU_Actor", "rel_tol_aquifr")
         .value_or(1e-3),
+    getSettings<double>(json_settings, "HRU_Actor", "abs_tol")
+        .value_or(1e-3),
+    getSettings<double>(json_settings, "HRU_Actor", "abs_tolWat")
+        .value_or(MISSING_DOUBLE),
+    getSettings<double>(json_settings, "HRU_Actor", "abs_tolNrg")
+        .value_or(MISSING_DOUBLE),
     getSettings<double>(json_settings, "HRU_Actor", "abs_tol_temp_cas")
         .value_or(1e-3),
     getSettings<double>(json_settings, "HRU_Actor", "abs_tol_temp_veg")
@@ -82,9 +88,8 @@ int Settings::readSettings() {
         .value_or(1e-3),
     getSettings<bool>(json_settings, "HRU_Actor", "default_tol")
         .value_or(true));
+
     f_set_default_tol(hru_actor_settings_.default_tol_);
-
-
   return SUCCESS;
 }
 
@@ -150,7 +155,7 @@ void Settings::generateConfigFile() {
         {"file_manager_path", "/home/username/summa_file_manager"},
         {"max_run_attempts", 1},
         {"data_assimilation_mode", false},
-        {"batch_size", 10}
+        {"batch_size", MISSING_INT}
     };
     config_file["HRU_Actor"] = {
         {"print_output", true},

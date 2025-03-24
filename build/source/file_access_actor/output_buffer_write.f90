@@ -273,7 +273,7 @@ subroutine writeTime(ncid,outputTimestep,output_step,meta,dat,err,message)
     do iVar = 1,size(meta)
 
       ! check instantaneous
-    if (meta(iVar)%statIndex(iFreq)/=iLookStat%inst) cycle
+      if (meta(iVar)%statIndex(iFreq)/=iLookStat%inst) cycle
       ! get variable id in file
       err = nf90_inq_varid(ncid%var(iFreq),trim(meta(iVar)%varName),ncVarID)
       if (err/=0) message=trim(message)//trim(meta(iVar)%varName); call netcdf_err(err,message)

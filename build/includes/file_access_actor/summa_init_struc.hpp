@@ -12,6 +12,7 @@ extern "C" {
                           double& atol_wat_veg, double& atol_temp_soil_snow, 
                           double& atol_wat_snow, double& atol_matric,
                           double& atol_aquifr, bool& def_tol);
+  // void f_getInitBEStepsIDATol(int& beSteps, double& rtol, double& atolWat, double& atolNrg);
   void f_deallocateInitStruc();
 }
 
@@ -31,5 +32,6 @@ class SummaInitStruc {
                           double& abs_tol_wat_veg, double& abs_tol_temp_soil_snow, 
                           double& abs_tol_wat_snow, double& abs_tol_matric,
                           double& abs_tol_aquifr, bool& def_tol); 
+    // void getInitBEStepsIDATol(int be_steps, double rel_tol, double abs_tolWat, double abs_tolNrg); 
 };
 

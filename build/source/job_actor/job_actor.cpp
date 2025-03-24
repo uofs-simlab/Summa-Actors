@@ -71,6 +71,7 @@ behavior JobActor::make_behavior() {
                                       abs_tol_wat_snow_, abs_tol_matric_, 
                                       abs_tol_aquifr_, default_tol_);
 
+  // summa_init_struc_->getInitBEStepsIDATol(be_steps_, rel_tol_, abs_tolWat_, abs_tolNrg_);
   
   num_gru_info_ = NumGRUInfo(batch_.getStartHRU(), batch_.getStartHRU(), 
                              batch_.getNumHRU(), batch_.getNumHRU(), 
@@ -130,6 +131,29 @@ behavior JobActor::async_mode() {
     [this](restart_failures) {
       logger_->log("Async Mode: Restarting Failed GRUs");
       self_->println("Async Mode: Restarting Failed GRUs");
+      // logger_->log("Async Mode: Restarting Failed GRUs (only works for >=V4)");
+      // self_->println("Async Mode: Restarting Failed GRUs (only works for >=V4)\n");
+      // if (rel_tol_ > 0 && abs_tolWat_ > 0 && abs_tolNrg_ > 0) {
+      //   logger_->log("Reducing IDA Tolerances by * 0.1");
+      //   self_->println("Reducing IDA Tolerances by * 0.1\n");
+      //   rel_tol_ /= 10;
+      //   hru_actor_settings_.rel_tol_ = rel_tol_;
+      //   abs_tolWat_ /= 10;
+      //   hru_actor_settings_.abs_tolWat_ = abs_tolWat_;
+      //   abs_tolNrg_ /= 10;
+      //   hru_actor_settings_.abs_tolNrg_ = abs_tolNrg_;
+      //   be_steps_ = 1;
+      //   hru_actor_settings_.be_steps_ = be_steps_;
+      // } else if (be_steps_ >0) {
+      //   logger_->log("Increasing BE Steps by * 2");
+      //   self_->println("Increasing BE Steps by * 2\n");
+      //   be_steps_ *= 2;
+      //   hru_actor_settings_.be_steps_ = be_steps_;
+      // } else {
+      //   logger_->log("Initial IDA Tolerances and BE Steps not set, increasing dt_init_factor by * 2 (not recommended)");
+      //   self_->println("Initial IDA Tolerances and BE Steps not set, increasing dt_init_factor by * 2 (not recommended)\n");
+      //   dt_init_factor_ *= 2;
+      // }
 
       auto tighten_tol = [&](double& tol, const double& min_tol, const std::string& name){
         if (tol > min_tol) {
@@ -222,6 +246,8 @@ behavior JobActor::async_mode() {
             rel_tol_aquifr_, abs_tol_temp_cas_, abs_tol_temp_veg_, abs_tol_wat_veg_,
             abs_tol_temp_soil_snow_, abs_tol_wat_snow_, abs_tol_matric_,
             abs_tol_aquifr_, job_actor_settings_.max_run_attempts_);
+            // netcdf_index, job_index, gru_actor, dt_init_factor_, be_steps_, rel_tol_, 
+            // abs_tolWat_, abs_tolNrg_, job_actor_settings_.max_run_attempts_);
         gru_struc_->addGRU(std::move(gru_obj));
         self_->mail(update_hru_async_v).send(gru_actor);
       }
@@ -370,12 +396,27 @@ void JobActor::spawnGruActors() {
     abs_tol_matric_       = hru_actor_settings_.abs_tol_;
     abs_tol_aquifr_       = hru_actor_settings_.abs_tol_;
   } else {
+  // TODO: Implement f_getBeSteps, f_getRelTol, and f_getAbsTol
+
+  // if (hru_actor_settings_.be_steps_ > 0) {
+  //   // f_getBeSteps();
+  //   be_steps_ = hru_actor_settings_.be_steps_;
+  // }
+
   if (hru_actor_settings_.rel_tol_ > 0) {
     rel_tol_ = hru_actor_settings_.rel_tol_;
   }
 
   if (hru_actor_settings_.abs_tol_ > 0) {
     abs_tol_ = hru_actor_settings_.abs_tol_;
+  // if (hru_actor_settings_.abs_tolWat_ > 0) {
+  //   // f_getAbsTol();
+  //   abs_tolWat_ = hru_actor_settings_.abs_tolWat_;
+  // }
+
+  // if (hru_actor_settings_.abs_tolNrg_ > 0) {
+  //   // f_getAbsTol();
+  //   abs_tolNrg_ = hru_actor_settings_.abs_tolNrg_;
   }
 
   // Initilize other tolerance values
@@ -438,6 +479,8 @@ void JobActor::spawnGruActors() {
         rel_tol_aquifr_, abs_tol_temp_cas_, abs_tol_temp_veg_, abs_tol_wat_veg_,
         abs_tol_temp_soil_snow_, abs_tol_wat_snow_, abs_tol_matric_,
         abs_tol_aquifr_, job_actor_settings_.max_run_attempts_);
+        // netcdf_index, job_index, gru_actor, dt_init_factor_, be_steps_, rel_tol_, 
+        // abs_tolWat_, abs_tolNrg_, job_actor_settings_.max_run_attempts_);
     gru_struc_->addGRU(std::move(gru_obj));
     
     if (!job_actor_settings_.data_assimilation_mode_) {
@@ -450,6 +493,12 @@ void JobActor::spawnGruActors() {
 void JobActor::spawnGruBatches() {
   self_->println("JobActor: Spawning GRU Batch Actors");
   int batch_size;
+  // TODO: Implement f_getBeSteps, f_getRelTol, and f_getAbsTol
+
+  if (hru_actor_settings_.be_steps_ <= 0) {
+    // f_getBeSteps();
+    be_steps_ = hru_actor_settings_.be_steps_;
+  }
 
   if (hru_actor_settings_.rel_tol_ <= 0) {
     rel_tol_ = hru_actor_settings_.rel_tol_;
@@ -516,6 +565,17 @@ void JobActor::spawnGruBatches() {
   }
 
   if (job_actor_settings_.batch_size_ < 0) {
+  // if (hru_actor_settings_.abs_tolWat_ <= 0) {
+  //   // f_getAbsTol();
+  //   abs_tolWat_ = hru_actor_settings_.abs_tolWat_;
+  // }
+
+  // if (hru_actor_settings_.abs_tolNrg_ <= 0) {
+  //   // f_getAbsTol();
+  //   abs_tolNrg_ = hru_actor_settings_.abs_tolNrg_;
+  // }
+
+  // if (job_actor_settings_.batch_size_ <= 0) {
     // Automatically determine batch size
     batch_size = std::ceil(static_cast<double>(gru_struc_->getNumGru()) / 
         static_cast<double>(std::thread::hardware_concurrency()));
@@ -550,6 +610,8 @@ void JobActor::spawnGruBatches() {
         abs_tol_wat_veg_, abs_tol_temp_soil_snow_, abs_tol_wat_snow_,
         abs_tol_matric_, abs_tol_aquifr_,
         job_actor_settings_.max_run_attempts_);
+        // netcdf_start_index, job_start_index, gru_batch, dt_init_factor_, be_steps_,
+        // rel_tol_, abs_tolWat_, abs_tolNrg_, job_actor_settings_.max_run_attempts_);
     gru_struc_->addGRU(std::move(gru_obj));
     remaining_hru_to_batch -= current_batch_size;
     job_start_index += current_batch_size;
@@ -590,6 +652,7 @@ void JobActor::handleFinishedGRU(int job_index) {
                               abs_tol_temp_veg_, abs_tol_wat_veg_,
                               abs_tol_temp_soil_snow_, abs_tol_wat_snow_,
                               abs_tol_matric_, abs_tol_aquifr_, default_tol_);
+                              // be_steps_, rel_tol_, abs_tolWat_, abs_tolNrg_);
   std::string update_str =
       "GRU Finished: " + std::to_string(gru_struc_->getNumGruDone()) + "/" + 
       std::to_string(gru_struc_->getNumGru()) + " -- GlobalGRU=" + 

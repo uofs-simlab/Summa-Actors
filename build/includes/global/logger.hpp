@@ -38,6 +38,8 @@ class ErrorLogger {
                   double abs_tol_matric, double abs_tol_aquifr,
                   bool default_tol, int err_code, 
                   const std::string &message);
+    // void logError(int ref_gru, int indx_gru, int timestep, int be_steps, double rel_tol, 
+    //               double abs_tolWat, double abs_tolNrg, int err_code, const std::string &message);
     void nextAttempt();
 };
 
@@ -60,5 +62,6 @@ class SuccessLogger {
                   double abs_tol_temp_soil_snow, double abs_tol_wat_snow,
                   double abs_tol_matric, double abs_tol_aquifr,
                   bool default_tol);
+    // void logSuccess(int ref_gru, int indx_gru, int be_steps, double rel_tol, double abs_tolWat, double abs_tolNrg);
     void nextAttempt();
 };

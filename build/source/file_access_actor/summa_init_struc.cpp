@@ -43,5 +43,7 @@ void SummaInitStruc::getInitTolerance(double& rel_tol, double& abs_tol, double& 
                      abs_tol_temp_cas, abs_tol_temp_veg, abs_tol_wat_veg, abs_tol_temp_soil_snow, 
                      abs_tol_wat_snow, abs_tol_matric, abs_tol_aquifr, def_tol);
   def_tol = (def_tol_temp == 1);
+// void SummaInitStruc::getInitBEStepsIDATol(int be_steps, double rel_tol, double abs_tolWat, double abs_tolNrg) {
+//   f_getInitBEStepsIDATol(be_steps, rel_tol, abs_tolWat, abs_tolNrg);
 }
 

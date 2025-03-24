@@ -153,6 +153,14 @@ int main(int argc, char** argv) {
   argc = args.size();
   exec_main_init_meta_objects<id_block::summa, io::middleman>();
   caf::core::init_global_meta_objects(); 
-  return exec_main<id_block::summa, io::middleman>(caf_main, argc, argv2);
+  int result = exec_main<id_block::summa, io::middleman>(caf_main, argc, argv2);
+
+  // Properly deallocate the memory
+  for (int i = 0; i < args.size(); ++i) {
+      delete[] argv2[i];
+  }
+  delete[] argv2;
+
+  return result;
 }
 

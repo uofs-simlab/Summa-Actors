@@ -28,6 +28,7 @@ extern "C" {
       double& rel_tol_aquifr, double& abs_tol_temp_cas, double& abs_tol_temp_veg, 
       double& abs_tol_wat_veg, double& abs_tol_temp_soil_snow, double& abs_tol_wat_snow, 
       double& abs_tol_matric, double& abs_tol_aquifr);
+  // void f_setGruTolerances(void* gru_data, int& be_steps, double& rel_tol, double& abs_tolWat, double& abs_tolNrg);
 }
 
 struct GruDeleter {
