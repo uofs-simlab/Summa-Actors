@@ -100,7 +100,6 @@ you will need to modify append to the $CMAKE_PREFIX_PATH environment variables
 to include the location of where you installed the dependencies. If you use
 a module system, this should handle appending the correct paths.
 
-
 ## Running SUMMA-Actors
 Running SUMMA-Actors is similar to running the original version of SUMMA. **Input and configuration files remain identical** alowing exising projects and `fileManager.txt` files to be used seamlessly with SUMMA-Actors. Please refer to the [SUMMA documentation](https://summa.readthedocs.io/en/latest/) regarding input files and simulation configuration. The only difference, if desired, is the option to use a `config.json` file to fine tune how SUMMA-Actors will perform. Please refer to the [relevant section](###Config-File-and-Advanced-Features) for more information on the `config.json` file and the more advanced features of SUMMA-Actors.
 

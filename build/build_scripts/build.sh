@@ -24,9 +24,9 @@ cmake -B ./cmake_build -S .. -DUSE_SUNDIALS=ON -DCMAKE_BUILD_TYPE=Release
 cmake --build ./cmake_build --target all -j
 
 
+
 # -----------------------------------
 # If compiling V4 without sundials use the following
-# -----------------------------------
   
 # cmake -B ./cmake_build -S .. -DUSE_V4=ON
 # cmake --build ./cmake_build --target all -j
@@ -37,6 +37,4 @@ cmake --build ./cmake_build --target all -j
 # cmake -B ./cmake_build -S ..
 # cmake --build ./cmake_build --target all -j
 
-# -----------------------------------
-# If compiling V4 with sundials use the following (default)
-# -----------------------------------
+
