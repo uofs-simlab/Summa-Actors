@@ -19,8 +19,25 @@ void serializeHru(stateful_actor<hru_state>* self, hru& serialized_state) {
   serialized_state.dt_init_factor = self->state.dt_init_factor;
   serialized_state.output_structure_step_index = 
       self->state.output_structure_step_index; 
+  serialized_state.beSteps = self->state.beSteps;
   serialized_state.rtol = self->state.rtol;
   serialized_state.atol = self->state.atol;
+  serialized_state.rtol_temp_cas = self->state.rtol_temp_cas;
+  serialized_state.atol_temp_cas = self->state.atol_temp_cas;
+  serialized_state.rtol_temp_veg = self->state.rtol_temp_veg;
+  serialized_state.atol_temp_veg = self->state.atol_temp_veg;
+  serialized_state.rtol_temp_soil_snow = self->state.rtol_temp_soil_snow;
+  serialized_state.atol_temp_soil_snow = self->state.atol_temp_soil_snow;
+  serialized_state.rtol_wat_veg = self->state.rtol_wat_veg;
+  serialized_state.atol_wat_veg = self->state.atol_wat_veg;
+  serialized_state.rtol_wat_snow = self->state.rtol_wat_snow;
+  serialized_state.atol_wat_snow = self->state.atol_wat_snow;
+  serialized_state.rtol_matric = self->state.rtol_matric;
+  serialized_state.atol_matric = self->state.atol_matric;
+  serialized_state.rtol_aquifr = self->state.rtol_aquifr;
+  serialized_state.atol_aquifr = self->state.atol_aquifr;
+  // serialized_state.atolWat = self->state.atolWat;
+  // serialized_state.atolNrg = self->state.atolNrg;
 
   // Statistic Structures
   serialized_state.forc_stat = get_var_dlength_by_indx(self->state.hru_data, 1); 
@@ -89,8 +106,25 @@ void deserializeHru(stateful_actor<hru_state>* self, hru& new_state) {
   self->state.dt_init_factor = new_state.dt_init_factor;
   self->state.output_structure_step_index = 
       new_state.output_structure_step_index;
+  self->state.beSteps = new_state.beSteps;
   self->state.rtol = new_state.rtol;
   self->state.atol = new_state.atol;
+  self->state.rtol_temp_cas = new_state.rtol_temp_cas;
+  self->state.rtol_temp_veg = new_state.rtol_temp_veg;
+  self->state.rtol_wat_veg = new_state.rtol_wat_veg;
+  self->state.rtol_temp_soil_snow = new_state.rtol_temp_soil_snow;
+  self->state.rtol_wat_snow = new_state.rtol_wat_snow;
+  self->state.rtol_matric = new_state.rtol_matric;
+  self->state.rtol_aquifr = new_state.rtol_aquifr;
+  self->state.atol_temp_cas = new_state.atol_temp_cas;
+  self->state.atol_temp_veg = new_state.atol_temp_veg;
+  self->state.atol_wat_veg = new_state.atol_wat_veg;
+  self->state.atol_temp_soil_snow = new_state.atol_temp_soil_snow;
+  self->state.atol_wat_snow = new_state.atol_wat_snow;
+  self->state.atol_matric = new_state.atol_matric;
+  self->state.atol_aquifr = new_state.atol_aquifr;
+  // self->state.atolWat = new_state.atolWat;
+  // self->state.atolNrg = new_state.atolNrg;
   // Statistic Structures
   set_var_dlength_by_indx(self->state.hru_data, new_state.forc_stat, 1);
   set_var_dlength_by_indx(self->state.hru_data, new_state.prog_stat, 2);

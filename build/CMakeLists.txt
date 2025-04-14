@@ -1,9 +1,12 @@
 cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 project(summa-actors VERSION 1.0.0 LANGUAGES Fortran C CXX)
 
+
 # Add options for build type
 set(CMAKE_CONFIGURATION_TYPES Release Debug)
 message("\nSelected Bulid Type: ${CMAKE_BUILD_TYPE}\n")
+
+
 
 # Optional Dependencies
 option(USE_SUNDIALS "Use IDA solver from sundilas suite" OFF)
@@ -162,7 +165,10 @@ target_compile_options(SUMMA_COMM PRIVATE ${FLAGS_ALL})
 target_link_libraries(SUMMA_COMM PUBLIC SUMMA_NOAHMP ${EXT_TARGETS}) # added flags to the link step
 
 # Build SUMMA Object
-add_library(summa SHARED ${SUMMA_ALL})
+add_library(summa SHARED ${SUMMA_ALL} ${F_MASTER}/build/source/global/global_tol.f90)
+set_target_properties(summa PROPERTIES
+    Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/mod_files"
+)
 target_compile_options(summa PRIVATE ${FLAGS_ALL})
 target_link_libraries(summa PUBLIC ${EXT_TARGETS} SUMMA_NOAHMP SUMMA_COMM)
 

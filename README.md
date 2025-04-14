@@ -19,19 +19,9 @@ the most up-to-date features and bug fixes. Below, we only provide steps for
 both version 4.x.x of SUMMA and the specific steps for version 3.x.x can be 
 found in our wiki: https://github.com/uofs-simlab/Summa-Actors/wiki
 
-<!-- SUMMA-Actors seamlessly integrates with two versions of the SUMMA hydrological modeling framework:
-  * SUMMA version 4.x.x:
-      * Built on top of the most up-to-data SUMMA codebase: https://github.com/ashleymedin/summa/tree/develop
-      * Includes latest features and bug fixes, including the option to use the Sundials numerical solver.
-      * If you are new to SUMMA, we recommend using this version of summa. 
-  * SUMMA version 3.x.x:
-      * Built on top of the original SUMMA codebase: https://github.com/CH-Earth/summa
-      * Suitable for existing projects and familiar workflows. -->
-
 Below we provide some background to SUMMA-Actors' structure, but for those 
 who do not like long documentation you can skip to compilation steps here:
 [Version 4.x.x Build Instructions](###Version-4.x.x-Build-Instructions)
-
 
 ### Directory Structure
 Upon downloading the SUMMA-Actors repository, you will be presented with 
@@ -103,13 +93,12 @@ time to compile:
   2) cd Summa-Actors/build/
   3) git clone -b develop https://github.com/ashleymedin/summa.git
   4) cd build_scripts/
-  6) ./build.sh
+  5) ./build.sh
 
 Note: If you did not install the dependencies in the `utils/dependencies` folder,
 you will need to modify append to the $CMAKE_PREFIX_PATH environment variables
 to include the location of where you installed the dependencies. If you use
 a module system, this should handle appending the correct paths.
-
 
 ## Running SUMMA-Actors
 Running SUMMA-Actors is similar to running the original version of SUMMA. **Input and configuration files remain identical** alowing exising projects and `fileManager.txt` files to be used seamlessly with SUMMA-Actors. Please refer to the [SUMMA documentation](https://summa.readthedocs.io/en/latest/) regarding input files and simulation configuration. The only difference, if desired, is the option to use a `config.json` file to fine tune how SUMMA-Actors will perform. Please refer to the [relevant section](###Config-File-and-Advanced-Features) for more information on the `config.json` file and the more advanced features of SUMMA-Actors.
@@ -199,6 +188,5 @@ below.
  * Charousset, D., Schmidt, T. C., Hiesgen, R., 2016: Revisiting actor programming in 
  C++. _Computer Languages, Systems & Structures_, [doi:10.1016/j.cl.2016.01.002](http://
  dx.doi.org/10.1016/j.cl.2016.01.002)
-
 
 

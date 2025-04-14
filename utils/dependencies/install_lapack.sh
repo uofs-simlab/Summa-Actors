@@ -9,6 +9,7 @@
 #   export LAPACK_PATH="path/to/lapack/liblapack.so"
 # Then modify the CMAKE command to include the following flag:
 #  -DUSE_CUSTOM_LAPACK=ON
+#####################################################################
 
 export BLASDIR=$PWD/install/lapack
 wget https://github.com/Reference-LAPACK/lapack/archive/refs/tags/v3.12.1.tar.gz

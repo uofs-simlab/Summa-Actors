@@ -5,6 +5,9 @@
 # Usage:
 #   ./install_caf.
 #
+
+#####################################################################
+
 export CAFDIR=$PWD/install/caf
 wget https://github.com/actor-framework/actor-framework/archive/refs/tags/1.0.2.tar.gz
 tar -xvf 1.0.2.tar.gz
