@@ -44,6 +44,34 @@ extern "C" {
   // hru_writeOutput.f90
   void setFinalizeStatsFalse(int* indx_gru);
 
+  void get_sundials_tolerances(void* hru_data, double* relTol, double* absTol,
+                              double* relTolTempCas, double* relTolTempVeg, double* relToWatVeg,
+                              double* relTolTempSoilSnow, double* relTolWatSnow,
+                              double* relTolMatric, double* relTolAquifr,
+                              double* absTolTempCas, double* absTolTempVeg,
+                              double* absToWatVeg, double* absTolTempSoilSnow,
+                              double* absTolWatSnow, double* absTolMatric,
+                              double* absTolAquifr, bool* def_tol);
+                              
+  void set_sundials_tolerances(void* hru_data, double* relTol, double* absTol, 
+                              double* relTolTempCas, double* relTolTempVeg, double* relToWatVeg,
+                              double* relTolTempSoilSnow, double* relTolWatSnow,
+                              double* relTolMatric, double* relTolAquifr,
+                              double* absTolTempCas, double* absTolTempVeg,
+                              double* absToWatVeg, double* absTolTempSoilSnow,
+                              double* absTolWatSnow, double* absTolMatric,
+                              double* absTolAquifr, bool* def_tol);
+ 
+  void setIDATolerances(void* hru_data, double* relTol, double* absTol,
+                        double* relTolTempCas, double* relTolTempVeg, double* relToWatVeg,
+                        double* relTolTempSoilSnow, double* relTolWatSnow,
+                        double* relTolMatric, double* relTolAquifr,
+                        double* absTolTempCas, double* absTolTempVeg,
+                        double* absToWatVeg, double* absTolTempSoilSnow,
+                        double* absTolWatSnow, double* absTolMatric,
+                        double* absTolAquifr, bool* def_tol);
+  
+                        // TODO: Ashley's New Variables                        
   void get_steps_tolerances(void* hru_data, int* beSteps, double* rtol, double* atolWat, 
                                double* atolNrg);
   void set_steps_tolerances(void* hru_data, int* beSteps, double* rtol, double* atolWat, 
@@ -86,8 +114,6 @@ struct hru_state {
   // HRU data structures (formerly summa_type)
   void *hru_data = new_handle_hru_type();
 
-  hru hru_data_serialized;
-
   // Misc Variables
   int timestep = 1;	    // Current Timestep of HRU simulation
   int forcingStep = 1;    // index of current time step in current forcing file
@@ -98,6 +124,24 @@ struct hru_state {
   std::string err_message;
 
   // Sundials variables
+  bool default_tol = true;
+  double rtol = -9999; // -9999 uses default
+  double atol = -9999; // -9999 uses default
+  double rtol_temp_cas = -9999;
+  double rtol_temp_veg = -9999;
+  double rtol_wat_veg = -9999;
+  double rtol_temp_soil_snow = -9999;
+  double rtol_wat_snow = -9999;
+  double rtol_matric = -9999;
+  double rtol_aquifr = -9999;
+  double atol_temp_cas = -9999;
+  double atol_temp_veg = -9999;
+  double atol_wat_veg = -9999;
+  double atol_temp_soil_snow = -9999;
+  double atol_wat_snow = -9999;
+  double atol_matric = -9999;
+  double atol_aquifr = -9999;
+  // TODO: Ashley's New Variables
   int beSteps = -9999; // -9999 uses default
   double rtol = -9999; // -9999 uses default
   double atolWat = -9999; // -9999 uses default

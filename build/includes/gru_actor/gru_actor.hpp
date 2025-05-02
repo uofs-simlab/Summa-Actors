@@ -28,7 +28,17 @@ extern "C" {
       int& dt_init_factor, int& err, void* message);
   void writeGRUOutput_fortran(int& index_gru, int& timestep, int& output_step, 
       void* gru_data, int& err, void* message, int& year, int& month, int& day, int& hour);
-  void f_setGruTolerances(void* gru_data, int& be_steps, double& rel_tol, double& abs_tolWat, double& abs_tolNrg);
+  void f_setGruTolerances(void* gru_data, int& be_steps,
+      // Relative Tolerances 
+      double& rel_tol, double& rel_tol_temp_cas, double& rel_tol_temp_veg, 
+      double& rel_tol_wat_veg, double& rel_tol_temp_soil_snow, 
+      double& rel_tol_wat_snow, double& rel_tol_matric, double& rel_tol_aquifr, 
+      // Absolute Tolerances
+      double& abs_tol, double& abs_tolWat, double& abs_tolNrg,
+      double& abs_tol_temp_cas, double& abs_tol_temp_veg, 
+      double& abs_tol_wat_veg, double& abs_tol_temp_soil_snow, 
+      double& abs_tol_wat_snow, double& abs_tol_matric, 
+      double& abs_tol_aquifr);
 }
 
 struct GruDeleter {

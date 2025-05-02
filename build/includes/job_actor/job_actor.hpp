@@ -47,14 +47,37 @@ class JobActor {
   // Settings
   JobActorSettings job_actor_settings_;
   FileAccessActorSettings fa_actor_settings_;
-  HRUActorSettings hru_actor_settings_; 
+  HRUActorSettings hru_actor_settings_;
+
+  //Min rel and abs tol values
+  const double MIN_REL_TOL = 1e-6;
+  const double MIN_ABS_TOL = 1e-6;
 
   // HRU Attributes
   int be_steps_ = -9999;
   double rel_tol_ = -9999;
+  double abs_tol_ = -9999;
+  double rel_tol_temp_cas_ = -9999;
+  double rel_tol_temp_veg_ = -9999;
+  double rel_tol_wat_veg_ = -9999;
+  double rel_tol_temp_soil_snow_ = -9999;
+  double rel_tol_wat_snow_ = -9999;
+  double rel_tol_matric_ = -9999;
+  double rel_tol_aquifr_ = -9999;
+  double abs_tol_temp_cas_ = -9999;
+  double abs_tol_temp_veg_ = -9999;
+  double abs_tol_wat_veg_ = -9999;
+  double abs_tol_temp_soil_snow_ = -9999;
+  double abs_tol_wat_snow_ = -9999;
+  double abs_tol_matric_ = -9999;
+  double abs_tol_aquifr_ = -9999;
+  // TODO: Ashley's New Variables
   double abs_tolWat_ = -9999;
   double abs_tolNrg_ = -9999;
+  
   int dt_init_factor_ = 1;
+  // Default tolerances flag
+  bool default_tol_ = true;
 
 
   // Misc
@@ -76,7 +99,8 @@ class JobActor {
              : self_(self), batch_(batch), enable_logging_(enable_logging),
                job_actor_settings_(job_settings), 
                fa_actor_settings_(fa_settings), 
-               hru_actor_settings_(hru_settings), parent_(parent), restart_(restart) {};
+               hru_actor_settings_(hru_settings), parent_(parent), restart_(restart),
+               default_tol_(default_tol_) {};
     
     caf::behavior make_behavior(); // Initial Behavior
     caf::behavior data_assimilation_mode();

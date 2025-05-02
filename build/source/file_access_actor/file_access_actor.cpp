@@ -132,17 +132,14 @@ behavior FileAccessActor::make_behavior() {
           int output_structure_index, int year, int month, int day, int hour) {
             int err = 0;
       // update hru progress vecs
-      self_->println("\n----------Restart sent {} {}----------\n", gru, gru_timestep);
       // int gru_index = abs(gru - start_gru_);
       int gru_index = gru-1;
-      // self_->println("\n----------Restart sent {} {} {}----------\n", gru_index, start_gru_, num_hru_);
 
       hru_timesteps_[gru_index] = gru_timestep;
       // for (int i=0; i < num_hru_; i++) {
       //   std::cout << " " << hru_timesteps_[i];
       // }
       // std::cout << "\n";
-      self_->println("\n----------Restart sent {}----------\n", hru_timesteps_[gru_index]);
 
       // find slowest time step of all hrus in job, stored hru_timesteps_
       // int slowest_timestep = gru_timestep;
@@ -170,17 +167,14 @@ behavior FileAccessActor::make_behavior() {
       int output_structure_index, int year, int month, int day, int hour) {
         int err = 0;
   // update hru progress vecs
-  // self_->println("\n----------Restart sent {} {}----------\n", gru, gru_timestep);
   // int gru_index = abs(gru - start_gru_);
   int gru_index = gru-1;
-  // self_->println("\n----------Restart sent {} {} {}----------\n", gru_index, start_gru_, num_hru_);
 
   hru_timesteps_[gru_index] = gru_timestep;
   // for (int i=0; i < num_hru_; i++) {
   //   std::cout << " " << hru_timesteps_[i];
   // }
   // std::cout << "\n";
-  // self_->println("\n----------Restart sent {}----------\n", hru_timesteps_[gru_index]);
 
   // find slowest time step of all hrus in job, stored hru_timesteps_
   // int slowest_timestep = gru_timestep;
