@@ -1099,7 +1099,7 @@ subroutine allocateDat_rkind_nSteps(metadata,varData,nSnow, nSoil, &
   USE var_lookup,only:iLookVarType           ! look up structure for variable typed
 
   USE globalData,only:nTimeDelay            ! number of timesteps in the time delay histogram
-  USE globalData,only:nBand                 ! number of spectral bands
+  USE globalData,only:nSpecBand                 ! number of spectral bands
   USE var_lookup,only:maxvarFreq             ! allocation dimension (output frequency)
   USE get_ixName_module,only:get_varTypeName       ! to access type strings for error messages
 
@@ -1123,7 +1123,7 @@ subroutine allocateDat_rkind_nSteps(metadata,varData,nSnow, nSoil, &
   do iStep=1, nSteps
     select case(metadata(iVar)%vartype)
       case(iLookVarType%scalarv); allocate(varData%var(iVar)%tim(iStep)%dat(1),stat=err)
-      case(iLookVarType%wLength); allocate(varData%var(iVar)%tim(iStep)%dat(nBand),stat=err)
+      case(iLookVarType%wLength); allocate(varData%var(iVar)%tim(iStep)%dat(nSpecBand),stat=err)
       case(iLookVarType%midSnow); allocate(varData%var(iVar)%tim(iStep)%dat(nSnow),stat=err)
       case(iLookVarType%midSoil); allocate(varData%var(iVar)%tim(iStep)%dat(nSoil),stat=err)
       case(iLookVarType%midToto); allocate(varData%var(iVar)%tim(iStep)%dat(nLayers),stat=err)
@@ -1147,7 +1147,7 @@ subroutine allocateDat_rkind(metadata,varData,nSnow,nSoil,err,message)
   USE data_types
   USE var_lookup,only:iLookVarType           ! look up structure for variable typed
   USE var_lookup,only:maxvarFreq             ! allocation dimension (output frequency)
-  USE globalData,only:nBand                 ! number of spectral bands
+  USE globalData,only:nSpecBand                 ! number of spectral bands
   USE globalData,only:nTimeDelay            ! number of timesteps in the time delay histogram
   implicit none
   type(var_info),intent(in)         :: metadata(:)
@@ -1170,7 +1170,7 @@ subroutine allocateDat_rkind(metadata,varData,nSnow,nSoil,err,message)
   do iVar=1, nVars
     select case(metadata(iVar)%vartype)
     case(iLookVarType%scalarv); allocate(varData%var(iVar)%dat(1),stat=err)
-    case(iLookVarType%wLength); allocate(varData%var(iVar)%dat(nBand),stat=err)
+    case(iLookVarType%wLength); allocate(varData%var(iVar)%dat(nSpecBand),stat=err)
     case(iLookVarType%midSnow); allocate(varData%var(iVar)%dat(nSnow),stat=err)
     case(iLookVarType%midSoil); allocate(varData%var(iVar)%dat(nSoil),stat=err)
     case(iLookVarType%midToto); allocate(varData%var(iVar)%dat(nLayers),stat=err)
@@ -1196,7 +1196,7 @@ subroutine allocateDat_int(metadata,varData,nSnow, nSoil, &
   USE actor_data_types
   USE var_lookup,only:iLookVarType           ! look up structure for variable typed
   USE var_lookup,only:maxvarFreq             ! allocation dimension (output frequency)
-  USE globalData,only:nBand                 ! number of spectral bands
+  USE globalData,only:nSpecBand                 ! number of spectral bands
   USE globalData,only:nTimeDelay            ! number of timesteps in the time delay histogram
   implicit none
   type(var_info),intent(in)            :: metadata(:)
@@ -1217,7 +1217,7 @@ subroutine allocateDat_int(metadata,varData,nSnow, nSoil, &
   do iStep=1, nSteps
     select case(metadata(iVar)%vartype)
       case(iLookVarType%scalarv); allocate(varData%var(iVar)%tim(iStep)%dat(1),stat=err)
-      case(iLookVarType%wLength); allocate(varData%var(iVar)%tim(iStep)%dat(nBand),stat=err)
+      case(iLookVarType%wLength); allocate(varData%var(iVar)%tim(iStep)%dat(nSpecBand),stat=err)
       case(iLookVarType%midSnow); allocate(varData%var(iVar)%tim(iStep)%dat(nSnow),stat=err)
       case(iLookVarType%midSoil); allocate(varData%var(iVar)%tim(iStep)%dat(nSoil),stat=err)
       case(iLookVarType%midToto); allocate(varData%var(iVar)%tim(iStep)%dat(nLayers),stat=err)
