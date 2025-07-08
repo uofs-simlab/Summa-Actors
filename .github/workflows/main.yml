@@ -24,5 +24,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: echo "Build Test"
-      - run: gfortran --version
-      - run: g++ --version
+      - run: gfortran --version    # check for gfortran compiler
+      - run: g++ --version         # check for g++ compiler
+      - run: cd utils/dependencies # prep for installation of dependencies
+      - run: ./install_lapack.sh   # install LAPACK
