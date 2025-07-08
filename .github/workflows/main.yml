@@ -35,3 +35,4 @@ jobs:
       #- run: ./install_lapack.sh   # install LAPACK -- successful
       #- run: ./install_netcdf.sh   # install NetCDF -- possible errors
       #- run: ./install_caf.sh      # install CAF -- successful
+      - run: ./install_sundials.sh # install SUNDIALS
