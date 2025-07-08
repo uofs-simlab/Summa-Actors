@@ -21,10 +21,13 @@ jobs:
   Run-on-Ubuntu:
     name: Run on Ubuntu
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash # set shell
+        working-directory: ./utils/dependencies # set working directory
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4  # checkout SUMMA-Actors repo
       - run: echo "Build Test"
       - run: gfortran --version    # check for gfortran compiler
       - run: g++ --version         # check for g++ compiler
-      - run: cd utils/dependencies # prep for installation of dependencies
       - run: ./install_lapack.sh   # install LAPACK
