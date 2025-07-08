@@ -31,6 +31,7 @@ jobs:
       - run: gfortran --version    # check for gfortran compiler
       - run: g++ --version         # check for g++ compiler
       - run: curl --version        # check for curl
+      - run: wget --version        # check for wget
       #- run: ./install_lapack.sh   # install LAPACK -- successful
       #- run: ./install_netcdf.sh   # install NetCDF -- possible errors
-      - run: ./install_caf.sh      # install CAF
+      #- run: ./install_caf.sh      # install CAF -- successful
