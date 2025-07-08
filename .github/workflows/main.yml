@@ -9,9 +9,9 @@ on:
     inputs:
       name:
         # Friendly description to be shown in the UI instead of 'name'
-        description: 'Person to greet'
+        description: 'Build Test'
         # Default value if no value is explicitly provided
-        default: 'World'
+        default: 'Start'
         # Input has to be provided for the workflow to run
         required: true
         # The data type of the input
@@ -31,5 +31,6 @@ jobs:
       - run: gfortran --version    # check for gfortran compiler
       - run: g++ --version         # check for g++ compiler
       - run: curl --version        # check for curl
-      #- run: ./install_lapack.sh   # install LAPACK
-      #- run: ./install_netcdf.sh   # install NetCDF
+      #- run: ./install_lapack.sh   # install LAPACK -- successful
+      #- run: ./install_netcdf.sh   # install NetCDF -- possible errors
+      - run: ./install_caf.sh      # install CAF
