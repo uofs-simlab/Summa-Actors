@@ -30,5 +30,6 @@ jobs:
       - run: echo "Build Test"
       - run: gfortran --version    # check for gfortran compiler
       - run: g++ --version         # check for g++ compiler
+      - run: curl --version        # check for curl
       #- run: ./install_lapack.sh   # install LAPACK
-      - run: ./install_netcdf.sh   # install NetCDF
+      #- run: ./install_netcdf.sh   # install NetCDF
