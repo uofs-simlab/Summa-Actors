@@ -18,8 +18,8 @@ on:
         type: string
 
 jobs:
-  Run-on-Ubuntu:
-    name: Run on Ubuntu
+  Install-Packages:
+    name: Install packages on Ubuntu
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -35,4 +35,14 @@ jobs:
       #- run: ./install_lapack.sh   # install LAPACK -- successful
       #- run: ./install_netcdf.sh   # install NetCDF -- possible errors
       #- run: ./install_caf.sh      # install CAF -- successful
-      - run: ./install_sundials.sh # install SUNDIALS -- successful
+      #- run: ./install_sundials.sh # install SUNDIALS -- successful
+  Install-SUMMA:
+    name: Install SUMMA on Ubuntu
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash # set shell
+        working-directory: ./Summa-Actors/build # set working directory
+    steps:
+      - uses: actions/checkout@v4  # checkout SUMMA-Actors repo
+      - run: git clone -b develop_sundials https://github.com/CH-Earth/summa.git
