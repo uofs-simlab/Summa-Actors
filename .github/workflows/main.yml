@@ -42,7 +42,7 @@ jobs:
     defaults:
       run:
         shell: bash # set shell
-        working-directory: ./Summa-Actors/build # set working directory
+        working-directory: ./build # set working directory
     steps:
       - uses: actions/checkout@v4  # checkout SUMMA-Actors repo
       - run: git clone -b develop_sundials https://github.com/CH-Earth/summa.git
