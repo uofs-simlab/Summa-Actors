@@ -6,10 +6,10 @@ on:
   #  branches: [ main ]
   workflow_dispatch:
     # Inputs the workflow accepts.
-    inputs:
-      name:
+    #inputs:
+      #name:
         # Friendly description to be shown in the UI instead of 'name'
-        description: 'Build Test'
+        #description: 'Build Test'
         # Default value if no value is explicitly provided
         #default: 'Start'
         # Input has to be provided for the workflow to run
