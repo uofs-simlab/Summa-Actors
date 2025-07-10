@@ -11,11 +11,11 @@ on:
         # Friendly description to be shown in the UI instead of 'name'
         description: 'Build Test'
         # Default value if no value is explicitly provided
-        default: 'Start'
+        #default: 'Start'
         # Input has to be provided for the workflow to run
-        required: true
+        #required: true
         # The data type of the input
-        type: string
+        #type: string
 
 jobs:
   Install-Packages:
