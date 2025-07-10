@@ -40,7 +40,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4  # checkout SUMMA-Actors repo
       - run: echo "Install NetCDF"
-      #- run: ./install_netcdf.sh   # install NetCDF -- possible errors
+      - run: ./install_netcdf.sh   # install NetCDF -- possible errors
   Install-CAF:
     name: Install CAF
     runs-on: ubuntu-latest
