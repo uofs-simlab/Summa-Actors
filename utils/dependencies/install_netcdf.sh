@@ -46,9 +46,9 @@ ROOTDIR=$PWD
 # Instal HDF5
 # determine name variables (dealing with notation for patch levels)
 if [[ $(echo "$HDF5_ver" | grep -o "\." | wc -l) -eq 3 ]]; then  # if version number has three decimal point characters
-  $HDF5_ver_dash=$(echo "$HDF5_ver" | sed 's/\.\([^.]*\)$/-\1/') # replace third decimal point with a dash
+  HDF5_ver_dash=$(echo "$HDF5_ver" | sed 's/\.\([^.]*\)$/-\1/') # replace third decimal point with a dash
 else
-  $HDF5_ver_dash=$HDF5_ver
+  HDF5_ver_dash=$HDF5_ver
 fi
 cd $ROOTDIR
 {
