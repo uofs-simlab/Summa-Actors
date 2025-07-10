@@ -19,6 +19,10 @@
 #
 # Then, run cmake as you normally would.
 #####################################################################
+
+# version numbers for packages
+zlib_ver=1.3.1
+
 export NETCDFCDIR=$PWD/install/netcdf-c
 export NETCDFFDIR=$PWD/install/netcdf-fortran
 export H5DIR=$PWD/install/hdf5
@@ -28,9 +32,9 @@ ROOTDIR=$PWD
 
 # Install zlib
 {
-  wget https://github.com/madler/zlib/releases/download/v1.3.1/zlib-1.3.1.tar.gz
-  tar -xf zlib-1.3.1.tar.gz
-  cd zlib-1.3.1
+  wget https://github.com/madler/zlib/releases/download/v$zlib_ver/zlib-$zlib_ver.tar.gz
+  tar -xf zlib-$zlib_ver.tar.gz
+  cd zlib-$zlib_ver
   ./configure --prefix=$ZDIR
   make check
   make install
