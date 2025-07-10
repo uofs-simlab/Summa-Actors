@@ -40,6 +40,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4  # checkout SUMMA-Actors repo
       - run: echo "Install NetCDF"
+      - run: sudo apt install libcurl4-openssl-dev # install cURL development headers
       - run: ./install_netcdf.sh   # install NetCDF -- possible errors
   Install-CAF:
     name: Install CAF
