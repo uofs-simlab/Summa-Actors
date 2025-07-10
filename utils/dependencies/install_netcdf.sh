@@ -25,6 +25,10 @@
 zlib_ver=1.3.1
 # HDF5
 HDF5_ver=1.14.6
+# NetCDF-C
+NetCDF_C_ver=4.9.3
+# NetCDF-Fortran
+NetCDF_Fortran_ver=4.6.2
 
 export NETCDFCDIR=$PWD/install/netcdf-c
 export NETCDFFDIR=$PWD/install/netcdf-fortran
@@ -65,9 +69,9 @@ cd $ROOTDIR
 # Install NetCDF-C
 cd $ROOTDIR
 {
-  wget https://github.com/Unidata/netcdf-c/archive/refs/tags/v4.9.2.tar.gz
-  tar -xf v4.9.2.tar.gz
-  cd netcdf-c-4.9.2
+  wget https://github.com/Unidata/netcdf-c/archive/refs/tags/v$NetCDF_C_ver.tar.gz
+  tar -xf v$NetCDF_C_ver.tar.gz
+  cd netcdf-c-$NetCDF_C_ver
   CPPFLAGS="-I${H5DIR}/include -I${ZDIR}/include" \
   LDFLAGS="-L${H5DIR}/lib -L${ZDIR}/lib" \
   ./configure --prefix=${NETCDFCDIR}
@@ -77,9 +81,9 @@ cd $ROOTDIR
 # Install NetCDF-Fortran
 cd $ROOTDIR
 {
-  wget https://github.com/Unidata/netcdf-fortran/archive/refs/tags/v4.6.1.tar.gz
-  tar -xf v4.6.1.tar.gz 
-  cd netcdf-fortran-4.6.1/
+  wget https://github.com/Unidata/netcdf-fortran/archive/refs/tags/v$NetCDF_Fortran_ver.tar.gz
+  tar -xf v$NetCDF_Fortran_ver.tar.gz 
+  cd netcdf-fortran-$NetCDF_Fortran_ver/
   LD_LIBRARY_PATH="${NETCDFCDIR}/lib:${LD_LIBRARY_PATH}" \
   CPPFLAGS="-I${NETCDFCDIR}/include" \
   LDFLAGS="-L${NETCDFCDIR}/lib" \
