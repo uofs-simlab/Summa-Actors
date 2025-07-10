@@ -18,6 +18,9 @@
 #   export CMAKE_PREFIX_PATH="$CMAKE_PREFIX_PATH:/path/to/netcdf-fortran"
 #
 # Then, run cmake as you normally would.
+#
+# Note: - cURL development headers are required to build NetCDF-C
+#       - on Ubuntu, the libcurl-openssl-dev package can be installed to obtain the cURL headers
 #####################################################################
 
 #### version numbers for packages ####
