@@ -4,27 +4,16 @@ on:
   #  branches: [ main ]
   #pull_request:
   #  branches: [ main ]
-  workflow_dispatch:
-    # Inputs the workflow accepts.
-    #inputs:
-      #name:
-        # Friendly description to be shown in the UI instead of 'name'
-        #description: 'Build Test'
-        # Default value if no value is explicitly provided
-        #default: 'Start'
-        # Input has to be provided for the workflow to run
-        #required: true
-        # The data type of the input
-        #type: string
+  workflow_dispatch: # for manually triggered workflow
 
 jobs:
   Install-Packages:
-    name: Install packages on Ubuntu
+    name: Install packages
     runs-on: ubuntu-latest
     defaults:
       run:
-        shell: bash # set shell
-        working-directory: ./utils/dependencies # set working directory
+        shell: bash
+        working-directory: ./utils/dependencies
     steps:
       - uses: actions/checkout@v4  # checkout SUMMA-Actors repo
       - run: echo "Build Test"
@@ -37,12 +26,12 @@ jobs:
       #- run: ./install_caf.sh      # install CAF -- successful
       #- run: ./install_sundials.sh # install SUNDIALS -- successful
   Install-SUMMA:
-    name: Install SUMMA on Ubuntu
+    name: Clone SUMMA
     runs-on: ubuntu-latest
     defaults:
       run:
-        shell: bash # set shell
-        working-directory: ./build # set working directory
+        shell: bash
+        working-directory: ./build
     steps:
       - uses: actions/checkout@v4  # checkout SUMMA-Actors repo
       - run: git clone -b develop_sundials https://github.com/CH-Earth/summa.git
