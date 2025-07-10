@@ -20,8 +20,11 @@
 # Then, run cmake as you normally would.
 #####################################################################
 
-# version numbers for packages
+#### version numbers for packages ####
+# zlib
 zlib_ver=1.3.1
+# HDF5
+HDF5_ver=1.14.6
 
 export NETCDFCDIR=$PWD/install/netcdf-c
 export NETCDFFDIR=$PWD/install/netcdf-fortran
@@ -40,12 +43,21 @@ ROOTDIR=$PWD
   make install
 } 2>&1 | tee zlib.log
 
-# # Instal HDF5
+# Instal HDF5
+# determine name variables (dealing with notation for patch levels)
+if [[ $(echo "$HDF5_ver" | grep -o "\." | wc -l) -eq 3 ]]; then  # if version number has three decimal point characters
+  $HDF5_ver_dash=$(echo "$HDF5_ver" | sed 's/\.\([^.]*\)$/-\1/') # replace third decimal point with a dash
+else
+  $HDF5_ver_dash=$HDF5_ver
+fi
 cd $ROOTDIR
 {
-  wget https://github.com/HDFGroup/hdf5/releases/download/hdf5_1.14.4.2/hdf5-1.14.4-2.tar.gz
-  tar -xf hdf5-1.14.4-2.tar.gz
-  cd hdf5-1.14.4-2
+  wget https://github.com/HDFGroup/hdf5/releases/download/hdf5_$HDF5_ver/hdf5-$HDF5_ver_dash.tar.gz
+  tar -xf hdf5-$HDF5_ver_dash.tar.gz
+  cd hdf5-$HDF5_ver_dash
+  #wget https://github.com/HDFGroup/hdf5/releases/download/hdf5_1.14.4.2/hdf5-1.14.4-2.tar.gz
+  #tar -xf hdf5-1.14.4-2.tar.gz
+  #cd hdf5-1.14.4-2
   ./configure --with-zlib=${ZDIR} --prefix=${H5DIR} --enable-hl
   make install
 } 2>&1 | tee hdf5.log
