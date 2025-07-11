@@ -8,6 +8,7 @@
 #include "client_container.hpp"
 #include "settings_functions.hpp"
 #include "message_atoms.hpp"
+#include "dynamic_batch_container.hpp"
 #include <string>
 #include <optional>
 #include <thread>

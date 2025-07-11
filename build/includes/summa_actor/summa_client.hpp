@@ -10,7 +10,7 @@
 #include <optional>
 #include <unistd.h>
 #include <limits.h>
-
+#include "hardware_monitoring.hpp"
 
 class SummaClient {
   caf::event_based_actor* self_;
