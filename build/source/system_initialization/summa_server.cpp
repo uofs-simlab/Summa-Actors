@@ -101,6 +101,62 @@ behavior SummaServer::summa_server() {
         }
       } 
     },
+     // A message from a client requesting to connect but wants to use dynamic batch sizing
+    [=](connect_to_server, actor client_actor, std::string hostname,int batchSize) {
+      aout(self) << "\nActor trying to connect with hostname "
+                 << hostname << "\n";
+
+      // Check if the simulation has started (first-actor connected)
+      if (!self->state.started_simulation) {
+        self->state.started_simulation = true;
+        self->state.start_time = std::chrono::system_clock::now();
+      }
+
+
+      // Check if the client is already connected
+      std::optional<Client> client =
+          self->state.client_container.getClient(client_actor.address());
+
+      if (client.has_value()) {
+        aout(self) << "Client is already connected\n";
+        aout(self) << "Updating " << hostname << " with current backup servers\n";
+        self->send(client.value().getActor(), update_backup_server_list_v,
+                   self->state.backup_servers_list);
+        std::optional<Batch> batch = client.value().getBatch();
+        if (batch.has_value())
+            return;
+      } else {
+        self->state.client_container.addClient(client_actor, hostname);
+        self->monitor(client_actor);
+        // Tell client they are connected
+        self->send(client_actor, connect_to_server_v,
+                   self->state.summa_actor_settings,
+                   self->state.file_access_actor_settings,
+                   self->state.job_actor_settings,
+                   self->state.hru_actor_settings,
+                   self->state.backup_servers_list);
+
+        std::optional<Batch> batch = self->state.batch_container.getUnsolvedBatch(batchSize);
+        if (batch.has_value()) {
+          self->state.client_container.setBatchForClient(client_actor, batch);
+          aout(self) << "SENDING: " << batch.value().toString() << "\n";
+          self->send(client_actor, batch.value());
+          for (auto& backup_server : self->state.backup_servers_list) {
+              caf::actor backup_server_actor = std::get<0>(backup_server);
+              self->send(backup_server_actor, new_client_v, client_actor, hostname);
+              self->send(backup_server_actor, new_assigned_batch_v, client_actor, batch.value());
+          }
+        } else {
+          aout(self) << "No batches left to assign - Waiting for All Clients to finish\n";
+          // Let Backup Servers know that a new client has connected
+          for (auto& backup_server : self->state.backup_servers_list) {
+              caf::actor backup_server_actor = std::get<0>(backup_server);
+              self->send(backup_server_actor, new_client_v, client_actor,
+                         hostname);
+          }
+        }
+      }
+    },
 
     [=](connect_as_backup, actor backup_server, std::string hostname) {
       self_->println("\nReceived Connection Request From a backup server ", hostname,  "\n");
@@ -166,7 +222,47 @@ behavior SummaServer::summa_server() {
           self_->mail(no_more_batches_v, client_actor).send(backup_server_actor);
         }
       }
-    }, 
+    },
+
+    //The dynamic batch size message between client and server
+    [=](done_batch, actor client_actor, Batch& batch, int batchSize) {
+      aout(self) << "\nReceived Completed Batch From Client\n";
+      aout(self) << batch.toString() << "\n\n";\
+      Client client = self->state.client_container.getClient(client_actor.address()).value();
+
+      self->state.batch_container.updateBatch_success(batch, self->state.csv_file_path, client.getHostname());
+      printRemainingBatches(self);
+
+      std::optional<Batch> new_batch = self->state.batch_container.getUnsolvedBatch(batchSize);
+
+      if (new_batch.has_value()) {
+        // send clients new batch and update backup servers
+        self->state.client_container.setBatchForClient(client_actor, new_batch);
+        self->send(client_actor, new_batch.value());
+        for (auto& backup_server : self->state.backup_servers_list) {
+          caf::actor backup_server_actor = std::get<0>(backup_server);
+          self->send(backup_server_actor, done_batch_v, client_actor, batch);
+          self->send(backup_server_actor, new_assigned_batch_v, client_actor, new_batch.value());
+        }
+      } else {
+        // We may be done
+        if (!self->state.batch_container.hasUnsolvedBatches()) {
+          // We are done
+          self->become(summa_server_exit(self));
+          return;
+        }
+
+        // No Batches left to assign but waiting for all clients to finish
+        aout(self) << "No batches left to assign - Waiting for All Clients to finish\n";
+        self->state.client_container.setBatchForClient(client_actor, {});
+        for (auto& backup_server : self->state.backup_servers_list) {
+          caf::actor backup_server_actor = std::get<0>(backup_server);
+          self->send(backup_server_actor, done_batch_v, client_actor, batch);
+          self->send(backup_server_actor, no_more_batches_v, client_actor);
+        }
+      }
+    },
+
   };
 }
 
