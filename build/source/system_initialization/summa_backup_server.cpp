@@ -31,12 +31,12 @@ void SummaServer::connecting_backup(const std::string& host, uint16_t port) {
             [=](const node_id&, strong_actor_ptr serv,
                 const std::set<std::string>& ifs) {
                 if (!serv) {
-                    self_->println(R"(*** no server found at ")", host, R"(":)", port);
+                    self_->println(R"(*** no server found at "{}":{})", host, port);
                     return;
                 }
                 if (!ifs.empty()) {
-                    self_->println(R"(*** typed actor found at ")", host, R"(":)",
-                        port, ", but expected an untyped actor ");
+                    self_->println(R"(*** typed actor found at "{}":{}, but expected an untyped actor )",
+                        host, port);
                     return;
                 }
                 self_->println("*** successfully connected to server");
@@ -73,7 +73,7 @@ void SummaServer::connecting_backup(const std::string& host, uint16_t port) {
 
             },
             [=](const error& err) {
-                self_->println(R"(*** cannot connect to ")", host, R"(":)", port,
+                self_->println(R"(*** cannot connect to "{}":{})", host, port,
                    " => ", to_string(err));
         });
 }
@@ -104,7 +104,7 @@ behavior SummaServer::summa_backup_server() {
         // We have a new backup server that was added to the server
         [=](update_backup_server_list, std::vector<std::tuple<caf::actor, std::string>> backup_servers) {
             self_->println("\nReceived the backup server list from the lead server\n");
-            self_->println("Backup Server List = ", backup_servers);
+            self_->println("Backup Server List = {}", backup_servers);
             backup_servers_list_ = backup_servers;
         },
         
@@ -147,13 +147,13 @@ behavior SummaServer::summa_backup_server() {
 
         // Client finished a batch and the lead server has sent an update
         [=](done_batch, actor client_actor, Batch& batch) {
-            self_->println("\nBatch: ", batch.getBatchID(), " is done\n");
+            self_->println("\nBatch: {} is done", batch.getBatchID());
             batch_container_.updateBatch_success(batch);
         },
 
         // Client has been assigned new batch by the lead server
         [=](new_assigned_batch, actor client_actor, Batch& batch) {
-            self_->println("\nNew Batch: ", batch.getBatchID(), " has been assigned\n");
+            self_->println("\nNew Batch: {} has been assigned", batch.getBatchID());
             batch_container_.setBatchAssigned(batch);
             client_container_.setBatchForClient(client_actor, batch);
         },
