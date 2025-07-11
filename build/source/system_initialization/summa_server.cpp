@@ -43,8 +43,8 @@ behavior SummaServer::summa_server() {
 
     // A message from a client requesting to connect
     [=](connect_to_server, actor client_actor, std::string hostname) {
-      self_->println("\nActor trying to connect with hostname ", 
-                 hostname, "\n");
+      self_->println("\nActor trying to connect with hostname {}", 
+                 hostname);
       
       // Check if the simulation has started (first-actor connected)
       if (!started_simulation_) {
@@ -78,7 +78,7 @@ behavior SummaServer::summa_server() {
             resolveLostBackupServer(source);
         });
         // Tell client they are connected
-        self_->mail(connect_to_server_v, settings_).send(client_actor);
+        self_->mail(connect_to_server_v, settings_, backup_servers_list_).send(client_actor);
             
         std::optional<Batch> batch = batch_container_.getUnsolvedBatch();
         if (batch.has_value()) {
