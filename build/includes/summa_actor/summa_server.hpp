@@ -35,7 +35,7 @@ class SummaServer {
 
   // Containers
   Client_Container client_container_;
-  BatchContainer batch_container_;
+  DynamicBatchContainer batch_container_;
   // Actor Reference, Hostname
   std::vector<std::tuple<caf::actor, std::string>> backup_servers_list_;
 
