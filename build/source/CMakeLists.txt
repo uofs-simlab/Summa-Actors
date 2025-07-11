@@ -57,6 +57,7 @@ set(ACTORS_GLOBAL
 set(SYS_INIT
     ${SYS_INIT_DIR}/batch.cpp
     ${SYS_INIT_DIR}/batch_container.cpp
+    ${SYS_INIT_DIR}/dynamic_batch_container.cpp
     ${SYS_INIT_DIR}/client.cpp
     ${SYS_INIT_DIR}/client_container.cpp
     ${SYS_INIT_DIR}/summa_global_data.cpp
