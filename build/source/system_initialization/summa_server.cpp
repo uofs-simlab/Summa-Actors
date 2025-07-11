@@ -103,7 +103,7 @@ behavior SummaServer::summa_server() {
     },
      // A message from a client requesting to connect but wants to use dynamic batch sizing
     [=](connect_to_server, actor client_actor, std::string hostname,int batchSize) {
-      aout(self) << "\nActor trying to connect with hostname "
+      aout(self_) << "\nActor trying to connect with hostname "
                  << hostname << "\n";
 
       // Check if the simulation has started (first-actor connected)
