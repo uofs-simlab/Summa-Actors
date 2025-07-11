@@ -95,9 +95,9 @@ behavior SummaClient::make_behavior() {
         [=](Batch& batch) {
             current_batch_ = batch;
             self_->println("\nReceived batch to compute\n");
-            self_->println("BatchID = ", current_batch_.getBatchID(), "\n");
-            self_->println("StartHRU = ", current_batch_.getStartHRU(), "\n");
-            self_->println("NumHRU = ", current_batch_.getNumHRU(), "\n");
+            self_->println("BatchID = {}", current_batch_.getBatchID());
+            self_->println("StartHRU = {}", current_batch_.getStartHRU());
+            self_->println("NumHRU = {}", current_batch_.getNumHRU());
 
             summa_actor_ref_ = self_->spawn(actor_from_state<SummaActor>, 
                 current_batch_.getStartHRU(), 
@@ -113,9 +113,9 @@ behavior SummaClient::make_behavior() {
         // Received completed batch information from the summa_actor 
         [=](done_batch, double run_time, double read_time, double write_time) {
             self_->println("Summa_Actor has finished, sending message to the server for another batch\n");
-            self_->println("run_time = ", run_time, "\n");
-            self_->println("read_time = ", read_time, "\n");
-            self_->println("write_time = ", write_time, "\n");
+            self_->println("run_time = {}", run_time);
+            self_->println("read_time = {}", read_time);
+            self_->println("write_time = {}", write_time);
 
             current_batch_.updateRunTime(run_time);
             current_batch_.updateReadTime(read_time);
