@@ -29,7 +29,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4  # checkout SUMMA-Actors repo
       - run: echo "Install LAPACK"
-      #- run: ./install_lapack.sh   # install LAPACK -- successful
+      - run: ./install_lapack.sh   # install LAPACK
   Install-NetCDF:
     name: Install NetCDF
     runs-on: ubuntu-latest
@@ -41,7 +41,7 @@ jobs:
       - uses: actions/checkout@v4  # checkout SUMMA-Actors repo
       - run: echo "Install NetCDF"
       - run: sudo apt install libcurl4-openssl-dev # install cURL development headers
-      - run: ./install_netcdf.sh   # install NetCDF -- successful
+      - run: ./install_netcdf.sh   # install NetCDF
   Install-CAF:
     name: Install CAF
     runs-on: ubuntu-latest
@@ -52,7 +52,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4  # checkout SUMMA-Actors repo
       - run: echo "Install CAF"
-      #- run: ./install_caf.sh      # install CAF -- successful
+      - run: ./install_caf.sh      # install CAF
   Install-SUNDIALS:
     name: Install SUNDIALS
     runs-on: ubuntu-latest
@@ -63,8 +63,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4  # checkout SUMMA-Actors repo
       - run: echo "Install SUNDIALS"
-      #- run: ./install_sundials.sh # install SUNDIALS -- successful
-  Install-SUMMA:
+      - run: ./install_sundials.sh # install SUNDIALS
+  Clone-SUMMA:
     name: Clone SUMMA
     runs-on: ubuntu-latest
     defaults:
@@ -75,3 +75,15 @@ jobs:
       - uses: actions/checkout@v4  # checkout SUMMA-Actors repo
       - run: echo "Clone SUMMA"
       - run: git clone -b develop_sundials https://github.com/CH-Earth/summa.git
+  Build-SUMMA-Actors:
+    name: Build SUMMA-Actors
+    needs: [Check-Runner-Packages, Install-LAPACK, Install-NetCDF, Install-CAF, Install-SUNDIALS, Clone-SUMMA]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./build/build_scripts
+    steps:
+      - uses: actions/checkout@v4  # checkout SUMMA-Actors repo
+      - run: echo "Build SUMMA-Actors"
+      - run: ./build.sh
