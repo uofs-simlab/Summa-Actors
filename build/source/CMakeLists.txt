@@ -52,6 +52,7 @@ set(ACTORS_GLOBAL
     ${ACTORS_DIR}/global/settings_functions.cpp
     ${ACTORS_DIR}/global/timing_info.cpp
     ${ACTORS_DIR}/global/logger.cpp
+    ${ACTORS_DIR}/global/hardware_monitoring.cpp
     CACHE INTERNAL "ACTORS_GLOBAL")
 set(SYS_INIT
     ${SYS_INIT_DIR}/batch.cpp
