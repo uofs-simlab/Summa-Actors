@@ -80,7 +80,7 @@ behavior SummaClient::make_behavior() {
                     }
                 }
                 servers_.clear();
-                self_->mail(connect_to_server_v, self_, hostname_).send(current_server_actor_);
+                self_->mail(connect_to_server_v, self_, hostname_,getBatchSize()).send(current_server_actor_);
             } else {
                 self_->println("This is not the lead server");
             }
@@ -125,7 +125,7 @@ behavior SummaClient::make_behavior() {
                 self_->println("Saving batch until we find a new lead server\n");
                 saved_batch_ = true;
             } else {
-                self_->mail(done_batch_v, self_, current_batch_).send(current_server_actor_);
+                self_->mail(done_batch_v, self_, current_batch_,getBatchSize()).send(current_server_actor_);
             }
         },
 
