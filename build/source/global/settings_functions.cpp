@@ -14,6 +14,19 @@ int Settings::readSettings() {
   }
   settings_file.close();
 
+  distributed_settings_ = DistributedSettings(
+    getSettings<bool>(json_settings, "Distributed_Settings", "distributed_mode")
+        .value_or(false),
+    getSettingsArray(json_settings, "Distributed_Settings", "servers_list")
+        .value_or(std::vector<std::string> {}),
+    getSettings<int>(json_settings, "Distributed_Settings", "port")
+        .value_or(0),
+    getSettings<int>(json_settings, "Distributed_Settings", "total_hru_count")
+        .value_or(0),
+    getSettings<int>(json_settings, "Distributed_Settings", "num_hru_per_batch")
+        .value_or(0)
+  );
+
   summa_actor_settings_ = SummaActorSettings(
     getSettings<int>(json_settings, "Summa_Actor", "max_gru_per_job")
         .value_or(GRU_PER_JOB),
