@@ -2,193 +2,195 @@
 
 namespace caf {
 
-behavior summa_server(stateful_actor<summa_server_state>* self,
-                      Distributed_Settings distributed_settings, 
-                      Summa_Actor_Settings summa_actor_settings, 
-                      File_Access_Actor_Settings file_access_actor_settings,
-                      Job_Actor_Settings job_actor_settings, 
-                      HRU_Actor_Settings hru_actor_settings) {
-  
-  aout(self) << "Summa-Server-Actor Started\n";
-  
-  self->set_down_handler([=](const down_msg& dm) {
-    aout(self) << "\n\n ********** DOWN HANDLER ********** \n"
-               << "Lost Connection With A Connected Actor\n";
-    std::optional<Client> client = 
-        self->state.client_container.getClient(dm.source);
-    if (client.has_value())
-      resolveLostClient(self, client.value());
-    else
-      resolveLostBackupServer(self, dm);
-  });
+behavior SummaServer::make_behavior() {
+  if (backup_) {
+    return summa_backup_server_init();
+  } else {
+    return summa_server();
+  }
+}
 
-  self->state.distributed_settings = distributed_settings;
-  self->state.summa_actor_settings = summa_actor_settings; 
-  self->state.file_access_actor_settings = file_access_actor_settings;
-  self->state.job_actor_settings = job_actor_settings;
-  self->state.hru_actor_settings = hru_actor_settings;
+behavior SummaServer::summa_server() {
+  backup_ = false;
 
-  self->state.client_container = Client_Container();
+  self_->println("Summa-Server-Actor Started\n");
+  
+
+  client_container_ = Client_Container();
   // TODO: Batch Container should have start gru passed to it
-  self->state.batch_container = Batch_Container(
+  batch_container_ = BatchContainer(
           1,
-          self->state.distributed_settings.total_hru_count,
-          self->state.distributed_settings.num_hru_per_batch);
+          settings_.distributed_settings_.total_hru_count_,
+          settings_.distributed_settings_.num_hru_per_batch_, "");
 
 
   // Publish the server actor
-  auto is_published = self->system().middleman().publish(self, 
-                            self->state.distributed_settings.port);
+  auto is_published = self_->system().middleman().publish(self_, 
+                            settings_.distributed_settings_.port_);
   if (!is_published) {
-    aout(self) << "Failed to publish actor\n";
-    self->quit();
+    self_->println("Failed to publish actor\n");
+    self_->quit();
     return {};
   }
-  self->state.current_server_actor = self;
-  aout(self) << "Server is Running \n";
+  current_server_actor_ = self_;
+  self_->println("Server is Running \n");
+  
   
   return {
     [=] (is_lead_server, caf::actor client_actor) {
-      self->send(client_actor, is_lead_server_v, true, self);
+      self_->mail(is_lead_server_v, true, self_).send(client_actor);
     },
 
     // A message from a client requesting to connect
     [=](connect_to_server, actor client_actor, std::string hostname) {
-      aout(self) << "\nActor trying to connect with hostname " 
-                 << hostname << "\n";
+      self_->println("\nActor trying to connect with hostname ", 
+                 hostname, "\n");
       
       // Check if the simulation has started (first-actor connected)
-      if (!self->state.started_simulation) {
-        self->state.started_simulation = true;
-        self->state.start_time = std::chrono::system_clock::now();
+      if (!started_simulation_) {
+        started_simulation_ = true;
+        start_time_ = std::chrono::system_clock::now();
       }
 
                  
       // Check if the client is already connected
       std::optional<Client> client = 
-          self->state.client_container.getClient(client_actor.address());
+          client_container_.getClient(client_actor.address());
 
       if (client.has_value()) {
-        aout(self) << "Client is already connected\n";
-        aout(self) << "Updating " << hostname << " with current backup servers\n";
-        self->send(client.value().getActor(), update_backup_server_list_v, 
-                   self->state.backup_servers_list);
+        self_->println("Client is already connected\n");
+        self_->println("Updating ", hostname, " with current backup servers\n");
+        self_->mail(update_backup_server_list_v, 
+                   backup_servers_list_).send(client.value().getActor());
         std::optional<Batch> batch = client.value().getBatch();
         if (batch.has_value())
             return;
       } else {
-        self->state.client_container.addClient(client_actor, hostname);
-        self->monitor(client_actor);
+        client_container_.addClient(client_actor, hostname);
+        self_->monitor(client_actor, [this, source=client_actor.address()](const error& err) {
+          self_->println("\n\n ********** DOWN HANDLER ********** \n",
+               "Lost Connection With A Connected Actor\n");
+          std::optional<Client> client = 
+          client_container_.getClient(source);
+          if (client.has_value())
+            resolveLostClient(client.value());
+          else
+            resolveLostBackupServer(source);
+        });
         // Tell client they are connected
-        self->send(client_actor, connect_to_server_v, 
-                   self->state.summa_actor_settings, 
-                   self->state.file_access_actor_settings, 
-                   self->state.job_actor_settings, 
-                   self->state.hru_actor_settings,
-                   self->state.backup_servers_list);
+        self_->mail(connect_to_server_v, settings_).send(client_actor);
             
-        std::optional<Batch> batch = self->state.batch_container.getUnsolvedBatch();
+        std::optional<Batch> batch = batch_container_.getUnsolvedBatch();
         if (batch.has_value()) {
-          self->state.client_container.setBatchForClient(client_actor, batch);
-          aout(self) << "SENDING: " << batch.value().toString() << "\n";
-          self->send(client_actor, batch.value());
-          for (auto& backup_server : self->state.backup_servers_list) {
+          client_container_.setBatchForClient(client_actor, batch);
+          self_->println("SENDING: ", batch.value().toString(), "\n");
+          self_->mail(batch.value()).send(client_actor);
+          for (auto& backup_server : backup_servers_list_) {
               caf::actor backup_server_actor = std::get<0>(backup_server);
-              self->send(backup_server_actor, new_client_v, client_actor, hostname);
-              self->send(backup_server_actor, new_assigned_batch_v, client_actor, batch.value());
+              self_->mail(new_client_v, client_actor, hostname).send(backup_server_actor);
+              self_->mail(new_assigned_batch_v, client_actor, batch.value()).send(backup_server_actor);
           }
         } else {
-          aout(self) << "No batches left to assign - Waiting for All Clients to finish\n";
+          self_->println("No batches left to assign - Waiting for All Clients to finish\n");
           // Let Backup Servers know that a new client has connected
-          for (auto& backup_server : self->state.backup_servers_list) {
+          for (auto& backup_server : backup_servers_list_) {
               caf::actor backup_server_actor = std::get<0>(backup_server);
-              self->send(backup_server_actor, new_client_v, client_actor, 
-                         hostname);
+              self_->mail(new_client_v, client_actor, 
+                         hostname).send(backup_server_actor);
           }
         }
       } 
     },
 
     [=](connect_as_backup, actor backup_server, std::string hostname) {
-      aout(self) << "\nReceived Connection Request From a backup server " << hostname <<  "\n";
-      self->monitor(backup_server);
+      self_->println("\nReceived Connection Request From a backup server ", hostname,  "\n");
+      self_->monitor(backup_server, [this, source=backup_server.address()](const error& err) {
+          self_->println("\n\n ********** DOWN HANDLER ********** \n",
+               "Lost Connection With A Connected Actor\n");
+          std::optional<Client> client = 
+          client_container_.getClient(source);
+          if (client.has_value())
+            resolveLostClient(client.value());
+          else
+            resolveLostBackupServer(source);
+        });
       // Check if the backup server is already connected
-      auto backup_server_iterator = find(self->state.backup_servers_list.begin(), self->state.backup_servers_list.end(), std::make_tuple(backup_server, hostname));
+      auto backup_server_iterator = find(backup_servers_list_.begin(), backup_servers_list_.end(), std::make_tuple(backup_server, hostname));
 
-      if (backup_server_iterator != self->state.backup_servers_list.end()) {
-        aout(self) << "Backup Server is already connected\n";
+      if (backup_server_iterator != backup_servers_list_.end()) {
+        self_->println("Backup Server is already connected\n");
       } else {
-        aout(self) << "Adding Backup Server to list\n";
-        self->state.backup_servers_list.push_back(std::make_tuple(backup_server, hostname));
+        self_->println("Adding Backup Server to list\n");
+        backup_servers_list_.push_back(std::make_tuple(backup_server, hostname));
       }
 
-      self->send(backup_server, connect_as_backup_v); // confirm connection with sender
+      self_->mail(connect_as_backup_v).send(backup_server); // confirm connection with sender
       // Now we need to send the backup actor our current state
-      self->send(backup_server, update_with_current_state_v, self->state.batch_container, self->state.client_container);
-      sendAllBackupServersList(self);
+      self_->mail(update_with_current_state_v, batch_container_, client_container_).send(backup_server);
+      sendAllBackupServersList();
     }, 
 
     [=](done_batch, actor client_actor, Batch& batch) {
-      aout(self) << "\nReceived Completed Batch From Client\n";
-      aout(self) << batch.toString() << "\n\n";\
-      Client client = self->state.client_container.getClient(client_actor.address()).value();
+      self_->println("\nReceived Completed Batch From Client\n");
+      self_->println(batch.toString(), "\n\n");\
+      Client client = client_container_.getClient(client_actor.address()).value();
 
-      self->state.batch_container.updateBatch_success(batch, self->state.csv_file_path, client.getHostname());
-      printRemainingBatches(self);
+      batch_container_.updateBatch_success(batch, csv_file_path_, client.getHostname());
+      printRemainingBatches();
 
-      std::optional<Batch> new_batch = self->state.batch_container.getUnsolvedBatch();
+      std::optional<Batch> new_batch = batch_container_.getUnsolvedBatch();
         
       if (new_batch.has_value()) {
         // send clients new batch and update backup servers
-        self->state.client_container.setBatchForClient(client_actor, new_batch);
-        self->send(client_actor, new_batch.value());
-        for (auto& backup_server : self->state.backup_servers_list) {
+        client_container_.setBatchForClient(client_actor, new_batch);
+        self_->mail(new_batch.value()).send(client_actor);
+        for (auto& backup_server : backup_servers_list_) {
           caf::actor backup_server_actor = std::get<0>(backup_server);
-          self->send(backup_server_actor, done_batch_v, client_actor, batch);
-          self->send(backup_server_actor, new_assigned_batch_v, client_actor, new_batch.value());
+          self_->mail(done_batch_v, client_actor, batch).send(backup_server_actor);
+          self_->mail(new_assigned_batch_v, client_actor, new_batch.value()).send(backup_server_actor);
         }
       } else {
         // We may be done
-        if (!self->state.batch_container.hasUnsolvedBatches()) {
+        if (!batch_container_.hasUnsolvedBatches()) {
           // We are done
-          self->become(summa_server_exit(self));
+          self_->become(summa_server_exit());
           return;    
         }
 
         // No Batches left to assign but waiting for all clients to finish
-        aout(self) << "No batches left to assign - Waiting for All Clients to finish\n";
-        self->state.client_container.setBatchForClient(client_actor, {});
-        for (auto& backup_server : self->state.backup_servers_list) {
+        self_->println("No batches left to assign - Waiting for All Clients to finish\n");
+        client_container_.setBatchForClient(client_actor, {});
+        for (auto& backup_server : backup_servers_list_) {
           caf::actor backup_server_actor = std::get<0>(backup_server);
-          self->send(backup_server_actor, done_batch_v, client_actor, batch);
-          self->send(backup_server_actor, no_more_batches_v, client_actor);
+          self_->mail(done_batch_v, client_actor, batch).send(backup_server_actor);
+          self_->mail(no_more_batches_v, client_actor).send(backup_server_actor);
         }
       }
     }, 
   };
 }
 
-behavior summa_server_exit(stateful_actor<summa_server_state>* self) {
-  aout(self) << "SUMMA Simulation is complete\n";
-  aout(self) << "Telling Clients to Exit\n";
-  while(!self->state.client_container.isEmpty()) {
-      Client client = self->state.client_container.removeClient_fromBack();
+behavior SummaServer::summa_server_exit() {
+  self_->println("SUMMA Simulation is complete\n");
+  self_->println("Telling Clients to Exit\n");
+  while(!client_container_.isEmpty()) {
+      Client client = client_container_.removeClient_fromBack();
       caf::actor client_actor = client.getActor();
-      self->send(client_actor, time_to_exit_v);
+      self_->mail(time_to_exit_v).send(client_actor);
   }
-  aout(self) << "Telling Backup Servers to Exit\n";
-  for (auto& backup_server : self->state.backup_servers_list) {
+  self_->println("Telling Backup Servers to Exit\n");
+  for (auto& backup_server : backup_servers_list_) {
       caf::actor backup_server_actor = std::get<0>(backup_server);
-      self->send(backup_server_actor, time_to_exit_v);
+      self_->mail(time_to_exit_v).send(backup_server_actor);
   }
 
   // Print timing
-  self->state.end_time = std::chrono::system_clock::now();
+  end_time_ = std::chrono::system_clock::now();
   std::chrono::duration<double> elapsed_seconds = 
-      self->state.end_time - self->state.start_time;
+      end_time_ - start_time_;
 
-  aout(self) << "Elapsed Time: " << elapsed_seconds.count() << "s\n";
-  self->quit();
+  self_->println("Elapsed Time: ", elapsed_seconds.count(), "s\n");
+  self_->quit();
   return {};
 }
 
@@ -207,78 +209,78 @@ void initializeCSVOutput(std::string csv_output_path) {
   csv_output.close();
 }
 
-void printRemainingBatches(stateful_actor<summa_server_state>* self) {
-  aout(self) << "******************\n Batches Remaining: " 
-             << self->state.batch_container.getBatchesRemaining()
-             << "\n******************\n\n";
+void SummaServer::printRemainingBatches() {
+  self_->println("******************\n Batches Remaining: ", 
+             batch_container_.getBatchesRemaining(),
+             "\n******************\n\n");
 }
 
-void sendAllBackupServersList(stateful_actor<summa_server_state>* self) {
-  std::vector<Client> clients = self->state.client_container.getClientList();
+void SummaServer::sendAllBackupServersList() {
+  std::vector<Client> clients = client_container_.getClientList();
   for (Client client : clients) {
-    self->send(client.getActor(), update_backup_server_list_v, 
-               self->state.backup_servers_list);
+    self_->mail(client.getActor(), update_backup_server_list_v, 
+               backup_servers_list_).send(client.getActor());
   }
   
-  for(std::tuple<actor, std::string> backup_server : self->state.backup_servers_list) {
-    self->send(std::get<0>(backup_server), update_backup_server_list_v, 
-               self->state.backup_servers_list);
+  for(std::tuple<actor, std::string> backup_server : backup_servers_list_) {
+    self_->mail(update_backup_server_list_v, 
+               backup_servers_list_).send(std::get<0>(backup_server));
   }
 }
 
-void findAndRemoveLostBackupServer(stateful_actor<summa_server_state>* self, actor_addr lost_backup_server) {
-  for (int i = 0; i < self->state.backup_servers_list.size(); i++) {
-    if (std::get<0>(self->state.backup_servers_list[i]) == lost_backup_server) {
-      aout(self) << "Removed backup server with hostname: "
-                 << std::get<1>(self->state.backup_servers_list[i]) << "\n";
-      self->state.backup_servers_list.erase(
-          self->state.backup_servers_list.begin() + i);
+void SummaServer::findAndRemoveLostBackupServer(actor_addr lost_backup_server) {
+  for (int i = 0; i < backup_servers_list_.size(); i++) {
+    if (std::get<0>(backup_servers_list_[i]) == lost_backup_server) {
+      self_->println("Removed backup server with hostname: ",
+                 std::get<1>(backup_servers_list_[i]), "\n");
+      backup_servers_list_.erase(
+        backup_servers_list_.begin() + i);
       break;
     }
   }
 }
 
-void checkForIdleClients(stateful_actor<summa_server_state>* self) {
-  aout(self) << "Looking for an idle Client\n";
-  std::optional<Client> client = self->state.client_container.getIdleClient();
+void SummaServer::checkForIdleClients() {
+  self_->println("Looking for an idle Client\n");
+  std::optional<Client> client = client_container_.getIdleClient();
   if (client.has_value()) {
-    aout(self) << "Found an idle Client\n";
-    std::optional<Batch> new_batch = self->state.batch_container.getUnsolvedBatch();
+    self_->println("Found an idle Client\n");
+    std::optional<Batch> new_batch = batch_container_.getUnsolvedBatch();
     if (new_batch.has_value()) {
       // send clients new batch and update backup servers
-      aout(self) << "Found a batch to assign\n";
-      self->state.client_container.setBatchForClient(client.value().getActor(), new_batch);
-      self->send(client.value().getActor(), new_batch.value());
-      for (auto& backup_server : self->state.backup_servers_list) {
+      self_->println("Found a batch to assign\n");
+      client_container_.setBatchForClient(client.value().getActor(), new_batch);
+      self_->mail(new_batch.value()).send(client.value().getActor());
+      for (auto& backup_server : backup_servers_list_) {
         caf::actor backup_server_actor = std::get<0>(backup_server);
-        self->send(backup_server_actor, new_assigned_batch_v, client.value().getActor(), new_batch.value());
+        self_->mail(new_assigned_batch_v, client.value().getActor(), new_batch.value()).send(backup_server_actor);
       }
     }
   } else {
-      aout(self) << "No idle clients found, batch will be added to the back of the list\n";
+      self_->println("No idle clients found, batch will be added to the back of the list\n");
   }
 }
 
-void notifyBackupServersOfRemovedClient(stateful_actor<summa_server_state>* self, Client client) {
-  for (auto& backup_server : self->state.backup_servers_list) {
+void SummaServer::notifyBackupServersOfRemovedClient(Client client) {
+  for (auto& backup_server : backup_servers_list_) {
     caf::actor backup_server_actor = std::get<0>(backup_server);
-    self->send(backup_server_actor, client_removed_v, client);
+    self_->mail(client_removed_v, client).send(backup_server_actor);
   }
 }
 
-void resolveLostClient(stateful_actor<summa_server_state>* self, Client client) {
-  aout(self) << "Lost Client: " << client.getHostname() << "\n";
+void SummaServer::resolveLostClient(Client client) {
+  self_->println("Lost Client: ", client.getHostname(), "\n");
   std::optional<Batch> batch = client.getBatch();
-  self->state.batch_container.setBatchUnassigned(batch.value());
-  self->state.client_container.removeClient(client);
-  notifyBackupServersOfRemovedClient(self, client);
-  checkForIdleClients(self);
+  batch_container_.setBatchUnassigned(batch.value());
+  client_container_.removeClient(client);
+  notifyBackupServersOfRemovedClient(client);
+  checkForIdleClients();
 }
 
-void resolveLostBackupServer(stateful_actor<summa_server_state>* self, const down_msg& dm) {
-  aout(self) << "Lost Backup Server\n";
-  findAndRemoveLostBackupServer(self, dm.source);
-  sendAllBackupServersList(self);
+void SummaServer::resolveLostBackupServer(actor_addr source) {
+  self_->println("Lost Backup Server\n");
+  findAndRemoveLostBackupServer(source);
+  sendAllBackupServersList();
 }
  
 } // end namespace

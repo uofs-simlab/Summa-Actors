@@ -6,12 +6,12 @@
 
 class BatchContainer {
   private:
-    int start_hru_;  
+    int start_hru_ = 1;  
     int total_hru_count_;
     int num_hru_per_batch_;
     int batches_remaining_;
     std::vector<Batch> batch_list_;
-    std::unique_ptr<Logger> logger_;
+    // std::unique_ptr<Logger> logger_;
     
     void assembleBatches(std::string log_dir);
     
@@ -91,8 +91,8 @@ class BatchContainer {
                                batch_container.num_hru_per_batch_),
                inspector.field("batches_remaining", 
                                batch_container.batches_remaining_),
-               inspector.field("batch_list", batch_container.batch_list_),
-               inspector.field("logger", batch_container.logger_));
+               inspector.field("batch_list", batch_container.batch_list_));
+              //  inspector.field("logger", batch_container.logger_));
     }
 
 

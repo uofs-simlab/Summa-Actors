@@ -11,40 +11,46 @@
 #include <unistd.h>
 #include <limits.h>
 
-namespace caf {
 
-struct summa_client_state {
-  strong_actor_ptr current_server = nullptr;
-  actor current_server_actor;
-  std::vector<strong_actor_ptr> servers;
+class SummaClient {
+  caf::event_based_actor* self_;
+
+  caf::strong_actor_ptr current_server_ = nullptr;
+  caf::actor current_server_actor_;
+  std::vector<caf::strong_actor_ptr> servers_;
   
-  std::string hostname;
-  actor summa_actor_ref;
-  uint16_t port;
-  int batch_id;
-  int client_id; // id held by server
-  bool running = false; // initalized to false - flipped to true when client returns behavior summa_client
+  std::string hostname_;
+  caf::actor summa_actor_ref_;
+  uint16_t port_;
+  int batch_id_;
+  int client_id_; // id held by server
+  bool running_ = false; // initalized to false - flipped to true when client returns behavior summa_client
 
 
   // tuple is the actor ref and hostname of the backup server
-  std::vector<std::tuple<caf::actor, std::string>> backup_servers_list;
+  std::vector<std::tuple<caf::actor, std::string>> backup_servers_list_;
 
-  Batch current_batch;
-  bool saved_batch = false;
+  Batch current_batch_;
+  bool saved_batch_ = false;
   
-  Distributed_Settings distributed_settings;
+  DistributedSettings distributed_settings_;
 
-  Summa_Actor_Settings summa_actor_settings;
-  File_Access_Actor_Settings file_access_actor_settings;
-  Job_Actor_Settings job_actor_settings;
-  HRU_Actor_Settings hru_actor_settings;
+  // SummaActorSettings summa_actor_settings_;
+  // FileAccessActorSettings file_access_actor_settings_;
+  // JobActorSettings job_actor_settings_;
+  // HRUActorSettings hru_actor_settings_;
+  Settings settings_;
+  public:
+    SummaClient(caf::event_based_actor* self, DistributedSettings distributed_settings) 
+    : self_(self), distributed_settings_(distributed_settings) {};
+
+    caf::behavior make_behavior();
 };
 
-behavior summa_client(stateful_actor<summa_client_state>* self, Distributed_Settings Distributed_Settings);
+//behavior summa_client(stateful_actor<summa_client_state>* self, DistributedSettings Distributed_Settings);
 
-void connecting(stateful_actor<summa_client_state>*, const std::string& host, uint16_t port);
+// void connecting(stateful_actor<summa_client_state>*, const std::string& host, uint16_t port);
 
-void findLeadServer(stateful_actor<summa_client_state>* self, strong_actor_ptr serv);
+// void findLeadServer(stateful_actor<summa_client_state>* self, strong_actor_ptr serv);
 
 
-}
