@@ -10,11 +10,12 @@ class BatchContainer {
     int total_hru_count_;
     int num_hru_per_batch_;
     int batches_remaining_;
-    std::vector<Batch> batch_list_;
-    // std::unique_ptr<Logger> logger_;
     
     void assembleBatches(std::string log_dir);
-    
+  protected:
+    std::vector<Batch> batch_list_;
+    std::unique_ptr<Logger> logger_;
+  
   public:
         
     // Initialize BatchContainer -- call assembleBatches() 
