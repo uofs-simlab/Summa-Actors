@@ -16,15 +16,14 @@ jobs:
         working-directory: ./
     steps:
       - uses: actions/checkout@v4  # checkout SUMMA-Actors repo
-      - run: echo "Check Runner Packages"
-      - run: gfortran --version    # check for gfortran compiler
-      - run: g++ --version         # check for g++ compiler
-      - run: curl --version        # check for curl
-      - run: wget --version        # check for wget
-      - run: echo "Changing Directory to utils/dependencies"
-      - run: cd ./utils/dependencies
-      - run: echo "Install LAPACK"
-      - run: ./install_lapack.sh   # install LAPACK
+      - name: "Check Runner Packages"
+        run: gfortran --version    # check for gfortran compiler
+        run: g++ --version         # check for g++ compiler
+        run: curl --version        # check for curl
+        run: wget --version        # check for wget
+      - name: echo "Install LAPACK"
+        working-directory: ./utils/dependencies
+        run: ./install_lapack.sh   # install LAPACK
       
   #Check-Runner-Packages:
   #  name: Check Runner Packages
