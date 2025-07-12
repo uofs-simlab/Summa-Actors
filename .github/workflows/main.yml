@@ -17,10 +17,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4  # checkout SUMMA-Actors repo
       - name: "Check Runner Packages"
-        run: gfortran --version    # check for gfortran compiler
-        run: g++ --version         # check for g++ compiler
-        run: curl --version        # check for curl
-        run: wget --version        # check for wget
+        run: |
+          gfortran --version    # check for gfortran compiler
+          g++ --version         # check for g++ compiler
+          curl --version        # check for curl
+          wget --version        # check for wget
       - name: echo "Install LAPACK"
         working-directory: ./utils/dependencies
         run: ./install_lapack.sh   # install LAPACK
