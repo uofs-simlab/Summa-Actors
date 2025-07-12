@@ -15,6 +15,7 @@ jobs:
         shell: bash
         working-directory: ./
     steps:
+      - uses: actions/checkout@v4  # checkout SUMMA-Actors repo
       - run: echo "Check Runner Packages"
       - run: gfortran --version    # check for gfortran compiler
       - run: g++ --version         # check for g++ compiler
