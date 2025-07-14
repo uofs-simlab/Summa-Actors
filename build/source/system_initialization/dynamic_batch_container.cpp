@@ -3,7 +3,7 @@
 DynamicBatchContainer::DynamicBatchContainer(int start_hru,
                                              int total_hru_count,
                                              std::string log_dir)
-  : BatchContainer(start_hru, 0, 0, log_dir),  // Do not pre-assemble batches
+  : BatchContainer(start_hru, total_hru_count, log_dir),  // Do not pre-assemble batches
     next_start_hru_(start_hru),
     remaining_hrus_(total_hru_count),
     next_batch_id_(0) {}

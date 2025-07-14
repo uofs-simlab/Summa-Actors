@@ -24,7 +24,7 @@ BatchContainer::BatchContainer(int start_hru, int total_hru_count,
 
 
 BatchContainer::BatchContainer(int start_hru, int total_hru_count, 
-                               , std::string log_dir) {
+                                std::string log_dir) {
   start_hru_ = start_hru;
   total_hru_count_ = total_hru_count;
   //num_hru_per_batch_ = num_hru_per_batch;
