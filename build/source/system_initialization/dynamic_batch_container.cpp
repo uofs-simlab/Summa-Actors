@@ -7,7 +7,8 @@ DynamicBatchContainer::DynamicBatchContainer(int start_hru,
     next_start_hru_(start_hru),
     remaining_hrus_(total_hru_count),
     next_batch_id_(0) {}
-std::optional<Batch> DynamicBatchContainer::getUnsolvedBatch() {
+
+    std::optional<Batch> DynamicBatchContainer::getUnsolvedBatch() {
   // First try existing unsolved batches from base class
   auto fallback = BatchContainer::getUnsolvedBatch();
   if (fallback.has_value()) {
@@ -30,7 +31,7 @@ std::optional<Batch> DynamicBatchContainer::getUnsolvedBatch(int size) {
   Batch new_batch(next_batch_id_, next_start_hru_, take);
   batch_list_.push_back(new_batch);
   batch_list_[next_batch_id_].updateAssigned(true);
-  logger_->log("Dynamic: Starting batch " + std::to_string(next_batch_id_));
+  //logger_->log("Dynamic: Starting batch " + std::to_string(next_batch_id_));
   ++next_batch_id_;
   next_start_hru_ += take;
   remaining_hrus_ -= take;

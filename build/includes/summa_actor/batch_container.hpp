@@ -14,7 +14,7 @@ class BatchContainer {
     void assembleBatches(std::string log_dir);
   protected:
     std::vector<Batch> batch_list_;
-    std::unique_ptr<Logger> logger_;
+    //std::unique_ptr<Logger> logger_;
   
   public:
         
