@@ -1,4 +1,5 @@
 #include "summa_client.hpp"
+#include "hardware_monitoring.hpp"
 using namespace caf;
 
 behavior SummaClient::make_behavior() {
@@ -21,7 +22,7 @@ behavior SummaClient::make_behavior() {
   }
 
   self_->mail(connect_to_server_v, self_, 
-             hostname_).send(current_server_actor_);
+             hostname_,getBatchSize()).send(current_server_actor_);
     return {
         // Response from the server on successful connection
         [=](connect_to_server, 
