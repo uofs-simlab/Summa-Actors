@@ -20,7 +20,7 @@ jobs:
         run: |
           gfortran --version    # check for gfortran compiler
           g++ --version         # check for g++ compiler
-          curl --version        # check for curl
+          curl --version        # check for cURL
           wget --version        # check for wget
       - name: Install LAPACK
         working-directory: ./utils/dependencies
