@@ -1,7 +1,7 @@
 name: Build test for SUMMA-Actors
 on:
   push:
-    branches: [ main ]
+    branches: [ main ] # trigger workflow for any push to main 
   schedule:
     - cron: "35 14 * * 1,4" # Monday and Thursday at 14:35 UTC
   workflow_dispatch: # for manually triggered workflow
