@@ -95,7 +95,7 @@ behavior SummaServer::summa_backup_server() {
         },
 
         // get the list of batches and clients from the lead server
-        [=](update_with_current_state, BatchContainer& batch_container, Client_Container& client_container) {
+        [=](update_with_current_state, DynamicBatchContainer& batch_container, Client_Container& client_container) {
             self_->println("\nReceived the containers from the lead server\n");
             batch_container_ = batch_container;
             client_container_ = client_container;
