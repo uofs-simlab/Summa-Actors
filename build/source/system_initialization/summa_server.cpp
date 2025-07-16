@@ -59,7 +59,7 @@ behavior SummaServer::summa_server() {
 
       if (client.has_value()) {
         self_->println("Client is already connected\n");
-        self_->println("Updating ", hostname, " with current backup servers\n");
+        self_->println("Updating {} with current backup servers", hostname);
         self_->mail(update_backup_server_list_v, 
                    backup_servers_list_).send(client.value().getActor());
         std::optional<Batch> batch = client.value().getBatch();
@@ -68,8 +68,7 @@ behavior SummaServer::summa_server() {
       } else {
         client_container_.addClient(client_actor, hostname);
         self_->monitor(client_actor, [this, source=client_actor.address()](const error& err) {
-          self_->println("\n\n ********** DOWN HANDLER ********** \n",
-               "Lost Connection With A Connected Actor\n");
+          self_->println("\n\n ********** DOWN HANDLER ********** \nLost Connection With A Connected Actor\n");
           std::optional<Client> client = 
           client_container_.getClient(source);
           if (client.has_value())
@@ -83,7 +82,7 @@ behavior SummaServer::summa_server() {
         std::optional<Batch> batch = batch_container_.getUnsolvedBatch();
         if (batch.has_value()) {
           client_container_.setBatchForClient(client_actor, batch);
-          self_->println("SENDING: ", batch.value().toString(), "\n");
+          self_->println("SENDING: {}", batch.value().toString());
           self_->mail(batch.value()).send(client_actor);
           for (auto& backup_server : backup_servers_list_) {
               caf::actor backup_server_actor = std::get<0>(backup_server);
@@ -116,14 +115,14 @@ behavior SummaServer::summa_server() {
         start_time_ = std::chrono::system_clock::now();
       }
 
-                 
+               
       // Check if the client is already connected
       std::optional<Client> client = 
           client_container_.getClient(client_actor.address());
 
       if (client.has_value()) {
         self_->println("Client is already connected\n");
-        self_->println("Updating ", hostname, " with current backup servers\n");
+        self_->println("Updating {} with current backup servers", hostname);
         self_->mail(update_backup_server_list_v, 
                    backup_servers_list_).send(client.value().getActor());
         std::optional<Batch> batch = client.value().getBatch();
@@ -147,7 +146,7 @@ behavior SummaServer::summa_server() {
         std::optional<Batch> batch = batch_container_.getUnsolvedBatch(batchSize);
         if (batch.has_value()) {
           client_container_.setBatchForClient(client_actor, batch);
-          self_->println("SENDING: ", batch.value().toString(), "\n");
+          self_->println("SENDING: {}\n", batch.value().toString());
           self_->mail(batch.value()).send(client_actor);
           for (auto& backup_server : backup_servers_list_) {
               caf::actor backup_server_actor = std::get<0>(backup_server);
@@ -166,11 +165,10 @@ behavior SummaServer::summa_server() {
       } 
     },
     
-       [=](connect_as_backup, actor backup_server, std::string hostname) {
-      self_->println("\nReceived Connection Request From a backup server ", hostname,  "\n");
+    [=](connect_as_backup, actor backup_server, std::string hostname) {
+      self_->println("\nReceived Connection Request From a backup server {}", hostname);
       self_->monitor(backup_server, [this, source=backup_server.address()](const error& err) {
-          self_->println("\n\n ********** DOWN HANDLER ********** \n",
-               "Lost Connection With A Connected Actor\n");
+          self_->println("\n\n ********** DOWN HANDLER ********** \nLost Connection With A Connected Actor\n");
           std::optional<Client> client = 
           client_container_.getClient(source);
           if (client.has_value())
@@ -195,8 +193,7 @@ behavior SummaServer::summa_server() {
     }, 
 
     [=](done_batch, actor client_actor, Batch& batch) {
-      self_->println("\nReceived Completed Batch From Client\n");
-      self_->println(batch.toString(), "\n\n");\
+      self_->println("\nReceived Completed Batch From Client\n{}\n\n", batch.toString());
       Client client = client_container_.getClient(client_actor.address()).value();
 
       batch_container_.updateBatch_success(batch, csv_file_path_, client.getHostname());
@@ -301,7 +298,7 @@ behavior SummaServer::summa_server_exit() {
   std::chrono::duration<double> elapsed_seconds = 
       end_time_ - start_time_;
 
-  self_->println("Elapsed Time: ", elapsed_seconds.count(), "s\n");
+  self_->println("Elapsed Time: {} s", elapsed_seconds.count());
   self_->quit();
   return {};
 }
@@ -322,9 +319,8 @@ void initializeCSVOutput(std::string csv_output_path) {
 }
 
 void SummaServer::printRemainingBatches() {
-  self_->println("******************\n Batches Remaining: ", 
-             batch_container_.getBatchesRemaining(),
-             "\n******************\n\n");
+  self_->println("******************\n Batches Remaining: {}\n******************\n\n", 
+             batch_container_.getBatchesRemaining());
 }
 
 void SummaServer::sendAllBackupServersList() {
@@ -343,8 +339,8 @@ void SummaServer::sendAllBackupServersList() {
 void SummaServer::findAndRemoveLostBackupServer(actor_addr lost_backup_server) {
   for (int i = 0; i < backup_servers_list_.size(); i++) {
     if (std::get<0>(backup_servers_list_[i]) == lost_backup_server) {
-      self_->println("Removed backup server with hostname: ",
-                 std::get<1>(backup_servers_list_[i]), "\n");
+      self_->println("Removed backup server with hostname: {}",
+                 std::get<1>(backup_servers_list_[i]));
       backup_servers_list_.erase(
         backup_servers_list_.begin() + i);
       break;
@@ -381,7 +377,7 @@ void SummaServer::notifyBackupServersOfRemovedClient(Client client) {
 }
 
 void SummaServer::resolveLostClient(Client client) {
-  self_->println("Lost Client: ", client.getHostname(), "\n");
+  self_->println("Lost Client: {}", client.getHostname());
   std::optional<Batch> batch = client.getBatch();
   batch_container_.setBatchUnassigned(batch.value());
   client_container_.removeClient(client);
