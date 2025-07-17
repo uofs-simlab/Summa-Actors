@@ -64,6 +64,7 @@ set(SYS_INIT
     ${SYS_INIT_DIR}/summa_actor.cpp
     ${SYS_INIT_DIR}/summa_backup_server.cpp
     ${SYS_INIT_DIR}/summa_client.cpp
+    ${SYS_INIT_DIR}/summa_gpu_client.cpp
     ${SYS_INIT_DIR}/summa_server.cpp
     CACHE INTERNAL "SYS_INIT")
 set(FILE_ACCESS_ACTOR

@@ -24,7 +24,11 @@ int Settings::readSettings() {
     getSettings<int>(json_settings, "Distributed_Settings", "total_hru_count")
         .value_or(0),
     getSettings<int>(json_settings, "Distributed_Settings", "num_hru_per_batch")
-        .value_or(0)
+        .value_or(0),
+    getSettings<std::string>(json_settings, "Distributed_Settings", "gpu_executable")
+        .value_or(""),
+    getSettings<std::string>(json_settings, "Distributed_Settings", "file_manager")
+        .value_or("")
   );
 
   summa_actor_settings_ = SummaActorSettings(
