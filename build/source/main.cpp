@@ -99,7 +99,7 @@ int caf_main(actor_system& sys, const config& cfg) {
     !settings.job_actor_settings_.data_assimilation_mode_) {
       cfg.server_mode ?
           self->spawn(actor_from_state<SummaServer>, settings, cfg.backup_server) :
-          self->spawn(actor_from_state<SummaClient>, settings.distributed_settings_);
+          self->spawn(actor_from_state<SummaClient>, settings.distributed_settings_, settings);
   }  else if (settings.distributed_settings_.distributed_mode_ &&
       settings.job_actor_settings_.data_assimilation_mode_) {
     

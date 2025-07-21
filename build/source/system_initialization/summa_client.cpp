@@ -34,11 +34,11 @@ behavior SummaClient::make_behavior() {
             
             self_->println("Successfully Connected to Server Actor \n"); 
             // summa_actor_settings_ = summa_actor_settings;
-            // file_access_actor_settings_ = file_access_actor_settings;
-            // job_actor_settings_ = job_actor_settings;
-            // hru_actor_settings_ = hru_actor_settings;
+            settings_.fa_actor_settings_ = settings.fa_actor_settings_;
+            settings_.job_actor_settings_ = settings.job_actor_settings_;
+            settings_.hru_actor_settings_ = settings.hru_actor_settings_;
             // backup_servers_list_ = backup_servers;
-            settings_ = settings;
+            // settings_.file_access_actor_settings_ = settings.file_access_actor_settings_;
         },
 
         [=] (connect_atom, const std::string& host, uint16_t port) {

@@ -41,8 +41,8 @@ class SummaClient {
   // HRUActorSettings hru_actor_settings_;
   Settings settings_;
   public:
-    SummaClient(caf::event_based_actor* self, DistributedSettings distributed_settings) 
-    : self_(self), distributed_settings_(distributed_settings) {};
+    SummaClient(caf::event_based_actor* self, DistributedSettings distributed_settings, Settings settings) 
+    : self_(self), distributed_settings_(distributed_settings), settings_(settings) {};
 
     caf::behavior make_behavior();
 };
