@@ -89,9 +89,9 @@ subroutine f_defOutput(handle_ncid, start_gru, num_gru, num_hru, file_gru, &
   nHRUrun = num_hru
   fileout = trim(OUTPUT_PATH)//trim(OUTPUT_PREFIX)//trim("_")//trim(output_fileSuffix)
   ncid(:) = integerMissing
-  call def_output(summaVersion, buildTime, gitBranch, gitHash, num_gru, &
-                  num_hru, gru_struc(1)%hruInfo(1)%nSoil, fileout, &
-                  err,message)
+ ! call def_output(summaVersion, buildTime, gitBranch, gitHash, num_gru, &
+ !                 num_hru, gru_struc(1)%hruInfo(1)%nSoil, fileout, &
+ !                 err,message)
   if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
   ! allocate space for the output file ID array
   if (.not.allocated(output_ncid%var))then
