@@ -22,6 +22,31 @@ BatchContainer::BatchContainer(int start_hru, int total_hru_count,
   // }
 }
 
+
+BatchContainer::BatchContainer(int start_hru, int total_hru_count, 
+                                std::string log_dir) {
+  start_hru_ = start_hru;
+  total_hru_count_ = total_hru_count;
+  //num_hru_per_batch_ = num_hru_per_batch;
+  if (!log_dir.empty() && log_dir.back() != '/') {
+    log_dir += "/"; // Ensure log_dir_ is a directory
+  }
+  //assembleBatches(log_dir);
+  //batches_remaining_ = batch_list_.size();
+
+  // Initialize logger
+  // if (!log_dir.empty()) {
+  //   logger_ = std::make_unique<Logger>(log_dir + "batch_container");
+  //   logger_->log("----------------Batch List----------------");
+  //   logger_->log(this->getBatchesAsString());
+  //   logger_->log("------------------------------------------");
+  // } else {
+  //   logger_ = std::make_unique<Logger>("");
+  // }
+}
+
+
+
 void BatchContainer::assembleBatches(std::string log_dir) {
   int remaining_hru_to_batch = total_hru_count_;
   int batch_id = 0;

@@ -3,6 +3,7 @@
 
 #include "batch.hpp"
 #include "batch_container.hpp"
+#include "dynamic_batch_container.hpp"
 
 #include "client.hpp"
 #include "client_container.hpp"
@@ -208,6 +209,7 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     CAF_ADD_TYPE_ID(summa, (Client_Container))
     CAF_ADD_TYPE_ID(summa, (Batch))
     CAF_ADD_TYPE_ID(summa, (BatchContainer))
+    CAF_ADD_TYPE_ID(summa, (DynamicBatchContainer))
     CAF_ADD_TYPE_ID(summa, (Logger))
 
     CAF_ADD_TYPE_ID(summa, (std::vector<std::vector<double>>))

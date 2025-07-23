@@ -8,6 +8,7 @@
 #include "client_container.hpp"
 #include "settings_functions.hpp"
 #include "message_atoms.hpp"
+#include "dynamic_batch_container.hpp"
 #include <string>
 #include <optional>
 #include <thread>
@@ -35,7 +36,7 @@ class SummaServer {
 
   // Containers
   Client_Container client_container_;
-  BatchContainer batch_container_;
+  DynamicBatchContainer batch_container_;
   // Actor Reference, Hostname
   std::vector<std::tuple<caf::actor, std::string>> backup_servers_list_;
 
