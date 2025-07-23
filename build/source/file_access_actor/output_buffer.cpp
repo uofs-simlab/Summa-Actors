@@ -161,8 +161,8 @@ const std::optional<WriteOutputReturn*> OutputPartition::writeOutput(
     std::unique_ptr<char[]> message(new char[256]);
     bool write_params = isWriteParams();
     
-    writeOutput_fortran(handle_ncid, num_steps_buffer_, start_gru_, end_gru_, 
-                        write_params, err, &message);
+    //writeOutput_fortran(handle_ncid, num_steps_buffer_, start_gru_, end_gru_, 
+     //                   write_params, err, &message);
     
     // recalculate the number of steps to send to grus
     steps_remaining_ -= num_steps_buffer_;
@@ -192,8 +192,8 @@ const std::optional<WriteOutputReturn*> OutputPartition::writeOutput(
     int err = 0;
     std::unique_ptr<char[]> message(new char[256]);
     bool write_params = isWriteParams();
-    writeOutput_fortran(handle_ncid, num_steps_buffer_, start_gru_, end_gru_, 
-                        write_params, err, &message);
+    //writeOutput_fortran(handle_ncid, num_steps_buffer_, start_gru_, end_gru_, 
+    //                    write_params, err, &message);
     // recalculate the number of steps to send to grus
     steps_remaining_ -= num_steps_buffer_;
     if (steps_remaining_ < num_steps_buffer_) {
