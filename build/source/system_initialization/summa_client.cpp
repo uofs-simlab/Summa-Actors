@@ -35,11 +35,11 @@ behavior SummaClient::make_behavior() {
             
             self_->println("Successfully Connected to Server Actor \n"); 
             // summa_actor_settings_ = summa_actor_settings;
-            // file_access_actor_settings_ = file_access_actor_settings;
-            // job_actor_settings_ = job_actor_settings;
-            // hru_actor_settings_ = hru_actor_settings;
+            settings_.fa_actor_settings_ = settings.fa_actor_settings_;
+            settings_.job_actor_settings_ = settings.job_actor_settings_;
+            settings_.hru_actor_settings_ = settings.hru_actor_settings_;
             // backup_servers_list_ = backup_servers;
-            settings_ = settings;
+            // settings_.file_access_actor_settings_ = settings.file_access_actor_settings_;
         },
 
         [=] (connect_atom, const std::string& host, uint16_t port) {
@@ -96,9 +96,9 @@ behavior SummaClient::make_behavior() {
         [=](Batch& batch) {
             current_batch_ = batch;
             self_->println("\nReceived batch to compute\n");
-            self_->println("BatchID = ", current_batch_.getBatchID(), "\n");
-            self_->println("StartHRU = ", current_batch_.getStartHRU(), "\n");
-            self_->println("NumHRU = ", current_batch_.getNumHRU(), "\n");
+            self_->println("BatchID = {}", current_batch_.getBatchID());
+            self_->println("StartHRU = {}", current_batch_.getStartHRU());
+            self_->println("NumHRU = {}", current_batch_.getNumHRU());
 
             summa_actor_ref_ = self_->spawn(actor_from_state<SummaActor>, 
                 current_batch_.getStartHRU(), 
@@ -114,9 +114,9 @@ behavior SummaClient::make_behavior() {
         // Received completed batch information from the summa_actor 
         [=](done_batch, double run_time, double read_time, double write_time) {
             self_->println("Summa_Actor has finished, sending message to the server for another batch\n");
-            self_->println("run_time = ", run_time, "\n");
-            self_->println("read_time = ", read_time, "\n");
-            self_->println("write_time = ", write_time, "\n");
+            self_->println("run_time = {}", run_time);
+            self_->println("read_time = {}", read_time);
+            self_->println("write_time = {}", write_time);
 
             current_batch_.updateRunTime(run_time);
             current_batch_.updateReadTime(read_time);
