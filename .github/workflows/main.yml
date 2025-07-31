@@ -1,0 +1,44 @@
+name: Build test for SUMMA-Actors
+on:
+  push:
+    branches: [ main ] # trigger workflow for any push to main 
+  schedule:
+    - cron: "35 14 * * 1,4" # Monday and Thursday at 14:35 UTC
+  workflow_dispatch: # for manually triggered workflow
+
+jobs:
+  Build-SUMMA-Actors:
+    name: Build SUMMA-Actors
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./
+    steps:
+      - uses: actions/checkout@v4  # checkout SUMMA-Actors repo
+      - name: Check Runner Packages
+        run: |
+          gfortran --version    # check for gfortran compiler
+          g++ --version         # check for g++ compiler
+          curl --version        # check for cURL
+          wget --version        # check for wget
+      - name: Install LAPACK
+        working-directory: ./utils/dependencies
+        run: ./install_lapack.sh
+      - name: Install NetCDF
+        working-directory: ./utils/dependencies
+        run: |
+          sudo apt install libcurl4-openssl-dev # install cURL development headers
+          ./install_netcdf.sh
+      - name: Install CAF
+        working-directory: ./utils/dependencies
+        run: ./install_caf.sh
+      - name: Install SUNDIALS
+        working-directory: ./utils/dependencies
+        run: ./install_sundials.sh
+      - name: Clone SUMMA
+        working-directory: ./build
+        run: git clone -b develop_sundials https://github.com/CH-Earth/summa.git
+      - name: Build SUMMA-Actors
+        working-directory: ./build/build_scripts
+        run: ./build.sh

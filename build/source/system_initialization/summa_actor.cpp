@@ -197,6 +197,8 @@ void SummaActor::finalize() {
                  total_dur_sec, total_dur_min, total_dur_hr, read_dur_sec, 
                  write_dur_sec, num_gru_failed_);
 
+  self_->mail(done_batch_v, total_dur_sec, read_dur_sec, write_dur_sec).send(parent_);
+
 }
 
 

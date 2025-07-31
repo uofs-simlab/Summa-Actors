@@ -56,13 +56,13 @@ set(ACTORS_GLOBAL
 set(SYS_INIT
     ${SYS_INIT_DIR}/batch.cpp
     ${SYS_INIT_DIR}/batch_container.cpp
-    # ${SYS_INIT_DIR}/client.cpp
-    # ${SYS_INIT_DIR}/client_container.cpp
+    ${SYS_INIT_DIR}/client.cpp
+    ${SYS_INIT_DIR}/client_container.cpp
     ${SYS_INIT_DIR}/summa_global_data.cpp
     ${SYS_INIT_DIR}/summa_actor.cpp
-    # ${SYS_INIT_DIR}/summa_backup_server.cpp
-    # ${SYS_INIT_DIR}/summa_client.cpp
-    # ${SYS_INIT_DIR}/summa_server.cpp
+    ${SYS_INIT_DIR}/summa_backup_server.cpp
+    ${SYS_INIT_DIR}/summa_client.cpp
+    ${SYS_INIT_DIR}/summa_server.cpp
     CACHE INTERNAL "SYS_INIT")
 set(FILE_ACCESS_ACTOR
     ${FILE_ACCESS_DIR}/summa_init_struc.cpp
@@ -77,6 +77,7 @@ set(JOB_ACTOR
     ${JOB_ACTOR_DIR}/da_server_actor.cpp
     ${JOB_ACTOR_DIR}/da_client_actor.cpp
     # ${JOB_ACTOR_DIR}/node_actor.cpp
+    # ${JOB_ACTOR_DIR}/distributed_job_actor.cpp
     CACHE INTERNAL "JOB_ACTOR")
 set(GRU_ACTOR
     ${GRU_ACTOR_DIR}/gru_actor.cpp

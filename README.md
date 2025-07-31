@@ -1,4 +1,4 @@
-# SUMMA-Actors: Structure for Unifying Multiple Modeling Alternatives with Actors
+# SUMMA-Actors: Structure for Unifying Multiple Modeling Alternatives with Actors [![Build test for SUMMA-Actors](https://github.com/uofs-simlab/Summa-Actors/actions/workflows/main.yml/badge.svg)](https://github.com/uofs-simlab/Summa-Actors/actions/workflows/main.yml)
 SUMMA-Actors is a powerful extension of the existing [SUMMA](https://github.com/CH-Earth/summa#readme) hydrological modeling framework, designed to leverage the Actor Model for enhanced scalability and fault-tolerance. SUMMA-Actors is built using the [C++ Actor Framework](https://github.com/actor-framework/actor-framework) and the key highlights include:
   * Scalability: Actors process messages concurrenty, effortlessly scaling to thousands of HRUs/GRUs.
   * Fault-Tolerance: Individual HRUs/GRUs can fail without affecting the rest of the simulation.

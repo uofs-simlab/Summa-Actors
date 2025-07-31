@@ -1,138 +1,138 @@
 #include "summa_client.hpp"
-namespace caf {
+using namespace caf;
 
-behavior summa_client(stateful_actor<summa_client_state>* self,
-                      Distributed_Settings distributed_settings) {
-  self->state.running = true;
-  self->state.distributed_settings = distributed_settings;
+behavior SummaClient::make_behavior() {
+  running_ = true;
   char host[HOST_NAME_MAX];
   gethostname(host, HOST_NAME_MAX);
-  self->state.hostname = host;
+  hostname_ = host;
 
-  self->set_down_handler([=](const down_msg& dm){
-    if(dm.source == self->state.current_server) {
-      aout(self) << "*** Lost Connection to Server" << std::endl;
-      self->state.current_server = nullptr;
-      // try to connect to new server
-      if (self->state.backup_servers_list.size() > 0) {
-        aout(self) << "Trying to connect to backup server\n";
-        std::this_thread::sleep_for(std::chrono::seconds(3)); 
-        // TODO: Not obvious where the code goes from here. 
-        // connecting(self, std::get<1>(self->state.backup_servers_list[0]), 
-        //            self->state.port);
-
-      } else {
-        aout(self) << "No backup servers available" << std::endl;
-      }
-    }
-  });
-
-  for (auto host : distributed_settings.servers_list) {
-    auto server = self->system().middleman().remote_actor(host, 
-                                           distributed_settings.port);
+  for (auto host : distributed_settings_.servers_list_) {
+    auto server = self_->system().middleman().remote_actor(host, 
+                                           distributed_settings_.port_);
     if (!server) {
-      aout(self) << "Failed To Connect To Server\n"; 
+      self_->println("Failed To Connect To Server\n"); 
       return {};
     }
-    aout(self) << "Connected to Server\n";
+    self_->println("Connected to Server\n");
     // self->state.servers.push_back(server);
-    self->state.current_server_actor = *server;
-    self->state.current_server = actor_cast<strong_actor_ptr>(*server);
+    current_server_actor_ = *server;
+    current_server_ = actor_cast<strong_actor_ptr>(*server);
   }
 
-  self->send(self->state.current_server_actor, connect_to_server_v, self, 
-             self->state.hostname);
+  self_->mail(connect_to_server_v, self_, 
+             hostname_).send(current_server_actor_);
     return {
         // Response from the server on successful connection
         [=](connect_to_server, 
-            Summa_Actor_Settings summa_actor_settings, 
-            File_Access_Actor_Settings file_access_actor_settings,
-            Job_Actor_Settings job_actor_settings, 
-            HRU_Actor_Settings hru_actor_settings,
+            Settings settings,
+            // SummaActorSettings summa_actor_settings, 
+            // FileAccessActorSettings file_access_actor_settings,
+            // JobActorSettings job_actor_settings, 
+            // HRUActorSettings hru_actor_settings,
             std::vector<std::tuple<caf::actor, std::string>> backup_servers) {
             
-            aout(self) << "Successfully Connected to Server Actor \n"; 
-            self->state.summa_actor_settings = summa_actor_settings;
-            self->state.file_access_actor_settings = file_access_actor_settings;
-            self->state.job_actor_settings = job_actor_settings;
-            self->state.hru_actor_settings = hru_actor_settings;
-            self->state.backup_servers_list = backup_servers;
+            self_->println("Successfully Connected to Server Actor \n"); 
+            // summa_actor_settings_ = summa_actor_settings;
+            settings_.fa_actor_settings_ = settings.fa_actor_settings_;
+            settings_.job_actor_settings_ = settings.job_actor_settings_;
+            settings_.hru_actor_settings_ = settings.hru_actor_settings_;
+            // backup_servers_list_ = backup_servers;
+            // settings_.file_access_actor_settings_ = settings.file_access_actor_settings_;
         },
 
         [=] (connect_atom, const std::string& host, uint16_t port) {
-            aout(self) << "Received a connect request while running\n";
+            self_->println("Received a connect request while running\n");
             // connecting(self, host, port);
         },
 
         [=] (is_lead_server, bool is_server, actor server_actor) {
             if (is_server) {
-                aout(self) << "This is the lead server" << std::endl;
-                self->monitor(server_actor);
-                self->state.current_server_actor = server_actor;
-                for(auto& server : self->state.servers) {
+                self_->println("This is the lead server");
+                // TODO update monitor here
+                self_->monitor(server_actor, [this, serv=server_actor](const error& err) {
+                    if (serv == current_server_) {
+                        self_->println("*** Lost Connection to Server");
+                        current_server_ = nullptr;
+                        // try to connect to new server
+                        if (backup_servers_list_.size() > 0) {
+                        self_->println("Trying to connect to backup server\n");
+                        std::this_thread::sleep_for(std::chrono::seconds(3)); 
+                        // TODO: Not obvious where the code goes from here. 
+                        // connecting(self, std::get<1>(self->state.backup_servers_list[0]), 
+                        //            self->state.port);
+
+                        } else {
+                            self_->println("No backup servers available");
+
+                        }
+                    }
+                });
+                current_server_actor_ = server_actor;
+                for(auto& server : servers_) {
                     if(actor_cast<actor>(server) == server_actor ) {
-                        aout(self) << "Found Match\n";
-                        self->state.current_server = server;
-                        if (self->state.saved_batch) {
-                            self->state.saved_batch = false;
-                            self->send(self->state.current_server_actor, done_batch_v, self, self->state.current_batch);
+                        self_->println("Found Match\n");
+                        current_server_ = server;
+                        if (saved_batch_) {
+                            saved_batch_ = false;
+                            self_->mail(done_batch_v, self_, current_batch_).send(current_server_actor_);
                         }
                     }
                 }
-                self->state.servers.clear();
-                self->send(self->state.current_server_actor, connect_to_server_v, self, self->state.hostname);
+                servers_.clear();
+                self_->mail(connect_to_server_v, self_, hostname_).send(current_server_actor_);
             } else {
-                aout(self) << "This is not the lead server" << std::endl;
+                self_->println("This is not the lead server");
             }
         },
 
         [=](update_backup_server_list, std::vector<std::tuple<caf::actor, std::string>> backup_servers) {
-            aout(self) << "Received the backup server list from the server\n";
-            self->state.backup_servers_list = backup_servers;
+            self_->println("Received the backup server list from the server\n");
+            backup_servers_list_ = backup_servers;
         },
 
         // Received batch from server to compute
         [=](Batch& batch) {
-            self->state.current_batch = batch;
-            aout(self) << "\nReceived batch to compute\n";
-            aout(self) << "BatchID = " << self->state.current_batch.getBatchID() << "\n";
-            aout(self) << "StartHRU = " << self->state.current_batch.getStartHRU() << "\n";
-            aout(self) << "NumHRU = " << self->state.current_batch.getNumHRU() << "\n";
+            current_batch_ = batch;
+            self_->println("\nReceived batch to compute\n");
+            self_->println("BatchID = {}", current_batch_.getBatchID());
+            self_->println("StartHRU = {}", current_batch_.getStartHRU());
+            self_->println("NumHRU = {}", current_batch_.getNumHRU());
 
-            self->state.summa_actor_ref = self->spawn(summa_actor, 
-                self->state.current_batch.getStartHRU(), 
-                self->state.current_batch.getNumHRU(), 
-                self->state.summa_actor_settings,
-                self->state.file_access_actor_settings,
-                self->state.job_actor_settings,
-                self->state.hru_actor_settings,
-                self);
+            summa_actor_ref_ = self_->spawn(actor_from_state<SummaActor>, 
+                current_batch_.getStartHRU(), 
+                current_batch_.getNumHRU(), 
+                settings_,
+                // summa_actor_settings_,
+                // file_access_actor_settings_,
+                // job_actor_settings_,
+                // hru_actor_settings_,
+                self_);
         },
         
         // Received completed batch information from the summa_actor 
         [=](done_batch, double run_time, double read_time, double write_time) {
-            aout(self) << "Summa_Actor has finished, sending message to the server for another batch\n";
-            aout(self) << "run_time = " << run_time << "\n";
-            aout(self) << "read_time = " << read_time << "\n";
-            aout(self) << "write_time = " << write_time << "\n";
+            self_->println("Summa_Actor has finished, sending message to the server for another batch\n");
+            self_->println("run_time = {}", run_time);
+            self_->println("read_time = {}", read_time);
+            self_->println("write_time = {}", write_time);
 
-            self->state.current_batch.updateRunTime(run_time);
-            self->state.current_batch.updateReadTime(read_time);
-            self->state.current_batch.updateWriteTime(write_time);
+            current_batch_.updateRunTime(run_time);
+            current_batch_.updateReadTime(read_time);
+            current_batch_.updateWriteTime(write_time);
 
-            if(self->state.current_server == nullptr) {
-                aout(self) << "Saving batch until we find a new lead server\n";
-                self->state.saved_batch = true;
+            if(current_server_ == nullptr) {
+                self_->println("Saving batch until we find a new lead server\n");
+                saved_batch_ = true;
             } else {
-                self->send(self->state.current_server_actor, done_batch_v, self, self->state.current_batch);
+                self_->mail(done_batch_v, self_, current_batch_).send(current_server_actor_);
             }
         },
 
         [=](time_to_exit) {
-            aout(self) << "Client Exiting\n";
-            self->quit();
+            self_->println("Client Exiting\n");
+            self_->quit();
         }
         
     };
-}
 }

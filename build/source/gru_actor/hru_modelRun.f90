@@ -131,20 +131,21 @@ subroutine runPhysics(indxGRU, indxHRU, modelTimeStep, hru_data, &
       ! (compute the exposed LAI and SAI and whether veg is buried by snow)
       call vegPhenlgy(&
                       ! model control
-                      model_decisions,        & ! intent(in):    model decisions
-                      hru_data%fracJulDay,    & ! intent(in):    fractional julian days since the start of year
-                      hru_data%yearLength,    & ! intent(in):    number of days in the current year
+                      gru_struc(indxGRU)%hruInfo(indxHRU)%nSnow,& ! intent(in):    number of snow layers
+                      model_decisions,                          & ! intent(in):    model decisions
+                      hru_data%fracJulDay,                      & ! intent(in):    fractional julian days since the start of year
+                      hru_data%yearLength,                      & ! intent(in):    number of days in the current year
                       ! input/output: data structures
-                      hru_data%typeStruct,    & ! intent(in):    type of vegetation and soil
-                      hru_data%attrStruct,    & ! intent(in):    spatial attributes
-                      hru_data%mparStruct,    & ! intent(in):    model parameters
-                      hru_data%progStruct,    & ! intent(in):    model prognostic variables for a local HRU
-                      hru_data%diagStruct,    & ! intent(inout): model diagnostic variables for a local HRU
+                      hru_data%typeStruct,                      & ! intent(in):    type of vegetation and soil
+                      hru_data%attrStruct,                      & ! intent(in):    spatial attributes
+                      hru_data%mparStruct,                      & ! intent(in):    model parameters
+                      hru_data%progStruct,                      & ! intent(in):    model prognostic variables for a local HRU
+                      hru_data%diagStruct,                      & ! intent(inout): model diagnostic variables for a local HRU
                       ! output
-                      computeVegFluxFlag,     & ! intent(out): flag to indicate if we are computing fluxes over vegetation (.false. means veg is buried with snow)
-                      notUsed_canopyDepth,    & ! intent(out): NOT USED: canopy depth (m)
-                      notUsed_exposedVAI,     & ! intent(out): NOT USED: exposed vegetation area index (m2 m-2)
-                      err,cmessage)                     ! intent(out): error control
+                      computeVegFluxFlag,                       & ! intent(out): flag to indicate if we are computing fluxes over vegetation (.false. means veg is buried with snow)
+                      notUsed_canopyDepth,                      & ! intent(out): NOT USED: canopy depth (m)
+                      notUsed_exposedVAI,                       & ! intent(out): NOT USED: exposed vegetation area index (m2 m-2)
+                      err,cmessage)                               ! intent(out): error control
       if(err/=0)then;message=trim(message)//trim(cmessage); return; endif
 
     

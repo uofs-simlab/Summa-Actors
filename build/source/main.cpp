@@ -5,6 +5,8 @@
 #include "summa_actor.hpp"
 #include "da_server_actor.hpp"
 #include "da_client_actor.hpp"
+#include "summa_server.hpp"
+#include "summa_client.hpp"
 #include "message_atoms.hpp"
 #include <iostream>
 #include <fstream>
@@ -95,7 +97,12 @@ int caf_main(actor_system& sys, const config& cfg) {
   if (cfg.output_file_suffix != "")
     settings.fa_actor_settings_.output_file_suffix_ = cfg.output_file_suffix;
 
-  if (settings.distributed_settings_.distributed_mode_ &&
+  if (settings.distributed_settings_.distributed_mode_ && 
+    !settings.job_actor_settings_.data_assimilation_mode_) {
+      cfg.server_mode ?
+          self->spawn(actor_from_state<SummaServer>, settings, cfg.backup_server) :
+          self->spawn(actor_from_state<SummaClient>, settings.distributed_settings_, settings);
+  }  else if (settings.distributed_settings_.distributed_mode_ &&
       settings.job_actor_settings_.data_assimilation_mode_) {
     
     cfg.server_mode ? 
