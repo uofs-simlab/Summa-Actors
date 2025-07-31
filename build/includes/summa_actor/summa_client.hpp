@@ -40,9 +40,11 @@ class SummaClient {
   // JobActorSettings job_actor_settings_;
   // HRUActorSettings hru_actor_settings_;
   Settings settings_;
+    std::string restart_;
+
   public:
-    SummaClient(caf::event_based_actor* self, DistributedSettings distributed_settings, Settings settings) 
-    : self_(self), distributed_settings_(distributed_settings), settings_(settings) {};
+    SummaClient(caf::event_based_actor* self, DistributedSettings distributed_settings, Settings settings, std::string restart) 
+    : self_(self), distributed_settings_(distributed_settings), settings_(settings), restart_(restart) {};
 
     caf::behavior make_behavior();
 };

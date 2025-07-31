@@ -107,7 +107,7 @@ behavior SummaClient::make_behavior() {
                 // file_access_actor_settings_,
                 // job_actor_settings_,
                 // hru_actor_settings_,
-                self_);
+                self_, restart_);
         },
         
         // Received completed batch information from the summa_actor 
