@@ -208,7 +208,6 @@ class HRUActorSettings {
         bool print_output = false, 
         int output_frequency = 100,
         int be_steps = MISSING_INT,
-      int restart_frequency_ = 0,
         double rel_tol = 0.0, 
         double rel_tol_temp_cas =0.0,
         double rel_tol_temp_veg = 0.0, 
@@ -227,7 +226,8 @@ class HRUActorSettings {
         double abs_tol_wat_snow = 0.0, 
         double abs_tol_matric = 0.0,
         double abs_tol_aquifr = 0.0, 
-        bool default_tol = false) 
+        bool default_tol = false,
+        int restart_frequency_ = 0) 
         : print_output_(print_output), 
           output_frequency_(output_frequency), 
           be_steps_(be_steps),
