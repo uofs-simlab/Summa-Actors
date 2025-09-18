@@ -214,8 +214,7 @@ subroutine setupGRU(iGRU, err, message)
     
     ! miscellaneous variables
     nGRU                 => init_struc%nGRU              , & ! number of grouped response units
-    nHRU                 => init_struc%nHRU              , & ! number of global hydrologic response units
-    hruCount             => init_struc%hruCount              & ! number of local hydrologic response units
+    nHRU                 => init_struc%nHRU               & ! number of global hydrologic response units
   )
 
 #ifdef V4_ACTIVE
