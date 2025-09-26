@@ -153,8 +153,6 @@ subroutine runPhysics(indxGRU, indxHRU, modelTimeStep, hru_data, &
       if(computeVegFluxFlag)      hru_data%computeVegFlux = yes
       if(.not.computeVegFluxFlag) hru_data%computeVegFlux = no
       
-      ! define the green vegetation fraction of the grid box (used to compute LAI)
-      hru_data%diagStruct%var(iLookDIAG%scalarGreenVegFraction)%dat(1) = greenVegFrac_monthly(hru_data%timeStruct%var(iLookTIME%im))
   end if  ! if the first time step
  
 
