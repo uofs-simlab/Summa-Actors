@@ -34,10 +34,10 @@ end subroutine f_getNumHruInGru
 
 subroutine f_setGruTolerances(handle_gru_data, be_steps, &
   ! Relative Tolerances
-  rel_tol, rel_tol_temp_cas, rel_tol_temp_veg, rel_tol_wat_veg, &
+  rel_tol_temp_cas, rel_tol_temp_veg, rel_tol_wat_veg, &
   rel_tol_temp_soil_snow, rel_tol_wat_snow, rel_tol_matric, rel_tol_aquifr, &
   ! Absolute Tolerances 
-  abs_tol, abs_tolWat, abs_tolNrg, abs_tol_temp_cas, abs_tol_temp_veg, &
+  abs_tol_temp_cas, abs_tol_temp_veg, &
   abs_tol_wat_veg, abs_tol_temp_snow_soil, abs_tol_wat_snow, abs_tol_matric, &
   abs_tol_aquifr)  bind(C, name="f_setGruTolerances")
 
@@ -49,7 +49,7 @@ subroutine f_setGruTolerances(handle_gru_data, be_steps, &
   type(c_ptr), intent(in),value   :: handle_gru_data
   integer(c_int), intent(in)      :: be_steps
   ! Relative Tolerances
-  real(c_double), intent(in)       :: rel_tol
+  ! real(c_double), intent(in)       :: rel_tol
   real(c_double), intent(inout)    :: rel_tol_temp_cas
   real(c_double), intent(inout)    :: rel_tol_temp_veg
   real(c_double), intent(inout)    :: rel_tol_wat_veg
@@ -58,9 +58,9 @@ subroutine f_setGruTolerances(handle_gru_data, be_steps, &
   real(c_double), intent(inout)    :: rel_tol_matric
   real(c_double), intent(inout)    :: rel_tol_aquifr
   ! Absolute Tolerances
-  real(c_double), intent(in)       :: abs_tol
-  real(c_double), intent(in)       :: abs_tolWat
-  real(c_double), intent(in)       :: abs_tolNrg
+  ! real(c_double), intent(in)       :: abs_tol
+  ! real(c_double), intent(in)       :: abs_tolWat
+  ! real(c_double), intent(in)       :: abs_tolNrg
   real(c_double), intent(inout)    :: abs_tol_temp_cas
   real(c_double), intent(inout)    :: abs_tol_temp_veg
   real(c_double), intent(inout)    :: abs_tol_wat_veg
@@ -75,32 +75,11 @@ subroutine f_setGruTolerances(handle_gru_data, be_steps, &
   type(gru_type),pointer :: gru_data
   call c_f_pointer(handle_gru_data, gru_data)
 
-  ! Apply default tol if flag is true
-  if (default_tol) then
-    rel_tol_temp_cas = rel_tol
-    rel_tol_temp_veg = rel_tol
-    rel_tol_wat_veg = rel_tol
-    rel_tol_temp_soil_snow = rel_tol
-    rel_tol_wat_snow = rel_tol
-    rel_tol_matric = rel_tol
-    rel_tol_aquifr = rel_tol
-    abs_tol_temp_cas = abs_tol
-    abs_tol_temp_veg = abs_tol
-    abs_tol_temp_snow_soil = abs_tol
-    abs_tol_wat_snow = abs_tol
-    abs_tol_wat_veg = abs_tol
-    abs_tol_matric = abs_tol
-    abs_tol_aquifr = abs_tol
-  end if
   do iHRU = 1, size(gru_data%hru)
     if (be_steps>0) then
       gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%be_steps)%dat(1) = be_steps
     end if
     ! Set rtols
-    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relConvTol_liquid)%dat(1) = rel_tol
-    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relConvTol_matric)%dat(1) = rel_tol
-    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relConvTol_energy)%dat(1) = rel_tol
-    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relConvTol_aquifr)%dat(1) = rel_tol
     gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relTolTempCas)%dat(1) = rel_tol_temp_cas
     gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relTolTempVeg)%dat(1) = rel_tol_temp_veg
     gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relTolWatVeg)%dat(1) = rel_tol_wat_veg
@@ -110,10 +89,6 @@ subroutine f_setGruTolerances(handle_gru_data, be_steps, &
     gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relTolAquifr)%dat(1) = rel_tol_aquifr
 
     ! Set atols
-    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absConvTol_liquid)%dat(1) = abs_tol 
-    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absConvTol_matric)%dat(1) = abs_tol 
-    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absConvTol_energy)%dat(1) = abs_tol 
-    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absConvTol_aquifr)%dat(1) = abs_tol 
     gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absTolTempCas)%dat(1) = abs_tol_temp_cas
     gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absTolTempVeg)%dat(1) = abs_tol_temp_veg
     gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absTolWatVeg)%dat(1) = abs_tol_wat_veg 

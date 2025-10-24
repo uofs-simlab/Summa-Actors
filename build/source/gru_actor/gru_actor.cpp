@@ -33,24 +33,22 @@ behavior GruActor::make_behavior() {
     return {};
   }
 
-  f_setGruTolerances(gru_data_.get(), hru_actor_settings_.be_steps_,
+  f_setGruTolerances(gru_data_.get(), tolerance_settings_.be_steps_,
       // Relative Tolerances
-      hru_actor_settings_.rel_tol_, hru_actor_settings_.rel_tol_temp_cas_,
-      hru_actor_settings_.rel_tol_temp_veg_, 
-      hru_actor_settings_.rel_tol_wat_veg_,
-      hru_actor_settings_.rel_tol_temp_soil_snow_, 
-      hru_actor_settings_.rel_tol_wat_snow_,
-      hru_actor_settings_.rel_tol_matric_, hru_actor_settings_.rel_tol_aquifr_,
+      tolerance_settings_.rel_tol_temp_cas_,
+      tolerance_settings_.rel_tol_temp_veg_, 
+      tolerance_settings_.rel_tol_wat_veg_,
+      tolerance_settings_.rel_tol_temp_soil_snow_, 
+      tolerance_settings_.rel_tol_wat_snow_,
+      tolerance_settings_.rel_tol_matric_, tolerance_settings_.rel_tol_aquifr_,
       // Absolute Tolerances
-      hru_actor_settings_.abs_tol_,
-      hru_actor_settings_.abs_tolWat_, hru_actor_settings_.abs_tolNrg_,
-      hru_actor_settings_.abs_tol_temp_cas_, 
-      hru_actor_settings_.abs_tol_temp_veg_,
-      hru_actor_settings_.abs_tol_wat_veg_, 
-      hru_actor_settings_.abs_tol_temp_soil_snow_,
-      hru_actor_settings_.abs_tol_wat_snow_, 
-      hru_actor_settings_.abs_tol_matric_,
-      hru_actor_settings_.abs_tol_aquifr_);
+      tolerance_settings_.abs_tol_temp_cas_, 
+      tolerance_settings_.abs_tol_temp_veg_,
+      tolerance_settings_.abs_tol_wat_veg_, 
+      tolerance_settings_.abs_tol_temp_soil_snow_,
+      tolerance_settings_.abs_tol_wat_snow_, 
+      tolerance_settings_.abs_tol_matric_,
+      tolerance_settings_.abs_tol_aquifr_);
 
   data_assimilation_mode_ ? self_->become(data_assimilation_mode()) :
                             self_->become(async_mode());
@@ -148,6 +146,7 @@ behavior GruActor::async_mode() {
         current_time.m = m;
         current_time.d = d;
         current_time.h = h;
+
         if (isCheckpoint()) {
           self_->mail(write_restart_v, job_index_, timestep_, output_step_, current_time.y, current_time.m, current_time.d, current_time.h)
             .send(file_access_actor_);

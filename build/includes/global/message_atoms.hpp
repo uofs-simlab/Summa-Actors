@@ -198,7 +198,8 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     CAF_ADD_TYPE_ID(summa, (JobActorSettings))
     CAF_ADD_TYPE_ID(summa, (HRUActorSettings))
     CAF_ADD_TYPE_ID(summa, (Settings))
-
+    CAF_ADD_TYPE_ID(summa, (ToleranceSettings))
+    
     CAF_ADD_TYPE_ID(summa, (HRU))
     CAF_ADD_TYPE_ID(summa, (std::vector<HRU>))
     CAF_ADD_TYPE_ID(summa, (NumGRUInfo))
