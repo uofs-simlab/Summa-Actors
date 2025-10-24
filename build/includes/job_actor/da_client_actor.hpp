@@ -22,6 +22,7 @@ class DAClientActor {
     caf::event_based_actor* self_;
     std::string host_;
     Settings settings_;
+    ToleranceSettings tolerance_settings_;
     std::string restart_;
 
     // member variables

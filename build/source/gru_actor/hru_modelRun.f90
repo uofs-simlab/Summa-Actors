@@ -369,22 +369,6 @@ end subroutine runPhysics
     hru_data%mparStruct%var(iLookPARAM%absTolAquifr)%dat(1) = atol_aquifr
   
     ! If the global default tolerance flag is set, then override the specific tolerances 
-    if (f_get_default_tol()) then
-      rtol_temp_cas = rtol
-      rtol_temp_veg = rtol
-      rtol_wat_veg = rtol
-      rtol_temp_soil_snow = rtol
-      rtol_wat_snow = rtol
-      rtol_matric = rtol
-      rtol_aquifr = rtol
-      atol_temp_cas = atol
-      atol_temp_veg = atol
-      atol_wat_veg = atol
-      atol_temp_soil_snow = atol
-      atol_wat_snow = atol
-      atol_matric = atol
-      atol_aquifr = atol
-    endif
   end subroutine set_sundials_tolerances
 
 ! ! *******************************************************************************************

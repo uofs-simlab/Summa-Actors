@@ -30,11 +30,11 @@ extern "C" {
       void* gru_data, int& err, void* message, int& year, int& month, int& day, int& hour);
   void f_setGruTolerances(void* gru_data, int& be_steps,
       // Relative Tolerances 
-      double& rel_tol, double& rel_tol_temp_cas, double& rel_tol_temp_veg, 
+      double& rel_tol_temp_cas, double& rel_tol_temp_veg, 
       double& rel_tol_wat_veg, double& rel_tol_temp_soil_snow, 
       double& rel_tol_wat_snow, double& rel_tol_matric, double& rel_tol_aquifr, 
       // Absolute Tolerances
-      double& abs_tol, double& abs_tolWat, double& abs_tolNrg,
+      // double& abs_tol, double& abs_tolWat, double& abs_tolNrg,
       double& abs_tol_temp_cas, double& abs_tol_temp_veg, 
       double& abs_tol_wat_veg, double& abs_tol_temp_soil_snow, 
       double& abs_tol_wat_snow, double& abs_tol_matric, 
@@ -60,6 +60,7 @@ class GruActor {
   int netcdf_index_;
   int job_index_;
   HRUActorSettings hru_actor_settings_;
+  ToleranceSettings tolerance_settings_;
   int num_steps_output_buffer_;
   caf::actor file_access_actor_;
   caf::actor parent_;
@@ -87,12 +88,12 @@ class GruActor {
     GruActor(caf::event_based_actor* self, int netcdf_index, int job_index, 
              int num_steps, HRUActorSettings hru_actor_settings, 
              bool data_assimilation_mode, int num_output_steps, 
-             caf::actor file_access_actor, caf::actor parent, std::string restart) 
+             caf::actor file_access_actor, caf::actor parent, std::string restart, ToleranceSettings tolerance_settings) 
              : self_(self), netcdf_index_(netcdf_index), job_index_(job_index), 
                num_steps_(num_steps), hru_actor_settings_(hru_actor_settings),
                data_assimilation_mode_(data_assimilation_mode),
                num_steps_output_buffer_(num_output_steps),
-               file_access_actor_(file_access_actor), parent_(parent), restart_(parse_restart(restart)) {};
+               file_access_actor_(file_access_actor), parent_(parent), restart_(parse_restart(restart)), tolerance_settings_(tolerance_settings) {};
 
     caf::behavior make_behavior();
     caf::behavior async_mode();

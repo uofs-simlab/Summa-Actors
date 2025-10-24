@@ -206,10 +206,10 @@ subroutine f_readRestart(err, message_r) bind(C, name="f_readRestart")
 
 end subroutine f_readRestart
 
-subroutine f_getInitTolerance(rtol, atol, rtol_temp_cas, rtol_temp_veg, rtol_wat_veg, &
+subroutine f_getInitTolerance(rtol_temp_cas, rtol_temp_veg, rtol_wat_veg, &
             rtol_temp_soil_snow, rtol_wat_snow, rtol_matric, rtol_aquifr, atol_temp_cas, &
             atol_temp_veg, atol_wat_veg, atol_temp_soil_snow, atol_wat_snow, atol_matric, & 
-            atol_aquifr, def_tol) &
+            atol_aquifr, def_tol, be_steps) &
     bind(C, name="f_getInitTolerance")
    USE globalData,only:model_decisions                         ! model decision structure
   USE var_lookup,only:iLookDECISIONS
@@ -221,9 +221,6 @@ subroutine f_getInitTolerance(rtol, atol, rtol_temp_cas, rtol_temp_veg, rtol_wat
 !   USE var_lookup,only:iLookPARAM                              ! lookup table for model parameters
   implicit none
   ! dummy variables
-  ! integer(c_int),       intent(out)       :: beSteps
-  real(c_double),       intent(out)       :: rtol 
-  real(c_double),       intent(out)       :: atol
   real(c_double),       intent(out)       :: rtol_temp_cas
   real(c_double),       intent(out)       :: rtol_temp_veg
   real(c_double),       intent(out)       :: rtol_wat_veg
@@ -239,12 +236,8 @@ subroutine f_getInitTolerance(rtol, atol, rtol_temp_cas, rtol_temp_veg, rtol_wat
   real(c_double),       intent(out)       :: atol_matric
   real(c_double),       intent(out)       :: atol_aquifr
   logical(c_bool),       intent(out)       :: def_tol
-  ! real(c_double),       intent(out)       :: atolWat
-  ! real(c_double),       intent(out)       :: atolNrg
+  integer(c_int), intent(out) :: be_steps
 
-  ! beSteps = -9999
-  rtol = -9999
-  atol = -9999
   rtol_temp_cas = -9999
   rtol_temp_veg = -9999
   rtol_temp_soil_snow = -9999
@@ -262,8 +255,6 @@ subroutine f_getInitTolerance(rtol, atol, rtol_temp_cas, rtol_temp_veg, rtol_wat
   def_tol = .true.
 #ifdef V4_ACTIVE
   if (model_decisions(iLookDECISIONS%num_method)%iDecision == 83) then
-    rtol = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolWatSnow)%dat(1)
-    atol = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolWatSnow)%dat(1)
     rtol_temp_cas = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolTempCas)%dat(1)
     rtol_temp_veg = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolTempveg)%dat(1)
     rtol_wat_snow = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolWatSnow)%dat(1)
@@ -278,9 +269,11 @@ subroutine f_getInitTolerance(rtol, atol, rtol_temp_cas, rtol_temp_veg, rtol_wat
     atol_wat_veg = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolWatVeg)%dat(1)
     atol_matric = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolMatric)%dat(1)
     atol_aquifr = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolAquifr)%dat(1)
+  end if
 
 #endif
-endif
+be_steps = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%be_steps)%dat(1)
+
 end subroutine f_getInitTolerance
 !   atolWat = -9999
 !   atolNrg = -9999
