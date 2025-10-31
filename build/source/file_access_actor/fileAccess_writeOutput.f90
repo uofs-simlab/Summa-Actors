@@ -557,6 +557,7 @@ subroutine writeScalar(ncid, outputTimestep, outputTimestepUpdate, nSteps, minGR
 
   err=0; message="writeOutput.f90-writeScalar/"
   realVec = realMissing
+  maxStepCounter = 0
 
   select type(stat)
     class is (gru_hru_time_doubleVec)
