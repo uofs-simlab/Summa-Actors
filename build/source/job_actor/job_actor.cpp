@@ -20,19 +20,17 @@ behavior JobActor::make_behavior() {
 
   // Create Loggers
   if (enable_logging_) {
-    logger_ = std::make_unique<Logger>(batch_.getLogDir() + "batch_" + 
-                                       std::to_string(batch_.getBatchID()));
-    err_logger_ = std::make_unique<ErrorLogger>(batch_.getLogDir());
-    success_logger_ = std::make_unique<SuccessLogger>(batch_.getLogDir()); 
+    logger_       = std::make_unique<Logger>(batch_.getLogDir() + "batch_" + std::to_string(batch_.getBatchID()));
+    err_logger_   = std::make_unique<ErrorLogger>(batch_.getLogDir());
+    success_logger_= std::make_unique<SuccessLogger>(batch_.getLogDir()); 
   } else {
-    logger_ = std::make_unique<Logger>("");
-    err_logger_ = std::make_unique<ErrorLogger>("");
-    success_logger_ = std::make_unique<SuccessLogger>("");
+    logger_        = std::make_unique<Logger>("");
+    err_logger_    = std::make_unique<ErrorLogger>("");
+    success_logger_= std::make_unique<SuccessLogger>("");
   }
 
   // GruStruc Initialization
-  gru_struc_ = std::make_unique<GruStruc>(batch_.getStartHRU(), 
-      batch_.getNumHRU(), job_actor_settings_.max_run_attempts_);
+  gru_struc_ = std::make_unique<GruStruc>(batch_.getStartHRU(), batch_.getNumHRU(), job_actor_settings_.max_run_attempts_);
   if (gru_struc_->readDimension()) {
     err_msg = "ERROR: Job_Actor - ReadDimension\n";
     self_->mail(err_atom_v, -2, err_msg).send(parent_);
@@ -62,53 +60,60 @@ behavior JobActor::make_behavior() {
     self_->mail(err_atom_v, -2, err_msg).send(parent_);
     return {};
   }
-  summa_init_struc_->getInitTolerance(tolerance_settings_.rel_tol_temp_cas_, 
-                                      tolerance_settings_.rel_tol_temp_veg_, tolerance_settings_.rel_tol_wat_veg_, 
-                                      tolerance_settings_.rel_tol_temp_soil_snow_, tolerance_settings_.rel_tol_wat_snow_, 
-                                      tolerance_settings_.rel_tol_matric_, tolerance_settings_.rel_tol_aquifr_, 
-                                      tolerance_settings_.abs_tol_temp_cas_, tolerance_settings_.abs_tol_temp_veg_, 
-                                      tolerance_settings_.abs_tol_wat_veg_, tolerance_settings_.abs_tol_temp_soil_snow_, 
-                                      tolerance_settings_.abs_tol_wat_snow_, tolerance_settings_.abs_tol_matric_, 
-                                      tolerance_settings_.abs_tol_aquifr_, default_tol_, tolerance_settings_.be_steps_);
 
-  // summa_init_struc_->getInitBEStepsIDATol(be_steps_, rel_tol_, abs_tolWat_, abs_tolNrg_);
+  // New: pull per-subsystem tolerances + be_steps into the bundle
+  // signature: getInitTolerance(rel_tc, rel_tv, rel_wv, rel_tss, rel_ws, rel_m, rel_aq, abs_tc, abs_tv, abs_wv, abs_tss, abs_ws, abs_m, abs_aq, default_tol, be_steps)
+  summa_init_struc_->getInitTolerance(
+    tolerance_settings_.rel_tol_temp_cas_,
+    tolerance_settings_.rel_tol_temp_veg_,
+    tolerance_settings_.rel_tol_wat_veg_,
+    tolerance_settings_.rel_tol_temp_soil_snow_,
+    tolerance_settings_.rel_tol_wat_snow_,
+    tolerance_settings_.rel_tol_matric_,
+    tolerance_settings_.rel_tol_aquifr_,
+    tolerance_settings_.abs_tol_temp_cas_,
+    tolerance_settings_.abs_tol_temp_veg_,
+    tolerance_settings_.abs_tol_wat_veg_,
+    tolerance_settings_.abs_tol_temp_soil_snow_,
+    tolerance_settings_.abs_tol_wat_snow_,
+    tolerance_settings_.abs_tol_matric_,
+    tolerance_settings_.abs_tol_aquifr_,
+    default_tol_,
+    tolerance_settings_.be_steps_
+  );
 
-  num_gru_info_ = NumGRUInfo(batch_.getStartHRU(), batch_.getStartHRU(), 
-                             batch_.getNumHRU(), batch_.getNumHRU(), 
-                             gru_struc_->getFileGru(), false);
+  num_gru_info_ = NumGRUInfo(
+    batch_.getStartHRU(), batch_.getStartHRU(),
+    batch_.getNumHRU(),   batch_.getNumHRU(),
+    gru_struc_->getFileGru(), false);
 
-
-  // Set the file_access_actor settings depending on data assimilation mode
+  // Adjust File Access buffer if DA mode
   if (job_actor_settings_.data_assimilation_mode_) {
     fa_actor_settings_.num_partitions_in_output_buffer_ = 1;
-    fa_actor_settings_.num_timesteps_in_output_buffer_ = 2;
+    fa_actor_settings_.num_timesteps_in_output_buffer_  = 2;
   } 
   
   // Start File Access Actor and Become User Selected Mode
-  file_access_actor_ = self_->spawn(actor_from_state<FileAccessActor>, 
-                                    num_gru_info_, fa_actor_settings_, self_);
+  file_access_actor_ = self_->spawn(actor_from_state<FileAccessActor>, num_gru_info_, fa_actor_settings_, self_);
 
-  self_->mail(init_file_access_actor_v, gru_struc_->getFileGru(),
-              gru_struc_->getNumHru())
+  self_->mail(init_file_access_actor_v, gru_struc_->getFileGru(), gru_struc_->getNumHru())
       .request(file_access_actor_, caf::infinite)
       .await([=](int num_timesteps){
-    if (num_timesteps < 0) {
-      std::string err_msg = "ERROR: Job_Actor: File Access Actor Not Ready\n";
-      self_->mail(err_atom_v, -2, err_msg).send(parent_);
-      self_->quit();
-      return;
-    }
-    timing_info_.updateEndPoint("init_duration");
+        if (num_timesteps < 0) {
+          std::string e = "ERROR: Job_Actor: File Access Actor Not Ready\n";
+          self_->mail(err_atom_v, -2, e).send(parent_);
+          self_->quit();
+          return;
+        }
+        timing_info_.updateEndPoint("init_duration");
 
-    // Start JobActor in User Selected Mode
-    logger_->log("JobActor Initialized");
-    self_->println("JobActor Initialized: Running {} Steps", num_timesteps);
-    job_actor_settings_.data_assimilation_mode_ ? 
-        self_->become(data_assimilation_mode()) : 
-        self_->become(async_mode());
-    
-    self_->mail(file_access_actor_ready_v, num_timesteps).send(self_);
-  });
+        logger_->log("JobActor Initialized");
+        self_->println("JobActor Initialized: Running {} Steps", num_timesteps);
+        job_actor_settings_.data_assimilation_mode_ ? 
+          self_->become(data_assimilation_mode()) : 
+          self_->become(async_mode());
+        self_->mail(file_access_actor_ready_v, num_timesteps).send(self_);
+      });
 
   return {};
 }
@@ -128,76 +133,86 @@ behavior JobActor::async_mode() {
       handleFinishedGRU(job_index);
     },
 
+    // --------- CONDITIONAL (error-specific) TOLERANCE TIGHTENING ----------
     [this](restart_failures) {
       logger_->log("Async Mode: Restarting Failed GRUs");
       self_->println("Async Mode: Restarting Failed GRUs");
-      // logger_->log("Async Mode: Restarting Failed GRUs (only works for >=V4)");
-      // self_->println("Async Mode: Restarting Failed GRUs (only works for >=V4)\n");
-      // if (rel_tol_ > 0 && abs_tolWat_ > 0 && abs_tolNrg_ > 0) {
-      //   logger_->log("Reducing IDA Tolerances by * 0.1");
-      //   self_->println("Reducing IDA Tolerances by * 0.1\n");
-      //   rel_tol_ /= 10;
-      //   hru_actor_settings_.rel_tol_ = rel_tol_;
-      //   abs_tolWat_ /= 10;
-      //   hru_actor_settings_.abs_tolWat_ = abs_tolWat_;
-      //   abs_tolNrg_ /= 10;
-      //   hru_actor_settings_.abs_tolNrg_ = abs_tolNrg_;
-      //   be_steps_ = 1;
-      //   hru_actor_settings_.be_steps_ = be_steps_;
-      // } else if (be_steps_ >0) {
-      //   logger_->log("Increasing BE Steps by * 2");
-      //   self_->println("Increasing BE Steps by * 2\n");
-      //   be_steps_ *= 2;
-      //   hru_actor_settings_.be_steps_ = be_steps_;
-      // } else {
-      //   logger_->log("Initial IDA Tolerances and BE Steps not set, increasing dt_init_factor by * 2 (not recommended)");
-      //   self_->println("Initial IDA Tolerances and BE Steps not set, increasing dt_init_factor by * 2 (not recommended)\n");
-      //   dt_init_factor_ *= 2;
-      // }
 
-      auto tighten_tol = [&](double& tol, const double& min_tol, const std::string& name){
+      // Helper to tighten a single tolerance toward MIN_*.
+      auto tighten_tol = [&](double& tol, const double& min_tol, const char* name){
         if (tol > min_tol) {
-          tol /= 10;
-          self_->println("Async Mode: Tightening tolerance");
-          self_->println("Async Mode: {} = {}", name, tol);
+          tol /= 10.0;
+          self_->println("Tightened {} -> {}", name, tol);
           return true;
         }
         return false;
       };
 
-      // Update tolerances (general and specific)
+      // Build the unique set of error categories we saw
+      std::set<std::string> triggered_errors;
+      for (const auto& [job_index, err_type] : last_error_type_) {
+        self_->println("Restart cause for GRU {}: {}", job_index, err_type);
+        triggered_errors.insert(err_type);
+      }
+
+      bool any_known_error = false;
       bool tol_updated = false;
 
-      tolerance_settings_.be_steps_ = tolerance_settings_.be_steps_ * 2;
-      self_->println("Async Mode: Tightening be steps: {}", tolerance_settings_.be_steps_);
+      // Map specific error strings to targeted tolerance sets
+      if (triggered_errors.count("canopy_temp_high")) {
+        any_known_error = true;
+        tol_updated |= tighten_tol(tolerance_settings_.rel_tol_temp_veg_,      MIN_REL_TOL, "rel_tol_temp_veg_");
+        tol_updated |= tighten_tol(tolerance_settings_.abs_tol_temp_veg_,      MIN_ABS_TOL, "abs_tol_temp_veg_");
+        tol_updated |= tighten_tol(tolerance_settings_.rel_tol_temp_cas_,      MIN_REL_TOL, "rel_tol_temp_cas_");
+      }
+      if (triggered_errors.count("canopy_air_space_temp_high")) {
+        any_known_error = true;
+        tol_updated |= tighten_tol(tolerance_settings_.rel_tol_temp_cas_,      MIN_REL_TOL, "rel_tol_temp_cas_");
+        tol_updated |= tighten_tol(tolerance_settings_.rel_tol_temp_veg_,      MIN_REL_TOL, "rel_tol_temp_veg_");
+        tol_updated |= tighten_tol(tolerance_settings_.abs_tol_temp_cas_,      MIN_ABS_TOL, "abs_tol_temp_cas_");
+      }
+      if (triggered_errors.count("layer_water_out_of_bounds")) {
+        any_known_error = true;
+        tol_updated |= tighten_tol(tolerance_settings_.rel_tol_temp_soil_snow_,MIN_REL_TOL, "rel_tol_temp_soil_snow_");
+        tol_updated |= tighten_tol(tolerance_settings_.abs_tol_temp_soil_snow_,MIN_ABS_TOL, "abs_tol_temp_soil_snow_");
+        tol_updated |= tighten_tol(tolerance_settings_.rel_tol_wat_snow_,      MIN_REL_TOL, "rel_tol_wat_snow_");
+        tol_updated |= tighten_tol(tolerance_settings_.abs_tol_wat_snow_,      MIN_ABS_TOL, "abs_tol_wat_snow_");
+      }
+      if (triggered_errors.count("canopy_liq_water_neg")) {
+        any_known_error = true;
+        tol_updated |= tighten_tol(tolerance_settings_.rel_tol_wat_veg_,       MIN_REL_TOL, "rel_tol_wat_veg_");
+        tol_updated |= tighten_tol(tolerance_settings_.rel_tol_temp_veg_,      MIN_REL_TOL, "rel_tol_temp_veg_");
+        tol_updated |= tighten_tol(tolerance_settings_.abs_tol_wat_veg_,       MIN_ABS_TOL, "abs_tol_wat_veg_");
+      }
+      if (triggered_errors.count("unreasonable_snow_density")) {
+        any_known_error = true;
+        tol_updated |= tighten_tol(tolerance_settings_.rel_tol_temp_soil_snow_,MIN_REL_TOL, "rel_tol_temp_soil_snow_");
+        tol_updated |= tighten_tol(tolerance_settings_.abs_tol_temp_soil_snow_,MIN_ABS_TOL, "abs_tol_temp_soil_snow_");
+        tol_updated |= tighten_tol(tolerance_settings_.rel_tol_wat_snow_,      MIN_REL_TOL, "rel_tol_wat_snow_");
+        tol_updated |= tighten_tol(tolerance_settings_.abs_tol_wat_snow_,      MIN_ABS_TOL, "abs_tol_wat_snow_");
+      }
 
-      tol_updated |= tighten_tol(tolerance_settings_.rel_tol_temp_cas_, MIN_REL_TOL, "rel_tol_temp_cas_");
-
-      tol_updated |= tighten_tol(tolerance_settings_.rel_tol_temp_veg_, MIN_REL_TOL, "rel_tol_temp_veg_");
-
-      tol_updated |= tighten_tol(tolerance_settings_.rel_tol_wat_veg_, MIN_REL_TOL, "rel_tol_wat_veg_");
-
-      tol_updated |= tighten_tol(tolerance_settings_.rel_tol_temp_soil_snow_, MIN_REL_TOL, "rel_tol_temp_soil_snow_");
-
-      tol_updated |= tighten_tol(tolerance_settings_.rel_tol_wat_snow_, MIN_REL_TOL, "rel_tol_wat_snow_");
-
-      tol_updated |= tighten_tol(tolerance_settings_.rel_tol_matric_, MIN_REL_TOL, "rel_tol_matric_");
-
-      tol_updated |= tighten_tol(tolerance_settings_.rel_tol_aquifr_, MIN_REL_TOL, "rel_tol_aquifr_");
-
-      tol_updated |= tighten_tol(tolerance_settings_.abs_tol_temp_cas_, MIN_ABS_TOL, "abs_tol_temp_cas_");
-
-      tol_updated |= tighten_tol(tolerance_settings_.abs_tol_temp_veg_, MIN_ABS_TOL, "abs_tol_temp_veg_");
-
-      tol_updated |= tighten_tol(tolerance_settings_.abs_tol_wat_veg_, MIN_ABS_TOL, "abs_tol_wat_veg_");
-
-      tol_updated |= tighten_tol(tolerance_settings_.abs_tol_temp_soil_snow_, MIN_ABS_TOL, "abs_tol_temp_soil_snow_");
-
-      tol_updated |= tighten_tol(tolerance_settings_.abs_tol_wat_snow_, MIN_ABS_TOL, "abs_tol_wat_snow_");
-
-      tol_updated |= tighten_tol(tolerance_settings_.abs_tol_matric_, MIN_ABS_TOL, "abs_tol_matric_");
-
-      tol_updated |= tighten_tol(tolerance_settings_.abs_tol_aquifr_, MIN_ABS_TOL, "abs_tol_aquifr_");
+      // Fallback: unknown errors → tighten everything + nudge BE steps
+      if (!any_known_error) {
+        self_->println("Unknown error types encountered: tightening all tolerances and increasing BE steps.");
+        tol_updated |= tighten_tol(tolerance_settings_.rel_tol_temp_cas_,      MIN_REL_TOL, "rel_tol_temp_cas_");
+        tol_updated |= tighten_tol(tolerance_settings_.rel_tol_temp_veg_,      MIN_REL_TOL, "rel_tol_temp_veg_");
+        tol_updated |= tighten_tol(tolerance_settings_.rel_tol_wat_veg_,       MIN_REL_TOL, "rel_tol_wat_veg_");
+        tol_updated |= tighten_tol(tolerance_settings_.rel_tol_temp_soil_snow_,MIN_REL_TOL, "rel_tol_temp_soil_snow_");
+        tol_updated |= tighten_tol(tolerance_settings_.rel_tol_wat_snow_,      MIN_REL_TOL, "rel_tol_wat_snow_");
+        tol_updated |= tighten_tol(tolerance_settings_.rel_tol_matric_,        MIN_REL_TOL, "rel_tol_matric_");
+        tol_updated |= tighten_tol(tolerance_settings_.rel_tol_aquifr_,        MIN_REL_TOL, "rel_tol_aquifr_");
+        tol_updated |= tighten_tol(tolerance_settings_.abs_tol_temp_cas_,      MIN_ABS_TOL, "abs_tol_temp_cas_");
+        tol_updated |= tighten_tol(tolerance_settings_.abs_tol_temp_veg_,      MIN_ABS_TOL, "abs_tol_temp_veg_");
+        tol_updated |= tighten_tol(tolerance_settings_.abs_tol_wat_veg_,       MIN_ABS_TOL, "abs_tol_wat_veg_");
+        tol_updated |= tighten_tol(tolerance_settings_.abs_tol_temp_soil_snow_,MIN_ABS_TOL, "abs_tol_temp_soil_snow_");
+        tol_updated |= tighten_tol(tolerance_settings_.abs_tol_wat_snow_,      MIN_ABS_TOL, "abs_tol_wat_snow_");
+        tol_updated |= tighten_tol(tolerance_settings_.abs_tol_matric_,        MIN_ABS_TOL, "abs_tol_matric_");
+        tol_updated |= tighten_tol(tolerance_settings_.abs_tol_aquifr_,        MIN_ABS_TOL, "abs_tol_aquifr_");
+        // cautious bump to BE steps as a last resort
+        tolerance_settings_.be_steps_ = std::max(1, tolerance_settings_.be_steps_) * 2;
+        self_->println("BE steps -> {}", tolerance_settings_.be_steps_);
+      }
 
       // notify file_access_actor
       self_->mail(restart_failures_v).send(file_access_actor_);
@@ -208,28 +223,40 @@ behavior JobActor::async_mode() {
       err_logger_->nextAttempt();
       success_logger_->nextAttempt();
 
-      while(gru_struc_->getNumGruFailed() > 0) {
-        int job_index = gru_struc_->getFailedIndex();
-        logger_->log("Async Mode: Restarting GRU: " + 
-            std::to_string(job_index));
-        self_->println("Async Mode: Restarting GRU: " + 
-            std::to_string(job_index));
+      while (gru_struc_->getNumGruFailed() > 0) {
+        int job_index    = gru_struc_->getFailedIndex();
         int netcdf_index = job_index + gru_struc_->getStartGru() - 1;
-        auto gru_actor = self_->spawn(actor_from_state<GruActor>, netcdf_index, 
-            job_index, num_steps_, hru_actor_settings_,
-            job_actor_settings_.data_assimilation_mode_, 
-            fa_actor_settings_.num_timesteps_in_output_buffer_,
-            file_access_actor_, self_,restart_, tolerance_settings_);
+
+        logger_->log("Async Mode: Restarting GRU: " + std::to_string(job_index));
+        self_->println("Async Mode: Restarting GRU: {}", job_index);
+
+        auto gru_actor = self_->spawn(
+          actor_from_state<GruActor>,
+          netcdf_index,
+          job_index,
+          num_steps_,
+          hru_actor_settings_,
+          job_actor_settings_.data_assimilation_mode_,
+          fa_actor_settings_.num_timesteps_in_output_buffer_,
+          file_access_actor_,
+          self_,
+          restart_,
+          tolerance_settings_);
+
         gru_struc_->getGRU(job_index)->setRestarted();
         gru_struc_->decrementNumGruFailed();
+
         std::unique_ptr<GRU> gru_obj = std::make_unique<GRU>(
-            netcdf_index, job_index, gru_actor, dt_init_factor_, tolerance_settings_, default_tol_,
-            job_actor_settings_.max_run_attempts_);
+          netcdf_index, job_index, gru_actor, dt_init_factor_,
+          tolerance_settings_, default_tol_, job_actor_settings_.max_run_attempts_);
         gru_struc_->addGRU(std::move(gru_obj));
+
         self_->mail(update_hru_async_v).send(gru_actor);
       }
+
+      last_error_type_.clear();
       gru_struc_->decrementRetryAttempts();
-      self_->println("Retries left: {}",gru_struc_->getRetryAttemptsLeft());
+      self_->println("Retries left: {}", gru_struc_->getRetryAttemptsLeft());
     },
 
     [this](finalize) {
@@ -237,16 +264,14 @@ behavior JobActor::async_mode() {
     },
 
     // Error Handling
-    [this](err_atom, int job_index, int timestep, int err_code, 
-           std::string err_msg) {
-      (job_index == 0) ? 
-        handleFileAccessError(err_code, err_msg) :
-        handleGRUError(err_code, job_index, timestep, err_msg);
+    [this](err_atom, int job_index, int timestep, int err_code, std::string err_msg) {
+      (job_index == 0)
+        ? handleFileAccessError(err_code, err_msg)
+        : handleGRUError(err_code, job_index, timestep, err_msg);
     },
 
     [this](const down_msg& dm) {
-      self_->println("Lost Connection With A Connected Actor\nReason: {}",
-                     to_string(dm.reason));
+      self_->println("Lost Connection With A Connected Actor\nReason: {}", to_string(dm.reason));
     },
 
     [this](const caf::exit_msg& em) {
@@ -273,9 +298,8 @@ behavior JobActor::data_assimilation_mode() {
       steps_in_ffile_ = num_steps_iFile;
       forcing_step_ = 1;
       
-      for (auto& gru : gru_struc_->getGruInfo()) {
+      for (auto& gru : gru_struc_->getGruInfo())
         self_->mail(update_timeZoneOffset_v, iFile_).send(gru->getActorRef());
-      }
 
       self_->mail(update_hru_v).send(self_);
     },
@@ -289,19 +313,14 @@ behavior JobActor::data_assimilation_mode() {
 
     [this](done_update) {
       num_gru_done_timestep_++;
-      if (num_gru_done_timestep_ < gru_struc_->getGruInfo().size()) {
+      if (num_gru_done_timestep_ < gru_struc_->getGruInfo().size())
         return;
-      }
 
       if (hru_actor_settings_.print_output_ && 
           timestep_ % hru_actor_settings_.output_frequency_ == 0) {
-        self_->println("JobActor: Done Update for timestep: {}", 
-                      timestep_);
+        self_->println("JobActor: Done Update for timestep: {}", timestep_);
       }
 
-      // write output
-      int steps_to_write = 1;
-      int start_gru = 1;
       self_->mail(write_output_v, output_step_ + 1).send(file_access_actor_);
       num_write_msgs_++;
       
@@ -329,11 +348,10 @@ behavior JobActor::data_assimilation_mode() {
       }
       num_write_msgs_--;
 
-      if (!da_paused_) return;
-      da_paused_ = false;
-
-      // We need to unpause
-      processTimestep();
+      if (da_paused_) {
+        da_paused_ = false;
+        processTimestep();
+      }
     },
 
     [this](finalize) {
@@ -341,8 +359,7 @@ behavior JobActor::data_assimilation_mode() {
     },
 
     [this](const down_msg& dm) {
-      self_->println("Lost Connection With A Connected Actor\nReason: {}",
-                     to_string(dm.reason));
+      self_->println("Lost Connection With A Connected Actor\nReason: {}", to_string(dm.reason));
     },
     
     [this](const caf::exit_msg& em) {
@@ -359,21 +376,30 @@ void JobActor::spawnGruActors() {
 
   for (int i = 0; i < gru_struc_->getNumGru(); i++) {
     auto netcdf_index = gru_struc_->getStartGru() + i;
-    auto job_index = i + 1;
-    auto gru_actor = self_->spawn(actor_from_state<GruActor>, netcdf_index, 
-        job_index, num_steps_, hru_actor_settings_,
-        job_actor_settings_.data_assimilation_mode_,
-        fa_actor_settings_.num_timesteps_in_output_buffer_, file_access_actor_, 
-        self_,restart_, tolerance_settings_);
+    auto job_index    = i + 1;
+
+    auto gru_actor = self_->spawn(
+      actor_from_state<GruActor>, 
+      netcdf_index, 
+      job_index, 
+      num_steps_, 
+      hru_actor_settings_,
+      job_actor_settings_.data_assimilation_mode_,
+      fa_actor_settings_.num_timesteps_in_output_buffer_,
+      file_access_actor_, 
+      self_,
+      restart_, 
+      tolerance_settings_
+    );
+
     std::unique_ptr<GRU> gru_obj = std::make_unique<GRU>(
-        netcdf_index, job_index, gru_actor, dt_init_factor_, tolerance_settings_,default_tol_, job_actor_settings_.max_run_attempts_);
-        // netcdf_index, job_index, gru_actor, dt_init_factor_, be_steps_, rel_tol_, 
-        // abs_tolWat_, abs_tolNrg_, job_actor_settings_.max_run_attempts_);
+      netcdf_index, job_index, gru_actor, dt_init_factor_,
+      tolerance_settings_, default_tol_, job_actor_settings_.max_run_attempts_);
+
     gru_struc_->addGRU(std::move(gru_obj));
     
-    if (!job_actor_settings_.data_assimilation_mode_) {
+    if (!job_actor_settings_.data_assimilation_mode_)
       self_->mail(update_hru_async_v).send(gru_actor);
-    }
   }
   gru_struc_->decrementRetryAttempts();
 }
@@ -381,26 +407,11 @@ void JobActor::spawnGruActors() {
 void JobActor::spawnGruBatches() {
   self_->println("JobActor: Spawning GRU Batch Actors");
   int batch_size;
-  // TODO: Implement f_getBeSteps, f_getRelTol, and f_getAbsTol
-
 
   if (job_actor_settings_.batch_size_ < 0) {
-  // if (hru_actor_settings_.abs_tolWat_ <= 0) {
-  //   // f_getAbsTol();
-  //   abs_tolWat_ = hru_actor_settings_.abs_tolWat_;
-  // }
-
-  // if (hru_actor_settings_.abs_tolNrg_ <= 0) {
-  //   // f_getAbsTol();
-  //   abs_tolNrg_ = hru_actor_settings_.abs_tolNrg_;
-  // }
-
-  // if (job_actor_settings_.batch_size_ <= 0) {
-    // Automatically determine batch size
     batch_size = std::ceil(static_cast<double>(gru_struc_->getNumGru()) / 
-        static_cast<double>(std::thread::hardware_concurrency()));
+                 static_cast<double>(std::thread::hardware_concurrency()));
   } else {
-    // Use the user selected batch size
     batch_size = job_actor_settings_.batch_size_;
   }
 
@@ -412,26 +423,26 @@ void JobActor::spawnGruBatches() {
   }
 
   int remaining_hru_to_batch = gru_struc_->getNumGru();
-  int netcdf_start_index = batch_.getStartHRU();
-  int job_start_index = 1;
+  int netcdf_start_index     = batch_.getStartHRU();
+  int job_start_index        = 1;
   
   while (remaining_hru_to_batch > 0) {
     int current_batch_size = std::min(batch_size, remaining_hru_to_batch);
-    auto gru_batch = self_->spawn(actor_from_state<GruBatchActor>, 
-        netcdf_start_index, job_start_index, current_batch_size, num_steps_,
-        hru_actor_settings_, fa_actor_settings_.num_timesteps_in_output_buffer_,
-        file_access_actor_, self_, restart_, tolerance_settings_);
+
+    auto gru_batch = self_->spawn(
+      actor_from_state<GruBatchActor>, 
+      netcdf_start_index, job_start_index, current_batch_size, num_steps_,
+      hru_actor_settings_, fa_actor_settings_.num_timesteps_in_output_buffer_,
+      file_access_actor_, self_, restart_, tolerance_settings_);
 
     std::unique_ptr<GRU> gru_obj = std::make_unique<GRU>(
-        netcdf_start_index, job_start_index, gru_batch, dt_init_factor_, 
-        tolerance_settings_, default_tol_,
-        job_actor_settings_.max_run_attempts_);
-        // netcdf_start_index, job_start_index, gru_batch, dt_init_factor_, be_steps_,
-        // rel_tol_, abs_tolWat_, abs_tolNrg_, job_actor_settings_.max_run_attempts_);
+      netcdf_start_index, job_start_index, gru_batch, dt_init_factor_, 
+      tolerance_settings_, default_tol_, job_actor_settings_.max_run_attempts_);
+
     gru_struc_->addGRU(std::move(gru_obj));
     remaining_hru_to_batch -= current_batch_size;
-    job_start_index += current_batch_size;
-    netcdf_start_index += current_batch_size;
+    job_start_index        += current_batch_size;
+    netcdf_start_index     += current_batch_size;
   }
   self_->println("JobActor: Assembled GRUs into Batches");
 }
@@ -439,17 +450,12 @@ void JobActor::spawnGruBatches() {
 void JobActor::processTimestep() {
   if (timestep_ > num_steps_) {
     self_->println("JobActor: Done");
-    for (auto& gru : gru_struc_->getGruInfo()) {
-      self_->mail(exit_reason::user_shutdown)
-          .send(gru->getActorRef());
-    }
+    for (auto& gru : gru_struc_->getGruInfo())
+      self_->mail(exit_reason::user_shutdown).send(gru->getActorRef());
     self_->mail(finalize_v).send(self_);
-  // Check if new forcing file is needed
   } else if (forcing_step_ > steps_in_ffile_) {
     self_->println("JobActor: Requesting New Forcing File");
-    self_->mail(access_forcing_v, iFile_ + 1, self_)
-        .send(file_access_actor_);
-  // Just update the HRUs
+    self_->mail(access_forcing_v, iFile_ + 1, self_).send(file_access_actor_);
   } else {
     self_->mail(update_hru_v).send(self_);
   }
@@ -458,17 +464,27 @@ void JobActor::processTimestep() {
 void JobActor::handleFinishedGRU(int job_index) {
   gru_struc_->incrementNumGruDone();
   gru_struc_->getGRU(job_index)->setSuccess();
-  success_logger_->logSuccess(gru_struc_->getGRU(job_index)->getIndexNetcdf(),
-                              gru_struc_->getGRU(job_index)->getIndexJob(),
-                              MISSING_DOUBLE, MISSING_DOUBLE, 
-                              tolerance_settings_.rel_tol_temp_cas_, tolerance_settings_.rel_tol_temp_veg_,
-                              tolerance_settings_.rel_tol_wat_veg_, tolerance_settings_.rel_tol_temp_soil_snow_,
-                              tolerance_settings_.rel_tol_wat_snow_, tolerance_settings_.rel_tol_matric_,
-                              tolerance_settings_.rel_tol_aquifr_, tolerance_settings_.abs_tol_temp_cas_,
-                              tolerance_settings_.abs_tol_temp_veg_, tolerance_settings_.abs_tol_wat_veg_,
-                              tolerance_settings_.abs_tol_temp_soil_snow_, tolerance_settings_.abs_tol_wat_snow_,
-                              tolerance_settings_.abs_tol_matric_, tolerance_settings_.abs_tol_aquifr_, default_tol_);
-                              // be_steps_, rel_tol_, abs_tolWat_, abs_tolNrg_);
+
+  success_logger_->logSuccess(
+    gru_struc_->getGRU(job_index)->getIndexNetcdf(),
+    gru_struc_->getGRU(job_index)->getIndexJob(),
+    MISSING_DOUBLE, MISSING_DOUBLE,
+    tolerance_settings_.rel_tol_temp_cas_,
+    tolerance_settings_.rel_tol_temp_veg_,
+    tolerance_settings_.rel_tol_wat_veg_,
+    tolerance_settings_.rel_tol_temp_soil_snow_,
+    tolerance_settings_.rel_tol_wat_snow_,
+    tolerance_settings_.rel_tol_matric_,
+    tolerance_settings_.rel_tol_aquifr_,
+    tolerance_settings_.abs_tol_temp_cas_,
+    tolerance_settings_.abs_tol_temp_veg_,
+    tolerance_settings_.abs_tol_wat_veg_,
+    tolerance_settings_.abs_tol_temp_soil_snow_,
+    tolerance_settings_.abs_tol_wat_snow_,
+    tolerance_settings_.abs_tol_matric_,
+    tolerance_settings_.abs_tol_aquifr_,
+    default_tol_);
+
   std::string update_str =
       "GRU Finished: " + std::to_string(gru_struc_->getNumGruDone()) + "/" + 
       std::to_string(gru_struc_->getNumGru()) + " -- GlobalGRU=" + 
@@ -480,16 +496,15 @@ void JobActor::handleFinishedGRU(int job_index) {
   self_->println(update_str);
 
   if (gru_struc_->isDone()) {
-    gru_struc_->hasFailures() && gru_struc_->shouldRetry() ?
-        self_->mail(restart_failures_v).send(self_) 
-        : self_->mail(finalize_v).send(self_);
+    (gru_struc_->hasFailures() && gru_struc_->shouldRetry())
+      ? self_->mail(restart_failures_v).send(self_) 
+      : self_->mail(finalize_v).send(self_);
   }
 }
 
 void JobActor::finalizeJob() {
   self_->mail(finalize_v).request(file_access_actor_, infinite).await(
     [=](std::tuple<double, double> read_write_duration) {
-      int err = 0;
       auto num_failed_grus = gru_struc_->getNumGruFailed();    
       timing_info_.updateEndPoint("total_duration");
       self_->println(
@@ -504,34 +519,49 @@ void JobActor::finalizeJob() {
           (timing_info_.getDuration("total_duration").value_or(-1.0) / 60) / 60,
           timing_info_.getDuration("init_duration").value_or(-1.0));
 
-      // Deallocate GRU_Struc
+      // Deallocate
       gru_struc_.reset();    
       summa_init_struc_.reset();
   
       // Tell Parent we are done
-      auto total_duration = timing_info_.getDuration("total_duration").
-          value_or(-1.0);
+      auto total_duration = timing_info_.getDuration("total_duration").value_or(-1.0);
       self_->mail(done_job_v, num_failed_grus, total_duration, 
                   std::get<0>(read_write_duration), 
                   std::get<1>(read_write_duration))
           .send(parent_);
-        self_->quit();
+      self_->quit();
     });
 }
 
 // ------------------------ERROR HANDLING FUNCTIONS ------------------------
-void JobActor::handleGRUError(int err_code, int job_index, int timestep, 
-                              std::string& err_msg) {
+void JobActor::handleGRUError(int err_code, int job_index, int timestep, std::string& err_msg) {
+  // Mark failure
   gru_struc_->getGRU(job_index)->setFailed();
   gru_struc_->incrementNumGruFailed();
+
+  // Extract error category for targeted tolerance changes (restored from honours flow)
+  if (err_msg.find("canopy temp high") != std::string::npos) {
+    last_error_type_[job_index] = "canopy_temp_high";
+  } else if (err_msg.find("canopy air space temp high") != std::string::npos) {
+    last_error_type_[job_index] = "canopy_air_space_temp_high";
+  } else if (err_msg.find("layer water out of bounds") != std::string::npos) {
+    last_error_type_[job_index] = "layer_water_out_of_bounds";
+  } else if (err_msg.find("canopy liq water neg") != std::string::npos) {
+    last_error_type_[job_index] = "canopy_liq_water_neg";
+  } else if (err_msg.find("unreasonable value for snow density") != std::string::npos) {
+    last_error_type_[job_index] = "unreasonable_snow_density";
+  } else if (last_error_type_.find(job_index) == last_error_type_.end()) {
+    last_error_type_[job_index] = "unknown_error";
+  }
+
   self_->mail(run_failure_v, job_index).send(file_access_actor_);
+
   if (gru_struc_->isDone()) {
-    gru_struc_->hasFailures() && gru_struc_->shouldRetry() ?
-        self_->mail(restart_failures_v).send(self_) 
-        : self_->mail(finalize_v).send(self_);
+    (gru_struc_->hasFailures() && gru_struc_->shouldRetry())
+      ? self_->mail(restart_failures_v).send(self_) 
+      : self_->mail(finalize_v).send(self_);
   }
 }
-
 
 void JobActor::handleFileAccessError(int err_code, std::string& err_msg) {
   logger_->log("JobActor: File_Access_Actor Error:" + err_msg);
@@ -543,3 +573,4 @@ void JobActor::handleFileAccessError(int err_code, std::string& err_msg) {
     return;
   }
 }
+
