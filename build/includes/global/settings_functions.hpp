@@ -14,7 +14,7 @@
 #define OUTPUT_TIMESTEPS 500
 #define NUM_PARTITIONS 8
 #define OUTPUT_FREQUENCY 1000
-#define GRU_PER_JOB 10
+#define GRU_PER_JOB 1000
 
 using json = nlohmann::json;
 
