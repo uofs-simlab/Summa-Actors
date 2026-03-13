@@ -1,8 +1,9 @@
-#include "summa_client.hpp"
-#include "hardware_monitoring.hpp"
+#include "summa_gpu_client.hpp"
 using namespace caf;
 
-behavior SummaClient::make_behavior() {
+int getGPUBatchSize() { return 1000;}
+
+behavior SummaGPUClient::make_behavior() {
   running_ = true;
   char host[HOST_NAME_MAX];
   gethostname(host, HOST_NAME_MAX);
@@ -22,7 +23,7 @@ behavior SummaClient::make_behavior() {
   }
 
   self_->mail(connect_to_server_v, self_, 
-             hostname_,getBatchSize()).send(current_server_actor_);
+             hostname_,getGPUBatchSize()).send(current_server_actor_);
     return {
         // Response from the server on successful connection
         [=](connect_to_server, 
@@ -35,11 +36,11 @@ behavior SummaClient::make_behavior() {
             
             self_->println("Successfully Connected to Server Actor \n"); 
             // summa_actor_settings_ = summa_actor_settings;
-            settings_.fa_actor_settings_ = settings.fa_actor_settings_;
-            settings_.job_actor_settings_ = settings.job_actor_settings_;
-            settings_.hru_actor_settings_ = settings.hru_actor_settings_;
+            // file_access_actor_settings_ = file_access_actor_settings;
+            // job_actor_settings_ = job_actor_settings;
+            // hru_actor_settings_ = hru_actor_settings;
             // backup_servers_list_ = backup_servers;
-            // settings_.file_access_actor_settings_ = settings.file_access_actor_settings_;
+            settings_ = settings;
         },
 
         [=] (connect_atom, const std::string& host, uint16_t port) {
@@ -81,7 +82,7 @@ behavior SummaClient::make_behavior() {
                     }
                 }
                 servers_.clear();
-                self_->mail(connect_to_server_v, self_, hostname_,getBatchSize()).send(current_server_actor_);
+                self_->mail(connect_to_server_v, self_, hostname_,getGPUBatchSize()).send(current_server_actor_);
             } else {
                 self_->println("This is not the lead server");
             }
@@ -94,21 +95,20 @@ behavior SummaClient::make_behavior() {
 
         // Received batch from server to compute
         [=](Batch& batch) {
+            std::string command;
             current_batch_ = batch;
             self_->println("\nReceived batch to compute\n");
             self_->println("BatchID = {}", current_batch_.getBatchID());
             self_->println("StartHRU = {}", current_batch_.getStartHRU());
             self_->println("NumHRU = {}", current_batch_.getNumHRU());
 
-            summa_actor_ref_ = self_->spawn(actor_from_state<SummaActor>, 
-                current_batch_.getStartHRU(), 
-                current_batch_.getNumHRU(), 
-                settings_,
-                // summa_actor_settings_,
-                // file_access_actor_settings_,
-                // job_actor_settings_,
-                // hru_actor_settings_,
-                self_, restart_);
+
+            command = distributed_settings_.gpu_executable_ + std::string(" --gru ") + 
+             std::to_string(current_batch_.getStartHRU()) + std::string(" ") +
+             std::to_string(current_batch_.getNumHRU()) + std::string(" -m ") + distributed_settings_.file_manager_;
+            std::system(command.c_str());
+            self_->mail(done_batch_v, 0.0, 0.0, 0.0).send(self_);
+
         },
         
         // Received completed batch information from the summa_actor 
@@ -126,7 +126,7 @@ behavior SummaClient::make_behavior() {
                 self_->println("Saving batch until we find a new lead server\n");
                 saved_batch_ = true;
             } else {
-                self_->mail(done_batch_v, self_, current_batch_,getBatchSize()).send(current_server_actor_);
+                self_->mail(done_batch_v, self_, current_batch_,getGPUBatchSize()).send(current_server_actor_);
             }
         },
 
@@ -137,3 +137,4 @@ behavior SummaClient::make_behavior() {
         
     };
 }
+

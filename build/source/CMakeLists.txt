@@ -52,16 +52,19 @@ set(ACTORS_GLOBAL
     ${ACTORS_DIR}/global/settings_functions.cpp
     ${ACTORS_DIR}/global/timing_info.cpp
     ${ACTORS_DIR}/global/logger.cpp
+    ${ACTORS_DIR}/global/hardware_monitoring.cpp
     CACHE INTERNAL "ACTORS_GLOBAL")
 set(SYS_INIT
     ${SYS_INIT_DIR}/batch.cpp
     ${SYS_INIT_DIR}/batch_container.cpp
+    ${SYS_INIT_DIR}/dynamic_batch_container.cpp
     ${SYS_INIT_DIR}/client.cpp
     ${SYS_INIT_DIR}/client_container.cpp
     ${SYS_INIT_DIR}/summa_global_data.cpp
     ${SYS_INIT_DIR}/summa_actor.cpp
     ${SYS_INIT_DIR}/summa_backup_server.cpp
     ${SYS_INIT_DIR}/summa_client.cpp
+    ${SYS_INIT_DIR}/summa_gpu_client.cpp
     ${SYS_INIT_DIR}/summa_server.cpp
     CACHE INTERNAL "SYS_INIT")
 set(FILE_ACCESS_ACTOR

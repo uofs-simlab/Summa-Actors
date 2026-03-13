@@ -27,12 +27,16 @@ class DistributedSettings {
     int num_hru_per_batch_;
     int num_nodes_;                            
     bool load_balancing_;
+    std::string file_manager_;
+    std::string gpu_executable_;
 
     DistributedSettings(bool distributed_mode = false, 
                         std::vector<std::string> servers_list = {}, 
                         int port = 0, 
                         int total_hru_count = 0, 
                         int num_hru_per_batch = 0, 
+                        std::string gpu_executable = "",
+                        std::string file_manager = "",
                         int num_nodes = 0, 
                         bool load_balancing = false)
         : distributed_mode_(distributed_mode), 
@@ -41,6 +45,8 @@ class DistributedSettings {
           total_hru_count_(total_hru_count), 
           num_hru_per_batch_(num_hru_per_batch), 
           num_nodes_(num_nodes), 
+          file_manager_(file_manager),
+          gpu_executable_(gpu_executable),
           load_balancing_(load_balancing) {};
     ~DistributedSettings() {};
 

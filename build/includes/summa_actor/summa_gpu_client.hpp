@@ -10,9 +10,8 @@
 #include <optional>
 #include <unistd.h>
 #include <limits.h>
-#include "hardware_monitoring.hpp"
 
-class SummaClient {
+class SummaGPUClient {
   caf::event_based_actor* self_;
 
   caf::strong_actor_ptr current_server_ = nullptr;
@@ -40,11 +39,9 @@ class SummaClient {
   // JobActorSettings job_actor_settings_;
   // HRUActorSettings hru_actor_settings_;
   Settings settings_;
-    std::string restart_;
-
   public:
-    SummaClient(caf::event_based_actor* self, DistributedSettings distributed_settings, Settings settings, std::string restart) 
-    : self_(self), distributed_settings_(distributed_settings), settings_(settings), restart_(restart) {};
+    SummaGPUClient(caf::event_based_actor* self, DistributedSettings distributed_settings) 
+    : self_(self), distributed_settings_(distributed_settings) {};
 
     caf::behavior make_behavior();
 };

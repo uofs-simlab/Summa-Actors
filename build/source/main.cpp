@@ -7,6 +7,7 @@
 #include "da_client_actor.hpp"
 #include "summa_server.hpp"
 #include "summa_client.hpp"
+#include "summa_gpu_client.hpp"
 #include "message_atoms.hpp"
 #include <iostream>
 #include <fstream>
@@ -48,6 +49,7 @@ class config : public actor_system_config {
     bool server_mode = false;
     bool help = false;
     std::string restart = "never";
+    bool gpu_mode = false;
         
     
   config() {
@@ -62,6 +64,7 @@ class config : public actor_system_config {
         .add(server_mode,   "server-mode", "enable server mode")
         .add(host,          "host", "Hostname of the server")
         .add(restart,       "restart,r", "Restart frequency")
+        .add(gpu_mode, "gpu", "Run with gpu client")
         .add(help,          "help,h", "Print this help message");
     }
 };
@@ -101,7 +104,8 @@ int caf_main(actor_system& sys, const config& cfg) {
     !settings.job_actor_settings_.data_assimilation_mode_) {
       cfg.server_mode ?
           self->spawn(actor_from_state<SummaServer>, settings, cfg.backup_server) :
-          self->spawn(actor_from_state<SummaClient>, settings.distributed_settings_, settings, cfg.restart);
+          (cfg.gpu_mode ? self->spawn(actor_from_state<SummaGPUClient>, settings.distributed_settings_) :
+                     self->spawn(actor_from_state<SummaClient>, settings.distributed_settings_,cfg.restart));
   }  else if (settings.distributed_settings_.distributed_mode_ &&
       settings.job_actor_settings_.data_assimilation_mode_) {
     
