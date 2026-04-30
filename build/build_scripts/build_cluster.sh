@@ -25,20 +25,15 @@ export CMAKE_PREFIX_PATH="$INSTALL_DIR/sundials:$INSTALL_DIR/caf:$CMAKE_PREFIX_P
 #export CMAKE_PREFIX_PATH="$INSTALL_DIR/netcdf-fortran:$INSTALL_DIR/netcdf-c:$INSTALL_DIR/lapack:$CMAKE_PREFIX_PATH"
 
 cmake -B ./cmake_build -S .. -DUSE_SUNDIALS=ON -DCMAKE_BUILD_TYPE=Release
-cmake --build ./cmake_build --target all -j4
+cmake --build ./cmake_build --target all -j
 
 
 
 # -----------------------------------
-# If compiling V4 without sundials use the following
+# If compiling without sundials use the following
   
-# cmake -B ./cmake_build -S .. -DUSE_V4=ON
+# cmake -B ./cmake_build -S .. -DUSE_SUNDIALS=OFF -DCMAKE_BUILD_TYPE=Release
 # cmake --build ./cmake_build --target all -j
 
-# -----------------------------------
-# If compiling V3 use the following
-# -----------------------------------
-# cmake -B ./cmake_build -S ..
-# cmake --build ./cmake_build --target all -j
 
 

@@ -21,7 +21,7 @@
 module summa_modelRun
 ! calls the model physics
 USE,intrinsic :: iso_c_binding
-USE nrtype
+USE nr_type
 USE actor_data_types,only:hru_type
 ! access missing values
 USE globalData,only:integerMissing         ! missing integer
@@ -33,7 +33,6 @@ USE module_sf_noahmplsm,only:isWater       ! parameter for water land cover type
 ! named variables
 USE globalData,only:yes,no                 ! .true. and .false.
 USE globalData,only:overwriteRSMIN         ! flag to overwrite RSMIN
-USE globalData,only:maxSoilLayers          ! Maximum Number of Soil Layers
 ! urban vegetation category (could be local)
 USE globalData,only:urbanVegCategory       ! vegetation category for urban areas
 USE globalData,only:greenVegFrac_monthly   ! fraction of green vegetation in each month (0-1)
@@ -68,10 +67,6 @@ USE mDecisions_module,only:&               ! look-up values for LAI decisions
 implicit none
 private
 public::runPhysics
-#ifdef V4_ACTIVE
-! public::get_steps_tolerances
-! public::set_steps_tolerances
-#endif
 contains
 
 ! Runs the model physics for an HRU
@@ -81,20 +76,16 @@ subroutine runPhysics(indxGRU, indxHRU, modelTimeStep, hru_data, &
   ! * desired modules
   ! ---------------------------------------------------------------------------------------
   ! data types
-  USE nrtype                                   ! variable types, etc.
+  USE nr_type                                  ! variable types, etc.
   ! subroutines and functions
-  USE nr_utility_module,only:indexx            ! sort vectors in ascending order
   USE vegPhenlgy_module,only:vegPhenlgy        ! module to compute vegetation phenology
-  USE time_utils_module,only:elapsedSec        ! calculate the elapsed time
   USE module_sf_noahmplsm,only:redprm          ! module to assign more Noah-MP parameters
   USE derivforce_module,only:derivforce        ! module to compute derived forcing data
   USE coupled_em_module,only:coupled_em        ! module to run the coupled energy and mass model
-  USE qTimeDelay_module,only:qOverland         ! module to route water through an "unresolved" river network
   ! global data
   USE globalData,only:gru_struc
   USE globalData,only:model_decisions          ! model decision structure
-  USE globalData,only:startPhysics,endPhysics  ! date/time for the start and end of the initialization
-  USE globalData,only:elapsedPhysics           ! elapsed time for the initialization
+
   implicit none
   ! Dummy Variables
   integer(c_int),intent(in)                 :: indxGRU                ! id of GRU
@@ -111,9 +102,6 @@ subroutine runPhysics(indxGRU, indxHRU, modelTimeStep, hru_data, &
   logical(lgt)                              :: computeVegFluxFlag     ! flag to indicate if we are computing fluxes over vegetation (.false. means veg is buried with snow)
   real(dp)                                  :: notUsed_canopyDepth    ! NOT USED: canopy depth (m)
   real(dp)                                  :: notUsed_exposedVAI     ! NOT USED: exposed vegetation area index (m2 m-2)
-  integer(i4b)                              :: nSnow                  ! number of snow layers
-  integer(i4b)                              :: nSoil                  ! number of soil layers
-  integer(i4b)                              :: nLayers                ! total number of layers
   ! ---------------------------------------------------------------------------------------
   hruId = gru_struc(indxGRU)%hruInfo(indxHRU)%hru_id
 
@@ -154,15 +142,9 @@ subroutine runPhysics(indxGRU, indxHRU, modelTimeStep, hru_data, &
       
   end if  ! if the first time step
  
-
   ! ****************************************************************************
   ! *** model simulation
   ! ****************************************************************************
-  ! update the number of layers
-  nSnow   = hru_data%indxStruct%var(iLookINDEX%nSnow)%dat(1)    ! number of snow layers
-  nSoil   = hru_data%indxStruct%var(iLookINDEX%nSoil)%dat(1)    ! number of soil layers
-  nLayers = hru_data%indxStruct%var(iLookINDEX%nLayers)%dat(1)  ! total number of layers
-  
   computeVegFluxFlag = (hru_data%ComputeVegFlux == yes)
 
   ! initialize the number of flux calls
@@ -184,10 +166,9 @@ subroutine runPhysics(indxGRU, indxHRU, modelTimeStep, hru_data, &
   call REDPRM(hru_data%typeStruct%var(iLookTYPE%vegTypeIndex),      & ! vegetation type index
               hru_data%typeStruct%var(iLookTYPE%soilTypeIndex),     & ! soil type
               hru_data%typeStruct%var(iLookTYPE%slopeTypeIndex),    & ! slope type index
-              maxSoilLayers,                               & ! number of soil layers
-              urbanVegCategory)                              ! vegetation category for urban areas
+              10000_i4b,                                            & ! number of soil layers
+              urbanVegCategory)                                       ! vegetation category for urban areas
  
-
   ! overwrite the minimum resistance
   if(overwriteRSMIN) RSMIN = hru_data%mparStruct%var(iLookPARAM%minStomatalResistance)%dat(1)
   
@@ -228,10 +209,8 @@ subroutine runPhysics(indxGRU, indxHRU, modelTimeStep, hru_data, &
                   hru_data%attrStruct,         & ! intent(in):    local attributes for each HRU
                   hru_data%forcStruct,         & ! intent(in):    model forcing data
                   hru_data%mparStruct,         & ! intent(in):    model parameters
-                  hru_data%bvarStruct,         & ! intent(in):    basin-average model variables
-#ifdef V4_ACTIVE                  
+                  hru_data%bvarStruct,         & ! intent(in):    basin-average model variables                 
                   hru_data%lookupStruct,       &
-#endif
                   ! data structures (input-output)
                   hru_data%indxStruct,         & ! intent(inout): model indices
                   hru_data%progStruct,         & ! intent(inout): model prognostic variables for a local HRU
@@ -244,6 +223,9 @@ subroutine runPhysics(indxGRU, indxHRU, modelTimeStep, hru_data, &
   flush(6)
   return; endif;
 
+  ! update the number of layers
+  gru_struc(indxGRU)%hruInfo(indxHRU)%nSnow = hru_data%indxStruct%var(iLookINDEX%nSnow)%dat(1) ! number of snow layers
+  gru_struc(indxGRU)%hruInfo(indxHRU)%nSoil = hru_data%indxStruct%var(iLookINDEX%nSoil)%dat(1) ! number of soil layers
 
   !************************************* End of run_oneHRU *****************************************
   ! save the flag for computing the vegetation fluxes
@@ -358,91 +340,5 @@ end subroutine runPhysics
   
     ! If the global default tolerance flag is set, then override the specific tolerances 
   end subroutine set_sundials_tolerances
-
-! ! *******************************************************************************************
-! ! *** get_steps_tolerances
-! ! *******************************************************************************************
-! #ifdef V4_ACTIVE
-! subroutine get_steps_tolerances(handle_hru_data, beSteps, rtol, atolWat, atolNrg) bind(C, name='get_steps_tolerances')
-!   USE globalData,only:model_decisions                         ! model decision structure
-!   USE var_lookup,only:iLookDECISIONS                          ! look-up values for model decisions
-!   USE var_lookup,only:iLookPARAM                              ! look-up values for local column model parameters
-!   implicit none
-
-!   ! dummy variables
-!   type(c_ptr),    intent(in), value         :: handle_hru_data        ! c_ptr to -- hru data
-!   integer(c_int), intent(out)               :: beSteps                ! number of backward Euler steps in data window
-!   real(c_double), intent(out)               :: rtol                   ! relative tolerance
-!   real(c_double), intent(out)               :: atolWat                ! absolute tolerance for water states
-!   real(c_double), intent(out)               :: atolNrg                ! absolute tolerance for energy states
-!   ! local variables
-!   type(hru_type),pointer                    :: hru_data               ! hru data
-!   call c_f_pointer(handle_hru_data, hru_data)
-
-!   if (trim(model_decisions(iLookDECISIONS%num_method)%cDecision)=='ida') then
-!     beSteps = 1 ! IDA should have full step size (value isn't used anyhow)
-!     ! IDA tolerances, which are set in the model decision file
-!     rtol = (hru_data%mparStruct%var(iLookPARAM%relTolTempCas)%dat(1) &
-!           + hru_data%mparStruct%var(iLookPARAM%relTolWatVeg)%dat(1) &
-!           + hru_data%mparStruct%var(iLookPARAM%relTolTempVeg)%dat(1) &
-!           + hru_data%mparStruct%var(iLookPARAM%relTolWatSnow)%dat(1) &
-!           + hru_data%mparStruct%var(iLookPARAM%relTolTempSoilSnow)%dat(1) &
-!           + hru_data%mparStruct%var(iLookPARAM%relTolMatric)%dat(1) &
-!           + hru_data%mparStruct%var(iLookPARAM%relTolAquifr)%dat(1))/7._rkind
-
-!     atolWat = (hru_data%mparStruct%var(iLookPARAM%absTolWatVeg)%dat(1) &
-!              + hru_data%mparStruct%var(iLookPARAM%absTolWatSnow)%dat(1) &
-!              + hru_data%mparStruct%var(iLookPARAM%absTolMatric)%dat(1) &
-!              + hru_data%mparStruct%var(iLookPARAM%absTolAquifr)%dat(1))/4._rkind
-!     atolNrg = (hru_data%mparStruct%var(iLookPARAM%absTolTempCas)%dat(1) &
-!              + hru_data%mparStruct%var(iLookPARAM%absTolTempVeg)%dat(1) &
-!              + hru_data%mparStruct%var(iLookPARAM%absTolTempSoilSnow)%dat(1))/3._rkind
-!   else ! all other methods are currently BE -- 'homegrown' ('itertive'), 'kinsol'
-!     beSteps = NINT(hru_data%mparStruct%var(iLookPARAM%be_steps)%dat(1))
-!     rtol = -9999    ! BE doesn't use these
-!     atolWat = -9999
-!     atolNrg = -9999
-!   endif
-! end subroutine get_steps_tolerances
-
-! ! *******************************************************************************************
-! ! *** get_steps_tolerances
-! ! *******************************************************************************************
-! subroutine set_steps_tolerances(handle_hru_data, beSteps, rtol, atolWat, atolNrg) bind(C, name='set_steps_tolerances')
-!   USE var_lookup,only:iLookPARAM                              ! look-up values for local column model parameters
-!   implicit none
-
-!   ! dummy variables
-!   type(c_ptr), intent(in), value           :: handle_hru_data        ! c_ptr to -- hru data
-!   integer(c_int), intent(in)               :: beSteps                ! number of backward Euler steps in data window
-!   real(c_double), intent(in)               :: rtol                   ! relative tolerance
-!   real(c_double), intent(in)               :: atolWat                ! absolute tolerance for water
-!   real(c_double), intent(in)               :: atolNrg                ! absolute tolerance for energy
-
-!   ! local variables
-!   type(hru_type),pointer                    :: hru_data              ! hru data
-!   call c_f_pointer(handle_hru_data, hru_data)
-
-!   ! set beSteps
-!   hru_data%mparStruct%var(iLookPARAM%be_steps)%dat(1) = REAL(beSteps)
-!   ! Set rtols
-!   hru_data%mparStruct%var(iLookPARAM%relTolTempCas)%dat(1) = rtol  
-!   hru_data%mparStruct%var(iLookPARAM%relTolTempVeg)%dat(1) = rtol  
-!   hru_data%mparStruct%var(iLookPARAM%relTolWatVeg)%dat(1) = rtol  
-!   hru_data%mparStruct%var(iLookPARAM%relTolTempSoilSnow)%dat(1) = rtol  
-!   hru_data%mparStruct%var(iLookPARAM%relTolWatSnow)%dat(1) = rtol  
-!   hru_data%mparStruct%var(iLookPARAM%relTolMatric)%dat(1) = rtol  
-!   hru_data%mparStruct%var(iLookPARAM%relTolAquifr)%dat(1) = rtol  
-!   ! Set atols
-!   hru_data%mparStruct%var(iLookPARAM%absTolTempCas)%dat(1) = atolNrg
-!   hru_data%mparStruct%var(iLookPARAM%absTolTempVeg)%dat(1) = atolNrg 
-!   hru_data%mparStruct%var(iLookPARAM%absTolWatVeg)%dat(1) = atolWat
-!   hru_data%mparStruct%var(iLookPARAM%absTolTempSoilSnow)%dat(1) = atolNrg
-!   hru_data%mparStruct%var(iLookPARAM%absTolWatSnow)%dat(1) = atolWat 
-!   hru_data%mparStruct%var(iLookPARAM%absTolMatric)%dat(1) = atolWat
-!   hru_data%mparStruct%var(iLookPARAM%absTolAquifr)%dat(1) = atolWat
-
-! end subroutine set_steps_tolerances
 #endif
-
 end module summa_modelRun

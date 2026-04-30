@@ -22,30 +22,41 @@ module summa_setup
 ! initializes parameter data structures (e.g. vegetation and soil parameters).
 
 ! access missing values
-USE globalData,only:integerMissing   ! missing integer
-USE globalData,only:realMissing      ! missing double precision number
+USE globalData,only:integerMissing      ! missing integer
+USE globalData,only:realMissing         ! missing real number
+
+! global data on the forcing file
+USE globalData,only:data_step           ! length of the data step (s)
 
 ! named variables
-USE var_lookup,only:iLookATTR                               ! look-up values for local attributes
-USE var_lookup,only:iLookTYPE                               ! look-up values for classification of veg, soils etc.
-USE var_lookup,only:iLookPARAM                              ! look-up values for local column model parameters
-USE var_lookup,only:iLookID                              ! look-up values for local column model parameters
-USE var_lookup,only:iLookBVAR                               ! look-up values for basin-average model variables
-USE var_lookup,only:iLookDECISIONS                          ! look-up values for model decisions
-USE globalData,only:urbanVegCategory                        ! vegetation category for urban areas
+USE var_lookup,only:iLookATTR           ! look-up values for local attributes
+USE var_lookup,only:iLookTYPE           ! look-up values for classification of veg, soils etc.
+USE var_lookup,only:iLookPARAM          ! look-up values for local column model parameters
+USE var_lookup,only:iLookINDEX          ! look-up values for local column model indices
+USE var_lookup,only:iLookLOOKUP         ! look-up values for local column lookup tables
+USE var_lookup,only:iLookID             ! look-up values for local column model ids
+USE var_lookup,only:iLookBVAR           ! look-up values for basin-average model variables
+USE var_lookup,only:iLookDECISIONS      ! look-up values for model decisions
+USE globalData,only:urbanVegCategory    ! vegetation category for urban areas
 
 ! metadata structures
-USE globalData,only:mpar_meta,bpar_meta                     ! parameter metadata structures
+USE globalData,only:mpar_meta,bpar_meta ! parameter metadata structures
+
+! look-up values for the choice of variable in energy equations (BE residual or IDA state variable)
+USE mDecisions_module,only:&
+  closedForm,    &                      ! use temperature with closed form heat capacity
+  enthalpyForm,  &                      ! use enthalpy with soil temperature-enthalpy lookup tables
+  enthalpyFormAN                        ! use enthalpy with soil temperature-enthalpy analytical solution
 
 ! named variables to define the decisions for snow layers
 USE mDecisions_module,only:&
-  sameRulesAllLayers, & ! SNTHERM option: same combination/sub-dividion rules applied to all layers
-  rulesDependLayerIndex ! CLM option: combination/sub-dividion rules depend on layer index
+  sameRulesAllLayers,&                  ! SNTHERM option: same combination/sub-dividion rules applied to all layers
+  rulesDependLayerIndex                 ! CLM option: combination/sub-dividion rules depend on layer index
 
 ! named variables to define LAI decisions
 USE mDecisions_module,only:&
- monthlyTable,& ! LAI/SAI taken directly from a monthly table for different vegetation classes
- specified      ! LAI/SAI computed from green vegetation fraction and winterSAI and summerLAI parameters
+ monthlyTable,&                         ! LAI/SAI taken directly from a monthly table for different vegetation classes
+ specified                              ! LAI/SAI computed from green vegetation fraction and winterSAI and summerLAI parameters
 
 ! safety: set private unless specified otherwise
 implicit none
@@ -58,10 +69,10 @@ contains
  ! ---------------------------------------------------------------------------------------
  ! * desired modules
  ! ---------------------------------------------------------------------------------------
- USE nrtype                                                  ! variable types, etc.
+ USE nr_type                                                 ! variable types, etc.
  USE summa_type, only:summa1_type_dec                        ! master summa data type
  ! subroutines and functions
- use time_utils_module,only:elapsedSec                       ! calculate the elapsed time
+ USE time_utils_module,only:elapsedSec                       ! calculate the elapsed time
  USE mDecisions_module,only:mDecisions                       ! module to read model decisions
  USE ffile_info_module,only:ffile_info                       ! module to read information on forcing datafile
  USE read_attrb_module,only:read_attrb                       ! module to read local attributes
@@ -84,6 +95,7 @@ contains
  ! output constraints
  USE globalData,only:maxLayers                               ! maximum number of layers
  USE globalData,only:maxSnowLayers                           ! maximum number of snow layers
+ USE globalData,only:maxSoilLayers                           ! maximum number of soil layers
  ! timing variables
  USE globalData,only:startSetup,endSetup                     ! date/time for the start and end of the parameter setup
  USE globalData,only:elapsedSetup                            ! elapsed time for the parameter setup
@@ -109,7 +121,8 @@ contains
  integer(i4b)                          :: jHRU,kHRU          ! HRU indices
  integer(i4b)                          :: iGRU,iHRU          ! looping variables
  integer(i4b)                          :: iVar               ! looping variables
- ! ---------------------------------------------------------------------------------------
+ real(rkind)                           :: absEnergyFac       ! multiplier for absolute value of energy state variable (for enthalpy or temperature)
+  ! ---------------------------------------------------------------------------------------
  ! associate to elements in the data structure
  summaVars: associate(&
 
@@ -126,6 +139,9 @@ contains
   bparStruct           => summa1_struc%bparStruct          , & ! x%gru(:)%var(:)            -- basin-average parameters
   bvarStruct           => summa1_struc%bvarStruct          , & ! x%gru(:)%var(:)%dat        -- basin-average variables
 
+  ! lookup table structure
+  lookupStruct         => summa1_struc%lookupStruct        , & ! x%gru(:)%hru(:)%z(:)%var(:)%lookup    -- lookup-tables
+
   ! miscellaneous variables
   upArea               => summa1_struc%upArea              , & ! area upslope of each HRU
   nGRU                 => summa1_struc%nGRU                , & ! number of grouped response units
@@ -135,15 +151,22 @@ contains
  ! ---------------------------------------------------------------------------------------
  ! initialize error control
  err=0; message='summa_paramSetup/'
-
+ 
  ! initialize the start of the initialization
  call date_and_time(values=startSetup)
 
+#ifdef NGEN_FORCING_ACTIVE
+ ! *****************************************************************************
+ ! if using NGEN forcing only need to set the hourly data_step (fixed)
+ ! *****************************************************************************
+ data_step = 3600._rkind
+#else
  ! *****************************************************************************
  ! *** read description of model forcing datafile used in each HRU
  ! *****************************************************************************
  call ffile_info(nGRU,err,cmessage)
  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+#endif
 
  ! *****************************************************************************
  ! *** read model decisions
@@ -151,7 +174,7 @@ contains
  ! NOTE: Must be after ffile_info because mDecisions uses the data_step
  call mDecisions(err,cmessage)
  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
-
+ 
  ! get the maximum number of snow layers
  select case(model_decisions(iLookDECISIONS%snowLayers)%iDecision)
   case(sameRulesAllLayers);    maxSnowLayers = 100
@@ -159,8 +182,16 @@ contains
   case default; err=20; message=trim(message)//'unable to identify option to combine/sub-divide snow layers'; return
  end select ! (option to combine/sub-divide snow layers)
 
- ! get the maximum number of layers
- maxLayers = gru_struc(1)%hruInfo(1)%nSoil + maxSnowLayers
+ ! get the maximum number of layers for soil and total
+ !  (max snow layers are fixed as above, snow layers may change)
+ maxLayers     = 0
+ maxSoilLayers = 0
+ do iGRU=1,nGRU
+  do iHRU=1,gru_struc(iGRU)%hruCount
+   maxSoilLayers = max(maxSoilLayers, gru_struc(iGRU)%hruInfo(iHRU)%nSoil)
+   maxLayers = max(maxLayers, maxSnowLayers+gru_struc(iGRU)%hruInfo(iHRU)%nSoil)
+  end do
+ end do
 
  ! *****************************************************************************
  ! *** read local attributes for each HRU
@@ -178,11 +209,19 @@ contains
  ! *****************************************************************************
 
  ! read default values and constraints for model parameters (local column)
- call read_pinit(LOCALPARAM_INFO,.TRUE., mpar_meta,localParFallback,err,cmessage)
+ select case(model_decisions(iLookDECISIONS%nrgConserv)%iDecision)
+   case(closedForm) ! ida temperature state variable
+     absEnergyFac = 1.e2_rkind ! energy state variable is 2 orders of magnitude larger than mass state variable
+   case(enthalpyForm, enthalpyFormAN) ! ida enthalpy state variable
+     absEnergyFac = 1.e7_rkind ! energy state variable is 7 orders of magnitude larger than mass state variable
+   case default; err=20; message=trim(message)//'unable to identify option for energy conservation'; return
+ end select ! (option for energy conservation)
+
+ call read_pinit(LOCALPARAM_INFO,.TRUE., absEnergyFac,mpar_meta,localParFallback,err,cmessage)
  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
 
  ! read default values and constraints for model parameters (basin-average)
- call read_pinit(BASINPARAM_INFO,.FALSE.,bpar_meta,basinParFallback,err,cmessage)
+ call read_pinit(BASINPARAM_INFO,.FALSE.,absEnergyFac, bpar_meta,basinParFallback,err,cmessage)
  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
 
  ! *****************************************************************************
@@ -219,7 +258,7 @@ contains
  do iGRU=1,nGRU
   do iHRU=1,gru_struc(iGRU)%hruCount
 
-   ! set parmameters to their default value
+   ! set parameters to their default value
    dparStruct%gru(iGRU)%hru(iHRU)%var(:) = localParFallback(:)%default_val         ! x%hru(:)%var(:)
 
    ! overwrite default model parameters with information from the Noah-MP tables
@@ -232,8 +271,8 @@ contains
 
    ! copy over to the parameter structure
    ! NOTE: constant for the dat(:) dimension (normally depth)
-   do ivar=1,size(localParFallback)
-    mparStruct%gru(iGRU)%hru(iHRU)%var(ivar)%dat(:) = dparStruct%gru(iGRU)%hru(iHRU)%var(ivar)
+   do iVar=1,size(localParFallback)
+    mparStruct%gru(iGRU)%hru(iHRU)%var(iVar)%dat(:) = dparStruct%gru(iGRU)%hru(iHRU)%var(iVar)
    end do  ! looping through variables
 
   end do  ! looping through HRUs
@@ -249,6 +288,10 @@ contains
  call read_param(iRunMode,checkHRU,startGRU,nHRU,nGRU,idStruct,mparStruct,bparStruct,err,cmessage)
  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
 
+ ! *****************************************************************************
+ ! *** skip computing derived model variables that are constant for the basin and do in gru_actor.f90 
+ ! *****************************************************************************
+
  ! identify the end of the initialization
  call date_and_time(values=endSetup)
 
@@ -260,14 +303,6 @@ contains
 
 
  end subroutine summa_paramSetup
-
-
- ! =================================================================================================
- ! =================================================================================================
- ! =================================================================================================
- ! =================================================================================================
- ! =================================================================================================
- ! =================================================================================================
 
  ! **************************************************************************************************
  ! private subroutine SOIL_VEG_GEN_PARM: Read soil, vegetation and other model parameters (from NOAH)
@@ -323,7 +358,7 @@ contains
   !                LAI: Leaf area index (dimensionless)
   !             MAXALB: Upper bound on maximum albedo over deep snow
   !
-  !-----READ IN VEGETAION PROPERTIES FROM VEGPARM.TBL
+  !-----READ IN VEGETATION PROPERTIES FROM VEGPARM.TBL
   !
 
   OPEN(19, FILE=trim(FILENAME_VEGTABLE),FORM='FORMATTED',STATUS='OLD',IOSTAT=ierr)
@@ -367,7 +402,7 @@ contains
        SIZE(ALBEDOMAXTBL) < LUCATS .OR. &
        SIZE(EMISSMINTBL ) < LUCATS .OR. &
        SIZE(EMISSMAXTBL ) < LUCATS ) THEN
-     CALL wrf_error_fatal('Table sizes too small for value of LUCATS in module_sf_noahdrv.F')
+     CALL wrf_error_fatal('Table sizes too small for value of LUCATS in module_sf_noahdrv.F, expand NLUS and MVT parameters to size of vegetation table and recompile')
   ENDIF
 
   IF(LUTYPE.EQ.MMINLU)THEN
@@ -458,7 +493,7 @@ contains
    case('ROSETTA')          ! new soil table
      DO LC=1,SLCATS
         READ (19,*) IINDEX,&
-             ! new soil parameters (from Rosetta)
+             ! new soil parameters (from Rosetta only)
              theta_res(LC), theta_sat(LC),        &
              vGn_alpha(LC), vGn_n(LC), k_soil(LC), &
              ! original soil parameters

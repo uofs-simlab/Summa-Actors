@@ -497,7 +497,6 @@ std::vector<int> get_flagVec_by_indx(void* handle, int struct_indx) {
   return array;
 }
 
-#ifdef V4_ACTIVE
 std::vector<std::vector<std::vector<double>>> get_lookup_struct(void *handle) {
   int size_z;
   get_size_z_lookup(handle, &size_z);
@@ -519,8 +518,7 @@ std::vector<std::vector<std::vector<double>>> get_lookup_struct(void *handle) {
   }
 
   return lookup_struct;
-} 
-#endif
+}
 
 void get_scalar_data(void* handle, double fracJulDay, 
                      double tmZoneOffsetFracDay, int year_length, 

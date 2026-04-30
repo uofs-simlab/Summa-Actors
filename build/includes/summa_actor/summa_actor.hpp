@@ -22,6 +22,7 @@ class SummaActor {
   int num_gru_;             // number of GRUs to compute
   int file_gru_;            // number of GRUs in the file
   int num_gru_failed_ = 0;  // Number of GRUs that have failed
+  int num_gru_restarts_ = 0; // Number of GRUs that have been restarted
   caf::actor current_job_;  // Reference to the current job actor
   caf::actor parent_;
   std::string log_folder_;

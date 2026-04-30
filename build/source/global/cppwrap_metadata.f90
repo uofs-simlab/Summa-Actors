@@ -32,7 +32,7 @@ contains
   end subroutine delete_handle_var_info
   
 !-----------------------------------
-  subroutine set_data_var_info(handle, varname, vardesc, varunit, vartype, &
+  subroutine set_data_var_info(handle, varname, vardesc, varunit, varType, &
     ncVarID, ncVarID_size, statIndex, statIndex_size, varDesire) &
     bind(C, name='set_data_var_info')
     use cppwrap_auxiliary,only:c_f_string           
@@ -41,7 +41,7 @@ contains
     
     type(c_ptr), intent(in),value :: handle
     character(kind=c_char,len=1),intent(in) :: varname(*), vardesc(*), varunit(*)
-    integer(c_int), intent(in),value  :: vartype 
+    integer(c_int), intent(in),value  :: varType 
     integer(c_int), intent(in),value  :: ncVarID_size
     integer(c_int), intent(in)        :: ncVarID(ncVarID_size)
     integer(c_int), intent(in),value  :: statIndex_size
@@ -56,7 +56,7 @@ contains
     call c_f_string(varname, p%varname, 64)
     call c_f_string(vardesc, p%vardesc, 128)
     call c_f_string(varunit, p%varunit, 64)
-    p%vartype = vartype
+    p%varType = varType
     do i=1,ncVarID_size
       p%ncVarID(i) = ncVarID(i)
     end do

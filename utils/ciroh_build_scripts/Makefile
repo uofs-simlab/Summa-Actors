@@ -59,16 +59,16 @@ SUMMA_NOAHMP= \
 NOAHMP = $(patsubst %, $(NOAHMP_DIR)/%, $(SUMMA_NOAHMP))
 
 SUMMA_NRUTIL= \
-		nrtype.f90 \
 		f2008funcs.f90 \
-		nr_utility.f90
-NRUTIL = $(patsubst %, $(ENGINE_DIR)/%, $(SUMMA_NRUTIL))
+		nr_utils.f90 \
+		nr_type.f90
+NRUTIL = $(patsubst %, $(NUMREC_DIR)/%, $(SUMMA_NRUTIL))
 
 SUMMA_NRPROC= \
 		expIntegral.f90 \
 		spline_int.f90 \
 		hyp_2F1.f90
-NRPROC = $(patsubst %, $(ENGINE_DIR)/%, $(SUMMA_NRPROC))
+NRPROC = $(patsubst %, $(NUMREC_DIR)/%, $(SUMMA_NRPROC))
 
 SUMMA_HOOKUP= \
 		ascii_util.f90 \
@@ -77,15 +77,15 @@ HOOKUP = $(patsubst %, $(HOOKUP_DIR)/%, $(SUMMA_HOOKUP))
 
 # Data modules
 SUMMA_DATAMS= \
-		var_lookup.f90 \
 		data_types.f90 \
-		globalData.f90 \
-		flxMapping.f90 \
+		fluxMapping.f90 \
 		get_ixname.f90 \
+		globalData.f90 \		
 		multiconst.f90 \
 		outpt_stat.f90 \
 		popMetadat.f90 \
-		type4ida.f90   \
+		var_lookup.f90 \
+		type4ida.f90 \
 		type4kinsol.f90
 DATAMS = $(patsubst %, $(DSHARE_DIR)/%, $(SUMMA_DATAMS))
 
@@ -94,31 +94,29 @@ ACTORS_DATAMS = \
 DATAMS += $(patsubst %, $(ACTORS_SRC)/global/%, $(ACTORS_DATAMS))
 
 SUMMA_UTILMS = \
-		time_utils.f90 \
 		matrixOper.f90 \
 		mDecisions.f90 \
 		snow_utils.f90 \
 		soil_utils.f90 \
+		time_utils.f90 \
 		updatState.f90 \
 		soil_utilsAddPrime.f90 \
 		updatStateWithPrime.f90
 UTILMS = $(patsubst %, $(ENGINE_DIR)/%, $(SUMMA_UTILMS))
 
-
 SUMMA_NETCDF = \
-		netcdf_util.f90 \
 		def_output.f90 \
 		modelwrite.f90 \
+		netcdf_util.f90 \
 		read_icond.f90
 NETCDF = $(patsubst %, $(NETCDF_DIR)/%, $(SUMMA_NETCDF))
 
 SUMMA_PRELIM = \
 		allocspace.f90  \
-		enthalpyTemp.f90 \
 		check_icond.f90 \
 		checkStruc.f90 \
 		childStruc.f90 \
-		conv_funcs.f90 \
+		convert_funcs.f90 \
 		ffile_info.f90 \
 		read_pinit.f90 \
 		read_attrb.f90 \
@@ -131,50 +129,49 @@ PRELIM = $(patsubst %, $(ENGINE_DIR)/%, $(SUMMA_PRELIM))
 SUMMA_MODRUN = \
 		canopySnow.f90 \
 		derivforce.f90 \
+		convertEnthalpyTemp.f90 \
 		getVectorz.f90 \
 		indexState.f90 \
-		var_derive.f90 \
 		layerMerge.f90 \
 		layerDivide.f90 \
 		qTimeDelay.f90 \
 		snowAlbedo.f90 \
-		snwCompact.f90 \
 		tempAdjust.f90 \
-		updateVars.f90 \
+		updatDiagn.f90 \
+		var_derive.f90 \
 		volicePack.f90 \
 		tol4ida.f90 \
-		updateVarsWithPrime.f90
+		updatDiagnWithPrime.f90
 MODRUN = $(patsubst %, $(ENGINE_DIR)/%, $(SUMMA_MODRUN))
 
 SUMMA_SOLVER = \
-		vegPhenlgy.f90 \
-		bigAquifer.f90 \
-		stomResist.f90 \
-		vegNrgFlux.f90 \
-		ssdNrgFlux.f90 \
-		vegLiqFlux.f90 \
-		vegSWavRad.f90 \
-		snowLiqFlx.f90 \
-		soilLiqFlx.f90 \
-		groundwatr.f90 \
-		computFlux.f90 \
-		computHeatCap.f90 \
-		computJacob.f90 \
-		computResid.f90 \
-		computSnowDepth.f90 \
-		computThermConduct.f90 \
-		computResidWithPrime.f90 \
+        bigAquifer.f90 \
+        computFlux.f90 \
+        heat_Cp_Cm.f90 \
+        computJacob.f90 \
+        computResid.f90 \
+        snowDepth.f90 \
+        thermConductivity.f90 \
+        coupled_em.f90 \
+        eval8summa.f90 \
+        groundwatr.f90 \
+        opSplittin.f90 \
+        snowLiqFlux.f90 \
+        soilLiqFlux.f90 \
+        snowSoilNrgFlux.f90 \
+        stomResist.f90 \
+        summaSolv4homegrown.f90 \
+        systemSolv.f90 \
+        varSubstep.f90 \
+        vegLiqFlux.f90 \
+        vegNrgFlux.f90 \
+        vegPhenlgy.f90 \
+        vegSWavRad.f90 \
 		computJacobWithPrime.f90 \
+		computResidWithPrime.f90 \
 		eval8summaWithPrime.f90 \
-		eval8summa.f90 \
-		summaSolve4kinsol.f90 \
-		summaSolve4ida.f90 \
-		summaSolve4homegrown.f90 \
-		diagn_evar.f90 \
-		systemSolv.f90 \
-		varSubstep.f90 \
-		opSplittin.f90 \
-		coupled_em.f90
+	    summaSolv4ida.f90 \
+		summaSolv4kinsol.f90
 SOLVER = $(patsubst %, $(ENGINE_DIR)/%, $(SUMMA_SOLVER))
 
 SUMMA_DRIVER = \

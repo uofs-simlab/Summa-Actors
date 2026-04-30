@@ -1,6 +1,6 @@
 module output_buffer
   USE, intrinsic :: iso_c_binding
-  USE nrtype
+  USE nr_type
   USE globalData,only:integerMissing      ! missing integer value
   USE globalData,only:realMissing         ! missing double precision value
   USE data_types
@@ -15,11 +15,8 @@ module output_buffer
   public::f_allocateOutputBuffer
   public::f_deallocateOutputBuffer
 
-  ! Parameters for the output NetCDF file
-  character(len=64), parameter     :: summaVersion = ''
-  character(len=64), parameter     :: buildTime = ''
-  character(len=64), parameter     :: gitBranch = ''
-  character(len=64), parameter     :: gitHash = ''
+  ! version information generated during compiling
+  INCLUDE 'summaversion.inc'
 
   type(summa_output_type),allocatable,save,public     :: summa_struct(:)    ! summa_OutputStructure(1)%struc%var(:)%dat(nTimeSteps) 
   type(ilength),allocatable,save,public               :: outputTimeStep(:)  ! timestep in output files
@@ -39,13 +36,12 @@ subroutine f_defOutput(handle_ncid, start_gru, num_gru, num_hru, file_gru, &
   USE globalData,only:fileout,output_fileSuffix
   USE globalData,only:iRunMode,iRunModeFull,iRunModeGRU,iRunModeHRU ! define the running modes
   USE globalData,only:checkHRU
-  USE globalData,only:gru_struc
   USE globalData,only:ncid
   USE globalData,only:nGRUrun,nHRUrun
   
   USE def_output_module,only:def_output               ! module to define model output
   implicit none
-  ! Dummy Varaibles
+  ! Dummy Variables
   type(c_ptr),intent(in),value           :: handle_ncid
   integer(c_int),intent(in)              :: start_gru
   integer(c_int),intent(in)              :: num_gru
@@ -87,15 +83,15 @@ subroutine f_defOutput(handle_ncid, start_gru, num_gru, num_hru, file_gru, &
 
   nGRUrun = num_gru
   nHRUrun = num_hru
-  fileout = trim(OUTPUT_PATH)//trim(OUTPUT_PREFIX)//trim("_")//trim(output_fileSuffix)
+  fileout = trim(OUTPUT_PATH)//trim(OUTPUT_PREFIX)//trim(output_fileSuffix)
   ncid(:) = integerMissing
-  call def_output(summaVersion, buildTime, gitBranch, gitHash, num_gru, &
-                  num_hru, gru_struc(1)%hruInfo(1)%nSoil, fileout, &
-                  err,message)
+  ! never use SUMMA buffered write for Actors, so pass first argument as false
+  call def_output(.false., summaVersion, buildTime, gitBranch, gitHash, &
+                  num_gru, num_hru, fileout, err, message)
   if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
   ! allocate space for the output file ID array
   if (.not.allocated(output_ncid%var))then
-    allocate(output_ncid%var(maxVarFreq))
+    allocate(output_ncid%var(maxvarFreq))
     output_ncid%var(:) = integerMissing
   endif
   ! copy ncid
@@ -106,7 +102,7 @@ end subroutine f_defOutput
 subroutine f_setChunkSize(chunk_size_in) bind(C, name="f_setChunkSize")
   USE globalData,only:chunksize                       ! chunk size for output file  
   implicit none
-  ! Dummy Varaibles
+  ! Dummy Variables
   integer(c_int),intent(inout)              :: chunk_size_in
 
   if (chunk_size_in > 0 .and. chunk_size_in > chunksize) then 
@@ -118,7 +114,7 @@ end subroutine f_setChunkSize
 
 subroutine f_addFailedGru(gru_index) bind(C, name="f_addFailedGru")
   implicit none
-  ! Dummy Varaibles
+  ! Dummy Variables
   integer(c_int),intent(in)              :: gru_index
   if (allocated(summa_struct)) then
     summa_struct(1)%failedGrus(gru_index) = .true.
@@ -167,7 +163,7 @@ subroutine f_setFailedGruMissing(start_gru, end_gru) bind(C, name="f_setFailedGr
   USE globalData,only:indxChild_map             ! index of the child data structure: stats indx
   USE globalData,only:bvarChild_map             ! index of the child data structure: stats bvar
   implicit none
-  ! Dummy Varaibles
+  ! Dummy Variables
   integer(c_int),intent(in)              :: start_gru
   integer(c_int),intent(in)              :: end_gru
   ! local variables
@@ -182,7 +178,7 @@ subroutine f_setFailedGruMissing(start_gru, end_gru) bind(C, name="f_setFailedGr
 
   do iGRU = start_gru, end_gru
     if (summa_struct(1)%failedGrus(iGRU)) then
-      do iFreq=1, maxVarFreq
+      do iFreq=1, maxvarFreq
         if(.not. outFreq(iFreq)) cycle
         ! forc
         do iVar=1, size(forc_meta)
@@ -205,7 +201,7 @@ subroutine f_setFailedGruMissing(start_gru, end_gru) bind(C, name="f_setFailedGr
               summa_struct(1)%forcStruct%gru(iGRU)%hru(iHRU)%var(iVar)%tim(:) = realMissing
             endif 
           end do ! iHRU
-        end do ! ivar
+        end do ! iVar
 
         ! prog
         do iVar = 1, size(prog_meta)
@@ -331,7 +327,7 @@ subroutine f_allocateOutputBuffer(max_steps, num_gru, err, message_r) &
   if (.not.allocated(outputTimeStep)) then
     allocate(outputTimeStep(num_gru), stat=err)
     do iGRU = 1, num_gru
-      allocate(outputTimeStep(iGRU)%dat(maxVarFreq), stat=err)
+      allocate(outputTimeStep(iGRU)%dat(maxvarFreq), stat=err)
       outputTimeStep(iGRU)%dat(:) = 1
     end do
   end if
@@ -391,7 +387,7 @@ subroutine f_deallocateOutputBuffer(handle_ncid) &
 
   call c_f_pointer(handle_ncid, output_ncid)
   
-  do iFreq = 1, maxVarFreq
+  do iFreq = 1, maxvarFreq
     if (output_ncid%var(iFreq) /= integerMissing) then
       call nc_file_close(output_ncid%var(iFreq), err, message)
     end if

@@ -1,6 +1,6 @@
 module gru_struc_module
   USE, intrinsic :: iso_c_binding
-  USE nrtype
+  USE nr_type
   USE globalData,only:integerMissing
   implicit none
 
@@ -32,9 +32,9 @@ subroutine f_readDimension(start_gru, num_gru, file_gru, file_hru, &
   USE netcdf_util_module,only:nc_file_open                   ! open netcdf file
   USE netcdf_util_module,only:nc_file_close                  ! close netcdf file
 
-  USE globalData,only:gru_struc                             ! gru->hru mapping structure
+  USE globalData,only:gru_struc                              ! gru->hru mapping structure
   USE globalData,only:index_map                              ! hru->gru mapping structure
-  USE nr_utility_module,only:arth
+  USE nr_utils_module,only:arth
 
   USE C_interface_module,only:f_c_string_ptr
   implicit none
@@ -117,7 +117,7 @@ end subroutine f_readDimension
 
 subroutine f_setHruCount(iGRU,sGRU) bind(C, name="f_setHruCount")
   USE globalData,only:gru_struc           ! gru->hru mapping structure
-  USE nr_utility_module ,only:arth
+  USE nr_utils_module ,only:arth
   implicit none
   ! Dummy Variables
   integer(c_int), intent(in)      :: iGRU
@@ -216,8 +216,5 @@ subroutine f_deallocateGruStruc() bind(C, name="f_deallocateGruStruc")
     if(allocated(hru2gru_id))then; deallocate(hru2gru_id);endif
     if(allocated(hru_ix))then; deallocate(hru_ix);endif
 end subroutine
-
-
-
 
 end module gru_struc_module

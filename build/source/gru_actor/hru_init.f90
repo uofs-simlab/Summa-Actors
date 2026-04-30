@@ -1,33 +1,16 @@
 module INIT_HRU_ACTOR
 ! used to declare and allocate summa data structures and initialize model state to known values
 USE,intrinsic :: iso_c_binding
-USE nrtype          ! variable types, etc.
-USE data_types,only:&
-                    ! no spatial dimension
-                    var_i,               & ! x%var(:)            (i4b)
-                    var_i8,              & ! x%var(:)            (i8b)
-                    var_d,               & ! x%var(:)            (dp)
-                    var_ilength,         & ! x%var(:)%dat        (i4b)
-                    var_dlength            ! x%var(:)%dat        (dp)
-#ifdef V4_ACTIVE
-USE data_types,only:zlookup               ! x%z(:)%var(:)%lookup(:) -- lookup tables
-#endif
+USE nr_type          ! variable types, etc.
 USE actor_data_types,only:hru_type             ! hru_type
                     
-! access missing values
-USE globalData,only:integerMissing   ! missing integer
-USE globalData,only:realMissing      ! missing double precision number
-! named variables for run time options
-USE globalData,only:iRunModeFull,iRunModeGRU,iRunModeHRU
 ! metadata structures
 USE globalData,only:time_meta,forc_meta,attr_meta,type_meta ! metadata structures
 USE globalData,only:prog_meta,diag_meta,flux_meta,id_meta   ! metadata structures
 USE globalData,only:mpar_meta,indx_meta                     ! metadata structures
 USE globalData,only:bpar_meta,bvar_meta                     ! metadata structures
 USE globalData,only:averageFlux_meta                        ! metadata for time-step average fluxes
-#ifdef V4_ACTIVE
 USE globalData,only:lookup_meta 
-#endif
 ! statistics metadata structures
 USE globalData,only:statForc_meta                           ! child metadata for stats
 USE globalData,only:statProg_meta                           ! child metadata for stats
@@ -36,7 +19,7 @@ USE globalData,only:statFlux_meta                           ! child metadata for
 USE globalData,only:statIndx_meta                           ! child metadata for stats
 USE globalData,only:statBvar_meta                           ! child metadata for stats
 ! maxvarFreq 
-USE var_lookup,only:maxVarFreq                               ! # of available output frequencies
+USE var_lookup,only:maxvarFreq                               ! # of available output frequencies
 ! named variables
 USE var_lookup,only:iLookATTR                               ! look-up values for local attributes
 USE var_lookup,only:iLookTYPE                               ! look-up values for classification of veg, soils etc.
@@ -46,12 +29,6 @@ USE var_lookup,only:iLookID                                   ! look-up values f
 USE var_lookup,only:iLookPROG                               ! look-up values for local column model prognostic (state) variables
 USE var_lookup,only:iLookDIAG                               ! look-up values for local column model diagnostic variables
 USE var_lookup,only:iLookFLUX                               ! look-up values for local column model fluxes
-USE globalData,only:urbanVegCategory                        ! vegetation category for urban areas
-
-! named variables to define LAI decisions
-USE mDecisions_module,only:&
- monthlyTable,& ! LAI/SAI taken directly from a monthly table for different vegetation classes
- specified      ! LAI/SAI computed from green vegetation fraction and winterSAI and summerLAI parameters
 
 ! safety: set private unless specified otherwise
 implicit none
@@ -68,7 +45,7 @@ subroutine initHRU(indx_gru, indx_hru, hru_data, err, message)
   ! * desired modules
   ! ---------------------------------------------------------------------------------------
   ! data types
-  USE nrtype                                                  ! variable types, etc.
+  USE nr_type                                                 ! variable types, etc.
   ! subroutines and functions: allocate space
   USE allocspace_module,only:allocLocal
   ! timing variables
@@ -80,14 +57,12 @@ subroutine initHRU(indx_gru, indx_hru, hru_data, err, message)
   USE globalData,only:gru_struc                               ! gru-hru mapping structures
   USE globalData,only:structInfo                              ! information on the data structures
   USE globalData,only:startTime,finshTime,refTime,oldTime
-
-  USE var_lookup,only:maxvarFreq                              ! maximum number of output files
   USE var_lookup,only:iLookFreq                               ! output frequency lookup table
   implicit none
   ! Dummy Variables
   integer(c_int),intent(in)                  :: indx_gru      ! indx of the parent GRU
   integer(c_int),intent(in)                  :: indx_hru      ! indx of the HRU
-  type(hru_type),intent(out)                 :: hru_data      ! hru data structure (hru_type
+  type(hru_type),intent(out)                 :: hru_data      ! hru data structure (hru_type)
   integer(c_int),intent(out)                 :: err  
   character(len=256),intent(out)             :: message       ! error message
   ! Local Variables
@@ -112,7 +87,7 @@ subroutine initHRU(indx_gru, indx_hru, hru_data, err, message)
   do iStruct=1,4
   select case(iStruct)
     case(1); call allocLocal(time_meta, hru_data%startTime_hru, err=err, message=cmessage)  ! start time for the model simulation
-    case(2); call allocLocal(time_meta, hru_data%finishTime_hru, err=err, message=cmessage)  ! end time for the model simulation
+    case(2); call allocLocal(time_meta, hru_data%finishTime_hru, err=err, message=cmessage) ! end time for the model simulation
     case(3); call allocLocal(time_meta, hru_data%refTime_hru,   err=err, message=cmessage)  ! reference time for the model simulation
     case(4); call allocLocal(time_meta, hru_data%oldTime_hru,   err=err, message=cmessage)  ! time from the previous step
   end select
@@ -124,7 +99,6 @@ subroutine initHRU(indx_gru, indx_hru, hru_data, err, message)
   hru_data%finishTime_hru%var(:) = finshTime%var(:)
   hru_data%refTime_hru%var(:) = refTime%var(:)
   hru_data%oldTime_hru%var(:) = oldTime%var(:)
-
 
   ! get the number of snow and soil layers
   associate(&
@@ -147,8 +121,8 @@ subroutine initHRU(indx_gru, indx_hru, hru_data, err, message)
     case('flux'); call allocLocal(flux_meta,hru_data%fluxStruct,nSnow,nSoil,err,cmessage);    ! model fluxes
     case('bpar'); call allocLocal(bpar_meta,hru_data%bparStruct,nSnow=0,nSoil=0,err=err,message=cmessage);  ! basin-average variables
     case('bvar'); call allocLocal(bvar_meta,hru_data%bvarStruct,nSnow=0,nSoil=0,err=err,message=cmessage);  ! basin-average variables
-    case('lookup'); cycle ! allocated in enthaplpyTemp.f90
-    case('deriv'); cycle
+    case('lookup'); cycle ! allocated in convertEnthalpyTemp.f90
+    case('deriv'); cycle ! derivatives are not stored in the data structure, but are instead computed on the fly and stored in local variables
     case default; err=20; message='unable to find structure name: '//trim(structInfo(iStruct)%structName)
   end select
   ! check errors
@@ -163,8 +137,6 @@ subroutine initHRU(indx_gru, indx_hru, hru_data, err, message)
 	! NOTE: This is done here, rather than in the loop above, because dpar is not one of the "standard" data structures
 	call allocLocal(mpar_meta,hru_data%dparStruct,nSnow,nSoil,err,cmessage);    ! default model parameters
 	if(err/=0)then; message=trim(message)//trim(cmessage)//' [problem allocating dparStruct]'; print*,message;return;endif
-	 
-
 
   ! *****************************************************************************
   ! *** allocate space for output statistics data structures
@@ -189,14 +161,13 @@ subroutine initHRU(indx_gru, indx_hru, hru_data, err, message)
     endif
   end do ! iStruct
 
-
   ! Intilaize the statistics data structures
-  allocate(hru_data%statCounter%var(maxVarFreq), stat=err)
-  allocate(hru_data%outputTimeStep%var(maxVarFreq), stat=err)
-  allocate(hru_data%resetStats%dat(maxVarFreq), stat=err)
-  allocate(hru_data%finalizeStats%dat(maxVarFreq), stat=err)
-  hru_data%statCounter%var(1:maxVarFreq) = 1
-  hru_data%outputTimeStep%var(1:maxVarFreq) = 1
+  allocate(hru_data%statCounter%var(maxvarFreq), stat=err)
+  allocate(hru_data%outputTimeStep%var(maxvarFreq), stat=err)
+  allocate(hru_data%resetStats%dat(maxvarFreq), stat=err)
+  allocate(hru_data%finalizeStats%dat(maxvarFreq), stat=err)
+  hru_data%statCounter%var(1:maxvarFreq) = 1
+  hru_data%outputTimeStep%var(1:maxvarFreq) = 1
   ! initialize flags to reset/finalize statistics
   hru_data%resetStats%dat(:)    = .true.   ! start by resetting statistics
   hru_data%finalizeStats%dat(:) = .false.  ! do not finalize stats on the first time step
@@ -219,30 +190,8 @@ subroutine setupHRU(indxGRU, indxHRU, hru_data, err, message)
   ! ---------------------------------------------------------------------------------------
   ! * desired modules
   ! ---------------------------------------------------------------------------------------
-  USE nrtype                                                  ! variable types, etc.
+  USE nr_type                                                  ! variable types, etc.
   USE summa_init_struc,only:init_struc
-  ! subroutines and functions
-  use time_utils_module,only:elapsedSec                       ! calculate the elapsed time
-  USE mDecisions_module,only:mDecisions                       ! module to read model decisions
-  USE paramCheck_module,only:paramCheck                       ! module to check consistency of model parameters
-  USE pOverwrite_module,only:pOverwrite                       ! module to overwrite default parameter values with info from the Noah tables
-  USE var_derive_module,only:fracFuture                       ! module to calculate the fraction of runoff in future time steps (time delay histogram)
-  USE module_sf_noahmplsm,only:read_mp_veg_parameters         ! module to read NOAH vegetation tables
-  ! global data structures
-  USE globalData,only:gru_struc                               ! gru-hru mapping structures
-  USE globalData,only:localParFallback                        ! local column default parameters
-  USE globalData,only:model_decisions                         ! model decision structure
-  USE globalData,only:greenVegFrac_monthly                    ! fraction of green vegetation in each month (0-1)
-  ! output constraints
-  USE globalData,only:maxLayers                               ! maximum number of layers
-  USE globalData,only:maxSnowLayers                           ! maximum number of snow layers
-  ! timing variables
-  USE globalData,only:startSetup,endSetup                     ! date/time for the start and end of the parameter setup
-  USE globalData,only:elapsedSetup                            ! elapsed time for the parameter setup
-  ! Noah-MP parameters
-  USE NOAHMP_VEG_PARAMETERS,only:SAIM,LAIM                    ! 2-d tables for stem area index and leaf area index (vegType,month)
-  USE NOAHMP_VEG_PARAMETERS,only:HVT,HVB                      ! height at the top and bottom of vegetation (vegType)
-
   ! ---------------------------------------------------------------------------------------
   ! * variables
   ! ---------------------------------------------------------------------------------------
@@ -257,7 +206,7 @@ subroutine setupHRU(indxGRU, indxHRU, hru_data, err, message)
 
   ! local variables
 
-  integer(i4b)                             :: ivar                 ! loop counter
+  integer(i4b)                             :: iVar                 ! loop counter
   integer(i4b)                             :: i_z                  ! loop counter
   character(len=256)                       :: cmessage             ! error message of downwind routine
 
@@ -273,10 +222,9 @@ subroutine setupHRU(indxGRU, indxHRU, hru_data, err, message)
   hru_data%mparStruct%var(:) = init_struc%mparStruct%gru(indxGRU)%hru(indxHRU)%var(:)
   hru_data%bparStruct%var(:) = init_struc%bparStruct%gru(indxGRU)%var(:)
   hru_data%dparStruct%var(:) = init_struc%dparStruct%gru(indxGRU)%hru(indxHRU)%var(:)
-  do ivar=1, size(init_struc%bvarStruct%gru(indxGRU)%var(:))
-    hru_data%bvarStruct%var(ivar)%dat(:) = init_struc%bvarStruct%gru(indxGRU)%var(ivar)%dat(:)
+  do iVar=1, size(init_struc%bvarStruct%gru(indxGRU)%var(:))
+    hru_data%bvarStruct%var(iVar)%dat(:) = init_struc%bvarStruct%gru(indxGRU)%var(iVar)%dat(:)
   enddo
-#ifdef V4_ACTIVE
   if (allocated(init_struc%lookupStruct%gru(indxGRU)%hru(indxHRU)%z)) then
     if (.not. allocated(hru_data%lookupStruct%z)) then
       allocate(hru_data%lookupStruct%z(size(init_struc%lookupStruct%gru(indxGRU)%hru(indxHRU)%z)))
@@ -285,26 +233,25 @@ subroutine setupHRU(indxGRU, indxHRU, hru_data, err, message)
       if (.not. allocated(hru_data%lookupStruct%z(i_z)%var)) then
         allocate(hru_data%lookupStruct%z(i_z)%var(size(init_struc%lookupStruct%gru(indxGRU)%hru(indxHRU)%z(i_z)%var)))
       end if
-      do ivar = 1, size(init_struc%lookupStruct%gru(indxGRU)%hru(indxHRU)%z(i_z)%var(:))
-        if (.not. allocated(hru_data%lookupStruct%z(i_z)%var(ivar)%lookup)) then
-          allocate(hru_data%lookupStruct%z(i_z)%var(ivar)%lookup(size(init_struc%lookupStruct%gru(indxGRU)%hru(indxHRU)%z(i_z)%var(ivar)%lookup)))
+      do iVar = 1, size(init_struc%lookupStruct%gru(indxGRU)%hru(indxHRU)%z(i_z)%var(:))
+        if (.not. allocated(hru_data%lookupStruct%z(i_z)%var(iVar)%lookup)) then
+          allocate(hru_data%lookupStruct%z(i_z)%var(iVar)%lookup(size(init_struc%lookupStruct%gru(indxGRU)%hru(indxHRU)%z(i_z)%var(iVar)%lookup)))
         end if
-        hru_data%lookupStruct%z(i_z)%var(ivar)%lookup(:) = init_struc%lookupStruct%gru(indxGRU)%hru(indxHRU)%z(i_z)%var(ivar)%lookup(:)
+        hru_data%lookupStruct%z(i_z)%var(iVar)%lookup(:) = init_struc%lookupStruct%gru(indxGRU)%hru(indxHRU)%z(i_z)%var(iVar)%lookup(:)
       end do
     end do
   endif
-#endif
-  do ivar=1, size(init_struc%progStruct%gru(indxGRU)%hru(indxHRU)%var(:))
-    hru_data%progStruct%var(ivar)%dat(:) = init_struc%progStruct%gru(indxGRU)%hru(indxHRU)%var(ivar)%dat(:)
+  do iVar=1, size(init_struc%progStruct%gru(indxGRU)%hru(indxHRU)%var(:))
+    hru_data%progStruct%var(iVar)%dat(:) = init_struc%progStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%dat(:)
   enddo
-  do ivar=1, size(init_struc%indxStruct%gru(indxGRU)%hru(indxHRU)%var(:))
-    hru_data%indxStruct%var(ivar)%dat(:) = init_struc%indxStruct%gru(indxGRU)%hru(indxHRU)%var(ivar)%dat(:)
+  do iVar=1, size(init_struc%indxStruct%gru(indxGRU)%hru(indxHRU)%var(:))
+    hru_data%indxStruct%var(iVar)%dat(:) = init_struc%indxStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%dat(:)
   enddo
-  do ivar=1, size(init_struc%diagStruct%gru(indxGRU)%hru(indxHRU)%var(:))
-    hru_data%diagStruct%var(ivar)%dat(:) = init_struc%diagStruct%gru(indxGRU)%hru(indxHRU)%var(ivar)%dat(:)
+  do iVar=1, size(init_struc%diagStruct%gru(indxGRU)%hru(indxHRU)%var(:))
+    hru_data%diagStruct%var(iVar)%dat(:) = init_struc%diagStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%dat(:)
   enddo
-  do ivar=1, size(init_struc%fluxStruct%gru(indxGRU)%hru(indxHRU)%var(:))
-    hru_data%fluxStruct%var(ivar)%dat(:) = init_struc%fluxStruct%gru(indxGRU)%hru(indxHRU)%var(ivar)%dat(:)
+  do iVar=1, size(init_struc%fluxStruct%gru(indxGRU)%hru(indxHRU)%var(:))
+    hru_data%fluxStruct%var(iVar)%dat(:) = init_struc%fluxStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%dat(:)
   enddo
 end subroutine setupHRU
 
@@ -313,18 +260,14 @@ end subroutine setupHRU
 ! public subroutine summa_readRestart: read restart data and reset the model state
 ! **************************************************************************************************
 subroutine readHRURestart(indxGRU, indxHRU, hru_data, err, message)
-  USE nrtype                                                  ! variable types, etc.
+  USE nr_type                                                 ! variable types, etc.
   ! functions and subroutines
-  USE time_utils_module,only:elapsedSec                       ! calculate the elapsed time
   USE var_derive_module,only:calcHeight                       ! module to calculate height at layer interfaces and layer mid-point
   USE var_derive_module,only:v_shortcut                       ! module to calculate "short-cut" variables
   USE var_derive_module,only:rootDensty                       ! module to calculate the vertical distribution of roots
   USE var_derive_module,only:satHydCond                       ! module to calculate the saturated hydraulic conductivity in each soil layer
   ! global data structures
   USE globalData,only:model_decisions                         ! model decision structure
-  ! timing variables
-  USE globalData,only:startRestart,endRestart                 ! date/time for the start and end of reading model restart files
-  USE globalData,only:elapsedRestart                          ! elapsed time to read model restart files
   ! Lookup values
   USE var_lookup,only:iLookDECISIONS                          ! look-up values for model decisions
   USE var_lookup,only:iLookBVAR                               ! look-up values for basin-average model variables
@@ -332,11 +275,9 @@ subroutine readHRURestart(indxGRU, indxHRU, hru_data, err, message)
   USE mDecisions_module,only:&                                ! look-up values for the choice of method for the spatial representation of groundwater
   localColumn, & ! separate groundwater representation in each local soil column
   singleBasin    ! single groundwater store over the entire basin
-#ifdef V4_ACTIVE
   USE mDecisions_module,only:&
   fullStart,      & ! start with full aquifer
   emptyStart        ! start with empty aquifer
-#endif
   implicit none
   ! Dummy variables
   integer(c_int),intent(in)               :: indxGRU            !  index of GRU in gru_struc
@@ -345,7 +286,7 @@ subroutine readHRURestart(indxGRU, indxHRU, hru_data, err, message)
   integer(c_int), intent(out)             :: err
   character(len=256),intent(out)          :: message
   ! local variables
-  integer(i4b)                            :: ivar               ! index of variable
+  integer(i4b)                            :: iVar               ! index of variable
   character(LEN=256)                      :: cmessage           ! error message of downwind routine
   character(LEN=256)                      :: restartFile        ! restart file name
   integer(i4b)                            :: nGRU
@@ -405,7 +346,6 @@ subroutine readHRURestart(indxGRU, indxHRU, hru_data, err, message)
   !  and ensure that basin-average aquifer storage is zero when groundwater is included in the local columns (localColumn).
 
   aquifer_start  = 1._dp
-#ifdef V4_ACTIVE
   ! select aquifer option
   select case(model_decisions(iLookDECISIONS%aquiferIni)%iDecision)
    case(fullStart)
@@ -416,7 +356,6 @@ subroutine readHRURestart(indxGRU, indxHRU, hru_data, err, message)
     message=trim(message)//'unable to identify decision for initial aquifer storage'
    return
   end select  ! aquifer option
-#endif
 
   ! select groundwater option
   select case(model_decisions(iLookDECISIONS%spatial_gw)%iDecision)
@@ -424,10 +363,8 @@ subroutine readHRURestart(indxGRU, indxHRU, hru_data, err, message)
   ! the basin-average aquifer storage is not used if the groundwater is included in the local column
   case(localColumn)
    hru_data%bvarStruct%var(iLookBVAR%basin__AquiferStorage)%dat(1) = 0._dp ! set to zero to be clear that there is no basin-average aquifer storage in this configuration
-#ifdef V4_ACTIVE
    if(model_decisions(iLookDECISIONS%aquiferIni)%iDecision==emptyStart) &
      hru_data%progStruct%var(iLookPROG%scalarAquiferStorage)%dat(1) = aquifer_start ! leave at initialized values if fullStart
-#endif
 
   ! the local column aquifer storage is not used if the groundwater is basin-average
   ! (i.e., where multiple HRUs drain to a basin-average aquifer)
@@ -494,7 +431,6 @@ subroutine setBEStepsIDATol(handle_hru_data,    &
 
   call c_f_pointer(handle_hru_data, hru_data)
 
-#ifdef V4_ACTIVE
   hru_data%mparStruct%var(iLookPARAM%be_steps)%dat(1)            = REAL(be_steps)
   hru_data%mparStruct%var(iLookPARAM%relTolTempCas)%dat(1)       = relTolTempCas 
   hru_data%mparStruct%var(iLookPARAM%absTolTempCas)%dat(1)       = absTolTempCas
@@ -510,6 +446,6 @@ subroutine setBEStepsIDATol(handle_hru_data,    &
   hru_data%mparStruct%var(iLookPARAM%absTolMatric)%dat(1)        = absTolMatric
   hru_data%mparStruct%var(iLookPARAM%relTolAquifr)%dat(1)        = relTolAquifr
   hru_data%mparStruct%var(iLookPARAM%absTolAquifr)%dat(1)        = absTolAquifr
-#endif
+  
 end subroutine setBEStepsIDATol
 end module INIT_HRU_ACTOR

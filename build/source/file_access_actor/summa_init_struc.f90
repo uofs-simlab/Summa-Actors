@@ -1,12 +1,11 @@
 module summa_init_struc
   USE iso_c_binding
-  USE nrtype
+  USE nr_type
   USE summa_type, only:summa1_type_dec                        ! master summa data type
   implicit none
   public :: f_allocate
   public :: f_paramSetup
   public :: f_readRestart
-  ! public :: f_getInitBEStepsIDATol 
   public :: f_deallocateInitStruc
   ! Used to get all the inital conditions for the model -- allows calling summa_setup.f90
   type(summa1_type_dec),allocatable,save,public :: init_struc 
@@ -26,10 +25,9 @@ subroutine f_allocate(num_gru, err, message_r) bind(C, name="f_allocate")
                       mpar_meta, &
                       indx_meta, &
                       bpar_meta, &
-                      bvar_meta
-#ifdef V4_ACTIVE
-  USE globalData,only:lookup_meta
-#endif
+                      bvar_meta, &
+                      lookup_meta
+
   ! statistics metadata structures
   USE globalData,only:statForc_meta, &        ! child metadata for stats
                       statProg_meta, &        ! child metadata for stats
@@ -55,10 +53,8 @@ subroutine f_allocate(num_gru, err, message_r) bind(C, name="f_allocate")
   message = ""
   call f_c_string_ptr(trim(message), message_r)
   allocate(init_struc)
-  summaVars: associate(&
-#ifdef V4_ACTIVE  
+  summaVars: associate(&  
     lookupStruct         =>init_struc%lookupStruct         , & ! x%gru(:)%hru(:)%z(:)%var(:)%lookup(:) -- lookup tables
-#endif
     ! statistics structures
     forcStat             => init_struc%forcStat            , & ! x%gru(:)%hru(:)%var(:)%dat -- model forcing data
     progStat             => init_struc%progStat            , & ! x%gru(:)%hru(:)%var(:)%dat -- model prognostic (state) variables
@@ -114,9 +110,7 @@ subroutine f_allocate(num_gru, err, message_r) bind(C, name="f_allocate")
       case('flux'); call allocGlobal(flux_meta,  fluxStruct,  err, cmessage)   ! model fluxes
       case('bpar'); call allocGlobal(bpar_meta,  bparStruct,  err, cmessage)   ! basin-average parameters
       case('bvar'); call allocGlobal(bvar_meta,  bvarStruct,  err, cmessage)   ! basin-average variables
-#ifdef V4_ACTIVE
-      case('lookup'); call allocGlobal(lookup_meta, lookupStruct, err, cmessage) ! lookup tables
-#endif      
+      case('lookup'); call allocGlobal(lookup_meta, lookupStruct, err, cmessage) ! lookup tables    
       case('deriv'); cycle
       case default; err=20; message='unable to find structure name: '//trim(structInfo(iStruct)%structName)
     end select
@@ -253,7 +247,6 @@ subroutine f_getInitTolerance(rtol_temp_cas, rtol_temp_veg, rtol_wat_veg, &
   atol_matric = -9999
   atol_aquifr = -9999
   def_tol = .true.
-#ifdef V4_ACTIVE
   if (model_decisions(iLookDECISIONS%num_method)%iDecision == 83) then
     rtol_temp_cas = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolTempCas)%dat(1)
     rtol_temp_veg = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolTempveg)%dat(1)
@@ -271,37 +264,9 @@ subroutine f_getInitTolerance(rtol_temp_cas, rtol_temp_veg, rtol_wat_veg, &
     atol_aquifr = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolAquifr)%dat(1)
   end if
 
-#endif
 be_steps = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%be_steps)%dat(1)
 
 end subroutine f_getInitTolerance
-!   atolWat = -9999
-!   atolNrg = -9999
-! #ifdef V4_ACTIVE
-!   if (trim(model_decisions(iLookDECISIONS%num_method)%cDecision)=='ida') then
-!     beSteps = 1 ! IDA should have full step size (value isn't used anyhow)
-!     ! IDA tolerances, which are set in the model decision file
-!     rtol = (init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolTempCas)%dat(1) &
-!           + init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolWatVeg)%dat(1) &
-!           + init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolTempVeg)%dat(1) &
-!           + init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolWatSnow)%dat(1) &
-!           + init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolTempSoilSnow)%dat(1) &
-!           + init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolMatric)%dat(1) &
-!           + init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolAquifr)%dat(1))/7._rkind
-
-!     atolWat = (init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolWatVeg)%dat(1) &
-!              + init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolWatSnow)%dat(1) &
-!              + init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolMatric)%dat(1) &
-!              + init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolAquifr)%dat(1))/4._rkind
-!     atolNrg = (init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolTempCas)%dat(1) &
-!              + init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolTempVeg)%dat(1) &
-!              + init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolTempSoilSnow)%dat(1))/3._rkind
-!   else ! all other methods are currently BE -- 'homegrown' ('itertive'), 'kinsol'
-!     beSteps = NINT(init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%be_steps)%dat(1))
-!   endif
-! #endif
-
-! end subroutine f_getInitBEStepsIDATol
 
 subroutine f_deallocateInitStruc() bind(C, name="f_deallocateInitStruc")
   USE globalData,only:startTime,finshTime,refTime,oldTime

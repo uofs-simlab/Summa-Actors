@@ -1,6 +1,6 @@
 module hru_interface
   USE,intrinsic :: iso_c_binding
-  USE nrtype
+  USE nr_type
 
   implicit none
   private
@@ -109,6 +109,7 @@ subroutine readHRUForcing_fortran(indx_gru, indx_hru, iStep, iRead, iFile, &
     handle_hru_data, err, message_r) bind(C, name="readHRUForcing_fortran")
   USE actor_data_types,only:hru_type
   USE hru_read,only:readHRUForcing
+  USE, intrinsic :: ieee_arithmetic
   USE C_interface_module,only:f_c_string_ptr  ! convert fortran string to c string
   ! Dummy Variables
   integer(c_int), intent(in)       :: indx_gru
@@ -190,13 +191,10 @@ subroutine runHRU_fortran(indx_gru, indx_hru, modelTimeStep, handle_hru_data, &
   hru_data%fluxStruct%var(iLookFLUX%mLayerColumnInflow)%dat(:) = 0._dp
   ! end if
 
-
   call runPhysics(indx_gru, indx_hru, modelTimeStep, hru_data, dt_init_factor, err, message)
   if(err /= 0) then; call f_c_string_ptr(trim(message), message_r); return; end if
 
   fracHRU = hru_data%attrStruct%var(iLookATTR%HRUarea) / hru_data%bvarStruct%var(iLookBVAR%basin__totalArea)%dat(1)
-
-
 
   ! ----- calculate weighted basin (GRU) fluxes --------------------------------------------------------------------------------------
   
@@ -245,6 +243,12 @@ subroutine runHRU_fortran(indx_gru, indx_hru, modelTimeStep, handle_hru_data, &
                   err,message)                                                                  ! intent(out): error control
   if(err/=0)then; err=20; message=trim(message)//trim(cmessage); call f_c_string_ptr(trim(message), message_r); return; endif;
   end associate
+
+  ! Underflow/denormal occur benignly and overflow occurs rarely in the physics; we do not want to stop the model when they occur
+  call ieee_set_flag(ieee_underflow, .false.)
+  call ieee_set_flag(ieee_denormal, .false.)
+  call ieee_set_flag(ieee_overflow, .false.)
+
   wallTimeTimeStep = hru_data%diagStruct%var(iLookDIAG%wallClockTime)%dat(1)
 
 

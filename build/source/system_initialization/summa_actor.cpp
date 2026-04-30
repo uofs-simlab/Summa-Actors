@@ -72,15 +72,18 @@ behavior SummaActor::make_behavior() {
   }
 
   return {
-    [this](done_job, int num_gru_failed, double job_duration, 
-           double read_duration, double write_duration) {
+        [this](done_job, int num_gru_failed, int num_gru_restarts,
+          double job_duration, double read_duration,
+          double write_duration) {
       int num_success = current_batch_->getNumHRU() - num_gru_failed;
 
       batch_container_->updateBatchStats(current_batch_->getBatchID(), 
                                          job_duration, read_duration,
                                          write_duration, num_success, 
-                                         num_gru_failed);
+                                         num_gru_failed,
+                                         num_gru_restarts);
       num_gru_failed_ += num_gru_failed;
+      num_gru_restarts_ += num_gru_restarts;
       if (!batch_container_->hasUnsolvedBatches()) {
         finalize();
         return;
@@ -193,9 +196,10 @@ void SummaActor::finalize() {
                  "Total Read Duration = {} Seconds\n"
                  "Total Write Duration = {} Seconds\n"
                  "Num Failed = {}\n"
+                 "Num Restarts = {}\n"
                  "___________________Program Finished__________________\n",
                  total_dur_sec, total_dur_min, total_dur_hr, read_dur_sec, 
-                 write_dur_sec, num_gru_failed_);
+                 write_dur_sec, num_gru_failed_, num_gru_restarts_);
 
   self_->mail(done_batch_v, total_dur_sec, read_dur_sec, write_dur_sec).send(parent_);
 

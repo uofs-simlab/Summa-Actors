@@ -41,8 +41,9 @@ void BatchContainer::assembleBatches(std::string log_dir) {
 }
 
 void BatchContainer::updateBatchStats(int batch_id, double run_time, 
-                                       double read_time, double write_time,
-                                       int num_success, int num_failed) {
+                                      double read_time, double write_time,
+                                      int num_success, int num_failed,
+                                      int num_restarts) {
   batch_list_[batch_id].updateRunTime(run_time);
   batch_list_[batch_id].updateReadTime(read_time);
   batch_list_[batch_id].updateWriteTime(write_time);
@@ -54,6 +55,7 @@ void BatchContainer::updateBatchStats(int batch_id, double run_time,
   // logger_->log("\tWrite Time: " + std::to_string(write_time));
   // logger_->log("\tNum Success: " + std::to_string(num_success));
   // logger_->log("\tNum Failed: " + std::to_string(num_failed));
+  // logger_->log("\tNum Restarts: " + std::to_string(num_restarts));
   // logger_->log("End");
 }
 
