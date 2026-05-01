@@ -137,6 +137,8 @@ behavior JobActor::async_mode() {
     [this](restart_failures) {
       logger_->log("Async Mode: Restarting Failed GRUs");
       self_->println("Async Mode: Restarting Failed GRUs");
+      // Snapshot before decrementing so shouldRetry() can detect no-progress plateau
+      gru_struc_->snapshotFailedCount();
 
       // Helper to tighten a single tolerance toward MIN_*.
       auto tighten_tol = [&](double& tol, const double& min_tol, const char* name){
@@ -496,9 +498,14 @@ void JobActor::handleFinishedGRU(int job_index) {
   self_->println(update_str);
 
   if (gru_struc_->isDone()) {
-    (gru_struc_->hasFailures() && gru_struc_->shouldRetry())
-      ? self_->mail(restart_failures_v).send(self_) 
-      : self_->mail(finalize_v).send(self_);
+    if (gru_struc_->hasFailures() && gru_struc_->shouldRetry()) {
+      self_->mail(restart_failures_v).send(self_);
+    } else {
+      if (gru_struc_->hasFailures())
+        self_->println("Stopping retries: failure count plateaued at {} GRU(s), no further progress possible",
+                       gru_struc_->getNumGruFailed());
+      self_->mail(finalize_v).send(self_);
+    }
   }
 }
 
@@ -557,9 +564,14 @@ void JobActor::handleGRUError(int err_code, int job_index, int timestep, std::st
   self_->mail(run_failure_v, job_index).send(file_access_actor_);
 
   if (gru_struc_->isDone()) {
-    (gru_struc_->hasFailures() && gru_struc_->shouldRetry())
-      ? self_->mail(restart_failures_v).send(self_) 
-      : self_->mail(finalize_v).send(self_);
+    if (gru_struc_->hasFailures() && gru_struc_->shouldRetry()) {
+      self_->mail(restart_failures_v).send(self_);
+    } else {
+      if (gru_struc_->hasFailures())
+        self_->println("Stopping retries: failure count plateaued at {} GRU(s), no further progress possible",
+                       gru_struc_->getNumGruFailed());
+      self_->mail(finalize_v).send(self_);
+    }
   }
 }
 

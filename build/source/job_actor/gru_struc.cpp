@@ -14,6 +14,7 @@ GruStruc::GruStruc(int start_gru, int num_gru, int num_retry_attempts) {
   start_gru_ = start_gru;
   num_gru_ = num_gru;
   num_retry_attempts_left_ = num_retry_attempts;
+  initial_retry_attempts_ = num_retry_attempts;
 }
 
 // gru_struc is set up in fortran here

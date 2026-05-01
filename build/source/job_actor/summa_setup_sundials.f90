@@ -264,6 +264,7 @@ subroutine summa_paramSetup(summa1_struc, err, message)
       ! overwrite default model parameters with information from the Noah-MP tables
       call pOverwrite(typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex),  &  ! vegetation category
                       typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%soilTypeIndex), &  ! soil category
+                      trim(model_decisions(iLookDECISIONS%soilCatTbl)%cDecision),   &  ! classification system used for soils
                       dparStruct%gru(iGRU)%hru(iHRU)%var,                          &  ! default model parameters
                       err,cmessage)                                                   ! error control
       if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
