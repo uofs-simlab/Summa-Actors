@@ -22,7 +22,7 @@ INSTALL_DIR=$PWD/../../utils/dependencies/install
 export CMAKE_PREFIX_PATH="$INSTALL_DIR/sundials:$INSTALL_DIR/caf:$CMAKE_PREFIX_PATH"
 
 # will only need this if not using modules
-export CMAKE_PREFIX_PATH="$INSTALL_DIR/netcdf-fortran:$INSTALL_DIR/netcdf-c:$INSTALL_DIR/lapack:$CMAKE_PREFIX_PATH"
+#export CMAKE_PREFIX_PATH="$INSTALL_DIR/netcdf-fortran:$INSTALL_DIR/netcdf-c:$INSTALL_DIR/lapack:$CMAKE_PREFIX_PATH"
 
 cmake -B ./cmake_build -S .. -DUSE_SUNDIALS=ON -DCMAKE_BUILD_TYPE=Release
 cmake --build ./cmake_build --target all -j
@@ -34,5 +34,6 @@ cmake --build ./cmake_build --target all -j
   
 # cmake -B ./cmake_build -S .. -DUSE_SUNDIALS=OFF -DCMAKE_BUILD_TYPE=Release
 # cmake --build ./cmake_build --target all -j
+
 
 

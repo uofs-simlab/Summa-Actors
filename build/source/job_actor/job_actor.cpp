@@ -246,6 +246,7 @@ behavior JobActor::async_mode() {
           tolerance_settings_);
 
         gru_struc_->getGRU(job_index)->setRestarted();
+        gru_struc_->incrementNumGruRestarts();
         gru_struc_->decrementNumGruFailed();
 
         std::unique_ptr<GRU> gru_obj = std::make_unique<GRU>(
@@ -513,6 +514,7 @@ void JobActor::finalizeJob() {
   self_->mail(finalize_v).request(file_access_actor_, infinite).await(
     [=](std::tuple<double, double> read_write_duration) {
       auto num_failed_grus = gru_struc_->getNumGruFailed();    
+      auto num_gru_restarts = gru_struc_->getNumGruRestarts();
       timing_info_.updateEndPoint("total_duration");
       self_->println(
           "\n_____________PRINTING JOB_ACTOR TIMING INFO RESULTS____________\n"
@@ -532,9 +534,9 @@ void JobActor::finalizeJob() {
   
       // Tell Parent we are done
       auto total_duration = timing_info_.getDuration("total_duration").value_or(-1.0);
-      self_->mail(done_job_v, num_failed_grus, total_duration, 
-                  std::get<0>(read_write_duration), 
-                  std::get<1>(read_write_duration))
+        self_->mail(done_job_v, num_failed_grus, num_gru_restarts,
+              total_duration, std::get<0>(read_write_duration),
+              std::get<1>(read_write_duration))
           .send(parent_);
       self_->quit();
     });

@@ -28,6 +28,7 @@ jobs:
       - name: Install NetCDF
         working-directory: ./utils/dependencies
         run: |
+          sudo apt update
           sudo apt install libcurl4-openssl-dev # install cURL development headers
           ./install_netcdf.sh
       - name: Install CAF

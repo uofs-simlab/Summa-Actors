@@ -223,6 +223,7 @@ class GruStruc {
     int prev_num_gru_failed_ = std::numeric_limits<int>::max();
     int num_retry_attempts_left_ = 0;
     int initial_retry_attempts_ = 0;  // saved so plateau budget can be reset on progress
+    int num_gru_restarts_ = 0;
     int attempt_ = 1;
 
     // todo: check if this is necessary
@@ -248,6 +249,7 @@ class GruStruc {
     inline int getGruInfoSize() const { return gru_info_.size(); }
     inline int getNumGruDone() const { return num_gru_done_; }
     inline int getNumGruFailed() const { return num_gru_failed_; }
+    inline int getNumGruRestarts() const { return num_gru_restarts_; }
 
     inline void addGRU(std::unique_ptr<GRU> gru) {
       gru_info_.push_back(std::move(gru));
@@ -255,6 +257,7 @@ class GruStruc {
 
     inline void incrementNumGruDone() { num_gru_done_++; }
     inline void incrementNumGruFailed() { num_gru_failed_++; num_gru_done_++;}
+    inline void incrementNumGruRestarts() { num_gru_restarts_++; }
     inline void decrementRetryAttempts() { num_retry_attempts_left_--; }
     inline int getRetryAttemptsLeft(){return num_retry_attempts_left_ ;}
     inline void decrementNumGruFailed() { num_gru_failed_--; num_gru_done_--;}
