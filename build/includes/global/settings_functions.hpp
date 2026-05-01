@@ -27,12 +27,14 @@ class DistributedSettings {
     int num_hru_per_batch_;
     int num_nodes_;                            
     bool load_balancing_;
+    int start_gru_;
 
     DistributedSettings(bool distributed_mode = false, 
                         std::vector<std::string> servers_list = {}, 
                         int port = 0, 
                         int total_hru_count = 0, 
                         int num_hru_per_batch = 0, 
+                        int start_gru = 1,
                         int num_nodes = 0, 
                         bool load_balancing = false)
         : distributed_mode_(distributed_mode), 
@@ -41,6 +43,7 @@ class DistributedSettings {
           total_hru_count_(total_hru_count), 
           num_hru_per_batch_(num_hru_per_batch), 
           num_nodes_(num_nodes), 
+          start_gru_(start_gru),
           load_balancing_(load_balancing) {};
     ~DistributedSettings() {};
 
@@ -53,6 +56,7 @@ class DistributedSettings {
       }
       str += "\n";
       str += "Port: " + std::to_string(port_) + "\n";
+      str += "Start GRU: " + std::to_string(start_gru_) + "\n";
       str += "Total HRU Count: " + std::to_string(total_hru_count_) + "\n";
       str += "Num HRU Per Batch: " + std::to_string(num_hru_per_batch_) + "\n";
       str += "Num Nodes: " + std::to_string(num_nodes_) + "\n";
@@ -68,6 +72,7 @@ class DistributedSettings {
              insp.field("port",             settings.port_),
              insp.field("total_hru_count",  settings.total_hru_count_),
              insp.field("num_hru_per_batch",settings.num_hru_per_batch_),
+             insp.field("start_gru",        settings.start_gru_),
              insp.field("num_nodes",        settings.num_nodes_),
              insp.field("load_balancing",   settings.load_balancing_));
     }

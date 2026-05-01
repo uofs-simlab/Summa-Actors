@@ -27,8 +27,9 @@ class BatchContainer {
     inline int getTotalBatches() { return batch_list_.size();}
     std::optional<Batch> getUnsolvedBatch();
 
-    void updateBatchStats(int batch_id, double run_time, double read_time, 
-                          double write_time, int num_success, int num_failed);
+    void updateBatchStats(int batch_id, double run_time, double read_time,
+                          double write_time, int num_success, int num_failed,
+                          int num_restarts);
 
     // Update the batch status to solved and write the output to a file.
     void updateBatch_success(Batch successful_batch, std::string output_csv, std::string hostname);
