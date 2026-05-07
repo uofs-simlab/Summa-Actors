@@ -632,10 +632,6 @@ subroutine runGRU_fortran(indx_gru, modelTimeStep, handle_gru_data, &
     end do
   end do
 
-  ! Underflow/denormal occur benignly and overflow occurs rarely in the physics; we do not want to stop the model when they occur
-  call ieee_set_flag(ieee_underflow, .false.)
-  call ieee_set_flag(ieee_overflow, .false.)
-
 end subroutine runGRU_fortran
 
 subroutine writeGRUOutput_fortran(indx_gru, timestep, outputstep, &

@@ -244,13 +244,7 @@ subroutine runHRU_fortran(indx_gru, indx_hru, modelTimeStep, handle_hru_data, &
   if(err/=0)then; err=20; message=trim(message)//trim(cmessage); call f_c_string_ptr(trim(message), message_r); return; endif;
   end associate
 
-  ! Underflow/denormal occur benignly and overflow occurs rarely in the physics; we do not want to stop the model when they occur
-  call ieee_set_flag(ieee_underflow, .false.)
-  call ieee_set_flag(ieee_denormal, .false.)
-  call ieee_set_flag(ieee_overflow, .false.)
-
   wallTimeTimeStep = hru_data%diagStruct%var(iLookDIAG%wallClockTime)%dat(1)
-
 
 end subroutine runHRU_fortran
 

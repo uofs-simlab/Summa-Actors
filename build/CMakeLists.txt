@@ -84,6 +84,11 @@ else()
     set(FLAGS_CXX -O3 -Wfatal-errors -std=c++17 ${FLAGS_OPT})
 endif()
 
+if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
+    # Suppress libgfortran end-of-run IEEE summaries (e.g., IEEE_DENORMAL).
+    list(APPEND FLAGS_NOAH -ffpe-summary=none)
+    list(APPEND FLAGS_ALL -ffpe-summary=none)
+endif()
 
 #=========================================================================================
 # COMPILE PART 1: Define directory paths
