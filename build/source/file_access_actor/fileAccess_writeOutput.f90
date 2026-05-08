@@ -244,7 +244,7 @@ subroutine writeRestart_fortran(handle_ncid,  start_gru, num_gru, checkpoint, ye
   integer(i4b), dimension(maxvarFreq)  :: stepCounter
   character(LEN=256)                   :: message
   character(LEN=256)                   :: cmessage
-  character (len = 11)                 :: output_fileSuffix
+  character (len = 15)                 :: output_fileSuffix
   character(len=256)                   :: restartFile       ! restart file name
   character(len=256)                   :: timeString        ! portion of restart file name that contains the write-out time
   integer(i4b)                         :: restart_flag
@@ -261,7 +261,7 @@ subroutine writeRestart_fortran(handle_ncid,  start_gru, num_gru, checkpoint, ye
   ! print a restart file if requested
   if( restart_flag == 1 )then ! temp bare bones check
     write(timeString,        '(I4.4,I2.2,I2.2,I2.2)') year,month,day,hour
-    write(output_fileSuffix, '(I5.5,"-",I5.5)') start_gru, start_gru + num_gru - 1
+    write(output_fileSuffix, '(I7.7,"-",I7.7)') start_gru, start_gru + num_gru - 1
 
     if(STATE_PATH == '') then
       restartFile=trim(OUTPUT_PATH)//trim(OUTPUT_PREFIX)//'_restart_'//trim(timeString)//"_G"//output_fileSuffix//'.nc'
@@ -934,7 +934,7 @@ subroutine writeRestart(filename,         & ! intent(in): name of restart file
   err = nf90_enddef(ncid); call netcdf_err(err,message); if (err/=0) return
  
  ! end definition phase
- err = nf90_enddef(ncid); call netcdf_err(err,message); if (err/=0) return
+!  err = nf90_enddef(ncid); call netcdf_err(err,message); if (err/=0) return
  
  ! write variables
  do iGRU = 1,nGRU
@@ -973,9 +973,9 @@ subroutine writeRestart(filename,         & ! intent(in): name of restart file
     err=nf90_put_var(ncid,ncSnowID,(/summa_struct(1)%indxStruct%gru(iGRU)%hru(iHRU)%var(iLookINDEX%nSnow)%tim(checkpoint)%dat(1)/),start=(/cHRU/),count=(/1/))
     err=nf90_put_var(ncid,ncSoilID,(/gru_struc(iGRU)%hruInfo(iHRU)%nSoil/),start=(/cHRU/),count=(/1/))
  
-  end do ! iHRU loop
   ! write selected basin variables
   err=nf90_put_var(ncid,ncVarID(nProgVars+1),(/bvar_data%gru(iGRU)%hru(iHRU)%var(iLookBVAR%routingRunoffFuture)%tim(checkpoint)%dat/),  start=(/iGRU/),count=(/1,nTimeDelay/))
+  end do ! iHRU loop
 
  end do  ! iGRU loop
 
