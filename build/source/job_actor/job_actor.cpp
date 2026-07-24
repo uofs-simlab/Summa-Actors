@@ -137,8 +137,7 @@ behavior JobActor::async_mode() {
     [this](restart_failures) {
       logger_->log("Async Mode: Restarting Failed GRUs");
       self_->println("Async Mode: Restarting Failed GRUs");
-      // Snapshot before decrementing so shouldRetry() can detect no-progress plateau
-      gru_struc_->snapshotFailedCount();
+
 
       // Helper to tighten a single tolerance toward MIN_*.
       auto tighten_tol = [&](double& tol, const double& min_tol, const char* name){
@@ -254,7 +253,7 @@ behavior JobActor::async_mode() {
           tolerance_settings_, default_tol_, job_actor_settings_.max_run_attempts_);
         gru_struc_->addGRU(std::move(gru_obj));
 
-        self_->mail(update_hru_async_v).send(gru_actor);
+        self_->mail(update_hru_async_v, fa_actor_settings_.num_timesteps_in_output_buffer_).send(gru_actor);
       }
 
       last_error_type_.clear();
@@ -402,7 +401,7 @@ void JobActor::spawnGruActors() {
     gru_struc_->addGRU(std::move(gru_obj));
     
     if (!job_actor_settings_.data_assimilation_mode_)
-      self_->mail(update_hru_async_v).send(gru_actor);
+      self_->mail(update_hru_async_v, fa_actor_settings_.num_timesteps_in_output_buffer_).send(gru_actor);
   }
   gru_struc_->decrementRetryAttempts();
 }
@@ -499,14 +498,9 @@ void JobActor::handleFinishedGRU(int job_index) {
   self_->println(update_str);
 
   if (gru_struc_->isDone()) {
-    if (gru_struc_->hasFailures() && gru_struc_->shouldRetry()) {
-      self_->mail(restart_failures_v).send(self_);
-    } else {
-      if (gru_struc_->hasFailures())
-        self_->println("Stopping retries: failure count plateaued at {} GRU(s), no further progress possible",
-                       gru_struc_->getNumGruFailed());
-      self_->mail(finalize_v).send(self_);
-    }
+    (gru_struc_->hasFailures() && gru_struc_->shouldRetry())
+      ? self_->mail(restart_failures_v).send(self_) 
+      : self_->mail(finalize_v).send(self_);
   }
 }
 
@@ -566,14 +560,9 @@ void JobActor::handleGRUError(int err_code, int job_index, int timestep, std::st
   self_->mail(run_failure_v, job_index).send(file_access_actor_);
 
   if (gru_struc_->isDone()) {
-    if (gru_struc_->hasFailures() && gru_struc_->shouldRetry()) {
-      self_->mail(restart_failures_v).send(self_);
-    } else {
-      if (gru_struc_->hasFailures())
-        self_->println("Stopping retries: failure count plateaued at {} GRU(s), no further progress possible",
-                       gru_struc_->getNumGruFailed());
-      self_->mail(finalize_v).send(self_);
-    }
+    (gru_struc_->hasFailures() && gru_struc_->shouldRetry())
+      ? self_->mail(restart_failures_v).send(self_) 
+      : self_->mail(finalize_v).send(self_);
   }
 }
 
