@@ -220,9 +220,7 @@ class GruStruc {
     // Runtime status of the GRUs
     int num_gru_done_ = 0;
     int num_gru_failed_ = 0;
-    int prev_num_gru_failed_ = std::numeric_limits<int>::max();
     int num_retry_attempts_left_ = 0;
-    int initial_retry_attempts_ = 0;  // saved so plateau budget can be reset on progress
     int num_gru_restarts_ = 0;
     int attempt_ = 1;
 
@@ -261,23 +259,11 @@ class GruStruc {
     inline void decrementRetryAttempts() { num_retry_attempts_left_--; }
     inline int getRetryAttemptsLeft(){return num_retry_attempts_left_ ;}
     inline void decrementNumGruFailed() { num_gru_failed_--; num_gru_done_--;}
-    inline void snapshotFailedCount() { prev_num_gru_failed_ = num_gru_failed_; }
     inline GRU* getGRU(int index) { return gru_info_[index-1].get(); }
 
     inline bool isDone() { return num_gru_done_ >= num_gru_; }
     inline bool hasFailures() { return num_gru_failed_ > 0; }
-    // Retry as long as progress is being made (failure count decreasing).
-    // If no progress on a given retry, decrement the plateau budget and try again.
-    // Reset the plateau budget whenever progress resumes.
-    // Stops only when the plateau budget is exhausted (max_run_attempts consecutive
-    // retries with no improvement).
-    inline bool shouldRetry() {
-      if (num_gru_failed_ < prev_num_gru_failed_) {
-        num_retry_attempts_left_ = initial_retry_attempts_;  // reset budget on progress
-        return true;
-      }
-      return num_retry_attempts_left_ > 0;  // still have plateau budget remaining
-    }
+    inline bool shouldRetry() { return num_retry_attempts_left_ > 0; }
 
     int getFailedIndex(); 
     void getNumHrusPerGru();

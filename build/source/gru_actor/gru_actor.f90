@@ -14,6 +14,7 @@ public::setTimeZoneOffsetGRU_fortran
 public::readGRUForcing_fortran
 public::runGRU_fortran
 public::writeGRUOutput_fortran
+public::f_resetGruStrucNSnow
 private::setupGRU
 private::allocateOutputBuffer
 private::alloc_outputStruc
@@ -1143,5 +1144,20 @@ subroutine allocateDat_int(metadata,varData,nSnow, nSoil, &
   end do ! loop through time steps
 end subroutine allocateDat_int
 
+
+subroutine f_resetGruStrucNSnow(indx_gru) bind(C, name="f_resetGruStrucNSnow")
+  USE globalData, only: gru_struc
+  USE summa_init_struc, only: init_struc
+  USE var_lookup, only: iLookINDEX
+  implicit none
+  integer(c_int), intent(in) :: indx_gru
+  integer(i4b) :: iHRU
+  do iHRU = 1, gru_struc(indx_gru)%hruCount
+    gru_struc(indx_gru)%hruInfo(iHRU)%nSnow = &
+      init_struc%indxStruct%gru(indx_gru)%hru(iHRU)%var(iLookINDEX%nSnow)%dat(1)
+    gru_struc(indx_gru)%hruInfo(iHRU)%nSoil = &
+      init_struc%indxStruct%gru(indx_gru)%hru(iHRU)%var(iLookINDEX%nSoil)%dat(1)
+  end do
+end subroutine f_resetGruStrucNSnow
 
 end module gru_actor
