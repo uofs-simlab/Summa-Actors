@@ -22,17 +22,10 @@ set(FILE_ACCESS_INTERFACE
     ${FILE_ACCESS_DIR}/output_buffer_write.f90
     ${FILE_ACCESS_DIR}/fileAccess_writeOutput.f90
     CACHE INTERNAL "FILE_ACCESS_INTERFACE")
-if (USE_V4)
-    set(JOB_INTERFACE
-        ${JOB_ACTOR_DIR}/summa_setup_sundials.f90
-        ${JOB_ACTOR_DIR}/gru_struc.f90
-        CACHE INTERNAL "JOB_INTERFACE")
-else()
     set(JOB_INTERFACE
         ${JOB_ACTOR_DIR}/summa_setup.f90
         ${JOB_ACTOR_DIR}/gru_struc.f90
-        CACHE INTERNAL "JOB_INTERFACE")
-endif()        
+        CACHE INTERNAL "JOB_INTERFACE")  
 set(GRU_INTERFACE
     ${GRU_ACTOR_DIR}/hru_init.f90
     ${GRU_ACTOR_DIR}/hru_read.f90
@@ -56,13 +49,13 @@ set(ACTORS_GLOBAL
 set(SYS_INIT
     ${SYS_INIT_DIR}/batch.cpp
     ${SYS_INIT_DIR}/batch_container.cpp
-    # ${SYS_INIT_DIR}/client.cpp
-    # ${SYS_INIT_DIR}/client_container.cpp
+    ${SYS_INIT_DIR}/client.cpp
+    ${SYS_INIT_DIR}/client_container.cpp
     ${SYS_INIT_DIR}/summa_global_data.cpp
     ${SYS_INIT_DIR}/summa_actor.cpp
-    # ${SYS_INIT_DIR}/summa_backup_server.cpp
-    # ${SYS_INIT_DIR}/summa_client.cpp
-    # ${SYS_INIT_DIR}/summa_server.cpp
+    ${SYS_INIT_DIR}/summa_backup_server.cpp
+    ${SYS_INIT_DIR}/summa_client.cpp
+    ${SYS_INIT_DIR}/summa_server.cpp
     CACHE INTERNAL "SYS_INIT")
 set(FILE_ACCESS_ACTOR
     ${FILE_ACCESS_DIR}/summa_init_struc.cpp
@@ -77,6 +70,7 @@ set(JOB_ACTOR
     ${JOB_ACTOR_DIR}/da_server_actor.cpp
     ${JOB_ACTOR_DIR}/da_client_actor.cpp
     # ${JOB_ACTOR_DIR}/node_actor.cpp
+    # ${JOB_ACTOR_DIR}/distributed_job_actor.cpp
     CACHE INTERNAL "JOB_ACTOR")
 set(GRU_ACTOR
     ${GRU_ACTOR_DIR}/gru_actor.cpp

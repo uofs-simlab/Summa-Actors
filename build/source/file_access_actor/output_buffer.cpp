@@ -1,5 +1,5 @@
 #include "output_buffer.hpp"
-
+#include "file_access_actor.hpp"
 
 using chrono_time = std::chrono::time_point<std::chrono::high_resolution_clock>;
 
@@ -105,6 +105,13 @@ const std::optional<WriteOutputReturn*> OutputBuffer::writeOutput(
   return partitions_[partition_index]->writeOutput(gru, handle_ncid_.get());
 }
 
+int OutputBuffer::writeRestart(
+  int start_gru, int num_gru, int checkpoint, int year, int month, int day, int hour) {
+    int err = 0;
+    writeRestart_fortran(handle_ncid_.get(), start_gru, num_gru, checkpoint, year, month, day, hour, err);
+    return err;
+  }
+
 const std::optional<WriteOutputReturn*> OutputBuffer::addFailedGRU(int index) {
   f_addFailedGru(index);
   
@@ -131,6 +138,27 @@ int OutputBuffer::findPartitionIndex(int index) {
     }
   }
   return -1;
+}
+
+int OutputBuffer::getPartitionStart(int index) {
+  for (int i = 0; i < partitions_.size(); i++) {
+    if (index >= partitions_[i]->getStartGru() && 
+        index <= partitions_[i]->getEndGru()) {
+      return partitions_[i]->getStartGru();
+    }
+  }
+  return -1;
+
+}
+int OutputBuffer::getPartitionEnd(int index) {
+  for (int i = 0; i < partitions_.size(); i++) {
+    if (index >= partitions_[i]->getStartGru() && 
+        index <= partitions_[i]->getEndGru()) {
+      return partitions_[i]->getEndGru();
+    }
+  }
+  return -1;
+
 }
 
 
@@ -183,6 +211,19 @@ const std::optional<WriteOutputReturn*> OutputPartition::writeOutput(
     return std::optional<WriteOutputReturn*>(&write_status_);
   }
   return {};
+}
+
+int OutputPartition::writeRestart(int gru_index, int checkpoint) {
+  hru_timesteps_[gru_index-start_gru_] = checkpoint;
+  std::cout << "partition (" << start_gru_ << ", " << end_gru_ << ")";
+  for (int i=0; i< num_gru_; i++) {
+    std::cout << " " << hru_timesteps_[i];
+  }
+  std::cout << "\n";
+
+  int slowest_timestep = *std::min_element(hru_timesteps_.begin(), hru_timesteps_.end());
+  std::cout << "slowest in partition " << slowest_timestep << "\n";
+  return 0;
 }
 
 const std::optional<WriteOutputReturn*> OutputPartition::writeOutput(

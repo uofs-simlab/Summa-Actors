@@ -22,6 +22,7 @@ class SummaActor {
   int num_gru_;             // number of GRUs to compute
   int file_gru_;            // number of GRUs in the file
   int num_gru_failed_ = 0;  // Number of GRUs that have failed
+  int num_gru_restarts_ = 0; // Number of GRUs that have been restarted
   caf::actor current_job_;  // Reference to the current job actor
   caf::actor parent_;
   std::string log_folder_;
@@ -33,12 +34,13 @@ class SummaActor {
   std::unique_ptr<SummaGlobalData> global_fortran_state_;
 
   Settings settings_;
+  std::string restart_;
 
   public:
     SummaActor(caf::event_based_actor* self, int start_gru, int num_gru, 
-               Settings settings, caf::actor parent) 
+               Settings settings, caf::actor parent, std::string restart) 
                : self_(self), start_gru_(start_gru), num_gru_(num_gru), 
-               settings_(settings), parent_(parent) {};
+               settings_(settings), parent_(parent), restart_(restart) {};
   
     caf::behavior make_behavior();
 

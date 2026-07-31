@@ -4,8 +4,8 @@
 #include "batch.hpp"
 #include "batch_container.hpp"
 
-// #include "client.hpp"
-// #include "client_container.hpp"
+#include "client.hpp"
+#include "client_container.hpp"
 
 #include "logger.hpp"
 
@@ -89,6 +89,7 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     // Reciever: File Access Actor 
     // Summary: Updates FAA when hru reaches restart checkpoint
     CAF_ADD_ATOM(summa, write_restart)
+    CAF_ADD_ATOM(summa, write_restart_da)
     // Sender:
     // Reciever:
     // Summary:
@@ -197,17 +198,18 @@ CAF_BEGIN_TYPE_ID_BLOCK(summa, first_custom_type_id)
     CAF_ADD_TYPE_ID(summa, (JobActorSettings))
     CAF_ADD_TYPE_ID(summa, (HRUActorSettings))
     CAF_ADD_TYPE_ID(summa, (Settings))
-
+    CAF_ADD_TYPE_ID(summa, (ToleranceSettings))
+    
     CAF_ADD_TYPE_ID(summa, (HRU))
     CAF_ADD_TYPE_ID(summa, (std::vector<HRU>))
     CAF_ADD_TYPE_ID(summa, (NumGRUInfo))
     CAF_ADD_TYPE_ID(summa, (NodeGruInfo))
 
     // Class Types
-    // CAF_ADD_TYPE_ID(summa, (Client))
-    // CAF_ADD_TYPE_ID(summa, (Client_Container))
+    CAF_ADD_TYPE_ID(summa, (Client))
+    CAF_ADD_TYPE_ID(summa, (Client_Container))
     CAF_ADD_TYPE_ID(summa, (Batch))
-    // CAF_ADD_TYPE_ID(summa, (BatchContainer))
+    CAF_ADD_TYPE_ID(summa, (BatchContainer))
     CAF_ADD_TYPE_ID(summa, (Logger))
 
     CAF_ADD_TYPE_ID(summa, (std::vector<std::vector<double>>))

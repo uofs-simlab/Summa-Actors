@@ -1,0 +1,109 @@
+// This file is part of CAF, the C++ Actor Framework. See the file LICENSE in
+// the main distribution directory for license terms and copyright or visit
+// https://github.com/actor-framework/actor-framework/blob/main/LICENSE.
+
+#pragma once
+
+#include "caf/detail/type_traits.hpp"
+#include "caf/fwd.hpp"
+#include "caf/sec.hpp"
+#include "caf/unsafe_behavior_init.hpp"
+
+#include <new>
+#include <type_traits>
+
+namespace caf::detail {
+
+/// Conditional base type for `stateful_actor` that overrides `make_behavior` if
+/// `State::make_behavior()` exists.
+template <class State, class Base>
+class stateful_actor_base : public Base {
+public:
+  using Base::Base;
+
+  typename Base::behavior_type make_behavior() override;
+};
+
+/// Evaluates to either `stateful_actor_base<State, Base> `or `Base`, depending
+/// on whether `State::make_behavior()` exists.
+template <class State, class Base>
+using stateful_actor_base_t
+  = std::conditional_t<has_make_behavior_member_v<State>,
+                       stateful_actor_base<State, Base>, Base>;
+
+} // namespace caf::detail
+
+namespace caf {
+
+/// An event-based actor with managed state. The state is constructed with the
+/// actor, but destroyed when the actor calls `quit`. This state management
+/// brakes cycles and allows actors to automatically release resources as soon
+/// as possible.
+template <class State, class Base /* = event_based_actor (see fwd.hpp) */>
+class stateful_actor : public detail::stateful_actor_base_t<State, Base> {
+public:
+  using super = detail::stateful_actor_base_t<State, Base>;
+
+  template <class... Ts>
+  explicit stateful_actor(actor_config& cfg, Ts&&... xs) : super(cfg) {
+    if constexpr (std::is_constructible_v<State, Ts&&...>)
+      new (&state_) State(std::forward<Ts>(xs)...);
+    else
+      new (&state_) State(this, std::forward<Ts>(xs)...);
+  }
+
+  ~stateful_actor() override {
+    // nop
+  }
+
+  /// @copydoc local_actor::on_exit
+  /// @note when overriding this member function, make sure to call
+  ///       `super::on_exit()` in order to clean up the state.
+  void on_exit() override {
+    state_.~State();
+  }
+
+  const char* name() const override {
+    if constexpr (detail::has_name<State>::value) {
+      if constexpr (!std::is_member_pointer<decltype(&State::name)>::value) {
+        if constexpr (std::is_convertible<decltype(State::name),
+                                          const char*>::value) {
+          return State::name;
+        }
+      }
+    }
+    return Base::name();
+  }
+
+  /// Returns a reference to the actor's state.
+  State& state() {
+    return state_;
+  }
+
+private:
+  union {
+    /// The actor's state. This member lives inside a union since its lifetime
+    /// ends when the actor terminates while the actual actor object lives until
+    /// its reference count drops to zero.
+    State state_;
+  };
+};
+
+} // namespace caf
+
+namespace caf::detail {
+
+template <class State, class Base>
+typename Base::behavior_type stateful_actor_base<State, Base>::make_behavior() {
+  // When spawning function-based actors, CAF sets `initial_behavior_fac_` to
+  // wrap the function invocation. This always has the highest priority.
+  if (this->initial_behavior_fac_) {
+    auto res = this->initial_behavior_fac_(this);
+    this->initial_behavior_fac_ = nullptr;
+    return {unsafe_behavior_init, std::move(res)};
+  }
+  auto dptr = static_cast<stateful_actor<State, Base>*>(this);
+  return dptr->state().make_behavior();
+}
+
+} // namespace caf::detail

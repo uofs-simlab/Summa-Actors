@@ -1,0 +1,65 @@
+// This file is part of CAF, the C++ Actor Framework. See the file LICENSE in
+// the main distribution directory for license terms and copyright or visit
+// https://github.com/actor-framework/actor-framework/blob/main/LICENSE.
+
+#pragma once
+
+#include "caf/net/http/method.hpp"
+#include "caf/net/http/status.hpp"
+
+#include "caf/byte_span.hpp"
+#include "caf/detail/net_export.hpp"
+
+#include <string_view>
+#include <utility>
+
+namespace caf::net::http::v1 {
+
+using string_view_pair = std::pair<std::string_view, std::string_view>;
+
+/// Tries splitting the given byte span into an HTTP header (`first`) and a
+/// remainder (`second`). Returns an empty `string_view` as `first` for
+/// incomplete HTTP headers.
+CAF_NET_EXPORT std::pair<std::string_view, byte_span>
+split_header(byte_span bytes);
+
+/// Tries parsing the given byte span into a chunk size (`first`) and the
+/// remainder (`second`).
+/// @returns On success, the chunk size and remainder. Otherwise, an error on
+///          malformed data.
+/// @note Returns an empty error on incomplete data.
+CAF_NET_EXPORT expected<std::pair<size_t, byte_span>>
+parse_chunk(byte_span input);
+
+/// Writes an HTTP header to @p buf.
+CAF_NET_EXPORT void write_response_header(status code,
+                                          span<const string_view_pair> fields,
+                                          byte_buffer& buf);
+
+/// Write the status code for an HTTP header to @p buf.
+CAF_NET_EXPORT void begin_response_header(status code, byte_buffer& buf);
+
+/// Write the status code for an HTTP header to @p buf.
+void begin_request_header(http::method method, std::string_view path,
+                          byte_buffer& buf);
+
+/// Write a header field to @p buf.
+CAF_NET_EXPORT void add_header_field(std::string_view key, std::string_view val,
+                                     byte_buffer& buf);
+
+/// Write the status code for an HTTP header to @buf.
+CAF_NET_EXPORT bool end_header(byte_buffer& buf);
+
+/// Writes a complete HTTP response to @p buf. Automatically sets Content-Type
+/// and Content-Length header fields.
+CAF_NET_EXPORT void write_response(status code, std::string_view content_type,
+                                   std::string_view content, byte_buffer& buf);
+
+/// Writes a complete HTTP response to @p buf. Automatically sets Content-Type
+/// and Content-Length header fields followed by the user-defined @p fields.
+CAF_NET_EXPORT void write_response(status code, std::string_view content_type,
+                                   std::string_view content,
+                                   span<const string_view_pair> fields,
+                                   byte_buffer& buf);
+
+} // namespace caf::net::http::v1

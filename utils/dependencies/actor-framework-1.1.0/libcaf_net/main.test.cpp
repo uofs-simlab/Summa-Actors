@@ -1,0 +1,9 @@
+// This file is part of CAF, the C++ Actor Framework. See the file LICENSE in
+// the main distribution directory for license terms and copyright or visit
+// https://github.com/actor-framework/actor-framework/blob/main/LICENSE.
+
+#include "caf/test/caf_test_main.hpp"
+
+#include "caf/net/middleman.hpp"
+
+CAF_TEST_MAIN(caf::net::middleman)

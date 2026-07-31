@@ -5,6 +5,8 @@
 #include "summa_actor.hpp"
 #include "da_server_actor.hpp"
 #include "da_client_actor.hpp"
+#include "summa_server.hpp"
+#include "summa_client.hpp"
 #include "message_atoms.hpp"
 #include <iostream>
 #include <fstream>
@@ -45,6 +47,7 @@ class config : public actor_system_config {
     bool backup_server = false;
     bool server_mode = false;
     bool help = false;
+    std::string restart = "never";
         
     
   config() {
@@ -58,6 +61,7 @@ class config : public actor_system_config {
         .add(backup_server, "backup-server,b", "flag to denote if the server starting is a backup server")
         .add(server_mode,   "server-mode", "enable server mode")
         .add(host,          "host", "Hostname of the server")
+        .add(restart,       "restart,r", "Restart frequency")
         .add(help,          "help,h", "Print this help message");
     }
 };
@@ -93,7 +97,12 @@ int caf_main(actor_system& sys, const config& cfg) {
   if (cfg.output_file_suffix != "")
     settings.fa_actor_settings_.output_file_suffix_ = cfg.output_file_suffix;
 
-  if (settings.distributed_settings_.distributed_mode_ &&
+  if (settings.distributed_settings_.distributed_mode_ && 
+    !settings.job_actor_settings_.data_assimilation_mode_) {
+      cfg.server_mode ?
+          self->spawn(actor_from_state<SummaServer>, settings, cfg.backup_server) :
+          self->spawn(actor_from_state<SummaClient>, settings.distributed_settings_, settings, cfg.restart);
+  }  else if (settings.distributed_settings_.distributed_mode_ &&
       settings.job_actor_settings_.data_assimilation_mode_) {
     
     cfg.server_mode ? 
@@ -103,7 +112,7 @@ int caf_main(actor_system& sys, const config& cfg) {
 
   } else {
     self->spawn(actor_from_state<SummaActor>, cfg.startGRU, cfg.countGRU, 
-                settings, self);
+                settings, self, cfg.restart);
   }
   return EXIT_SUCCESS;
   }

@@ -1,6 +1,6 @@
 module gru_actor
 USE,intrinsic :: iso_c_binding
-USE nrtype
+USE nr_type
 USE globalData,only:integerMissing
 USE globalData,only:realMissing
 
@@ -14,6 +14,7 @@ public::setTimeZoneOffsetGRU_fortran
 public::readGRUForcing_fortran
 public::runGRU_fortran
 public::writeGRUOutput_fortran
+public::f_resetGruStrucNSnow
 private::setupGRU
 private::allocateOutputBuffer
 private::alloc_outputStruc
@@ -32,22 +33,24 @@ subroutine f_getNumHruInGru(indx_gru, num_hru) bind(C, name="f_getNumHruInGru")
   num_hru = gru_struc(indx_gru)%hruCount
 end subroutine f_getNumHruInGru
 
-subroutine f_setGruTolerances(handle_gru_data, rel_tol, abs_tol, rel_tol_temp_cas, &
-  rel_tol_temp_veg, rel_tol_wat_veg, rel_tol_temp_soil_snow, rel_tol_wat_snow, &
-  rel_tol_matric, rel_tol_aquifr, abs_tol_temp_cas, abs_tol_temp_veg, &
+subroutine f_setGruTolerances(handle_gru_data, be_steps, &
+  ! Relative Tolerances
+  rel_tol_temp_cas, rel_tol_temp_veg, rel_tol_wat_veg, &
+  rel_tol_temp_soil_snow, rel_tol_wat_snow, rel_tol_matric, rel_tol_aquifr, &
+  ! Absolute Tolerances 
+  abs_tol_temp_cas, abs_tol_temp_veg, &
   abs_tol_wat_veg, abs_tol_temp_snow_soil, abs_tol_wat_snow, abs_tol_matric, &
   abs_tol_aquifr)  bind(C, name="f_setGruTolerances")
 
   USE global_tol
-! subroutine f_setGruTolerances(handle_gru_data, be_steps, rel_tol, abs_tolWat, abs_tolNrg) bind(C, name="f_setGruTolerances")
   USE actor_data_types,only:gru_type
   USE var_lookup,only: iLookPARAM
 
   implicit none
-  type(c_ptr), intent(in),value :: handle_gru_data
-  ! integer(c_int), intent(in)    :: be_steps
-  real(c_double), intent(in)    :: rel_tol
-  real(c_double), intent(in)    :: abs_tol
+  type(c_ptr), intent(in),value   :: handle_gru_data
+  integer(c_int), intent(in)      :: be_steps
+  ! Relative Tolerances
+  ! real(c_double), intent(in)       :: rel_tol
   real(c_double), intent(inout)    :: rel_tol_temp_cas
   real(c_double), intent(inout)    :: rel_tol_temp_veg
   real(c_double), intent(inout)    :: rel_tol_wat_veg
@@ -55,6 +58,10 @@ subroutine f_setGruTolerances(handle_gru_data, rel_tol, abs_tol, rel_tol_temp_ca
   real(c_double), intent(inout)    :: rel_tol_wat_snow
   real(c_double), intent(inout)    :: rel_tol_matric
   real(c_double), intent(inout)    :: rel_tol_aquifr
+  ! Absolute Tolerances
+  ! real(c_double), intent(in)       :: abs_tol
+  ! real(c_double), intent(in)       :: abs_tolWat
+  ! real(c_double), intent(in)       :: abs_tolNrg
   real(c_double), intent(inout)    :: abs_tol_temp_cas
   real(c_double), intent(inout)    :: abs_tol_temp_veg
   real(c_double), intent(inout)    :: abs_tol_wat_veg
@@ -63,37 +70,17 @@ subroutine f_setGruTolerances(handle_gru_data, rel_tol, abs_tol, rel_tol_temp_ca
   real(c_double), intent(inout)    :: abs_tol_matric
   real(c_double), intent(inout)    :: abs_tol_aquifr
 
-  ! real(c_double), intent(in)    :: abs_tolWat
-  ! real(c_double), intent(in)    :: abs_tolNrg
   ! Local Varaibles
   integer(i4b)                  :: iHRU
 
   type(gru_type),pointer :: gru_data
   call c_f_pointer(handle_gru_data, gru_data)
 
-  ! Apply default tol if flag is true
-  if (default_tol) then
-    rel_tol_temp_cas = rel_tol
-    rel_tol_temp_veg = rel_tol
-    rel_tol_wat_veg = rel_tol
-    rel_tol_temp_soil_snow = rel_tol
-    rel_tol_wat_snow = rel_tol
-    rel_tol_matric = rel_tol
-    rel_tol_aquifr = rel_tol
-    abs_tol_temp_cas = abs_tol
-    abs_tol_temp_veg = abs_tol
-    abs_tol_temp_snow_soil = abs_tol
-    abs_tol_wat_snow = abs_tol
-    abs_tol_wat_veg = abs_tol
-    abs_tol_matric = abs_tol
-    abs_tol_aquifr = abs_tol
-  end if
   do iHRU = 1, size(gru_data%hru)
+    if (be_steps>0) then
+      gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%be_steps)%dat(1) = be_steps
+    end if
     ! Set rtols
-    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relConvTol_liquid)%dat(1) = rel_tol
-    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relConvTol_matric)%dat(1) = rel_tol
-    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relConvTol_energy)%dat(1) = rel_tol
-    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relConvTol_aquifr)%dat(1) = rel_tol
     gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relTolTempCas)%dat(1) = rel_tol_temp_cas
     gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relTolTempVeg)%dat(1) = rel_tol_temp_veg
     gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relTolWatVeg)%dat(1) = rel_tol_wat_veg
@@ -101,11 +88,8 @@ subroutine f_setGruTolerances(handle_gru_data, rel_tol, abs_tol, rel_tol_temp_ca
     gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relTolWatSnow)%dat(1) = rel_tol_wat_snow
     gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relTolMatric)%dat(1) = rel_tol_matric
     gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relTolAquifr)%dat(1) = rel_tol_aquifr
-  
-    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absConvTol_liquid)%dat(1) = abs_tol 
-    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absConvTol_matric)%dat(1) = abs_tol 
-    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absConvTol_energy)%dat(1) = abs_tol 
-    gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absConvTol_aquifr)%dat(1) = abs_tol 
+
+    ! Set atols
     gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absTolTempCas)%dat(1) = abs_tol_temp_cas
     gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absTolTempVeg)%dat(1) = abs_tol_temp_veg
     gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absTolWatVeg)%dat(1) = abs_tol_wat_veg 
@@ -113,27 +97,7 @@ subroutine f_setGruTolerances(handle_gru_data, rel_tol, abs_tol, rel_tol_temp_ca
     gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absTolWatSnow)%dat(1) = abs_tol_wat_snow
     gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absTolMatric)%dat(1) = abs_tol_matric 
     gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absTolAquifr)%dat(1) = abs_tol_aquifr 
-    ! ! Reset only if the values are valid
-    ! if (rel_tol > 0.0 .and. abs_tolWat > 0.0 .and. abs_tolNrg > 0.0 ) then
-    !   gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relTolTempCas)%dat(1) = rel_tol
-    !   gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relTolTempVeg)%dat(1) = rel_tol
-    !   gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relTolWatVeg)%dat(1) = rel_tol
-    !   gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relTolTempSoilSnow)%dat(1) = rel_tol
-    !   gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relTolWatSnow)%dat(1) = rel_tol
-    !   gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relTolMatric)%dat(1) = rel_tol
-    !   gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%relTolAquifr)%dat(1) = rel_tol
 
-    !   gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absTolTempCas)%dat(1) = abs_tolNrg
-    !   gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absTolTempVeg)%dat(1) = abs_tolNrg 
-    !   gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absTolWatVeg)%dat(1) = abs_tolWat 
-    !   gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absTolTempSoilSnow)%dat(1) = abs_tolNrg 
-    !   gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absTolWatSnow)%dat(1) = abs_tolWat 
-    !   gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absTolMatric)%dat(1) = abs_tolWat 
-    !   gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%absTolAquifr)%dat(1) = abs_tolWat 
-    ! end if
-    ! if (be_steps>0) then
-    !   gru_data%hru(iHRU)%mparStruct%var(iLookPARAM%be_steps)%dat(1) = be_steps
-    ! end if
   end do
 
 end subroutine f_setGruTolerances
@@ -155,20 +119,14 @@ subroutine setupGRU(iGRU, err, message)
   USE NOAHMP_VEG_PARAMETERS,only:SAIM,LAIM                    ! 2-d tables for stem area index and leaf area index (vegType,month)
   
   USE paramCheck_module,only:paramCheck                       ! module to check consistency of model parameters
-#ifdef V4_ACTIVE
   ! look-up values for the choice of variable in energy equations (BE residual or IDA state variable)
   USE mDecisions_module,only:&
-    closedForm,    &                      ! use temperature with closed form heat capacity
-    enthalpyFormLU,&                      ! use enthalpy with soil temperature-enthalpy lookup tables
-    enthalpyForm                          ! use enthalpy with soil temperature-enthalpy analytical solution
-  USE enthalpyTemp_module,only:T2H_lookup_snWat               ! module to calculate a look-up table for the snow temperature-enthalpy conversion
-  USE enthalpyTemp_module,only:T2L_lookup_soil                ! module to calculate a look-up table for the soil temperature-enthalpy conversion
+    closedForm,              &            ! use temperature with closed form heat capacity
+    enthalpyForm,            &            ! use enthalpy with soil temperature-enthalpy lookup tables
+    enthalpyFormAN                        ! use enthalpy with soil temperature-enthalpy analytical solution
+  USE convertEnthalpyTemp_module,only:T2H_lookup_snWat               ! module to calculate a look-up table for the snow temperature-enthalpy conversion
+  USE convertEnthalpyTemp_module,only:T2L_lookup_soil                ! module to calculate a look-up table for the soil temperature-enthalpy conversion
 
-#else
-  
-  USE ConvE2Temp_module,only:E2T_lookup                       ! module to calculate a look-up table for the temperature-enthalpy conversion
-
-#endif
   USE var_derive_module,only:fracFuture                       ! module to calculate the fraction of runoff in future time steps (time delay histogram)
   
   ! named variables to define LAI decisions
@@ -183,13 +141,11 @@ subroutine setupGRU(iGRU, err, message)
 
   ! Local Variables
   character(len=256) :: cmessage
-  integer(i4b)        :: iHRU, jHRU, kHRU
-  logical             :: needLookup_soil = .false.
+  integer(i4b)       :: iHRU, jHRU, kHRU
+  logical            :: needLookup_soil = .false.
 
   summaVars: associate(&
-#ifdef V4_ACTIVE  
     lookupStruct         =>init_struc%lookupStruct         , & ! x%gru(:)%hru(:)%z(:)%var(:)%lookup(:) -- lookup tables
-#endif
     ! statistics structures
     forcStat             => init_struc%forcStat            , & ! x%gru(:)%hru(:)%var(:)%dat -- model forcing data
     progStat             => init_struc%progStat            , & ! x%gru(:)%hru(:)%var(:)%dat -- model prognostic (state) variables
@@ -226,12 +182,10 @@ subroutine setupGRU(iGRU, err, message)
     
     ! miscellaneous variables
     nGRU                 => init_struc%nGRU              , & ! number of grouped response units
-    nHRU                 => init_struc%nHRU              , & ! number of global hydrologic response units
-    hruCount             => init_struc%hruCount              & ! number of local hydrologic response units
+    nHRU                 => init_struc%nHRU                & ! number of global hydrologic response units
   )
 
-#ifdef V4_ACTIVE
-  if(model_decisions(iLookDECISIONS%nrgConserv)%iDecision == enthalpyFormLU) needLookup_soil = .true. 
+  if(model_decisions(iLookDECISIONS%nrgConserv)%iDecision == enthalpyForm) needLookup_soil = .true. 
   ! *****************************************************************************
   ! *** compute derived model variables that are pretty much constant for the basin as a whole
   ! *****************************************************************************
@@ -244,134 +198,69 @@ subroutine setupGRU(iGRU, err, message)
   ! loop through local HRUs
   do iHRU=1,gru_struc(iGRU)%hruCount
 
-    kHRU=0
-    ! check the network topology (only expect there to be one downslope HRU)
-    do jHRU=1,gru_struc(iGRU)%hruCount
-      if(typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%downHRUindex) == idStruct%gru(iGRU)%hru(jHRU)%var(iLookID%hruId))then
-      if(kHRU==0)then  ! check there is a unique match
-        kHRU=jHRU
-      else
-        message=trim(message)//'only expect there to be one downslope HRU'; return
-      end if  ! (check there is a unique match)
-      end if  ! (if identified a downslope HRU)
-    end do
+   kHRU=0
+   ! check the network topology (only expect there to be one downslope HRU)
+   do jHRU=1,gru_struc(iGRU)%hruCount
+    if(typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%downHRUindex) == idStruct%gru(iGRU)%hru(jHRU)%var(iLookID%hruId))then
+     if(kHRU==0)then  ! check there is a unique match
+      kHRU=jHRU
+     else
+      message=trim(message)//'only expect there to be one downslope HRU'; return
+     end if  ! (check there is a unique match)
+    end if  ! (if identified a downslope HRU)
+   end do
 
-    ! check that the parameters are consistent
-    call paramCheck(mparStruct%gru(iGRU)%hru(iHRU),err,cmessage)
-    if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+   ! check that the parameters are consistent
+   call paramCheck(mparStruct%gru(iGRU)%hru(iHRU),err,cmessage)
+   if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
 
-    ! calculate a look-up table for the temperature-enthalpy conversion of snow for future snow layer merging
-    ! NOTE1: might be able to make this more efficient by only doing this for the HRUs that have snow
-    ! NOTE2: H is the mixture enthalpy of snow liquid and ice
-    call T2H_lookup_snWat(mparStruct%gru(iGRU)%hru(iHRU),err,cmessage)
-    if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+   ! calculate a look-up table for the temperature-enthalpy conversion of snow for future snow layer merging
+   ! NOTE1: might be able to make this more efficient by only doing this for the HRUs that have snow
+   ! NOTE2: H is the mixture enthalpy of snow liquid and ice
+   call T2H_lookup_snWat(mparStruct%gru(iGRU)%hru(iHRU),err,cmessage)
+   if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
 
-    ! calculate a lookup table for the temperature-enthalpy conversion of soil 
-    ! NOTE: L is the integral of soil Clapeyron equation liquid water matric potential from temperature
-    !       multiply by Cp_liq*iden_water to get temperature component of enthalpy
-    if(needLookup_soil)then
-      call T2L_lookup_soil(gru_struc(iGRU)%hruInfo(iHRU)%nSoil,   &   ! intent(in):    number of soil layers
-                            mparStruct%gru(iGRU)%hru(iHRU),        &   ! intent(in):    parameter data structure
-                            lookupStruct%gru(iGRU)%hru(iHRU),      &   ! intent(inout): lookup table data structure
-                            err,cmessage)                              ! intent(out):   error control
-      if(err/=0)then; message=trim(message)//trim(cmessage); return; endif  
-    endif
+   ! calculate a lookup table for the temperature-enthalpy conversion of soil 
+   ! NOTE: L is the integral of soil Clapeyron equation liquid water matric potential from temperature
+   !       multiply by Cp_liq*iden_water to get temperature component of enthalpy
+   if(needLookup_soil)then
+     call T2L_lookup_soil(gru_struc(iGRU)%hruInfo(iHRU)%nSoil,   &   ! intent(in):    number of soil layers
+                          mparStruct%gru(iGRU)%hru(iHRU),        &   ! intent(in):    parameter data structure
+                          lookupStruct%gru(iGRU)%hru(iHRU),      &   ! intent(inout): lookup table data structure
+                          err,cmessage)                              ! intent(out):   error control
+     if(err/=0)then; message=trim(message)//trim(cmessage); return; endif  
+   endif
 
-    ! overwrite the vegetation height
-    HVT(typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex)) = mparStruct%gru(iGRU)%hru(iHRU)%var(iLookPARAM%heightCanopyTop)%dat(1)
-    HVB(typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex)) = mparStruct%gru(iGRU)%hru(iHRU)%var(iLookPARAM%heightCanopyBottom)%dat(1)
+   ! overwrite the vegetation height
+   HVT(typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex)) = mparStruct%gru(iGRU)%hru(iHRU)%var(iLookPARAM%heightCanopyTop)%dat(1)
+   HVB(typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex)) = mparStruct%gru(iGRU)%hru(iHRU)%var(iLookPARAM%heightCanopyBottom)%dat(1)
 
-    ! overwrite the tables for LAI and SAI
-    if(model_decisions(iLookDECISIONS%LAI_method)%iDecision == specified)then
-      SAIM(typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex),:) = mparStruct%gru(iGRU)%hru(iHRU)%var(iLookPARAM%winterSAI)%dat(1)
-      LAIM(typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex),:) = mparStruct%gru(iGRU)%hru(iHRU)%var(iLookPARAM%summerLAI)%dat(1)*greenVegFrac_monthly
-    endif
+   ! overwrite the tables for LAI and SAI
+   if(model_decisions(iLookDECISIONS%LAI_method)%iDecision == specified)then
+    SAIM(typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex),:) = mparStruct%gru(iGRU)%hru(iHRU)%var(iLookPARAM%winterSAI)%dat(1)
+    LAIM(typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex),:) = mparStruct%gru(iGRU)%hru(iHRU)%var(iLookPARAM%summerLAI)%dat(1)*greenVegFrac_monthly
+   endif
 
   end do ! HRU
 
   ! compute total area of the upstream HRUS that flow into each HRU
   do iHRU=1,gru_struc(iGRU)%hruCount
-    upArea%gru(iGRU)%hru(iHRU) = 0._rkind
-    do jHRU=1,gru_struc(iGRU)%hruCount
-      ! check if jHRU flows into iHRU; assume no exchange between GRUs
-      if(typeStruct%gru(iGRU)%hru(jHRU)%var(iLookTYPE%downHRUindex)==typeStruct%gru(iGRU)%hru(iHRU)%var(iLookID%hruId))then
-      upArea%gru(iGRU)%hru(iHRU) = upArea%gru(iGRU)%hru(iHRU) + attrStruct%gru(iGRU)%hru(jHRU)%var(iLookATTR%HRUarea)
-      endif   ! (if jHRU is an upstream HRU)
-    end do  ! jHRU
+   upArea%gru(iGRU)%hru(iHRU) = 0._rkind
+   do jHRU=1,gru_struc(iGRU)%hruCount
+    ! check if jHRU flows into iHRU; assume no exchange between GRUs
+    if(typeStruct%gru(iGRU)%hru(jHRU)%var(iLookTYPE%downHRUindex)==typeStruct%gru(iGRU)%hru(iHRU)%var(iLookID%hruId))then
+     upArea%gru(iGRU)%hru(iHRU) = upArea%gru(iGRU)%hru(iHRU) + attrStruct%gru(iGRU)%hru(jHRU)%var(iLookATTR%HRUarea)
+    endif   ! (if jHRU is an upstream HRU)
+   end do  ! jHRU
   end do  ! iHRU
 
   ! identify the total basin area for a GRU (m2)
   associate(totalArea => bvarStruct%gru(iGRU)%var(iLookBVAR%basin__totalArea)%dat(1) )
-    totalArea = 0._rkind
-    do iHRU=1,gru_struc(iGRU)%hruCount
-      totalArea = totalArea + attrStruct%gru(iGRU)%hru(iHRU)%var(iLookATTR%HRUarea)
-    end do
+   totalArea = 0._rkind
+   do iHRU=1,gru_struc(iGRU)%hruCount
+    totalArea = totalArea + attrStruct%gru(iGRU)%hru(iHRU)%var(iLookATTR%HRUarea)
+   end do
   end associate
-
-! ****************************end V4***********************************
-#else
-! ****************************start V3****************************************
-
-
-    ! calculate the fraction of runoff in future time steps
-  call fracFuture(bparStruct%gru(iGRU)%var,    &  ! vector of basin-average model parameters
-                  bvarStruct%gru(iGRU),        &  ! data structure of basin-average variables
-                  err,cmessage)                   ! error control
-  if(err/=0)then; message=trim(message)//trim(cmessage); endif
-
-  ! loop through local HRUs
-  do iHRU=1,gru_struc(iGRU)%hruCount
-
-    kHRU=0
-    ! check the network topology (only expect there to be one downslope HRU)
-    do jHRU=1,gru_struc(iGRU)%hruCount
-      if(typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%downHRUindex) == idStruct%gru(iGRU)%hru(jHRU)%var(iLookID%hruId))then
-        if(kHRU==0)then  ! check there is a unique match
-          kHRU=jHRU
-        else
-          message=trim(message)//'only expect there to be one downslope HRU';
-        end if  ! (check there is a unique match)
-      end if  ! (if identified a downslope HRU)
-    end do
-
-    ! check that the parameters are consistent
-    call paramCheck(mparStruct%gru(iGRU)%hru(iHRU),err,cmessage)
-    if(err/=0)then; message=trim(message)//trim(cmessage); endif
-
-    ! calculate a look-up table for the temperature-enthalpy conversion
-    call E2T_lookup(mparStruct%gru(iGRU)%hru(iHRU),err,cmessage)
-    if(err/=0)then; message=trim(message)//trim(cmessage); endif
-
-    ! overwrite the vegetation height
-    HVT(typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex)) = mparStruct%gru(iGRU)%hru(iHRU)%var(iLookPARAM%heightCanopyTop)%dat(1)
-    HVB(typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex)) = mparStruct%gru(iGRU)%hru(iHRU)%var(iLookPARAM%heightCanopyBottom)%dat(1)
-
-    ! overwrite the tables for LAI and SAI
-    if(model_decisions(iLookDECISIONS%LAI_method)%iDecision == specified)then
-      SAIM(typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex),:) = mparStruct%gru(iGRU)%hru(iHRU)%var(iLookPARAM%winterSAI)%dat(1)
-      LAIM(typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex),:) = mparStruct%gru(iGRU)%hru(iHRU)%var(iLookPARAM%summerLAI)%dat(1)*greenVegFrac_monthly
-    endif
-
-  end do ! HRU
-
-  ! compute total area of the upstream HRUS that flow into each HRU
-  do iHRU=1,gru_struc(iGRU)%hruCount
-    upArea%gru(iGRU)%hru(iHRU) = 0._rkind
-    do jHRU=1,gru_struc(iGRU)%hruCount
-      ! check if jHRU flows into iHRU; assume no exchange between GRUs
-      if(typeStruct%gru(iGRU)%hru(jHRU)%var(iLookTYPE%downHRUindex)==typeStruct%gru(iGRU)%hru(iHRU)%var(iLookID%hruId))then
-        upArea%gru(iGRU)%hru(iHRU) = upArea%gru(iGRU)%hru(iHRU) + attrStruct%gru(iGRU)%hru(jHRU)%var(iLookATTR%HRUarea)
-      endif   ! (if jHRU is an upstream HRU)
-    end do  ! jHRU
-  end do  ! iHRU
-
-  ! identify the total basin area for a GRU (m2)
-  bvarStruct%gru(iGRU)%var(iLookBVAR%basin__totalArea)%dat(1) = 0._rkind
-  do iHRU=1,gru_struc(iGRU)%hruCount
-    bvarStruct%gru(iGRU)%var(iLookBVAR%basin__totalArea)%dat(1) = bvarStruct%gru(iGRU)%var(iLookBVAR%basin__totalArea)%dat(1) + attrStruct%gru(iGRU)%hru(iHRU)%var(iLookATTR%HRUarea)
-  end do
-
-#endif
 
 end associate summaVars
 
@@ -460,8 +349,8 @@ subroutine setupGRU_fortran(indx_gru, handle_gru_data, err, message_r) &
     if(err /= 0) then; call f_c_string_ptr(trim(message), message_r);return; end if
   end do
 
-  do ivar=1, size(init_struc%bvarStruct%gru(indx_gru)%var(:))
-    gru_data%bvarStruct%var(ivar)%dat(:) = init_struc%bvarStruct%gru(indx_gru)%var(ivar)%dat(:)
+  do iVar=1, size(init_struc%bvarStruct%gru(indx_gru)%var(:))
+    gru_data%bvarStruct%var(iVar)%dat(:) = init_struc%bvarStruct%gru(indx_gru)%var(iVar)%dat(:)
   enddo
 end subroutine setupGRU_fortran
 
@@ -570,6 +459,7 @@ subroutine runGRU_fortran(indx_gru, modelTimeStep, handle_gru_data, &
     dt_init_factor, err, message_r) bind(C, name="runGRU_fortran")
   USE actor_data_types,only:gru_type
   USE C_interface_module,only:f_c_string_ptr  ! convert fortran string to c string
+  USE, intrinsic :: ieee_arithmetic
   USE summa_modelRun,only:runPhysics
   
   USE globalData,only:model_decisions          ! model decision structure
@@ -624,7 +514,6 @@ subroutine runGRU_fortran(indx_gru, modelTimeStep, handle_gru_data, &
     gru_data%hru(iHRU)%fluxStruct%var(iLookFLUX%mLayerColumnInflow)%dat(:) = 0._rkind
   end do
 
-
   do iHRU = 1, size(gru_data%hru)
     ! Give the HRU the up to date basin variables
     do iVar=1, size(gru_data%bvarStruct%var(:))
@@ -664,7 +553,6 @@ subroutine runGRU_fortran(indx_gru, modelTimeStep, handle_gru_data, &
           gru_data%bvarStruct%var(iLookBVAR%basin__ColumnOutflow)%dat(1) + &
           sum( gru_data%hru(iHRU)%fluxStruct%var(iLookFLUX%mLayerColumnOutflow)%dat(:))
     end if
-
 
     ! ----- calculate weighted basin (GRU) fluxes --------------------------------------------------------------------------------------
     
@@ -745,12 +633,18 @@ subroutine runGRU_fortran(indx_gru, modelTimeStep, handle_gru_data, &
     end do
   end do
 
+  ! Underflow/denormal occur benignly and overflow occurs rarely in the physics; we do not want to stop the model when they occur
+  call ieee_set_flag(ieee_underflow, .false.)
+  call ieee_set_flag(ieee_overflow, .false.)
+
 end subroutine runGRU_fortran
 
 subroutine writeGRUOutput_fortran(indx_gru, timestep, outputstep, &
-    handle_gru_data, err, message_r) bind(C, name="writeGRUOutput_fortran")
+    handle_gru_data, err, message_r, year, month, day, hour) bind(C, name="writeGRUOutput_fortran")
   USE actor_data_types,only:gru_type
-  USE HRUwriteoOutput_module,only:writeHRUOutput
+  USE HRUwriteoOutput_module,only:writeHRUOutput, hru_writeRestart
+  USE var_lookup,only:iLookTIME                 ! named variables for time data structure
+
   USE C_interface_module,only:f_c_string_ptr  ! convert fortran string to c string
   implicit none
   ! Dummy Variables
@@ -760,6 +654,7 @@ subroutine writeGRUOutput_fortran(indx_gru, timestep, outputstep, &
   type(c_ptr),    intent(in),value :: handle_gru_data
   integer(c_int), intent(out)      :: err
   type(c_ptr),    intent(out)      :: message_r
+  integer(c_int), intent(out) :: year, month, day, hour
   ! Local Variables
   integer(i4b)                     :: iHRU
   type(gru_type),pointer           :: gru_data
@@ -767,10 +662,16 @@ subroutine writeGRUOutput_fortran(indx_gru, timestep, outputstep, &
 
   call f_c_string_ptr(trim(message), message_r)
   call c_f_pointer(handle_gru_data, gru_data)
+  year = gru_data%hru(1)%timeStruct%var(iLookTIME%iyyy)
+  month = gru_data%hru(1)%timeStruct%var(iLookTIME%im)
+  day = gru_data%hru(1)%timeStruct%var(iLookTIME%id)
+  hour = gru_data%hru(1)%timeStruct%var(iLookTIME%ih)
 
   do iHRU = 1, size(gru_data%hru)
     call writeHRUOutput(indx_gru, iHRU, timestep, outputstep, gru_data%hru(iHRU), & 
                         err, message)
+    call hru_writeRestart(indx_gru, iHRU, timestep, outputstep, gru_data%hru(iHRU), &
+                         err)
     if(err /= 0) then; call f_c_string_ptr(trim(message), message_r);return; end if
   end do
 
@@ -791,11 +692,9 @@ subroutine allocateOutputBuffer(indx_gru, num_hru, output_buffer_steps, &
 
   USE globalData,only:statForc_meta,statProg_meta,statDiag_meta ! child metadata for stats
   USE globalData,only:statFlux_meta,statIndx_meta,statBvar_meta ! child metadata for stats
-
-#ifdef V4_ACTIVE
-  USE globalData,only:lookup_meta                             ! child metadata for stats
-#endif
+  USE globalData,only:lookup_meta                               ! child metadata for stats
   USE globalData,only:maxSnowLayers
+  USE globalData,only:maxSoilLayers
   USE var_lookup,only:maxvarFreq             ! allocation dimension (output frequency)
   
 
@@ -859,9 +758,9 @@ subroutine allocateOutputBuffer(indx_gru, num_hru, output_buffer_steps, &
                                       nSteps=output_buffer_steps,err=err,message=message) 
         case('forc')
           call alloc_outputStruc(forc_meta,summa_struct(1)%forcStruct%gru(indx_gru)%hru(iHRU), &
-                                 nSteps=output_buffer_steps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,message=message)
+                                 nSteps=output_buffer_steps,nSnow=maxSnowLayers,nSoil=maxSoilLayers,err=err,message=message)
           call alloc_outputStruc(statForc_meta(:)%var_info,summa_struct(1)%forcStat%gru(indx_gru)%hru(iHRU), &
-                                 nSteps=output_buffer_steps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,message=message); 
+                                 nSteps=output_buffer_steps,nSnow=maxSnowLayers,nSoil=maxSoilLayers,err=err,message=message); 
         case('attr')
           call allocLocal(attr_meta,summa_struct(1)%attrStruct%gru(indx_gru)%hru(iHRU),nSnow,nSoil,err,message)
         case('type')
@@ -872,34 +771,32 @@ subroutine allocateOutputBuffer(indx_gru, num_hru, output_buffer_steps, &
           call allocLocal(mpar_meta,summa_struct(1)%mparStruct%gru(indx_gru)%hru(iHRU),nSnow,nSoil,err,message)
         case('indx')
           call alloc_outputStruc(indx_meta,summa_struct(1)%indxStruct%gru(indx_gru)%hru(iHRU), &
-                                 nSteps=output_buffer_steps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,str_name='indx',message=message);
+                                 nSteps=output_buffer_steps,nSnow=maxSnowLayers,nSoil=maxSoilLayers,err=err,str_name='indx',message=message);
           call alloc_outputStruc(statIndx_meta(:)%var_info,summa_struct(1)%indxStat%gru(indx_gru)%hru(iHRU), &
-                                 nSteps=output_buffer_steps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,str_name='indx',message=message);
+                                 nSteps=output_buffer_steps,nSnow=maxSnowLayers,nSoil=maxSoilLayers,err=err,str_name='indx',message=message);
         case('prog')
           call alloc_outputStruc(prog_meta,summa_struct(1)%progStruct%gru(indx_gru)%hru(iHRU), &
-                                  nSteps=output_buffer_steps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,str_name='prog',message=message);
+                                  nSteps=output_buffer_steps,nSnow=maxSnowLayers,nSoil=maxSoilLayers,err=err,str_name='prog',message=message);
           call alloc_outputStruc(statProg_meta(:)%var_info,summa_struct(1)%progStat%gru(indx_gru)%hru(iHRU), &
-                                  nSteps=output_buffer_steps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,str_name='prog',message=message);
+                                  nSteps=output_buffer_steps,nSnow=maxSnowLayers,nSoil=maxSoilLayers,err=err,str_name='prog',message=message);
         case('diag')
           call alloc_outputStruc(diag_meta,summa_struct(1)%diagStruct%gru(indx_gru)%hru(iHRU), &
-                                 nSteps=output_buffer_steps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,message=message);
+                                 nSteps=output_buffer_steps,nSnow=maxSnowLayers,nSoil=maxSoilLayers,err=err,message=message);
           call alloc_outputStruc(statDiag_meta(:)%var_info,summa_struct(1)%diagStat%gru(indx_gru)%hru(iHRU), &
-                                 nSteps=output_buffer_steps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,message=message);
+                                 nSteps=output_buffer_steps,nSnow=maxSnowLayers,nSoil=maxSoilLayers,err=err,message=message);
         case('flux')
           call alloc_outputStruc(flux_meta,summa_struct(1)%fluxStruct%gru(indx_gru)%hru(iHRU), &
-                                 nSteps=output_buffer_steps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,message=message);    ! model fluxes
+                                 nSteps=output_buffer_steps,nSnow=maxSnowLayers,nSoil=maxSoilLayers,err=err,message=message);    ! model fluxes
           call alloc_outputStruc(statFlux_meta(:)%var_info,summa_struct(1)%fluxStat%gru(indx_gru)%hru(iHRU), &
-                                 nSteps=output_buffer_steps,nSnow=maxSnowLayers,nSoil=nSoil,err=err,message=message);
+                                 nSteps=output_buffer_steps,nSnow=maxSnowLayers,nSoil=maxSoilLayers,err=err,message=message);
         case('bpar'); cycle;
         case('bvar')
           call alloc_outputStruc(bvar_meta,summa_struct(1)%bvarStruct%gru(indx_gru)%hru(iHRU), &
                                  nSteps=output_buffer_steps,nSnow=0,nSoil=0,err=err,str_name='bvar',message=message);  ! basin-average variables
           call alloc_outputStruc(statBvar_meta(:)%var_info,summa_struct(1)%bvarStat%gru(indx_gru)%hru(iHRU), &
                                  nSteps=output_buffer_steps,nSnow=0,nSoil=0,err=err,str_name='bvar',message=message);  ! basin-average variables
-        case('deriv'); cycle;
-#ifdef V4_ACTIVE     
+        case('deriv'); cycle;     
         case('lookup'); call allocLocal(lookup_meta,summa_struct(1)%lookupStruct,nSnow,nSoil,err,message);
-#endif
         end select
       end do
 
@@ -911,7 +808,7 @@ subroutine allocateOutputBuffer(indx_gru, num_hru, output_buffer_steps, &
       ! NOTE: This is done here, rather than in the loop above, because finalizeStats is not one of the "standard" data structures
       allocate(summa_struct(1)%finalizeStats%gru(indx_gru)%hru(iHRU)%tim(output_buffer_steps))
       do iStep = 1, output_buffer_steps
-        allocate(summa_struct(1)%finalizeStats%gru(indx_gru)%hru(iHRU)%tim(iStep)%dat(1:maxVarFreq))
+        allocate(summa_struct(1)%finalizeStats%gru(indx_gru)%hru(iHRU)%tim(iStep)%dat(1:maxvarFreq))
         summa_struct(1)%finalizeStats%gru(indx_gru)%hru(iHRU)%tim(iStep)%dat(:) = .false.
       end do ! timeSteps
     end associate
@@ -1111,7 +1008,7 @@ subroutine allocateDat_rkind_nSteps(metadata,varData,nSnow, nSoil, &
   USE var_lookup,only:iLookVarType           ! look up structure for variable typed
 
   USE globalData,only:nTimeDelay            ! number of timesteps in the time delay histogram
-  USE globalData,only:nBand                 ! number of spectral bands
+  USE globalData,only:nSpecBand                 ! number of spectral bands
   USE var_lookup,only:maxvarFreq             ! allocation dimension (output frequency)
   USE get_ixName_module,only:get_varTypeName       ! to access type strings for error messages
 
@@ -1133,9 +1030,9 @@ subroutine allocateDat_rkind_nSteps(metadata,varData,nSnow, nSoil, &
 
   nLayers = nSnow+nSoil
   do iStep=1, nSteps
-    select case(metadata(iVar)%vartype)
+    select case(metadata(iVar)%varType)
       case(iLookVarType%scalarv); allocate(varData%var(iVar)%tim(iStep)%dat(1),stat=err)
-      case(iLookVarType%wLength); allocate(varData%var(iVar)%tim(iStep)%dat(nBand),stat=err)
+      case(iLookVarType%wLength); allocate(varData%var(iVar)%tim(iStep)%dat(nSpecBand),stat=err)
       case(iLookVarType%midSnow); allocate(varData%var(iVar)%tim(iStep)%dat(nSnow),stat=err)
       case(iLookVarType%midSoil); allocate(varData%var(iVar)%tim(iStep)%dat(nSoil),stat=err)
       case(iLookVarType%midToto); allocate(varData%var(iVar)%tim(iStep)%dat(nLayers),stat=err)
@@ -1147,7 +1044,7 @@ subroutine allocateDat_rkind_nSteps(metadata,varData,nSnow, nSoil, &
       case(iLookVarType%outstat); allocate(varData%var(iVar)%tim(iStep)%dat(maxvarfreq*2),stat=err)
       case(iLookVarType%unknown); allocate(varData%var(iVar)%tim(iStep)%dat(0),stat=err)
       case default
-      err=40; message=trim(message)//"1. unknownVariableType[name='"//trim(metadata(iVar)%varname)//"'; type='"//trim(get_varTypeName(metadata(iVar)%vartype))//"']"
+      err=40; message=trim(message)//"1. unknownVariableType[name='"//trim(metadata(iVar)%varname)//"'; type='"//trim(get_varTypeName(metadata(iVar)%varType))//"']"
       return
     end select
   end do ! (iStep)
@@ -1159,7 +1056,7 @@ subroutine allocateDat_rkind(metadata,varData,nSnow,nSoil,err,message)
   USE data_types
   USE var_lookup,only:iLookVarType           ! look up structure for variable typed
   USE var_lookup,only:maxvarFreq             ! allocation dimension (output frequency)
-  USE globalData,only:nBand                 ! number of spectral bands
+  USE globalData,only:nSpecBand                 ! number of spectral bands
   USE globalData,only:nTimeDelay            ! number of timesteps in the time delay histogram
   implicit none
   type(var_info),intent(in)         :: metadata(:)
@@ -1180,9 +1077,9 @@ subroutine allocateDat_rkind(metadata,varData,nSnow,nSoil,err,message)
   nVars = size(metaData)
   nLayers = nSnow+nSoil
   do iVar=1, nVars
-    select case(metadata(iVar)%vartype)
+    select case(metadata(iVar)%varType)
     case(iLookVarType%scalarv); allocate(varData%var(iVar)%dat(1),stat=err)
-    case(iLookVarType%wLength); allocate(varData%var(iVar)%dat(nBand),stat=err)
+    case(iLookVarType%wLength); allocate(varData%var(iVar)%dat(nSpecBand),stat=err)
     case(iLookVarType%midSnow); allocate(varData%var(iVar)%dat(nSnow),stat=err)
     case(iLookVarType%midSoil); allocate(varData%var(iVar)%dat(nSoil),stat=err)
     case(iLookVarType%midToto); allocate(varData%var(iVar)%dat(nLayers),stat=err)
@@ -1194,7 +1091,7 @@ subroutine allocateDat_rkind(metadata,varData,nSnow,nSoil,err,message)
     case(iLookVarType%outstat); allocate(varData%var(iVar)%dat(maxvarfreq*2),stat=err)
     case(iLookVarType%unknown); allocate(varData%var(iVar)%dat(0),stat=err)
     case default
-        err=40; message=trim(message)//"1. unknownVariableType[name='"//trim(metadata(iVar)%varname)//"'; type='"//trim(get_varTypeName(metadata(iVar)%vartype))//"']"
+        err=40; message=trim(message)//"1. unknownVariableType[name='"//trim(metadata(iVar)%varname)//"'; type='"//trim(get_varTypeName(metadata(iVar)%varType))//"']"
         return
     end select
   end do
@@ -1208,7 +1105,7 @@ subroutine allocateDat_int(metadata,varData,nSnow, nSoil, &
   USE actor_data_types
   USE var_lookup,only:iLookVarType           ! look up structure for variable typed
   USE var_lookup,only:maxvarFreq             ! allocation dimension (output frequency)
-  USE globalData,only:nBand                 ! number of spectral bands
+  USE globalData,only:nSpecBand                 ! number of spectral bands
   USE globalData,only:nTimeDelay            ! number of timesteps in the time delay histogram
   implicit none
   type(var_info),intent(in)            :: metadata(:)
@@ -1227,9 +1124,9 @@ subroutine allocateDat_int(metadata,varData,nSnow, nSoil, &
 
   nLayers = nSnow+nSoil
   do iStep=1, nSteps
-    select case(metadata(iVar)%vartype)
+    select case(metadata(iVar)%varType)
       case(iLookVarType%scalarv); allocate(varData%var(iVar)%tim(iStep)%dat(1),stat=err)
-      case(iLookVarType%wLength); allocate(varData%var(iVar)%tim(iStep)%dat(nBand),stat=err)
+      case(iLookVarType%wLength); allocate(varData%var(iVar)%tim(iStep)%dat(nSpecBand),stat=err)
       case(iLookVarType%midSnow); allocate(varData%var(iVar)%tim(iStep)%dat(nSnow),stat=err)
       case(iLookVarType%midSoil); allocate(varData%var(iVar)%tim(iStep)%dat(nSoil),stat=err)
       case(iLookVarType%midToto); allocate(varData%var(iVar)%tim(iStep)%dat(nLayers),stat=err)
@@ -1241,11 +1138,26 @@ subroutine allocateDat_int(metadata,varData,nSnow, nSoil, &
       case(iLookVarType%outstat); allocate(varData%var(iVar)%tim(iStep)%dat(maxvarfreq*2),stat=err)
       case(iLookVarType%unknown); allocate(varData%var(iVar)%tim(iStep)%dat(0),stat=err)
       case default
-      err=40; message=trim(message)//"1. unknownVariableType[name='"//trim(metadata(iVar)%varname)//"'; type='"//trim(get_varTypeName(metadata(iVar)%vartype))//"']"
+      err=40; message=trim(message)//"1. unknownVariableType[name='"//trim(metadata(iVar)%varname)//"'; type='"//trim(get_varTypeName(metadata(iVar)%varType))//"']"
       return
     end select
   end do ! loop through time steps
 end subroutine allocateDat_int
 
+
+subroutine f_resetGruStrucNSnow(indx_gru) bind(C, name="f_resetGruStrucNSnow")
+  USE globalData, only: gru_struc
+  USE summa_init_struc, only: init_struc
+  USE var_lookup, only: iLookINDEX
+  implicit none
+  integer(c_int), intent(in) :: indx_gru
+  integer(i4b) :: iHRU
+  do iHRU = 1, gru_struc(indx_gru)%hruCount
+    gru_struc(indx_gru)%hruInfo(iHRU)%nSnow = &
+      init_struc%indxStruct%gru(indx_gru)%hru(iHRU)%var(iLookINDEX%nSnow)%dat(1)
+    gru_struc(indx_gru)%hruInfo(iHRU)%nSoil = &
+      init_struc%indxStruct%gru(indx_gru)%hru(iHRU)%var(iLookINDEX%nSoil)%dat(1)
+  end do
+end subroutine f_resetGruStrucNSnow
 
 end module gru_actor

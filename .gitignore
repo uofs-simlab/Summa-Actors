@@ -22,4 +22,5 @@ utils/dependencies/sundials*
 utils/dependencies/v*
 utils/dependencies/lapack*
 utils/dependencies/1.0.2.tar.gz
-utils/dependencies/install/
+utils/dependencies/install/*
+

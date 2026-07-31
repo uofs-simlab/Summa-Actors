@@ -2,7 +2,7 @@ module hru_read
 
 
 USE,intrinsic :: iso_c_binding
-USE nrtype
+USE nr_type
 USE data_types,only:&
                     var_i,          &  
                     var_i8,         &
@@ -165,12 +165,12 @@ subroutine readHRUForcing(indx_gru, indx_hru, iStep, iRead, iFile, &
     checkForce(iVar) = .true.
 
     ! check individual data value
-    if(forcingDataStruct(iFile)%var(ivar)%dataFromFile(indx_gru,iRead)<dataMin)then
+    if(forcingDataStruct(iFile)%var(iVar)%dataFromFile(indx_gru,iRead)<dataMin)then
       write(message,'(a,f13.5)') trim(message)//'forcing data for variable '//trim(varname)//' is less than minimum allowable value ', dataMin
       err=20; return
     endif
     ! put the data into structures
-    hru_data%forcStruct%var(ivar) = forcingDataStruct(iFile)%var(ivar)%dataFromFile(indx_gru,iRead)
+    hru_data%forcStruct%var(iVar) = forcingDataStruct(iFile)%var(iVar)%dataFromFile(indx_gru,iRead)
   end do  ! loop through forcing variables
     
   ! check if any forcing data is missing
@@ -242,7 +242,7 @@ subroutine getFirstTimestep(iFile, iRead, err)
     
   USE multiconst,only:secprday                  ! number of seconds in a day
   
-  USE nr_utility_module,only:arth               ! get a sequence of numbers
+  USE nr_utils_module,only:arth                 ! get a sequence of numbers
 
   implicit none
 

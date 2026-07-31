@@ -1230,7 +1230,6 @@ end subroutine
 
   
 ! ****************************** z_lookup ****************************
-#ifdef V4_ACTIVE
 function new_handle_z_lookup() result(handle) bind(C, name="new_handle_z_lookup")
   type(c_ptr)            :: handle
   type(zLookup), pointer :: p
@@ -1298,7 +1297,6 @@ subroutine get_data_zlookup(handle, z, var, array) bind(C, name='get_data_zlooku
   size_data = size(hru_data%lookupStruct%z(z)%var(var)%lookup, kind=c_int)
   array(:size_data) = hru_data%lookupStruct%z(z)%var(var)%lookup
 end subroutine get_data_zlookup
-#endif
 
 
 ! ****************************** z_lookup ****************************
@@ -1734,7 +1732,7 @@ subroutine set_data_var_dlength_local(metaData, varData_out, num_var, &
 
   sum_elem = 0
   do iVar=1,num_var
-    select case(metadata(iVar)%vartype)
+    select case(metadata(iVar)%varType)
       case(iLookVarType%ifcSnow, iLookVarType%ifcSoil, iLookVarType%ifcToto)
         dat_length = varData_in(iVar) - 1
         allocate(varData_out%var(iVar)%dat(0:dat_length))
@@ -2530,9 +2528,7 @@ function new_handle_hru_type() result(handle) bind(C, name="new_handle_hru_type"
   type(hru_type), pointer :: p
 
   allocate(p)
-#ifdef V4_ACTIVE
   allocate(p%lookupStruct)
-#endif
   allocate(p%forcStat)
   allocate(p%progStat)
   allocate(p%diagStat)
@@ -2568,9 +2564,7 @@ subroutine delete_handle_hru_type(handle) bind(C, name="delete_handle_hru_type")
   type(hru_type), pointer :: p
 
   call c_f_pointer(handle, p)
-#ifdef V4_ACTIVE
   deallocate(p%lookupStruct)
-#endif
   deallocate(p%forcStat)
   deallocate(p%progStat)
   deallocate(p%diagStat)
@@ -2614,9 +2608,7 @@ function new_handle_gru_type(num_hru) result(handle) bind(C, name="new_handle_gr
   allocate(p%bvarStruct)
 
   do i=1,num_hru
-#ifdef V4_ACTIVE
     allocate(p%hru(i)%lookupStruct)
-#endif
     allocate(p%hru(i)%forcStat)
     allocate(p%hru(i)%progStat)
     allocate(p%hru(i)%diagStat)
@@ -2659,9 +2651,7 @@ subroutine delete_handle_gru_type(handle) bind(C, name="delete_handle_gru_type")
   call c_f_pointer(handle, p)
 
   do i = 1, size(p%hru)
-#ifdef V4_ACTIVE
     deallocate(p%hru(i)%lookupStruct)
-#endif
     deallocate(p%hru(i)%forcStat)
     deallocate(p%hru(i)%progStat)
     deallocate(p%hru(i)%diagStat)

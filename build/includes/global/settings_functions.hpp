@@ -27,12 +27,14 @@ class DistributedSettings {
     int num_hru_per_batch_;
     int num_nodes_;                            
     bool load_balancing_;
+    int start_gru_;
 
     DistributedSettings(bool distributed_mode = false, 
                         std::vector<std::string> servers_list = {}, 
                         int port = 0, 
                         int total_hru_count = 0, 
                         int num_hru_per_batch = 0, 
+                        int start_gru = 1,
                         int num_nodes = 0, 
                         bool load_balancing = false)
         : distributed_mode_(distributed_mode), 
@@ -41,6 +43,7 @@ class DistributedSettings {
           total_hru_count_(total_hru_count), 
           num_hru_per_batch_(num_hru_per_batch), 
           num_nodes_(num_nodes), 
+          start_gru_(start_gru),
           load_balancing_(load_balancing) {};
     ~DistributedSettings() {};
 
@@ -53,6 +56,7 @@ class DistributedSettings {
       }
       str += "\n";
       str += "Port: " + std::to_string(port_) + "\n";
+      str += "Start GRU: " + std::to_string(start_gru_) + "\n";
       str += "Total HRU Count: " + std::to_string(total_hru_count_) + "\n";
       str += "Num HRU Per Batch: " + std::to_string(num_hru_per_batch_) + "\n";
       str += "Num Nodes: " + std::to_string(num_nodes_) + "\n";
@@ -68,6 +72,7 @@ class DistributedSettings {
              insp.field("port",             settings.port_),
              insp.field("total_hru_count",  settings.total_hru_count_),
              insp.field("num_hru_per_batch",settings.num_hru_per_batch_),
+             insp.field("start_gru",        settings.start_gru_),
              insp.field("num_nodes",        settings.num_nodes_),
              insp.field("load_balancing",   settings.load_balancing_));
     }
@@ -145,7 +150,7 @@ class JobActorSettings {
     int batch_size_; 
 
     JobActorSettings(std::string file_manager_path = "", 
-                     int max_run_attempts = 1, 
+                     int max_run_attempts = 3, 
                      bool data_assimilation_mode = false, 
                      int batch_size = MISSING_INT)
         : file_manager_path_(file_manager_path), 
@@ -179,75 +184,16 @@ class HRUActorSettings {
   public:
     bool print_output_;
     int output_frequency_;
-    int be_steps_;
-
-    double rel_tol_;
-    double rel_tol_temp_cas_ ;
-    double rel_tol_temp_veg_ ;
-    double rel_tol_wat_veg_ ;
-    double rel_tol_temp_soil_snow_ ;
-    double rel_tol_wat_snow_ ;
-    double rel_tol_matric_ ;
-    double rel_tol_aquifr_ ;
-    
-    double abs_tol_;
-    double abs_tolWat_;
-    double abs_tolNrg_;    
-    double abs_tol_temp_cas_ ;
-    double abs_tol_temp_veg_;
-    double abs_tol_wat_veg_;
-    double abs_tol_temp_soil_snow_;
-    double abs_tol_wat_snow_;
-    double abs_tol_matric_ ;
-    double abs_tol_aquifr_ ;
+    int restart_frequency_;
  
-    bool default_tol_;
 
     HRUActorSettings(
         bool print_output = false, 
         int output_frequency = 100,
-        int be_steps = MISSING_INT,
-        double rel_tol = 0.0, 
-        double rel_tol_temp_cas =0.0,
-        double rel_tol_temp_veg = 0.0, 
-        double rel_tol_wat_veg = 0.0,
-        double rel_tol_temp_soil_snow = 0.0, 
-        double rel_tol_wat_snow = 0.0,
-        double rel_tol_matric = 0.0, 
-        double rel_tol_aquifr = 0.0,
-        double abs_tol = 0.0,
-        double abs_tolWat_ = MISSING_DOUBLE,
-        double abs_tolNrg_ = MISSING_DOUBLE, 
-        double abs_tol_temp_cas = 0.0, 
-        double abs_tol_temp_veg = 0.0,
-        double abs_tol_wat_veg = 0.0, 
-        double abs_tol_temp_soil_snow = 0.0,
-        double abs_tol_wat_snow = 0.0, 
-        double abs_tol_matric = 0.0,
-        double abs_tol_aquifr = 0.0, 
-        bool default_tol = false) 
+        int restart_frequency = 0) 
         : print_output_(print_output), 
           output_frequency_(output_frequency), 
-          be_steps_(be_steps),
-          rel_tol_(rel_tol), 
-          rel_tol_temp_cas_(rel_tol_temp_cas),
-          rel_tol_temp_veg_(rel_tol_temp_veg), 
-          rel_tol_wat_veg_(rel_tol_wat_veg),
-          rel_tol_temp_soil_snow_(rel_tol_temp_soil_snow), 
-          rel_tol_wat_snow_(rel_tol_wat_snow), 
-          rel_tol_matric_(rel_tol_matric),
-          rel_tol_aquifr_(rel_tol_aquifr), 
-          abs_tol_(abs_tol),
-          abs_tolWat_(abs_tolWat_),
-          abs_tolNrg_(abs_tolNrg_), 
-          abs_tol_temp_cas_(abs_tol_temp_cas),
-          abs_tol_temp_veg_(abs_tol_temp_veg), 
-          abs_tol_wat_veg_(abs_tol_wat_veg), 
-          abs_tol_temp_soil_snow_(abs_tol_temp_soil_snow),
-          abs_tol_wat_snow_(abs_tol_wat_snow), 
-          abs_tol_matric_(abs_tol_matric),
-          abs_tol_aquifr_(abs_tol_aquifr), 
-          default_tol_(default_tol) {};
+          restart_frequency_(restart_frequency) {};
 
     ~HRUActorSettings() {};
 
@@ -255,26 +201,6 @@ class HRUActorSettings {
       std::string str = "HRU Actor Settings:\n";
       str += "Print Output: " + std::to_string(print_output_) + "\n";
       str += "Output Frequency: " + std::to_string(output_frequency_) + "\n";
-      str += "BE Steps: " + std::to_string(be_steps_) + "\n";
-      str += "Abs Tol Water: " + std::to_string(abs_tolWat_) + "\n";
-      str += "Abs Tol Energy: " + std::to_string(abs_tolNrg_) + "\n";
-      str += "Rel Tol: " + std::to_string(rel_tol_) + "\n";
-      str += "Specific Tolerances:\n";
-      str += "Rel Tol Temp Veg: " + std::to_string(rel_tol_temp_veg_) + "\n";
-      str += "Rel Tol Temp Cas: " + std::to_string(rel_tol_temp_cas_) + "\n";
-      str += "Rel Tol Wat Veg: " + std::to_string(rel_tol_wat_veg_) + "\n";
-      str += "Rel Tol Temp Soil Snow: " + std::to_string(rel_tol_temp_soil_snow_) + "\n";
-      str += "Rel Tol Wat Snow: " + std::to_string(rel_tol_wat_snow_) + "\n";
-      str += "Rel Tol Matric: " + std::to_string(rel_tol_matric_) + "\n";
-      str += "Rel Tol Aquifr: " + std::to_string(rel_tol_aquifr_) + "\n";
-      str += "Abs Tol Temp Cas: " + std::to_string(abs_tol_temp_cas_) + "\n";
-      str += "Abs Tol Temp Veg: " + std::to_string(abs_tol_temp_veg_) + "\n";
-      str += "Abs Tol Wat Veg: " + std::to_string(abs_tol_wat_veg_) + "\n";
-      str += "Abs Tol Temp Soil Snow: " + std::to_string(abs_tol_temp_soil_snow_) + "\n";
-      str += "Abs Tol Wat Snow: " + std::to_string(abs_tol_wat_snow_) + "\n";
-      str += "Abs Tol Matric: " + std::to_string(abs_tol_matric_) + "\n";
-      str += "Abs Tol Aquifr: " + std::to_string(abs_tol_aquifr_) + "\n";
-      str += "Default Tolerances: " + std::to_string(default_tol_) + "\n";
       return str;
     }
 
@@ -282,27 +208,7 @@ class HRUActorSettings {
     friend bool inspect(Inspector& insp, HRUActorSettings& settings) {
       return insp.object(settings).fields(
              insp.field("print_output",           settings.print_output_),
-             insp.field("output_frequency",       settings.output_frequency_),
-             insp.field("be_steps",               settings.be_steps_),
-             insp.field("rel_tol",                settings.rel_tol_),
-             insp.field("rel_tol_temp_veg",       settings.rel_tol_temp_veg_),
-             insp.field("rel_tol_temp_cas",       settings.rel_tol_temp_cas_),
-             insp.field("rel_tol_wat_veg",        settings.rel_tol_wat_veg_),
-             insp.field("rel_tol_temp_soil_snow", settings.rel_tol_temp_soil_snow_),
-             insp.field("rel_tol_wat_snow",       settings.rel_tol_wat_snow_),
-             insp.field("rel_tol_matric",         settings.rel_tol_matric_),
-             insp.field("rel_tol_aquifr",         settings.rel_tol_aquifr_),
-             insp.field("abs_tol",                settings.abs_tol_),
-             insp.field("abs_tolWat",             settings.abs_tolWat_),
-             insp.field("abs_tolNrg",             settings.abs_tolNrg_),
-             insp.field("abs_tol_temp_cas",       settings.abs_tol_temp_cas_),
-             insp.field("abs_tol_temp_veg",       settings.abs_tol_temp_veg_),
-             insp.field("abs_tol_wat_veg",        settings.abs_tol_wat_veg_),
-             insp.field("abs_tol_temp_soil_snow", settings.abs_tol_temp_soil_snow_),
-             insp.field("abs_tol_wat_snow",       settings.abs_tol_wat_snow_),
-             insp.field("abs_tol_matric",         settings.abs_tol_matric_),
-             insp.field("abs_tol_aquifr",         settings.abs_tol_aquifr_));
-             insp.field("default_tol",            settings.default_tol_);
+             insp.field("output_frequency",       settings.output_frequency_));
     }
 };
 
@@ -358,3 +264,99 @@ class Settings {
              insp.field("json_file", settings.json_file_));
     }
 }; 
+
+class ToleranceSettings {
+  public:
+    int be_steps_;
+
+    double rel_tol_temp_cas_ ;
+    double rel_tol_temp_veg_ ;
+    double rel_tol_wat_veg_ ;
+    double rel_tol_temp_soil_snow_ ;
+    double rel_tol_wat_snow_ ;
+    double rel_tol_matric_ ;
+    double rel_tol_aquifr_ ;
+    
+    double abs_tol_temp_cas_ ;
+    double abs_tol_temp_veg_;
+    double abs_tol_wat_veg_;
+    double abs_tol_temp_soil_snow_;
+    double abs_tol_wat_snow_;
+    double abs_tol_matric_ ;
+    double abs_tol_aquifr_ ;
+ 
+
+    ToleranceSettings(
+        int be_steps = MISSING_INT,
+        double rel_tol_temp_cas =0.0,
+        double rel_tol_temp_veg = 0.0, 
+        double rel_tol_wat_veg = 0.0,
+        double rel_tol_temp_soil_snow = 0.0, 
+        double rel_tol_wat_snow = 0.0,
+        double rel_tol_matric = 0.0, 
+        double rel_tol_aquifr = 0.0,
+        double abs_tol_temp_cas = 0.0, 
+        double abs_tol_temp_veg = 0.0,
+        double abs_tol_wat_veg = 0.0, 
+        double abs_tol_temp_soil_snow = 0.0,
+        double abs_tol_wat_snow = 0.0, 
+        double abs_tol_matric = 0.0,
+        double abs_tol_aquifr = 0.0) :
+          be_steps_(be_steps),
+          rel_tol_temp_cas_(rel_tol_temp_cas),
+          rel_tol_temp_veg_(rel_tol_temp_veg), 
+          rel_tol_wat_veg_(rel_tol_wat_veg),
+          rel_tol_temp_soil_snow_(rel_tol_temp_soil_snow), 
+          rel_tol_wat_snow_(rel_tol_wat_snow), 
+          rel_tol_matric_(rel_tol_matric),
+          rel_tol_aquifr_(rel_tol_aquifr), 
+          abs_tol_temp_cas_(abs_tol_temp_cas),
+          abs_tol_temp_veg_(abs_tol_temp_veg), 
+          abs_tol_wat_veg_(abs_tol_wat_veg), 
+          abs_tol_temp_soil_snow_(abs_tol_temp_soil_snow),
+          abs_tol_wat_snow_(abs_tol_wat_snow), 
+          abs_tol_matric_(abs_tol_matric),
+          abs_tol_aquifr_(abs_tol_aquifr) {};
+
+    ~ToleranceSettings() {};
+
+    std::string toString() {
+      std::string str = "Tolerance Settings:\n";
+      str += "BE Steps: " + std::to_string(be_steps_) + "\n";
+      str += "Rel Tol Temp Veg: " + std::to_string(rel_tol_temp_veg_) + "\n";
+      str += "Rel Tol Temp Cas: " + std::to_string(rel_tol_temp_cas_) + "\n";
+      str += "Rel Tol Wat Veg: " + std::to_string(rel_tol_wat_veg_) + "\n";
+      str += "Rel Tol Temp Soil Snow: " + std::to_string(rel_tol_temp_soil_snow_) + "\n";
+      str += "Rel Tol Wat Snow: " + std::to_string(rel_tol_wat_snow_) + "\n";
+      str += "Rel Tol Matric: " + std::to_string(rel_tol_matric_) + "\n";
+      str += "Rel Tol Aquifr: " + std::to_string(rel_tol_aquifr_) + "\n";
+      str += "Abs Tol Temp Cas: " + std::to_string(abs_tol_temp_cas_) + "\n";
+      str += "Abs Tol Temp Veg: " + std::to_string(abs_tol_temp_veg_) + "\n";
+      str += "Abs Tol Wat Veg: " + std::to_string(abs_tol_wat_veg_) + "\n";
+      str += "Abs Tol Temp Soil Snow: " + std::to_string(abs_tol_temp_soil_snow_) + "\n";
+      str += "Abs Tol Wat Snow: " + std::to_string(abs_tol_wat_snow_) + "\n";
+      str += "Abs Tol Matric: " + std::to_string(abs_tol_matric_) + "\n";
+      str += "Abs Tol Aquifr: " + std::to_string(abs_tol_aquifr_) + "\n";
+      return str;
+    }
+
+    template<class Inspector>
+    friend bool inspect(Inspector& insp, ToleranceSettings& settings) {
+      return insp.object(settings).fields(
+             insp.field("be_steps",               settings.be_steps_),
+             insp.field("rel_tol_temp_veg",       settings.rel_tol_temp_veg_),
+             insp.field("rel_tol_temp_cas",       settings.rel_tol_temp_cas_),
+             insp.field("rel_tol_wat_veg",        settings.rel_tol_wat_veg_),
+             insp.field("rel_tol_temp_soil_snow", settings.rel_tol_temp_soil_snow_),
+             insp.field("rel_tol_wat_snow",       settings.rel_tol_wat_snow_),
+             insp.field("rel_tol_matric",         settings.rel_tol_matric_),
+             insp.field("rel_tol_aquifr",         settings.rel_tol_aquifr_),
+             insp.field("abs_tol_temp_cas",       settings.abs_tol_temp_cas_),
+             insp.field("abs_tol_temp_veg",       settings.abs_tol_temp_veg_),
+             insp.field("abs_tol_wat_veg",        settings.abs_tol_wat_veg_),
+             insp.field("abs_tol_temp_soil_snow", settings.abs_tol_temp_soil_snow_),
+             insp.field("abs_tol_wat_snow",       settings.abs_tol_wat_snow_),
+             insp.field("abs_tol_matric",         settings.abs_tol_matric_),
+             insp.field("abs_tol_aquifr",         settings.abs_tol_aquifr_));
+    }
+};

@@ -27,22 +27,22 @@ From: ubuntu:22.04
 
     # Install Sundials v6.6
     cd /opt
-    wget https://github.com/LLNL/sundials/releases/download/v6.6.0/sundials-6.6.0.tar.gz
-    tar -xzf sundials-6.6.0.tar.gz
+    wget https://github.com/LLNL/sundials/releases/download/v7.1.1/sundials-7.1.1.tar.gz
+    tar -xzf sundials-7.1.1.tar.gz
     mkdir /usr/local/sundials/
-    mkdir /usr/local/sundials/v6.6
-    cd sundials-6.6.0
+    mkdir /usr/local/sundials/v7.1
+    cd sundials-7.1.1
     mkdir build
     cd build
-    cmake .. -DBUILD_FORTRAN_MODULE_INTERFACE=ON -DCMAKE_Fortran_COMPILER=gfortran -DCMAKE_INSTALL_PREFIX=/usr/local/sundials/v6.6 -DEXAMPLES_INSTALL_PATH=/usr/local/sundials/v6.6/examples
+    cmake .. -DBUILD_FORTRAN_MODULE_INTERFACE=ON -DCMAKE_Fortran_COMPILER=gfortran -DCMAKE_INSTALL_PREFIX=/usr/local/sundials/v7.1 -DEXAMPLES_INSTALL_PATH=/usr/local/sundials/v7.1/examples
     make
     make install
 
     # Install C++ Actor Framework
     cd /opt
-    wget https://github.com/actor-framework/actor-framework/archive/refs/tags/0.18.6.tar.gz
-    tar -xzf 0.18.6.tar.gz
-    cd actor-framework-0.18.6
+    wget https://github.com/actor-framework/actor-framework/archive/refs/tags/1.0.2.tar.gz
+    tar -xzf 1.0.2.tar.gz
+    cd actor-framework-1.0.2
     ./configure
     cd build
     make

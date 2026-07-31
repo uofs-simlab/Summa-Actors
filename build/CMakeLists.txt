@@ -10,20 +10,13 @@ message("\nSelected Bulid Type: ${CMAKE_BUILD_TYPE}\n")
 
 # Optional Dependencies
 option(USE_SUNDIALS "Use IDA solver from sundilas suite" OFF)
-option(USE_V4 "Use V4 interface" OFF)
-set(EXT_TARGETS) # list of external targets to link to
 
 if (USE_SUNDIALS)
     message("ENABLING SUNDIALS")
-    set(USE_V4 ON CACHE BOOL "Use V4 interface" FORCE)
     find_package(SUNDIALS REQUIRED)
     list(APPEND EXT_TARGETS SUNDIALS::fida_mod_shared 
                             SUNDIALS::fkinsol_mod_shared)
     add_compile_definitions(SUNDIALS_ACTIVE)
-endif()
-
-if (USE_V4)
-    add_compile_definitions(ACTORS_ACTIVE V4_ACTIVE)
 endif()
 
 # Required Dependencies
@@ -103,6 +96,7 @@ set(ENGINE_DIR ${F_MASTER}/build/summa/build/source/engine)
 set(HOOKUP_DIR ${F_MASTER}/build/summa/build/source/hookup)
 set(NETCDF_DIR ${F_MASTER}/build/summa/build/source/netcdf)
 set(NOAHMP_DIR ${F_MASTER}/build/summa/build/source/noah-mp)
+set(NUMREC_DIR ${F_MASTER}/build/summa/build/source/numrec)
 
 # Define Actors specific directories
 set(ACTORS_DIR      ${F_MASTER}/build/source)
@@ -151,9 +145,41 @@ if (USE_SUNDIALS)
     set(SUMMA_ALL ${SUMMA_ALL} ${MODRUN_SUNDIALS} ${SOLVER_SUNDIALS})
 endif()
 
+# Define version number
+set(VERSIONFILE     ${DRIVER_DIR}/summaversion.inc)
+execute_process(
+    COMMAND bash -c "git tag | tail -n 1"
+    WORKING_DIRECTORY ${F_MASTER}/build/summa
+    OUTPUT_VARIABLE VERSION
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+execute_process(
+    COMMAND date
+    OUTPUT_VARIABLE BUILDTIM
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+execute_process(
+    COMMAND bash -c "git describe --long --all --always | sed 's#heads/##'"
+    WORKING_DIRECTORY ${F_MASTER}/build/summa
+    OUTPUT_VARIABLE GITBRCH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+execute_process(
+    COMMAND git rev-parse HEAD
+    WORKING_DIRECTORY ${F_MASTER}/build/summa
+    OUTPUT_VARIABLE GITHASH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
 #=========================================================================================
 # COMPILE PART 4: Do the compilation
 #=========================================================================================
+
+# update version information
+file(WRITE  ${VERSIONFILE} "character(len=64), parameter     :: summaVersion = '${VERSION}'\n")
+file(APPEND ${VERSIONFILE} "character(len=64), parameter     :: buildTime = '${BUILDTIM}'\n")
+file(APPEND ${VERSIONFILE} "character(len=64), parameter     :: gitBranch = '${GITBRCH}'\n")
+file(APPEND ${VERSIONFILE} "character(len=64), parameter     :: gitHash = '${GITHASH}'")
 
 # Build SUMMA_NOAHMP Object
 add_library(SUMMA_NOAHMP OBJECT ${NOAHMP} ${NRUTIL})
@@ -170,6 +196,7 @@ set_target_properties(summa PROPERTIES
     Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/mod_files"
 )
 target_compile_options(summa PRIVATE ${FLAGS_ALL})
+target_include_directories(summa PRIVATE ${DRIVER_DIR})
 target_link_libraries(summa PUBLIC ${EXT_TARGETS} SUMMA_NOAHMP SUMMA_COMM)
 
 
