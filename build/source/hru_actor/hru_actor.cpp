@@ -27,7 +27,7 @@ behavior hru_actor(stateful_actor<hru_state>* self, int ref_gru, int indx_gru,
   self->state.dt_init_factor = hru_actor_settings.dt_init_factor;
 
   // Set the restart frequency
-  self->state.restartFrequency = 0; // TODO: obtain this value from command line arg
+  self->state.restartFrequency = 1; // TODO: obtain this value from command line arg
 
 
   return {
@@ -225,10 +225,10 @@ int initHRU(stateful_actor<hru_state>* self) {
     return err;
   }
 #ifdef SUNDIALS_ACTIVE
-  !-- Always call set_sundials_tolerances with the HRU settings --
-  set_sundials_tolerances(self->state.hru_data, 
+  // Always call set_sundials_tolerances with the HRU settings
+  set_sundials_tolerances(self->state.hru_data, hru_actor_settings.be_steps,
+                          // Relative Tolerances
                           self->state.hru_actor_settings.rel_tol,
-                          self->state.hru_actor_settings.abs_tol,
                           self->state.hru_actor_settings.rel_tol_temp_cas,
                           self->state.hru_actor_settings.rel_tol_temp_veg,
                           self->state.hru_actor_settings.rel_tol_wat_veg,
@@ -236,6 +236,10 @@ int initHRU(stateful_actor<hru_state>* self) {
                           self->state.hru_actor_settings.rel_tol_wat_snow,
                           self->state.hru_actor_settings.rel_tol_matric,
                           self->state.hru_actor_settings.rel_tol_aquifr,
+                          // Absolute Tolerances
+                          self->state.hru_actor_settings.abs_tol,
+                          self->state.hru_actor_settings.abs_tolWat,
+                          self->state.hru_actor_settings.abs_tolNrg,
                           self->state.hru_actor_settings.abs_tol_temp_cas,
                           self->state.hru_actor_settings.abs_tol_temp_veg,
                           self->state.hru_actor_settings.abs_tol_wat_veg,
@@ -244,21 +248,7 @@ int initHRU(stateful_actor<hru_state>* self) {
                           self->state.hru_actor_settings.abs_tol_matric,
                           self->state.hru_actor_settings.abs_tol_aquifr);
 #endif     
-  return 0;
-  // #ifdef V4_ACTIVE
-  //   if (self->state.hru_actor_settings.be_steps > 0 &&
-  //       self->state.hru_actor_settings.rel_tol > 0 && 
-  //       self->state.hru_actor_settings.abs_tolWat > 0 &&
-  //       self->state.hru_actor_settings.abs_tolNrg > 0) {
-  //     set_steps_tolerances(self->state.hru_data, 
-  //         &self->state.hru_actor_settings.be_steps,
-  //         &self->state.hru_actor_settings.rel_tol, 
-  //         &self->state.hru_actor_settings.abs_tolWat,
-  //         self->state.hru_actor_settings.abs_tolNrg);
-  //   }
-  // #endif     
-  
-  // return 0;      
+  return 0;    
 }
 
 int runHRU(stateful_actor<hru_state>* self) {
@@ -321,7 +311,7 @@ int runHRU(stateful_actor<hru_state>* self) {
       return err;
     }
 
-    self->state.currentDate.y = y;
+    self->state.currentDate.y = y
     self->state.currentDate.m = m;
     self->state.currentDate.d = d;
     self->state.currentDate.h = h;
@@ -330,6 +320,7 @@ int runHRU(stateful_actor<hru_state>* self) {
     if (self->state.timestep == 1 ){
         self->state.startDate = self->state.currentDate;
     }
+    aout(self) << "HRU checkpoint " << self->state.checkpoint << "\n";
 
     // check if hru reached a checkpoint, if so it will write restart data to outputsructure and
     // send an update to the FAA

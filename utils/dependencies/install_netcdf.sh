@@ -18,7 +18,21 @@
 #   export CMAKE_PREFIX_PATH="$CMAKE_PREFIX_PATH:/path/to/netcdf-fortran"
 #
 # Then, run cmake as you normally would.
+#
+# Note: - cURL development headers are required to build NetCDF-C
+#       - on Ubuntu, the libcurl-openssl-dev package can be installed to obtain the cURL headers
 #####################################################################
+
+#### version numbers for packages ####
+# zlib
+zlib_ver=1.3.1
+# HDF5
+HDF5_ver=1.14.6
+# NetCDF-C
+NetCDF_C_ver=4.9.3
+# NetCDF-Fortran
+NetCDF_Fortran_ver=4.6.2
+
 export NETCDFCDIR=$PWD/install/netcdf-c
 export NETCDFFDIR=$PWD/install/netcdf-fortran
 export H5DIR=$PWD/install/hdf5
@@ -28,20 +42,29 @@ ROOTDIR=$PWD
 
 # Install zlib
 {
-  wget https://github.com/madler/zlib/releases/download/v1.3.1/zlib-1.3.1.tar.gz
-  tar -xf zlib-1.3.1.tar.gz
-  cd zlib-1.3.1
+  wget https://github.com/madler/zlib/releases/download/v$zlib_ver/zlib-$zlib_ver.tar.gz
+  tar -xf zlib-$zlib_ver.tar.gz
+  cd zlib-$zlib_ver
   ./configure --prefix=$ZDIR
   make check
   make install
 } 2>&1 | tee zlib.log
 
-# # Instal HDF5
+# Instal HDF5
+# determine name variables (dealing with notation for patch levels)
+if [[ $(echo "$HDF5_ver" | grep -o "\." | wc -l) -eq 3 ]]; then  # if version number has three decimal point characters
+  HDF5_ver_dash=$(echo "$HDF5_ver" | sed 's/\.\([^.]*\)$/-\1/') # replace third decimal point with a dash
+else
+  HDF5_ver_dash=$HDF5_ver
+fi
 cd $ROOTDIR
 {
-  wget https://github.com/HDFGroup/hdf5/releases/download/hdf5_1.14.4.2/hdf5-1.14.4-2.tar.gz
-  tar -xf hdf5-1.14.4-2.tar.gz
-  cd hdf5-1.14.4-2
+  wget https://github.com/HDFGroup/hdf5/releases/download/hdf5_$HDF5_ver/hdf5-$HDF5_ver_dash.tar.gz
+  tar -xf hdf5-$HDF5_ver_dash.tar.gz
+  cd hdf5-$HDF5_ver_dash
+  #wget https://github.com/HDFGroup/hdf5/releases/download/hdf5_1.14.4.2/hdf5-1.14.4-2.tar.gz
+  #tar -xf hdf5-1.14.4-2.tar.gz
+  #cd hdf5-1.14.4-2
   ./configure --with-zlib=${ZDIR} --prefix=${H5DIR} --enable-hl
   make install
 } 2>&1 | tee hdf5.log
@@ -49,9 +72,9 @@ cd $ROOTDIR
 # Install NetCDF-C
 cd $ROOTDIR
 {
-  wget https://github.com/Unidata/netcdf-c/archive/refs/tags/v4.9.2.tar.gz
-  tar -xf v4.9.2.tar.gz
-  cd netcdf-c-4.9.2
+  wget https://github.com/Unidata/netcdf-c/archive/refs/tags/v$NetCDF_C_ver.tar.gz
+  tar -xf v$NetCDF_C_ver.tar.gz
+  cd netcdf-c-$NetCDF_C_ver
   CPPFLAGS="-I${H5DIR}/include -I${ZDIR}/include" \
   LDFLAGS="-L${H5DIR}/lib -L${ZDIR}/lib" \
   ./configure --prefix=${NETCDFCDIR}
@@ -61,9 +84,9 @@ cd $ROOTDIR
 # Install NetCDF-Fortran
 cd $ROOTDIR
 {
-  wget https://github.com/Unidata/netcdf-fortran/archive/refs/tags/v4.6.1.tar.gz
-  tar -xf v4.6.1.tar.gz 
-  cd netcdf-fortran-4.6.1/
+  wget https://github.com/Unidata/netcdf-fortran/archive/refs/tags/v$NetCDF_Fortran_ver.tar.gz
+  tar -xf v$NetCDF_Fortran_ver.tar.gz 
+  cd netcdf-fortran-$NetCDF_Fortran_ver/
   LD_LIBRARY_PATH="${NETCDFCDIR}/lib:${LD_LIBRARY_PATH}" \
   CPPFLAGS="-I${NETCDFCDIR}/include" \
   LDFLAGS="-L${NETCDFCDIR}/lib" \

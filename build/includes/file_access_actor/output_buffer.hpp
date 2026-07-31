@@ -54,6 +54,12 @@ class OutputPartition {
       return ready_to_write_.size() == num_gru_ && ready_to_write_.size() > 0;
     }
 
+    // Checkpointing variables
+    int completed_checkpoints_ = 1;   
+    std::vector<int> hru_checkpoints_;
+    std::vector<int> hru_timesteps_;
+
+
   public:
     OutputPartition(int start_gru, int num_gru, int num_steps_buffer, 
                     int num_timesteps) : start_gru_(start_gru), 
@@ -64,6 +70,7 @@ class OutputPartition {
       if (num_steps_buffer_ > steps_remaining_) {
         num_steps_buffer_ = steps_remaining_;
       }
+      hru_timesteps_.resize(num_gru_,0);
     };
 
     inline const int getStartGru() { return start_gru_;};
@@ -74,6 +81,7 @@ class OutputPartition {
     const std::optional<WriteOutputReturn*> writeOutput(
         caf::actor gru, void* handle_ncid);
     const std::optional<WriteOutputReturn*> writeOutput(void* handle_ncid);
+    int writeRestart(int gru_index, int timestep);
 
     bool isWriteParams();
 };
@@ -152,6 +160,11 @@ class OutputBuffer {
     const int writeOutputDA(const int output_step);
     void reconstruct();
     int findPartitionIndex(int index);
+    int getPartitionStart(int index);
+    int getPartitionEnd(int index);
+    int writeRestart(int start_gru, int num_gru, int checkpoint, int year, 
+      int month, int day, int hour);
+    
 
 
 };
