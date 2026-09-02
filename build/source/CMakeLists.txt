@@ -40,7 +40,6 @@ set(DATAMS_ACTORS
     CACHE INTERNAL "DATAMS_ACTORS")
 
 set(ACTORS_GLOBAL
-    ${ACTORS_DIR}/global/auxiliary.cpp
     ${ACTORS_DIR}/global/file_manager.cpp
     ${ACTORS_DIR}/global/settings_functions.cpp
     ${ACTORS_DIR}/global/timing_info.cpp
@@ -76,7 +75,3 @@ set(GRU_ACTOR
     ${GRU_ACTOR_DIR}/gru_actor.cpp
     ${GRU_ACTOR_DIR}/gru_batch_actor.cpp
     CACHE INTERNAL "GRU_ACTOR")
-set(HRU_ACTOR
-    ${HRU_ACTOR_DIR}/hru_utils.cpp
-    ${HRU_ACTOR_DIR}/hru_actor.cpp
-    CACHE INTERNAL "HRU_ACTOR")
