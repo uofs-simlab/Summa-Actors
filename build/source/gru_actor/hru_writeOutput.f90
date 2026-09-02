@@ -101,6 +101,7 @@ subroutine writeHRUOutput(indxGRU, indxHRU, timestep, outputStep, hru_data, err,
   character(len=256)                    :: timeString        ! portion of restart file name that contains the write-out time
   integer(i4b)                          :: iStruct           ! index of model structure
   integer(i4b)                          :: iFreq             ! index of the output frequency
+  integer(i4b)                          :: iDOM              ! index of the domain
 
   err=0; message='summa_manageOutputFiles/'
   ! identify the start of the writing
@@ -120,19 +121,22 @@ subroutine writeHRUOutput(indxGRU, indxHRU, timestep, outputStep, hru_data, err,
   if (timestep == 1)then
     do iStruct=1,size(structInfo)
       select case(trim(structInfo(iStruct)%structName))
-        case('attr'); call writeParam(indxGRU,indxHRU,                           &
+        case('attr'); call writeParam(indxGRU,indxHRU,0,                         &
                                       hru_data%attrStruct,attr_meta,             &
                                       structInfo(iStruct)%structName,            &
                                       err,cmessage)
-        case('type'); call writeParam(indxGRU,indxHRU,                           &
+        case('type'); call writeParam(indxGRU,indxHRU,0,                         &
                                       hru_data%typeStruct,type_meta,             &
                                       structInfo(iStruct)%structName,            &
                                       err,cmessage)
-        case('mpar'); call writeParam(indxGRU,indxHRU,                           &
-                                      hru_data%mparStruct,mpar_meta,             &
-                                      structInfo(iStruct)%structName,            &
-                                      err,cmessage)
-        case('bpar'); call writeParam(indxGRU,indxHRU,                           &
+        case('mpar')
+          do iDOM=1,gru_struc(indxGRU)%hruInfo(indxHRU)%domCount
+            call writeParam(indxGRU,indxHRU,iDOM,                               &
+                            hru_data%mparStruct%dom(iDOM),mpar_meta,            &
+                            structInfo(iStruct)%structName,err,cmessage)
+            if(err/=0) exit
+          end do
+        case('bpar'); call writeParam(indxGRU,indxHRU,0,                         &
                                       hru_data%bparStruct,bpar_meta,             &
                                       structInfo(iStruct)%structName,            &
                                       err,cmessage)
@@ -150,30 +154,42 @@ subroutine writeHRUOutput(indxGRU, indxHRU, timestep, outputStep, hru_data, err,
   do iStruct=1,size(structInfo)
     select case(trim(structInfo(iStruct)%structName))
       case('forc'); call calcStats(hru_data%forcStat%var,                     &
-                                   hru_data%forcStruct%var, statForc_meta,    & 
-                                   hru_data%resetStats%dat,                   &     
-                                   hru_data%finalizeStats%dat,                &
-                                   hru_data%statCounter%var, err, cmessage)
-      case('prog'); call calcStats(hru_data%progStat%var,                     &
-                                   hru_data%progStruct%var, statProg_meta,    &
+                                   hru_data%forcStruct%var, statForc_meta,    &
                                    hru_data%resetStats%dat,                   &
                                    hru_data%finalizeStats%dat,                &
                                    hru_data%statCounter%var, err, cmessage)
-      case('diag'); call calcStats(hru_data%diagStat%var,                     &
-                                   hru_data%diagStruct%var, statDiag_meta,    &
-                                   hru_data%resetStats%dat,                   &
-                                   hru_data%finalizeStats%dat,                &
-                                   hru_data%statCounter%var, err, cmessage)
-      case('flux'); call calcStats(hru_data%fluxStat%var,                     &
-                                   hru_data%fluxStruct%var, statFlux_meta,    &
-                                   hru_data%resetStats%dat,                   &
-                                   hru_data%finalizeStats%dat,                &
-                                   hru_data%statCounter%var, err, cmessage)
-      case('indx'); call calcStats(hru_data%indxStat%var,                     &
-                                   hru_data%indxStruct%var, statIndx_meta,    &
-                                   hru_data%resetStats%dat,                   &
-                                   hru_data%finalizeStats%dat,                &
-                                   hru_data%statCounter%var, err, cmessage)     
+      case('prog')
+        do iDOM=1,gru_struc(indxGRU)%hruInfo(indxHRU)%domCount
+          call calcStats(hru_data%progStat%dom(iDOM)%var,                     &
+                         hru_data%progStruct%dom(iDOM)%var, statProg_meta,    &
+                         hru_data%resetStats%dat, hru_data%finalizeStats%dat, &
+                         hru_data%statCounter%var, err, cmessage)
+          if(err/=0) exit
+        end do
+      case('diag')
+        do iDOM=1,gru_struc(indxGRU)%hruInfo(indxHRU)%domCount
+          call calcStats(hru_data%diagStat%dom(iDOM)%var,                     &
+                         hru_data%diagStruct%dom(iDOM)%var, statDiag_meta,    &
+                         hru_data%resetStats%dat, hru_data%finalizeStats%dat, &
+                         hru_data%statCounter%var, err, cmessage)
+          if(err/=0) exit
+        end do
+      case('flux')
+        do iDOM=1,gru_struc(indxGRU)%hruInfo(indxHRU)%domCount
+          call calcStats(hru_data%fluxStat%dom(iDOM)%var,                     &
+                         hru_data%fluxStruct%dom(iDOM)%var, statFlux_meta,    &
+                         hru_data%resetStats%dat, hru_data%finalizeStats%dat, &
+                         hru_data%statCounter%var, err, cmessage)
+          if(err/=0) exit
+        end do
+      case('indx')
+        do iDOM=1,gru_struc(indxGRU)%hruInfo(indxHRU)%domCount
+          call calcStats(hru_data%indxStat%dom(iDOM)%var,                     &
+                         hru_data%indxStruct%dom(iDOM)%var, statIndx_meta,    &
+                         hru_data%resetStats%dat, hru_data%finalizeStats%dat, &
+                         hru_data%statCounter%var, err, cmessage)
+          if(err/=0) exit
+        end do
       case('bvar'); call calcStats(hru_data%bvarStat%var,                     &
                                    hru_data%bvarStruct%var, statBvar_meta,    &
                                    hru_data%resetStats%dat,                   &
@@ -195,38 +211,54 @@ subroutine writeHRUOutput(indxGRU, indxHRU, timestep, outputStep, hru_data, err,
   ! ****************************************************************************
   do iStruct=1,size(structInfo)
     select case(trim(structInfo(iStruct)%structName))
-      case('forc'); call writeData(indxGRU,indxHRU,outputStep,maxLengthAll,   &
-                                   "forc",hru_data%finalizeStats%dat,         &
+      case('forc'); call writeData(indxGRU,indxHRU,0,outputStep,maxLengthAll,  &
+                                   "forc",hru_data%finalizeStats%dat,          &
                                    forc_meta,hru_data%forcStat,               &
-                                   hru_data%forcStruct,forcChild_map,         &
-                                   hru_data%indxStruct,err,cmessage)
-      case('prog'); call writeData(indxGRU,indxHRU,outputStep,maxLengthAll,   &
-                                   "prog",hru_data%finalizeStats%dat,         &
-                                   prog_meta,hru_data%progStat,               &
-                                   hru_data%progStruct,progChild_map,         &
-                                   hru_data%indxStruct,err,cmessage)
-      case('diag'); call writeData(indxGRU,indxHRU,outputStep,maxLengthAll,   &
-                                   "diag",hru_data%finalizeStats%dat,         &
-                                   diag_meta,hru_data%diagStat,               &
-                                   hru_data%diagStruct,diagChild_map,         &
-                                   hru_data%indxStruct,err,cmessage)
-      case('flux'); call writeData(indxGRU,indxHRU,outputStep,maxLengthAll,   &
-                                   "flux",hru_data%finalizeStats%dat,         &
-                                   flux_meta,hru_data%fluxStat,               &
-                                   hru_data%fluxStruct,fluxChild_map,         &
-                                   hru_data%indxStruct,err,cmessage)
-      case('indx'); call writeData(indxGRU,indxHRU,outputStep,maxLengthAll,   &
-                                   "indx",hru_data%finalizeStats%dat,         &
-                                   indx_meta,hru_data%indxStat,               &
-                                   hru_data%indxStruct,indxChild_map,         &
-                                   hru_data%indxStruct,err,cmessage)
-      case('bvar'); call writeData(indxGRU,indxHRU,outputStep,maxLengthAll,   &
-                                   "bvar",hru_data%finalizeStats%dat,         &
+                                   hru_data%forcStruct,forcChild_map,          &
+                                   hru_data%indxStruct%dom(1),err,cmessage)
+      case('prog')
+        do iDOM=1,gru_struc(indxGRU)%hruInfo(indxHRU)%domCount
+          call writeData(indxGRU,indxHRU,iDOM,outputStep,maxLengthAll,         &
+                         "prog",hru_data%finalizeStats%dat,                    &
+                         prog_meta,hru_data%progStat%dom(iDOM),                &
+                         hru_data%progStruct%dom(iDOM),progChild_map,          &
+                         hru_data%indxStruct%dom(iDOM),err,cmessage)
+          if(err/=0) exit
+        end do
+      case('diag')
+        do iDOM=1,gru_struc(indxGRU)%hruInfo(indxHRU)%domCount
+          call writeData(indxGRU,indxHRU,iDOM,outputStep,maxLengthAll,         &
+                         "diag",hru_data%finalizeStats%dat,                    &
+                         diag_meta,hru_data%diagStat%dom(iDOM),                &
+                         hru_data%diagStruct%dom(iDOM),diagChild_map,          &
+                         hru_data%indxStruct%dom(iDOM),err,cmessage)
+          if(err/=0) exit
+        end do
+      case('flux')
+        do iDOM=1,gru_struc(indxGRU)%hruInfo(indxHRU)%domCount
+          call writeData(indxGRU,indxHRU,iDOM,outputStep,maxLengthAll,         &
+                         "flux",hru_data%finalizeStats%dat,                    &
+                         flux_meta,hru_data%fluxStat%dom(iDOM),                &
+                         hru_data%fluxStruct%dom(iDOM),fluxChild_map,          &
+                         hru_data%indxStruct%dom(iDOM),err,cmessage)
+          if(err/=0) exit
+        end do
+      case('indx')
+        do iDOM=1,gru_struc(indxGRU)%hruInfo(indxHRU)%domCount
+          call writeData(indxGRU,indxHRU,iDOM,outputStep,maxLengthAll,         &
+                         "indx",hru_data%finalizeStats%dat,                    &
+                         indx_meta,hru_data%indxStat%dom(iDOM),                &
+                         hru_data%indxStruct%dom(iDOM),indxChild_map,          &
+                         hru_data%indxStruct%dom(iDOM),err,cmessage)
+          if(err/=0) exit
+        end do
+      case('bvar'); call writeData(indxGRU,indxHRU,0,outputStep,maxLengthAll,  &
+                                   "bvar",hru_data%finalizeStats%dat,          &
                                    bvar_meta,hru_data%bvarStat,               &
-                                   hru_data%bvarStruct,bvarChild_map,         &
-                                   hru_data%indxStruct,err,cmessage)                                   
+                                   hru_data%bvarStruct,bvarChild_map,          &
+                                   hru_data%indxStruct%dom(1),err,cmessage)
     end select
-    if(err/=0)then 
+    if(err/=0)then
       message=trim(message)//trim(cmessage)//'['//trim(structInfo(iStruct)%structName)//']'
       return
     endif
@@ -264,6 +296,7 @@ subroutine hru_writeRestart(&
   err) 
   USE nr_type
   USE output_buffer,only:summa_struct
+  USE globalData,only:gru_struc              ! gru-hru-dom mapping structure
   USE var_lookup,only:iLookVarType           ! named variables for structure elements
   implicit none
 
@@ -277,8 +310,9 @@ subroutine hru_writeRestart(&
   character (len = 5)              :: output_fileSuffix
   integer(i4b)                     :: iStruct            ! index of model structure
   integer(i4b)                     :: iFreq              ! index of the output frequency
-  integer(i4b)                     :: iVar 
+  integer(i4b)                     :: iVar
   integer(i4b)                     :: iDat
+  integer(i4b)                     :: iDOM
   integer(i4b)                     :: checkPoint
   
   ! convert the C pointers to Fortran pointers
@@ -292,53 +326,44 @@ subroutine hru_writeRestart(&
   ! *** write restart data
   ! ****************************************************************************
   
-  ! write prog vars
-  do iVar = 1, size(hru_data%progstruct%var(:))
-    select case (prog_meta(iVar)%varType)
-      case(iLookVarType%scalarv);
-        summa_struct(1)%progStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(checkPoint)%dat(:) = hru_data%progstruct%var(iVar)%dat(:) 
-      case(iLookVarType%wlength);              
-        summa_struct(1)%progStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(checkPoint)%dat(:) = hru_data%progstruct%var(iVar)%dat(:) 
-      case(iLookVarType%midSoil);              
-        summa_struct(1)%progStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(checkPoint)%dat(:) = hru_data%progstruct%var(iVar)%dat(:) 
-      case(iLookVarType%midToto);              
-        do iDat = 1, size(hru_data%progstruct%var(iVar)%dat(:))
-          summa_struct(1)%progStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(checkPoint)%dat(iDat) = hru_data%progstruct%var(iVar)%dat(iDat)
-        end do ! iDat 
-      case(iLookVarType%ifcSoil);              
-        summa_struct(1)%progStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(checkPoint)%dat(:) = hru_data%progstruct%var(iVar)%dat(:) 
-      case(iLookVarType%ifcToto);              
-        do iDat = 0, size(hru_data%progstruct%var(iVar)%dat(:)) -1 !varType 8 in hru_data begins its index at 0 instead of the default of 1. this case accomodates that
-          summa_struct(1)%progStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(checkPoint)%dat(iDat+1) = hru_data%progstruct%var(iVar)%dat(iDat)
-        end do ! iDat 
-      case(iLookVarType%midSnow);
-        summa_struct(1)%progStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(checkPoint)%dat(:) = hru_data%progstruct%var(iVar)%dat(:) 
-      case(iLookVarType%ifcSnow); 
-        summa_struct(1)%progStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(checkPoint)%dat(:) = hru_data%progstruct%var(iVar)%dat(:) 
-      case default; err=20; message=trim(message)//'unknown var type'; return
-   end select
-  end do ! iVar
+  ! write prog vars (per domain).  Copy element-wise so that interface (0:n) and mid (1:n) arrays
+  ! map correctly into the 1-based output buffer, and so that a larger (max-sized) buffer is only
+  ! partially filled.
+  do iDOM = 1, gru_struc(indxGRU)%hruInfo(indxHRU)%domCount
+    do iVar = 1, size(hru_data%progstruct%dom(iDOM)%var(:))
+      do iDat = 1, size(hru_data%progstruct%dom(iDOM)%var(iVar)%dat)
+        summa_struct(1)%progStruct%gru(indxGRU)%hru(indxHRU)%dom(iDOM)%var(iVar)%tim(checkPoint)%dat(iDat) = &
+          hru_data%progstruct%dom(iDOM)%var(iVar)%dat(lbound(hru_data%progstruct%dom(iDOM)%var(iVar)%dat,1) + iDat - 1)
+      end do
+    end do ! iVar
 
-  ! write basin var
+    ! write index vars (number of layers per domain)
+    summa_struct(1)%indxStruct%gru(indxGRU)%hru(indxHRU)%dom(iDOM)%var(iLookINDEX%nSnow)%tim(checkPoint)%dat(1) = hru_data%indxStruct%dom(iDOM)%var(iLookINDEX%nSnow)%dat(1)
+    summa_struct(1)%indxStruct%gru(indxGRU)%hru(indxHRU)%dom(iDOM)%var(iLookINDEX%nLake)%tim(checkPoint)%dat(1) = hru_data%indxStruct%dom(iDOM)%var(iLookINDEX%nLake)%dat(1)
+    summa_struct(1)%indxStruct%gru(indxGRU)%hru(indxHRU)%dom(iDOM)%var(iLookINDEX%nSoil)%tim(checkPoint)%dat(1) = hru_data%indxStruct%dom(iDOM)%var(iLookINDEX%nSoil)%dat(1)
+    summa_struct(1)%indxStruct%gru(indxGRU)%hru(indxHRU)%dom(iDOM)%var(iLookINDEX%nGlce)%tim(checkPoint)%dat(1) = hru_data%indxStruct%dom(iDOM)%var(iLookINDEX%nGlce)%dat(1)
+  end do ! iDOM
+
+  ! write basin var (GRU level)
   summa_struct(1)%bvarStruct%gru(indxGRU)%hru(indxHRU)%var(iLookBVAR%routingRunoffFuture)%tim(checkPoint)%dat(:) = hru_data%bvarstruct%var(iLookBVAR%routingRunoffFuture)%dat(:)
-  summa_struct(1)%indxStruct%gru(indxGRU)%hru(indxHRU)%var(iLookINDEX%nSnow)%tim(checkPoint)%dat(1) = hru_data%indxStruct%var(iLookINDEX%nSnow)%dat(1)
-  
+
 end subroutine hru_writeRestart
 
 
 ! **********************************************************************************************************
 ! private subroutine writeParam: write model parameters
 ! **********************************************************************************************************
-subroutine writeParam(indxGRU,indxHRU,struct,meta,structName,err,message)
+subroutine writeParam(indxGRU,indxHRU,iDOM,struct,meta,structName,err,message)
   ! USE globalData,only:ncid                      ! netcdf file ids
   USE data_types,only:var_info                    ! metadata info
   USE var_lookup,only:iLookStat                   ! index in statistics vector
   USE var_lookup,only:iLookFreq                   ! index in vector of model output frequencies
   implicit none
-  
+
   ! declare input variables
   integer(i4b)  ,intent(in)   :: indxGRU          ! Index into output Structure
   integer(i4b)  ,intent(in)   :: indxHRU          ! Index into output Structure
+  integer(i4b)  ,intent(in)   :: iDOM             ! domain index (0 = no domain dimension)
   class(*)      ,intent(in)   :: struct           ! data structure
   type(var_info),intent(in)   :: meta(:)          ! metadata structure
   character(*)  ,intent(in)   :: structName       ! Name to know which global struct to write to
@@ -368,7 +393,7 @@ subroutine writeParam(indxGRU,indxHRU,struct,meta,structName,err,message)
        if (structName == "attr") summa_struct(1)%attrStruct%gru(indxGRU)%hru(indxHRU)%var(iVar) = struct%var(iVar)
        if (structName == "bpar") summa_struct(1)%bparStruct%gru(indxGRU)%var(iVar) = struct%var(iVar) ! this will overwrite data
       class is (var_dlength)
-       if (structName == "mpar") summa_struct(1)%mparStruct%gru(indxGRU)%hru(indxHRU)%var(iVar) = struct%var(iVar)
+       if (structName == "mpar") summa_struct(1)%mparStruct%gru(indxGRU)%hru(indxHRU)%dom(iDOM)%var(iVar) = struct%var(iVar)
       class default; err=20; message=trim(message)//'parameter type must be var_i, var_i8, var_d, or var_dlength'; return
     end select
 
@@ -381,7 +406,7 @@ end subroutine writeParam
 ! **************************************************************************************
 ! private subroutine writeData: write model time-dependent data
 ! **************************************************************************************
-subroutine writeData(indxGRU,indxHRU,iStep,maxLengthAll,structName,finalizeStats, &
+subroutine writeData(indxGRU,indxHRU,iDOM,iStep,maxLengthAll,structName,finalizeStats, &
                       meta,stat,datt,map,indx,err,message)
   USE data_types,only:var_info                       ! metadata type
   USE var_lookup,only:maxvarStat                     ! index into stats structure
@@ -396,15 +421,16 @@ subroutine writeData(indxGRU,indxHRU,iStep,maxLengthAll,structName,finalizeStats
   ! declare dummy variables
   integer(i4b)  ,intent(in)        :: indxGRU
   integer(i4b)  ,intent(in)        :: indxHRU
+  integer(i4b)  ,intent(in)        :: iDOM              ! domain index (0 = no domain dimension, i.e. forc/bvar)
   integer(i4b)  ,intent(in)        :: iStep
   integer(i4b)  ,intent(in)        :: maxLengthAll      ! maxLength all data
   character(*)  ,intent(in)        :: structName
   logical(lgt)  ,intent(in)        :: finalizeStats(:)  ! flags to finalize statistics
   type(var_info),intent(in)        :: meta(:)           ! meta data
-  class(*)      ,intent(in)        :: stat              ! stats data
-  class(*)      ,intent(in)        :: datt              ! timestep data
+  class(*)      ,intent(in)        :: stat              ! stats data (per-domain slice for prog/diag/flux/indx)
+  class(*)      ,intent(in)        :: datt              ! timestep data (per-domain slice for prog/diag/flux/indx)
   integer(i4b)  ,intent(in)        :: map(:)            ! map into stats child struct
-  type(var_ilength) ,intent(in)    :: indx              ! index data
+  type(var_ilength) ,intent(in)    :: indx              ! index data (per-domain slice)
   integer(i4b)  ,intent(out)       :: err               ! error code
   character(*)  ,intent(out)       :: message           ! error message
   ! local variables
@@ -412,7 +438,9 @@ subroutine writeData(indxGRU,indxHRU,iStep,maxLengthAll,structName,finalizeStats
   integer(i4b)                     :: iStat             ! statistics index
   integer(i4b)                     :: iFreq             ! frequency index
   integer(i4b)                     :: nSnow             ! number of snow layers
+  integer(i4b)                     :: nLake             ! number of lake layers
   integer(i4b)                     :: nSoil             ! number of soil layers
+  integer(i4b)                     :: nGlce             ! number of glacier ice layers
   integer(i4b)                     :: nLayers           ! total number of layers
   ! output arrays
   integer(i4b)                     :: datLength         ! length of each data vector
@@ -461,10 +489,10 @@ subroutine writeData(indxGRU,indxHRU,iStep,maxLengthAll,structName,finalizeStats
           class is (var_dlength)
             select case(trim(structName))
             case('forc'); summa_struct(1)%forcStat%gru(indxGRU)%hru(indxHRU)%var(map(iVar))%tim(iStep)%dat(iFreq) = stat%var(map(iVar))%dat(iFreq)
-            case('prog'); summa_struct(1)%progStat%gru(indxGRU)%hru(indxHRU)%var(map(iVar))%tim(iStep)%dat(iFreq) = stat%var(map(iVar))%dat(iFreq)
-            case('diag'); summa_struct(1)%diagStat%gru(indxGRU)%hru(indxHRU)%var(map(iVar))%tim(iStep)%dat(iFreq) = stat%var(map(iVar))%dat(iFreq)
-            case('flux'); summa_struct(1)%fluxStat%gru(indxGRU)%hru(indxHRU)%var(map(iVar))%tim(iStep)%dat(iFreq) = stat%var(map(iVar))%dat(iFreq)
-            case('indx'); summa_struct(1)%indxStat%gru(indxGRU)%hru(indxHRU)%var(map(iVar))%tim(iStep)%dat(iFreq) = stat%var(map(iVar))%dat(iFreq)
+            case('prog'); summa_struct(1)%progStat%gru(indxGRU)%hru(indxHRU)%dom(iDOM)%var(map(iVar))%tim(iStep)%dat(iFreq) = stat%var(map(iVar))%dat(iFreq)
+            case('diag'); summa_struct(1)%diagStat%gru(indxGRU)%hru(indxHRU)%dom(iDOM)%var(map(iVar))%tim(iStep)%dat(iFreq) = stat%var(map(iVar))%dat(iFreq)
+            case('flux'); summa_struct(1)%fluxStat%gru(indxGRU)%hru(indxHRU)%dom(iDOM)%var(map(iVar))%tim(iStep)%dat(iFreq) = stat%var(map(iVar))%dat(iFreq)
+            case('indx'); summa_struct(1)%indxStat%gru(indxGRU)%hru(indxHRU)%dom(iDOM)%var(map(iVar))%tim(iStep)%dat(iFreq) = stat%var(map(iVar))%dat(iFreq)
             case('bvar'); summa_struct(1)%bvarStat%gru(indxGRU)%hru(indxHRU)%var(map(iVar))%tim(iStep)%dat(iFreq) = stat%var(map(iVar))%dat(iFreq)
             case default; err=21; message=trim(message)//"stats structure not found"; return
             end select
@@ -474,43 +502,55 @@ subroutine writeData(indxGRU,indxHRU,iStep,maxLengthAll,structName,finalizeStats
         ! non-scalar variables: regular data structures
       else
 
-        ! get the model layers
-        nSoil   = indx%var(iLookIndex%nSoil)%dat(1)
-        summa_struct(1)%indxStruct%gru(indxGRU)%hru(indxHRU)%var(iLookIndex%nSoil)%tim(iStep)%dat(1)   = nSoil
-        nSnow   = indx%var(iLookIndex%nSnow)%dat(1)
-        summa_struct(1)%indxStruct%gru(indxGRU)%hru(indxHRU)%var(iLookIndex%nSnow)%tim(iStep)%dat(1)   = nSnow
-        nLayers = indx%var(iLookIndex%nLayers)%dat(1)
-        summa_struct(1)%indxStruct%gru(indxGRU)%hru(indxHRU)%var(iLookIndex%nLayers)%tim(iStep)%dat(1) = nLayers
+        ! get the model layers (per domain; bvar has no domain dimension so use nLayers from meta only)
+        if(iDOM>0)then
+          nSnow   = indx%var(iLookIndex%nSnow)%dat(1)
+          nLake   = indx%var(iLookIndex%nLake)%dat(1)
+          nSoil   = indx%var(iLookIndex%nSoil)%dat(1)
+          nGlce   = indx%var(iLookIndex%nGlce)%dat(1)
+          nLayers = indx%var(iLookIndex%nLayers)%dat(1)
+          summa_struct(1)%indxStruct%gru(indxGRU)%hru(indxHRU)%dom(iDOM)%var(iLookIndex%nSnow)%tim(iStep)%dat(1)   = nSnow
+          summa_struct(1)%indxStruct%gru(indxGRU)%hru(indxHRU)%dom(iDOM)%var(iLookIndex%nLake)%tim(iStep)%dat(1)   = nLake
+          summa_struct(1)%indxStruct%gru(indxGRU)%hru(indxHRU)%dom(iDOM)%var(iLookIndex%nSoil)%tim(iStep)%dat(1)   = nSoil
+          summa_struct(1)%indxStruct%gru(indxGRU)%hru(indxHRU)%dom(iDOM)%var(iLookIndex%nGlce)%tim(iStep)%dat(1)   = nGlce
+          summa_struct(1)%indxStruct%gru(indxGRU)%hru(indxHRU)%dom(iDOM)%var(iLookIndex%nLayers)%tim(iStep)%dat(1) = nLayers
+        else
+          nSnow = 0; nLake = 0; nSoil = 0; nGlce = 0; nLayers = 0
+        end if
 
         ! get the length of each data vector
         select case (meta(iVar)%varType)
           case(iLookVarType%wLength); datLength = nSpecBand
           case(iLookVarType%midToto); datLength = nLayers
           case(iLookVarType%midSnow); datLength = nSnow
+          case(iLookVarType%midLake); datLength = nLake
           case(iLookVarType%midSoil); datLength = nSoil
+          case(iLookVarType%midGlce); datLength = nGlce
           case(iLookVarType%ifcToto); datLength = nLayers+1
           case(iLookVarType%ifcSnow); datLength = nSnow+1
+          case(iLookVarType%ifcLake); datLength = nLake+1
           case(iLookVarType%ifcSoil); datLength = nSoil+1
+          case(iLookVarType%ifcGlce); datLength = nGlce+1
           case(iLookVarType%routing); datLength = nTimeDelay
           message="writeData/"; cycle iVar_loop ! move onto the next variable
-          ! case parSoil only in parameters (mpar, not written here) 
+          ! case parSoil only in parameters (mpar, not written here)
           ! case unknown skipped above
         end select ! varType
-      
+
         ! get the data vectors
         select type (datt)
           class is (var_dlength)
             select case(trim(structName))
-              case('prog'); summa_struct(1)%progStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep)%dat(1:datLength) = datt%var(iVar)%dat(:)
-              case('diag'); summa_struct(1)%diagStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep)%dat(1:datLength) = datt%var(iVar)%dat(:)
-              case('flux'); summa_struct(1)%fluxStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep)%dat(1:datLength) = datt%var(iVar)%dat(:)
+              case('prog'); summa_struct(1)%progStruct%gru(indxGRU)%hru(indxHRU)%dom(iDOM)%var(iVar)%tim(iStep)%dat(1:datLength) = datt%var(iVar)%dat(:)
+              case('diag'); summa_struct(1)%diagStruct%gru(indxGRU)%hru(indxHRU)%dom(iDOM)%var(iVar)%tim(iStep)%dat(1:datLength) = datt%var(iVar)%dat(:)
+              case('flux'); summa_struct(1)%fluxStruct%gru(indxGRU)%hru(indxHRU)%dom(iDOM)%var(iVar)%tim(iStep)%dat(1:datLength) = datt%var(iVar)%dat(:)
               case('bvar'); summa_struct(1)%bvarStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep)%dat(1:datLength) = datt%var(iVar)%dat(:)
-              ! note, 'forc' data structure only has scalar variables, and thus is covered above in the stats output section 
+              ! note, 'forc' data structure only has scalar variables, and thus is covered above in the stats output section
               case default; err=21; message=trim(message)//'data structure not found for var_dlength output'
             end select
           class is (var_ilength)
             select case(trim(structName))
-              case('indx'); summa_struct(1)%indxStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%tim(iStep)%dat(1:datLength) = datt%var(iVar)%dat(:)
+              case('indx'); summa_struct(1)%indxStruct%gru(indxGRU)%hru(indxHRU)%dom(iDOM)%var(iVar)%tim(iStep)%dat(1:datLength) = datt%var(iVar)%dat(:)
               case default; err=21; message=trim(message)//'data structure not found for var_ilength output'
             end select
           class default; err=20; message=trim(message)//'data must not be scalarv and either of type var_dlength or var_ilength'; return

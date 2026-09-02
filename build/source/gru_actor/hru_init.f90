@@ -68,6 +68,7 @@ subroutine initHRU(indx_gru, indx_hru, hru_data, err, message)
   ! Local Variables
   character(LEN=256)                         :: cmessage      ! error message of downwind routine
   integer(i4b)                               :: iStruct       ! looping variables
+  integer(i4b)                               :: iDOM          ! domain loop counter
   ! ---------------------------------------------------------------------------------------
   ! initialize error control
   err=0; message='hru_init/'
@@ -100,66 +101,73 @@ subroutine initHRU(indx_gru, indx_hru, hru_data, err, message)
   hru_data%refTime_hru%var(:) = refTime%var(:)
   hru_data%oldTime_hru%var(:) = oldTime%var(:)
 
-  ! get the number of snow and soil layers
-  associate(&
-  nSnow => gru_struc(indx_gru)%hruInfo(indx_hru)%nSnow, & ! number of snow layers for each HRU
-  nSoil => gru_struc(indx_gru)%hruInfo(indx_hru)%nSoil  ) ! number of soil layers for each HRU
+  ! get the number of domains in this HRU
+  associate(domCount => gru_struc(indx_gru)%hruInfo(indx_hru)%domCount)
 
-  ! allocate other data structures
+  ! allocate the per-domain containers (contents allocated in the domain loop below)
+  allocate(hru_data%dt_init%dom(domCount))
+  allocate(hru_data%mparStruct%dom(domCount), hru_data%indxStruct%dom(domCount),   &
+           hru_data%progStruct%dom(domCount), hru_data%diagStruct%dom(domCount),   &
+           hru_data%fluxStruct%dom(domCount),                                      &
+           hru_data%progStat%dom(domCount),   hru_data%diagStat%dom(domCount),     &
+           hru_data%fluxStat%dom(domCount),   hru_data%indxStat%dom(domCount),     &
+           hru_data%lookupStruct%dom(domCount), stat=err)
+  if(err/=0)then; message=trim(message)//'problem allocating per-domain containers'; print*,message; return; endif
+
+  ! allocate the HRU-level (non-domain) data structures
   do iStruct=1,size(structInfo)
-  ! allocate space  
-  select case(trim(structInfo(iStruct)%structName))    
-    case('time'); call allocLocal(time_meta,hru_data%timeStruct,err=err,message=cmessage)     ! model time data
-    case('forc'); call allocLocal(forc_meta,hru_data%forcStruct,nSnow,nSoil,err,cmessage);    ! model forcing data
-    case('attr'); call allocLocal(attr_meta,hru_data%attrStruct,nSnow,nSoil,err,cmessage);    ! model attribute data
-    case('type'); call allocLocal(type_meta,hru_data%typeStruct,nSnow,nSoil,err,cmessage);    ! model type data
-    case('id'  ); call allocLocal(id_meta,hru_data%idStruct,nSnow,nSoil,err,cmessage);        ! model id data
-    case('mpar'); call allocLocal(mpar_meta,hru_data%mparStruct,nSnow,nSoil,err,cmessage);    ! model parameters  
-    case('indx'); call allocLocal(indx_meta,hru_data%indxStruct,nSnow,nSoil,err,cmessage);    ! model variables
-    case('prog'); call allocLocal(prog_meta,hru_data%progStruct,nSnow,nSoil,err,cmessage);    ! model prognostic (state) variables
-    case('diag'); call allocLocal(diag_meta,hru_data%diagStruct,nSnow,nSoil,err,cmessage);    ! model diagnostic variables
-    case('flux'); call allocLocal(flux_meta,hru_data%fluxStruct,nSnow,nSoil,err,cmessage);    ! model fluxes
-    case('bpar'); call allocLocal(bpar_meta,hru_data%bparStruct,nSnow=0,nSoil=0,err=err,message=cmessage);  ! basin-average variables
-    case('bvar'); call allocLocal(bvar_meta,hru_data%bvarStruct,nSnow=0,nSoil=0,err=err,message=cmessage);  ! basin-average variables
-    case('lookup'); cycle ! allocated in convertEnthalpyTemp.f90
-    case('deriv'); cycle ! derivatives are not stored in the data structure, but are instead computed on the fly and stored in local variables
-    case default; err=20; message='unable to find structure name: '//trim(structInfo(iStruct)%structName)
+  select case(trim(structInfo(iStruct)%structName))
+    case('time'); call allocLocal(time_meta,hru_data%timeStruct,err=err,message=cmessage)                            ! model time data
+    case('forc'); call allocLocal(forc_meta,hru_data%forcStruct,0,0,0,0,0,err,cmessage)                              ! model forcing data (HRU level)
+    case('attr'); call allocLocal(attr_meta,hru_data%attrStruct,0,0,0,0,0,err,cmessage)                              ! model attribute data
+    case('type'); call allocLocal(type_meta,hru_data%typeStruct,0,0,0,0,0,err,cmessage)                              ! model type data
+    case('id'  ); call allocLocal(id_meta,hru_data%idStruct,0,0,0,0,0,err,cmessage)                                  ! model id data
+    case('bpar'); call allocLocal(bpar_meta,hru_data%bparStruct,nSnow=0,nLake=0,nSoil=0,nGlce=0,nGlac=0,err=err,message=cmessage)  ! basin-average parameters
+    case('bvar'); call allocLocal(bvar_meta,hru_data%bvarStruct,nSnow=0,nLake=0,nSoil=0,nGlce=0,nGlac=gru_struc(indx_gru)%nGlac,err=err,message=cmessage)  ! basin-average variables
+    case default; cycle
   end select
-  ! check errors
   if(err/=0)then
     message=trim(message)//trim(cmessage)//'[structure =  '//trim(structInfo(iStruct)%structName)//']'
     print*, message
     return
   endif
-  end do  ! looping through data structures
+  end do  ! looping through HRU-level data structures
 
-  ! allocate space for default model parameters
-	! NOTE: This is done here, rather than in the loop above, because dpar is not one of the "standard" data structures
-	call allocLocal(mpar_meta,hru_data%dparStruct,nSnow,nSoil,err,cmessage);    ! default model parameters
-	if(err/=0)then; message=trim(message)//trim(cmessage)//' [problem allocating dparStruct]'; print*,message;return;endif
+  ! default model parameters (HRU level; not one of the "standard" data structures)
+  call allocLocal(mpar_meta,hru_data%dparStruct,0,0,0,0,0,err,cmessage)
+  if(err/=0)then; message=trim(message)//trim(cmessage)//'[dparStruct]'; print*,message; return; endif
+
+  ! allocate HRU-level statistics structures
+  call allocLocal(statForc_meta(:)%var_info,hru_data%forcStat,0,0,0,0,0,err,cmessage)
+  if(err/=0)then; message=trim(message)//trim(cmessage)//'[forcStat]'; print*,message; return; endif
+  call allocLocal(statBvar_meta(:)%var_info,hru_data%bvarStat,nSnow=0,nLake=0,nSoil=0,nGlce=0,nGlac=0,err=err,message=cmessage)
+  if(err/=0)then; message=trim(message)//trim(cmessage)//'[bvarStat]'; print*,message; return; endif
 
   ! *****************************************************************************
-  ! *** allocate space for output statistics data structures
+  ! *** allocate the per-domain data structures (prognostic + parameters + stats)
   ! *****************************************************************************
-  ! loop through data structures
-  do iStruct=1,size(structInfo)
-    ! allocate space
-    select case(trim(structInfo(iStruct)%structName))
-      case('forc'); call allocLocal(statForc_meta(:)%var_info,hru_data%forcStat,nSnow,nSoil,err,cmessage);    ! model forcing data
-      case('prog'); call allocLocal(statProg_meta(:)%var_info,hru_data%progStat,nSnow,nSoil,err,cmessage);    ! model prognostic 
-      case('diag'); call allocLocal(statDiag_meta(:)%var_info,hru_data%diagStat,nSnow,nSoil,err,cmessage);    ! model diagnostic
-      case('flux'); call allocLocal(statFlux_meta(:)%var_info,hru_data%fluxStat,nSnow,nSoil,err,cmessage);    ! model fluxes
-      case('indx'); call allocLocal(statIndx_meta(:)%var_info,hru_data%indxStat,nSnow,nSoil,err,cmessage);    ! index vars
-      case('bvar'); call allocLocal(statBvar_meta(:)%var_info,hru_data%bvarStat,nSnow=0,nSoil=0,err=err,message=cmessage);  ! basin-average variables
-      case default; cycle
-    end select
-    ! check errors
-    if(err/=0)then
-      message=trim(message)//trim(cmessage)//'[statistics for =  '//trim(structInfo(iStruct)%structName)//']'
-      print*, message
-      return
-    endif
-  end do ! iStruct
+  do iDOM = 1, domCount
+    associate(nSnow => gru_struc(indx_gru)%hruInfo(indx_hru)%domInfo(iDOM)%nSnow, &
+              nLake => gru_struc(indx_gru)%hruInfo(indx_hru)%domInfo(iDOM)%nLake, &
+              nSoil => gru_struc(indx_gru)%hruInfo(indx_hru)%domInfo(iDOM)%nSoil, &
+              nGlce => gru_struc(indx_gru)%hruInfo(indx_hru)%domInfo(iDOM)%nGlce)
+      call allocLocal(mpar_meta,hru_data%mparStruct%dom(iDOM),nSnow,nLake,nSoil,nGlce,0,err,cmessage);                     if(err/=0)goto 900
+      call allocLocal(indx_meta,hru_data%indxStruct%dom(iDOM),nSnow,nLake,nSoil,nGlce,0,err,cmessage);                     if(err/=0)goto 900
+      call allocLocal(prog_meta,hru_data%progStruct%dom(iDOM),nSnow,nLake,nSoil,nGlce,0,err,cmessage);                     if(err/=0)goto 900
+      call allocLocal(diag_meta,hru_data%diagStruct%dom(iDOM),nSnow,nLake,nSoil,nGlce,0,err,cmessage);                     if(err/=0)goto 900
+      call allocLocal(flux_meta,hru_data%fluxStruct%dom(iDOM),nSnow,nLake,nSoil,nGlce,0,err,cmessage);                     if(err/=0)goto 900
+      call allocLocal(statProg_meta(:)%var_info,hru_data%progStat%dom(iDOM),nSnow,nLake,nSoil,nGlce,0,err,cmessage);       if(err/=0)goto 900
+      call allocLocal(statDiag_meta(:)%var_info,hru_data%diagStat%dom(iDOM),nSnow,nLake,nSoil,nGlce,0,err,cmessage);       if(err/=0)goto 900
+      call allocLocal(statFlux_meta(:)%var_info,hru_data%fluxStat%dom(iDOM),nSnow,nLake,nSoil,nGlce,0,err,cmessage);       if(err/=0)goto 900
+      call allocLocal(statIndx_meta(:)%var_info,hru_data%indxStat%dom(iDOM),nSnow,nLake,nSoil,nGlce,0,err,cmessage);       if(err/=0)goto 900
+    end associate
+  end do
+  goto 910
+  900 continue
+    message=trim(message)//trim(cmessage)//'[per-domain allocation]'
+    print*, message
+    return
+  910 continue
 
   ! Intilaize the statistics data structures
   allocate(hru_data%statCounter%var(maxvarFreq), stat=err)
@@ -192,6 +200,7 @@ subroutine setupHRU(indxGRU, indxHRU, hru_data, err, message)
   ! ---------------------------------------------------------------------------------------
   USE nr_type                                                  ! variable types, etc.
   USE summa_init_struc,only:init_struc
+  USE globalData,only:gru_struc                                ! gru-hru-dom mapping structures
   ! ---------------------------------------------------------------------------------------
   ! * variables
   ! ---------------------------------------------------------------------------------------
@@ -199,7 +208,7 @@ subroutine setupHRU(indxGRU, indxHRU, hru_data, err, message)
   ! dummy variables
   ! calling variables
   integer(c_int),intent(in)                :: indxGRU              ! Index of the parent GRU of the HRU
-  integer(c_int),intent(in)                :: indxHRU              ! ID to locate correct HRU from netcdf file 
+  integer(c_int),intent(in)                :: indxHRU              ! ID to locate correct HRU from netcdf file
   type(hru_type),intent(out)               :: hru_data             ! local hru data structure
   integer(c_int),intent(inout)             :: err
   character(len=256),intent(out)           :: message
@@ -208,50 +217,53 @@ subroutine setupHRU(indxGRU, indxHRU, hru_data, err, message)
 
   integer(i4b)                             :: iVar                 ! loop counter
   integer(i4b)                             :: i_z                  ! loop counter
+  integer(i4b)                             :: iDOM                 ! domain loop counter
   character(len=256)                       :: cmessage             ! error message of downwind routine
 
   ! ---------------------------------------------------------------------------------------
   ! initialize error control
   err=0; message='setupHRU'
 
-  ! update all structures
+  ! update the HRU-level (non-domain) structures
   hru_data%oldTime_hru%var(:) = hru_data%startTime_hru%var(:)
   hru_data%attrStruct%var(:) = init_struc%attrStruct%gru(indxGRU)%hru(indxHRU)%var(:)
   hru_data%typeStruct%var(:) = init_struc%typeStruct%gru(indxGRU)%hru(indxHRU)%var(:)
   hru_data%idStruct%var(:) = init_struc%idStruct%gru(indxGRU)%hru(indxHRU)%var(:)
-  hru_data%mparStruct%var(:) = init_struc%mparStruct%gru(indxGRU)%hru(indxHRU)%var(:)
   hru_data%bparStruct%var(:) = init_struc%bparStruct%gru(indxGRU)%var(:)
   hru_data%dparStruct%var(:) = init_struc%dparStruct%gru(indxGRU)%hru(indxHRU)%var(:)
   do iVar=1, size(init_struc%bvarStruct%gru(indxGRU)%var(:))
     hru_data%bvarStruct%var(iVar)%dat(:) = init_struc%bvarStruct%gru(indxGRU)%var(iVar)%dat(:)
   enddo
-  if (allocated(init_struc%lookupStruct%gru(indxGRU)%hru(indxHRU)%z)) then
-    if (.not. allocated(hru_data%lookupStruct%z)) then
-      allocate(hru_data%lookupStruct%z(size(init_struc%lookupStruct%gru(indxGRU)%hru(indxHRU)%z)))
-    end if
-    do i_z = 1, size(init_struc%lookupStruct%gru(indxGRU)%hru(indxHRU)%z(:))
-      if (.not. allocated(hru_data%lookupStruct%z(i_z)%var)) then
-        allocate(hru_data%lookupStruct%z(i_z)%var(size(init_struc%lookupStruct%gru(indxGRU)%hru(indxHRU)%z(i_z)%var)))
-      end if
-      do iVar = 1, size(init_struc%lookupStruct%gru(indxGRU)%hru(indxHRU)%z(i_z)%var(:))
-        if (.not. allocated(hru_data%lookupStruct%z(i_z)%var(iVar)%lookup)) then
-          allocate(hru_data%lookupStruct%z(i_z)%var(iVar)%lookup(size(init_struc%lookupStruct%gru(indxGRU)%hru(indxHRU)%z(i_z)%var(iVar)%lookup)))
-        end if
-        hru_data%lookupStruct%z(i_z)%var(iVar)%lookup(:) = init_struc%lookupStruct%gru(indxGRU)%hru(indxHRU)%z(i_z)%var(iVar)%lookup(:)
+
+  ! update the per-domain structures
+  do iDOM = 1, gru_struc(indxGRU)%hruInfo(indxHRU)%domCount
+    associate(inLookup => init_struc%lookupStruct%gru(indxGRU)%hru(indxHRU)%dom(iDOM), &
+              hrLookup => hru_data%lookupStruct%dom(iDOM))
+    hru_data%mparStruct%dom(iDOM)%var(:) = init_struc%mparStruct%gru(indxGRU)%hru(indxHRU)%dom(iDOM)%var(:)
+    if (allocated(inLookup%z)) then
+      if (.not. allocated(hrLookup%z)) allocate(hrLookup%z(size(inLookup%z)))
+      do i_z = 1, size(inLookup%z(:))
+        if (.not. allocated(hrLookup%z(i_z)%var)) allocate(hrLookup%z(i_z)%var(size(inLookup%z(i_z)%var)))
+        do iVar = 1, size(inLookup%z(i_z)%var(:))
+          if (.not. allocated(hrLookup%z(i_z)%var(iVar)%lookup)) &
+            allocate(hrLookup%z(i_z)%var(iVar)%lookup(size(inLookup%z(i_z)%var(iVar)%lookup)))
+          hrLookup%z(i_z)%var(iVar)%lookup(:) = inLookup%z(i_z)%var(iVar)%lookup(:)
+        end do
       end do
-    end do
-  endif
-  do iVar=1, size(init_struc%progStruct%gru(indxGRU)%hru(indxHRU)%var(:))
-    hru_data%progStruct%var(iVar)%dat(:) = init_struc%progStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%dat(:)
-  enddo
-  do iVar=1, size(init_struc%indxStruct%gru(indxGRU)%hru(indxHRU)%var(:))
-    hru_data%indxStruct%var(iVar)%dat(:) = init_struc%indxStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%dat(:)
-  enddo
-  do iVar=1, size(init_struc%diagStruct%gru(indxGRU)%hru(indxHRU)%var(:))
-    hru_data%diagStruct%var(iVar)%dat(:) = init_struc%diagStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%dat(:)
-  enddo
-  do iVar=1, size(init_struc%fluxStruct%gru(indxGRU)%hru(indxHRU)%var(:))
-    hru_data%fluxStruct%var(iVar)%dat(:) = init_struc%fluxStruct%gru(indxGRU)%hru(indxHRU)%var(iVar)%dat(:)
+    endif
+    end associate
+    do iVar=1, size(init_struc%progStruct%gru(indxGRU)%hru(indxHRU)%dom(iDOM)%var(:))
+      hru_data%progStruct%dom(iDOM)%var(iVar)%dat(:) = init_struc%progStruct%gru(indxGRU)%hru(indxHRU)%dom(iDOM)%var(iVar)%dat(:)
+    enddo
+    do iVar=1, size(init_struc%indxStruct%gru(indxGRU)%hru(indxHRU)%dom(iDOM)%var(:))
+      hru_data%indxStruct%dom(iDOM)%var(iVar)%dat(:) = init_struc%indxStruct%gru(indxGRU)%hru(indxHRU)%dom(iDOM)%var(iVar)%dat(:)
+    enddo
+    do iVar=1, size(init_struc%diagStruct%gru(indxGRU)%hru(indxHRU)%dom(iDOM)%var(:))
+      hru_data%diagStruct%dom(iDOM)%var(iVar)%dat(:) = init_struc%diagStruct%gru(indxGRU)%hru(indxHRU)%dom(iDOM)%var(iVar)%dat(:)
+    enddo
+    do iVar=1, size(init_struc%fluxStruct%gru(indxGRU)%hru(indxHRU)%dom(iDOM)%var(:))
+      hru_data%fluxStruct%dom(iDOM)%var(iVar)%dat(:) = init_struc%fluxStruct%gru(indxGRU)%hru(indxHRU)%dom(iDOM)%var(iVar)%dat(:)
+    enddo
   enddo
 end subroutine setupHRU
 
@@ -268,9 +280,11 @@ subroutine readHRURestart(indxGRU, indxHRU, hru_data, err, message)
   USE var_derive_module,only:satHydCond                       ! module to calculate the saturated hydraulic conductivity in each soil layer
   ! global data structures
   USE globalData,only:model_decisions                         ! model decision structure
+  USE globalData,only:gru_struc                               ! gru-hru-dom mapping structure
   ! Lookup values
   USE var_lookup,only:iLookDECISIONS                          ! look-up values for model decisions
   USE var_lookup,only:iLookBVAR                               ! look-up values for basin-average model variables
+  USE var_lookup,only:iLookINDEX                              ! look-up values for local column index variables
   ! model decisions
   USE mDecisions_module,only:&                                ! look-up values for the choice of method for the spatial representation of groundwater
   localColumn, & ! separate groundwater representation in each local soil column
@@ -287,6 +301,7 @@ subroutine readHRURestart(indxGRU, indxHRU, hru_data, err, message)
   character(len=256),intent(out)          :: message
   ! local variables
   integer(i4b)                            :: iVar               ! index of variable
+  integer(i4b)                            :: iDOM               ! domain loop counter
   character(LEN=256)                      :: cmessage           ! error message of downwind routine
   character(LEN=256)                      :: restartFile        ! restart file name
   integer(i4b)                            :: nGRU
@@ -296,40 +311,33 @@ subroutine readHRURestart(indxGRU, indxHRU, hru_data, err, message)
   err=0; message='hru_actor_readRestart/'
 
   ! *****************************************************************************
-  ! *** compute ancillary variables
+  ! *** compute ancillary variables (per domain)
   ! *****************************************************************************
+  do iDOM = 1, gru_struc(indxGRU)%hruInfo(indxHRU)%domCount
 
-  ! re-calculate height of each layer
-  call calcHeight(hru_data%indxStruct,   & ! layer type
-      hru_data%progStruct,   & ! model prognostic (state) variables for a local HRU
-      err,cmessage)                       ! error control
-  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+    ! re-calculate height of each layer
+    call calcHeight(hru_data%indxStruct%dom(iDOM), hru_data%progStruct%dom(iDOM), err,cmessage)
+    if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
 
-  ! calculate vertical distribution of root density
-  call rootDensty(hru_data%mparStruct,   & ! vector of model parameters
-      hru_data%indxStruct,   & ! data structure of model indices
-      hru_data%progStruct,   & ! data structure of model prognostic (state) variables
-      hru_data%diagStruct,   & ! data structure of model diagnostic variables
-      err,cmessage)                       ! error control
-  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+    if (hru_data%indxStruct%dom(iDOM)%var(iLookINDEX%nSoil)%dat(1) > 0) then
+      ! calculate vertical distribution of root density
+      call rootDensty(hru_data%mparStruct%dom(iDOM), hru_data%indxStruct%dom(iDOM), &
+                      hru_data%progStruct%dom(iDOM), hru_data%diagStruct%dom(iDOM), err,cmessage)
+      if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
 
-  ! calculate saturated hydraulic conductivity in each soil layer
-  call satHydCond(hru_data%mparStruct,   & ! vector of model parameters
-      hru_data%indxStruct,   & ! data structure of model indices
-      hru_data%progStruct,   & ! data structure of model prognostic (state) variables
-      hru_data%fluxStruct,   & ! data structure of model fluxes
-      err,cmessage)                       ! error control
-  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+      ! calculate saturated hydraulic conductivity in each soil layer
+      call satHydCond(hru_data%mparStruct%dom(iDOM), hru_data%indxStruct%dom(iDOM), &
+                      hru_data%progStruct%dom(iDOM), hru_data%fluxStruct%dom(iDOM), err,cmessage)
+      if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
 
-  ! calculate "short-cut" variables such as volumetric heat capacity
-  call v_shortcut(hru_data%mparStruct,   & ! vector of model parameters
-      hru_data%diagStruct,   & ! data structure of model diagnostic variables
-      err,cmessage)                       ! error control
-  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+      ! calculate "short-cut" variables such as volumetric heat capacity
+      call v_shortcut(hru_data%mparStruct%dom(iDOM), hru_data%diagStruct%dom(iDOM), err,cmessage)
+      if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+    end if
 
-  ! initialize canopy drip
-  ! NOTE: canopy drip from the previous time step is used to compute throughfall for the current time step
-  hru_data%fluxStruct%var(iLookFLUX%scalarCanopyLiqDrainage)%dat(1) = 0._dp  ! not used
+    ! initialize canopy drip (used to compute throughfall on the current time step)
+    hru_data%fluxStruct%dom(iDOM)%var(iLookFLUX%scalarCanopyLiqDrainage)%dat(1) = 0._dp  ! not used
+  end do
 
   ! *****************************************************************************
   ! *** initialize aquifer storage
@@ -363,14 +371,19 @@ subroutine readHRURestart(indxGRU, indxHRU, hru_data, err, message)
   ! the basin-average aquifer storage is not used if the groundwater is included in the local column
   case(localColumn)
    hru_data%bvarStruct%var(iLookBVAR%basin__AquiferStorage)%dat(1) = 0._dp ! set to zero to be clear that there is no basin-average aquifer storage in this configuration
-   if(model_decisions(iLookDECISIONS%aquiferIni)%iDecision==emptyStart) &
-     hru_data%progStruct%var(iLookPROG%scalarAquiferStorage)%dat(1) = aquifer_start ! leave at initialized values if fullStart
+   if(model_decisions(iLookDECISIONS%aquiferIni)%iDecision==emptyStart)then
+     do iDOM = 1, gru_struc(indxGRU)%hruInfo(indxHRU)%domCount
+       hru_data%progStruct%dom(iDOM)%var(iLookPROG%scalarAquiferStorage)%dat(1) = aquifer_start ! leave at initialized values if fullStart
+     end do
+   endif
 
   ! the local column aquifer storage is not used if the groundwater is basin-average
   ! (i.e., where multiple HRUs drain to a basin-average aquifer)
   case(singleBasin)
    hru_data%bvarStruct%var(iLookBVAR%basin__AquiferStorage)%dat(1) = aquifer_start
-   hru_data%progStruct%var(iLookPROG%scalarAquiferStorage)%dat(1) = 0._dp  ! set to zero to be clear that there is no local aquifer storage in this configuration
+   do iDOM = 1, gru_struc(indxGRU)%hruInfo(indxHRU)%domCount
+     hru_data%progStruct%dom(iDOM)%var(iLookPROG%scalarAquiferStorage)%dat(1) = 0._dp  ! set to zero to be clear that there is no local aquifer storage in this configuration
+   end do
 
   ! error check
   case default
@@ -380,11 +393,11 @@ subroutine readHRURestart(indxGRU, indxHRU, hru_data, err, message)
   end select  ! groundwater option
 
   ! *****************************************************************************
-  ! *** initialize time step
+  ! *** initialize time step length (per domain)
   ! *****************************************************************************
-
-  ! initialize time step length
-  hru_data%dt_init = hru_data%progStruct%var(iLookPROG%dt_init)%dat(1) ! seconds
+  do iDOM = 1, gru_struc(indxGRU)%hruInfo(indxHRU)%domCount
+    hru_data%dt_init%dom(iDOM) = hru_data%progStruct%dom(iDOM)%var(iLookPROG%dt_init)%dat(1) ! seconds
+  end do
 
 end subroutine readHRURestart
 
@@ -428,24 +441,27 @@ subroutine setBEStepsIDATol(handle_hru_data,    &
   real(c_double),intent(in)               :: absTolAquifr
   ! local variables
   type(hru_type),pointer                  :: hru_data          !  model time data
+  integer(i4b)                            :: iDOM
 
   call c_f_pointer(handle_hru_data, hru_data)
 
-  hru_data%mparStruct%var(iLookPARAM%be_steps)%dat(1)            = REAL(be_steps)
-  hru_data%mparStruct%var(iLookPARAM%relTolTempCas)%dat(1)       = relTolTempCas 
-  hru_data%mparStruct%var(iLookPARAM%absTolTempCas)%dat(1)       = absTolTempCas
-  hru_data%mparStruct%var(iLookPARAM%relTolTempVeg)%dat(1)       = relTolTempVeg
-  hru_data%mparStruct%var(iLookPARAM%absTolTempVeg)%dat(1)       = absTolTempVeg
-  hru_data%mparStruct%var(iLookPARAM%relTolWatVeg)%dat(1)        = relTolWatVeg
-  hru_data%mparStruct%var(iLookPARAM%absTolWatVeg)%dat(1)        = absTolWatVeg
-  hru_data%mparStruct%var(iLookPARAM%relTolTempSoilSnow)%dat(1)  = relTolTempSoilSnow
-  hru_data%mparStruct%var(iLookPARAM%absTolTempSoilSnow)%dat(1)  = absTolTempSoilSnow
-  hru_data%mparStruct%var(iLookPARAM%relTolWatSnow)%dat(1)       = relTolWatSnow
-  hru_data%mparStruct%var(iLookPARAM%absTolWatSnow)%dat(1)       = absTolWatSnow
-  hru_data%mparStruct%var(iLookPARAM%relTolMatric)%dat(1)        = relTolMatric
-  hru_data%mparStruct%var(iLookPARAM%absTolMatric)%dat(1)        = absTolMatric
-  hru_data%mparStruct%var(iLookPARAM%relTolAquifr)%dat(1)        = relTolAquifr
-  hru_data%mparStruct%var(iLookPARAM%absTolAquifr)%dat(1)        = absTolAquifr
-  
+  do iDOM = 1, size(hru_data%mparStruct%dom)
+    hru_data%mparStruct%dom(iDOM)%var(iLookPARAM%be_steps)%dat(1)            = REAL(be_steps)
+    hru_data%mparStruct%dom(iDOM)%var(iLookPARAM%relTolTempCas)%dat(1)       = relTolTempCas
+    hru_data%mparStruct%dom(iDOM)%var(iLookPARAM%absTolTempCas)%dat(1)       = absTolTempCas
+    hru_data%mparStruct%dom(iDOM)%var(iLookPARAM%relTolTempVeg)%dat(1)       = relTolTempVeg
+    hru_data%mparStruct%dom(iDOM)%var(iLookPARAM%absTolTempVeg)%dat(1)       = absTolTempVeg
+    hru_data%mparStruct%dom(iDOM)%var(iLookPARAM%relTolWatVeg)%dat(1)        = relTolWatVeg
+    hru_data%mparStruct%dom(iDOM)%var(iLookPARAM%absTolWatVeg)%dat(1)        = absTolWatVeg
+    hru_data%mparStruct%dom(iDOM)%var(iLookPARAM%relTolTempSoilSnow)%dat(1)  = relTolTempSoilSnow
+    hru_data%mparStruct%dom(iDOM)%var(iLookPARAM%absTolTempSoilSnow)%dat(1)  = absTolTempSoilSnow
+    hru_data%mparStruct%dom(iDOM)%var(iLookPARAM%relTolWatSnow)%dat(1)       = relTolWatSnow
+    hru_data%mparStruct%dom(iDOM)%var(iLookPARAM%absTolWatSnow)%dat(1)       = absTolWatSnow
+    hru_data%mparStruct%dom(iDOM)%var(iLookPARAM%relTolMatric)%dat(1)        = relTolMatric
+    hru_data%mparStruct%dom(iDOM)%var(iLookPARAM%absTolMatric)%dat(1)        = absTolMatric
+    hru_data%mparStruct%dom(iDOM)%var(iLookPARAM%relTolAquifr)%dat(1)        = relTolAquifr
+    hru_data%mparStruct%dom(iDOM)%var(iLookPARAM%absTolAquifr)%dat(1)        = absTolAquifr
+  end do
+
 end subroutine setBEStepsIDATol
 end module INIT_HRU_ACTOR

@@ -1090,8 +1090,8 @@ subroutine get_size_var_mparStruct(handle, var_size) bind(C, name='get_size_var_
   type(hru_type), pointer     :: hru_data
   
   call c_f_pointer(handle, hru_data)
-  if (allocated(hru_data%mparStruct%var)) then
-    var_size = size(hru_data%mparStruct%var, kind=c_int)
+  if (allocated(hru_data%mparStruct%dom(1)%var)) then
+    var_size = size(hru_data%mparStruct%dom(1)%var, kind=c_int)
   else
     var_size = 0_c_int
   end if
@@ -1128,7 +1128,7 @@ subroutine get_size_data_mparStruct(handle, var_size, dat_size) bind(C, name='ge
   call c_f_pointer(handle, hru_data)
   
   do i=1,var_size
-      dat_size(i) = size(hru_data%mparStruct%var(i)%dat, kind=c_int)
+      dat_size(i) = size(hru_data%mparStruct%dom(1)%var(i)%dat, kind=c_int)
   end do
   
 end subroutine get_size_data_mparStruct
@@ -1181,11 +1181,11 @@ subroutine get_data_mparStruct(handle, array) bind(C, name='get_data_mparStruct'
   call c_f_pointer(handle, hru_data)
   
   size_array = 0
-  if (allocated(hru_data%mparStruct%var)) then
-    size_var = size(hru_data%mparStruct%var)
+  if (allocated(hru_data%mparStruct%dom(1)%var)) then
+    size_var = size(hru_data%mparStruct%dom(1)%var)
     do i=1,size_var
-      size_dat = size(hru_data%mparStruct%var(i)%dat)
-      start_index = lbound(hru_data%mparStruct%var(i)%dat)
+      size_dat = size(hru_data%mparStruct%dom(1)%var(i)%dat)
+      start_index = lbound(hru_data%mparStruct%dom(1)%var(i)%dat)
 
       if (start_index(1) == 0) then
         loop_val = size_dat - 1
@@ -1195,7 +1195,7 @@ subroutine get_data_mparStruct(handle, array) bind(C, name='get_data_mparStruct'
 
       j2=1
       do j=start_index(1),loop_val
-        array(size_array+j2) = hru_data%mparStruct%var(i)%dat(j)
+        array(size_array+j2) = hru_data%mparStruct%dom(1)%var(i)%dat(j)
         j2=j2+1
       end do
       size_array = size_array + size_dat
@@ -1253,8 +1253,8 @@ subroutine get_size_z_lookup(handle, size_z) bind(C, name='get_size_z_lookup')
   type(hru_type), pointer           :: hru_data
 
   call c_f_pointer(handle, hru_data)
-  if (allocated(hru_data%lookupStruct%z)) then
-    size_z = size(hru_data%lookupStruct%z, kind=c_int)
+  if (allocated(hru_data%lookupStruct%dom(1)%z)) then
+    size_z = size(hru_data%lookupStruct%dom(1)%z, kind=c_int)
   else
     size_z = 0_c_int
   end if
@@ -1267,7 +1267,7 @@ subroutine get_size_var_lookup(handle, z, var_size) bind(C, name='get_size_var_l
   type(hru_type), pointer           :: hru_data
 
   call c_f_pointer(handle, hru_data)
-  var_size = size(hru_data%lookupStruct%z(z)%var, kind=c_int)
+  var_size = size(hru_data%lookupStruct%dom(1)%z(z)%var, kind=c_int)
 end subroutine
 
 
@@ -1280,7 +1280,7 @@ subroutine get_size_data_lookup(handle, z, var, size_data) bind(C, name='get_siz
   
   call c_f_pointer(handle, hru_data)
 
-  size_data = size(hru_data%lookupStruct%z(z)%var(var)%lookup, kind=c_int)
+  size_data = size(hru_data%lookupStruct%dom(1)%z(z)%var(var)%lookup, kind=c_int)
 end subroutine get_size_data_lookup
 
 
@@ -1294,8 +1294,8 @@ subroutine get_data_zlookup(handle, z, var, array) bind(C, name='get_data_zlooku
 
   call c_f_pointer(handle, hru_data)
 
-  size_data = size(hru_data%lookupStruct%z(z)%var(var)%lookup, kind=c_int)
-  array(:size_data) = hru_data%lookupStruct%z(z)%var(var)%lookup
+  size_data = size(hru_data%lookupStruct%dom(1)%z(z)%var(var)%lookup, kind=c_int)
+  array(:size_data) = hru_data%lookupStruct%dom(1)%z(z)%var(var)%lookup
 end subroutine get_data_zlookup
 
 
@@ -1320,26 +1320,26 @@ subroutine get_size_var_dlength_by_indx(handle, struct_indx, size_var) &
         size_var = 0_c_int
       end if
     case(2) ! progStat
-      if (allocated(hru_data%progStat%var)) then
-        size_var = size(hru_data%progStat%var, kind=c_int)
+      if (allocated(hru_data%progStat%dom(1)%var)) then
+        size_var = size(hru_data%progStat%dom(1)%var, kind=c_int)
       else
         size_var = 0_c_int
       end if
     case(3) ! diagStat
-      if (allocated(hru_data%diagStat%var)) then
-        size_var = size(hru_data%diagStat%var, kind=c_int)
+      if (allocated(hru_data%diagStat%dom(1)%var)) then
+        size_var = size(hru_data%diagStat%dom(1)%var, kind=c_int)
       else
         size_var = 0_c_int
       end if
     case(4) ! fluxStat
-      if (allocated(hru_data%fluxStat%var)) then
-        size_var = size(hru_data%fluxStat%var, kind=c_int)
+      if (allocated(hru_data%fluxStat%dom(1)%var)) then
+        size_var = size(hru_data%fluxStat%dom(1)%var, kind=c_int)
       else
         size_var = 0_c_int
       end if
     case(5) ! indxStat
-      if (allocated(hru_data%indxStat%var)) then
-        size_var = size(hru_data%indxStat%var, kind=c_int)
+      if (allocated(hru_data%indxStat%dom(1)%var)) then
+        size_var = size(hru_data%indxStat%dom(1)%var, kind=c_int)
       else
         size_var = 0_c_int
       end if
@@ -1350,26 +1350,26 @@ subroutine get_size_var_dlength_by_indx(handle, struct_indx, size_var) &
         size_var = 0_c_int
       end if
     case(7) ! mparStruct
-      if (allocated(hru_data%mparStruct%var)) then
-        size_var = size(hru_data%mparStruct%var, kind=c_int)
+      if (allocated(hru_data%mparStruct%dom(1)%var)) then
+        size_var = size(hru_data%mparStruct%dom(1)%var, kind=c_int)
       else
         size_var = 0_c_int
       end if
     case(8) ! progStruct
-      if (allocated(hru_data%progStruct%var)) then
-        size_var = size(hru_data%progStruct%var, kind=c_int)
+      if (allocated(hru_data%progStruct%dom(1)%var)) then
+        size_var = size(hru_data%progStruct%dom(1)%var, kind=c_int)
       else
         size_var = 0_c_int
       end if
     case(9) ! diagStruct
-      if (allocated(hru_data%diagStruct%var)) then
-        size_var = size(hru_data%diagStruct%var, kind=c_int)
+      if (allocated(hru_data%diagStruct%dom(1)%var)) then
+        size_var = size(hru_data%diagStruct%dom(1)%var, kind=c_int)
       else
         size_var = 0_c_int
       end if
     case(10) ! fluxStruct
-      if (allocated(hru_data%fluxStruct%var)) then
-        size_var = size(hru_data%fluxStruct%var, kind=c_int)
+      if (allocated(hru_data%fluxStruct%dom(1)%var)) then
+        size_var = size(hru_data%fluxStruct%dom(1)%var, kind=c_int)
       else
         size_var = 0_c_int
       end if
@@ -1401,19 +1401,19 @@ subroutine get_size_data_var_dlength_by_indx(handle, struct_indx, size_var, &
       end do
     case(2) ! progStat
       do i=1,size_var
-        dat_size(i) = size(hru_data%progStat%var(i)%dat, kind=c_int)
+        dat_size(i) = size(hru_data%progStat%dom(1)%var(i)%dat, kind=c_int)
       end do
     case(3) ! diagStat
       do i=1,size_var
-        dat_size(i) = size(hru_data%diagStat%var(i)%dat, kind=c_int)
+        dat_size(i) = size(hru_data%diagStat%dom(1)%var(i)%dat, kind=c_int)
       end do
     case(4) ! fluxStat
       do i=1,size_var
-        dat_size(i) = size(hru_data%fluxStat%var(i)%dat, kind=c_int)
+        dat_size(i) = size(hru_data%fluxStat%dom(1)%var(i)%dat, kind=c_int)
       end do
     case(5) ! indxStat
       do i=1,size_var
-        dat_size(i) = size(hru_data%indxStat%var(i)%dat, kind=c_int)
+        dat_size(i) = size(hru_data%indxStat%dom(1)%var(i)%dat, kind=c_int)
       end do
     case(6) ! bvarStat
       do i=1,size_var
@@ -1421,19 +1421,19 @@ subroutine get_size_data_var_dlength_by_indx(handle, struct_indx, size_var, &
       end do
     case(7) ! mparStruct
       do i=1,size_var
-        dat_size(i) = size(hru_data%mparStruct%var(i)%dat, kind=c_int)
+        dat_size(i) = size(hru_data%mparStruct%dom(1)%var(i)%dat, kind=c_int)
       end do
     case(8) ! progStruct
       do i=1,size_var
-        dat_size(i) = size(hru_data%progStruct%var(i)%dat, kind=c_int)
+        dat_size(i) = size(hru_data%progStruct%dom(1)%var(i)%dat, kind=c_int)
       end do
     case(9) ! diagStruct
       do i=1,size_var
-        dat_size(i) = size(hru_data%diagStruct%var(i)%dat, kind=c_int)
+        dat_size(i) = size(hru_data%diagStruct%dom(1)%var(i)%dat, kind=c_int)
       end do
     case(10) ! fluxStruct
       do i=1,size_var
-        dat_size(i) = size(hru_data%fluxStruct%var(i)%dat, kind=c_int)
+        dat_size(i) = size(hru_data%fluxStruct%dom(1)%var(i)%dat, kind=c_int)
       end do
     case(11) ! bvarStruct
       do i=1,size_var
@@ -1480,11 +1480,11 @@ subroutine get_data_var_dlength_by_indx(handle, struct_indx, dat)&
       end if
     case(2) ! progStat
       size_array = 0
-      if (allocated(hru_data%progStat%var)) then
-        size_var = size(hru_data%progStat%var)
+      if (allocated(hru_data%progStat%dom(1)%var)) then
+        size_var = size(hru_data%progStat%dom(1)%var)
         do i=1,size_var
-          size_dat = size(hru_data%progStat%var(i)%dat)
-          start_index = lbound(hru_data%progStat%var(i)%dat)
+          size_dat = size(hru_data%progStat%dom(1)%var(i)%dat)
+          start_index = lbound(hru_data%progStat%dom(1)%var(i)%dat)
 
           if (start_index(1) == 0) then
             loop_val = size_dat - 1
@@ -1494,7 +1494,7 @@ subroutine get_data_var_dlength_by_indx(handle, struct_indx, dat)&
 
           j2=1
           do j=start_index(1),loop_val
-            dat(size_array+j2) = hru_data%progStat%var(i)%dat(j)
+            dat(size_array+j2) = hru_data%progStat%dom(1)%var(i)%dat(j)
             j2=j2+1
           end do
           size_array = size_array + size_dat
@@ -1502,11 +1502,11 @@ subroutine get_data_var_dlength_by_indx(handle, struct_indx, dat)&
       end if
     case(3) ! diagStat
       size_array = 0
-      if (allocated(hru_data%diagStat%var)) then
-        size_var = size(hru_data%diagStat%var)
+      if (allocated(hru_data%diagStat%dom(1)%var)) then
+        size_var = size(hru_data%diagStat%dom(1)%var)
         do i=1,size_var
-          size_dat = size(hru_data%diagStat%var(i)%dat)
-          start_index = lbound(hru_data%diagStat%var(i)%dat)
+          size_dat = size(hru_data%diagStat%dom(1)%var(i)%dat)
+          start_index = lbound(hru_data%diagStat%dom(1)%var(i)%dat)
 
           if (start_index(1) == 0) then
             loop_val = size_dat - 1
@@ -1516,7 +1516,7 @@ subroutine get_data_var_dlength_by_indx(handle, struct_indx, dat)&
 
           j2=1
           do j=start_index(1),loop_val
-            dat(size_array+j2) = hru_data%diagStat%var(i)%dat(j)
+            dat(size_array+j2) = hru_data%diagStat%dom(1)%var(i)%dat(j)
             j2=j2+1
           end do
           size_array = size_array + size_dat
@@ -1524,11 +1524,11 @@ subroutine get_data_var_dlength_by_indx(handle, struct_indx, dat)&
       end if
     case(4) ! fluxStat
       size_array = 0
-      if (allocated(hru_data%fluxStat%var)) then
-        size_var = size(hru_data%fluxStat%var)
+      if (allocated(hru_data%fluxStat%dom(1)%var)) then
+        size_var = size(hru_data%fluxStat%dom(1)%var)
         do i=1,size_var
-          size_dat = size(hru_data%fluxStat%var(i)%dat)
-          start_index = lbound(hru_data%fluxStat%var(i)%dat)
+          size_dat = size(hru_data%fluxStat%dom(1)%var(i)%dat)
+          start_index = lbound(hru_data%fluxStat%dom(1)%var(i)%dat)
 
           if (start_index(1) == 0) then
             loop_val = size_dat - 1
@@ -1538,7 +1538,7 @@ subroutine get_data_var_dlength_by_indx(handle, struct_indx, dat)&
 
           j2=1
           do j=start_index(1),loop_val
-            dat(size_array+j2) = hru_data%fluxStat%var(i)%dat(j)
+            dat(size_array+j2) = hru_data%fluxStat%dom(1)%var(i)%dat(j)
             j2=j2+1
           end do
           size_array = size_array + size_dat
@@ -1546,11 +1546,11 @@ subroutine get_data_var_dlength_by_indx(handle, struct_indx, dat)&
       end if
     case(5) ! indxStat
       size_array = 0
-      if (allocated(hru_data%indxStat%var)) then
-        size_var = size(hru_data%indxStat%var)
+      if (allocated(hru_data%indxStat%dom(1)%var)) then
+        size_var = size(hru_data%indxStat%dom(1)%var)
         do i=1,size_var
-          size_dat = size(hru_data%indxStat%var(i)%dat)
-          start_index = lbound(hru_data%indxStat%var(i)%dat)
+          size_dat = size(hru_data%indxStat%dom(1)%var(i)%dat)
+          start_index = lbound(hru_data%indxStat%dom(1)%var(i)%dat)
 
           if (start_index(1) == 0) then
             loop_val = size_dat - 1
@@ -1560,7 +1560,7 @@ subroutine get_data_var_dlength_by_indx(handle, struct_indx, dat)&
 
           j2=1
           do j=start_index(1),loop_val
-            dat(size_array+j2) = hru_data%indxStat%var(i)%dat(j)
+            dat(size_array+j2) = hru_data%indxStat%dom(1)%var(i)%dat(j)
             j2=j2+1
           end do
           size_array = size_array + size_dat
@@ -1590,11 +1590,11 @@ subroutine get_data_var_dlength_by_indx(handle, struct_indx, dat)&
       end if
     case(7) ! mparStruct
       size_array = 0
-      if (allocated(hru_data%mparStruct%var)) then
-        size_var = size(hru_data%mparStruct%var)
+      if (allocated(hru_data%mparStruct%dom(1)%var)) then
+        size_var = size(hru_data%mparStruct%dom(1)%var)
         do i=1,size_var
-          size_dat = size(hru_data%mparStruct%var(i)%dat)
-          start_index = lbound(hru_data%mparStruct%var(i)%dat)
+          size_dat = size(hru_data%mparStruct%dom(1)%var(i)%dat)
+          start_index = lbound(hru_data%mparStruct%dom(1)%var(i)%dat)
 
           if (start_index(1) == 0) then
             loop_val = size_dat - 1
@@ -1604,7 +1604,7 @@ subroutine get_data_var_dlength_by_indx(handle, struct_indx, dat)&
 
           j2=1
           do j=start_index(1),loop_val
-            dat(size_array+j2) = hru_data%mparStruct%var(i)%dat(j)
+            dat(size_array+j2) = hru_data%mparStruct%dom(1)%var(i)%dat(j)
             j2=j2+1
           end do
           size_array = size_array + size_dat
@@ -1612,11 +1612,11 @@ subroutine get_data_var_dlength_by_indx(handle, struct_indx, dat)&
       end if
     case(8) ! progStruct
       size_array = 0
-      if (allocated(hru_data%progStruct%var)) then
-        size_var = size(hru_data%progStruct%var)
+      if (allocated(hru_data%progStruct%dom(1)%var)) then
+        size_var = size(hru_data%progStruct%dom(1)%var)
         do i=1,size_var
-          size_dat = size(hru_data%progStruct%var(i)%dat)
-          start_index = lbound(hru_data%progStruct%var(i)%dat)
+          size_dat = size(hru_data%progStruct%dom(1)%var(i)%dat)
+          start_index = lbound(hru_data%progStruct%dom(1)%var(i)%dat)
 
           if (start_index(1) == 0) then
             loop_val = size_dat - 1
@@ -1626,7 +1626,7 @@ subroutine get_data_var_dlength_by_indx(handle, struct_indx, dat)&
 
           j2=1
           do j=start_index(1),loop_val
-            dat(size_array+j2) = hru_data%progStruct%var(i)%dat(j)
+            dat(size_array+j2) = hru_data%progStruct%dom(1)%var(i)%dat(j)
             j2=j2+1
           end do
           size_array = size_array + size_dat
@@ -1634,11 +1634,11 @@ subroutine get_data_var_dlength_by_indx(handle, struct_indx, dat)&
       end if
     case(9) ! diagStruct
       size_array = 0
-      if (allocated(hru_data%diagStruct%var)) then
-        size_var = size(hru_data%diagStruct%var)
+      if (allocated(hru_data%diagStruct%dom(1)%var)) then
+        size_var = size(hru_data%diagStruct%dom(1)%var)
         do i=1,size_var
-          size_dat = size(hru_data%diagStruct%var(i)%dat)
-          start_index = lbound(hru_data%diagStruct%var(i)%dat)
+          size_dat = size(hru_data%diagStruct%dom(1)%var(i)%dat)
+          start_index = lbound(hru_data%diagStruct%dom(1)%var(i)%dat)
 
           if (start_index(1) == 0) then
             loop_val = size_dat - 1
@@ -1648,7 +1648,7 @@ subroutine get_data_var_dlength_by_indx(handle, struct_indx, dat)&
 
           j2=1
           do j=start_index(1),loop_val
-            dat(size_array+j2) = hru_data%diagStruct%var(i)%dat(j)
+            dat(size_array+j2) = hru_data%diagStruct%dom(1)%var(i)%dat(j)
             j2=j2+1
           end do
           size_array = size_array + size_dat
@@ -1656,11 +1656,11 @@ subroutine get_data_var_dlength_by_indx(handle, struct_indx, dat)&
       end if
     case(10) ! fluxStruct
       size_array = 0
-      if (allocated(hru_data%fluxStruct%var)) then
-        size_var = size(hru_data%fluxStruct%var)
+      if (allocated(hru_data%fluxStruct%dom(1)%var)) then
+        size_var = size(hru_data%fluxStruct%dom(1)%var)
         do i=1,size_var
-          size_dat = size(hru_data%fluxStruct%var(i)%dat)
-          start_index = lbound(hru_data%fluxStruct%var(i)%dat)
+          size_dat = size(hru_data%fluxStruct%dom(1)%var(i)%dat)
+          start_index = lbound(hru_data%fluxStruct%dom(1)%var(i)%dat)
 
           if (start_index(1) == 0) then
             loop_val = size_dat - 1
@@ -1670,7 +1670,7 @@ subroutine get_data_var_dlength_by_indx(handle, struct_indx, dat)&
 
           j2=1
           do j=start_index(1),loop_val
-            dat(size_array+j2) = hru_data%fluxStruct%var(i)%dat(j)
+            dat(size_array+j2) = hru_data%fluxStruct%dom(1)%var(i)%dat(j)
             j2=j2+1
           end do
           size_array = size_array + size_dat
@@ -1779,30 +1779,30 @@ subroutine set_data_var_dlength_by_indx(handle, struct_indx, num_var, var_arr,&
           hru_data%forcStat, num_var, var_arr, num_elements, dat_array)
     case(2) ! progStat
       call set_data_var_dlength_local(statProg_meta(:)%var_info, &
-          hru_data%progStat, num_var, var_arr, num_elements, dat_array)
+          hru_data%progStat%dom(1), num_var, var_arr, num_elements, dat_array)
     case(3) ! diagStat
       call set_data_var_dlength_local(statDiag_meta(:)%var_info, &
-          hru_data%diagStat, num_var, var_arr, num_elements, dat_array)
+          hru_data%diagStat%dom(1), num_var, var_arr, num_elements, dat_array)
     case(4) ! fluxStat
       call set_data_var_dlength_local(statFlux_meta(:)%var_info, &
-          hru_data%fluxStat, num_var, var_arr, num_elements, dat_array)
+          hru_data%fluxStat%dom(1), num_var, var_arr, num_elements, dat_array)
     case(5) ! indxStat
       call set_data_var_dlength_local(statIndx_meta(:)%var_info, &
-          hru_data%indxStat, num_var, var_arr, num_elements, dat_array)
+          hru_data%indxStat%dom(1), num_var, var_arr, num_elements, dat_array)
     case(6) ! bvarStat
       call set_data_var_dlength_local(statBvar_meta(:)%var_info, &
           hru_data%bvarStat, num_var, var_arr, num_elements, dat_array)
     case(7) ! mparStruct
-      call set_data_var_dlength_local(mpar_meta(:),hru_data%mparStruct, &
+      call set_data_var_dlength_local(mpar_meta(:),hru_data%mparStruct%dom(1), &
           num_var, var_arr, num_elements, dat_array)
     case(8) ! progStruct
-      call set_data_var_dlength_local(prog_meta(:), hru_data%progStruct, &
+      call set_data_var_dlength_local(prog_meta(:), hru_data%progStruct%dom(1), &
           num_var, var_arr, num_elements, dat_array)
     case(9) ! diagStruct
-      call set_data_var_dlength_local(diag_meta(:), hru_data%diagStruct, &
+      call set_data_var_dlength_local(diag_meta(:), hru_data%diagStruct%dom(1), &
           num_var, var_arr, num_elements, dat_array)
     case(10) ! fluxStruct
-      call set_data_var_dlength_local(flux_meta, hru_data%fluxStruct, num_var,&
+      call set_data_var_dlength_local(flux_meta, hru_data%fluxStruct%dom(1), num_var,&
           var_arr, num_elements, dat_array)
     case(11) ! bvarStruct
       call set_data_var_dlength_local(bvar_meta(:), hru_data%bvarStruct, &
@@ -1825,8 +1825,8 @@ subroutine get_size_var_ilength_by_indx(handle, struct_indx, size_var) &
 
   select case(struct_indx)
     case(1) ! indxStruct
-      if (allocated(hru_data%indxStruct%var)) then
-        size_var = size(hru_data%indxStruct%var, kind=c_int)
+      if (allocated(hru_data%indxStruct%dom(1)%var)) then
+        size_var = size(hru_data%indxStruct%dom(1)%var, kind=c_int)
       else
         size_var = 0_c_int
       end if
@@ -1848,7 +1848,7 @@ subroutine get_size_data_var_ilength_by_indx(handle, struct_indx, size_var, &
   select case(struct_indx)
     case(1) ! indxStruct
       do i=1,size_var
-        dat_size(i) = size(hru_data%indxStruct%var(i)%dat, kind=c_int)
+        dat_size(i) = size(hru_data%indxStruct%dom(1)%var(i)%dat, kind=c_int)
       end do
   end select
 
@@ -1869,11 +1869,11 @@ subroutine get_data_var_ilength_by_indx(handle, struct_indx, dat) &
   select case(struct_indx)
     case(1) ! indxStruct
       size_array = 0
-      if (allocated(hru_data%indxStruct%var)) then
-        size_var = size(hru_data%indxStruct%var)
+      if (allocated(hru_data%indxStruct%dom(1)%var)) then
+        size_var = size(hru_data%indxStruct%dom(1)%var)
         do i=1,size_var
-          size_dat = size(hru_data%indxStruct%var(i)%dat)
-          start_index = lbound(hru_data%indxStruct%var(i)%dat)
+          size_dat = size(hru_data%indxStruct%dom(1)%var(i)%dat)
+          start_index = lbound(hru_data%indxStruct%dom(1)%var(i)%dat)
 
           if (start_index(1) == 0) then
             size_dat = size_dat - 1
@@ -1881,7 +1881,7 @@ subroutine get_data_var_ilength_by_indx(handle, struct_indx, dat) &
 
           j2=1
           do j=start_index(1),size_dat
-            dat(size_array+j2) = hru_data%indxStruct%var(i)%dat(j)
+            dat(size_array+j2) = hru_data%indxStruct%dom(1)%var(i)%dat(j)
             j2=j2+1
           end do
           size_array = size_array + size_dat
@@ -1908,19 +1908,19 @@ subroutine set_data_var_ilength_by_indx(handle, struct_indx, num_var, var_arr,&
   select case(struct_indx)
     case(1) ! indxStruct
       ! create the structure if it doesn't exist
-      if (allocated(hru_data%indxStruct%var)) then
+      if (allocated(hru_data%indxStruct%dom(1)%var)) then
         print*, "ALLOCATED!!"
-        if (size(hru_data%indxStruct%var) /= num_var) then
-          deallocate(hru_data%indxStruct%var)
-          allocate(hru_data%indxStruct%var(num_var))
+        if (size(hru_data%indxStruct%dom(1)%var) /= num_var) then
+          deallocate(hru_data%indxStruct%dom(1)%var)
+          allocate(hru_data%indxStruct%dom(1)%var(num_var))
           do i=1,num_var
-            allocate( hru_data%indxStruct%var(i)%dat(var_arr(i)) )
+            allocate( hru_data%indxStruct%dom(1)%var(i)%dat(var_arr(i)) )
           end do
         end if
       else
-        allocate(hru_data%indxStruct%var(num_var))
+        allocate(hru_data%indxStruct%dom(1)%var(num_var))
         do i=1,num_var
-          allocate( hru_data%indxStruct%var(i)%dat(var_arr(i)) )
+          allocate( hru_data%indxStruct%dom(1)%var(i)%dat(var_arr(i)) )
         end do
       end if
 
@@ -1928,13 +1928,13 @@ subroutine set_data_var_ilength_by_indx(handle, struct_indx, num_var, var_arr,&
       sum_elem = 0
       do i=1,num_var
         do j=1,var_arr(i)
-          if (size(hru_data%indxStruct%var(i)%dat) /= var_arr(i)) then
+          if (size(hru_data%indxStruct%dom(1)%var(i)%dat) /= var_arr(i)) then
             print*, "ERROR: Size of data array does not match size of data"
-            print*, "Size of data array:", size(hru_data%indxStruct%var(i)%dat)
+            print*, "Size of data array:", size(hru_data%indxStruct%dom(1)%var(i)%dat)
             print*, "Size of data:", dat_array(sum_elem)
             stop
           end if
-          hru_data%indxStruct%var(i)%dat(j) = dat_array(sum_elem + j)
+          hru_data%indxStruct%dom(1)%var(i)%dat(j) = dat_array(sum_elem + j)
         end do
         sum_elem = sum_elem + var_arr(i)
       end do
@@ -2494,7 +2494,7 @@ subroutine get_scalar_data_fortran(handle, fracJulDay, tmZoneOffsetFracDay, &
   tmZoneOffsetFracDay = hru_data%tmZoneOffsetFracDay
   year_length = hru_data%yearLength
   computeVegFlux = hru_data%computeVegFlux
-  dt_init = hru_data%dt_init
+  dt_init = hru_data%dt_init%dom(1)
   upArea = hru_data%upArea
 
 end subroutine get_scalar_data_fortran
@@ -2516,7 +2516,7 @@ subroutine set_scalar_data_fortran(handle, fracJulDay, tmZoneOffsetFracDay, &
   hru_data%tmZoneOffsetFracDay = tmZoneOffsetFracDay
   hru_data%yearLength = year_length
   hru_data%computeVegFlux = computeVegFlux
-  hru_data%dt_init = dt_init
+  hru_data%dt_init%dom(1) = dt_init
   hru_data%upArea = upArea
 
 end subroutine set_scalar_data_fortran

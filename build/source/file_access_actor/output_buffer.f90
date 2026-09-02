@@ -169,10 +169,11 @@ subroutine f_setFailedGruMissing(start_gru, end_gru) bind(C, name="f_setFailedGr
   ! local variables
   integer(i4b)                           :: iGRU
   integer(i4b)                           :: iHRU
+  integer(i4b)                           :: iDOM
   integer(i4b)                           :: iFreq
-  integer(i4b)                           :: iVar      
+  integer(i4b)                           :: iVar
   integer(i4b)                           :: iStat
-  integer(i4b)                           :: iStep       
+  integer(i4b)                           :: iStep
 
   if (.not.allocated(summa_struct)) then; return; endif
 
@@ -209,15 +210,17 @@ subroutine f_setFailedGruMissing(start_gru, end_gru) bind(C, name="f_setFailedGr
           if (iStat==integerMissing.or.trim(prog_meta(iVar)%varName)=='unknown') cycle
           
           do iHRU=1, gru_struc(iGRU)%hruCount
+          do iDOM=1, gru_struc(iGRU)%hruInfo(iHRU)%domCount
             if (prog_meta(iVar)%varType==iLookVarType%scalarv) then
               do iStep=1, summa_struct(1)%nTimeSteps
-                summa_struct(1)%progStat%gru(iGRU)%hru(iHRU)%var(progChild_map(iVar))%tim(iStep)%dat(iFreq) = realMissing
+                summa_struct(1)%progStat%gru(iGRU)%hru(iHRU)%dom(iDOM)%var(progChild_map(iVar))%tim(iStep)%dat(iFreq) = realMissing
               end do ! iStep
             else ! vector
               do iStep=1, summa_struct(1)%nTimeSteps
-                summa_struct(1)%progStruct%gru(iGRU)%hru(iHRU)%var(iVar)%tim(iStep)%dat(:) = realMissing
+                summa_struct(1)%progStruct%gru(iGRU)%hru(iHRU)%dom(iDOM)%var(iVar)%tim(iStep)%dat(:) = realMissing
               end do ! iStep
             endif
+          end do ! iDOM
           end do ! iHRU
         end do ! iVar
 
@@ -226,15 +229,17 @@ subroutine f_setFailedGruMissing(start_gru, end_gru) bind(C, name="f_setFailedGr
           iStat = diag_meta(iVar)%statIndex(iFreq)
           if (iStat==integerMissing.or.trim(diag_meta(iVar)%varName)=='unknown') cycle
           do iHRU=1, gru_struc(iGRU)%hruCount
+          do iDOM=1, gru_struc(iGRU)%hruInfo(iHRU)%domCount
             if (diag_meta(iVar)%varType==iLookVarType%scalarv) then
               do iStep=1, summa_struct(1)%nTimeSteps
-                summa_struct(1)%diagStat%gru(iGRU)%hru(iHRU)%var(diagChild_map(iVar))%tim(iStep)%dat(iFreq) = realMissing
+                summa_struct(1)%diagStat%gru(iGRU)%hru(iHRU)%dom(iDOM)%var(diagChild_map(iVar))%tim(iStep)%dat(iFreq) = realMissing
               end do ! iStep
             else ! vector
               do iStep=1, summa_struct(1)%nTimeSteps
-                summa_struct(1)%diagStruct%gru(iGRU)%hru(iHRU)%var(iVar)%tim(iStep)%dat(:) = realMissing
+                summa_struct(1)%diagStruct%gru(iGRU)%hru(iHRU)%dom(iDOM)%var(iVar)%tim(iStep)%dat(:) = realMissing
               end do ! iStep
             endif
+          end do ! iDOM
           end do ! iHRU
         end do ! iVar
 
@@ -243,15 +248,17 @@ subroutine f_setFailedGruMissing(start_gru, end_gru) bind(C, name="f_setFailedGr
           iStat = flux_meta(iVar)%statIndex(iFreq)
           if (iStat==integerMissing.or.trim(flux_meta(iVar)%varName)=='unknown') cycle
           do iHRU=1, gru_struc(iGRU)%hruCount
+          do iDOM=1, gru_struc(iGRU)%hruInfo(iHRU)%domCount
             if (flux_meta(iVar)%varType==iLookVarType%scalarv) then
               do iStep=1, summa_struct(1)%nTimeSteps
-                summa_struct(1)%fluxStat%gru(iGRU)%hru(iHRU)%var(fluxChild_map(iVar))%tim(iStep)%dat(iFreq) = realMissing
+                summa_struct(1)%fluxStat%gru(iGRU)%hru(iHRU)%dom(iDOM)%var(fluxChild_map(iVar))%tim(iStep)%dat(iFreq) = realMissing
               end do ! iStep
             else ! vector
               do iStep=1, summa_struct(1)%nTimeSteps
-                summa_struct(1)%fluxStruct%gru(iGRU)%hru(iHRU)%var(iVar)%tim(iStep)%dat(:) = realMissing
+                summa_struct(1)%fluxStruct%gru(iGRU)%hru(iHRU)%dom(iDOM)%var(iVar)%tim(iStep)%dat(:) = realMissing
               end do ! iStep
             endif
+          end do ! iDOM
           end do ! iHRU
         end do ! iVar
 
@@ -260,15 +267,17 @@ subroutine f_setFailedGruMissing(start_gru, end_gru) bind(C, name="f_setFailedGr
           iStat = indx_meta(iVar)%statIndex(iFreq)
           if (iStat==integerMissing.or.trim(indx_meta(iVar)%varName)=='unknown') cycle
           do iHRU=1, gru_struc(iGRU)%hruCount
+          do iDOM=1, gru_struc(iGRU)%hruInfo(iHRU)%domCount
             if (indx_meta(iVar)%varType==iLookVarType%scalarv) then
               do iStep=1, summa_struct(1)%nTimeSteps
-                summa_struct(1)%indxStat%gru(iGRU)%hru(iHRU)%var(indxChild_map(iVar))%tim(iStep)%dat(iFreq) = realMissing
+                summa_struct(1)%indxStat%gru(iGRU)%hru(iHRU)%dom(iDOM)%var(indxChild_map(iVar))%tim(iStep)%dat(iFreq) = realMissing
               end do ! iStep
             else ! vector
               do iStep=1, summa_struct(1)%nTimeSteps
-                summa_struct(1)%indxStruct%gru(iGRU)%hru(iHRU)%var(iVar)%tim(iStep)%dat(:) = integerMissing
+                summa_struct(1)%indxStruct%gru(iGRU)%hru(iHRU)%dom(iDOM)%var(iVar)%tim(iStep)%dat(:) = integerMissing
               end do ! iStep
             endif
+          end do ! iDOM
           end do ! iHRU
         end do ! iVar
 
@@ -308,6 +317,7 @@ subroutine f_allocateOutputBuffer(max_steps, num_gru, err, message_r) &
     bind(C, name="f_allocateOutputBuffer")
   USE C_interface_module,only:f_c_string_ptr          ! convert fortran string to c string
   USE var_lookup,only:maxvarFreq                      ! maximum number of output files
+  USE globalData,only:maxDOM                          ! maximum number of domains in any HRU
   implicit none
   ! Dummy Variables
   integer(c_int),intent(in)              :: max_steps
@@ -361,6 +371,8 @@ subroutine f_allocateOutputBuffer(max_steps, num_gru, err, message_r) &
   allocate(summa_struct(1)%bvarStruct%gru(num_gru))
   allocate(summa_struct(1)%bparStruct%gru(num_gru))
   allocate(summa_struct(1)%dparStruct%gru(num_gru))
+  ! Glacier grid structure
+  allocate(summa_struct(1)%gridStruct%gru(num_gru))
   ! Finalize Stats for writing
   allocate(summa_struct(1)%finalizeStats%gru(num_gru))
   ! Extras
@@ -368,6 +380,7 @@ subroutine f_allocateOutputBuffer(max_steps, num_gru, err, message_r) &
   allocate(summa_struct(1)%failedGrus(num_gru))
   summa_struct(1)%failedGrus(:) = .false.
   summa_struct(1)%nTimeSteps = max_steps
+  summa_struct(1)%nDOM = maxDOM
 
 end subroutine f_allocateOutputBuffer
 

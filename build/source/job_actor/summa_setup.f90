@@ -95,7 +95,12 @@ contains
  ! output constraints
  USE globalData,only:maxLayers                               ! maximum number of layers
  USE globalData,only:maxSnowLayers                           ! maximum number of snow layers
+ USE globalData,only:maxLakeLayers                           ! maximum number of lake layers
  USE globalData,only:maxSoilLayers                           ! maximum number of soil layers
+ USE globalData,only:maxGlceLayers                           ! maximum number of glacier ice layers
+ USE globalData,only:maxGlaciers                             ! maximum number of glaciers in any GRU
+ USE globalData,only:maxWetlands                             ! maximum number of wetlands in any GRU
+ USE globalData,only:maxGrid,maxGridX,maxGridY               ! maximum number/size of glacier grids
  ! timing variables
  USE globalData,only:startSetup,endSetup                     ! date/time for the start and end of the parameter setup
  USE globalData,only:elapsedSetup                            ! elapsed time for the parameter setup
@@ -119,7 +124,8 @@ contains
  character(len=256)                    :: cmessage           ! error message of downwind routine
  character(len=256)                    :: attrFile           ! attributes file name
  integer(i4b)                          :: jHRU,kHRU          ! HRU indices
- integer(i4b)                          :: iGRU,iHRU          ! looping variables
+ integer(i4b)                          :: iGRU,iHRU,iDOM     ! looping variables
+ integer(i4b)                          :: iGrid             ! grid loop counter
  integer(i4b)                          :: iVar               ! looping variables
  real(rkind)                           :: absEnergyFac       ! multiplier for absolute value of energy state variable (for enthalpy or temperature)
   ! ---------------------------------------------------------------------------------------
@@ -140,10 +146,14 @@ contains
   bvarStruct           => summa1_struc%bvarStruct          , & ! x%gru(:)%var(:)%dat        -- basin-average variables
 
   ! lookup table structure
-  lookupStruct         => summa1_struc%lookupStruct        , & ! x%gru(:)%hru(:)%z(:)%var(:)%lookup    -- lookup-tables
+  lookupStruct         => summa1_struc%lookupStruct        , & ! x%gru(:)%hru(:)%dom(:)%z(:)%var(:)%lookup -- lookup-tables
+
+  ! glacier grid structure
+  gridStruct           => summa1_struc%gridStruct          , & ! x%gru(:)%grid(:)%var(:)%dat2(:,:)  -- basin glacier grids
 
   ! miscellaneous variables
   upArea               => summa1_struc%upArea              , & ! area upslope of each HRU
+  nDOM                 => summa1_struc%nDOM                , & ! max number of domains in any HRU
   nGRU                 => summa1_struc%nGRU                , & ! number of grouped response units
   nHRU                 => summa1_struc%nHRU                  & ! number of global hydrologic response units
 
@@ -175,21 +185,39 @@ contains
  call mDecisions(err,cmessage)
  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
  
+ ! get the maximum number of glaciers and wetlands in any GRU
+ maxGlaciers = 0
+ maxWetlands = 0
+ do iGRU=1,nGRU
+   maxGlaciers = max(maxGlaciers, gru_struc(iGRU)%nGlac)
+   maxWetlands = max(maxWetlands, gru_struc(iGRU)%nWtld)
+ end do
+
  ! get the maximum number of snow layers
  select case(model_decisions(iLookDECISIONS%snowLayers)%iDecision)
   case(sameRulesAllLayers);    maxSnowLayers = 100
-  case(rulesDependLayerIndex); maxSnowLayers = 5
+  case(rulesDependLayerIndex)
+    maxSnowLayers = 5
+    if (maxGlaciers>0) maxSnowLayers = int(maxSnowLayers*2.5_rkind) ! more snow layers for glacier firn development in the accumulation zone
   case default; err=20; message=trim(message)//'unable to identify option to combine/sub-divide snow layers'; return
  end select ! (option to combine/sub-divide snow layers)
 
- ! get the maximum number of layers for soil and total
+ ! get the maximum number of layers for lake, soil, glacier ice, and total
  !  (max snow layers are fixed as above, snow layers may change)
  maxLayers     = 0
  maxSoilLayers = 0
+ maxGlceLayers = 0
+ maxLakeLayers = 0
  do iGRU=1,nGRU
   do iHRU=1,gru_struc(iGRU)%hruCount
-   maxSoilLayers = max(maxSoilLayers, gru_struc(iGRU)%hruInfo(iHRU)%nSoil)
-   maxLayers = max(maxLayers, maxSnowLayers+gru_struc(iGRU)%hruInfo(iHRU)%nSoil)
+   do iDOM=1,gru_struc(iGRU)%hruInfo(iHRU)%domCount
+    maxLakeLayers = max(maxLakeLayers, gru_struc(iGRU)%hruInfo(iHRU)%domInfo(iDOM)%nLake)
+    maxSoilLayers = max(maxSoilLayers, gru_struc(iGRU)%hruInfo(iHRU)%domInfo(iDOM)%nSoil)
+    maxGlceLayers = max(maxGlceLayers, gru_struc(iGRU)%hruInfo(iHRU)%domInfo(iDOM)%nGlce)
+    maxLayers = max(maxLayers, maxSnowLayers + gru_struc(iGRU)%hruInfo(iHRU)%domInfo(iDOM)%nSoil &
+                             + gru_struc(iGRU)%hruInfo(iHRU)%domInfo(iDOM)%nLake &
+                             + gru_struc(iGRU)%hruInfo(iHRU)%domInfo(iDOM)%nGlce)
+   end do
   end do
  end do
 
@@ -200,9 +228,21 @@ contains
  ! define the attributes file
  attrFile = trim(SETTINGS_PATH)//trim(LOCAL_ATTRIBUTES)
 
- ! read local attributes for each HRU
- call read_attrb(trim(attrFile),nGRU,attrStruct,typeStruct,idStruct,err,cmessage)
+ ! read local attributes for each HRU (also reads glacier grid dimensions into gru_struc and gridStruct)
+ call read_attrb(trim(attrFile),nGRU,attrStruct,typeStruct,idStruct,gridStruct,err,cmessage)
  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+
+ ! determine the maximum glacier grid size
+ maxGrid  = 0
+ maxGridX = 0
+ maxGridY = 0
+ do iGRU=1,nGRU
+  maxGrid = max(maxGrid,gru_struc(iGRU)%nGrid)
+  if(gru_struc(iGRU)%nGrid>0)then
+    maxGridX = max(maxGridX,maxval(gru_struc(iGRU)%gridInfo(:)%nx))
+    maxGridY = max(maxGridY,maxval(gru_struc(iGRU)%gridInfo(:)%ny))
+  endif
+ end do
 
  ! *****************************************************************************
  ! *** read default model parameters
@@ -257,7 +297,6 @@ contains
  ! set default model parameters
  do iGRU=1,nGRU
   do iHRU=1,gru_struc(iGRU)%hruCount
-
    ! set parameters to their default value
    dparStruct%gru(iGRU)%hru(iHRU)%var(:) = localParFallback(:)%default_val         ! x%hru(:)%var(:)
 
@@ -269,11 +308,13 @@ contains
                    err,cmessage)                                                   ! error control
    if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
 
-   ! copy over to the parameter structure
-   ! NOTE: constant for the dat(:) dimension (normally depth)
-   do iVar=1,size(localParFallback)
-    mparStruct%gru(iGRU)%hru(iHRU)%var(iVar)%dat(:) = dparStruct%gru(iGRU)%hru(iHRU)%var(iVar)
-   end do  ! looping through variables
+   ! copy over to the parameter structure (once per domain)
+   do iDOM=1,gru_struc(iGRU)%hruInfo(iHRU)%domCount
+    ! NOTE: constant for the dat(:) dimension (normally depth)
+    do iVar=1,size(localParFallback)
+     mparStruct%gru(iGRU)%hru(iHRU)%dom(iDOM)%var(iVar)%dat(:) = dparStruct%gru(iGRU)%hru(iHRU)%var(iVar)
+    end do  ! looping through variables
+   end do  ! looping through domains
 
   end do  ! looping through HRUs
 
@@ -285,7 +326,7 @@ contains
  ! *****************************************************************************
  ! *** read trial model parameter values for each HRU, and populate initial data structures
  ! *****************************************************************************
- call read_param(iRunMode,checkHRU,startGRU,nHRU,nGRU,idStruct,mparStruct,bparStruct,err,cmessage)
+ call read_param(iRunMode,checkHRU,startGRU,nDOM,nHRU,nGRU,idStruct,mparStruct,bparStruct,err,cmessage)
  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
 
  ! *****************************************************************************

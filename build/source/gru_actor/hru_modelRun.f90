@@ -85,11 +85,14 @@ subroutine runPhysics(indxGRU, indxHRU, modelTimeStep, hru_data, &
   ! global data
   USE globalData,only:gru_struc
   USE globalData,only:model_decisions          ! model decision structure
+  USE globalData,only:flux_meta                ! metadata on the model fluxes
+  ! access domain types
+  USE globalData,only:upland,glacCln1,glacCln2,glacDbr,wetland
 
   implicit none
   ! Dummy Variables
   integer(c_int),intent(in)                 :: indxGRU                ! id of GRU
-  integer(c_int),intent(in)                 :: indxHRU                ! id of HRU                   
+  integer(c_int),intent(in)                 :: indxHRU                ! id of HRU
   integer(c_int), intent(in)                :: modelTimeStep          ! time step index
   type(hru_type), intent(inout)             :: hru_data               ! c_ptr to -- hru data
   integer(c_int), intent(in)                :: dt_init_factor         ! used to adjust the length of the timestep in the event of a failure
@@ -97,6 +100,13 @@ subroutine runPhysics(indxGRU, indxHRU, modelTimeStep, hru_data, &
   character(len=256), intent(out)           :: message                ! error message
   ! local variables: general
   integer(8)                                :: hruId                  ! hruId
+  integer(i4b)                              :: iDOM                   ! domain loop index
+  integer(i4b)                              :: iVar                   ! variable loop index
+  integer(i4b)                              :: typeDOM                ! type of the current domain
+  logical(lgt)                              :: use_computeVegFlux     ! computeVegFlux flag for the current domain
+  logical(lgt)                              :: is_glac                ! flag to indicate a glacier domain
+  logical(lgt)                              :: noVeg                  ! flag to indicate no vegetation (lake or glacier)
+  real(rkind),allocatable                   :: forc0(:)               ! original (undisturbed) forcing vector for the HRU
   character(LEN=256)                        :: cmessage               ! error message of downwind routine
   ! local variables: veg phenology
   logical(lgt)                              :: computeVegFluxFlag     ! flag to indicate if we are computing fluxes over vegetation (.false. means veg is buried with snow)
@@ -108,124 +118,137 @@ subroutine runPhysics(indxGRU, indxHRU, modelTimeStep, hru_data, &
   ! ---------------------------------------------------------------------------------------
   ! initialize error control
   err=0; message='runPhysics/'
-  
+
   ! *******************************************************************************************
   ! *** initialize computeVegFlux (flag to indicate if we are computing fluxes over vegetation)
   ! *******************************************************************************************
-  ! if computeVegFlux changes, then the number of state variables changes, and we need to reoranize the data structures
+  ! if computeVegFlux changes, then the number of state variables changes, and we need to reorganize the data structures
   if(modelTimeStep==1)then
-      ! get vegetation phenology
-      ! (compute the exposed LAI and SAI and whether veg is buried by snow)
+    hru_data%computeVegFlux = no
+    do iDOM = 1, gru_struc(indxGRU)%hruInfo(indxHRU)%domCount
+      noVeg = .true.
+      if (gru_struc(indxGRU)%hruInfo(indxHRU)%domInfo(iDOM)%dom_type == upland) noVeg = .false.
+
+      ! get vegetation phenology (compute the exposed LAI and SAI and whether veg is buried by snow)
       call vegPhenlgy(&
-                      ! model control
-                      gru_struc(indxGRU)%hruInfo(indxHRU)%nSnow,& ! intent(in):    number of snow layers
+                      gru_struc(indxGRU)%hruInfo(indxHRU)%domInfo(iDOM)%nSnow, & ! intent(in):    number of snow layers
                       model_decisions,                          & ! intent(in):    model decisions
                       hru_data%fracJulDay,                      & ! intent(in):    fractional julian days since the start of year
                       hru_data%yearLength,                      & ! intent(in):    number of days in the current year
-                      ! input/output: data structures
+                      noVeg,                                    & ! intent(in):    flag to indicate no vegetation
                       hru_data%typeStruct,                      & ! intent(in):    type of vegetation and soil
                       hru_data%attrStruct,                      & ! intent(in):    spatial attributes
-                      hru_data%mparStruct,                      & ! intent(in):    model parameters
-                      hru_data%progStruct,                      & ! intent(in):    model prognostic variables for a local HRU
-                      hru_data%diagStruct,                      & ! intent(inout): model diagnostic variables for a local HRU
-                      ! output
-                      computeVegFluxFlag,                       & ! intent(out): flag to indicate if we are computing fluxes over vegetation (.false. means veg is buried with snow)
+                      hru_data%mparStruct%dom(iDOM),            & ! intent(in):    model parameters
+                      hru_data%progStruct%dom(iDOM),            & ! intent(in):    model prognostic variables for a local HRU
+                      hru_data%diagStruct%dom(iDOM),            & ! intent(inout): model diagnostic variables for a local HRU
+                      computeVegFluxFlag,                       & ! intent(out): flag to indicate if we are computing fluxes over vegetation
                       notUsed_canopyDepth,                      & ! intent(out): NOT USED: canopy depth (m)
                       notUsed_exposedVAI,                       & ! intent(out): NOT USED: exposed vegetation area index (m2 m-2)
                       err,cmessage)                               ! intent(out): error control
-      if(err/=0)then;message=trim(message)//trim(cmessage); return; endif
+      if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
 
-    
-      ! save the flag for computing the vegetation fluxes
-      if(computeVegFluxFlag)      hru_data%computeVegFlux = yes
-      if(.not.computeVegFluxFlag) hru_data%computeVegFlux = no
-      
+      ! save the flag for computing the vegetation fluxes (from the upland domain)
+      if(gru_struc(indxGRU)%hruInfo(indxHRU)%domInfo(iDOM)%dom_type == upland)then
+        if(computeVegFluxFlag)      hru_data%computeVegFlux = yes
+        if(.not.computeVegFluxFlag) hru_data%computeVegFlux = no
+      endif
+    end do  ! looping through domains
   end if  ! if the first time step
- 
+
   ! ****************************************************************************
-  ! *** model simulation
+  ! *** model simulation -- loop over the domains within the HRU (from run_oneHRU)
   ! ****************************************************************************
   computeVegFluxFlag = (hru_data%ComputeVegFlux == yes)
 
-  ! initialize the number of flux calls
-  hru_data%diagStruct%var(iLookDIAG%numFluxCalls)%dat(1) = 0._dp
+  ! save the original forcing for the HRU (reset for each domain, different derived forcing per domain type)
+  allocate(forc0(size(hru_data%forcStruct%var)))
+  forc0(:) = hru_data%forcStruct%var(:)
 
-  !******************************************************************************
-  !****************************** From run_oneHRU *******************************
-  !******************************************************************************
-  ! water pixel: do nothing
-  if (hru_data%typeStruct%var(iLookTYPE%vegTypeIndex) == isWater) then
-    ! Set wall_clock time to zero so it does not get a random value
-    hru_data%diagStruct%var(iLookDIAG%wallClockTime)%dat(1) = 0._dp 
-    return
-  endif
- 
-  ! populate parameters in Noah-MP modules
-  ! Passing a maxSoilLayer in order to pass the check for NROOT, that is done to avoid making any changes to Noah-MP code.
-  !  --> NROOT from Noah-MP veg tables (as read here) is not used in SUMMA
-  call REDPRM(hru_data%typeStruct%var(iLookTYPE%vegTypeIndex),      & ! vegetation type index
-              hru_data%typeStruct%var(iLookTYPE%soilTypeIndex),     & ! soil type
-              hru_data%typeStruct%var(iLookTYPE%slopeTypeIndex),    & ! slope type index
-              10000_i4b,                                            & ! number of soil layers
-              urbanVegCategory)                                       ! vegetation category for urban areas
- 
-  ! overwrite the minimum resistance
-  if(overwriteRSMIN) RSMIN = hru_data%mparStruct%var(iLookPARAM%minStomatalResistance)%dat(1)
-  
-  ! overwrite the vegetation height
-  HVT(hru_data%typeStruct%var(iLookTYPE%vegTypeIndex)) = hru_data%mparStruct%var(iLookPARAM%heightCanopyTop)%dat(1)
-  HVB(hru_data%typeStruct%var(iLookTYPE%vegTypeIndex)) = hru_data%mparStruct%var(iLookPARAM%heightCanopyBottom)%dat(1)
+  do iDOM = 1, gru_struc(indxGRU)%hruInfo(indxHRU)%domCount
+    is_glac = .false.
+    hru_data%forcStruct%var(:) = forc0(:)                     ! reset the forcing for this domain
+    typeDOM = gru_struc(indxGRU)%hruInfo(indxHRU)%domInfo(iDOM)%dom_type
 
-  ! overwrite the tables for LAI and SAI
-  if(model_decisions(iLookDECISIONS%LAI_method)%iDecision == specified)then
-    SAIM(hru_data%typeStruct%var(iLookTYPE%vegTypeIndex),:) = hru_data%mparStruct%var(iLookPARAM%winterSAI)%dat(1)
-    LAIM(hru_data%typeStruct%var(iLookTYPE%vegTypeIndex),:) = hru_data%mparStruct%var(iLookPARAM%summerLAI)%dat(1)*greenVegFrac_monthly
-  end if
- 
-  ! compute derived forcing variables
-  call derivforce(&
-        hru_data%timeStruct%var,     & ! vector of time information
-        hru_data%forcStruct%var,     & ! vector of model forcing data
-        hru_data%attrStruct%var,     & ! vector of model attributes
-        hru_data%mparStruct,         & ! data structure of model parameters
-        hru_data%progStruct,         & ! data structure of model prognostic variables
-        hru_data%diagStruct,         & ! data structure of model diagnostic variables
-        hru_data%fluxStruct,         & ! data structure of model fluxes
-        hru_data%tmZoneOffsetFracDay,         & ! time zone offset in fractional days
-        err,cmessage)                  ! error control
-  if(err/=0)then;err=20; message=trim(message)//cmessage; return; endif
+    ! initialize the number of flux calls
+    hru_data%diagStruct%dom(iDOM)%var(iLookDIAG%numFluxCalls)%dat(1) = 0._dp
 
-  ! run the model for a single HRU
-  call coupled_em(&
-                  ! model control
-                  hruId,                       & ! intent(in):    hruID
-                  hru_data%dt_init,            & ! intent(inout): initial time step
-                  dt_init_factor,              & ! Used to adjust the length of the timestep in the event of a failure
-                  computeVegFluxFlag,          & ! intent(inout): flag to indicate if we are computing fluxes over vegetation
-                  hru_data%fracJulDay,         & ! intent(in):    fractional julian days since the start of year
-                  hru_data%yearLength,         & ! intent(in):    number of days in the current year
-                  ! data structures (input)
-                  hru_data%typeStruct,         & ! intent(in):    local classification of soil veg etc. for each HRU
-                  hru_data%attrStruct,         & ! intent(in):    local attributes for each HRU
-                  hru_data%forcStruct,         & ! intent(in):    model forcing data
-                  hru_data%mparStruct,         & ! intent(in):    model parameters
-                  hru_data%bvarStruct,         & ! intent(in):    basin-average model variables                 
-                  hru_data%lookupStruct,       &
-                  ! data structures (input-output)
-                  hru_data%indxStruct,         & ! intent(inout): model indices
-                  hru_data%progStruct,         & ! intent(inout): model prognostic variables for a local HRU
-                  hru_data%diagStruct,         & ! intent(inout): model diagnostic variables for a local HRU
-                  hru_data%fluxStruct,         & ! intent(inout): model fluxes for a local HRU
-                  ! error control
-                  err,cmessage)       ! intent(out): error control
-  if(err/=0)then; err=20; message=trim(message)//trim(cmessage);
-  print *,message
-  flush(6)
-  return; endif;
+    ! water pixel or a domain with no area: do nothing
+    if (hru_data%typeStruct%var(iLookTYPE%vegTypeIndex) == isWater .or. &
+        hru_data%progStruct%dom(iDOM)%var(iLookPROG%DOMarea)%dat(1) <= 0._rkind) then
+      hru_data%diagStruct%dom(iDOM)%var(iLookDIAG%wallClockTime)%dat(1) = 0._dp
+      do iVar=1,size(flux_meta)
+        hru_data%fluxStruct%dom(iDOM)%var(iVar)%dat(:) = 0._rkind
+      end do
 
-  ! update the number of layers
-  gru_struc(indxGRU)%hruInfo(indxHRU)%nSnow = hru_data%indxStruct%var(iLookINDEX%nSnow)%dat(1) ! number of snow layers
-  gru_struc(indxGRU)%hruInfo(indxHRU)%nSoil = hru_data%indxStruct%var(iLookINDEX%nSoil)%dat(1) ! number of soil layers
+    else  ! not a water pixel and the area of the domain is greater than zero
+
+      if (typeDOM == upland) then
+        ! populate parameters in Noah-MP modules (large soil-layer count to pass the NROOT check; NROOT unused in SUMMA)
+        call REDPRM(hru_data%typeStruct%var(iLookTYPE%vegTypeIndex),      & ! vegetation type index
+                    hru_data%typeStruct%var(iLookTYPE%soilTypeIndex),     & ! soil type
+                    hru_data%typeStruct%var(iLookTYPE%slopeTypeIndex),    & ! slope type index
+                    10000_i4b,                                            & ! number of soil layers
+                    urbanVegCategory)                                       ! vegetation category for urban areas
+        if(overwriteRSMIN) RSMIN = hru_data%mparStruct%dom(iDOM)%var(iLookPARAM%minStomatalResistance)%dat(1)
+        HVT(hru_data%typeStruct%var(iLookTYPE%vegTypeIndex)) = hru_data%mparStruct%dom(iDOM)%var(iLookPARAM%heightCanopyTop)%dat(1)
+        HVB(hru_data%typeStruct%var(iLookTYPE%vegTypeIndex)) = hru_data%mparStruct%dom(iDOM)%var(iLookPARAM%heightCanopyBottom)%dat(1)
+        if(model_decisions(iLookDECISIONS%LAI_method)%iDecision == specified)then
+          SAIM(hru_data%typeStruct%var(iLookTYPE%vegTypeIndex),:) = hru_data%mparStruct%dom(iDOM)%var(iLookPARAM%winterSAI)%dat(1)
+          LAIM(hru_data%typeStruct%var(iLookTYPE%vegTypeIndex),:) = hru_data%mparStruct%dom(iDOM)%var(iLookPARAM%summerLAI)%dat(1)*greenVegFrac_monthly
+        end if
+        use_computeVegFlux = computeVegFluxFlag
+      else if (typeDOM == glacCln1 .or. typeDOM == glacCln2 .or. typeDOM == glacDbr .or. typeDOM == wetland) then
+        use_computeVegFlux = .false.
+        if (typeDOM == glacCln1 .or. typeDOM == glacCln2 .or. typeDOM == glacDbr) is_glac = .true.
+      else
+        err=20; message=trim(message)//'domain type not recognized'; return
+      end if
+
+      ! compute derived forcing variables (different for each domain type)
+      call derivforce(&
+            is_glac,                          & ! intent(in):    flag to indicate a glacier domain
+            hru_data%forcStruct,              & ! intent(inout): vector of model forcing data
+            hru_data%attrStruct,              & ! intent(in):    vector of model attributes
+            hru_data%mparStruct%dom(iDOM),    & ! intent(in):    data structure of model parameters
+            hru_data%progStruct%dom(iDOM),    & ! intent(in):    data structure of model prognostic variables
+            hru_data%diagStruct%dom(iDOM),    & ! intent(inout): data structure of model diagnostic variables
+            hru_data%fluxStruct%dom(iDOM),    & ! intent(inout): data structure of model fluxes
+            hru_data%tmZoneOffsetFracDay,     & ! intent(inout): time zone offset in fractional days
+            err,cmessage)                       ! intent(out):   error control
+      if(err/=0)then; err=20; message=trim(message)//trim(cmessage); return; endif
+
+      ! run the model for a single HRU domain
+      call coupled_em(&
+                      hruId,                           & ! intent(in):    hruID
+                      hru_data%dt_init%dom(iDOM),       & ! intent(inout): initial time step
+                      dt_init_factor,                  & ! intent(in):    used to adjust the timestep length on failure
+                      use_computeVegFlux,              & ! intent(inout): flag to indicate if we are computing fluxes over vegetation
+                      hru_data%fracJulDay,             & ! intent(in):    fractional julian days since the start of year
+                      hru_data%yearLength,             & ! intent(in):    number of days in the current year
+                      hru_data%typeStruct,             & ! intent(in):    local classification of soil veg etc. for each HRU
+                      hru_data%attrStruct,             & ! intent(in):    local attributes for each HRU
+                      hru_data%forcStruct,             & ! intent(in):    model forcing data
+                      hru_data%mparStruct%dom(iDOM),   & ! intent(in):    model parameters
+                      hru_data%bvarStruct,             & ! intent(in):    basin-average model variables
+                      hru_data%lookupStruct%dom(iDOM), & ! intent(in):    lookup tables
+                      hru_data%indxStruct%dom(iDOM),   & ! intent(inout): model indices
+                      hru_data%progStruct%dom(iDOM),   & ! intent(inout): model prognostic variables for a local HRU
+                      hru_data%diagStruct%dom(iDOM),   & ! intent(inout): model diagnostic variables for a local HRU
+                      hru_data%fluxStruct%dom(iDOM),   & ! intent(inout): model fluxes for a local HRU
+                      err,cmessage)                      ! intent(out):   error control
+      if(err/=0)then; err=20; message=trim(message)//trim(cmessage); print *,message; flush(6); return; endif
+
+      if(typeDOM == upland) computeVegFluxFlag = use_computeVegFlux
+    end if  ! not a water pixel and area of the domain is greater than zero
+
+    ! update the number of layers regardless of whether the model was run
+    gru_struc(indxGRU)%hruInfo(indxHRU)%domInfo(iDOM)%nSnow = hru_data%indxStruct%dom(iDOM)%var(iLookINDEX%nSnow)%dat(1)
+    gru_struc(indxGRU)%hruInfo(indxHRU)%domInfo(iDOM)%nLake = hru_data%indxStruct%dom(iDOM)%var(iLookINDEX%nLake)%dat(1)
+    gru_struc(indxGRU)%hruInfo(indxHRU)%domInfo(iDOM)%nSoil = hru_data%indxStruct%dom(iDOM)%var(iLookINDEX%nSoil)%dat(1)
+    gru_struc(indxGRU)%hruInfo(indxHRU)%domInfo(iDOM)%nGlce = hru_data%indxStruct%dom(iDOM)%var(iLookINDEX%nGlce)%dat(1)
+  end do  ! looping through domains
+
+  deallocate(forc0)
 
   !************************************* End of run_oneHRU *****************************************
   ! save the flag for computing the vegetation fluxes
@@ -256,22 +279,22 @@ end subroutine runPhysics
     type(hru_type), pointer :: hru_data
     call c_f_pointer(handle_hru_data, hru_data)
   
-    rtol = hru_data%mparStruct%var(iLookPARAM%relTolWatSnow)%dat(1)
-    atol = hru_data%mparStruct%var(iLookPARAM%absTolWatSnow)%dat(1)
-    rtol_temp_cas = hru_data%mparStruct%var(iLookPARAM%relTolTempCas)%dat(1)
-    rtol_temp_veg = hru_data%mparStruct%var(iLookPARAM%relTolTempVeg)%dat(1)
-    rtol_wat_veg = hru_data%mparStruct%var(iLookPARAM%relTolWatVeg)%dat(1)
-    rtol_temp_soil_snow = hru_data%mparStruct%var(iLookPARAM%relTolTempSoilSnow)%dat(1)
-    rtol_wat_snow = hru_data%mparStruct%var(iLookPARAM%relTolWatSnow)%dat(1)
-    rtol_matric = hru_data%mparStruct%var(iLookPARAM%relTolMatric)%dat(1)
-    rtol_aquifr = hru_data%mparStruct%var(iLookPARAM%relTolAquifr)%dat(1)
-    atol_temp_cas = hru_data%mparStruct%var(iLookPARAM%absTolTempCas)%dat(1)
-    atol_temp_veg = hru_data%mparStruct%var(iLookPARAM%absTolTempVeg)%dat(1)
-    atol_wat_veg = hru_data%mparStruct%var(iLookPARAM%absTolWatVeg)%dat(1)
-    atol_temp_soil_snow = hru_data%mparStruct%var(iLookPARAM%absTolTempSoilSnow)%dat(1)
-    atol_wat_snow = hru_data%mparStruct%var(iLookPARAM%absTolWatSnow)%dat(1)
-    atol_matric = hru_data%mparStruct%var(iLookPARAM%absTolMatric)%dat(1)
-    atol_aquifr = hru_data%mparStruct%var(iLookPARAM%absTolAquifr)%dat(1)
+    rtol = hru_data%mparStruct%dom(1)%var(iLookPARAM%relTolWatSnow)%dat(1)
+    atol = hru_data%mparStruct%dom(1)%var(iLookPARAM%absTolWatSnow)%dat(1)
+    rtol_temp_cas = hru_data%mparStruct%dom(1)%var(iLookPARAM%relTolTempCas)%dat(1)
+    rtol_temp_veg = hru_data%mparStruct%dom(1)%var(iLookPARAM%relTolTempVeg)%dat(1)
+    rtol_wat_veg = hru_data%mparStruct%dom(1)%var(iLookPARAM%relTolWatVeg)%dat(1)
+    rtol_temp_soil_snow = hru_data%mparStruct%dom(1)%var(iLookPARAM%relTolTempSoilSnow)%dat(1)
+    rtol_wat_snow = hru_data%mparStruct%dom(1)%var(iLookPARAM%relTolWatSnow)%dat(1)
+    rtol_matric = hru_data%mparStruct%dom(1)%var(iLookPARAM%relTolMatric)%dat(1)
+    rtol_aquifr = hru_data%mparStruct%dom(1)%var(iLookPARAM%relTolAquifr)%dat(1)
+    atol_temp_cas = hru_data%mparStruct%dom(1)%var(iLookPARAM%absTolTempCas)%dat(1)
+    atol_temp_veg = hru_data%mparStruct%dom(1)%var(iLookPARAM%absTolTempVeg)%dat(1)
+    atol_wat_veg = hru_data%mparStruct%dom(1)%var(iLookPARAM%absTolWatVeg)%dat(1)
+    atol_temp_soil_snow = hru_data%mparStruct%dom(1)%var(iLookPARAM%absTolTempSoilSnow)%dat(1)
+    atol_wat_snow = hru_data%mparStruct%dom(1)%var(iLookPARAM%absTolWatSnow)%dat(1)
+    atol_matric = hru_data%mparStruct%dom(1)%var(iLookPARAM%absTolMatric)%dat(1)
+    atol_aquifr = hru_data%mparStruct%dom(1)%var(iLookPARAM%absTolAquifr)%dat(1)
   end subroutine get_sundials_tolerances
   
   !**********************************************************************
@@ -309,34 +332,34 @@ end subroutine runPhysics
     if (trim(model_decisions(iLookDECISIONS%num_method)%cDecision)=='ida') then
       be_steps = 1
     else
-      be_steps = NINT(hru_data%mparStruct%var(iLookPARAM%be_steps)%dat(1))
+      be_steps = NINT(hru_data%mparStruct%dom(1)%var(iLookPARAM%be_steps)%dat(1))
     endif
     ! First, set the general conversion tolerances
-    hru_data%mparStruct%var(iLookPARAM%relConvTol_liquid)%dat(1) = rtol  
-    hru_data%mparStruct%var(iLookPARAM%relConvTol_matric)%dat(1) = rtol  
-    hru_data%mparStruct%var(iLookPARAM%relConvTol_energy)%dat(1) = rtol  
-    hru_data%mparStruct%var(iLookPARAM%relConvTol_aquifr)%dat(1) = rtol  
+    hru_data%mparStruct%dom(1)%var(iLookPARAM%relConvTol_liquid)%dat(1) = rtol  
+    hru_data%mparStruct%dom(1)%var(iLookPARAM%relConvTol_matric)%dat(1) = rtol  
+    hru_data%mparStruct%dom(1)%var(iLookPARAM%relConvTol_energy)%dat(1) = rtol  
+    hru_data%mparStruct%dom(1)%var(iLookPARAM%relConvTol_aquifr)%dat(1) = rtol  
     ! Set the specific relative tolerances
-    hru_data%mparStruct%var(iLookPARAM%relTolTempCas)%dat(1) = rtol_temp_cas
-    hru_data%mparStruct%var(iLookPARAM%relTolTempVeg)%dat(1) = rtol_temp_veg
-    hru_data%mparStruct%var(iLookPARAM%relTolWatVeg)%dat(1) = rtol_wat_veg
-    hru_data%mparStruct%var(iLookPARAM%relTolTempSoilSnow)%dat(1) = rtol_temp_soil_snow
-    hru_data%mparStruct%var(iLookPARAM%relTolWatSnow)%dat(1) = rtol_wat_snow
-    hru_data%mparStruct%var(iLookPARAM%relTolMatric)%dat(1) = rtol_matric
-    hru_data%mparStruct%var(iLookPARAM%relTolAquifr)%dat(1) = rtol_aquifr
+    hru_data%mparStruct%dom(1)%var(iLookPARAM%relTolTempCas)%dat(1) = rtol_temp_cas
+    hru_data%mparStruct%dom(1)%var(iLookPARAM%relTolTempVeg)%dat(1) = rtol_temp_veg
+    hru_data%mparStruct%dom(1)%var(iLookPARAM%relTolWatVeg)%dat(1) = rtol_wat_veg
+    hru_data%mparStruct%dom(1)%var(iLookPARAM%relTolTempSoilSnow)%dat(1) = rtol_temp_soil_snow
+    hru_data%mparStruct%dom(1)%var(iLookPARAM%relTolWatSnow)%dat(1) = rtol_wat_snow
+    hru_data%mparStruct%dom(1)%var(iLookPARAM%relTolMatric)%dat(1) = rtol_matric
+    hru_data%mparStruct%dom(1)%var(iLookPARAM%relTolAquifr)%dat(1) = rtol_aquifr
     ! Set the general absolute conversion tolerances
-    hru_data%mparStruct%var(iLookPARAM%absConvTol_liquid)%dat(1) = atol 
-    hru_data%mparStruct%var(iLookPARAM%absConvTol_matric)%dat(1) = atol 
-    hru_data%mparStruct%var(iLookPARAM%absConvTol_energy)%dat(1) = atol 
-    hru_data%mparStruct%var(iLookPARAM%absConvTol_aquifr)%dat(1) = atol 
+    hru_data%mparStruct%dom(1)%var(iLookPARAM%absConvTol_liquid)%dat(1) = atol 
+    hru_data%mparStruct%dom(1)%var(iLookPARAM%absConvTol_matric)%dat(1) = atol 
+    hru_data%mparStruct%dom(1)%var(iLookPARAM%absConvTol_energy)%dat(1) = atol 
+    hru_data%mparStruct%dom(1)%var(iLookPARAM%absConvTol_aquifr)%dat(1) = atol 
     ! Set the specific absolute tolerances
-    hru_data%mparStruct%var(iLookPARAM%absTolTempCas)%dat(1) = atol_temp_cas
-    hru_data%mparStruct%var(iLookPARAM%absTolTempVeg)%dat(1) = atol_temp_veg
-    hru_data%mparStruct%var(iLookPARAM%absTolWatVeg)%dat(1) = atol_wat_veg
-    hru_data%mparStruct%var(iLookPARAM%absTolTempSoilSnow)%dat(1) = atol_temp_soil_snow
-    hru_data%mparStruct%var(iLookPARAM%absTolWatSnow)%dat(1) = atol_wat_snow
-    hru_data%mparStruct%var(iLookPARAM%absTolMatric)%dat(1) = atol_matric
-    hru_data%mparStruct%var(iLookPARAM%absTolAquifr)%dat(1) = atol_aquifr
+    hru_data%mparStruct%dom(1)%var(iLookPARAM%absTolTempCas)%dat(1) = atol_temp_cas
+    hru_data%mparStruct%dom(1)%var(iLookPARAM%absTolTempVeg)%dat(1) = atol_temp_veg
+    hru_data%mparStruct%dom(1)%var(iLookPARAM%absTolWatVeg)%dat(1) = atol_wat_veg
+    hru_data%mparStruct%dom(1)%var(iLookPARAM%absTolTempSoilSnow)%dat(1) = atol_temp_soil_snow
+    hru_data%mparStruct%dom(1)%var(iLookPARAM%absTolWatSnow)%dat(1) = atol_wat_snow
+    hru_data%mparStruct%dom(1)%var(iLookPARAM%absTolMatric)%dat(1) = atol_matric
+    hru_data%mparStruct%dom(1)%var(iLookPARAM%absTolAquifr)%dat(1) = atol_aquifr
   
     ! If the global default tolerance flag is set, then override the specific tolerances 
   end subroutine set_sundials_tolerances

@@ -72,13 +72,15 @@ endif()
 # Set compiler flags
 set(FLAGS_OPT $ENV{FLAGS_OPT}) # get optional user-specified flags from environment variables
 if(CMAKE_BUILD_TYPE MATCHES Debug)
-    message("\nSetting Debug Options")
-    add_compile_definitions(DEBUG) 
-    set(FLAGS_NOAH -g -O0 -fbacktrace -fbounds-check -ffree-form -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors ${FLAGS_OPT})
-    set(FLAGS_ALL -g -O0 -fbacktrace -fbounds-check -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors -cpp ${FLAGS_OPT})
-    set(FLAGS_CXX -g -O0 -fbounds-check -Wfatal-errors -std=c++17 ${FLAGS_OPT})
+	message("\nSetting SUMMA Debug Options")
+	add_compile_definitions(DEBUG)
+	# Notes: - optimization -Og is selected here to maximize information displayed in debugging software (e.g., gdb)
+	#        - however, it may be useful to vary the optimization level to test for optimization related issues
+    set(FLAGS_NOAH -g -Og -fbacktrace -fbounds-check -ffree-form -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors ${FLAGS_OPT})
+    set(FLAGS_ALL -g -Og -fbacktrace -fbounds-check -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors -cpp ${FLAGS_OPT})
+    set(FLAGS_CXX -g -Og -fbounds-check -Wfatal-errors -std=c++17 ${FLAGS_OPT})
 else()
-    message("\nSetting Release Options")
+	message("\nSetting SUMMA Release Options")
     set(FLAGS_NOAH -O3 -ffree-form -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors ${FLAGS_OPT})
     set(FLAGS_ALL -O3 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors -cpp ${FLAGS_OPT})
     set(FLAGS_CXX -O3 -Wfatal-errors -std=c++17 ${FLAGS_OPT})
@@ -88,6 +90,11 @@ if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
     # Suppress libgfortran end-of-run IEEE summaries (e.g., IEEE_DENORMAL).
     list(APPEND FLAGS_NOAH -ffpe-summary=none)
     list(APPEND FLAGS_ALL -ffpe-summary=none)
+endif()
+
+if(APPLE)
+    # macOS does not define HOST_NAME_MAX (a Linux-ism); POSIX guarantees 255.
+    list(APPEND FLAGS_CXX -DHOST_NAME_MAX=255)
 endif()
 
 #=========================================================================================

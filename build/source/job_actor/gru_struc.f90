@@ -155,11 +155,12 @@ subroutine f_getNumHru(num_hru) bind(C, name="f_getNumHru")
   num_hru = sum(gru_struc(:)%hruCount)
 end subroutine f_getNumHru
 
-subroutine f_readIcondNlayers(num_gru, err, message_r)& 
+subroutine f_readIcondNlayers(num_gru, err, message_r)&
     bind(C, name="f_readIcondNlayers")
   USE globalData,only:indx_meta                     ! metadata structures
-  
-  USE summaFileManager,only:SETTINGS_PATH,STATE_PATH,MODEL_INITCOND                    
+  USE globalData,only:maxDOM                        ! maximum number of domains in any HRU (set here for def_output)
+
+  USE summaFileManager,only:SETTINGS_PATH,STATE_PATH,MODEL_INITCOND
   USE read_icond_module,only:read_icond_nlayers               ! module to read initial condition dimensions
   USE C_interface_module,only:f_c_string_ptr
   implicit none
@@ -170,22 +171,28 @@ subroutine f_readIcondNlayers(num_gru, err, message_r)&
   ! Local Variables
   character(len=256)              :: restartFile        ! restart file name
   character(len=256)              :: message
+  integer(i4b)                    :: nDOM              ! max number of domains in any HRU (returned by read_icond_nlayers)
 
   err = 0
   message = ""
+  nDOM = 0
   call f_c_string_ptr(trim(message), message_r)
 
   ! *****************************************************************************
-  ! *** read the number of snow and soil layers
+  ! *** read the number of snow, lake, soil and glacier-ice layers per domain
+  ! ***     also populates gru_struc(:)%hruInfo(:)%domInfo(:) and returns nDOM
   ! *****************************************************************************
-  ! set restart filename and read the number of snow and soil layers from the initial conditions (restart) file
+  ! set restart filename and read the number of layers from the initial conditions (restart) file
   if(STATE_PATH == '') then
     restartFile = trim(SETTINGS_PATH)//trim(MODEL_INITCOND)
   else
     restartFile = trim(STATE_PATH)//trim(MODEL_INITCOND)
   endif
-  call read_icond_nlayers(trim(restartFile),num_gru,indx_meta,err,message)
-  if(err/=0)then; call f_c_string_ptr(trim(message), message_r); endif
+  call read_icond_nlayers(trim(restartFile),num_gru,nDOM,indx_meta,err,message)
+  if(err/=0)then; call f_c_string_ptr(trim(message), message_r); return; endif
+
+  ! make the maximum number of domains available globally (used when defining output files)
+  maxDOM = nDOM
 
 end subroutine f_readIcondNlayers
 

@@ -248,23 +248,23 @@ subroutine f_getInitTolerance(rtol_temp_cas, rtol_temp_veg, rtol_wat_veg, &
   atol_aquifr = -9999
   def_tol = .true.
   if (model_decisions(iLookDECISIONS%num_method)%iDecision == 83) then
-    rtol_temp_cas = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolTempCas)%dat(1)
-    rtol_temp_veg = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolTempveg)%dat(1)
-    rtol_wat_snow = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolWatSnow)%dat(1)
-    rtol_temp_soil_snow = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolTempSoilSnow)%dat(1)
-    rtol_wat_veg = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolWatVeg)%dat(1)
-    rtol_matric = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolMatric)%dat(1)
-    rtol_aquifr = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolAquifr)%dat(1)
-    atol_temp_cas = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolTempCas)%dat(1)
-    atol_temp_veg = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolTempVeg)%dat(1)
-    atol_wat_snow = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolWatSnow)%dat(1)
-    atol_temp_soil_snow = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolTempSoilSnow)%dat(1)
-    atol_wat_veg = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolWatVeg)%dat(1)
-    atol_matric = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolMatric)%dat(1)
-    atol_aquifr = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolAquifr)%dat(1)
+    rtol_temp_cas = init_struc%mparStruct%gru(1)%hru(1)%dom(1)%var(iLookPARAM%relTolTempCas)%dat(1)
+    rtol_temp_veg = init_struc%mparStruct%gru(1)%hru(1)%dom(1)%var(iLookPARAM%relTolTempveg)%dat(1)
+    rtol_wat_snow = init_struc%mparStruct%gru(1)%hru(1)%dom(1)%var(iLookPARAM%relTolWatSnow)%dat(1)
+    rtol_temp_soil_snow = init_struc%mparStruct%gru(1)%hru(1)%dom(1)%var(iLookPARAM%relTolTempSoilSnow)%dat(1)
+    rtol_wat_veg = init_struc%mparStruct%gru(1)%hru(1)%dom(1)%var(iLookPARAM%relTolWatVeg)%dat(1)
+    rtol_matric = init_struc%mparStruct%gru(1)%hru(1)%dom(1)%var(iLookPARAM%relTolMatric)%dat(1)
+    rtol_aquifr = init_struc%mparStruct%gru(1)%hru(1)%dom(1)%var(iLookPARAM%relTolAquifr)%dat(1)
+    atol_temp_cas = init_struc%mparStruct%gru(1)%hru(1)%dom(1)%var(iLookPARAM%absTolTempCas)%dat(1)
+    atol_temp_veg = init_struc%mparStruct%gru(1)%hru(1)%dom(1)%var(iLookPARAM%absTolTempVeg)%dat(1)
+    atol_wat_snow = init_struc%mparStruct%gru(1)%hru(1)%dom(1)%var(iLookPARAM%absTolWatSnow)%dat(1)
+    atol_temp_soil_snow = init_struc%mparStruct%gru(1)%hru(1)%dom(1)%var(iLookPARAM%absTolTempSoilSnow)%dat(1)
+    atol_wat_veg = init_struc%mparStruct%gru(1)%hru(1)%dom(1)%var(iLookPARAM%absTolWatVeg)%dat(1)
+    atol_matric = init_struc%mparStruct%gru(1)%hru(1)%dom(1)%var(iLookPARAM%absTolMatric)%dat(1)
+    atol_aquifr = init_struc%mparStruct%gru(1)%hru(1)%dom(1)%var(iLookPARAM%absTolAquifr)%dat(1)
   end if
 
-be_steps = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%be_steps)%dat(1)
+be_steps = init_struc%mparStruct%gru(1)%hru(1)%dom(1)%var(iLookPARAM%be_steps)%dat(1)
 
 end subroutine f_getInitTolerance
 

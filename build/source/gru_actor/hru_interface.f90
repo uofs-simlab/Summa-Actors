@@ -188,7 +188,7 @@ subroutine runHRU_fortran(indx_gru, indx_hru, modelTimeStep, handle_hru_data, &
 
   ! initialize total inflow for each layer in a soil column
   ! if (modelTimeStep == 0 .and. indxHRU == 1)then
-  hru_data%fluxStruct%var(iLookFLUX%mLayerColumnInflow)%dat(:) = 0._dp
+  hru_data%fluxStruct%dom(1)%var(iLookFLUX%mLayerColumnInflow)%dat(:) = 0._dp
   ! end if
 
   call runPhysics(indx_gru, indx_hru, modelTimeStep, hru_data, dt_init_factor, err, message)
@@ -199,19 +199,19 @@ subroutine runHRU_fortran(indx_gru, indx_hru, modelTimeStep, handle_hru_data, &
   ! ----- calculate weighted basin (GRU) fluxes --------------------------------------------------------------------------------------
   
   ! increment basin surface runoff (m s-1)
-  hru_data%bvarStruct%var(iLookBVAR%basin__SurfaceRunoff)%dat(1) = hru_data%bvarStruct%var(iLookBVAR%basin__SurfaceRunoff)%dat(1) + hru_data%fluxStruct%var(iLookFLUX%scalarSurfaceRunoff)%dat(1) * fracHRU
+  hru_data%bvarStruct%var(iLookBVAR%basin__SurfaceRunoff)%dat(1) = hru_data%bvarStruct%var(iLookBVAR%basin__SurfaceRunoff)%dat(1) + hru_data%fluxStruct%dom(1)%var(iLookFLUX%scalarSurfaceRunoff)%dat(1) * fracHRU
   
   !increment basin soil drainage (m s-1)
-  hru_data%bvarStruct%var(iLookBVAR%basin__SoilDrainage)%dat(1)   = hru_data%bvarStruct%var(iLookBVAR%basin__SoilDrainage)%dat(1)  + hru_data%fluxStruct%var(iLookFLUX%scalarSoilDrainage)%dat(1)  * fracHRU
+  hru_data%bvarStruct%var(iLookBVAR%basin__SoilDrainage)%dat(1)   = hru_data%bvarStruct%var(iLookBVAR%basin__SoilDrainage)%dat(1)  + hru_data%fluxStruct%dom(1)%var(iLookFLUX%scalarSoilDrainage)%dat(1)  * fracHRU
   
   ! increment aquifer variables -- ONLY if aquifer baseflow is computed individually for each HRU and aquifer is run
   ! NOTE: groundwater computed later for singleBasin
   if(model_decisions(iLookDECISIONS%spatial_gw)%iDecision == localColumn .and. model_decisions(iLookDECISIONS%groundwatr)%iDecision == bigBucket) then
 
-    hru_data%bvarStruct%var(iLookBVAR%basin__AquiferRecharge)%dat(1)  = hru_data%bvarStruct%var(iLookBVAR%basin__AquiferRecharge)%dat(1)   + hru_data%fluxStruct%var(iLookFLUX%scalarSoilDrainage)%dat(1)     * fracHRU
-    hru_data%bvarStruct%var(iLookBVAR%basin__AquiferTranspire)%dat(1) = hru_data%bvarStruct%var(iLookBVAR%basin__AquiferTranspire)%dat(1)  + hru_data%fluxStruct%var(iLookFLUX%scalarAquiferTranspire)%dat(1) * fracHRU
+    hru_data%bvarStruct%var(iLookBVAR%basin__AquiferRecharge)%dat(1)  = hru_data%bvarStruct%var(iLookBVAR%basin__AquiferRecharge)%dat(1)   + hru_data%fluxStruct%dom(1)%var(iLookFLUX%scalarSoilDrainage)%dat(1)     * fracHRU
+    hru_data%bvarStruct%var(iLookBVAR%basin__AquiferTranspire)%dat(1) = hru_data%bvarStruct%var(iLookBVAR%basin__AquiferTranspire)%dat(1)  + hru_data%fluxStruct%dom(1)%var(iLookFLUX%scalarAquiferTranspire)%dat(1) * fracHRU
     hru_data%bvarStruct%var(iLookBVAR%basin__AquiferBaseflow)%dat(1)  =  hru_data%bvarStruct%var(iLookBVAR%basin__AquiferBaseflow)%dat(1)  &
-            +  hru_data%fluxStruct%var(iLookFLUX%scalarAquiferBaseflow)%dat(1) * fracHRU
+            +  hru_data%fluxStruct%dom(1)%var(iLookFLUX%scalarAquiferBaseflow)%dat(1) * fracHRU
     end if
 
   ! perform the routing
@@ -244,7 +244,7 @@ subroutine runHRU_fortran(indx_gru, indx_hru, modelTimeStep, handle_hru_data, &
   if(err/=0)then; err=20; message=trim(message)//trim(cmessage); call f_c_string_ptr(trim(message), message_r); return; endif;
   end associate
 
-  wallTimeTimeStep = hru_data%diagStruct%var(iLookDIAG%wallClockTime)%dat(1)
+  wallTimeTimeStep = hru_data%diagStruct%dom(1)%var(iLookDIAG%wallClockTime)%dat(1)
 
 end subroutine runHRU_fortran
 
