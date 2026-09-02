@@ -875,6 +875,8 @@ subroutine writeRestart(filename,         & ! intent(in): name of restart file
  integer(i4b)                       :: ncid          ! netcdf file id
  integer(i4b),allocatable           :: ncVarID(:)    ! netcdf variable id (prog + routing + optional glacier bvars)
  integer(i4b)                       :: ncDomTypeID   ! domType variable id
+ integer(i4b)                       :: ncGruIdID     ! gruId variable id
+ integer(i4b)                       :: ncHruIdID     ! hruId variable id
  integer(i4b)                       :: ncIdxID(4)    ! nSnow/nLake/nSoil/nGlce variable ids
  integer(i4b)                       :: nSnow,nLake,nSoil,nGlce,nLayers
  integer(i4b),parameter             :: nScalar=1     ! size of a scalar
@@ -896,13 +898,9 @@ subroutine writeRestart(filename,         & ! intent(in): name of restart file
  nProgVars = size(prog_meta)
  nidx = (/iLookINDEX%nSnow, iLookINDEX%nLake, iLookINDEX%nSoil, iLookINDEX%nGlce/)
 
- ! size the hru dimension so every hru_nc in this batch is a valid index
- hruFileDim = 0
- do iGRU=1,nGRU
-   do iHRU=1,gru_struc(iGRU)%hruCount
-     hruFileDim = max(hruFileDim, gru_struc(iGRU)%hruInfo(iHRU)%hru_nc)
-   end do
- end do
+ ! compact hru dimension: one slot per HRU in this batch, in iteration order.
+ ! gruId/hruId variables are written so read_icond matches by identity, not by slot.
+ hruFileDim = sum(gru_struc(1:nGRU)%hruCount)
 
  size_prog = nProgVars + 1  ! +1 for the routing future runoff variable
  if(maxGlaciers > 0)then
@@ -937,9 +935,10 @@ subroutine writeRestart(filename,         & ! intent(in): name of restart file
  if(maxGlceLayers>0) err = nf90_def_dim(ncid,'ifcGlce',maxGlceLayers+1,ifcGlceDimID); message='iCreate[ifcGlce]'; call netcdf_err(err,message); if(err/=0)return
  err=0; message='writeRestart/'
 
- ! define domType(dom,hru)
- err = nf90_def_var(ncid,'domType',nf90_int,(/domDimID,hruDimID/),ncDomTypeID)
- message='iCreate[domType]'; call netcdf_err(err,message); if(err/=0)return
+ ! define id / type variables read by read_icond
+ err = nf90_def_var(ncid,'gruId'  ,nf90_int64,(/gruDimID/)          ,ncGruIdID);   message='iCreate[gruId]'  ; call netcdf_err(err,message); if(err/=0)return
+ err = nf90_def_var(ncid,'hruId'  ,nf90_int64,(/hruDimID/)          ,ncHruIdID);   message='iCreate[hruId]'  ; call netcdf_err(err,message); if(err/=0)return
+ err = nf90_def_var(ncid,'domType',nf90_int  ,(/domDimID,hruDimID/) ,ncDomTypeID); message='iCreate[domType]'; call netcdf_err(err,message); if(err/=0)return
 
  ! define prognostic variables, shaped (dom,hru,<layer>)
  do iVar = 1,nProgVars
@@ -997,9 +996,20 @@ subroutine writeRestart(filename,         & ! intent(in): name of restart file
  err = nf90_enddef(ncid); call netcdf_err(err,message); if (err/=0) return
 
  ! ----- write data -----
+ cHRU = 0
  do iGRU = 1,nGRU
+
+  ! gru identity (so read_icond can match this GRU by id regardless of file position)
+  err = nf90_put_var(ncid,ncGruIdID,(/gru_struc(iGRU)%gru_id/),start=(/iGRU/))
+  if(err/=0)then; message=trim(message)//'writing gruId'; call netcdf_err(err,message); return; endif
+
   do iHRU = 1,gru_struc(iGRU)%hruCount
-   cHRU = gru_struc(iGRU)%hruInfo(iHRU)%hru_nc
+   cHRU = cHRU + 1
+
+   ! hru identity
+   err = nf90_put_var(ncid,ncHruIdID,(/gru_struc(iGRU)%hruInfo(iHRU)%hru_id/),start=(/cHRU/))
+   if(err/=0)then; message=trim(message)//'writing hruId'; call netcdf_err(err,message); return; endif
+
    do iDOM = 1,gru_struc(iGRU)%hruInfo(iHRU)%domCount
 
     err = nf90_put_var(ncid,ncDomTypeID,(/gru_struc(iGRU)%hruInfo(iHRU)%domInfo(iDOM)%dom_type/),start=(/iDOM,cHRU/),count=(/1,1/))
