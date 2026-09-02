@@ -833,222 +833,239 @@ end subroutine writeTime
 ! public subroutine writeRestart: print a re-start file
 ! *********************************************************************************************************
 subroutine writeRestart(filename,         & ! intent(in): name of restart file
-                         nGRU,             & ! intent(in): number of GRUs
-                         checkpoint,       &
+                         nGRU,             & ! intent(in): number of GRUs in this batch
+                         checkpoint,       & ! intent(in): output-buffer slice to write
                          prog_meta,        & ! intent(in): prognostics metadata
-                         prog_data,        & ! intent(in): prognostics data
+                         prog_data,        & ! intent(in): prognostics data (per gru/hru/dom, time-buffered)
                          bvar_meta,        & ! intent(in): basin (gru) variable metadata
-                         bvar_data,        & ! intent(in): basin (gru) variable data
+                         bvar_data,        & ! intent(in): basin (gru) variable data (per gru/hru, time-buffered)
                          indx_meta,        & ! intent(in): index metadata
-                         indx_data,        & ! intent(in): index data
+                         indx_data,        & ! intent(in): index data (per gru/hru/dom, time-buffered)
                          err,message)        ! intent(out): error control
  ! --------------------------------------------------------------------------------------------------------
+ ! Writes a restart file with the same schema SUMMA's read_icond expects: a `dom` dimension plus a
+ ! `domType(dom,hru)` variable, prognostic variables shaped (dom,hru,<layer>), and per-domain layer
+ ! counts nSnow/nLake/nSoil/nGlce shaped (dom,hru).  ALL HRUs of each GRU and ALL domains of each HRU
+ ! are written.  The `hru` dimension is indexed by hru_nc (the HRU's position in the attributes file),
+ ! matching read_icond; positions not in this batch are left as fill and are never read back.
  ! --------------------------------------------------------------------------------------------------------
- ! access the derived types to define the data structures
  USE data_types,only:var_info               ! metadata
- ! access named variables defining elements in the data structures
  USE var_lookup,only:iLookINDEX             ! named variables for structure elements
  USE var_lookup,only:iLookVarType           ! named variables for structure elements
  USE var_lookup,only:iLookBVAR              ! named variables for structure elements
- ! constants
- USE globalData,only:gru_struc              ! gru-hru mapping structures
- ! external routines
+ USE globalData,only:gru_struc              ! gru-hru-dom mapping structures
+ USE globalData,only:maxDOM                 ! maximum number of domains in any HRU
+ USE globalData,only:maxGlaciers            ! maximum number of glaciers in any GRU
  USE netcdf_util_module,only:nc_file_close  ! close netcdf file
- USE netcdf_util_module,only:nc_file_open   ! open netcdf file
 
  implicit none
- ! --------------------------------------------------------------------------------------------------------
  ! input
- character(len=256),intent(in)           :: filename      ! name of the restart file
- integer(i4b),intent(in)                 :: nGRU          ! number of GRUs
- integer(i4b),intent(in)                 :: checkpoint    ! checkpoint the restart file is based on
+ character(len=256),intent(in)               :: filename      ! name of the restart file
+ integer(i4b),intent(in)                     :: nGRU          ! number of GRUs in this batch
+ integer(i4b),intent(in)                     :: checkpoint    ! output-buffer slice to write
  type(var_info),intent(in)                   :: prog_meta(:)  ! prognostic variable metadata
- type(gru_hru_dom_time_doubleVec),intent(in) :: prog_data     ! prognostic vars (only domain 1 is written)
+ type(gru_hru_dom_time_doubleVec),intent(in) :: prog_data     ! prognostic vars
  type(var_info),intent(in)                   :: bvar_meta(:)  ! basin variable metadata
  type(gru_hru_time_doubleVec),intent(in)     :: bvar_data     ! basin variables
- type(var_info),intent(in)                   :: indx_meta(:)  ! metadata
- type(gru_hru_dom_time_intVec),intent(in)    :: indx_data     ! indexing vars (only domain 1 is written)
- ! output: error control
- integer(i4b),intent(out)                :: err           ! error code
- character(*),intent(out)                :: message       ! error message
- ! --------------------------------------------------------------------------------------------------------
- ! dummy variables
- 
+ type(var_info),intent(in)                   :: indx_meta(:)  ! index metadata
+ type(gru_hru_dom_time_intVec),intent(in)    :: indx_data     ! index vars
+ integer(i4b),intent(out)                    :: err           ! error code
+ character(*),intent(out)                    :: message       ! error message
  ! local variables
  integer(i4b)                       :: ncid          ! netcdf file id
- integer(i4b),allocatable           :: ncVarID(:)    ! netcdf variable id
- integer(i4b)                       :: ncSnowID      ! index variable id
- integer(i4b)                       :: ncSoilID      ! index variable id
- integer(i4b)                       :: nSoil         ! number of soil layers
- integer(i4b)                       :: nSnow         ! number of snow layers
- integer(i4b)                       :: nLayers       ! number of total layers
+ integer(i4b),allocatable           :: ncVarID(:)    ! netcdf variable id (prog + routing + optional glacier bvars)
+ integer(i4b)                       :: ncDomTypeID   ! domType variable id
+ integer(i4b)                       :: ncIdxID(4)    ! nSnow/nLake/nSoil/nGlce variable ids
+ integer(i4b)                       :: nSnow,nLake,nSoil,nGlce,nLayers
  integer(i4b),parameter             :: nScalar=1     ! size of a scalar
- integer(i4b)                       :: nProgVars     ! number of prognostic variables written to state file
- integer(i4b)                       :: scalar_val
- integer(i4b)                       :: varID
- integer(i4b)                       :: hruDimID      ! variable dimension ID
- integer(i4b)                       :: gruDimID      ! variable dimension ID
- integer(i4b)                       :: tdhDimID      ! variable dimension ID
- integer(i4b)                       :: scalDimID     ! variable dimension ID
- integer(i4b)                       :: specDimID     ! variable dimension ID
- integer(i4b)                       :: midSnowDimID  ! variable dimension ID
- integer(i4b)                       :: midSoilDimID  ! variable dimension ID
- integer(i4b)                       :: midTotoDimID  ! variable dimension ID
- integer(i4b)                       :: ifcSnowDimID  ! variable dimension ID
- integer(i4b)                       :: ifcSoilDimID  ! variable dimension ID
- integer(i4b)                       :: ifcTotoDimID  ! variable dimension ID
- character(len=32),parameter        :: hruDimName    ='hru'      ! dimension name for HRUs
- character(len=32),parameter        :: gruDimName    ='gru'      ! dimension name for GRUs
- character(len=32),parameter        :: tdhDimName    ='tdh'      ! dimension name for time-delay basin variables
- character(len=32),parameter        :: scalDimName   ='scalarv'  ! dimension name for scalar data
- character(len=32),parameter        :: specDimName   ='spectral' ! dimension name for spectral bands
- character(len=32),parameter        :: midSnowDimName='midSnow'  ! dimension name for snow-only layers
- character(len=32),parameter        :: midSoilDimName='midSoil'  ! dimension name for soil-only layers
- character(len=32),parameter        :: midTotoDimName='midToto'  ! dimension name for layered varaiables
- character(len=32),parameter        :: ifcSnowDimName='ifcSnow'  ! dimension name for snow-only layers
- character(len=32),parameter        :: ifcSoilDimName='ifcSoil'  ! dimension name for soil-only layers
- character(len=32),parameter        :: ifcTotoDimName='ifcToto'  ! dimension name for layered variables
- integer(i4b)                       :: cHRU          ! count of HRUs
- integer(i4b)                       :: iHRU          ! index of HRUs
- integer(i4b)                       :: iGRU          ! index of GRUs
- integer(i4b)                       :: iVar          ! variable index
+ integer(i4b)                       :: nProgVars     ! number of prognostic variables
+ integer(i4b)                       :: hruDimID,gruDimID,domDimID,tdhDimID,nglDimID
+ integer(i4b)                       :: scalDimID,specDimID
+ integer(i4b)                       :: midSnowDimID,midLakeDimID,midSoilDimID,midGlceDimID,midTotoDimID
+ integer(i4b)                       :: ifcSnowDimID,ifcLakeDimID,ifcSoilDimID,ifcGlceDimID,ifcTotoDimID
+ integer(i4b)                       :: cHRU          ! HRU position in the restart file (== hru_nc)
+ integer(i4b)                       :: hruFileDim    ! length of the hru dimension
+ integer(i4b)                       :: nGlac         ! number of glaciers in the GRU
+ integer(i4b)                       :: iHRU,iGRU,iDOM,iVar,i
+ integer(i4b),dimension(4)          :: nidx          ! index-var lookup ids
+ integer(i4b),dimension(7)          :: ngdx          ! glacier bvar lookup ids
+ integer(i4b)                       :: size_prog     ! ncVarID slots for prog + routing (+ glacier bvars)
  character(len=256)                 :: cmessage      ! downstream error message
  ! --------------------------------------------------------------------------------------------------------
- 
- ! initialize error control
  err=0; message='writeRestart/'
- 
- ! size of prognostic variable vector
  nProgVars = size(prog_meta)
- allocate(ncVarID(nProgVars+1))     ! include 1 additional basin variable in ID array (possibly more later)
- 
+ nidx = (/iLookINDEX%nSnow, iLookINDEX%nLake, iLookINDEX%nSoil, iLookINDEX%nGlce/)
+
+ ! size the hru dimension so every hru_nc in this batch is a valid index
+ hruFileDim = 0
+ do iGRU=1,nGRU
+   do iHRU=1,gru_struc(iGRU)%hruCount
+     hruFileDim = max(hruFileDim, gru_struc(iGRU)%hruInfo(iHRU)%hru_nc)
+   end do
+ end do
+
+ size_prog = nProgVars + 1  ! +1 for the routing future runoff variable
+ if(maxGlaciers > 0)then
+   ngdx = (/iLookBVAR%basin__GlacierStorage, iLookBVAR%updateJulDay, iLookBVAR%glacierAblArea, &
+            iLookBVAR%glacierAccArea, iLookBVAR%glacIceRunoffFuture, iLookBVAR%glacSnowRunoffFuture, &
+            iLookBVAR%glacFirnRunoffFuture/)
+   size_prog = size_prog + size(ngdx)
+ endif
+ allocate(ncVarID(size_prog))
+
  ! create file
- err = nf90_create(trim(filename),nf90_classic_model,ncid)
+ err = nf90_create(trim(filename),NF90_NETCDF4,ncid)
  message='iCreate[create]'; call netcdf_err(err,message); if(err/=0)return
- 
- ! create file
-  err = nf90_create(trim(filename),NF90_NETCDF4,ncid)
-  message='iCreate[create]'; call netcdf_err(err,message); if(err/=0)return
- 
-  ! define dimensions, NOTE, we only write one HRU per GRU for now
-                      err = nf90_def_dim(ncid,trim(gruDimName)    ,nGRU             ,    gruDimID); message='iCreate[gru]'     ; call netcdf_err(err,message); if(err/=0)return
-                      err = nf90_def_dim(ncid,trim(hruDimName)    ,nGRU             ,    hruDimID); message='iCreate[hru]'     ; call netcdf_err(err,message); if(err/=0)return
-                      err = nf90_def_dim(ncid,trim(tdhDimName)    ,nTimeDelay       ,    tdhDimID); message='iCreate[tdh]'     ; call netcdf_err(err,message); if(err/=0)return
-                      err = nf90_def_dim(ncid,trim(scalDimName)   ,nScalar          ,   scalDimID); message='iCreate[scalar]'  ; call netcdf_err(err,message); if(err/=0)return
-                      err = nf90_def_dim(ncid,trim(specDimName)   ,nSpecBand        ,   specDimID); message='iCreate[spectral]'; call netcdf_err(err,message); if(err/=0)return
-                      err = nf90_def_dim(ncid,trim(midTotoDimName),maxLayers        ,midTotoDimID); message='iCreate[midToto]' ; call netcdf_err(err,message); if(err/=0)return
-                      err = nf90_def_dim(ncid,trim(ifcTotoDimName),maxLayers+1      ,ifcTotoDimID); message='iCreate[ifcToto]' ; call netcdf_err(err,message); if(err/=0)return
-  if(maxSoilLayers>0) err = nf90_def_dim(ncid,trim(midSoilDimName),maxSoilLayers    ,midSoilDimID); message='iCreate[midSoil]' ; call netcdf_err(err,message); if(err/=0)return
-  if(maxSoilLayers>0) err = nf90_def_dim(ncid,trim(ifcSoilDimName),maxSoilLayers+1  ,ifcSoilDimID); message='iCreate[ifcSoil]' ; call netcdf_err(err,message); if(err/=0)return
-  if(maxSnowLayers>0) err = nf90_def_dim(ncid,trim(midSnowDimName),maxSnowLayers    ,midSnowDimID); message='iCreate[midSnow]' ; call netcdf_err(err,message); if(err/=0)return
-  if(maxSnowLayers>0) err = nf90_def_dim(ncid,trim(ifcSnowDimName),maxSnowLayers+1  ,ifcSnowDimID); message='iCreate[ifcSnow]' ; call netcdf_err(err,message); if(err/=0)return
-  ! re-initialize error control
-  err=0; message='writeRestart/'
- 
- ! define prognostic variables
+
+ ! define dimensions
+                     err = nf90_def_dim(ncid,'gru'    ,nGRU           ,    gruDimID); message='iCreate[gru]'    ; call netcdf_err(err,message); if(err/=0)return
+                     err = nf90_def_dim(ncid,'hru'    ,hruFileDim     ,    hruDimID); message='iCreate[hru]'    ; call netcdf_err(err,message); if(err/=0)return
+                     err = nf90_def_dim(ncid,'dom'    ,max(maxDOM,1)  ,    domDimID); message='iCreate[dom]'    ; call netcdf_err(err,message); if(err/=0)return
+                     err = nf90_def_dim(ncid,'tdh'    ,nTimeDelay     ,    tdhDimID); message='iCreate[tdh]'    ; call netcdf_err(err,message); if(err/=0)return
+ if(  maxGlaciers>0) err = nf90_def_dim(ncid,'glac'   ,maxGlaciers    ,    nglDimID); message='iCreate[glac]'   ; call netcdf_err(err,message); if(err/=0)return
+                     err = nf90_def_dim(ncid,'scalarv',nScalar        ,   scalDimID); message='iCreate[scalar]' ; call netcdf_err(err,message); if(err/=0)return
+                     err = nf90_def_dim(ncid,'spectral',nSpecBand     ,   specDimID); message='iCreate[spec]'   ; call netcdf_err(err,message); if(err/=0)return
+                     err = nf90_def_dim(ncid,'midToto',maxLayers      ,midTotoDimID); message='iCreate[midToto]'; call netcdf_err(err,message); if(err/=0)return
+                     err = nf90_def_dim(ncid,'ifcToto',maxLayers+1    ,ifcTotoDimID); message='iCreate[ifcToto]'; call netcdf_err(err,message); if(err/=0)return
+ if(maxSnowLayers>0) err = nf90_def_dim(ncid,'midSnow',maxSnowLayers  ,midSnowDimID); message='iCreate[midSnow]'; call netcdf_err(err,message); if(err/=0)return
+ if(maxSnowLayers>0) err = nf90_def_dim(ncid,'ifcSnow',maxSnowLayers+1,ifcSnowDimID); message='iCreate[ifcSnow]'; call netcdf_err(err,message); if(err/=0)return
+ if(maxLakeLayers>0) err = nf90_def_dim(ncid,'midLake',maxLakeLayers  ,midLakeDimID); message='iCreate[midLake]'; call netcdf_err(err,message); if(err/=0)return
+ if(maxLakeLayers>0) err = nf90_def_dim(ncid,'ifcLake',maxLakeLayers+1,ifcLakeDimID); message='iCreate[ifcLake]'; call netcdf_err(err,message); if(err/=0)return
+ if(maxSoilLayers>0) err = nf90_def_dim(ncid,'midSoil',maxSoilLayers  ,midSoilDimID); message='iCreate[midSoil]'; call netcdf_err(err,message); if(err/=0)return
+ if(maxSoilLayers>0) err = nf90_def_dim(ncid,'ifcSoil',maxSoilLayers+1,ifcSoilDimID); message='iCreate[ifcSoil]'; call netcdf_err(err,message); if(err/=0)return
+ if(maxGlceLayers>0) err = nf90_def_dim(ncid,'midGlce',maxGlceLayers  ,midGlceDimID); message='iCreate[midGlce]'; call netcdf_err(err,message); if(err/=0)return
+ if(maxGlceLayers>0) err = nf90_def_dim(ncid,'ifcGlce',maxGlceLayers+1,ifcGlceDimID); message='iCreate[ifcGlce]'; call netcdf_err(err,message); if(err/=0)return
+ err=0; message='writeRestart/'
+
+ ! define domType(dom,hru)
+ err = nf90_def_var(ncid,'domType',nf90_int,(/domDimID,hruDimID/),ncDomTypeID)
+ message='iCreate[domType]'; call netcdf_err(err,message); if(err/=0)return
+
+ ! define prognostic variables, shaped (dom,hru,<layer>)
  do iVar = 1,nProgVars
-   if (prog_meta(iVar)%varType==iLookvarType%unknown) cycle
- 
-   ! define variable
+   if (prog_meta(iVar)%varType==iLookVarType%unknown) cycle
    select case(prog_meta(iVar)%varType)
-    case(iLookVarType%scalarv);                      err = nf90_def_var(ncid,trim(prog_meta(iVar)%varName),nf90_double,(/hruDimID,  scalDimID /),ncVarID(iVar))
-    case(iLookVarType%wLength);                      err = nf90_def_var(ncid,trim(prog_meta(iVar)%varName),nf90_double,(/hruDimID,  specDimID /),ncVarID(iVar))
-    case(iLookVarType%midToto);                      err = nf90_def_var(ncid,trim(prog_meta(iVar)%varName),nf90_double,(/hruDimID,midTotoDimID/),ncVarID(iVar))
-    case(iLookVarType%ifcToto);                      err = nf90_def_var(ncid,trim(prog_meta(iVar)%varName),nf90_double,(/hruDimID,ifcTotoDimID/),ncVarID(iVar))
-    case(iLookVarType%midSoil); if (maxSoilLayers>0) err = nf90_def_var(ncid,trim(prog_meta(iVar)%varName),nf90_double,(/hruDimID,midSoilDimID/),ncVarID(iVar))
-    case(iLookVarType%ifcSoil); if (maxSoilLayers>0) err = nf90_def_var(ncid,trim(prog_meta(iVar)%varName),nf90_double,(/hruDimID,ifcSoilDimID/),ncVarID(iVar))
-    case(iLookVarType%midSnow); if (maxSnowLayers>0) err = nf90_def_var(ncid,trim(prog_meta(iVar)%varName),nf90_double,(/hruDimID,midSnowDimID/),ncVarID(iVar))
-    case(iLookVarType%ifcSnow); if (maxSnowLayers>0) err = nf90_def_var(ncid,trim(prog_meta(iVar)%varName),nf90_double,(/hruDimID,ifcSnowDimID/),ncVarID(iVar))
+    case(iLookVarType%scalarv);                      err = nf90_def_var(ncid,trim(prog_meta(iVar)%varName),nf90_double,(/domDimID,hruDimID,  scalDimID /),ncVarID(iVar))
+    case(iLookVarType%wLength);                      err = nf90_def_var(ncid,trim(prog_meta(iVar)%varName),nf90_double,(/domDimID,hruDimID,  specDimID /),ncVarID(iVar))
+    case(iLookVarType%midToto);                      err = nf90_def_var(ncid,trim(prog_meta(iVar)%varName),nf90_double,(/domDimID,hruDimID,midTotoDimID/),ncVarID(iVar))
+    case(iLookVarType%ifcToto);                      err = nf90_def_var(ncid,trim(prog_meta(iVar)%varName),nf90_double,(/domDimID,hruDimID,ifcTotoDimID/),ncVarID(iVar))
+    case(iLookVarType%midSnow); if (maxSnowLayers>0) err = nf90_def_var(ncid,trim(prog_meta(iVar)%varName),nf90_double,(/domDimID,hruDimID,midSnowDimID/),ncVarID(iVar))
+    case(iLookVarType%ifcSnow); if (maxSnowLayers>0) err = nf90_def_var(ncid,trim(prog_meta(iVar)%varName),nf90_double,(/domDimID,hruDimID,ifcSnowDimID/),ncVarID(iVar))
+    case(iLookVarType%midLake); if (maxLakeLayers>0) err = nf90_def_var(ncid,trim(prog_meta(iVar)%varName),nf90_double,(/domDimID,hruDimID,midLakeDimID/),ncVarID(iVar))
+    case(iLookVarType%ifcLake); if (maxLakeLayers>0) err = nf90_def_var(ncid,trim(prog_meta(iVar)%varName),nf90_double,(/domDimID,hruDimID,ifcLakeDimID/),ncVarID(iVar))
+    case(iLookVarType%midSoil); if (maxSoilLayers>0) err = nf90_def_var(ncid,trim(prog_meta(iVar)%varName),nf90_double,(/domDimID,hruDimID,midSoilDimID/),ncVarID(iVar))
+    case(iLookVarType%ifcSoil); if (maxSoilLayers>0) err = nf90_def_var(ncid,trim(prog_meta(iVar)%varName),nf90_double,(/domDimID,hruDimID,ifcSoilDimID/),ncVarID(iVar))
+    case(iLookVarType%midGlce); if (maxGlceLayers>0) err = nf90_def_var(ncid,trim(prog_meta(iVar)%varName),nf90_double,(/domDimID,hruDimID,midGlceDimID/),ncVarID(iVar))
+    case(iLookVarType%ifcGlce); if (maxGlceLayers>0) err = nf90_def_var(ncid,trim(prog_meta(iVar)%varName),nf90_double,(/domDimID,hruDimID,ifcGlceDimID/),ncVarID(iVar))
+    case default; cycle
    end select
- 
-  ! check errors
-   if(err/=0)then
-    message=trim(message)//trim(cmessage)//' [variable '//trim(prog_meta(iVar)%varName)//']'
-    return
-   end if
- 
-   ! add parameter description
-   err = nf90_put_att(ncid,ncVarID(iVar),'long_name',trim(prog_meta(iVar)%vardesc))
-   call netcdf_err(err,message)
- 
-   ! add parameter units
-   err = nf90_put_att(ncid,ncVarID(iVar),'units',trim(prog_meta(iVar)%varunit))
-   call netcdf_err(err,message)
- 
-  end do ! iVar
-  
-  ! define selected basin variables (derived) -- e.g., hillslope routing
-  err = nf90_def_var(ncid, trim(bvar_meta(iLookBVAR%routingRunoffFuture)%varName), nf90_double, (/gruDimID, tdhDimID /), ncVarID(nProgVars+1))
-  err = nf90_put_att(ncid,ncVarID(nProgVars+1),'long_name',trim(bvar_meta(iLookBVAR%routingRunoffFuture)%vardesc));   call netcdf_err(err,message)
-  err = nf90_put_att(ncid,ncVarID(nProgVars+1),'units'    ,trim(bvar_meta(iLookBVAR%routingRunoffFuture)%varunit));   call netcdf_err(err,message)
- 
-  ! define index variables - snow
-  err = nf90_def_var(ncid,trim(indx_meta(iLookINDEX%nSnow)%varName),nf90_int,(/hruDimID/),ncSnowID); call netcdf_err(err,message)
-  err = nf90_put_att(ncid,ncSnowID,'long_name',trim(indx_meta(iLookINDEX%nSnow)%vardesc));           call netcdf_err(err,message)
-  err = nf90_put_att(ncid,ncSnowID,'units'    ,trim(indx_meta(iLookINDEX%nSnow)%varunit));           call netcdf_err(err,message)
- 
-  ! define index variables - soil
-  err = nf90_def_var(ncid,trim(indx_meta(iLookINDEX%nSoil)%varName),nf90_int,(/hruDimID/),ncSoilID); call netcdf_err(err,message)
-  err = nf90_put_att(ncid,ncSoilID,'long_name',trim(indx_meta(iLookINDEX%nSoil)%vardesc));           call netcdf_err(err,message)
-  err = nf90_put_att(ncid,ncSoilID,'units'    ,trim(indx_meta(iLookINDEX%nSoil)%varunit));           call netcdf_err(err,message)
- 
-  ! end definition phase
-  err = nf90_enddef(ncid); call netcdf_err(err,message); if (err/=0) return
- 
- ! end definition phase
-!  err = nf90_enddef(ncid); call netcdf_err(err,message); if (err/=0) return
- 
- ! write variables
- do iGRU = 1,nGRU
-  do iHRU = 1,1 ! NOTE: only writing the first HRU for now since that is the only one we are using for restart, but may need to loop through all HRUs in the future if we want to use more than 1 HRU for restart
-   cHRU = iGRU !gru_struc(iGRU)%hruInfo(iHRU)%hru_ix
-    do iVar = 1,size(prog_meta)
-     ! excape if this variable is not used
-     if (prog_meta(iVar)%varType==iLookvarType%unknown) cycle
- 
-     ! actual number of layers (restart writes domain 1 only)
-     nSnow = summa_struct(1)%indxStruct%gru(iGRU)%hru(iHRU)%dom(1)%var(iLookINDEX%nSnow)%tim(checkpoint)%dat(1)
-     nSoil = gru_struc(iGRU)%hruInfo(iHRU)%domInfo(1)%nSoil
-     nLayers = nSoil + nSnow
+   if(err/=0)then; message=trim(message)//' [variable '//trim(prog_meta(iVar)%varName)//']'; return; end if
+   err = nf90_put_att(ncid,ncVarID(iVar),'long_name',trim(prog_meta(iVar)%vardesc)); call netcdf_err(err,message)
+   err = nf90_put_att(ncid,ncVarID(iVar),'units',trim(prog_meta(iVar)%varunit));     call netcdf_err(err,message)
+ end do ! iVar
 
-     ! write data
-     select case (prog_meta(iVar)%varType)
-     case(iLookVarType%scalarv);               err=nf90_put_var(ncid,ncVarID(iVar),(/prog_data%gru(iGRU)%hru(iHRU)%dom(1)%var(iVar)%tim(checkpoint)%dat/),start=(/cHRU,1/),count=(/1,nScalar  /))
-     case(iLookVarType%wlength);               err=nf90_put_var(ncid,ncVarID(iVar),(/prog_data%gru(iGRU)%hru(iHRU)%dom(1)%var(iVar)%tim(checkpoint)%dat/),start=(/cHRU,1/),count=(/1,nSpecBand/))
-     case(iLookVarType%midSoil);               err=nf90_put_var(ncid,ncVarID(iVar),(/prog_data%gru(iGRU)%hru(iHRU)%dom(1)%var(iVar)%tim(checkpoint)%dat/),start=(/cHRU,1/),count=(/1,nSoil    /))
-     case(iLookVarType%midToto);               err=nf90_put_var(ncid,ncVarID(iVar),(/prog_data%gru(iGRU)%hru(iHRU)%dom(1)%var(iVar)%tim(checkpoint)%dat/),start=(/cHRU,1/),count=(/1,nLayers  /))
-     case(iLookVarType%ifcSoil);  if (nSoil>0) err=nf90_put_var(ncid,ncVarID(iVar),(/prog_data%gru(iGRU)%hru(iHRU)%dom(1)%var(iVar)%tim(checkpoint)%dat/),start=(/cHRU,1/),count=(/1,nSoil+1  /))
-     case(iLookVarType%ifcToto);  if (nSoil>0) err=nf90_put_var(ncid,ncVarID(iVar),(/prog_data%gru(iGRU)%hru(iHRU)%dom(1)%var(iVar)%tim(checkpoint)%dat/),start=(/cHRU,1/),count=(/1,nLayers +1/))
-     case(iLookVarType%midSnow);  if (nSnow>0) err=nf90_put_var(ncid,ncVarID(iVar),(/prog_data%gru(iGRU)%hru(iHRU)%dom(1)%var(iVar)%tim(checkpoint)%dat/),start=(/cHRU,1/),count=(/1,nSnow    /))
-     case(iLookVarType%ifcSnow);  if (nSnow>0) err=nf90_put_var(ncid,ncVarID(iVar),(/prog_data%gru(iGRU)%hru(iHRU)%dom(1)%var(iVar)%tim(checkpoint)%dat/),start=(/cHRU,1/),count=(/1,nSnow+1  /))
-     ! lake / glacier-ice layers are not present in the (upland) domain 1 restart snapshot
-     case(iLookVarType%midLake, iLookVarType%ifcLake, iLookVarType%midGlce, iLookVarType%ifcGlce); cycle
-     case default; err=20; message=trim(message)//'unknown var type'; return
+ ! routing future runoff  (gru,tdh)
+ err = nf90_def_var(ncid, trim(bvar_meta(iLookBVAR%routingRunoffFuture)%varName), nf90_double, (/gruDimID, tdhDimID /), ncVarID(nProgVars+1))
+ if(err/=0)then; message=trim(message)//' [routingRunoffFuture]'; return; end if
+ err = nf90_put_att(ncid,ncVarID(nProgVars+1),'long_name',trim(bvar_meta(iLookBVAR%routingRunoffFuture)%vardesc)); call netcdf_err(err,message)
+ err = nf90_put_att(ncid,ncVarID(nProgVars+1),'units'    ,trim(bvar_meta(iLookBVAR%routingRunoffFuture)%varunit)); call netcdf_err(err,message)
+
+ ! glacier basin variables
+ if(maxGlaciers > 0)then
+   do i = 1,size(ngdx)
+     iVar = ngdx(i)
+     select case(bvar_meta(iVar)%varType)
+      case(iLookVarType%scalarv); err = nf90_def_var(ncid,trim(bvar_meta(iVar)%varName),nf90_double,(/gruDimID,scalDimID/),ncVarID(nProgVars+1+i))
+      case(iLookVarType%glacier); err = nf90_def_var(ncid,trim(bvar_meta(iVar)%varName),nf90_double,(/gruDimID,nglDimID /),ncVarID(nProgVars+1+i))
+      case default; err = nf90_def_var(ncid,trim(bvar_meta(iVar)%varName),nf90_double,(/gruDimID,nglDimID /),ncVarID(nProgVars+1+i))
      end select
-     
-     ! error check
-     if (err/=0) message=trim(message)//'writing variable:'//trim(prog_meta(iVar)%varName)
-     call netcdf_err(err,message); if (err/=0) return
-     err=0; message='writeRestart/'
-     
-    end do ! iVar loop
+     if(err/=0)then; message=trim(message)//' [variable '//trim(bvar_meta(iVar)%varName)//']'; return; end if
+     err = nf90_put_att(ncid,ncVarID(nProgVars+1+i),'long_name',trim(bvar_meta(iVar)%vardesc)); call netcdf_err(err,message)
+     err = nf90_put_att(ncid,ncVarID(nProgVars+1+i),'units',trim(bvar_meta(iVar)%varunit));     call netcdf_err(err,message)
+   end do
+ endif
 
-    ! write index variables (domain 1)
-    err=nf90_put_var(ncid,ncSnowID,(/summa_struct(1)%indxStruct%gru(iGRU)%hru(iHRU)%dom(1)%var(iLookINDEX%nSnow)%tim(checkpoint)%dat(1)/),start=(/cHRU/),count=(/1/))
-    err=nf90_put_var(ncid,ncSoilID,(/gru_struc(iGRU)%hruInfo(iHRU)%domInfo(1)%nSoil/),start=(/cHRU/),count=(/1/))
- 
-  ! write selected basin variables
-  err=nf90_put_var(ncid,ncVarID(nProgVars+1),(/bvar_data%gru(iGRU)%hru(iHRU)%var(iLookBVAR%routingRunoffFuture)%tim(checkpoint)%dat/),  start=(/iGRU/),count=(/1,nTimeDelay/))
-  end do ! iHRU loop
+ ! index variables nSnow/nLake/nSoil/nGlce  (dom,hru)
+ do i=1,size(nidx)
+   iVar = nidx(i)
+   err = nf90_def_var(ncid,trim(indx_meta(iVar)%varName),nf90_int,(/domDimID,hruDimID/),ncIdxID(i))
+   if(err/=0)then; message=trim(message)//' [variable '//trim(indx_meta(iVar)%varName)//']'; return; end if
+   err = nf90_put_att(ncid,ncIdxID(i),'long_name',trim(indx_meta(iVar)%vardesc)); call netcdf_err(err,message)
+   err = nf90_put_att(ncid,ncIdxID(i),'units'    ,trim(indx_meta(iVar)%varunit)); call netcdf_err(err,message)
+ end do
 
- end do  ! iGRU loop
+ err = nf90_enddef(ncid); call netcdf_err(err,message); if (err/=0) return
 
- ! close file
+ ! ----- write data -----
+ do iGRU = 1,nGRU
+  do iHRU = 1,gru_struc(iGRU)%hruCount
+   cHRU = gru_struc(iGRU)%hruInfo(iHRU)%hru_nc
+   do iDOM = 1,gru_struc(iGRU)%hruInfo(iHRU)%domCount
+
+    err = nf90_put_var(ncid,ncDomTypeID,(/gru_struc(iGRU)%hruInfo(iHRU)%domInfo(iDOM)%dom_type/),start=(/iDOM,cHRU/),count=(/1,1/))
+    if(err/=0)then; message=trim(message)//'writing domType'; call netcdf_err(err,message); return; endif
+
+    nSnow = indx_data%gru(iGRU)%hru(iHRU)%dom(iDOM)%var(iLookINDEX%nSnow)%tim(checkpoint)%dat(1)
+    nLake = indx_data%gru(iGRU)%hru(iHRU)%dom(iDOM)%var(iLookINDEX%nLake)%tim(checkpoint)%dat(1)
+    nSoil = indx_data%gru(iGRU)%hru(iHRU)%dom(iDOM)%var(iLookINDEX%nSoil)%tim(checkpoint)%dat(1)
+    nGlce = indx_data%gru(iGRU)%hru(iHRU)%dom(iDOM)%var(iLookINDEX%nGlce)%tim(checkpoint)%dat(1)
+    nLayers = nSnow + nLake + nSoil + nGlce
+
+    do iVar = 1,nProgVars
+      if (prog_meta(iVar)%varType==iLookVarType%unknown) cycle
+      select case (prog_meta(iVar)%varType)
+       case(iLookVarType%scalarv);              err=nf90_put_var(ncid,ncVarID(iVar),(/prog_data%gru(iGRU)%hru(iHRU)%dom(iDOM)%var(iVar)%tim(checkpoint)%dat/),start=(/iDOM,cHRU,1/),count=(/1,1,nScalar  /))
+       case(iLookVarType%wlength);              err=nf90_put_var(ncid,ncVarID(iVar),(/prog_data%gru(iGRU)%hru(iHRU)%dom(iDOM)%var(iVar)%tim(checkpoint)%dat/),start=(/iDOM,cHRU,1/),count=(/1,1,nSpecBand/))
+       case(iLookVarType%midToto);              err=nf90_put_var(ncid,ncVarID(iVar),(/prog_data%gru(iGRU)%hru(iHRU)%dom(iDOM)%var(iVar)%tim(checkpoint)%dat/),start=(/iDOM,cHRU,1/),count=(/1,1,nLayers  /))
+       case(iLookVarType%ifcToto);              err=nf90_put_var(ncid,ncVarID(iVar),(/prog_data%gru(iGRU)%hru(iHRU)%dom(iDOM)%var(iVar)%tim(checkpoint)%dat/),start=(/iDOM,cHRU,1/),count=(/1,1,nLayers+1/))
+       case(iLookVarType%midSnow); if (nSnow>0) err=nf90_put_var(ncid,ncVarID(iVar),(/prog_data%gru(iGRU)%hru(iHRU)%dom(iDOM)%var(iVar)%tim(checkpoint)%dat/),start=(/iDOM,cHRU,1/),count=(/1,1,nSnow    /))
+       case(iLookVarType%ifcSnow); if (nSnow>0) err=nf90_put_var(ncid,ncVarID(iVar),(/prog_data%gru(iGRU)%hru(iHRU)%dom(iDOM)%var(iVar)%tim(checkpoint)%dat/),start=(/iDOM,cHRU,1/),count=(/1,1,nSnow+1  /))
+       case(iLookVarType%midLake); if (nLake>0) err=nf90_put_var(ncid,ncVarID(iVar),(/prog_data%gru(iGRU)%hru(iHRU)%dom(iDOM)%var(iVar)%tim(checkpoint)%dat/),start=(/iDOM,cHRU,1/),count=(/1,1,nLake    /))
+       case(iLookVarType%ifcLake); if (nLake>0) err=nf90_put_var(ncid,ncVarID(iVar),(/prog_data%gru(iGRU)%hru(iHRU)%dom(iDOM)%var(iVar)%tim(checkpoint)%dat/),start=(/iDOM,cHRU,1/),count=(/1,1,nLake+1  /))
+       case(iLookVarType%midSoil); if (nSoil>0) err=nf90_put_var(ncid,ncVarID(iVar),(/prog_data%gru(iGRU)%hru(iHRU)%dom(iDOM)%var(iVar)%tim(checkpoint)%dat/),start=(/iDOM,cHRU,1/),count=(/1,1,nSoil    /))
+       case(iLookVarType%ifcSoil); if (nSoil>0) err=nf90_put_var(ncid,ncVarID(iVar),(/prog_data%gru(iGRU)%hru(iHRU)%dom(iDOM)%var(iVar)%tim(checkpoint)%dat/),start=(/iDOM,cHRU,1/),count=(/1,1,nSoil+1  /))
+       case(iLookVarType%midGlce); if (nGlce>0) err=nf90_put_var(ncid,ncVarID(iVar),(/prog_data%gru(iGRU)%hru(iHRU)%dom(iDOM)%var(iVar)%tim(checkpoint)%dat/),start=(/iDOM,cHRU,1/),count=(/1,1,nGlce    /))
+       case(iLookVarType%ifcGlce); if (nGlce>0) err=nf90_put_var(ncid,ncVarID(iVar),(/prog_data%gru(iGRU)%hru(iHRU)%dom(iDOM)%var(iVar)%tim(checkpoint)%dat/),start=(/iDOM,cHRU,1/),count=(/1,1,nGlce+1  /))
+       case default; err=20; message=trim(message)//'unknown var type'; return
+      end select
+      if (err/=0)then; message=trim(message)//'writing variable:'//trim(prog_meta(iVar)%varName); call netcdf_err(err,message); return; endif
+      err=0; message='writeRestart/'
+    end do ! iVar
+
+    ! index variables
+    err=nf90_put_var(ncid,ncIdxID(1),(/nSnow/),start=(/iDOM,cHRU/),count=(/1,1/)); if(err/=0)goto 900
+    err=nf90_put_var(ncid,ncIdxID(2),(/nLake/),start=(/iDOM,cHRU/),count=(/1,1/)); if(err/=0)goto 900
+    err=nf90_put_var(ncid,ncIdxID(3),(/nSoil/),start=(/iDOM,cHRU/),count=(/1,1/)); if(err/=0)goto 900
+    err=nf90_put_var(ncid,ncIdxID(4),(/nGlce/),start=(/iDOM,cHRU/),count=(/1,1/)); if(err/=0)goto 900
+
+   end do ! iDOM
+  end do ! iHRU
+
+  ! basin (GRU) variables
+  err=nf90_put_var(ncid,ncVarID(nProgVars+1),(/bvar_data%gru(iGRU)%hru(1)%var(iLookBVAR%routingRunoffFuture)%tim(checkpoint)%dat/),start=(/iGRU,1/),count=(/1,nTimeDelay/))
+  if(err/=0)then; message=trim(message)//'writing routingRunoffFuture'; call netcdf_err(err,message); return; endif
+
+  if(maxGlaciers > 0)then
+    nGlac = gru_struc(iGRU)%nGlac
+    do i=1,size(ngdx)
+      iVar = ngdx(i)
+      select case(bvar_meta(iVar)%varType)
+       case(iLookVarType%scalarv); err=nf90_put_var(ncid,ncVarID(nProgVars+1+i),(/bvar_data%gru(iGRU)%hru(1)%var(iVar)%tim(checkpoint)%dat/),start=(/iGRU,1/),count=(/1,nScalar/))
+       case default;               err=nf90_put_var(ncid,ncVarID(nProgVars+1+i),(/bvar_data%gru(iGRU)%hru(1)%var(iVar)%tim(checkpoint)%dat/),start=(/iGRU,1/),count=(/1,max(nGlac,1)/))
+      end select
+      if(err/=0)then; message=trim(message)//'writing '//trim(bvar_meta(iVar)%varName); call netcdf_err(err,message); return; endif
+    end do
+  endif
+
+ end do  ! iGRU
+
  call nc_file_close(ncid,err,cmessage)
  if(err/=0)then;message=trim(message)//trim(cmessage);return;end if
-
- ! cleanup
  deallocate(ncVarID)
+ return
+
+ 900 continue
+ message=trim(message)//'writing index variables'; call netcdf_err(err,message)
 
 end subroutine writeRestart
 
