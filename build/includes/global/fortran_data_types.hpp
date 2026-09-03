@@ -1,6 +1,6 @@
 #pragma once
 
-// C prototypes for the opaque Fortran handle constructors/destructors used by the Summa-Actors
+// C prototypes for the opaque Fortran handle constructors/destructors used by the SUMMA-Actors
 // C++ layer.  These are defined in build/source/global/cppwrap_datatypes.f90.
 //
 // This header once declared ~100 get_/set_data_* accessors for serializing per-HRU state to C++

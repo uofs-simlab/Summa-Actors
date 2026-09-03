@@ -1,5 +1,5 @@
 #===============================================================================
-# List of Source Files for Summa-Actors
+# List of Source Files for SUMMA-Actors
 # All Variables are reachable from the parent scope
 #===============================================================================
 

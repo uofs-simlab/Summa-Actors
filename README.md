@@ -46,7 +46,7 @@ Summa-Actors/
 └── README.md
 ```
  * `bin/`: Contains the compiled SUMMA-Actors executable after building
- * `build/`: Contains the build scripts, the Summa-Actors specific source code, 
+ * `build/`: Contains the build scripts, the SUMMA-Actors specific source code, 
             and a Fortran version of SUMMA.
  * `utils/`: Contains utility scripts and Dockerfiles for building and running 
             SUMMA-Actors. **This folder also contains `dependencies`, 
@@ -54,9 +54,9 @@ Summa-Actors/
 
 
 ### Dependencies
-  SUMMA-Actors requires the following dependencies to be installed on you 
+  SUMMA-Actors requires the following dependencies to be installed on your 
   system:
-  * [SUMMA](https://github.com/ashleymedin/summa/tree/develop) 
+  * [SUMMA](https://github.com/CH-Earth/summa/tree/develop) 
   * g++
   * gfortran
   * [OpenBLAS](https://github.com/xianyi/OpenBLAS)
@@ -112,7 +112,7 @@ Usage: summa_actors -m master_file [-g startGRU countGRU] [-c config_file] [-b b
   Available options:
     -m, --master:         Define path/name of master file (can be specified in config)
     -g, --gru:            Run a subset of countGRU GRUs starting from index startGRU 
-    -c, --config:         Path name of the Summa-Actors config file (optional but recommended)
+    -c, --config:         Path name of the SUMMA-Actors config file (optional but recommended)
     -s, --suffix          Add fileSuffix to the output files
         --gen-config:     Generate a config file
     -b, --backup-server:  Start backup server, requires a server and config_file

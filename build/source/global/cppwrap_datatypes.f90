@@ -1,7 +1,7 @@
 module cppwrap_datatypes
 
 ! Minimal C-interoperable constructors/destructors for the opaque Fortran handles used by the
-! Summa-Actors C++ layer.
+! SUMMA-Actors C++ layer.
 !
 ! History: this module previously exported ~100 bind(C) accessor routines (get_data_ / set_data_
 ! families, the by_indx variants, get_scalar_data_fortran, new_handle_hru_type, ...) that existed
