@@ -32,6 +32,8 @@ Summa-Actors/
 ├── build/
 |   ├── build_scripts/
 │   |   ├── build.sh
+│   |   ├── build_mac.sh
+│   |   ├── build_cluster.sh
 |   ├── cmake/
 │   ├── includes/
 │   ├── source/
@@ -75,8 +77,9 @@ will automatically download and install the dependencies in the
 `utils/dependencies/install` folder. We have configured a script to 
 automatically look here for the dependencies.
 
-If you are using a module system, you can modify the `build.sh` script in the 
-`build/build_scripts` folder to point to the correct locations.
+The `build/build_scripts` folder contains `build.sh` (generic Linux, no module
+system), `build_mac.sh` (macOS + MacPorts GCC), and `build_cluster.sh` (HPC with
+a module system); edit whichever applies to point at your dependency locations.
 
 To install each dependency, follow these steps, some libraries will take some 
 time to compile: 
@@ -93,7 +96,7 @@ time to compile:
   2) cd Summa-Actors/build/
   3) git clone -b develop https://github.com/ashleymedin/summa.git
   4) cd build_scripts/
-  5) ./build.sh
+  5) ./build.sh              # generic Linux;  ./build_mac.sh on macOS;  ./build_cluster.sh on an HPC module system
 
 Note: If you did not install the dependencies in the `utils/dependencies` folder,
 you will need to modify append to the $CMAKE_PREFIX_PATH environment variables
