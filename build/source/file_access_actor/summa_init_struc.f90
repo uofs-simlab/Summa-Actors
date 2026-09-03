@@ -26,6 +26,7 @@ subroutine f_allocate(num_gru, err, message_r) bind(C, name="f_allocate")
                       indx_meta, &
                       bpar_meta, &
                       bvar_meta, &
+                      grid_meta, &
                       lookup_meta
 
   ! statistics metadata structures
@@ -45,8 +46,9 @@ subroutine f_allocate(num_gru, err, message_r) bind(C, name="f_allocate")
   integer(c_int),       intent(out)       :: err
   type(c_ptr),          intent(out)       :: message_r
   ! local variables
-  integer(i4b)                            :: iStruct,iGRU      ! looping variables
+  integer(i4b)                            :: iStruct,iGRU,iHRU ! looping variables
   integer(i4b)                            :: hruCount          ! number of local hydrologic response units
+  integer(i4b)                            :: domCount          ! number of domains in the current HRU
   character(len=256)                      :: message           ! error message
   character(len=256)                      :: cmessage          ! error message
   ! Start of subroutine
@@ -76,6 +78,9 @@ subroutine f_allocate(num_gru, err, message_r) bind(C, name="f_allocate")
     progStruct           => init_struc%progStruct          , & ! x%gru(:)%hru(:)%var(:)%dat -- model prognostic (state) variables
     diagStruct           => init_struc%diagStruct          , & ! x%gru(:)%hru(:)%var(:)%dat -- model diagnostic variables
     fluxStruct           => init_struc%fluxStruct          , & ! x%gru(:)%hru(:)%var(:)%dat -- model fluxes
+
+    ! glacier grid structure
+    gridStruct           => init_struc%gridStruct          , & ! x%gru(:)%grid(:)%var(:)%dat2(:,:) -- basin grid parameters and variables
 
     ! basin-average structures
     bparStruct           => init_struc%bparStruct          , & ! x%gru(:)%var(:)            -- basin-average parameters
@@ -110,7 +115,8 @@ subroutine f_allocate(num_gru, err, message_r) bind(C, name="f_allocate")
       case('flux'); call allocGlobal(flux_meta,  fluxStruct,  err, cmessage)   ! model fluxes
       case('bpar'); call allocGlobal(bpar_meta,  bparStruct,  err, cmessage)   ! basin-average parameters
       case('bvar'); call allocGlobal(bvar_meta,  bvarStruct,  err, cmessage)   ! basin-average variables
-      case('lookup'); call allocGlobal(lookup_meta, lookupStruct, err, cmessage) ! lookup tables    
+      case('grid'); call allocGlobal(grid_meta,  gridStruct,  err, cmessage)   ! basin glacier grid parameters and variables
+      case('lookup'); call allocGlobal(lookup_meta, lookupStruct, err, cmessage) ! lookup tables
       case('deriv'); cycle
       case default; err=20; message='unable to find structure name: '//trim(structInfo(iStruct)%structName)
     end select
@@ -149,6 +155,15 @@ subroutine f_allocate(num_gru, err, message_r) bind(C, name="f_allocate")
       call f_c_string_ptr(trim(message), message_r)
       return
     endif
+    do iHRU=1,hruCount
+      domCount = gru_struc(iGRU)%hruInfo(iHRU)%domCount
+      allocate(dt_init%gru(iGRU)%hru(iHRU)%dom(domCount),stat=err)
+      if(err/=0)then
+        message='problem allocating space for dt_init [DOM]'
+        call f_c_string_ptr(trim(message), message_r)
+        return
+      endif
+    end do
   end do
 
   nGRU = num_gru

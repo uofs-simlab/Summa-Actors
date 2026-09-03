@@ -336,9 +336,9 @@ subroutine f_initGru(indx_gru, handle_gru_data, output_buffer_steps, &
   call allocLocal(statBvar_meta(:)%var_info,gru_data%bvarStat,nSnow=0,nLake=0,nSoil=0,nGlce=0,nGlac=0,err=err,message=cmessage);
   if(err /= 0) then; message=trim(message)//cmessage; call f_c_string_ptr(trim(message), message_r);return;end if
 
-  ! basin glacier grid structure (geometry-update machinery not yet ported to the actor GRU driver; keep an empty grid list)
-  if(.not.associated(gru_data%gridStruct)) allocate(gru_data%gridStruct)
-  if(.not.allocated(gru_data%gridStruct%grid)) allocate(gru_data%gridStruct%grid(0))
+  ! basin glacier grid structure: deep-copy this GRU's grids from init_struc (filled by read_attrb)
+  call copyGridStruct(indx_gru, gru_data, err, cmessage)
+  if(err /= 0) then; message=trim(message)//cmessage; call f_c_string_ptr(trim(message), message_r);return;end if
 
   ! ****************************************************************************
   ! Initialize the HRUs
@@ -349,7 +349,42 @@ subroutine f_initGru(indx_gru, handle_gru_data, output_buffer_steps, &
   end do
 end subroutine f_initGru
 
-subroutine setupGRU_fortran(indx_gru, handle_gru_data, err, message_r) & 
+! deep-copy this GRU's glacier grid(s) from init_struc%gridStruct (populated by read_attrb) into
+! the actor GRU handle, so the glacier area-change model has its own working copy of the grid.
+subroutine copyGridStruct(indx_gru, gru_data, err, message)
+  USE summa_init_struc,only:init_struc
+  USE actor_data_types,only:gru_type
+  implicit none
+  integer(i4b),        intent(in)    :: indx_gru
+  type(gru_type),      pointer       :: gru_data
+  integer(i4b),        intent(out)   :: err
+  character(*),         intent(out)   :: message
+  integer(i4b)                       :: iGrid,iVar,nGrid,nVar,nx,ny
+
+  err=0; message="copyGridStruct/"
+
+  if(.not.associated(gru_data%gridStruct)) allocate(gru_data%gridStruct)
+  if(allocated(gru_data%gridStruct%grid)) deallocate(gru_data%gridStruct%grid)
+
+  if(.not.allocated(init_struc%gridStruct%gru)) then
+    allocate(gru_data%gridStruct%grid(0)); return
+  endif
+  nGrid = size(init_struc%gridStruct%gru(indx_gru)%grid)
+  allocate(gru_data%gridStruct%grid(nGrid))
+  do iGrid=1,nGrid
+    nVar = size(init_struc%gridStruct%gru(indx_gru)%grid(iGrid)%var)
+    allocate(gru_data%gridStruct%grid(iGrid)%var(nVar))
+    do iVar=1,nVar
+      nx = size(init_struc%gridStruct%gru(indx_gru)%grid(iGrid)%var(iVar)%dat2,1)
+      ny = size(init_struc%gridStruct%gru(indx_gru)%grid(iGrid)%var(iVar)%dat2,2)
+      allocate(gru_data%gridStruct%grid(iGrid)%var(iVar)%dat2(nx,ny))
+      gru_data%gridStruct%grid(iGrid)%var(iVar)%dat2 = &
+        init_struc%gridStruct%gru(indx_gru)%grid(iGrid)%var(iVar)%dat2
+    end do
+  end do
+end subroutine copyGridStruct
+
+subroutine setupGRU_fortran(indx_gru, handle_gru_data, err, message_r) &
     bind(C, name="setupGRU_fortran")
   USE summa_init_struc,only:init_struc
   USE actor_data_types,only:gru_type
@@ -491,8 +526,13 @@ subroutine runGRU_fortran(indx_gru, modelTimeStep, handle_gru_data, &
   USE globalData,only:gru_struc
   USE globalData,only:data_step                ! length of the data step (s)
   USE globalData,only:upland,glacCln1,glacCln2,glacDbr,wetland  ! horizontal domain types
+  USE globalData,only:elapsedUpdateArea        ! elapsed time for updating glacier and wetland area for all GRUs (s)
   USE qTimeDelay_module,only:qOverland         ! module to route water through an "unresolved" river network
   USE qTimeDelay_module,only:qGlacier          ! module to route water through the glacier reservoirs
+  USE glacAreaChange_module,only:time_updateGlacArea  ! check if glacier area needs to be updated
+  USE glacAreaChange_module,only:glacAreaChange       ! change glacier area with ice flow model
+  USE glacAreaChange_module,only:updateGlacDomain     ! change glacier domain area, elevation, layering
+  USE time_utils_module,only:elapsedSec        ! calculate the elapsed time
 
   USE mDecisions_module,only:&               ! look-up values for LAI decisions
       monthlyTable,& ! LAI/SAI taken directly from a monthly table for different vegetation classes
@@ -510,6 +550,8 @@ subroutine runGRU_fortran(indx_gru, modelTimeStep, handle_gru_data, &
   USE var_lookup,only:iLookDECISIONS         ! look-up values for model decisions
   USE var_lookup,only:iLookTYPE              ! look-up values for HRU types
   USE var_lookup,only:iLookID                ! look-up values for HRU IDs
+  USE var_lookup,only:iLookTIME              ! look-up values for model time data
+  USE var_lookup,only:iLookPARAM             ! look-up values for model parameters
   implicit none
   ! Dummy Variables
   integer(c_int), intent(in)       :: indx_gru
@@ -530,6 +572,40 @@ subroutine runGRU_fortran(indx_gru, modelTimeStep, handle_gru_data, &
   real(rkind)                      :: glacSnowMelt          ! glacier snow reservoir melt (m s-1)
   real(rkind)                      :: glacFirnMelt          ! glacier firn reservoir melt (m s-1)
   logical(lgt)                     :: hasGlacier            ! flag: the GRU has at least one glacier domain
+  ! ----- glacier geometry area-change (ported from run_oneGRU.f90) -------------------------------------------------------
+  integer(i4b)                     :: nglacDOM              ! number of glacier domains in the GRU
+  integer(i4b)                     :: nglacHRU              ! number of glacier HRUs in the GRU
+  integer(i4b)                     :: iglacDOM              ! glacier domain index
+  integer(i4b)                     :: iglacHRU              ! glacier HRU index
+  integer(i4b)                     :: nSnowD,nLakeD,nSoilD  ! layer counts of the current (debris) domain
+  real(rkind)                      :: soil_thick            ! soil(==debris) thickness of a debris domain (m)
+  real(rkind)                      :: sec_since_last_update ! seconds since last glacier area update
+  logical(lgt)                     :: updateGlacArea        ! flag to update glacier area this time step
+  logical(lgt)                     :: updateLakeArea        ! flag to update wetland area this time step
+  logical(lgt)                     :: check_updateGlacArea  ! flag to check (once per GRU) if glacier area needs updating
+  logical(lgt)                     :: has_glacier           ! flag: the current HRU has at least one glacier domain
+  real(rkind)                      :: remaining_area        ! upland residual area (m2)
+  real(rkind)                      :: remaining_elev        ! upland residual area-weighted elevation
+  real(rkind)                      :: remaining_tan_slope   ! upland residual area-weighted tan slope
+  real(rkind)                      :: remaining_aspect_sin  ! upland residual sine component for circular aspect mean
+  real(rkind)                      :: remaining_aspect_cos  ! upland residual cosine component for circular aspect mean
+  real(rkind),parameter            :: deg2rad=PI_D/180._rkind  ! convert degrees to radians
+  real(rkind),parameter            :: rad2deg=180._rkind/PI_D  ! convert radians to degrees
+  real(rkind),parameter            :: aspect_tol=1.e-12_rkind  ! tolerance for undefined circular mean
+  integer(i4b),dimension(8)        :: startUpdateArea,endUpdateArea  ! wall-clock time around the area update
+  real(rkind),allocatable          :: glac_elev(:)             ! elevation of each glacier domain (m)
+  real(rkind),allocatable          :: glac_tan_slope(:)        ! tan ground surface slope of each glacier domain (m/m)
+  real(rkind),allocatable          :: glac_aspect(:)           ! azimuth of each glacier domain (degrees E of N)
+  real(rkind),allocatable          :: glac_contourLength(:)    ! downslope contour length of each glacier domain (m)
+  real(rkind),allocatable          :: glac_debris_thick(:)     ! debris thickness of each glacier domain (m)
+  real(rkind),allocatable          :: massChange(:)            ! mean water-equivalent change rate since last update (kg m-2 s-1)
+  real(rkind),allocatable          :: glac_ablFrac(:)          ! ablation fraction of each glacier domain (-)
+  real(rkind),allocatable          :: glac_area(:)             ! area of each glacier domain (m2)
+  real(rkind),allocatable          :: iden_soil_mean(:)        ! mean soil(debris) density of each glacier domain (kg m-3)
+  real(rkind),allocatable          :: theta_sat_mean(:)        ! mean soil(debris) porosity of each glacier domain (-)
+  integer(i8b),allocatable         :: glac_hru(:)              ! HRU index of each glacier domain
+  integer(i4b),allocatable         :: nclean(:)                ! number of clean glacier domains in each glacier HRU
+  integer(i4b),allocatable         :: ndebris(:)               ! number of debris glacier domains in each glacier HRU
 
   call f_c_string_ptr(trim(message), message_r)
   call c_f_pointer(handle_gru_data, gru_data)
@@ -546,12 +622,54 @@ subroutine runGRU_fortran(indx_gru, modelTimeStep, handle_gru_data, &
   gru_data%bvarStruct%var(iLookBVAR%basin__GlacierArea)%dat(1)      = 0._dp
   glacIceMelt = 0._rkind; glacSnowMelt = 0._rkind; glacFirnMelt = 0._rkind
   hasGlacier = .false.
+  updateGlacArea = .false.
+  updateLakeArea = .false.
+  sec_since_last_update = 0._rkind
+  nglacDOM = 0
+  nglacHRU = 0
 
+  ! ----- zero lateral inflow and decide (once) whether glacier geometry is updated this step ---------------------------
+  check_updateGlacArea = .true.
   do iHRU = 1, size(gru_data%hru)
     do iDOM = 1, gru_struc(indx_gru)%hruInfo(iHRU)%domCount
+      typeDOM = gru_struc(indx_gru)%hruInfo(iHRU)%domInfo(iDOM)%dom_type
       gru_data%hru(iHRU)%fluxStruct%dom(iDOM)%var(iLookFLUX%mLayerColumnInflow)%dat(:) = 0._rkind
+      if(gru_data%hru(iHRU)%progStruct%dom(iDOM)%var(iLookPROG%DOMarea)%dat(1)==0._rkind) cycle
+      if(typeDOM==glacCln1 .or. typeDOM==glacCln2 .or. typeDOM==glacDbr)then
+        if(check_updateGlacArea)then
+          call time_updateGlacArea( &
+              gru_data%hru(iHRU)%timeStruct%var(iLookTIME%iyyy), gru_data%hru(iHRU)%timeStruct%var(iLookTIME%im),   &
+              gru_data%hru(iHRU)%timeStruct%var(iLookTIME%id),   gru_data%hru(iHRU)%timeStruct%var(iLookTIME%ih),   &
+              gru_data%hru(iHRU)%timeStruct%var(iLookTIME%imin),                                                    &
+              gru_data%hru(iHRU)%attrStruct%var(iLookATTR%latitude),                                                &
+              gru_data%bvarStruct%var(iLookBVAR%updateJulDay)%dat(1),                                               &
+              gru_data%bvarStruct%var(iLookBVAR%updateJulDayNext)%dat(1),                                           &
+              updateGlacArea, sec_since_last_update, err, cmessage)
+          if(err/=0)then; err=30; message=trim(message)//trim(cmessage); call f_c_string_ptr(trim(message), message_r); return; endif
+          check_updateGlacArea = .false.
+        endif
+      endif
     end do
   end do
+
+  ! ----- on an update year, count glacier domains / HRUs and allocate the area-change work arrays ---------------------
+  if(updateGlacArea)then
+    do iHRU = 1, size(gru_data%hru)
+      has_glacier = .false.
+      do iDOM = 1, gru_struc(indx_gru)%hruInfo(iHRU)%domCount
+        typeDOM = gru_struc(indx_gru)%hruInfo(iHRU)%domInfo(iDOM)%dom_type
+        if(typeDOM==glacCln1 .or. typeDOM==glacCln2 .or. typeDOM==glacDbr)then
+          nglacDOM = nglacDOM + 1
+          if(.not.has_glacier)then; has_glacier = .true.; nglacHRU = nglacHRU + 1; endif
+        endif
+      end do
+    end do
+    allocate(glac_elev(nglacDOM),glac_debris_thick(nglacDOM),glac_area(nglacDOM),glac_ablFrac(nglacDOM), &
+             massChange(nglacDOM),glac_hru(nglacDOM),iden_soil_mean(nglacDOM),theta_sat_mean(nglacDOM),  &
+             nclean(nglacHRU),ndebris(nglacHRU),glac_tan_slope(nglacDOM),glac_aspect(nglacDOM),          &
+             glac_contourLength(nglacDOM),stat=err)
+    if(err/=0)then; err=20; message=trim(message)//'problem allocating glacier area-change work arrays'; call f_c_string_ptr(trim(message), message_r); return; endif
+  endif
 
   do iHRU = 1, size(gru_data%hru)
     ! Give the HRU the up to date basin variables
@@ -645,8 +763,64 @@ subroutine runGRU_fortran(indx_gru, modelTimeStep, handle_gru_data, &
   ! ***********************************************************************************************************************
   ! ********** END LOOP THROUGH HRUS **************************************************************************************
   ! ***********************************************************************************************************************
-  ! NOTE: glacier geometry update (time_updateGlacArea / glacAreaChange / updateGlacDomain) is NOT yet ported to the
-  !       actors GRU driver -- glaciers run with static geometry.  See run_oneGRU.f90 in the bundled SUMMA.
+  ! if a year has passed since the last glacier-area update, gather the per-glacier-domain geometry and mass change
+  if(updateGlacArea)then
+    iglacHRU = 0; iglacDOM = 0
+    iden_soil_mean = 0._rkind; theta_sat_mean = 0._rkind
+    nclean = 0; ndebris = 0
+    do iHRU = 1, size(gru_data%hru)
+      has_glacier = .false.
+      do iDOM = 1, gru_struc(indx_gru)%hruInfo(iHRU)%domCount
+        typeDOM = gru_struc(indx_gru)%hruInfo(iHRU)%domInfo(iDOM)%dom_type
+        if(typeDOM/=glacCln1 .and. typeDOM/=glacCln2 .and. typeDOM/=glacDbr) cycle
+        associate(DOMarea          => gru_data%hru(iHRU)%progStruct%dom(iDOM)%var(iLookPROG%DOMarea)%dat(1),          &
+                  DOMelev          => gru_data%hru(iHRU)%progStruct%dom(iDOM)%var(iLookPROG%DOMelev)%dat(1),          &
+                  DOMtan_slope     => gru_data%hru(iHRU)%progStruct%dom(iDOM)%var(iLookPROG%DOMtan_slope)%dat(1),     &
+                  DOMaspect        => gru_data%hru(iHRU)%progStruct%dom(iDOM)%var(iLookPROG%DOMaspect)%dat(1),        &
+                  DOMcontourLength => gru_data%hru(iHRU)%progStruct%dom(iDOM)%var(iLookPROG%DOMcontourLength)%dat(1), &
+                  mLayerDepth      => gru_data%hru(iHRU)%progStruct%dom(iDOM)%var(iLookPROG%mLayerDepth)%dat)
+          iglacDOM = iglacDOM + 1
+          glac_hru(iglacDOM) = iHRU
+          if(.not.has_glacier)then; has_glacier = .true.; iglacHRU = iglacHRU + 1; endif
+          if(typeDOM==glacCln1 .or. typeDOM==glacCln2) nclean(iglacHRU)  = nclean(iglacHRU)  + 1
+          if(typeDOM==glacDbr)                         ndebris(iglacHRU) = ndebris(iglacHRU) + 1
+          if(DOMarea>0._rkind)then
+            nSnowD = gru_struc(indx_gru)%hruInfo(iHRU)%domInfo(iDOM)%nSnow
+            nLakeD = gru_struc(indx_gru)%hruInfo(iHRU)%domInfo(iDOM)%nLake
+            nSoilD = gru_struc(indx_gru)%hruInfo(iHRU)%domInfo(iDOM)%nSoil
+            glac_elev(iglacDOM)          = DOMelev
+            glac_area(iglacDOM)          = DOMarea
+            glac_tan_slope(iglacDOM)     = DOMtan_slope
+            glac_aspect(iglacDOM)        = DOMaspect
+            glac_contourLength(iglacDOM) = DOMcontourLength
+            massChange(iglacDOM)         = gru_data%hru(iHRU)%progStruct%dom(iDOM)%var(iLookPROG%glacMass4AreaChange)%dat(1)
+            if(typeDOM==glacDbr)then
+              soil_thick = sum(mLayerDepth(nSnowD+nLakeD+1:nSnowD+nLakeD+nSoilD))
+              iden_soil_mean(iglacDOM) = iden_soil_mean(iglacDOM) + &
+                  sum(gru_data%hru(iHRU)%mparStruct%dom(iDOM)%var(iLookPARAM%soil_dens_intr)%dat(1:nSoilD) &
+                      *mLayerDepth(nSnowD+nLakeD+1:nSnowD+nLakeD+nSoilD)) / soil_thick
+              theta_sat_mean(iglacDOM) = theta_sat_mean(iglacDOM) + &
+                  sum(gru_data%hru(iHRU)%mparStruct%dom(iDOM)%var(iLookPARAM%theta_sat)%dat(1:nSoilD) &
+                      *mLayerDepth(nSnowD+nLakeD+1:nSnowD+nLakeD+nSoilD)) / soil_thick
+              glac_debris_thick(iglacDOM) = soil_thick
+            else
+              glac_debris_thick(iglacDOM) = 0._rkind
+            endif
+          else
+            glac_elev(iglacDOM)          = realMissing
+            glac_tan_slope(iglacDOM)     = realMissing
+            glac_aspect(iglacDOM)        = realMissing
+            glac_contourLength(iglacDOM) = 0._rkind
+            glac_area(iglacDOM)          = 0._rkind
+            massChange(iglacDOM)         = 0._rkind
+            glac_debris_thick(iglacDOM)  = 0._rkind
+            iden_soil_mean(iglacDOM)     = 0._rkind
+            theta_sat_mean(iglacDOM)     = 0._rkind
+          endif
+        end associate
+      end do
+    end do
+  endif
 
   ! lapse glacier melt to the basin by routing through each glacier reservoir
   if(hasGlacier)then
@@ -704,6 +878,105 @@ subroutine runGRU_fortran(indx_gru, modelTimeStep, handle_gru_data, &
   gru_data%bvarStruct%var(iLookBVAR%averageRoutedRunoff)%dat(1) = &
       gru_data%bvarStruct%var(iLookBVAR%averageRoutedRunoff)%dat(1) + gru_data%bvarStruct%var(iLookBVAR%glacierRoutedRunoff)%dat(1)
   end associate
+
+  ! ----- update the glacier geometry (ice-flow area change + domain re-layering) ---------------------------------------
+  call date_and_time(values=startUpdateArea)
+  if(updateGlacArea)then
+    call glacAreaChange( &
+        sec_since_last_update, nglacHRU, nglacDOM, ndebris, nclean, glac_hru,              &
+        gru_struc(indx_gru)%nGlac, gru_struc(indx_gru)%glacInfo, gru_struc(indx_gru)%gridInfo, &
+        gru_data%gridStruct,                                                               &
+        massChange, glac_elev, glac_tan_slope, glac_aspect, glac_contourLength,            &
+        glac_debris_thick, iden_soil_mean, theta_sat_mean,                                 &
+        gru_data%hru(1)%bparStruct%var(iLookBPAR%debrisConc),                              &
+        gru_data%hru(1)%bparStruct%var(iLookBPAR%wallErosionRate),                         &
+        gru_data%hru(1)%bparStruct%var(iLookBPAR%debrisCritStress),                        &
+        gru_data%hru(1)%bparStruct%var(iLookBPAR%latMoraineWidth),                         &
+        gru_data%bvarStruct%var(iLookBVAR%glacierAblArea)%dat,                             &
+        gru_data%bvarStruct%var(iLookBVAR%glacierAccArea)%dat,                             &
+        glac_area, glac_ablFrac, err, cmessage)
+    if(err/=0)then; err=20; message=trim(message)//trim(cmessage); call f_c_string_ptr(trim(message), message_r); return; endif
+
+    ! push the new geometry / layering back into each glacier domain
+    iglacDOM = 0
+    do iHRU = 1, size(gru_data%hru)
+      do iDOM = 1, gru_struc(indx_gru)%hruInfo(iHRU)%domCount
+        typeDOM = gru_struc(indx_gru)%hruInfo(iHRU)%domInfo(iDOM)%dom_type
+        if(typeDOM/=glacCln1 .and. typeDOM/=glacCln2 .and. typeDOM/=glacDbr) cycle
+        iglacDOM = iglacDOM + 1
+        call updateGlacDomain( &
+            iglacDOM, glac_elev, glac_area, glac_tan_slope, glac_aspect, glac_contourLength, &
+            glac_ablFrac, glac_debris_thick, typeDOM,                                        &
+            gru_struc(indx_gru)%hruInfo(iHRU)%domInfo(iDOM)%nSnow,                           &
+            gru_struc(indx_gru)%hruInfo(iHRU)%domInfo(iDOM)%nLake,                           &
+            gru_struc(indx_gru)%hruInfo(iHRU)%domInfo(iDOM)%nSoil,                           &
+            gru_struc(indx_gru)%hruInfo(iHRU)%domInfo(iDOM)%nGlce,                           &
+            gru_data%hru(iHRU)%mparStruct%dom(iDOM), gru_data%hru(iHRU)%indxStruct%dom(iDOM), &
+            gru_data%hru(iHRU)%progStruct%dom(iDOM), gru_data%hru(iHRU)%diagStruct%dom(iDOM), &
+            gru_data%hru(iHRU)%fluxStruct%dom(iDOM), err, cmessage)
+        if(err/=0)then; err=20; message=trim(message)//trim(cmessage); call f_c_string_ptr(trim(message), message_r); return; endif
+      end do
+    end do
+    deallocate(glac_elev,glac_debris_thick,glac_area,glac_ablFrac,massChange,glac_hru,iden_soil_mean, &
+               theta_sat_mean,nclean,ndebris,glac_tan_slope,glac_aspect,glac_contourLength)
+  endif
+
+  ! recompute the upland domain residual coordinates from the updated non-upland areas
+  if(updateGlacArea .or. updateLakeArea)then
+    do iHRU = 1, size(gru_data%hru)
+      associate(HRUarea => gru_data%hru(iHRU)%attrStruct%var(iLookATTR%HRUarea),     &
+                HRUelev => gru_data%hru(iHRU)%attrStruct%var(iLookATTR%elevation),   &
+                HRUslp  => gru_data%hru(iHRU)%attrStruct%var(iLookATTR%tan_slope),   &
+                HRUasp  => gru_data%hru(iHRU)%attrStruct%var(iLookATTR%aspect))
+        remaining_area       = HRUarea
+        remaining_elev       = HRUarea*HRUelev
+        remaining_tan_slope  = HRUarea*HRUslp
+        remaining_aspect_sin = HRUarea*sin(HRUasp*deg2rad)
+        remaining_aspect_cos = HRUarea*cos(HRUasp*deg2rad)
+      end associate
+      do iDOM = 1, gru_struc(indx_gru)%hruInfo(iHRU)%domCount
+        typeDOM = gru_struc(indx_gru)%hruInfo(iHRU)%domInfo(iDOM)%dom_type
+        associate(DOMarea      => gru_data%hru(iHRU)%progStruct%dom(iDOM)%var(iLookPROG%DOMarea)%dat(1),      &
+                  DOMelev      => gru_data%hru(iHRU)%progStruct%dom(iDOM)%var(iLookPROG%DOMelev)%dat(1),      &
+                  DOMtan_slope => gru_data%hru(iHRU)%progStruct%dom(iDOM)%var(iLookPROG%DOMtan_slope)%dat(1), &
+                  DOMaspect    => gru_data%hru(iHRU)%progStruct%dom(iDOM)%var(iLookPROG%DOMaspect)%dat(1))
+          if(typeDOM/=upland .and. DOMarea>0._rkind)then
+            remaining_area       = remaining_area       - DOMarea
+            remaining_elev       = remaining_elev       - DOMarea*DOMelev
+            remaining_tan_slope  = remaining_tan_slope  - DOMarea*DOMtan_slope
+            remaining_aspect_sin = remaining_aspect_sin - DOMarea*sin(DOMaspect*deg2rad)
+            remaining_aspect_cos = remaining_aspect_cos - DOMarea*cos(DOMaspect*deg2rad)
+          endif
+        end associate
+      end do
+      do iDOM = 1, gru_struc(indx_gru)%hruInfo(iHRU)%domCount
+        typeDOM = gru_struc(indx_gru)%hruInfo(iHRU)%domInfo(iDOM)%dom_type
+        if(typeDOM/=upland) cycle
+        associate(DOMarea          => gru_data%hru(iHRU)%progStruct%dom(iDOM)%var(iLookPROG%DOMarea)%dat(1),      &
+                  DOMelev          => gru_data%hru(iHRU)%progStruct%dom(iDOM)%var(iLookPROG%DOMelev)%dat(1),      &
+                  DOMtan_slope     => gru_data%hru(iHRU)%progStruct%dom(iDOM)%var(iLookPROG%DOMtan_slope)%dat(1), &
+                  DOMaspect        => gru_data%hru(iHRU)%progStruct%dom(iDOM)%var(iLookPROG%DOMaspect)%dat(1),    &
+                  DOMcontourLength => gru_data%hru(iHRU)%progStruct%dom(iDOM)%var(iLookPROG%DOMcontourLength)%dat(1))
+          DOMarea = remaining_area
+          if(remaining_area>0._rkind)then
+            DOMelev      = remaining_elev/remaining_area
+            DOMtan_slope = remaining_tan_slope/remaining_area
+            if(remaining_aspect_sin**2 + remaining_aspect_cos**2 > aspect_tol)then
+              DOMaspect = modulo(atan2(remaining_aspect_sin,remaining_aspect_cos)*rad2deg,360._rkind)
+            else
+              DOMaspect = 0._rkind
+            endif
+          else
+            DOMelev = realMissing; DOMarea = 0._rkind
+            DOMtan_slope = realMissing; DOMaspect = realMissing
+            DOMcontourLength = 0._rkind
+          endif
+        end associate
+      end do
+    end do
+  endif
+  call date_and_time(values=endUpdateArea)
+  elapsedUpdateArea = elapsedUpdateArea + elapsedSec(startUpdateArea,endUpdateArea)
 
   ! update hru's bvarStruct with the basin's bvarStruct
   do iHRU = 1, size(gru_data%hru)
