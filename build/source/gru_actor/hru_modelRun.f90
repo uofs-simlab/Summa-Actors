@@ -52,7 +52,7 @@ USE var_lookup,only:iLookDECISIONS         ! look-up values for model decisions
 ! Noah-MP parameters
 USE NOAHMP_VEG_PARAMETERS,only:SAIM,LAIM   ! 2-d tables for stem area index and leaf area index (vegType,month)
 USE NOAHMP_VEG_PARAMETERS,only:HVT,HVB     ! height at the top and bottom of vegetation (vegType)
-USE noahmp_globals,only:RSMIN
+! USE noahmp_globals,only:RSMIN
 
 ! provide access to the named variables that describe model decisions
 USE mDecisions_module,only:&               ! look-up values for LAI decisions
@@ -85,6 +85,7 @@ subroutine runPhysics(indxGRU, indxHRU, modelTimeStep, hru_data, &
   ! global data
   USE globalData,only:gru_struc
   USE globalData,only:model_decisions          ! model decision structure
+  use noahmp_globals,only:noahmp_context
 
   implicit none
   ! Dummy Variables
@@ -102,6 +103,7 @@ subroutine runPhysics(indxGRU, indxHRU, modelTimeStep, hru_data, &
   logical(lgt)                              :: computeVegFluxFlag     ! flag to indicate if we are computing fluxes over vegetation (.false. means veg is buried with snow)
   real(dp)                                  :: notUsed_canopyDepth    ! NOT USED: canopy depth (m)
   real(dp)                                  :: notUsed_exposedVAI     ! NOT USED: exposed vegetation area index (m2 m-2)
+  type(noahmp_context) :: noahmp
   ! ---------------------------------------------------------------------------------------
   hruId = gru_struc(indxGRU)%hruInfo(indxHRU)%hru_id
 
@@ -116,10 +118,15 @@ subroutine runPhysics(indxGRU, indxHRU, modelTimeStep, hru_data, &
   if(modelTimeStep==1)then
       ! get vegetation phenology
       ! (compute the exposed LAI and SAI and whether veg is buried by snow)
+      noahmp%SAIM = SAIM
+      noahmp%LAIM = LAIM
+      noahmp%HVT = HVT
+      noahmp%HVB = HVB
       call vegPhenlgy(&
                       ! model control
                       gru_struc(indxGRU)%hruInfo(indxHRU)%nSnow,& ! intent(in):    number of snow layers
                       model_decisions,                          & ! intent(in):    model decisions
+                      noahmp, &
                       hru_data%fracJulDay,                      & ! intent(in):    fractional julian days since the start of year
                       hru_data%yearLength,                      & ! intent(in):    number of days in the current year
                       ! input/output: data structures
@@ -167,19 +174,19 @@ subroutine runPhysics(indxGRU, indxHRU, modelTimeStep, hru_data, &
               hru_data%typeStruct%var(iLookTYPE%soilTypeIndex),     & ! soil type
               hru_data%typeStruct%var(iLookTYPE%slopeTypeIndex),    & ! slope type index
               10000_i4b,                                            & ! number of soil layers
-              urbanVegCategory)                                       ! vegetation category for urban areas
+              urbanVegCategory,noahmp)                                       ! vegetation category for urban areas
  
   ! overwrite the minimum resistance
-  if(overwriteRSMIN) RSMIN = hru_data%mparStruct%var(iLookPARAM%minStomatalResistance)%dat(1)
+  if(overwriteRSMIN) noahmp%RSMIN = hru_data%mparStruct%var(iLookPARAM%minStomatalResistance)%dat(1)
   
   ! overwrite the vegetation height
-  HVT(hru_data%typeStruct%var(iLookTYPE%vegTypeIndex)) = hru_data%mparStruct%var(iLookPARAM%heightCanopyTop)%dat(1)
-  HVB(hru_data%typeStruct%var(iLookTYPE%vegTypeIndex)) = hru_data%mparStruct%var(iLookPARAM%heightCanopyBottom)%dat(1)
+  noahmp%HVT(hru_data%typeStruct%var(iLookTYPE%vegTypeIndex)) = hru_data%mparStruct%var(iLookPARAM%heightCanopyTop)%dat(1)
+  noahmp%HVB(hru_data%typeStruct%var(iLookTYPE%vegTypeIndex)) = hru_data%mparStruct%var(iLookPARAM%heightCanopyBottom)%dat(1)
 
   ! overwrite the tables for LAI and SAI
   if(model_decisions(iLookDECISIONS%LAI_method)%iDecision == specified)then
-    SAIM(hru_data%typeStruct%var(iLookTYPE%vegTypeIndex),:) = hru_data%mparStruct%var(iLookPARAM%winterSAI)%dat(1)
-    LAIM(hru_data%typeStruct%var(iLookTYPE%vegTypeIndex),:) = hru_data%mparStruct%var(iLookPARAM%summerLAI)%dat(1)*greenVegFrac_monthly
+    noahmp%SAIM(hru_data%typeStruct%var(iLookTYPE%vegTypeIndex),:) = hru_data%mparStruct%var(iLookPARAM%winterSAI)%dat(1)
+    noahmp%LAIM(hru_data%typeStruct%var(iLookTYPE%vegTypeIndex),:) = hru_data%mparStruct%var(iLookPARAM%summerLAI)%dat(1)*greenVegFrac_monthly
   end if
  
   ! compute derived forcing variables
@@ -194,6 +201,7 @@ subroutine runPhysics(indxGRU, indxHRU, modelTimeStep, hru_data, &
         hru_data%tmZoneOffsetFracDay,         & ! time zone offset in fractional days
         err,cmessage)                  ! error control
   if(err/=0)then;err=20; message=trim(message)//cmessage; return; endif
+  !print*, 'forc', indxGRU, modelTimeStep, hru_data%forcStruct%var
 
   ! run the model for a single HRU
   call coupled_em(&
@@ -205,6 +213,7 @@ subroutine runPhysics(indxGRU, indxHRU, modelTimeStep, hru_data, &
                   hru_data%fracJulDay,         & ! intent(in):    fractional julian days since the start of year
                   hru_data%yearLength,         & ! intent(in):    number of days in the current year
                   ! data structures (input)
+                  noahmp, &
                   hru_data%typeStruct,         & ! intent(in):    local classification of soil veg etc. for each HRU
                   hru_data%attrStruct,         & ! intent(in):    local attributes for each HRU
                   hru_data%forcStruct,         & ! intent(in):    model forcing data
