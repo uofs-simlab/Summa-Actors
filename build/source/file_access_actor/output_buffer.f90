@@ -337,35 +337,35 @@ subroutine f_allocateOutputBuffer(max_steps, num_gru, err, message_r) &
   ! ****************************************************************************
   ! *** Initialize output structure
   ! ****************************************************************************
-  allocate(summa_struct(1))
+  if (.not.allocated(summa_struct)) allocate(summa_struct(1))
   ! Statistics Structures
-  allocate(summa_struct(1)%forcStat%gru(num_gru))
-  allocate(summa_struct(1)%progStat%gru(num_gru))
-  allocate(summa_struct(1)%diagStat%gru(num_gru))
-  allocate(summa_struct(1)%fluxStat%gru(num_gru))
-  allocate(summa_struct(1)%indxStat%gru(num_gru))
-  allocate(summa_struct(1)%bvarStat%gru(num_gru))
+  if (.not. allocated(summa_struct(1)%forcStat%gru)) allocate(summa_struct(1)%forcStat%gru(num_gru))
+  if (.not. allocated(summa_struct(1)%progStat%gru)) allocate(summa_struct(1)%progStat%gru(num_gru))
+  if (.not. allocated(summa_struct(1)%diagStat%gru)) allocate(summa_struct(1)%diagStat%gru(num_gru))
+  if (.not. allocated(summa_struct(1)%fluxStat%gru)) allocate(summa_struct(1)%fluxStat%gru(num_gru))
+  if (.not. allocated(summa_struct(1)%indxStat%gru)) allocate(summa_struct(1)%indxStat%gru(num_gru))
+  if (.not. allocated(summa_struct(1)%bvarStat%gru)) allocate(summa_struct(1)%bvarStat%gru(num_gru))
   ! Primary Data Structures (scalars)
-  allocate(summa_struct(1)%timeStruct%gru(num_gru))
-  allocate(summa_struct(1)%forcStruct%gru(num_gru))
-  allocate(summa_struct(1)%attrStruct%gru(num_gru))
-  allocate(summa_struct(1)%typeStruct%gru(num_gru))
-  allocate(summa_struct(1)%idStruct%gru(num_gru))
+  if (.not. allocated(summa_struct(1)%timeStruct%gru)) allocate(summa_struct(1)%timeStruct%gru(num_gru))
+  if (.not. allocated(summa_struct(1)%forcStruct%gru)) allocate(summa_struct(1)%forcStruct%gru(num_gru))
+  if (.not. allocated(summa_struct(1)%attrStruct%gru)) allocate(summa_struct(1)%attrStruct%gru(num_gru))
+  if (.not. allocated(summa_struct(1)%typeStruct%gru)) allocate(summa_struct(1)%typeStruct%gru(num_gru))
+  if (.not. allocated(summa_struct(1)%idStruct%gru)) allocate(summa_struct(1)%idStruct%gru(num_gru))
   ! Primary Data Structures (variable length vectors)
-  allocate(summa_struct(1)%indxStruct%gru(num_gru))
-  allocate(summa_struct(1)%mparStruct%gru(num_gru))
-  allocate(summa_struct(1)%progStruct%gru(num_gru))
-  allocate(summa_struct(1)%diagStruct%gru(num_gru))
-  allocate(summa_struct(1)%fluxStruct%gru(num_gru))
+  if (.not. allocated(summa_struct(1)%indxStruct%gru)) allocate(summa_struct(1)%indxStruct%gru(num_gru))
+  if (.not. allocated(summa_struct(1)%mparStruct%gru)) allocate(summa_struct(1)%mparStruct%gru(num_gru))
+  if (.not. allocated(summa_struct(1)%progStruct%gru)) allocate(summa_struct(1)%progStruct%gru(num_gru))
+  if (.not. allocated(summa_struct(1)%diagStruct%gru)) allocate(summa_struct(1)%diagStruct%gru(num_gru))
+  if (.not. allocated(summa_struct(1)%fluxStruct%gru)) allocate(summa_struct(1)%fluxStruct%gru(num_gru))
   ! Basin-Average structures
-  allocate(summa_struct(1)%bvarStruct%gru(num_gru))
-  allocate(summa_struct(1)%bparStruct%gru(num_gru))
-  allocate(summa_struct(1)%dparStruct%gru(num_gru))
+  if (.not. allocated(summa_struct(1)%bvarStruct%gru)) allocate(summa_struct(1)%bvarStruct%gru(num_gru))
+  if (.not. allocated(summa_struct(1)%bparStruct%gru)) allocate(summa_struct(1)%bparStruct%gru(num_gru))
+  if (.not. allocated(summa_struct(1)%dparStruct%gru)) allocate(summa_struct(1)%dparStruct%gru(num_gru))
   ! Finalize Stats for writing
-  allocate(summa_struct(1)%finalizeStats%gru(num_gru))
+  if (.not. allocated(summa_struct(1)%finalizeStats%gru)) allocate(summa_struct(1)%finalizeStats%gru(num_gru))
   ! Extras
-  allocate(summa_struct(1)%upArea%gru(num_gru))
-  allocate(summa_struct(1)%failedGrus(num_gru))
+  if (.not. allocated(summa_struct(1)%upArea%gru)) allocate(summa_struct(1)%upArea%gru(num_gru))
+  if (.not. allocated(summa_struct(1)%failedGrus)) allocate(summa_struct(1)%failedGrus(num_gru))
   summa_struct(1)%failedGrus(:) = .false.
   summa_struct(1)%nTimeSteps = max_steps
 
@@ -393,7 +393,6 @@ subroutine f_deallocateOutputBuffer(handle_ncid) &
     end if
   end do
 
-  deallocate(summa_struct)
   deallocate(outputTimeStep)
 end subroutine
 
