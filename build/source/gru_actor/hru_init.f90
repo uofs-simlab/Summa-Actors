@@ -239,7 +239,14 @@ subroutine setupHRU(indxGRU, indxHRU, hru_data, err, message)
   do iDOM = 1, gru_struc(indxGRU)%hruInfo(indxHRU)%domCount
     associate(inLookup => init_struc%lookupStruct%gru(indxGRU)%hru(indxHRU)%dom(iDOM), &
               hrLookup => hru_data%lookupStruct%dom(iDOM))
-    hru_data%mparStruct%dom(iDOM)%var(:) = init_struc%mparStruct%gru(indxGRU)%hru(indxHRU)%dom(iDOM)%var(:)
+    ! copy per-variable so each %dat(:) vector is assigned explicitly -- a whole-array derived-type
+    ! assignment (%var(:) = %var(:)) of a pointer-rooted type with allocatable components is
+    ! miscompiled at -O2/-O3 here, leaving per-layer params (dat(2:nSoil)) as heap garbage and
+    ! making celia1990 etc. converge nondeterministically to a different answer than non-actors.
+    do iVar=1, size(init_struc%mparStruct%gru(indxGRU)%hru(indxHRU)%dom(iDOM)%var(:))
+      hru_data%mparStruct%dom(iDOM)%var(iVar)%dat(:) = &
+        init_struc%mparStruct%gru(indxGRU)%hru(indxHRU)%dom(iDOM)%var(iVar)%dat(:)
+    enddo
     if (allocated(inLookup%z)) then
       if (.not. allocated(hrLookup%z)) allocate(hrLookup%z(size(inLookup%z)))
       do i_z = 1, size(inLookup%z(:))

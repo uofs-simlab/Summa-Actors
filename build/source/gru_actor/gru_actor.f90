@@ -82,23 +82,31 @@ subroutine f_setGruTolerances(handle_gru_data, be_steps, &
     if (be_steps>0) then
       gru_data%hru(iHRU)%mparStruct%dom(iDOM)%var(iLookPARAM%be_steps)%dat(1) = be_steps
     end if
-    ! Set rtols
-    gru_data%hru(iHRU)%mparStruct%dom(iDOM)%var(iLookPARAM%relTolTempCas)%dat(1) = rel_tol_temp_cas
-    gru_data%hru(iHRU)%mparStruct%dom(iDOM)%var(iLookPARAM%relTolTempVeg)%dat(1) = rel_tol_temp_veg
-    gru_data%hru(iHRU)%mparStruct%dom(iDOM)%var(iLookPARAM%relTolWatVeg)%dat(1) = rel_tol_wat_veg
-    gru_data%hru(iHRU)%mparStruct%dom(iDOM)%var(iLookPARAM%relTolTempSoilSnow)%dat(1) = rel_tol_temp_soil_snow
-    gru_data%hru(iHRU)%mparStruct%dom(iDOM)%var(iLookPARAM%relTolWatSnow)%dat(1) = rel_tol_wat_snow
-    gru_data%hru(iHRU)%mparStruct%dom(iDOM)%var(iLookPARAM%relTolMatric)%dat(1) = rel_tol_matric
-    gru_data%hru(iHRU)%mparStruct%dom(iDOM)%var(iLookPARAM%relTolAquifr)%dat(1) = rel_tol_aquifr
 
-    ! Set atols
-    gru_data%hru(iHRU)%mparStruct%dom(iDOM)%var(iLookPARAM%absTolTempCas)%dat(1) = abs_tol_temp_cas
-    gru_data%hru(iHRU)%mparStruct%dom(iDOM)%var(iLookPARAM%absTolTempVeg)%dat(1) = abs_tol_temp_veg
-    gru_data%hru(iHRU)%mparStruct%dom(iDOM)%var(iLookPARAM%absTolWatVeg)%dat(1) = abs_tol_wat_veg
-    gru_data%hru(iHRU)%mparStruct%dom(iDOM)%var(iLookPARAM%absTolTempSoilSnow)%dat(1) = abs_tol_temp_snow_soil
-    gru_data%hru(iHRU)%mparStruct%dom(iDOM)%var(iLookPARAM%absTolWatSnow)%dat(1) = abs_tol_wat_snow
-    gru_data%hru(iHRU)%mparStruct%dom(iDOM)%var(iLookPARAM%absTolMatric)%dat(1) = abs_tol_matric
-    gru_data%hru(iHRU)%mparStruct%dom(iDOM)%var(iLookPARAM%absTolAquifr)%dat(1) = abs_tol_aquifr
+    ! Only override the solver tolerances when real values were supplied (the IDA path, or
+    ! adaptive-tolerance tightening after a failure).  f_getInitTolerance returns the -9999
+    ! sentinel for the homegrown / kinsol path, meaning "keep the param-file / SUMMA default
+    ! tolerances" -- writing -9999 into the params corrupts the backward-Euler convergence test
+    ! and makes every timestep converge to a different answer than non-actors SUMMA.
+    if (rel_tol_matric > 0._c_double) then
+      ! Set rtols
+      gru_data%hru(iHRU)%mparStruct%dom(iDOM)%var(iLookPARAM%relTolTempCas)%dat(1) = rel_tol_temp_cas
+      gru_data%hru(iHRU)%mparStruct%dom(iDOM)%var(iLookPARAM%relTolTempVeg)%dat(1) = rel_tol_temp_veg
+      gru_data%hru(iHRU)%mparStruct%dom(iDOM)%var(iLookPARAM%relTolWatVeg)%dat(1) = rel_tol_wat_veg
+      gru_data%hru(iHRU)%mparStruct%dom(iDOM)%var(iLookPARAM%relTolTempSoilSnow)%dat(1) = rel_tol_temp_soil_snow
+      gru_data%hru(iHRU)%mparStruct%dom(iDOM)%var(iLookPARAM%relTolWatSnow)%dat(1) = rel_tol_wat_snow
+      gru_data%hru(iHRU)%mparStruct%dom(iDOM)%var(iLookPARAM%relTolMatric)%dat(1) = rel_tol_matric
+      gru_data%hru(iHRU)%mparStruct%dom(iDOM)%var(iLookPARAM%relTolAquifr)%dat(1) = rel_tol_aquifr
+
+      ! Set atols
+      gru_data%hru(iHRU)%mparStruct%dom(iDOM)%var(iLookPARAM%absTolTempCas)%dat(1) = abs_tol_temp_cas
+      gru_data%hru(iHRU)%mparStruct%dom(iDOM)%var(iLookPARAM%absTolTempVeg)%dat(1) = abs_tol_temp_veg
+      gru_data%hru(iHRU)%mparStruct%dom(iDOM)%var(iLookPARAM%absTolWatVeg)%dat(1) = abs_tol_wat_veg
+      gru_data%hru(iHRU)%mparStruct%dom(iDOM)%var(iLookPARAM%absTolTempSoilSnow)%dat(1) = abs_tol_temp_snow_soil
+      gru_data%hru(iHRU)%mparStruct%dom(iDOM)%var(iLookPARAM%absTolWatSnow)%dat(1) = abs_tol_wat_snow
+      gru_data%hru(iHRU)%mparStruct%dom(iDOM)%var(iLookPARAM%absTolMatric)%dat(1) = abs_tol_matric
+      gru_data%hru(iHRU)%mparStruct%dom(iDOM)%var(iLookPARAM%absTolAquifr)%dat(1) = abs_tol_aquifr
+    end if
 
    end do
   end do
