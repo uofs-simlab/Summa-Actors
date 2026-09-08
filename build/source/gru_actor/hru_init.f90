@@ -62,7 +62,7 @@ subroutine initHRU(indx_gru, indx_hru, hru_data, err, message)
   ! Dummy Variables
   integer(c_int),intent(in)                  :: indx_gru      ! indx of the parent GRU
   integer(c_int),intent(in)                  :: indx_hru      ! indx of the HRU
-  type(hru_type),intent(out)                 :: hru_data      ! hru data structure (hru_type)
+  type(hru_type),intent(inout)               :: hru_data      ! hru data structure (hru_type)  -- inout: dt_init%dom is a live allocatable set up by new_handle_gru_type / initHRU; intent(out) would deallocate it
   integer(c_int),intent(out)                 :: err  
   character(len=256),intent(out)             :: message       ! error message
   ! Local Variables
@@ -209,7 +209,7 @@ subroutine setupHRU(indxGRU, indxHRU, hru_data, err, message)
   ! calling variables
   integer(c_int),intent(in)                :: indxGRU              ! Index of the parent GRU of the HRU
   integer(c_int),intent(in)                :: indxHRU              ! ID to locate correct HRU from netcdf file
-  type(hru_type),intent(out)               :: hru_data             ! local hru data structure
+  type(hru_type),intent(inout)             :: hru_data             ! local hru data structure  -- inout: intent(out) would deallocate dt_init%dom
   integer(c_int),intent(inout)             :: err
   character(len=256),intent(out)           :: message
 
@@ -296,7 +296,7 @@ subroutine readHRURestart(indxGRU, indxHRU, hru_data, err, message)
   ! Dummy variables
   integer(c_int),intent(in)               :: indxGRU            !  index of GRU in gru_struc
   integer(c_int),intent(in)               :: indxHRU            !  index of HRU in gru_struc
-  type(hru_type),intent(out)              :: hru_data
+  type(hru_type),intent(inout)           :: hru_data   ! inout: intent(out) would deallocate the live dt_init%dom allocatable
   integer(c_int), intent(out)             :: err
   character(len=256),intent(out)          :: message
   ! local variables
