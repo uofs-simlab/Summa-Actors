@@ -148,9 +148,7 @@ subroutine f_setHruCount(iGRU,sGRU) bind(C, name="f_setHruCount")
   gru_struc(iGRU)%gru_nc   = iGRU+sGRU-1
   gru_struc(iGRU)%hruCount = count(hru2gru_id == gru_struc(iGRU)%gru_id)       ! number of HRUs in this GRU
 
-  ! offset of this GRU's HRUs within the run domain -- recomputed (not accumulated) so this
-  ! routine is safe to call in parallel over GRUs.  With >1 HRU per GRU, arth(iGRU,...) would
-  ! produce overlapping run-domain indices across GRUs and corrupt index_map / output positions.
+  ! offset of this GRU's HRUs within the run domain -- recomputed (not accumulated) so can call in parallel over GRUs.
   hru_offset = 0
   do jGRU = 1, iGRU-1
     hru_offset = hru_offset + count(hru2gru_id == gru_id(jGRU+sGRU-1))
@@ -161,15 +159,12 @@ subroutine f_setHruCount(iGRU,sGRU) bind(C, name="f_setHruCount")
   gru_struc(iGRU)%hruInfo(:)%hru_ix = arth(hru_offset+1,1,gru_struc(iGRU)%hruCount)            ! index within the run domain (1..nHRU)
   gru_struc(iGRU)%hruInfo(:)%hru_id = hru_id(gru_struc(iGRU)%hruInfo(:)%hru_nc)                ! set id of hru
 
-  ! per-GRU glacier / wetland counts from the attributes file (grid dimensions are set later by
-  ! f_readGridDimension, which must run serially after this parallel loop)
+  ! per-GRU glacier / wetland counts from the attributes file
   gru_struc(iGRU)%nGlac = nGlac_file(iGRU+sGRU-1)
   gru_struc(iGRU)%nWtld = nWtld_file(iGRU+sGRU-1)
 end subroutine f_setHruCount
 
-! Read the glacier-grid dimensions (grid / xgrid / ygrid) and per-GRU gridInfo from the attributes
-! file.  Mirrors read_dimension's grid block; the actor path builds gru_struc itself so it cannot
-! call read_dimension directly.  Must be called after all f_setHruCount calls (needs %nGlac/%gru_nc).
+! Read the glacier-grid dimensions (grid / xgrid / ygrid) and per-GRU gridInfo from the attributes, run serially after f_setHruCount parallel loop
 subroutine f_readGridDimension(start_gru, num_gru, file_gru, err, message_r) &
     bind(C, name="f_readGridDimension")
   USE summaFileManager,only:SETTINGS_PATH, LOCAL_ATTRIBUTES
@@ -225,8 +220,7 @@ subroutine f_setIndexMap() bind(C, name="f_setIndexMap")
 
   allocate(index_map(sum(gru_struc(:)%hruCount)))
 
-  ! loop over GRUs (size(gru_struc) == nGRU), NOT the total HRU count -- the old bound walked
-  ! gru_struc past its end whenever any GRU had more than one HRU (e.g. wigmosta1999: 1 GRU, 50 HRU).
+  ! loop over GRUs
   do iGRU = 1,size(gru_struc)
     index_map(gru_struc(iGRU)%hruInfo(:)%hru_ix)%gru_ix      = iGRU                              ! gru (run domain) this hru belongs to
     index_map(gru_struc(iGRU)%hruInfo(:)%hru_ix)%localHRU_ix = hru_ix(1:gru_struc(iGRU)%hruCount)! index of hru within the gru (1-based)

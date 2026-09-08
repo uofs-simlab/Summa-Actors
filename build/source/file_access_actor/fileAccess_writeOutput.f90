@@ -843,12 +843,6 @@ subroutine writeRestart(filename,         & ! intent(in): name of restart file
                          indx_data,        & ! intent(in): index data (per gru/hru/dom, time-buffered)
                          err,message)        ! intent(out): error control
  ! --------------------------------------------------------------------------------------------------------
- ! Writes a restart file with the same schema SUMMA's read_icond expects: a `dom` dimension plus a
- ! `domType(dom,hru)` variable, prognostic variables shaped (dom,hru,<layer>), and per-domain layer
- ! counts nSnow/nLake/nSoil/nGlce shaped (dom,hru).  ALL HRUs of each GRU and ALL domains of each HRU
- ! are written.  The `hru` dimension is indexed by hru_nc (the HRU's position in the attributes file),
- ! matching read_icond; positions not in this batch are left as fill and are never read back.
- ! --------------------------------------------------------------------------------------------------------
  USE data_types,only:var_info               ! metadata
  USE var_lookup,only:iLookINDEX             ! named variables for structure elements
  USE var_lookup,only:iLookVarType           ! named variables for structure elements

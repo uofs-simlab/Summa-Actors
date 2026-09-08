@@ -64,7 +64,6 @@ subroutine f_defOutput(handle_ncid, start_gru, num_gru, num_hru, file_gru, &
   file_extention = trim(file_extention)
   
   ! build the user file suffix (from the -s/--suffix argument), mirroring summa_init.f90:
-  ! separate it from the output prefix by a leading underscore, and drop any trailing underscore
   output_fileSuffix = ''
   if (use_extention) output_fileSuffix = trim(file_extention)
   if (len_trim(output_fileSuffix) > 0) then

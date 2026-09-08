@@ -127,8 +127,6 @@ behavior JobActor::async_mode() {
       logger_->log("Async Mode: File Access Actor Ready");
       num_steps_ = num_timesteps;
       // The output buffer caps itself at the run length (see OutputBuffer ctor); mirror that here
-      // so the GRU actors are told to buffer <= num_steps_ before writing.  Otherwise a run shorter
-      // than num_timesteps_in_output_buffer_ never reaches a flush and writes zero output.
       if (fa_actor_settings_.num_timesteps_in_output_buffer_ > num_steps_)
         fa_actor_settings_.num_timesteps_in_output_buffer_ = num_steps_;
       spawnGruActors();
