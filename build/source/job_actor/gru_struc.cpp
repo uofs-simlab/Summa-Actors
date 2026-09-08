@@ -39,11 +39,20 @@ int GruStruc::readDimension() {
       f_setHruCount(i, start_gru_); 
   });
 #else
-  std::for_each(indicies.begin(), indicies.end(), 
-    [=](int i) { 
-      f_setHruCount(i, start_gru_); 
+  std::for_each(indicies.begin(), indicies.end(),
+    [=](int i) {
+      f_setHruCount(i, start_gru_);
   });
 #endif
+
+  // glacier grid dimensions (serial: needs every GRU's nGlac set by f_setHruCount)
+  f_readGridDimension(start_gru_, num_gru_, file_gru_, err, &err_msg);
+  if (err != 0) {
+    std::cout << "ERROR: GruStruc - ReadGridDimension()\n";
+    std::cout << err_msg.get() << "\n";
+    return err;
+  }
+
   f_setIndexMap();
   f_getNumHru(num_hru_);
 
