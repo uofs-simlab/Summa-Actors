@@ -63,15 +63,18 @@ subroutine f_defOutput(handle_ncid, start_gru, num_gru, num_hru, file_gru, &
   call c_f_string(file_extention_c,file_extention, 256)
   file_extention = trim(file_extention)
   
+  ! build the user file suffix (from the -s/--suffix argument), mirroring summa_init.f90:
+  ! separate it from the output prefix by a leading underscore, and drop any trailing underscore
   output_fileSuffix = ''
-  if (output_fileSuffix(1:1) /= '_') output_fileSuffix='_'//trim(output_fileSuffix)
-  if (output_fileSuffix(len_trim(output_fileSuffix):len_trim(output_fileSuffix)) == '_') output_fileSuffix(len_trim(output_fileSuffix):len_trim(output_fileSuffix)) = ' '
+  if (use_extention) output_fileSuffix = trim(file_extention)
+  if (len_trim(output_fileSuffix) > 0) then
+    if (output_fileSuffix(1:1) /= '_') output_fileSuffix = '_'//trim(output_fileSuffix)
+    if (output_fileSuffix(len_trim(output_fileSuffix):len_trim(output_fileSuffix)) == '_') &
+        output_fileSuffix(len_trim(output_fileSuffix):len_trim(output_fileSuffix)) = ' '
+  endif
   select case (iRunMode)
     case(iRunModeGRU)
       ! left zero padding for startGRU and endGRU
-      if (use_extention) then
-        output_fileSuffix = trim(output_fileSuffix)//trim(file_extention)
-      endif
       write(fmtGruOutput,"(i0)") ceiling(log10(real(file_gru)+0.1))                      ! maximum width of startGRU and endGRU
       fmtGruOutput = "i"//trim(fmtGruOutput)//"."//trim(fmtGruOutput)                   ! construct the format string for startGRU and endGRU
       fmtGruOutput = "('_G',"//trim(fmtGruOutput)//",'-',"//trim(fmtGruOutput)//")"
