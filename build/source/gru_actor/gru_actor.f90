@@ -83,11 +83,7 @@ subroutine f_setGruTolerances(handle_gru_data, be_steps, &
       gru_data%hru(iHRU)%mparStruct%dom(iDOM)%var(iLookPARAM%be_steps)%dat(1) = be_steps
     end if
 
-    ! Only override the solver tolerances when real values were supplied (the IDA path, or
-    ! adaptive-tolerance tightening after a failure).  f_getInitTolerance returns the -9999
-    ! sentinel for the homegrown / kinsol path, meaning "keep the param-file / SUMMA default
-    ! tolerances" -- writing -9999 into the params corrupts the backward-Euler convergence test
-    ! and makes every timestep converge to a different answer than non-actors SUMMA.
+    ! Only override the solver tolerances when real values were supplied
     if (rel_tol_matric > 0._c_double) then
       ! Set rtols
       gru_data%hru(iHRU)%mparStruct%dom(iDOM)%var(iLookPARAM%relTolTempCas)%dat(1) = rel_tol_temp_cas

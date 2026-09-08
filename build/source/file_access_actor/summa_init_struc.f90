@@ -14,6 +14,7 @@ module summa_init_struc
 subroutine f_allocate(num_gru, err, message_r) bind(C, name="f_allocate")
   USE globalData,only:structInfo            ! information on the data structures
   USE globalData,only:gru_struc                               ! gru-hru mapping structures
+  USE globalData,only:maxDOM                                  ! max number of domains in any HRU (set by f_readIcondNlayers)
   USE globalData,only:time_meta, &                       
                       forc_meta, &
                       attr_meta, &
@@ -96,6 +97,7 @@ subroutine f_allocate(num_gru, err, message_r) bind(C, name="f_allocate")
     
     ! miscellaneous variables
     nGRU                 => init_struc%nGRU              , & ! number of grouped response units
+    nDOM                 => init_struc%nDOM              , & ! max number of domains in any HRU
     nHRU                 => init_struc%nHRU                & ! number of global hydrologic response units
   )
 
@@ -168,7 +170,8 @@ subroutine f_allocate(num_gru, err, message_r) bind(C, name="f_allocate")
 
   nGRU = num_gru
   nHRU = sum(gru_struc%hruCount)
-  
+  nDOM = maxDOM
+
   end associate summaVars
 
   ! Allocate the time structures
