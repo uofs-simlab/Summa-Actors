@@ -140,14 +140,25 @@ subroutine f_setHruCount(iGRU,sGRU) bind(C, name="f_setHruCount")
   ! Dummy Variables
   integer(c_int), intent(in)      :: iGRU
   integer(c_int), intent(in)      :: sGRU
+  ! Local Variables
+  integer(i4b)                    :: jGRU
+  integer(i4b)                    :: hru_offset     ! number of run-domain HRUs in GRUs before this one
 
-  gru_struc(iGRU)%hruCount = count(hru2gru_id == gru_id(iGRU))                 ! number of HRUs in each GRU
   gru_struc(iGRU)%gru_id   = gru_id(iGRU+sGRU-1)
-  gru_struc(iGRU)%gru_nc   = iGRU+sGRU-1 
-  
+  gru_struc(iGRU)%gru_nc   = iGRU+sGRU-1
+  gru_struc(iGRU)%hruCount = count(hru2gru_id == gru_struc(iGRU)%gru_id)       ! number of HRUs in this GRU
+
+  ! offset of this GRU's HRUs within the run domain -- recomputed (not accumulated) so this
+  ! routine is safe to call in parallel over GRUs.  With >1 HRU per GRU, arth(iGRU,...) would
+  ! produce overlapping run-domain indices across GRUs and corrupt index_map / output positions.
+  hru_offset = 0
+  do jGRU = 1, iGRU-1
+    hru_offset = hru_offset + count(hru2gru_id == gru_id(jGRU+sGRU-1))
+  end do
+
   allocate(gru_struc(iGRU)%hruInfo(gru_struc(iGRU)%hruCount))
-  gru_struc(iGRU)%hruInfo(:)%hru_nc = pack(hru_ix,hru2gru_id == gru_struc(iGRU)%gru_id)
-  gru_struc(iGRU)%hruInfo(:)%hru_ix = arth(iGRU,1,gru_struc(iGRU)%hruCount)                    ! set index of hru in run domain
+  gru_struc(iGRU)%hruInfo(:)%hru_nc = pack(hru_ix,hru2gru_id == gru_struc(iGRU)%gru_id)        ! row in the attributes file
+  gru_struc(iGRU)%hruInfo(:)%hru_ix = arth(hru_offset+1,1,gru_struc(iGRU)%hruCount)            ! index within the run domain (1..nHRU)
   gru_struc(iGRU)%hruInfo(:)%hru_id = hru_id(gru_struc(iGRU)%hruInfo(:)%hru_nc)                ! set id of hru
 
   ! per-GRU glacier / wetland counts from the attributes file (grid dimensions are set later by
@@ -210,14 +221,16 @@ subroutine f_setIndexMap() bind(C, name="f_setIndexMap")
   USE globalData,only:gru_struc,index_map
   implicit none
   ! Local Variables
-  integer                         :: iGRU
+  integer(i4b)                    :: iGRU
 
   allocate(index_map(sum(gru_struc(:)%hruCount)))
 
-  do iGRU = 1,sum(gru_struc(:)%hruCount)
-    index_map(gru_struc(iGRU)%hruInfo(:)%hru_ix)%gru_ix   = iGRU                                 ! index of gru in run domain to which the hru belongs
-    index_map(gru_struc(iGRU)%hruInfo(:)%hru_ix)%localHRU_ix = hru_ix(1:gru_struc(iGRU)%hruCount)! index of hru within the gru
-  enddo ! iGRU = 1,nGRU
+  ! loop over GRUs (size(gru_struc) == nGRU), NOT the total HRU count -- the old bound walked
+  ! gru_struc past its end whenever any GRU had more than one HRU (e.g. wigmosta1999: 1 GRU, 50 HRU).
+  do iGRU = 1,size(gru_struc)
+    index_map(gru_struc(iGRU)%hruInfo(:)%hru_ix)%gru_ix      = iGRU                              ! gru (run domain) this hru belongs to
+    index_map(gru_struc(iGRU)%hruInfo(:)%hru_ix)%localHRU_ix = hru_ix(1:gru_struc(iGRU)%hruCount)! index of hru within the gru (1-based)
+  enddo
 
 end subroutine f_setIndexMap
 
