@@ -1,6 +1,5 @@
 bin/summa_actors
 build/cmake/build
-build/summa
 build/.vscode
 .vscode/settings.json
 .DS_Store

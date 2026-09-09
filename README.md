@@ -89,14 +89,19 @@ time to compile:
   5) `./install_caf.sh`
   6) `./install_sundials.sh`
 
-**NOTE: Installing SUMMA is part of the build instructions below**
+**NOTE: A Fortran version of SUMMA is bundled as a git submodule at
+`build/summa` (see step 1 below); you do not clone it separately.**
  
 ### Version 4.x.x Build Instructions
-  1) git clone https://github.com/uofs-simlab/Summa-Actors.git
-  2) cd Summa-Actors/build/
-  3) git clone -b develop https://github.com/ashleymedin/summa.git
-  4) cd build_scripts/
-  5) ./build.sh              # generic Linux;  ./build_mac.sh on macOS;  ./build_cluster.sh on an HPC module system
+  1) git clone --recurse-submodules https://github.com/uofs-simlab/Summa-Actors.git
+     # already cloned without --recurse-submodules? run: git submodule update --init --recursive
+  2) cd Summa-Actors/build/build_scripts/
+  3) ./build.sh              # generic Linux;  ./build_mac.sh on macOS;  ./build_cluster.sh on an HPC module system
+
+The `build/summa` submodule tracks the `develop` branch of
+https://github.com/ashleymedin/summa.git. To advance it to the latest SUMMA
+`develop` later, run `git submodule update --remote build/summa` and commit the
+updated pointer.
 
 Note: If you did not install the dependencies in the `utils/dependencies` folder,
 you will need to modify append to the $CMAKE_PREFIX_PATH environment variables
