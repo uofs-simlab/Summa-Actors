@@ -393,6 +393,7 @@ subroutine f_deallocateOutputBuffer(handle_ncid) &
     end if
   end do
 
+  deallocate(summa_struct)
   deallocate(outputTimeStep)
 end subroutine
 
