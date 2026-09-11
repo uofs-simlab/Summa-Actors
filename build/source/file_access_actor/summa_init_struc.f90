@@ -14,6 +14,7 @@ module summa_init_struc
 subroutine f_allocate(num_gru, err, message_r) bind(C, name="f_allocate")
   USE globalData,only:structInfo            ! information on the data structures
   USE globalData,only:gru_struc                               ! gru-hru mapping structures
+  USE globalData,only:maxDOM                                  ! max number of domains in any HRU (set by f_readIcondNlayers)
   USE globalData,only:time_meta, &                       
                       forc_meta, &
                       attr_meta, &
@@ -26,6 +27,7 @@ subroutine f_allocate(num_gru, err, message_r) bind(C, name="f_allocate")
                       indx_meta, &
                       bpar_meta, &
                       bvar_meta, &
+                      grid_meta, &
                       lookup_meta
 
   ! statistics metadata structures
@@ -45,8 +47,9 @@ subroutine f_allocate(num_gru, err, message_r) bind(C, name="f_allocate")
   integer(c_int),       intent(out)       :: err
   type(c_ptr),          intent(out)       :: message_r
   ! local variables
-  integer(i4b)                            :: iStruct,iGRU      ! looping variables
+  integer(i4b)                            :: iStruct,iGRU,iHRU ! looping variables
   integer(i4b)                            :: hruCount          ! number of local hydrologic response units
+  integer(i4b)                            :: domCount          ! number of domains in the current HRU
   character(len=256)                      :: message           ! error message
   character(len=256)                      :: cmessage          ! error message
   ! Start of subroutine
@@ -77,6 +80,9 @@ subroutine f_allocate(num_gru, err, message_r) bind(C, name="f_allocate")
     diagStruct           => init_struc%diagStruct          , & ! x%gru(:)%hru(:)%var(:)%dat -- model diagnostic variables
     fluxStruct           => init_struc%fluxStruct          , & ! x%gru(:)%hru(:)%var(:)%dat -- model fluxes
 
+    ! glacier grid structure
+    gridStruct           => init_struc%gridStruct          , & ! x%gru(:)%grid(:)%var(:)%dat2(:,:) -- basin grid parameters and variables
+
     ! basin-average structures
     bparStruct           => init_struc%bparStruct          , & ! x%gru(:)%var(:)            -- basin-average parameters
     bvarStruct           => init_struc%bvarStruct          , & ! x%gru(:)%var(:)%dat        -- basin-average variables
@@ -91,6 +97,7 @@ subroutine f_allocate(num_gru, err, message_r) bind(C, name="f_allocate")
     
     ! miscellaneous variables
     nGRU                 => init_struc%nGRU              , & ! number of grouped response units
+    nDOM                 => init_struc%nDOM              , & ! max number of domains in any HRU
     nHRU                 => init_struc%nHRU                & ! number of global hydrologic response units
   )
 
@@ -110,7 +117,8 @@ subroutine f_allocate(num_gru, err, message_r) bind(C, name="f_allocate")
       case('flux'); call allocGlobal(flux_meta,  fluxStruct,  err, cmessage)   ! model fluxes
       case('bpar'); call allocGlobal(bpar_meta,  bparStruct,  err, cmessage)   ! basin-average parameters
       case('bvar'); call allocGlobal(bvar_meta,  bvarStruct,  err, cmessage)   ! basin-average variables
-      case('lookup'); call allocGlobal(lookup_meta, lookupStruct, err, cmessage) ! lookup tables    
+      case('grid'); call allocGlobal(grid_meta,  gridStruct,  err, cmessage)   ! basin glacier grid parameters and variables
+      case('lookup'); call allocGlobal(lookup_meta, lookupStruct, err, cmessage) ! lookup tables
       case('deriv'); cycle
       case default; err=20; message='unable to find structure name: '//trim(structInfo(iStruct)%structName)
     end select
@@ -149,11 +157,21 @@ subroutine f_allocate(num_gru, err, message_r) bind(C, name="f_allocate")
       call f_c_string_ptr(trim(message), message_r)
       return
     endif
+    do iHRU=1,hruCount
+      domCount = gru_struc(iGRU)%hruInfo(iHRU)%domCount
+      allocate(dt_init%gru(iGRU)%hru(iHRU)%dom(domCount),stat=err)
+      if(err/=0)then
+        message='problem allocating space for dt_init [DOM]'
+        call f_c_string_ptr(trim(message), message_r)
+        return
+      endif
+    end do
   end do
 
   nGRU = num_gru
   nHRU = sum(gru_struc%hruCount)
-  
+  nDOM = maxDOM
+
   end associate summaVars
 
   ! Allocate the time structures
@@ -248,23 +266,23 @@ subroutine f_getInitTolerance(rtol_temp_cas, rtol_temp_veg, rtol_wat_veg, &
   atol_aquifr = -9999
   def_tol = .true.
   if (model_decisions(iLookDECISIONS%num_method)%iDecision == 83) then
-    rtol_temp_cas = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolTempCas)%dat(1)
-    rtol_temp_veg = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolTempveg)%dat(1)
-    rtol_wat_snow = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolWatSnow)%dat(1)
-    rtol_temp_soil_snow = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolTempSoilSnow)%dat(1)
-    rtol_wat_veg = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolWatVeg)%dat(1)
-    rtol_matric = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolMatric)%dat(1)
-    rtol_aquifr = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%relTolAquifr)%dat(1)
-    atol_temp_cas = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolTempCas)%dat(1)
-    atol_temp_veg = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolTempVeg)%dat(1)
-    atol_wat_snow = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolWatSnow)%dat(1)
-    atol_temp_soil_snow = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolTempSoilSnow)%dat(1)
-    atol_wat_veg = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolWatVeg)%dat(1)
-    atol_matric = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolMatric)%dat(1)
-    atol_aquifr = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%absTolAquifr)%dat(1)
+    rtol_temp_cas = init_struc%mparStruct%gru(1)%hru(1)%dom(1)%var(iLookPARAM%relTolTempCas)%dat(1)
+    rtol_temp_veg = init_struc%mparStruct%gru(1)%hru(1)%dom(1)%var(iLookPARAM%relTolTempveg)%dat(1)
+    rtol_wat_snow = init_struc%mparStruct%gru(1)%hru(1)%dom(1)%var(iLookPARAM%relTolWatSnow)%dat(1)
+    rtol_temp_soil_snow = init_struc%mparStruct%gru(1)%hru(1)%dom(1)%var(iLookPARAM%relTolTempSoilSnow)%dat(1)
+    rtol_wat_veg = init_struc%mparStruct%gru(1)%hru(1)%dom(1)%var(iLookPARAM%relTolWatVeg)%dat(1)
+    rtol_matric = init_struc%mparStruct%gru(1)%hru(1)%dom(1)%var(iLookPARAM%relTolMatric)%dat(1)
+    rtol_aquifr = init_struc%mparStruct%gru(1)%hru(1)%dom(1)%var(iLookPARAM%relTolAquifr)%dat(1)
+    atol_temp_cas = init_struc%mparStruct%gru(1)%hru(1)%dom(1)%var(iLookPARAM%absTolTempCas)%dat(1)
+    atol_temp_veg = init_struc%mparStruct%gru(1)%hru(1)%dom(1)%var(iLookPARAM%absTolTempVeg)%dat(1)
+    atol_wat_snow = init_struc%mparStruct%gru(1)%hru(1)%dom(1)%var(iLookPARAM%absTolWatSnow)%dat(1)
+    atol_temp_soil_snow = init_struc%mparStruct%gru(1)%hru(1)%dom(1)%var(iLookPARAM%absTolTempSoilSnow)%dat(1)
+    atol_wat_veg = init_struc%mparStruct%gru(1)%hru(1)%dom(1)%var(iLookPARAM%absTolWatVeg)%dat(1)
+    atol_matric = init_struc%mparStruct%gru(1)%hru(1)%dom(1)%var(iLookPARAM%absTolMatric)%dat(1)
+    atol_aquifr = init_struc%mparStruct%gru(1)%hru(1)%dom(1)%var(iLookPARAM%absTolAquifr)%dat(1)
   end if
 
-be_steps = init_struc%mparStruct%gru(1)%hru(1)%var(iLookPARAM%be_steps)%dat(1)
+be_steps = init_struc%mparStruct%gru(1)%hru(1)%dom(1)%var(iLookPARAM%be_steps)%dat(1)
 
 end subroutine f_getInitTolerance
 

@@ -7,7 +7,8 @@ behavior GruActor::make_behavior() {
   int err = 0;
   f_getNumHruInGru(job_index_, num_hrus_);
   gru_data_ = std::unique_ptr<void, GruDeleter>(new_handle_gru_type(num_hrus_));
-  
+  f_resetGruStrucNSnow(job_index_);
+
   std::unique_ptr<char[]> message(new char[256]);
   f_initGru(job_index_, gru_data_.get(), num_steps_output_buffer_, err,
             &message);
@@ -59,14 +60,9 @@ behavior GruActor::make_behavior() {
 
 behavior GruActor::async_mode() {
   return {
-    [this](update_hru_async) {
-      self_->mail(get_num_output_steps_v, job_index_)
-          .request(file_access_actor_, infinite)
-          .await([this](int num_steps) {
-            num_steps_until_write_ = num_steps;
-            self_->mail(access_forcing_v, iFile_, self_).
-                send(file_access_actor_);
-      });
+    [this](update_hru_async, int num_steps) {
+      num_steps_until_write_ = num_steps;
+      self_->mail(access_forcing_v, iFile_, self_).send(file_access_actor_);
     },
 
     [this](new_forcing_file, int num_forc_steps, int iFile) {

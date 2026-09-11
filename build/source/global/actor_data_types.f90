@@ -113,30 +113,52 @@ module actor_data_types
     type(hru_time_intVec),allocatable    :: gru(:)
   endtype gru_hru_time_intVec
 
+  ! ***********************************************************************************************************
+  ! Output-buffer wrappers that carry BOTH a domain (dom) and a buffer-timestep (tim) dimension
+  ! ***********************************************************************************************************
+  type, public :: dom_time_doubleVec
+    type(var_time_dlength),allocatable    :: dom(:)   ! dom(:)%var(:)%tim(:)%dat
+  endtype dom_time_doubleVec
+  type, public :: dom_time_intVec
+    type(var_time_ilength),allocatable    :: dom(:)   ! dom(:)%var(:)%tim(:)%dat
+  endtype dom_time_intVec
+  type, public :: hru_dom_time_doubleVec
+    type(dom_time_doubleVec),allocatable  :: hru(:)   ! hru(:)%dom(:)%var(:)%tim(:)%dat
+  endtype hru_dom_time_doubleVec
+  type, public :: hru_dom_time_intVec
+    type(dom_time_intVec),allocatable     :: hru(:)   ! hru(:)%dom(:)%var(:)%tim(:)%dat
+  endtype hru_dom_time_intVec
+  type, public :: gru_hru_dom_time_doubleVec
+    type(hru_dom_time_doubleVec),allocatable :: gru(:) ! gru(:)%hru(:)%dom(:)%var(:)%tim(:)%dat
+  endtype gru_hru_dom_time_doubleVec
+  type, public :: gru_hru_dom_time_intVec
+    type(hru_dom_time_intVec),allocatable :: gru(:)   ! gru(:)%hru(:)%dom(:)%var(:)%tim(:)%dat
+  endtype gru_hru_dom_time_intVec
+
   type, public :: hru_type
-    type(zLookup),pointer                      :: lookupStruct               ! z(:)%var(:)%lookup(:) -- lookup tables
-    type(var_dlength),pointer                  :: forcStat                   ! model forcing data
-    type(var_dlength),pointer                  :: progStat                   ! model prognostic (state) variables
-    type(var_dlength),pointer                  :: diagStat                   ! model diagnostic variables
-    type(var_dlength),pointer                  :: fluxStat                   ! model fluxes
-    type(var_dlength),pointer                  :: indxStat                   ! model indices
+    type(dom_z_vLookup),pointer                :: lookupStruct               ! dom(:)%z(:)%var(:)%lookup(:) -- lookup tables
+    type(var_dlength),pointer                  :: forcStat                   ! model forcing data (HRU level)
+    type(dom_doubleVec),pointer                :: progStat                   ! model prognostic (state) variables
+    type(dom_doubleVec),pointer                :: diagStat                   ! model diagnostic variables
+    type(dom_doubleVec),pointer                :: fluxStat                   ! model fluxes
+    type(dom_doubleVec),pointer                :: indxStat                   ! model indices
     type(var_dlength),pointer                  :: bvarStat                   ! basin-average variabl
     ! primary data structures (scalars)
     type(var_i),pointer                        :: timeStruct                 ! model time data
-    type(var_d),pointer                        :: forcStruct                 ! model forcing data
+    type(var_d),pointer                        :: forcStruct                 ! model forcing data (HRU level)
     type(var_d),pointer                        :: attrStruct                 ! model attribute data
     type(var_i),pointer                        :: typeStruct                 ! model type data
     type(var_i8),pointer                       :: idStruct                   ! model id data
     ! primary data structures (variable length vectors)
-    type(var_ilength),pointer                  :: indxStruct                 ! model indices
-    type(var_dlength),pointer                  :: mparStruct                 ! model parameters
-    type(var_dlength),pointer                  :: progStruct                 ! model prognostic (state) variables
-    type(var_dlength),pointer                  :: diagStruct                 ! model diagnostic variables
-    type(var_dlength),pointer                  :: fluxStruct                 ! model fluxes
+    type(dom_intVec),pointer                   :: indxStruct                 ! model indices          (per domain)
+    type(dom_doubleVec),pointer                :: mparStruct                 ! model parameters       (per domain)
+    type(dom_doubleVec),pointer                :: progStruct                 ! model prognostic vars  (per domain)
+    type(dom_doubleVec),pointer                :: diagStruct                 ! model diagnostic vars  (per domain)
+    type(dom_doubleVec),pointer                :: fluxStruct                 ! model fluxes           (per domain)
     ! basin-average structures
     type(var_d),pointer                        :: bparStruct                 ! basin-average variables
     type(var_dlength),pointer                  :: bvarStruct                 ! basin-average variables
-    type(var_d),pointer                        :: dparStruct                 ! default model parameters
+    type(var_d),pointer                        :: dparStruct                 ! default model parameters (HRU level)
     ! local HRU data structures
     type(var_i),pointer                        :: startTime_hru              ! start time for the model simulation
     type(var_i),pointer                        :: finishTime_hru             ! end time for the model simulation
@@ -155,7 +177,7 @@ module actor_data_types
     integer(c_int)                             :: yearLength                 ! number of days in the current year
     ! Misc Variables
     integer(c_int)                             :: computeVegFlux             ! flag to indicate if we are computing fluxes over vegetation
-    real(c_double)                             :: dt_init
+    type(dom_d)                                :: dt_init                    ! initial sub-step length for each domain -- dt_init%dom(:)
     real(c_double)                             :: upArea
   end type hru_type
 
@@ -163,44 +185,48 @@ module actor_data_types
     type(hru_type),allocatable :: hru(:)
     type(var_dlength),pointer  :: bvarStat
     type(var_dlength),pointer  :: bvarStruct
+    type(grid_double),pointer  :: gridStruct                  ! grid(:)%var(:)%dat2(:,:) -- basin glacier grids (may be size 0)
   end type gru_type
 
   ! Output Structure Type
   type, public :: summa_output_type
-    type(gru_hru_z_vLookup)                           :: lookupStruct                   ! x%gru(:)%hru(:)%z(:)%var(:)%lookup(:) -- lookup tables
+    type(gru_hru_dom_z_vLookup)                       :: lookupStruct                   ! x%gru(:)%hru(:)%dom(:)%z(:)%var(:)%lookup(:) -- lookup tables
     ! define the statistics structures
-    type(gru_hru_time_doubleVec)                      :: forcStat                      ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model forcing data
-    type(gru_hru_time_doubleVec)                      :: progStat                      ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model prognostic (state) variables
-    type(gru_hru_time_doubleVec)                      :: diagStat                      ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model diagnostic variables
-    type(gru_hru_time_doubleVec)                      :: fluxStat                      ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model fluxes
-    type(gru_hru_time_doubleVec)                      :: indxStat                      ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model indices
+    type(gru_hru_time_doubleVec)                      :: forcStat                      ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model forcing data (HRU level)
+    type(gru_hru_dom_time_doubleVec)                  :: progStat                      ! x%gru(:)%hru(:)%dom(:)%var(:)%tim(:)%dat -- model prognostic (state) variables
+    type(gru_hru_dom_time_doubleVec)                  :: diagStat                      ! x%gru(:)%hru(:)%dom(:)%var(:)%tim(:)%dat -- model diagnostic variables
+    type(gru_hru_dom_time_doubleVec)                  :: fluxStat                      ! x%gru(:)%hru(:)%dom(:)%var(:)%tim(:)%dat -- model fluxes
+    type(gru_hru_dom_time_doubleVec)                  :: indxStat                      ! x%gru(:)%hru(:)%dom(:)%var(:)%tim(:)%dat -- model indices
     type(gru_hru_time_doubleVec)                      :: bvarStat                      ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- basin-average variabl
 
     ! define the primary data structures (scalars)
     type(gru_hru_time_int)                            :: timeStruct                    ! x%gru(:)%hru(:)%var(:)%tim(:)     -- model time data
-    type(gru_hru_time_double)                         :: forcStruct                    ! x%gru(:)%hru(:)%var(:)%tim(:)     -- model forcing data
+    type(gru_hru_time_double)                         :: forcStruct                    ! x%gru(:)%hru(:)%var(:)%tim(:)     -- model forcing data (HRU level)
     type(gru_hru_double)                              :: attrStruct                    ! x%gru(:)%hru(:)%var(:)            -- local attributes for each HRU, DOES NOT CHANGE OVER TIMESTEPS
     type(gru_hru_int)                                 :: typeStruct                    ! x%gru(:)%hru(:)%var(:)            -- local classification of soil veg etc. for each HRU, DOES NOT CHANGE OVER TIMESTEPS
     type(gru_hru_int8)                                :: idStruct                      ! x%gru(:)%hru(:)%var(:)
 
     ! define the primary data structures (variable length vectors)
-    type(gru_hru_time_intVec)                         :: indxStruct                    ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model indices
-    type(gru_hru_doubleVec)                           :: mparStruct                    ! x%gru(:)%hru(:)%var(:)%dat        -- model parameters, DOES NOT CHANGE OVER TIMESTEPS TODO: MAYBE
-    type(gru_hru_time_doubleVec)                      :: progStruct                    ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model prognostic (state) variables
-    type(gru_hru_time_doubleVec)                      :: diagStruct                    ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model diagnostic variables
-    type(gru_hru_time_doubleVec)                      :: fluxStruct                    ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- model fluxes
+    type(gru_hru_dom_time_intVec)                     :: indxStruct                    ! x%gru(:)%hru(:)%dom(:)%var(:)%tim(:)%dat -- model indices
+    type(gru_hru_dom_doubleVec)                       :: mparStruct                    ! x%gru(:)%hru(:)%dom(:)%var(:)%dat        -- model parameters, DOES NOT CHANGE OVER TIMESTEPS
+    type(gru_hru_dom_time_doubleVec)                  :: progStruct                    ! x%gru(:)%hru(:)%dom(:)%var(:)%tim(:)%dat -- model prognostic (state) variables
+    type(gru_hru_dom_time_doubleVec)                  :: diagStruct                    ! x%gru(:)%hru(:)%dom(:)%var(:)%tim(:)%dat -- model diagnostic variables
+    type(gru_hru_dom_time_doubleVec)                  :: fluxStruct                    ! x%gru(:)%hru(:)%dom(:)%var(:)%tim(:)%dat -- model fluxes
 
     ! define the basin-average structures
     type(gru_double)                                  :: bparStruct                    ! x%gru(:)%var(:)                   -- basin-average parameters, DOES NOT CHANGE OVER TIMESTEPS
     type(gru_hru_time_doubleVec)                      :: bvarStruct                    ! x%gru(:)%hru(:)%var(:)%tim(:)%dat -- basin-average variables
+    ! grid (glacier) structures
+    type(gru_grid_double)                             :: gridStruct                    ! x%gru(:)%grid(:)%var(:)%dat2(:,:) -- basin glacier grids
     ! define the ancillary data structures
-    type(gru_hru_double)                              :: dparStruct                    ! x%gru(:)%hru(:)%var(:)
+    type(gru_hru_double)                              :: dparStruct                    ! x%gru(:)%hru(:)%dom(:)%var(:)
 
     ! finalize stats structure
     type(gru_hru_time_flagVec)                        :: finalizeStats                 ! x%gru(:)%hru(:)%tim(:)%dat -- flags on when to write to file
 
     type(gru_d)                                       :: upArea
     integer(i4b)                                      :: nTimeSteps
+    integer(i4b)                                      :: nDOM                           ! maximum number of domains in any HRU (== maxDOM)
     logical(lgt), allocatable                         :: failedGrus(:)                  ! flag to indicate if the GRU failed
-  end type summa_output_type  
+  end type summa_output_type
 end module

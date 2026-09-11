@@ -150,7 +150,7 @@ class JobActorSettings {
     int batch_size_; 
 
     JobActorSettings(std::string file_manager_path = "", 
-                     int max_run_attempts = 1, 
+                     int max_run_attempts = 3, 
                      bool data_assimilation_mode = false, 
                      int batch_size = MISSING_INT)
         : file_manager_path_(file_manager_path), 

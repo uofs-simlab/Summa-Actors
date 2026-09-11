@@ -13,12 +13,12 @@
 
 using namespace caf;
 
-const std::string command_line_help = "Summa-Actors is in active development and some features may not be available.\n"
+const std::string command_line_help = "SUMMA-Actors is in active development and some features may not be available.\n"
     "Usage: summa_actors -m master_file [-g startGRU countGRU] [-c config_file] [-b backup_server] [-s server_mode]\n"
     "Available options: \n"
     "\t-m, --master:         Define path/name of master file (can be specified in config)\n"
     "\t-g, --gru:            Run a subset of countGRU GRUs starting from index startGRU \n"
-    "\t-c, --config:         Path name of the Summa-Actors config file (optional but recommended)\n"
+    "\t-c, --config:         Path name of the SUMMA-Actors config file (optional but recommended)\n"
     "\t-s  --suffix          Add fileSuffix to the output files\n"
     "\t    --gen-config:     Generate a config file \n"
     "\t    --host:           Hostname of the server \n"

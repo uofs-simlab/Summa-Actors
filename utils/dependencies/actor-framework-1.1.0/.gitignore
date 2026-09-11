@@ -1,0 +1,13 @@
+.make-release-steps.bash
+.push-doxygen-steps.bash
+Makefile
+bin/*
+build/*
+doxygen-log.txt
+html/*
+manual/examples
+manual/html/*
+manual/libcaf_core
+manual/libcaf_io
+manual/libcaf_net
+manual/libcaf_openssl
