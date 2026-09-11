@@ -567,6 +567,12 @@ subroutine runGRU_fortran(indx_gru, modelTimeStep, handle_gru_data, &
   ! Local Variables
   integer(i4b)                     :: iHRU, kHRU, jHRU, iDOM
   integer(i4b)                     :: iVar
+  ! ----- HRU cascade ordering (ported from run_oneGRU.f90) ---------------------------------------------------------------
+  integer(i4b)                     :: iSeq                  ! position in the cascade processing order
+  integer(i4b)                     :: nOrder                ! number of HRUs placed in the processing order
+  integer(i4b),allocatable         :: downIdx(:)            ! index of the downslope HRU (0 = GRU outlet)
+  integer(i4b),allocatable         :: inDegree(:)           ! number of HRUs draining into a given HRU
+  integer(i4b),allocatable         :: hruOrder(:)           ! HRU indices in cascade order, upslope before downslope
   integer(i4b)                     :: typeDOM
   type(gru_type),pointer           :: gru_data
   character(len=256)               :: message = ""
@@ -675,7 +681,42 @@ subroutine runGRU_fortran(indx_gru, modelTimeStep, handle_gru_data, &
     if(err/=0)then; err=20; message=trim(message)//'problem allocating glacier area-change work arrays'; call f_c_string_ptr(trim(message), message_r); return; endif
   endif
 
-  do iHRU = 1, size(gru_data%hru)
+  ! ----- order the HRUs so that an HRU is run after everything that drains into it -----------------------------------------
+  allocate(downIdx(gru_struc(indx_gru)%hruCount), inDegree(gru_struc(indx_gru)%hruCount), &
+           hruOrder(gru_struc(indx_gru)%hruCount), stat=err)
+  if(err/=0)then; err=20; message=trim(message)//'problem allocating cascade ordering arrays'; call f_c_string_ptr(trim(message), message_r); return; endif
+  downIdx(:) = 0; inDegree(:) = 0
+  do iHRU=1,gru_struc(indx_gru)%hruCount
+    dsHRU0: do jHRU=1,gru_struc(indx_gru)%hruCount
+      if(gru_data%hru(iHRU)%typeStruct%var(iLookTYPE%downHRUindex) == gru_data%hru(jHRU)%idStruct%var(iLookID%hruId))then
+        downIdx(iHRU) = jHRU                  ! first match wins, as before
+        inDegree(jHRU) = inDegree(jHRU) + 1
+        exit dsHRU0
+      endif
+    enddo dsHRU0
+  enddo
+  ! repeatedly take an HRU nothing drains into, then remove its own contribution
+  nOrder = 0
+  do iHRU=1,gru_struc(indx_gru)%hruCount
+    if(inDegree(iHRU)==0)then; nOrder = nOrder + 1; hruOrder(nOrder) = iHRU; endif
+  enddo
+  iSeq = 0
+  do while(iSeq < nOrder)
+    iSeq = iSeq + 1
+    kHRU = downIdx(hruOrder(iSeq))
+    if(kHRU > 0)then
+      inDegree(kHRU) = inDegree(kHRU) - 1
+      if(inDegree(kHRU)==0)then; nOrder = nOrder + 1; hruOrder(nOrder) = kHRU; endif
+    endif
+  end do
+  if(nOrder /= gru_struc(indx_gru)%hruCount)then
+    err=20; message=trim(message)//'the downHRUindex cascade network contains a loop, so the HRUs cannot be ordered upslope to &
+      &downslope (check downHRUindex in the attributes file)'
+    call f_c_string_ptr(trim(message), message_r); return
+  endif
+
+  do iSeq = 1, gru_struc(indx_gru)%hruCount
+    iHRU = hruOrder(iSeq)
     ! Give the HRU the up to date basin variables
     do iVar=1, size(gru_data%bvarStruct%var(:))
       gru_data%hru(iHRU)%bvarStruct%var(iVar)%dat(:) = gru_data%bvarStruct%var(iVar)%dat(:)
@@ -685,13 +726,8 @@ subroutine runGRU_fortran(indx_gru, modelTimeStep, handle_gru_data, &
                     dt_init_factor, err, message)
     if(err /= 0) then; call f_c_string_ptr(trim(message), message_r);return; end if
 
-    ! identify the downslope HRU (lateral connectivity)
-    kHRU = 0
-    dsHRU: do jHRU=1,gru_struc(indx_gru)%hruCount
-      if(gru_data%hru(iHRU)%typeStruct%var(iLookTYPE%downHRUindex) == gru_data%hru(jHRU)%idStruct%var(iLookID%hruId))then
-        if(kHRU==0)then; kHRU=jHRU; exit dsHRU; end if
-      end if
-    end do dsHRU
+    ! the downslope HRU, found once above with the cascade ordering
+    kHRU = downIdx(iHRU)
 
     ! ----- aggregate weighted GRU fluxes over each domain within the HRU --------------------------------------------------
     do iDOM = 1, gru_struc(indx_gru)%hruInfo(iHRU)%domCount
@@ -988,6 +1024,8 @@ subroutine runGRU_fortran(indx_gru, modelTimeStep, handle_gru_data, &
       gru_data%hru(iHRU)%bvarStruct%var(iVar)%dat(:) = gru_data%bvarStruct%var(iVar)%dat(:)
     end do
   end do
+
+  deallocate(downIdx,inDegree,hruOrder)
 
 end subroutine runGRU_fortran
 
