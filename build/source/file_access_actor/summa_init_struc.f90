@@ -96,9 +96,9 @@ subroutine f_allocate(num_gru, err, message_r) bind(C, name="f_allocate")
     upArea               => init_struc%upArea              , & ! area upslope of each HRU
     
     ! miscellaneous variables
-    nGRU                 => init_struc%nGRU              , & ! number of grouped response units
+    nGRU                 => init_struc%nGRU_local         , & ! number of grouped response units assigned to this actors job
     nDOM                 => init_struc%nDOM              , & ! max number of domains in any HRU
-    nHRU                 => init_struc%nHRU                & ! number of global hydrologic response units
+    nHRU                 => init_struc%nHRU_local          & ! number of hydrologic response units assigned to this actors job
   )
 
   ! allocate other data structures

@@ -80,8 +80,6 @@ subroutine readHRUForcing(indx_gru, indx_hru, iStep, iRead, iFile, &
   USE netcdf,only:nf90_max_name                                   ! used for nf90_max_name
   USE time_utils_module,only:compcalday                 ! convert julian day to calendar date
   USE globalData,only:refJulDay                 ! reference time (fractional julian days)
-  USE globalData,only:ixHRUfile_min             ! minimum index of HRU in the forcing file
-  USE globalData,only:ixHRUfile_max             ! maximum index of HRU in the forcing file
   USE globalData,only:gru_struc                 ! GRU structure
   implicit none
 
@@ -114,8 +112,10 @@ subroutine readHRUForcing(indx_gru, indx_hru, iStep, iRead, iFile, &
   err=0;message="hru_actor.f90 - readForcingHRU";
 
   ! Get index into the forcing structure
+  ! (row 1 of forcingDataStruct(...)%dataFromFile corresponds to file HRU gru_struc(1)%hruInfo(1)%hru_nc,
+  !  the same reference index used to read the block in forcing_file_info.f90:read_forcingFile)
   iHRU_global = gru_struc(indx_gru)%hruInfo(indx_hru)%hru_nc
-  iHRU_local  = (iHRU_global - ixHRUfile_min)+1
+  iHRU_local  = (iHRU_global - gru_struc(1)%hruInfo(1)%hru_nc)+1
 
   if(istep == 1) then
     call getFirstTimestep(iFile, iRead, err)

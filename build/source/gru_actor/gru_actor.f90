@@ -194,8 +194,8 @@ subroutine setupGRU(iGRU, err, message)
     upArea               => init_struc%upArea              , & ! area upslope of each HRU
     
     ! miscellaneous variables
-    nGRU                 => init_struc%nGRU              , & ! number of grouped response units
-    nHRU                 => init_struc%nHRU                & ! number of global hydrologic response units
+    nGRU                 => init_struc%nGRU_local         , & ! number of grouped response units assigned to this actors job
+    nHRU                 => init_struc%nHRU_local          & ! number of hydrologic response units assigned to this actors job
   )
 
   ! *****************************************************************************

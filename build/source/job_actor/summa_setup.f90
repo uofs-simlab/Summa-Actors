@@ -88,10 +88,6 @@ contains
  USE globalData,only:basinParFallback                        ! basin-average default parameters
  USE globalData,only:model_decisions                         ! model decision structure
  USE globalData,only:greenVegFrac_monthly                    ! fraction of green vegetation in each month (0-1)
- ! run time options
- USE globalData,only:startGRU                                ! index of the starting GRU for parallelization run
- USE globalData,only:checkHRU                                ! index of the HRU for a single HRU run
- USE globalData,only:iRunMode                                ! define the current running mode
  ! output constraints
  USE globalData,only:maxLayers                               ! maximum number of layers
  USE globalData,only:maxSnowLayers                           ! maximum number of snow layers
@@ -154,8 +150,8 @@ contains
   ! miscellaneous variables
   upArea               => summa1_struc%upArea              , & ! area upslope of each HRU
   nDOM                 => summa1_struc%nDOM                , & ! max number of domains in any HRU
-  nGRU                 => summa1_struc%nGRU                , & ! number of grouped response units
-  nHRU                 => summa1_struc%nHRU                  & ! number of global hydrologic response units
+  nGRU                 => summa1_struc%nGRU_local           , & ! number of grouped response units assigned to this actors job
+  nHRU                 => summa1_struc%nHRU_local            & ! number of hydrologic response units assigned to this actors job
 
  ) ! assignment to variables in the data structures
  ! ---------------------------------------------------------------------------------------
@@ -326,7 +322,7 @@ contains
  ! *****************************************************************************
  ! *** read trial model parameter values for each HRU, and populate initial data structures
  ! *****************************************************************************
- call read_param(iRunMode,checkHRU,startGRU,nDOM,nHRU,nGRU,idStruct,mparStruct,bparStruct,err,cmessage)
+ call read_param(nGRU,nHRU,nDOM,idStruct,mparStruct,bparStruct,err,cmessage)
  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
 
  ! *****************************************************************************
