@@ -93,15 +93,23 @@ time to compile:
 `build/summa` (see step 1 below); you do not clone it separately.**
  
 ### Version 4.x.x Build Instructions
-  1) git clone --recurse-submodules https://github.com/uofs-simlab/Summa-Actors.git
-     # already cloned without --recurse-submodules? run: git submodule update --init --recursive
-  2) cd Summa-Actors/build/build_scripts/
-  3) ./build.sh              # generic Linux;  ./build_mac.sh on macOS;  ./build_cluster.sh on an HPC module system
+  1) git clone https://github.com/uofs-simlab/Summa-Actors.git
+  2) cd Summa-Actors && git submodule update --init build/summa
+     # already cloned and just missing build/summa? the command above still works
+  3) cd build/build_scripts/
+  4) ./build.sh              # generic Linux;  ./build_mac.sh on macOS;  ./build_cluster.sh on an HPC module system
 
 The `build/summa` submodule tracks the `develop` branch of
 https://github.com/ashleymedin/summa.git. To advance it to the latest SUMMA
 `develop` later, run `git submodule update --remote build/summa` and commit the
 updated pointer.
+
+Note: do **not** use `--recurse-submodules`/`--recursive` here. SUMMA itself
+now carries optional submodules for MPI (`parallel-utils`) and river-routing
+coupling (`mizuRoute`, `toml-f`), pulled in through SUMMA's own CMake build.
+SUMMA-Actors has its own top-level CMake build and reaches directly into
+`build/summa/build/source`, so it never uses those and recursing into them
+just downloads the full mizuRoute model for no benefit.
 
 Note: If you did not install the dependencies in the `utils/dependencies` folder,
 you will need to modify append to the $CMAKE_PREFIX_PATH environment variables

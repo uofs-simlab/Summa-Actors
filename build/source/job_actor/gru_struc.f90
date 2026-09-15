@@ -204,7 +204,7 @@ subroutine f_readGridDimension(start_gru, num_gru, file_gru, err, message_r) &
   call nc_file_open(trim(attrFile),nf90_noWrite,ncID,err,cmessage)
   if(err/=0)then; message=trim(message)//trim(cmessage); call f_c_string_ptr(trim(message), message_r); return; end if
 
-  call read_dimensionGrid(ncID, file_gru, num_gru, err, message)
+  call read_dimensionGrid(ncID, file_gru, num_gru, gru_struc, err, message)
   if(err/=0)then; call nc_file_close(ncID,err,cmessage); call f_c_string_ptr(trim(message), message_r); return; end if
 
   call nc_file_close(ncID,err,cmessage)

@@ -145,8 +145,8 @@ list(REMOVE_ITEM DRIVER
 #=========================================================================================
 # COMPILE PART 3: Collect the subroutines into build groups depending on build type
 #=========================================================================================
-set(COMM_ALL ${NRPROC} ${HOOKUP} ${DATAMS} ${UTILMS})
-set(SUMMA_ALL ${NETCDF} ${PRELIM} ${MODRUN} ${SOLVER} ${DRIVER})
+set(COMM_ALL ${NRPROC} ${HOOKUP} ${DATAMS} ${SUMMA_DATA_TYPES} ${UTILMS})
+set(SUMMA_ALL ${NETCDF} ${PRELIM} ${MODRUN} ${SOLVER} ${SUMMA_TYPE} ${DRIVER})
 set(COMM_ALL ${COMM_ALL} ${DATAMS_ACTORS} ${INTERFACE})
 set(SUMMA_ALL ${SUMMA_ALL} ${SYS_INIT_INTERFACE} ${FILE_ACCESS_INTERFACE}
               ${JOB_INTERFACE} ${GRU_INTERFACE})
@@ -194,7 +194,8 @@ file(APPEND ${VERSIONFILE} "character(len=64), parameter     :: gitBranch = '${G
 file(APPEND ${VERSIONFILE} "character(len=64), parameter     :: gitHash = '${GITHASH}'")
 
 # Build SUMMA_NOAHMP Object
-add_library(SUMMA_NOAHMP OBJECT ${NOAHMP} ${NRUTIL})
+# nr_type.f90 was split out of NRUTIL into its own NRTYPE variable (PR #632)
+add_library(SUMMA_NOAHMP OBJECT ${NOAHMP} ${NRTYPE} ${NRUTIL})
 target_compile_options(SUMMA_NOAHMP PRIVATE ${FLAGS_NOAH})
 
 # Build SUMMA_COMM Object
