@@ -141,7 +141,12 @@ list(REMOVE_ITEM DRIVER
         ${DRIVER_DIR}/summa_forcing.f90
         ${DRIVER_DIR}/summa_modelRun.f90
         ${DRIVER_DIR}/summa_setup.f90
-        ${DRIVER_DIR}/summa_writeOutput.f90)
+        ${DRIVER_DIR}/summa_writeOutput.f90
+        # summa_simulation drives the standalone run lifecycle (initialize / run /
+        # finalize, and the objective function built on it). Summa-Actors replaces
+        # that orchestration with the job and GRU actors, and does not build the
+        # summa_init it depends on.
+        ${DRIVER_DIR}/summa_simulation.f90)
 #=========================================================================================
 # COMPILE PART 3: Collect the subroutines into build groups depending on build type
 #=========================================================================================

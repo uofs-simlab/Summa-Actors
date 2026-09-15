@@ -79,7 +79,7 @@ contains
  USE read_pinit_module,only:read_pinit                       ! module to read initial model parameter values
  USE paramCheck_module,only:paramCheck                       ! module to check consistency of model parameters
  USE pOverwrite_module,only:pOverwrite                       ! module to overwrite default parameter values with info from the Noah tables
- USE summa_read_param_module,only:read_param                 ! module to read model parameter sets
+ USE param_override_module,only:read_param                   ! module to read model parameter sets
  USE var_derive_module,only:fracFuture                       ! module to calculate the fraction of runoff in future time steps (time delay histogram)
  USE module_sf_noahmplsm,only:read_mp_veg_parameters         ! module to read NOAH vegetation tables
  ! global data structures
