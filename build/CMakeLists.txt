@@ -146,7 +146,10 @@ list(REMOVE_ITEM DRIVER
         # finalize, and the objective function built on it). Summa-Actors replaces
         # that orchestration with the job and GRU actors, and does not build the
         # summa_init it depends on.
-        ${DRIVER_DIR}/summa_simulation.f90)
+        ${DRIVER_DIR}/summa_simulation.f90
+        # summa_spinup is part of the same standalone lifecycle: it drives a shared
+        # spinup run through summa_simulation for the calibration driver.
+        ${DRIVER_DIR}/summa_spinup.f90)
 #=========================================================================================
 # COMPILE PART 3: Collect the subroutines into build groups depending on build type
 #=========================================================================================
