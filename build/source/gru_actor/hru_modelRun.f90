@@ -225,6 +225,7 @@ subroutine runPhysics(indxGRU, indxHRU, modelTimeStep, hru_data, &
                   hru_data%progStruct,         & ! intent(inout): model prognostic variables for a local HRU
                   hru_data%diagStruct,         & ! intent(inout): model diagnostic variables for a local HRU
                   hru_data%fluxStruct,         & ! intent(inout): model fluxes for a local HRU
+                  hru_data%lookup, &
                   ! error control
                   err,cmessage)       ! intent(out): error control
   if(err/=0)then; err=20; message=trim(message)//trim(cmessage);
