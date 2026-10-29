@@ -101,8 +101,9 @@ subroutine f_setGruTolerances(handle_gru_data, be_steps, &
 
 end subroutine f_setGruTolerances
 
-subroutine setupGRU(iGRU, err, message)
+subroutine setupGRU(iGRU,gru_data, err, message)
   USE summa_init_struc,only:init_struc
+  USE actor_data_types,only:gru_type             
   USE globalData,only:gru_struc
   USE globalData,only:model_decisions                         ! model decision structure
   USE globalData,only:greenVegFrac_monthly                    ! fraction of green vegetation in each month (0-1)
@@ -135,6 +136,7 @@ subroutine setupGRU(iGRU, err, message)
   implicit none
   ! Dum
   integer(c_int), intent(in)      :: iGRU
+  type(gru_type),pointer              :: gru_data
   integer(c_int), intent(out)     :: err
   character(len=256), intent(out) :: message
 
@@ -216,7 +218,8 @@ subroutine setupGRU(iGRU, err, message)
    ! calculate a look-up table for the temperature-enthalpy conversion of snow for future snow layer merging
    ! NOTE1: might be able to make this more efficient by only doing this for the HRUs that have snow
    ! NOTE2: H is the mixture enthalpy of snow liquid and ice
-   call T2H_lookup_snWat(mparStruct%gru(iGRU)%hru(iHRU),err,cmessage)
+   allocate(gru_data%hru(iHRU)%lookup)
+   call T2H_lookup_snWat(mparStruct%gru(iGRU)%hru(iHRU),gru_data%hru(iHRU)%lookup,err,cmessage)
    if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
 
    ! calculate a lookup table for the temperature-enthalpy conversion of soil 
@@ -302,7 +305,7 @@ subroutine f_initGru(indx_gru, handle_gru_data, output_buffer_steps, &
   if(err /= 0) then; call f_c_string_ptr(trim(message), message_r);return;end if
 
   ! Setup the GRU
-  call setupGRU(indx_gru, err, message)
+  call setupGRU(indx_gru, gru_data,err, message)
   if(err /= 0) then; call f_c_string_ptr(trim(message), message_r);return;end if
 
 
@@ -707,34 +710,34 @@ subroutine allocateOutputBuffer(indx_gru, num_hru, output_buffer_steps, &
   integer(i4b)                      :: iDat
 
   if (allocated(summa_struct(1)%timeStruct%gru(indx_gru)%hru)) then 
-    return 
+    ! return 
   endif
 
-  allocate(summa_struct(1)%forcStat%gru(indx_gru)%hru(num_hru))
-  allocate(summa_struct(1)%progStat%gru(indx_gru)%hru(num_hru))
-  allocate(summa_struct(1)%diagStat%gru(indx_gru)%hru(num_hru))
-  allocate(summa_struct(1)%fluxStat%gru(indx_gru)%hru(num_hru))
-  allocate(summa_struct(1)%indxStat%gru(indx_gru)%hru(num_hru))
-  allocate(summa_struct(1)%bvarStat%gru(indx_gru)%hru(num_hru))
+  if (.not. allocated(summa_struct(1)%forcStat%gru(indx_gru)%hru)) allocate(summa_struct(1)%forcStat%gru(indx_gru)%hru(num_hru))
+  if (.not. allocated(summa_struct(1)%progStat%gru(indx_gru)%hru)) allocate(summa_struct(1)%progStat%gru(indx_gru)%hru(num_hru))
+  if (.not. allocated(summa_struct(1)%diagStat%gru(indx_gru)%hru)) allocate(summa_struct(1)%diagStat%gru(indx_gru)%hru(num_hru))
+  if (.not. allocated(summa_struct(1)%fluxStat%gru(indx_gru)%hru)) allocate(summa_struct(1)%fluxStat%gru(indx_gru)%hru(num_hru))
+  if (.not. allocated(summa_struct(1)%indxStat%gru(indx_gru)%hru)) allocate(summa_struct(1)%indxStat%gru(indx_gru)%hru(num_hru))
+  if (.not. allocated(summa_struct(1)%bvarStat%gru(indx_gru)%hru)) allocate(summa_struct(1)%bvarStat%gru(indx_gru)%hru(num_hru))
   ! Primary Data Structures (scalars)
-  allocate(summa_struct(1)%timeStruct%gru(indx_gru)%hru(num_hru))
-  allocate(summa_struct(1)%forcStruct%gru(indx_gru)%hru(num_hru))
-  allocate(summa_struct(1)%attrStruct%gru(indx_gru)%hru(num_hru))
-  allocate(summa_struct(1)%typeStruct%gru(indx_gru)%hru(num_hru))
-  allocate(summa_struct(1)%idStruct%gru(indx_gru)%hru(num_hru))
+  if (.not. allocated(summa_struct(1)%timeStruct%gru(indx_gru)%hru)) allocate(summa_struct(1)%timeStruct%gru(indx_gru)%hru(num_hru))
+  if (.not. allocated(summa_struct(1)%forcStruct%gru(indx_gru)%hru)) allocate(summa_struct(1)%forcStruct%gru(indx_gru)%hru(num_hru))
+  if (.not. allocated(summa_struct(1)%attrStruct%gru(indx_gru)%hru)) allocate(summa_struct(1)%attrStruct%gru(indx_gru)%hru(num_hru))
+  if (.not. allocated(summa_struct(1)%typeStruct%gru(indx_gru)%hru)) allocate(summa_struct(1)%typeStruct%gru(indx_gru)%hru(num_hru))
+  if (.not. allocated(summa_struct(1)%idStruct%gru(indx_gru)%hru)) allocate(summa_struct(1)%idStruct%gru(indx_gru)%hru(num_hru))
   ! Primary Data Structures (variable length vectors)
-  allocate(summa_struct(1)%indxStruct%gru(indx_gru)%hru(num_hru))
-  allocate(summa_struct(1)%mparStruct%gru(indx_gru)%hru(num_hru))
-  allocate(summa_struct(1)%progStruct%gru(indx_gru)%hru(num_hru))
-  allocate(summa_struct(1)%diagStruct%gru(indx_gru)%hru(num_hru))
-  allocate(summa_struct(1)%fluxStruct%gru(indx_gru)%hru(num_hru))
+  if (.not. allocated(summa_struct(1)%indxStruct%gru(indx_gru)%hru)) allocate(summa_struct(1)%indxStruct%gru(indx_gru)%hru(num_hru))
+  if (.not. allocated(summa_struct(1)%mparStruct%gru(indx_gru)%hru)) allocate(summa_struct(1)%mparStruct%gru(indx_gru)%hru(num_hru))
+  if (.not. allocated(summa_struct(1)%progStruct%gru(indx_gru)%hru)) allocate(summa_struct(1)%progStruct%gru(indx_gru)%hru(num_hru))
+  if (.not. allocated(summa_struct(1)%diagStruct%gru(indx_gru)%hru)) allocate(summa_struct(1)%diagStruct%gru(indx_gru)%hru(num_hru))
+  if (.not. allocated(summa_struct(1)%fluxStruct%gru(indx_gru)%hru)) allocate(summa_struct(1)%fluxStruct%gru(indx_gru)%hru(num_hru))
   ! Basin-Average structures
-  allocate(summa_struct(1)%bvarStruct%gru(indx_gru)%hru(num_hru))
+  if (.not. allocated(summa_struct(1)%bvarStruct%gru(indx_gru)%hru)) allocate(summa_struct(1)%bvarStruct%gru(indx_gru)%hru(num_hru))
   ! Finalize Stats for writing
-  allocate(summa_struct(1)%finalizeStats%gru(indx_gru)%hru(num_hru))
+  if (.not. allocated(summa_struct(1)%finalizeStats%gru(indx_gru)%hru)) allocate(summa_struct(1)%finalizeStats%gru(indx_gru)%hru(num_hru))
   ! TODO: IS this needed - upArea?
-  allocate(summa_struct(1)%upArea%gru(indx_gru)%hru(num_hru))
-  allocate(summa_struct(1)%dparStruct%gru(indx_gru)%hru(num_hru))
+  if (.not. allocated(summa_struct(1)%upArea%gru(indx_gru)%hru)) allocate(summa_struct(1)%upArea%gru(indx_gru)%hru(num_hru))
+  if (.not. allocated(summa_struct(1)%dparStruct%gru(indx_gru)%hru)) allocate(summa_struct(1)%dparStruct%gru(indx_gru)%hru(num_hru))
 
 
   call allocLocal(bpar_meta,summa_struct(1)%bparStruct%gru(indx_gru), &
@@ -801,9 +804,9 @@ subroutine allocateOutputBuffer(indx_gru, num_hru, output_buffer_steps, &
 
       ! Finalize Stats Structre
       ! NOTE: This is done here, rather than in the loop above, because finalizeStats is not one of the "standard" data structures
-      allocate(summa_struct(1)%finalizeStats%gru(indx_gru)%hru(iHRU)%tim(output_buffer_steps))
+      if (.not. allocated(summa_struct(1)%finalizeStats%gru(indx_gru)%hru(iHRU)%tim)) allocate(summa_struct(1)%finalizeStats%gru(indx_gru)%hru(iHRU)%tim(output_buffer_steps))
       do iStep = 1, output_buffer_steps
-        allocate(summa_struct(1)%finalizeStats%gru(indx_gru)%hru(iHRU)%tim(iStep)%dat(1:maxvarFreq))
+        if (.not. allocated(summa_struct(1)%finalizeStats%gru(indx_gru)%hru(iHRU)%tim(iStep)%dat)) allocate(summa_struct(1)%finalizeStats%gru(indx_gru)%hru(iHRU)%tim(iStep)%dat(1:maxvarFreq))
         summa_struct(1)%finalizeStats%gru(indx_gru)%hru(iHRU)%tim(iStep)%dat(:) = .false.
       end do ! timeSteps
     end associate
@@ -863,6 +866,10 @@ subroutine alloc_outputStruc(metaStruct,dataStruct,nSteps,nSnow,nSoil,str_name,e
     ! ****************************************************
     class is (var_time_i)
       if(allocated(dataStruct%var))then
+        if (size(dataStruct%var).ne.nVars) then
+          deallocate(dataStruct%var)
+          allocate(dataStruct%var(nVars),stat=err)
+        end if
         check=.true.
       else 
         allocate(dataStruct%var(nVars),stat=err)
@@ -870,7 +877,7 @@ subroutine alloc_outputStruc(metaStruct,dataStruct,nSteps,nSnow,nSoil,str_name,e
       do iVar=1, nVars
         ! Check if this variable is desired within any timeframe
         if(is_var_desired(metaStruct,iVar) .or. allocAllFlag)then
-          allocate(dataStruct%var(iVar)%tim(nSteps))
+          if (.not. allocated(dataStruct%var(iVar)%tim)) allocate(dataStruct%var(iVar)%tim(nSteps))
         end if
       end do
       return
@@ -898,7 +905,7 @@ subroutine alloc_outputStruc(metaStruct,dataStruct,nSteps,nSnow,nSoil,str_name,e
       do iVar=1, nVars
         ! Check if this variable is desired within any timeframe
         if(is_var_desired(metaStruct,iVar) .or. allocAllFlag)then
-          allocate(dataStruct%var(iVar)%tim(nSteps))
+          if (.not. allocated(dataStruct%var(iVar)%tim)) allocate(dataStruct%var(iVar)%tim(nSteps))
         end if
       end do
       return
@@ -938,6 +945,11 @@ subroutine alloc_outputStruc(metaStruct,dataStruct,nSteps,nSnow,nSoil,str_name,e
     class is (var_time_ilength)
       if(allocated(dataStruct%var))then
         check=.true. 
+        if (size(dataStruct%var).ne.nVars) then
+          deallocate(dataStruct%var)
+          allocate(dataStruct%var(nVars),stat=err)
+        end if
+
       else 
         allocate(dataStruct%var(nVars),stat=err) 
       end if
@@ -945,7 +957,7 @@ subroutine alloc_outputStruc(metaStruct,dataStruct,nSteps,nSnow,nSoil,str_name,e
         ! Check if this variable is desired within any timeframe
         if(is_var_desired(metaStruct,iVar) .or. allocAllFlag .or. (present(str_name) .and. &
          ((iVar == iLookINDEX%nLayers) .or. (iVar == iLookINDEX%nSnow) .or. (iVar == iLookINDEX%nSoil)) ))then
-        allocate(dataStruct%var(iVar)%tim(nSteps))
+          if (.not. allocated(dataStruct%var(iVar)%tim)) allocate(dataStruct%var(iVar)%tim(nSteps))
           call allocateDat_int(metaStruct,dataStruct,nSnow,nSoil,nSteps,iVar,err,cmessage)
         end if
       end do
@@ -960,7 +972,7 @@ subroutine alloc_outputStruc(metaStruct,dataStruct,nSteps,nSnow,nSoil,str_name,e
         ! Check if this variable is desired within any timeframe
         if(is_var_desired(metaStruct,iVar) .or. allocAllFlag)then
           if (allocated(dataStruct%var(iVar)%tim)) then
-            print*, "Already Allocated"; return;
+            return;
           end if
           allocate(dataStruct%var(iVar)%tim(nSteps), stat=err)
           call allocateDat_rkind_nSteps(metaStruct,dataStruct,nSnow,nSoil,nSteps,iVar,err,cmessage)
@@ -970,7 +982,7 @@ subroutine alloc_outputStruc(metaStruct,dataStruct,nSteps,nSnow,nSoil,str_name,e
     class default; err=20; message=trim(message)//'unable to identify derived data type for the variable dimension'; print*,message;return
   end select
   ! check errors
-  if(check) then; err=20; message=trim(message)//'structure was unexpectedly allocated already'; print*,message; return; end if
+  ! if(check) then; err=20; message=trim(message)//'structure was unexpectedly allocated already'; print*,message; return; end if
   if(err/=0)then; err=20; message=trim(message)//'problem allocating'; print*,message; return; end if
 
   ! check errors

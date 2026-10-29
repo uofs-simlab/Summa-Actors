@@ -157,6 +157,7 @@ module actor_data_types
     integer(c_int)                             :: computeVegFlux             ! flag to indicate if we are computing fluxes over vegetation
     real(c_double)                             :: dt_init
     real(c_double)                             :: upArea
+    type(lookupStruct),pointer :: lookup
   end type hru_type
 
   type, public :: gru_type
