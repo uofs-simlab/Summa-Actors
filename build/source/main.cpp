@@ -170,6 +170,6 @@ int main(int argc, char** argv) {
   }
   delete[] argv2;
 
-  return result;
+  return result != EXIT_SUCCESS ? result : summa_exit_code.load();
 }
 
