@@ -10,6 +10,7 @@ behavior DAClientActor::make_behavior() {
         host_, settings_.distributed_settings_.port_);
     if (!strong_server) {
       self_->println("DAClientActor: Failed to connect to server");
+      summa_exit_code = EXIT_FAILURE;
       return {};
     }
     server_ = *strong_server;
@@ -40,7 +41,7 @@ behavior DAClientActor::make_behavior() {
       auto err_msg = file_manager_->setTimesDirsAndFiles();
       if (!err_msg.empty()) {
         self_->println("DAClientActor: {}", err_msg);
-        self_->quit();
+        quitWithError();
         return;
       }
 
@@ -49,7 +50,7 @@ behavior DAClientActor::make_behavior() {
       auto err = global_fortran_state_->defineGlobalData();
       if (err != 0) {
         self_->println("DAClientActor: Unable To Define Global Data");
-        self_->quit();
+        quitWithError();
         return;
       }
 
@@ -59,30 +60,31 @@ behavior DAClientActor::make_behavior() {
           settings_.job_actor_settings_.max_run_attempts_);
       if (gru_struc_->readDimension() != 0) {
         self_->println("DAClientActor: GruStruc ReadDimension() Failed");
-        self_->quit();
+        quitWithError();
         return;
       }
       if (gru_struc_->readIcondNlayers() != 0) {
         self_->println("DAClientActor: GruStruc ReadIcondNlayers() Failed");
-        self_->quit();
+        quitWithError();
         return;
       }
+      gru_struc_->getNumHrusPerGru();
 
       // SummaInitStruc Initialization
       summa_init_struc_ = std::make_unique<SummaInitStruc>();
-      if (summa_init_struc_->allocate(gru_struc_->getNumHru()) != 0) {
+      if (summa_init_struc_->allocate(node_gru_info.node_num_gru_) != 0) {
         self_->println("DAClientActor: SummaInitStruc allocate() Failed");
-        self_->quit();
+        quitWithError();
         return;
       }
       if (summa_init_struc_->summa_paramSetup() != 0) {
         self_->println("DAClientActor: SummaInitStruc paramSetup failed");
-        self_->quit();
+        quitWithError();
         return;
       }
       if (summa_init_struc_->summa_readRestart()!= 0) {
         self_->println("DAClientActor: SummaInitStruc readRestart failed");
-        self_->quit();
+        quitWithError();
         return;
       }
       // summa_init_struc_->getInitBEStepsIDATol(be_steps_, rel_tol_, abs_tolWat_, abs_tolNrg_);
@@ -94,6 +96,10 @@ behavior DAClientActor::make_behavior() {
           node_gru_info.node_num_gru_, node_gru_info.node_num_gru_,
           gru_struc_->getFileGru(), false);
 
+      // writeOutputDA writes only the first partition, as in the job actor's DA mode
+      settings_.fa_actor_settings_.num_partitions_in_output_buffer_ = 1;
+      settings_.fa_actor_settings_.num_timesteps_in_output_buffer_  = 2;
+
       file_access_actor_ = self_->spawn(actor_from_state<FileAccessActor>, 
                                        num_gru_info, 
                                        settings_.fa_actor_settings_, self_);
@@ -104,7 +110,7 @@ behavior DAClientActor::make_behavior() {
           .await([=](int num_steps) {
         if (num_steps < 0) {
           self_->println("DAClientActor: Error init_file_access_actor_v");
-          self_->quit();
+          quitWithError();
           return;
         }
         num_steps_ = num_steps;
@@ -141,7 +147,7 @@ behavior DAClientActor::make_behavior() {
       if (forcing_step > num_steps_ffile_) {
         self_->println("DAClientActor: Error forcing_step_ outside bounds: timestep {} -- "
                         "forcing_step: {}", timestep, forcing_step);
-        self_->quit();
+        quitWithError();
         return;
       }
       for (auto& gru : gru_struc_->getGruInfo()) {
@@ -175,15 +181,15 @@ behavior DAClientActor::make_behavior() {
           self_->mail(exit_msg_v).send(gru->getActorRef());
         }
         self_->send_exit(file_access_actor_, exit_reason::user_shutdown);
-        self_->quit();
+        quitWithError();
       } else {
         self_->mail(done_update_v).send(server_);
       }
 
     },
     [this](finalize) {
-      self_->println("DAClientActor: Exiting Successfully");
-      exit(EXIT_SUCCESS);
+      self_->println("DAClientActor: Exiting");
+      exit(summa_exit_code.load());
     }
   };
 }
@@ -228,4 +234,9 @@ void DAClientActor::spawnGruBatches() {
     start_hru_global += current_batch_size;
   }
   self_->println("DAClientActor: Assembled GRUs into Batches");
+}
+
+void DAClientActor::quitWithError() {
+  summa_exit_code = EXIT_FAILURE;
+  self_->quit();
 }

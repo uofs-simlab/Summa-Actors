@@ -3,6 +3,7 @@
 #include "fortran_data_types.hpp"
 #include "settings_functions.hpp"
 #include "message_atoms.hpp"
+#include "summa_exit_code.hpp"
 // #include "hru_actor.hpp"
 #include <vector>
 

@@ -130,6 +130,7 @@ behavior SummaServer::summa_server() {
     [=](done_batch, actor client_actor, Batch& batch) {
       self_->println("\nReceived Completed Batch From Client\n{}\n\n", batch.toString());
       Client client = client_container_.getClient(client_actor.address()).value();
+      if (batch.getNumGruFailed() != 0) summa_exit_code = EXIT_FAILURE;
 
       batch_container_.updateBatch_success(batch, csv_file_path_, client.getHostname());
       printRemainingBatches();

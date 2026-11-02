@@ -1,7 +1,6 @@
 #pragma once
 #include "caf/all.hpp"
 #include "caf/io/all.hpp"
-#include <atomic>
 #include <chrono>
 #include <string>
 #include <vector>
@@ -13,10 +12,8 @@
 #include "gru_struc.hpp"
 #include "message_atoms.hpp"
 #include "summa_global_data.hpp"
+#include "summa_exit_code.hpp"
 
-
-// process exit code: EXIT_FAILURE after a fatal error or failed GRUs, returned by main once all actors finish
-extern std::atomic<int> summa_exit_code;
 
 class SummaActor {
   caf::event_based_actor* self_;

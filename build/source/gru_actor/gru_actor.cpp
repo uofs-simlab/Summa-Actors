@@ -22,6 +22,7 @@ behavior GruActor::make_behavior() {
   }
   if (err != 0) {
     self_->println("GRU Actor: Error initializing GRU -- {}", message.get());
+    summa_exit_code = EXIT_FAILURE;
     self_->quit();
     return {};
   }
@@ -30,6 +31,7 @@ behavior GruActor::make_behavior() {
   setupGRU_fortran(job_index_, gru_data_.get(), err, &message);
   if (err != 0) {
     self_->println("GRU Actor: Error setting up GRU -- {}", message.get());
+    summa_exit_code = EXIT_FAILURE;
     self_->quit();
     return {};
   }
@@ -38,6 +40,7 @@ behavior GruActor::make_behavior() {
   readGRURestart_fortran(job_index_, gru_data_.get(), err, &message);
   if (err != 0) {
     self_->println("GRU Actor: Error reading GRU restart -- {}", message.get());
+    summa_exit_code = EXIT_FAILURE;
     self_->quit();
     return {};
   }
@@ -183,6 +186,7 @@ behavior GruActor::data_assimilation_mode() {
       if (err != 0) {
         self_->mail(err_atom_v, job_index_, timestep_, err, message.get())
             .send(parent_);
+        summa_exit_code = EXIT_FAILURE;
         self_->quit();
         return;
       }
@@ -199,6 +203,7 @@ behavior GruActor::data_assimilation_mode() {
       if (err !=0 ) {
         self_->println("GRU Actor {}: Error running GRU -- {}", 
                        job_index_, message.get());
+        summa_exit_code = EXIT_FAILURE;
       }
       std::fill(message.get(), message.get() + 256, '\0'); // Clear message
       writeGRUOutput_fortran(job_index_, time_step, output_step, 

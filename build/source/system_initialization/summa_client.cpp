@@ -7,11 +7,17 @@ behavior SummaClient::make_behavior() {
   gethostname(host, HOST_NAME_MAX);
   hostname_ = host;
 
+  if (distributed_settings_.servers_list_.empty()) {
+    self_->println("No Servers In servers_list\n");
+    summa_exit_code = EXIT_FAILURE;
+    return {};
+  }
   for (auto host : distributed_settings_.servers_list_) {
     auto server = self_->system().middleman().remote_actor(host, 
                                            distributed_settings_.port_);
     if (!server) {
       self_->println("Failed To Connect To Server\n"); 
+      summa_exit_code = EXIT_FAILURE;
       return {};
     }
     self_->println("Connected to Server\n");
@@ -111,7 +117,8 @@ behavior SummaClient::make_behavior() {
         },
         
         // Received completed batch information from the summa_actor 
-        [=](done_batch, double run_time, double read_time, double write_time) {
+        [=](done_batch, double run_time, double read_time, double write_time,
+            int num_gru_failed) {
             self_->println("Summa_Actor has finished, sending message to the server for another batch\n");
             self_->println("run_time = {}", run_time);
             self_->println("read_time = {}", read_time);
@@ -120,9 +127,22 @@ behavior SummaClient::make_behavior() {
             current_batch_.updateRunTime(run_time);
             current_batch_.updateReadTime(read_time);
             current_batch_.updateWriteTime(write_time);
+            current_batch_.setNumGruFailed(num_gru_failed);
 
             if(current_server_ == nullptr) {
                 self_->println("Saving batch until we find a new lead server\n");
+                saved_batch_ = true;
+            } else {
+                self_->mail(done_batch_v, self_, current_batch_).send(current_server_actor_);
+            }
+        },
+
+        // Summa_Actor quit on a fatal error, report the batch as failed so the server can finish
+        [=](err_atom) {
+            self_->println("Summa_Actor failed, reporting batch {} as failed\n",
+                           current_batch_.getBatchID());
+            current_batch_.setNumGruFailed(-1);
+            if(current_server_ == nullptr) {
                 saved_batch_ = true;
             } else {
                 self_->mail(done_batch_v, self_, current_batch_).send(current_server_actor_);

@@ -26,6 +26,8 @@ int Settings::readSettings() {
     getSettings<int>(json_settings, "Distributed_Settings", "num_hru_per_batch")
         .value_or(0),
     getSettings<int>(json_settings, "Distributed_Settings", "start_gru")
+        .value_or(1),
+    getSettings<int>(json_settings, "Distributed_Settings", "num_nodes")
         .value_or(1)
   );
 

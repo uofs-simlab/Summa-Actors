@@ -204,11 +204,13 @@ void SummaActor::finalize() {
                  write_dur_sec, num_gru_failed_, num_gru_restarts_);
 
   if (num_gru_failed_ > 0) summa_exit_code = EXIT_FAILURE;
-  self_->mail(done_batch_v, total_dur_sec, read_dur_sec, write_dur_sec).send(parent_);
+  self_->mail(done_batch_v, total_dur_sec, read_dur_sec, write_dur_sec,
+              num_gru_failed_).send(parent_);
 }
 
 void SummaActor::quitWithError() {
   summa_exit_code = EXIT_FAILURE;
+  self_->mail(err_atom_v).send(parent_);
   self_->quit();
 }
 

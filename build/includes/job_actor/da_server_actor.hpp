@@ -5,6 +5,7 @@
 #include "file_manager.hpp"
 #include "gru_struc.hpp"
 #include "message_atoms.hpp"
+#include "summa_exit_code.hpp"
 #include "da_client_actor.hpp"
 
 class DAServerActor {
@@ -38,4 +39,5 @@ class DAServerActor {
                   : self_(self), start_gru_(start_gru), num_gru_(num_gru_), 
                     settings_(settings) {};
     caf::behavior make_behavior();
+    void quitWithError();
 };

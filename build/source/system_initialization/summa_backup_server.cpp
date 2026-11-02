@@ -148,6 +148,7 @@ behavior SummaServer::summa_backup_server() {
         // Client finished a batch and the lead server has sent an update
         [=](done_batch, actor client_actor, Batch& batch) {
             self_->println("\nBatch: {} is done", batch.getBatchID());
+            if (batch.getNumGruFailed() != 0) summa_exit_code = EXIT_FAILURE;
             batch_container_.updateBatch_success(batch);
         },
 

@@ -11,6 +11,7 @@ behavior DAServerActor::make_behavior() {
       self_, settings_.distributed_settings_.port_);
   if (!res) {
     self_->println("DAServerActor: Failed to publish actor");
+    summa_exit_code = EXIT_FAILURE;
     return {};
   }
   self_->println("DAServerActor: Published actor");
@@ -21,11 +22,11 @@ behavior DAServerActor::make_behavior() {
   file_gru_ = file_manager_->getFileGru();
   if (file_gru_ < 0) {
     self_->println("ERROR--File Manager: Unable To Verify Number Of GRUs");
-    self_->quit();
+    quitWithError();
     return {};
   } else if (file_gru_ < num_gru_ + start_gru_ - 1) {
     self_->println("ERROR--File Manager: Number Of GRUs Exceeds File GRUs");
-    self_->quit();
+    quitWithError();
     return {};
   }
 
@@ -48,12 +49,12 @@ behavior DAServerActor::make_behavior() {
       self_->monitor(client, [this](const error& err) {
         if (!done_) {
           self_->println("DAServerActor: Client went down");
-          self_->quit();
+          quitWithError();
         } else {
           clients_exited_++;
           if (clients_exited_ == settings_.distributed_settings_.num_nodes_) {
             self_->println("DAServerActor: All clients exited");
-            exit(EXIT_SUCCESS);
+            exit(summa_exit_code.load());
           }
         }
       });
@@ -128,4 +129,9 @@ behavior DAServerActor::make_behavior() {
       }
     }
   };
+}
+
+void DAServerActor::quitWithError() {
+  summa_exit_code = EXIT_FAILURE;
+  self_->quit();
 }

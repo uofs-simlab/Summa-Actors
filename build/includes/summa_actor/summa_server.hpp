@@ -8,6 +8,7 @@
 #include "client_container.hpp"
 #include "settings_functions.hpp"
 #include "message_atoms.hpp"
+#include "summa_exit_code.hpp"
 #include <string>
 #include <optional>
 #include <thread>
