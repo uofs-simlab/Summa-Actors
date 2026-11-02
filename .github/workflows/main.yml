@@ -37,9 +37,8 @@ jobs:
       - name: Install SUNDIALS
         working-directory: ./utils/dependencies
         run: ./install_sundials.sh
-      - name: Clone SUMMA
-        working-directory: ./build
-        run: git clone -b develop_sundials https://github.com/CH-Earth/summa.git
+      - name: Fetch SUMMA submodule
+        run: git submodule update --init build/summa
       - name: Build SUMMA-Actors
         working-directory: ./build/build_scripts
         run: ./build.sh
