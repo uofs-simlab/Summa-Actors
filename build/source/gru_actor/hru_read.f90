@@ -165,12 +165,12 @@ subroutine readHRUForcing(indx_gru, indx_hru, iStep, iRead, iFile, &
     checkForce(iVar) = .true.
 
     ! check individual data value
-    if(forcingDataStruct(iFile)%var(iVar)%dataFromFile(indx_gru,iRead)<dataMin)then
+    if(forcingDataStruct(iFile)%var(iVar)%dataFromFile(iHRU_local,iRead)<dataMin)then
       write(message,'(a,f13.5)') trim(message)//'forcing data for variable '//trim(varname)//' is less than minimum allowable value ', dataMin
       err=20; return
     endif
     ! put the data into structures
-    hru_data%forcStruct%var(iVar) = forcingDataStruct(iFile)%var(iVar)%dataFromFile(indx_gru,iRead)
+    hru_data%forcStruct%var(iVar) = forcingDataStruct(iFile)%var(iVar)%dataFromFile(iHRU_local,iRead)
   end do  ! loop through forcing variables
     
   ! check if any forcing data is missing
