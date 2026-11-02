@@ -112,27 +112,15 @@ end subroutine f_setGruTolerances
 subroutine setupGRU(iGRU, err, message)
   USE summa_init_struc,only:init_struc
   USE globalData,only:gru_struc
-  USE globalData,only:model_decisions                         ! model decision structure
   
   USE var_lookup,only:iLookTYPE
   USE var_lookup,only:iLookID
-  USE var_lookup,only:iLookDECISIONS
   USE var_lookup,only:iLookPARAM
   USE var_lookup,only:iLookATTR
   USE var_lookup,only:iLookBVAR
   
   USE paramCheck_module,only:paramCheck                       ! module to check consistency of model parameters
-  ! look-up values for the choice of variable in energy equations (BE residual or IDA state variable)
-  USE mDecisions_module,only:&
-    closedForm,              &            ! use temperature with closed form heat capacity
-    enthalpyForm,            &            ! use enthalpy with soil temperature-enthalpy lookup tables
-    enthalpyFormAN                        ! use enthalpy with soil temperature-enthalpy analytical solution
   USE convertEnthalpyTemp_module,only:T2H_lookup_snWat               ! module to calculate a look-up table for the snow temperature-enthalpy conversion
-  USE convertEnthalpyTemp_module,only:T2L_lookup_soil                ! module to calculate a look-up table for the soil temperature-enthalpy conversion
-
-  USE var_derive_module,only:fracFuture                       ! module to calculate the fraction of runoff in future time steps (time delay histogram)
-
-  USE globalData,only:realMissing                             ! missing real value
   implicit none
   ! Dum
   integer(c_int), intent(in)      :: iGRU
@@ -142,7 +130,6 @@ subroutine setupGRU(iGRU, err, message)
   ! Local Variables
   character(len=256) :: cmessage
   integer(i4b)       :: iHRU, jHRU, kHRU, iDOM
-  logical            :: needLookup_soil
 
   summaVars: associate(&
     lookupStruct         =>init_struc%lookupStruct         , & ! x%gru(:)%hru(:)%z(:)%var(:)%lookup(:) -- lookup tables
@@ -186,20 +173,8 @@ subroutine setupGRU(iGRU, err, message)
   )
 
   ! *****************************************************************************
-  ! *** compute derived model variables that are pretty much constant for the basin as a whole
+  ! *** compute derived model variables; those read from the restart file are set in summa_paramSetup
   ! *****************************************************************************
-  ! calculate the fraction of runoff in future time steps
-  call fracFuture(bparStruct%gru(iGRU),        &  ! data structure of basin-average model parameters
-                  bvarStruct%gru(iGRU),        &  ! data structure of basin-average variables
-                  err,cmessage)                   ! error control
-  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
-
-  ! initialize glacier runoff / geometry-update variables (overwritten by initial conditions file values if present)
-  bvarStruct%gru(iGRU)%var(iLookBVAR%glacIceRunoffFuture)%dat  = 0._rkind
-  bvarStruct%gru(iGRU)%var(iLookBVAR%glacSnowRunoffFuture)%dat = 0._rkind
-  bvarStruct%gru(iGRU)%var(iLookBVAR%glacFirnRunoffFuture)%dat = 0._rkind
-  bvarStruct%gru(iGRU)%var(iLookBVAR%updateJulDay)%dat     = realMissing
-  bvarStruct%gru(iGRU)%var(iLookBVAR%updateJulDayNext)%dat = realMissing
 
   ! loop through local HRUs
   do iHRU=1,gru_struc(iGRU)%hruCount
@@ -228,18 +203,7 @@ subroutine setupGRU(iGRU, err, message)
                           lookupStruct%gru(iGRU)%hru(iHRU)%dom(iDOM),   &   ! intent(inout): lookup table data structure
                           err,cmessage)                                     ! intent(out):   error control
     if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
-
-    ! calculate a lookup table for the temperature-enthalpy conversion of soil
-    needLookup_soil = .false.
-    if(model_decisions(iLookDECISIONS%nrgConserv)%iDecision == enthalpyForm .and. &
-       gru_struc(iGRU)%hruInfo(iHRU)%domInfo(iDOM)%nSoil > 0) needLookup_soil = .true.
-    if(needLookup_soil)then
-      call T2L_lookup_soil(gru_struc(iGRU)%hruInfo(iHRU)%domInfo(iDOM)%nSoil, &   ! intent(in):    number of soil layers
-                           mparStruct%gru(iGRU)%hru(iHRU)%dom(iDOM),          &   ! intent(in):    parameter data structure
-                           lookupStruct%gru(iGRU)%hru(iHRU)%dom(iDOM),        &   ! intent(inout): lookup table data structure
-                           err,cmessage)                                          ! intent(out):   error control
-      if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
-    endif
+    ! the soil lookup table is built in summa_paramSetup, before check_icond needs it
 
    enddo ! looping through domains
   end do ! HRU

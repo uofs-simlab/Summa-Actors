@@ -81,6 +81,7 @@ contains
  USE pOverwrite_module,only:pOverwrite                       ! module to overwrite default parameter values with info from the Noah tables
  USE param_override_module,only:read_param                   ! module to read model parameter sets
  USE var_derive_module,only:fracFuture                       ! module to calculate the fraction of runoff in future time steps (time delay histogram)
+ USE convertEnthalpyTemp_module,only:T2L_lookup_soil         ! module to calculate a look-up table for the soil temperature-enthalpy conversion
  USE module_sf_noahmplsm,only:read_mp_veg_parameters         ! module to read NOAH vegetation tables
  ! global data structures
  USE globalData,only:gru_struc                               ! gru-hru mapping structures
@@ -326,8 +327,35 @@ contains
  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
 
  ! *****************************************************************************
- ! *** skip computing derived model variables that are constant for the basin and do in gru_actor.f90 
+ ! *** derived variables that summa_readRestart reads or overwrites; the rest are in gru_actor.f90
  ! *****************************************************************************
+ do iGRU=1,nGRU
+  ! fraction of runoff in future time steps, and zeroed future runoff that the restart file overwrites
+  call fracFuture(bparStruct%gru(iGRU),bvarStruct%gru(iGRU),err,cmessage)
+  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+  ! glacier runoff and geometry-update variables, overwritten by the restart file if present
+  bvarStruct%gru(iGRU)%var(iLookBVAR%glacIceRunoffFuture)%dat  = 0._rkind
+  bvarStruct%gru(iGRU)%var(iLookBVAR%glacSnowRunoffFuture)%dat = 0._rkind
+  bvarStruct%gru(iGRU)%var(iLookBVAR%glacFirnRunoffFuture)%dat = 0._rkind
+  bvarStruct%gru(iGRU)%var(iLookBVAR%updateJulDay)%dat         = realMissing
+  bvarStruct%gru(iGRU)%var(iLookBVAR%updateJulDayNext)%dat     = realMissing
+ end do
+
+ ! soil temperature-enthalpy lookup tables, needed by check_icond
+ if(model_decisions(iLookDECISIONS%nrgConserv)%iDecision == enthalpyForm)then
+  do iGRU=1,nGRU
+   do iHRU=1,gru_struc(iGRU)%hruCount
+    do iDOM=1,gru_struc(iGRU)%hruInfo(iHRU)%domCount
+     if(gru_struc(iGRU)%hruInfo(iHRU)%domInfo(iDOM)%nSoil == 0) cycle
+     call T2L_lookup_soil(gru_struc(iGRU)%hruInfo(iHRU)%domInfo(iDOM)%nSoil, &   ! intent(in):    number of soil layers
+                          mparStruct%gru(iGRU)%hru(iHRU)%dom(iDOM),          &   ! intent(in):    parameter data structure
+                          lookupStruct%gru(iGRU)%hru(iHRU)%dom(iDOM),        &   ! intent(inout): lookup table data structure
+                          err,cmessage)                                          ! intent(out):   error control
+     if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
+    end do
+   end do
+  end do
+ endif
 
  ! identify the end of the initialization
  call date_and_time(values=endSetup)
