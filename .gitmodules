@@ -1,4 +1,4 @@
 [submodule "build/summa"]
 	path = build/summa
-	url = https://github.com/ashleymedin/summa.git
+	url = https://github.com/CH-Earth/summa.git
 	branch = develop

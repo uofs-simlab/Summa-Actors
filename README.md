@@ -100,7 +100,7 @@ time to compile:
   4) ./build.sh              # generic Linux;  ./build_mac.sh on macOS;  ./build_cluster.sh on an HPC module system
 
 The `build/summa` submodule tracks the `develop` branch of
-https://github.com/ashleymedin/summa.git. To advance it to the latest SUMMA
+https://github.com/CH-Earth/summa.git. To advance it to the latest SUMMA
 `develop` later, run `git submodule update --remote build/summa` and commit the
 updated pointer.
 
