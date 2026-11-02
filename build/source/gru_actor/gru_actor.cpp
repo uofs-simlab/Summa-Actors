@@ -9,6 +9,7 @@ static std::mutex gru_setup_mutex;
 
 behavior GruActor::make_behavior() {  
   int err = 0;
+  f_getStartForcingFile(iFile_);
   f_getNumHruInGru(job_index_, num_hrus_);
   gru_data_ = std::unique_ptr<void, GruDeleter>(new_handle_gru_type(num_hrus_));
   f_resetGruStrucNSnow(job_index_);

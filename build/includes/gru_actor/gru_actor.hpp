@@ -13,6 +13,7 @@
 #define RESTART_YEARLY 4
 
 extern "C" {
+  void f_getStartForcingFile(int& iFile);
   void f_getNumHruInGru(int& index_gru, int& num_hru);
   void f_resetGruStrucNSnow(int& index_gru);
   void f_initGru(int& index_gru, void* gru_data, int& output_buffer_steps,

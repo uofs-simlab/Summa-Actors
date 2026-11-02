@@ -288,19 +288,9 @@ subroutine readHRURestart(indxGRU, indxHRU, hru_data, err, message)
   USE var_derive_module,only:rootDensty                       ! module to calculate the vertical distribution of roots
   USE var_derive_module,only:satHydCond                       ! module to calculate the saturated hydraulic conductivity in each soil layer
   ! global data structures
-  USE globalData,only:model_decisions                         ! model decision structure
   USE globalData,only:gru_struc                               ! gru-hru-dom mapping structure
   ! Lookup values
-  USE var_lookup,only:iLookDECISIONS                          ! look-up values for model decisions
-  USE var_lookup,only:iLookBVAR                               ! look-up values for basin-average model variables
   USE var_lookup,only:iLookINDEX                              ! look-up values for local column index variables
-  ! model decisions
-  USE mDecisions_module,only:&                                ! look-up values for the choice of method for the spatial representation of groundwater
-  localColumn, & ! separate groundwater representation in each local soil column
-  singleBasin    ! single groundwater store over the entire basin
-  USE mDecisions_module,only:&
-  fullStart,      & ! start with full aquifer
-  emptyStart        ! start with empty aquifer
   implicit none
   ! Dummy variables
   integer(c_int),intent(in)               :: indxGRU            !  index of GRU in gru_struc
@@ -314,7 +304,6 @@ subroutine readHRURestart(indxGRU, indxHRU, hru_data, err, message)
   character(LEN=256)                      :: cmessage           ! error message of downwind routine
   character(LEN=256)                      :: restartFile        ! restart file name
   integer(i4b)                            :: nGRU
-  real(dp)                                :: aquifer_start      ! initial aquifer storage
   ! ---------------------------------------------------------------------------------------
   ! initialize error control
   err=0; message='hru_actor_readRestart/'
@@ -349,57 +338,9 @@ subroutine readHRURestart(indxGRU, indxHRU, hru_data, err, message)
   end do
 
   ! *****************************************************************************
-  ! *** initialize aquifer storage
+  ! *** aquifer storage
   ! *****************************************************************************
-
-  ! initialize aquifer storage
-  ! NOTE: this is ugly: need to add capabilities to initialize basin-wide state variables
-
-  ! There are two options for groundwater:
-  !  (1) where groundwater is included in the local column (i.e., the HRUs); and
-  !  (2) where groundwater is included for the single basin (i.e., the GRUS, where multiple HRUS drain into a GRU).
-
-  ! For water balance calculations it is important to ensure that the local aquifer storage is zero if groundwater is treated as a basin-average state variable (singleBasin);
-  !  and ensure that basin-average aquifer storage is zero when groundwater is included in the local columns (localColumn).
-
-  aquifer_start  = 1._dp
-  ! select aquifer option
-  select case(model_decisions(iLookDECISIONS%aquiferIni)%iDecision)
-   case(fullStart)
-    aquifer_start  = 1._dp ! Start with full aquifer, since easier to spin up by draining than filling (filling we need to wait for precipitation) 
-   case(emptyStart)
-    aquifer_start  = 0._dp ! Start with empty aquifer ! If want to compare model method outputs, empty start leads to quicker equilibrium
-   case default
-    message=trim(message)//'unable to identify decision for initial aquifer storage'
-   return
-  end select  ! aquifer option
-
-  ! select groundwater option
-  select case(model_decisions(iLookDECISIONS%spatial_gw)%iDecision)
-
-  ! the basin-average aquifer storage is not used if the groundwater is included in the local column
-  case(localColumn)
-   hru_data%bvarStruct%var(iLookBVAR%basin__AquiferStorage)%dat(1) = 0._dp ! set to zero to be clear that there is no basin-average aquifer storage in this configuration
-   if(model_decisions(iLookDECISIONS%aquiferIni)%iDecision==emptyStart)then
-     do iDOM = 1, gru_struc(indxGRU)%hruInfo(indxHRU)%domCount
-       hru_data%progStruct%dom(iDOM)%var(iLookPROG%scalarAquiferStorage)%dat(1) = aquifer_start ! leave at initialized values if fullStart
-     end do
-   endif
-
-  ! the local column aquifer storage is not used if the groundwater is basin-average
-  ! (i.e., where multiple HRUs drain to a basin-average aquifer)
-  case(singleBasin)
-   hru_data%bvarStruct%var(iLookBVAR%basin__AquiferStorage)%dat(1) = aquifer_start
-   do iDOM = 1, gru_struc(indxGRU)%hruInfo(indxHRU)%domCount
-     hru_data%progStruct%dom(iDOM)%var(iLookPROG%scalarAquiferStorage)%dat(1) = 0._dp  ! set to zero to be clear that there is no local aquifer storage in this configuration
-   end do
-
-  ! error check
-  case default
-  message=trim(message)//'unable to identify decision for regional representation of groundwater'
-  return
-
-  end select  ! groundwater option
+  ! aquifer storage comes from init_struc, where summa_readRestart applied aquiferIni and the aqEmptyStarted flag
 
   ! *****************************************************************************
   ! *** initialize time step length (per domain)

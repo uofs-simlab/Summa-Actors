@@ -29,12 +29,20 @@ behavior FileAccessActor::make_behavior() {
       int err = 0;
       self_->println("File Access Actor: Initializing\n");
       num_hru_ = num_hru;
-      hru_timesteps_.resize(num_hru_, 0);
+      hru_timesteps_.resize(num_gru_, 0); // progress is tracked per GRU (indexed by job index)
 
       f_getNumTimeSteps(num_steps_);
 
       forcing_files_ = std::make_unique<forcingFileContainer>();
       if (forcing_files_->initForcingFiles() != 0) return -1;
+
+      std::unique_ptr<char[]> message(new char[256]);
+      f_findStartForcingFile(err, &message);
+      if (err != 0) {
+        self_->println("File Access Actor: Error -- {}", message.get());
+        self_->quit();
+        return -1;
+      }
 
       // Initialize output buffer
       output_buffer_ = std::make_unique<OutputBuffer>(
@@ -78,7 +86,8 @@ behavior FileAccessActor::make_behavior() {
 
     //
     [this](access_forcing_internal, int i_file) {
-      if (forcing_files_->allFilesLoaded()) return;
+      // files before the start file are never loaded, so stop at the last file
+      if (forcing_files_->allFilesLoaded() || i_file > forcing_files_->getNumFiles()) return;
       auto err = forcing_files_->loadForcingFile(i_file, start_gru_, num_gru_);
       if (err != 0) {
         self_->println("File Access Actor: Error loadForcingFile\n"
@@ -154,7 +163,8 @@ behavior FileAccessActor::make_behavior() {
       // if the slowest hru is past the ith checkpoint (current threshold)
       if (slowest_timestep > completed_checkpoints_) {
         // self_->println("\n --- Writing Restart {} {} -- \n", slowest_timestep, start_gru_);
-        err = output_buffer_->writeRestart(start_gru_, num_hru_, output_structure_index-1, year, month, day, hour);
+        err = output_buffer_->writeRestart(start_gru_, num_gru_, output_structure_index-1, year, month, day, hour);
+        if (err != 0) self_->println("FileAccessActor: Error writing restart file, err = {}", err);
         // Output_Partition *output_partition = 
         //     output_container_->getOutputPartition(gru - 1);
         // writeRestart(output_partition, start_gru_, num_gru_, 
@@ -189,7 +199,8 @@ behavior FileAccessActor::make_behavior() {
   // if the slowest hru is past the ith checkpoint (current threshold)
   if (slowest_timestep > 0) {
     self_->println("\n --- Writing Restart {} {} {} {} {} -- \n", year, month, day, hour, start_gru_);
-    err = output_buffer_->writeRestart(start_gru_, num_hru_, output_structure_index, year, month, day, hour);
+    err = output_buffer_->writeRestart(start_gru_, num_gru_, output_structure_index, year, month, day, hour);
+    if (err != 0) self_->println("FileAccessActor: Error writing restart file, err = {}", err);
     std::fill(hru_timesteps_.begin(), hru_timesteps_.end(), 0);
     // Output_Partition *output_partition = 
     //     output_container_->getOutputPartition(gru - 1);

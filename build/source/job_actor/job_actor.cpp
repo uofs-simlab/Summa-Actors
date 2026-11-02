@@ -294,6 +294,7 @@ behavior JobActor::data_assimilation_mode() {
       num_steps_ = num_timesteps;
       spawnGruBatches();
       self_->println("JobActor: GRUs Initialized");
+      f_getStartForcingFile(iFile_);
       self_->mail(access_forcing_v, iFile_, self_).send(file_access_actor_);
     },
 

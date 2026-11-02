@@ -401,11 +401,8 @@ subroutine readGRURestart_fortran(indx_gru, handle_gru_data, err, message_r) &
   USE C_interface_module,only:f_c_string_ptr  ! convert fortran string to c string
   USE INIT_HRU_ACTOR,only:readHRURestart
 
-  USE var_lookup,only:iLookDECISIONS                          ! look-up values for model decisions
   USE var_lookup,only:iLookBVAR                               ! look-up values for basin-average model variables
-  USE globalData,only:model_decisions                         ! model decision structure
-  USE mDecisions_module,only:localColumn, & ! separate groundwater representation in each local soil column
-                             singleBasin    ! single groundwater store over the entire basin
+  USE summa_init_struc,only:init_struc                        ! summa data initialized by the file access actor
   implicit none
   ! Dummy Variables
   integer(c_int), intent(in)       :: indx_gru
@@ -425,18 +422,9 @@ subroutine readGRURestart_fortran(indx_gru, handle_gru_data, err, message_r) &
     if(err /= 0) then; call f_c_string_ptr(trim(message), message_r);return; end if
   end do
 
-  ! Set the basin variables that pertain to the GRU
-  select case(model_decisions(iLookDECISIONS%spatial_gw)%iDecision)
-    case(localColumn) 
-      gru_data%bvarStruct%var(iLookBVAR%basin__AquiferStorage)%dat(1) = 0._dp
-    case(singleBasin)
-      gru_data%bvarStruct%var(iLookBVAR%basin__AquiferStorage)%dat(1) = 1._dp
-    case default
-      message=trim(message)//'unable to identify decision for regional representation of groundwater'
-      call f_c_string_ptr(trim(message), message_r)
-      err = 1
-      return
-  end select
+  ! basin aquifer storage as set by summa_readRestart (aquiferIni, spatial_gw and the aqEmptyStarted flag)
+  gru_data%bvarStruct%var(iLookBVAR%basin__AquiferStorage)%dat(1) = &
+    init_struc%bvarStruct%gru(indx_gru)%var(iLookBVAR%basin__AquiferStorage)%dat(1)
 
 end subroutine readGRURestart_fortran
 
@@ -507,7 +495,6 @@ subroutine runGRU_fortran(indx_gru, modelTimeStep, handle_gru_data, &
   USE globalData,only:gru_struc
   USE globalData,only:data_step                ! length of the data step (s)
   USE globalData,only:upland,glacCln1,glacCln2,glacDbr,wetland  ! horizontal domain types
-  USE globalData,only:elapsedUpdateArea        ! elapsed time for updating glacier and wetland area for all GRUs (s)
   USE qTimeDelay_module,only:qOverland         ! module to route water through an "unresolved" river network
   USE qTimeDelay_module,only:qGlacier          ! module to route water through the glacier reservoirs
   USE glacAreaChange_module,only:time_updateGlacArea  ! check if glacier area needs to be updated
@@ -1076,7 +1063,7 @@ subroutine runGRU_fortran(indx_gru, modelTimeStep, handle_gru_data, &
     end do
   endif
   call date_and_time(values=endUpdateArea)
-  elapsedUpdateArea = elapsedUpdateArea + elapsedSec(startUpdateArea,endUpdateArea)
+  gru_data%elapsedUpdateArea = gru_data%elapsedUpdateArea + elapsedSec(startUpdateArea,endUpdateArea)
 
   ! update hru's bvarStruct with the basin's bvarStruct
   do iHRU = 1, size(gru_data%hru)

@@ -186,6 +186,7 @@ module actor_data_types
     type(var_dlength),pointer  :: bvarStat
     type(var_dlength),pointer  :: bvarStruct
     type(grid_double),pointer  :: gridStruct                  ! grid(:)%var(:)%dat2(:,:) -- basin glacier grids (may be size 0)
+    real(rkind)                :: elapsedUpdateArea=0._rkind  ! elapsed time for updating glacier and wetland area in this GRU (s), per GRU so actors do not race
   end type gru_type
 
   ! Output Structure Type
