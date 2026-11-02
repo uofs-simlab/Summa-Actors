@@ -550,11 +550,13 @@ subroutine writeScalar(isBvar, hasDom, iDOM, ncid, outputTimestep, outputTimeste
   integer(i4b)                      :: maxStepCounter          ! counter for the realVec
   integer(i4b)                      :: iGRU,iHRU
   integer(i4b)                      :: nSpace                  ! number of spatial points to write
+  integer(i4b)                      :: iStart                  ! first row in the file: the GRU for bvar, else the GRU's first HRU
   ! output array
   real(rkind)                       :: realVec(nHRUrun, nSteps)! real vector for all HRUs in the run domain
   real(rkind)                       :: val
 
   err=0; message="writeScalar/"
+  iStart = merge(minGRU, gru_struc(minGRU)%hruInfo(1)%hru_ix, isBvar)
 
   select type(stat)
     class is (gru_hru_dom_time_doubleVec)
@@ -582,7 +584,7 @@ subroutine writeScalar(isBvar, hasDom, iDOM, ncid, outputTimestep, outputTimeste
       end do ! iGRU
       err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),        &
                              realVec(1:nSpace, 1:maxStepCounter),          &
-                             start=(/iDOM,minGRU,outputTimestep(iFreq)/),  &
+                             start=(/iDOM,iStart,outputTimestep(iFreq)/),  &
                              count=(/1,nSpace,maxStepCounter/))
 
     class is (gru_hru_time_doubleVec)
@@ -613,7 +615,7 @@ subroutine writeScalar(isBvar, hasDom, iDOM, ncid, outputTimestep, outputTimeste
 
       err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),&
                              realVec(1:nSpace, 1:maxStepCounter),  &
-                             start=(/minGRU,outputTimestep(iFreq)/),   &
+                             start=(/iStart,outputTimestep(iFreq)/),   &
                              count=(/nSpace,maxStepCounter/))
 
     class default; err=20; message=trim(message)//'stats must be scalarv and of type gru_hru_[dom_]time_doubleVec'; return
@@ -660,6 +662,7 @@ subroutine writeVector(isBvar, hasDom, iDOM, ncid, outputTimestep, maxLengthAll,
   integer(i4b)                          :: nSnow,nLake,nSoil,nGlce
   integer(i4b)                          :: nLayers
   integer(i4b)                          :: nSpace             ! number of spatial points to write
+  integer(i4b)                          :: iStart             ! first row in the file: the GRU for bvar, else the GRU's first HRU
   ! output array
   integer(i4b)                          :: datLength         ! length of each data vector
   integer(i4b)                          :: maxLength         ! maximum length of each data vector
@@ -673,6 +676,7 @@ subroutine writeVector(isBvar, hasDom, iDOM, ncid, outputTimestep, maxLengthAll,
   ! set the number of spatial points to write
   nSpace = nHRUrun
   if(isBvar) nSpace = maxGRU - minGRU + 1 ! for bvar we have one value per GRU, not one value per HRU
+  iStart = merge(minGRU, gru_struc(minGRU)%hruInfo(1)%hru_ix, isBvar)
 
   ! initialize the data vectors
   select type (datt)
@@ -755,19 +759,19 @@ subroutine writeVector(isBvar, hasDom, iDOM, ncid, outputTimestep, maxLengthAll,
     if(hasDom)then
       select case(dataType)
         case(ixReal)
-          err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),realArray(1:nSpace,1:maxLength),start=(/iDOM,minGRU,1,stepCounter/),count=(/1,nSpace,maxLength,1/))
+          err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),realArray(1:nSpace,1:maxLength),start=(/iDOM,iStart,1,stepCounter/),count=(/1,nSpace,maxLength,1/))
           realArray(:,:) = realMissing
         case(ixInteger)
-          err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),intArray(1:nSpace,1:maxLength),start=(/iDOM,minGRU,1,stepCounter/),count=(/1,nSpace,maxLength,1/))
+          err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),intArray(1:nSpace,1:maxLength),start=(/iDOM,iStart,1,stepCounter/),count=(/1,nSpace,maxLength,1/))
           intArray(:,:) = integerMissing
       end select
     else
       select case(dataType)
         case(ixReal)
-          err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),realArray(1:nSpace,1:maxLength),start=(/minGRU,1,stepCounter/),count=(/nSpace,maxLength,1/))
+          err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),realArray(1:nSpace,1:maxLength),start=(/iStart,1,stepCounter/),count=(/nSpace,maxLength,1/))
           realArray(:,:) = realMissing
         case(ixInteger)
-          err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),intArray(1:nSpace,1:maxLength),start=(/minGRU,1,stepCounter/),count=(/nSpace,maxLength,1/))
+          err = nf90_put_var(ncid%var(iFreq),meta(iVar)%ncVarID(iFreq),intArray(1:nSpace,1:maxLength),start=(/iStart,1,stepCounter/),count=(/nSpace,maxLength,1/))
           intArray(:,:) = integerMissing
       end select
     end if
