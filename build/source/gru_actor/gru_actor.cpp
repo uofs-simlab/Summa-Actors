@@ -1,7 +1,11 @@
 #include "gru_actor.hpp"
+#include <mutex>
 
 
 using namespace caf;
+
+// SUMMA's enthalpy lookup-table builders in GRU setup are not thread-safe, so one GRU sets up at a time
+static std::mutex gru_setup_mutex;
 
 behavior GruActor::make_behavior() {  
   int err = 0;
@@ -10,8 +14,11 @@ behavior GruActor::make_behavior() {
   f_resetGruStrucNSnow(job_index_);
 
   std::unique_ptr<char[]> message(new char[256]);
-  f_initGru(job_index_, gru_data_.get(), num_steps_output_buffer_, err,
-            &message);
+  {
+    std::lock_guard<std::mutex> lock(gru_setup_mutex);
+    f_initGru(job_index_, gru_data_.get(), num_steps_output_buffer_, err,
+              &message);
+  }
   if (err != 0) {
     self_->println("GRU Actor: Error initializing GRU -- {}", message.get());
     self_->quit();

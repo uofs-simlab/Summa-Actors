@@ -92,6 +92,15 @@ if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
     list(APPEND FLAGS_ALL -ffpe-summary=none)
 endif()
 
+# GRU actors run SUMMA on many threads, so keep locals on each thread's stack (SAVE variables are still shared)
+if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
+    list(APPEND FLAGS_NOAH -frecursive)
+    list(APPEND FLAGS_ALL -frecursive)
+elseif(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
+    list(APPEND FLAGS_NOAH -recursive)
+    list(APPEND FLAGS_ALL -recursive)
+endif()
+
 if(APPLE)
     # macOS does not define HOST_NAME_MAX (a Linux-ism); POSIX guarantees 255.
     list(APPEND FLAGS_CXX -DHOST_NAME_MAX=255)

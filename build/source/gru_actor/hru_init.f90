@@ -258,6 +258,8 @@ subroutine setupHRU(indxGRU, indxHRU, hru_data, err, message)
         end do
       end do
     endif
+    ! snow/ice lookup tables are shared and read-only once built, so point to them rather than copy
+    hrLookup%snow => inLookup%snow
     end associate
     do iVar=1, size(init_struc%progStruct%gru(indxGRU)%hru(indxHRU)%dom(iDOM)%var(:))
       hru_data%progStruct%dom(iDOM)%var(iVar)%dat(:) = init_struc%progStruct%gru(indxGRU)%hru(indxHRU)%dom(iDOM)%var(iVar)%dat(:)

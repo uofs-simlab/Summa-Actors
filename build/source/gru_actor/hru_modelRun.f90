@@ -32,10 +32,6 @@ USE module_sf_noahmplsm,only:isWater       ! parameter for water land cover type
 
 ! named variables
 USE globalData,only:yes,no                 ! .true. and .false.
-USE globalData,only:overwriteRSMIN         ! flag to overwrite RSMIN
-! urban vegetation category (could be local)
-USE globalData,only:urbanVegCategory       ! vegetation category for urban areas
-USE globalData,only:greenVegFrac_monthly   ! fraction of green vegetation in each month (0-1)
 ! provide access to the named variables that describe elements of parameter structures
 USE var_lookup,only:iLookTYPE              ! look-up values for classification of veg, soils etc.
 USE var_lookup,only:iLookID                ! look-up values for hru and gru IDs
@@ -49,15 +45,8 @@ USE var_lookup,only:iLookPROG              ! look-up values for local column mod
 USE var_lookup,only:iLookPARAM             ! look-up values for local column model parameters
 USE var_lookup,only:iLookDECISIONS         ! look-up values for model decisions
 
-! Noah-MP parameters
-USE NOAHMP_VEG_PARAMETERS,only:SAIM,LAIM   ! 2-d tables for stem area index and leaf area index (vegType,month)
-USE NOAHMP_VEG_PARAMETERS,only:HVT,HVB     ! height at the top and bottom of vegetation (vegType)
-USE noahmp_globals,only:RSMIN
-
 ! provide access to the named variables that describe model decisions
 USE mDecisions_module,only:&               ! look-up values for LAI decisions
- monthlyTable,& ! LAI/SAI taken directly from a monthly table for different vegetation classes
- specified,&    ! LAI/SAI computed from green vegetation fraction and winterSAI and summerLAI parameters   
  localColumn, & ! separate groundwater representation in each local soil column
  singleBasin, & ! single groundwater store over the entire basin
  bigBucket
@@ -79,7 +68,6 @@ subroutine runPhysics(indxGRU, indxHRU, modelTimeStep, hru_data, &
   USE nr_type                                  ! variable types, etc.
   ! subroutines and functions
   USE vegPhenlgy_module,only:vegPhenlgy        ! module to compute vegetation phenology
-  USE module_sf_noahmplsm,only:redprm          ! module to assign more Noah-MP parameters
   USE derivforce_module,only:derivforce        ! module to compute derived forcing data
   USE coupled_em_module,only:coupled_em        ! module to run the coupled energy and mass model
   ! global data
@@ -183,19 +171,7 @@ subroutine runPhysics(indxGRU, indxHRU, modelTimeStep, hru_data, &
     else  ! not a water pixel and the area of the domain is greater than zero
 
       if (typeDOM == upland) then
-        ! populate parameters in Noah-MP modules (large soil-layer count to pass the NROOT check; NROOT unused in SUMMA)
-        call REDPRM(hru_data%typeStruct%var(iLookTYPE%vegTypeIndex),      & ! vegetation type index
-                    hru_data%typeStruct%var(iLookTYPE%soilTypeIndex),     & ! soil type
-                    hru_data%typeStruct%var(iLookTYPE%slopeTypeIndex),    & ! slope type index
-                    10000_i4b,                                            & ! number of soil layers
-                    urbanVegCategory)                                       ! vegetation category for urban areas
-        if(overwriteRSMIN) RSMIN = hru_data%mparStruct%dom(iDOM)%var(iLookPARAM%minStomatalResistance)%dat(1)
-        HVT(hru_data%typeStruct%var(iLookTYPE%vegTypeIndex)) = hru_data%mparStruct%dom(iDOM)%var(iLookPARAM%heightCanopyTop)%dat(1)
-        HVB(hru_data%typeStruct%var(iLookTYPE%vegTypeIndex)) = hru_data%mparStruct%dom(iDOM)%var(iLookPARAM%heightCanopyBottom)%dat(1)
-        if(model_decisions(iLookDECISIONS%LAI_method)%iDecision == specified)then
-          SAIM(hru_data%typeStruct%var(iLookTYPE%vegTypeIndex),:) = hru_data%mparStruct%dom(iDOM)%var(iLookPARAM%winterSAI)%dat(1)
-          LAIM(hru_data%typeStruct%var(iLookTYPE%vegTypeIndex),:) = hru_data%mparStruct%dom(iDOM)%var(iLookPARAM%summerLAI)%dat(1)*greenVegFrac_monthly
-        end if
+        ! NOTE: Noah-MP parameters are set per HRU where used (SUMMA noahmpContext); never write the shared tables here
         use_computeVegFlux = computeVegFluxFlag
       else if (typeDOM == glacCln1 .or. typeDOM == glacCln2 .or. typeDOM == glacDbr .or. typeDOM == wetland) then
         use_computeVegFlux = .false.
@@ -207,6 +183,7 @@ subroutine runPhysics(indxGRU, indxHRU, modelTimeStep, hru_data, &
       ! compute derived forcing variables (different for each domain type)
       call derivforce(&
             is_glac,                          & ! intent(in):    flag to indicate a glacier domain
+            typeDOM == upland,                & ! intent(in):    flag to indicate the domain can have a canopy
             hru_data%forcStruct,              & ! intent(inout): vector of model forcing data
             hru_data%attrStruct,              & ! intent(in):    vector of model attributes
             hru_data%mparStruct%dom(iDOM),    & ! intent(in):    data structure of model parameters
