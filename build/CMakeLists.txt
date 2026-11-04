@@ -25,6 +25,10 @@ list(APPEND EXT_TARGETS CAF::core CAF::io)
 include(FortranCInterface)
 FortranCInterface_VERIFY(CXX)
 
+# SUMMA's work-structure caches are threadprivate; without OpenMP every GRU actor shares one copy
+find_package(OpenMP REQUIRED COMPONENTS Fortran)
+list(APPEND EXT_TARGETS OpenMP::OpenMP_Fortran)
+
 
 # Find the TBB package
 # Attempt to find TBB
@@ -100,6 +104,10 @@ elseif(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
     list(APPEND FLAGS_NOAH -recursive)
     list(APPEND FLAGS_ALL -recursive)
 endif()
+
+# Keeps SUMMA's threadprivate directives active on the threads running GRU actors
+list(APPEND FLAGS_NOAH ${OpenMP_Fortran_FLAGS})
+list(APPEND FLAGS_ALL ${OpenMP_Fortran_FLAGS})
 
 if(APPLE)
     # macOS does not define HOST_NAME_MAX (a Linux-ism); POSIX guarantees 255.
