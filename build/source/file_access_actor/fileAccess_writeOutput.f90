@@ -157,7 +157,7 @@ subroutine writeOutput_fortran(handle_ncid, num_steps, start_gru, max_gru, &
   do iGRU=start_gru, max_gru
     stepCounter(:) = outputTimeStep(iGRU)%dat(:) ! We want to avoid updating outputTimeStep
     do iStep=1, num_steps
-      call writeTime(ncid,outputTimeStep(iGRU)%dat(:),iStep,time_meta,  &
+      call writeTime(iGRU,ncid,outputTimeStep(iGRU)%dat(:),iStep,time_meta,  &
                      summa_struct(1)%timeStruct%gru(iGRU)%hru(indxHRU)%var,&
                      err,cmessage)
       if(err/=0)then 
@@ -785,12 +785,13 @@ end subroutine writeVector
 ! **************************************************************************************
 ! public subroutine writeTime: write current time to all files
 ! **************************************************************************************
-subroutine writeTime(ncid,outputTimestep,iStep,meta,datt,err,message)
+subroutine writeTime(iGRU,ncid,outputTimestep,iStep,meta,datt,err,message)
   USE data_types,only:var_info                       ! metadata type
   USE var_lookup,only:iLookStat                      ! index into stat structure
   implicit none
 
   ! declare dummy variables
+  integer(i4b)  ,intent(in)     :: iGRU              ! index of GRU being written
   type(var_i)   ,intent(in)     :: ncid              ! file ids
   integer(i4b)  ,intent(inout)  :: outputTimestep(:) ! output time step
   integer(i4b)  ,intent(in)     :: iStep
@@ -808,7 +809,7 @@ subroutine writeTime(ncid,outputTimestep,iStep,meta,datt,err,message)
   do iFreq=1,maxvarFreq
 
     ! check that we have finalized statistics for a given frequency
-    if(.not.summa_struct(1)%finalizeStats%gru(1)%hru(1)%tim(iStep)%dat(iFreq)) cycle
+    if(.not.summa_struct(1)%finalizeStats%gru(iGRU)%hru(1)%tim(iStep)%dat(iFreq)) cycle
 
     ! loop through model variables
     do iVar = 1,size(meta)
