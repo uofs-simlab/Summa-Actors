@@ -1,18 +1,28 @@
 #include "gru_actor.hpp"
+#include <mutex>
 
 
 using namespace caf;
 
+// SUMMA's enthalpy lookup-table builders in GRU setup are not thread-safe, so one GRU sets up at a time
+static std::mutex gru_setup_mutex;
+
 behavior GruActor::make_behavior() {  
   int err = 0;
+  f_getStartForcingFile(iFile_);
   f_getNumHruInGru(job_index_, num_hrus_);
   gru_data_ = std::unique_ptr<void, GruDeleter>(new_handle_gru_type(num_hrus_));
-  
+  f_resetGruStrucNSnow(job_index_);
+
   std::unique_ptr<char[]> message(new char[256]);
-  f_initGru(job_index_, gru_data_.get(), num_steps_output_buffer_, err,
-            &message);
+  {
+    std::lock_guard<std::mutex> lock(gru_setup_mutex);
+    f_initGru(job_index_, gru_data_.get(), num_steps_output_buffer_, err,
+              &message);
+  }
   if (err != 0) {
     self_->println("GRU Actor: Error initializing GRU -- {}", message.get());
+    summa_exit_code = EXIT_FAILURE;
     self_->quit();
     return {};
   }
@@ -21,6 +31,7 @@ behavior GruActor::make_behavior() {
   setupGRU_fortran(job_index_, gru_data_.get(), err, &message);
   if (err != 0) {
     self_->println("GRU Actor: Error setting up GRU -- {}", message.get());
+    summa_exit_code = EXIT_FAILURE;
     self_->quit();
     return {};
   }
@@ -29,6 +40,7 @@ behavior GruActor::make_behavior() {
   readGRURestart_fortran(job_index_, gru_data_.get(), err, &message);
   if (err != 0) {
     self_->println("GRU Actor: Error reading GRU restart -- {}", message.get());
+    summa_exit_code = EXIT_FAILURE;
     self_->quit();
     return {};
   }
@@ -59,14 +71,9 @@ behavior GruActor::make_behavior() {
 
 behavior GruActor::async_mode() {
   return {
-    [this](update_hru_async) {
-      self_->mail(get_num_output_steps_v, job_index_)
-          .request(file_access_actor_, infinite)
-          .await([this](int num_steps) {
-            num_steps_until_write_ = num_steps;
-            self_->mail(access_forcing_v, iFile_, self_).
-                send(file_access_actor_);
-      });
+    [this](update_hru_async, int num_steps) {
+      num_steps_until_write_ = num_steps;
+      self_->mail(access_forcing_v, iFile_, self_).send(file_access_actor_);
     },
 
     [this](new_forcing_file, int num_forc_steps, int iFile) {
@@ -179,6 +186,7 @@ behavior GruActor::data_assimilation_mode() {
       if (err != 0) {
         self_->mail(err_atom_v, job_index_, timestep_, err, message.get())
             .send(parent_);
+        summa_exit_code = EXIT_FAILURE;
         self_->quit();
         return;
       }
@@ -195,6 +203,7 @@ behavior GruActor::data_assimilation_mode() {
       if (err !=0 ) {
         self_->println("GRU Actor {}: Error running GRU -- {}", 
                        job_index_, message.get());
+        summa_exit_code = EXIT_FAILURE;
       }
       std::fill(message.get(), message.get() + 256, '\0'); // Clear message
       writeGRUOutput_fortran(job_index_, time_step, output_step, 

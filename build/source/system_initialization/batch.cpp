@@ -9,6 +9,7 @@ Batch::Batch(int batch_id, int start_hru, int num_hru){
   write_time_ = 0.0;
   assigned_to_actor_ = false;
   solved_ = false;
+  num_gru_failed_ = 0;
 }
 
 // Getters

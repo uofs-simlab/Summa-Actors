@@ -20,6 +20,10 @@ extern "C" {
   void read_forcingFile(int& iFile, int& start_gru, int& num_gru, 
       int& err, void* message);
 
+  // Forcing file holding the simulation start: found once, then read by each GRU
+  void f_findStartForcingFile(int& err, void* message);
+  void f_getStartForcingFile(int& iFile);
+
   // Deallocate Fortran Structures associate with forcing files
   void freeForcingFiles_fortran();
 }
@@ -60,6 +64,7 @@ class forcingFileContainer {
     inline bool allFilesLoaded() { 
       return files_loaded_ == forcing_files_.size(); 
     }
+    inline int getNumFiles() { return forcing_files_.size(); }
     inline int getNumSteps(int iFile) {
       return forcing_files_[iFile-1].nTimeSteps;
     }

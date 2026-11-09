@@ -1,6 +1,5 @@
 bin/summa_actors
 build/cmake/build
-build/summa
 build/.vscode
 .vscode/settings.json
 .DS_Store
@@ -14,13 +13,13 @@ build/build_scripts/cmake_build
 .vscode
 bin/
 utils/dependencies/caf
-utils/dependencies/actor-framework-1.0.2
+utils/dependencies/actor-framework-*
 utils/dependencies/hdf5*
 utils/dependencies/netcdf*
 utils/dependencies/zlib*
 utils/dependencies/sundials*
 utils/dependencies/v*
 utils/dependencies/lapack*
-utils/dependencies/1.0.2.tar.gz
+utils/dependencies/*.tar.gz
 utils/dependencies/install/*
 

@@ -78,13 +78,13 @@ int forcingFileContainer::initForcingFiles() {
 int forcingFileContainer::loadForcingFile(int file_ID, int start_gru, 
     int num_gru) {
   int err = 0;
-  if (forcing_files_[file_ID-1].is_loaded) {
-    return 0;
-  }
-
   if (file_ID < 1 || file_ID > forcing_files_.size()) {
     std::cout << "Error: Invalid file ID: " << file_ID << std::endl;
     return -1;
+  }
+
+  if (forcing_files_[file_ID-1].is_loaded) {
+    return 0;
   }
   file_access_timing_.updateStartPoint("read_duration");
   std::unique_ptr<char[]> message(new char[256]);

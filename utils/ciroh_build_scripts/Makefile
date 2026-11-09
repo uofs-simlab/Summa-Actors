@@ -59,7 +59,7 @@ SUMMA_NOAHMP= \
 NOAHMP = $(patsubst %, $(NOAHMP_DIR)/%, $(SUMMA_NOAHMP))
 
 SUMMA_NRUTIL= \
-		f2008funcs.f90 \
+		f2008_funcs.f90 \
 		nr_utils.f90 \
 		nr_type.f90
 NRUTIL = $(patsubst %, $(NUMREC_DIR)/%, $(SUMMA_NRUTIL))

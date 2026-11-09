@@ -4,6 +4,7 @@
 #include "settings_functions.hpp"
 #include "gru_struc.hpp"
 #include "message_atoms.hpp"
+#include "summa_exit_code.hpp"
 #include "summa_init_struc.hpp"
 #include "file_manager.hpp"
 #include "summa_global_data.hpp"
@@ -55,4 +56,5 @@ class DAClientActor {
     }
 
     void spawnGruBatches();
+    void quitWithError();
 };

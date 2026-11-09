@@ -10,7 +10,7 @@
 # Usage:
 #   ./install_netcdf.sh
 #
-# If you encounter any issues, please post an issue on the Summa-Actors repository:
+# If you encounter any issues, please post an issue on the SUMMA-Actors repository:
 #   https://github.com/uofs-simlab/Summa-Actors/issues
 #
 # After installation, update the CMAKE_PREFIX_PATH environment variable:

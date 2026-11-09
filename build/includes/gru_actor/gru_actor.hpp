@@ -3,6 +3,7 @@
 #include "fortran_data_types.hpp"
 #include "settings_functions.hpp"
 #include "message_atoms.hpp"
+#include "summa_exit_code.hpp"
 // #include "hru_actor.hpp"
 #include <vector>
 
@@ -13,8 +14,10 @@
 #define RESTART_YEARLY 4
 
 extern "C" {
+  void f_getStartForcingFile(int& iFile);
   void f_getNumHruInGru(int& index_gru, int& num_hru);
-  void f_initGru(int& index_gru, void* gru_data, int& output_buffer_steps, 
+  void f_resetGruStrucNSnow(int& index_gru);
+  void f_initGru(int& index_gru, void* gru_data, int& output_buffer_steps,
       int& err, void* message);
   void setupGRU_fortran(int& index_gru, void* gru_data, int& err, 
       void* message);

@@ -18,6 +18,8 @@
 using json = nlohmann::json;
 using namespace caf;
 
+std::atomic<int> summa_exit_code{EXIT_SUCCESS};
+
 behavior SummaActor::make_behavior() {
   self_->println("Starting SUMMA Actor, start_gru {}, num_gru {}", start_gru_, 
                  num_gru_);
@@ -30,17 +32,17 @@ behavior SummaActor::make_behavior() {
   auto err_msg = file_manager_->setTimesDirsAndFiles();
   if (!err_msg.empty()) {
     self_->println("ERROR--File Manager: {}", err_msg);
-    self_->quit();
+    quitWithError();
     return {};
   }
   file_gru_ = file_manager_->getFileGru();
   if (file_gru_ < 0) {
     self_->println("ERROR--File Manager: Unable To Verify Number Of GRUs");
-    self_->quit();
+    quitWithError();
     return {};
   } else if (file_gru_ < num_gru_ + start_gru_ - 1) {
     self_->println("ERROR--File Manager: Number Of GRUs Exceeds File GRUs");
-    self_->quit();
+    quitWithError();
     return {};
   }
   
@@ -48,14 +50,14 @@ behavior SummaActor::make_behavior() {
   auto err = global_fortran_state_->defineGlobalData();
   if (err != 0) {
     self_->println("ERROR--Global State: Unable To Define Global Data");
-    self_->quit();
+    quitWithError();
     return {};
   }
 
   err = createLogDirectory();
   if (err != 0) {
     self_->println("ERROR--Summa_Actor: Unable To Create Log Directory");
-    self_->quit();
+    quitWithError();
     return {};
   }
 
@@ -67,7 +69,7 @@ behavior SummaActor::make_behavior() {
      
   if (spawnJob() != 0) {
     self_->println("ERROR--Summa_Actor: Unable To Spawn Job\n");
-    self_->quit();
+    quitWithError();
     return {};
   }
 
@@ -91,7 +93,7 @@ behavior SummaActor::make_behavior() {
 
       if (spawnJob() != 0) {
         self_->println("ERROR--Summa_Actor: Unable To Spawn Job");
-        self_->quit();
+        quitWithError();
         return;
       }
     },
@@ -100,13 +102,13 @@ behavior SummaActor::make_behavior() {
       if (err_code == -2) { // Unrecoverable Error
         self_->println("Summa-Actor: Unrecoverable Error from job_actor\n" 
                        "\t Error Message = {}", err_msg);
-        self_->quit();
+        quitWithError();
         return; // TODO: Need to handle this in the main actor?
       } else {
         self_->println("Summa-Actor: Recoverable Error from job_actor\n" 
                        "\t Error Message = {}\n" "\t Error Code = {}\n"
                        "IMPLEMENTATION NEEDED\n", err_msg, err_code);
-        self_->quit();
+        quitWithError();
         return;
       }
     },
@@ -121,7 +123,7 @@ int SummaActor::spawnJob() {
   std::optional<Batch> batch = batch_container_->getUnsolvedBatch();
   if (!batch.has_value()) {
     self_->println("ERROR--Summa_Actor: No Batches To Solve");
-    self_->quit(); 
+    quitWithError();
     return -1;
   }
   current_batch_ = std::make_shared<Batch>(batch.value());
@@ -201,8 +203,15 @@ void SummaActor::finalize() {
                  total_dur_sec, total_dur_min, total_dur_hr, read_dur_sec, 
                  write_dur_sec, num_gru_failed_, num_gru_restarts_);
 
-  self_->mail(done_batch_v, total_dur_sec, read_dur_sec, write_dur_sec).send(parent_);
+  if (num_gru_failed_ > 0) summa_exit_code = EXIT_FAILURE;
+  self_->mail(done_batch_v, total_dur_sec, read_dur_sec, write_dur_sec,
+              num_gru_failed_).send(parent_);
+}
 
+void SummaActor::quitWithError() {
+  summa_exit_code = EXIT_FAILURE;
+  self_->mail(err_atom_v).send(parent_);
+  self_->quit();
 }
 
 

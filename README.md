@@ -32,6 +32,8 @@ Summa-Actors/
 ├── build/
 |   ├── build_scripts/
 │   |   ├── build.sh
+│   |   ├── build_mac.sh
+│   |   ├── build_cluster.sh
 |   ├── cmake/
 │   ├── includes/
 │   ├── source/
@@ -44,7 +46,7 @@ Summa-Actors/
 └── README.md
 ```
  * `bin/`: Contains the compiled SUMMA-Actors executable after building
- * `build/`: Contains the build scripts, the Summa-Actors specific source code, 
+ * `build/`: Contains the build scripts, the SUMMA-Actors specific source code, 
             and a Fortran version of SUMMA.
  * `utils/`: Contains utility scripts and Dockerfiles for building and running 
             SUMMA-Actors. **This folder also contains `dependencies`, 
@@ -52,9 +54,9 @@ Summa-Actors/
 
 
 ### Dependencies
-  SUMMA-Actors requires the following dependencies to be installed on you 
+  SUMMA-Actors requires the following dependencies to be installed on your 
   system:
-  * [SUMMA](https://github.com/ashleymedin/summa/tree/develop) 
+  * [SUMMA](https://github.com/CH-Earth/summa/tree/develop) 
   * g++
   * gfortran
   * [OpenBLAS](https://github.com/xianyi/OpenBLAS)
@@ -75,8 +77,9 @@ will automatically download and install the dependencies in the
 `utils/dependencies/install` folder. We have configured a script to 
 automatically look here for the dependencies.
 
-If you are using a module system, you can modify the `build.sh` script in the 
-`build/build_scripts` folder to point to the correct locations.
+The `build/build_scripts` folder contains `build.sh` (generic Linux, no module
+system), `build_mac.sh` (macOS + MacPorts GCC), and `build_cluster.sh` (HPC with
+a module system); edit whichever applies to point at your dependency locations.
 
 To install each dependency, follow these steps, some libraries will take some 
 time to compile: 
@@ -86,14 +89,27 @@ time to compile:
   5) `./install_caf.sh`
   6) `./install_sundials.sh`
 
-**NOTE: Installing SUMMA is part of the build instructions below**
+**NOTE: A Fortran version of SUMMA is bundled as a git submodule at
+`build/summa` (see step 1 below); you do not clone it separately.**
  
 ### Version 4.x.x Build Instructions
   1) git clone https://github.com/uofs-simlab/Summa-Actors.git
-  2) cd Summa-Actors/build/
-  3) git clone -b develop https://github.com/ashleymedin/summa.git
-  4) cd build_scripts/
-  5) ./build.sh
+  2) cd Summa-Actors && git submodule update --init build/summa
+     # already cloned and just missing build/summa? the command above still works
+  3) cd build/build_scripts/
+  4) ./build.sh              # generic Linux;  ./build_mac.sh on macOS;  ./build_cluster.sh on an HPC module system
+
+The `build/summa` submodule tracks the `develop` branch of
+https://github.com/CH-Earth/summa.git. To advance it to the latest SUMMA
+`develop` later, run `git submodule update --remote build/summa` and commit the
+updated pointer.
+
+Note: do **not** use `--recurse-submodules`/`--recursive` here. SUMMA itself
+now carries optional submodules for MPI (`parallel-utils`) and river-routing
+coupling (`mizuRoute`, `toml-f`), pulled in through SUMMA's own CMake build.
+SUMMA-Actors has its own top-level CMake build and reaches directly into
+`build/summa/build/source`, so it never uses those and recursing into them
+just downloads the full mizuRoute model for no benefit.
 
 Note: If you did not install the dependencies in the `utils/dependencies` folder,
 you will need to modify append to the $CMAKE_PREFIX_PATH environment variables
@@ -109,7 +125,7 @@ Usage: summa_actors -m master_file [-g startGRU countGRU] [-c config_file] [-b b
   Available options:
     -m, --master:         Define path/name of master file (can be specified in config)
     -g, --gru:            Run a subset of countGRU GRUs starting from index startGRU 
-    -c, --config:         Path name of the Summa-Actors config file (optional but recommended)
+    -c, --config:         Path name of the SUMMA-Actors config file (optional but recommended)
     -s, --suffix          Add fileSuffix to the output files
         --gen-config:     Generate a config file
     -b, --backup-server:  Start backup server, requires a server and config_file

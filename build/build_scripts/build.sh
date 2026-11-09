@@ -1,38 +1,45 @@
 #!/bin/bash
+#####################################################################
+# SUMMA-Actors build script -- generic Linux (no module system)
+#
+# Run from build/build_scripts/ :
+#     ./build.sh                 # configure + build
+#     USE_SUNDIALS=OFF ./build.sh # build without the IDA solver
+#     CLEAN=1 ./build.sh         # wipe build/cmake_build first
+#
+# Expects the dependencies (lapack, netcdf-c, netcdf-fortran, caf, and
+# -- when USE_SUNDIALS=ON -- sundials) to have been installed into
+# utils/dependencies/install/ by the scripts in utils/dependencies/.
+# If they live elsewhere, prepend their locations to CMAKE_PREFIX_PATH
+# before running, or edit INSTALL_DIR below.
+#
+# For an HPC module system use build_cluster.sh; on macOS use build_mac.sh.
+#####################################################################
+set -euo pipefail
 
-# If compiling on a Digital Research Alliance of Canada cluster,
-# load the following modules:
-# module load StdEnv/2023
-# module load gcc/12.3
-# module load openblas/0.3.24
-# module load openmpi/4.1.5
-# module load netcdf-fortran/4.6.1
+cd "$(dirname "$0")"                       # build/build_scripts/
+BUILD_DIR=$(cd .. && pwd)                  # build/
+INSTALL_DIR=$(cd ../../utils/dependencies/install && pwd)
 
-# If compiling on Anvil, load the following modules:
-# module load gcc/14.2.0
-# module load openmpi/4.1.6
-# module load openblas/0.3.17
-# module load netcdf-fortran/4.5.3
+USE_SUNDIALS=${USE_SUNDIALS:-ON}
+NJOBS=$(command -v nproc >/dev/null && nproc || echo 4)
 
-# -----------------------------------
+export CMAKE_PREFIX_PATH="\
+$INSTALL_DIR/caf:\
+$INSTALL_DIR/netcdf-fortran:$INSTALL_DIR/netcdf-c:$INSTALL_DIR/lapack:\
+${CMAKE_PREFIX_PATH:-}"
 
-# Compiling the LATEST version of the code
-# -----------------------------------
-INSTALL_DIR=$PWD/../../utils/dependencies/install
-export CMAKE_PREFIX_PATH="$INSTALL_DIR/sundials:$INSTALL_DIR/caf:$CMAKE_PREFIX_PATH"
+if [ "$USE_SUNDIALS" = "ON" ]; then
+  export CMAKE_PREFIX_PATH="$INSTALL_DIR/sundials:$CMAKE_PREFIX_PATH"
+fi
 
-# will only need this if not using modules
-export CMAKE_PREFIX_PATH="$INSTALL_DIR/netcdf-fortran:$INSTALL_DIR/netcdf-c:$INSTALL_DIR/lapack:$CMAKE_PREFIX_PATH"
+[ "${CLEAN:-0}" = "1" ] && { echo "==> Removing $BUILD_DIR/cmake_build"; rm -rf "$BUILD_DIR/cmake_build"; }
 
-cmake -B ./cmake_build -S .. -DUSE_SUNDIALS=ON -DCMAKE_BUILD_TYPE=Release
-cmake --build ./cmake_build --target all -j
+echo "==> Configuring (USE_SUNDIALS=$USE_SUNDIALS)"
+cmake -B "$BUILD_DIR/cmake_build" -S "$BUILD_DIR" \
+      -DUSE_SUNDIALS="$USE_SUNDIALS" -DCMAKE_BUILD_TYPE=Release
 
+echo "==> Building (-j$NJOBS)"
+cmake --build "$BUILD_DIR/cmake_build" --target all -j"$NJOBS"
 
-
-# -----------------------------------
-# If compiling without sundials use the following
-  
-# cmake -B ./cmake_build -S .. -DUSE_SUNDIALS=OFF -DCMAKE_BUILD_TYPE=Release
-# cmake --build ./cmake_build --target all -j
-
-
+echo "==> Done: $(cd "$BUILD_DIR/.." && pwd)/bin/summa_actors.exe"

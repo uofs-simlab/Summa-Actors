@@ -25,6 +25,10 @@ list(APPEND EXT_TARGETS CAF::core CAF::io)
 include(FortranCInterface)
 FortranCInterface_VERIFY(CXX)
 
+# SUMMA's work-structure caches are threadprivate; without OpenMP every GRU actor shares one copy
+find_package(OpenMP REQUIRED COMPONENTS Fortran)
+list(APPEND EXT_TARGETS OpenMP::OpenMP_Fortran)
+
 
 # Find the TBB package
 # Attempt to find TBB
@@ -72,13 +76,15 @@ endif()
 # Set compiler flags
 set(FLAGS_OPT $ENV{FLAGS_OPT}) # get optional user-specified flags from environment variables
 if(CMAKE_BUILD_TYPE MATCHES Debug)
-    message("\nSetting Debug Options")
-    add_compile_definitions(DEBUG) 
-    set(FLAGS_NOAH -g -O0 -fbacktrace -fbounds-check -ffree-form -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors ${FLAGS_OPT})
-    set(FLAGS_ALL -g -O0 -fbacktrace -fbounds-check -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors -cpp ${FLAGS_OPT})
-    set(FLAGS_CXX -g -O0 -fbounds-check -Wfatal-errors -std=c++17 ${FLAGS_OPT})
+	message("\nSetting SUMMA Debug Options")
+	add_compile_definitions(DEBUG)
+	# Notes: - optimization -Og is selected here to maximize information displayed in debugging software (e.g., gdb)
+	#        - however, it may be useful to vary the optimization level to test for optimization related issues
+    set(FLAGS_NOAH -g -Og -fbacktrace -fbounds-check -ffree-form -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors ${FLAGS_OPT})
+    set(FLAGS_ALL -g -Og -fbacktrace -fbounds-check -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors -cpp ${FLAGS_OPT})
+    set(FLAGS_CXX -g -Og -fbounds-check -Wfatal-errors -std=c++17 ${FLAGS_OPT})
 else()
-    message("\nSetting Release Options")
+	message("\nSetting SUMMA Release Options")
     set(FLAGS_NOAH -O3 -ffree-form -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors ${FLAGS_OPT})
     set(FLAGS_ALL -O3 -ffree-line-length-none -fmax-errors=0 -fPIC -Wfatal-errors -cpp ${FLAGS_OPT})
     set(FLAGS_CXX -O3 -Wfatal-errors -std=c++17 ${FLAGS_OPT})
@@ -88,6 +94,24 @@ if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
     # Suppress libgfortran end-of-run IEEE summaries (e.g., IEEE_DENORMAL).
     list(APPEND FLAGS_NOAH -ffpe-summary=none)
     list(APPEND FLAGS_ALL -ffpe-summary=none)
+endif()
+
+# GRU actors run SUMMA on many threads, so keep locals on each thread's stack (SAVE variables are still shared)
+if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
+    list(APPEND FLAGS_NOAH -frecursive)
+    list(APPEND FLAGS_ALL -frecursive)
+elseif(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
+    list(APPEND FLAGS_NOAH -recursive)
+    list(APPEND FLAGS_ALL -recursive)
+endif()
+
+# Keeps SUMMA's threadprivate directives active on the threads running GRU actors
+list(APPEND FLAGS_NOAH ${OpenMP_Fortran_FLAGS})
+list(APPEND FLAGS_ALL ${OpenMP_Fortran_FLAGS})
+
+if(APPLE)
+    # macOS does not define HOST_NAME_MAX (a Linux-ism); POSIX guarantees 255.
+    list(APPEND FLAGS_CXX -DHOST_NAME_MAX=255)
 endif()
 
 #=========================================================================================
@@ -102,6 +126,8 @@ set(HOOKUP_DIR ${F_MASTER}/build/summa/build/source/hookup)
 set(NETCDF_DIR ${F_MASTER}/build/summa/build/source/netcdf)
 set(NOAHMP_DIR ${F_MASTER}/build/summa/build/source/noah-mp)
 set(NUMREC_DIR ${F_MASTER}/build/summa/build/source/numrec)
+set(PARALLEL_DIR ${F_MASTER}/build/summa/build/source/parallel)
+set(CALIBR_DIR ${F_MASTER}/build/summa/build/source/calibration)
 
 # Define Actors specific directories
 set(ACTORS_DIR      ${F_MASTER}/build/source)
@@ -134,12 +160,20 @@ list(REMOVE_ITEM DRIVER
         ${DRIVER_DIR}/summa_forcing.f90
         ${DRIVER_DIR}/summa_modelRun.f90
         ${DRIVER_DIR}/summa_setup.f90
-        ${DRIVER_DIR}/summa_writeOutput.f90)
+        ${DRIVER_DIR}/summa_writeOutput.f90
+        # summa_simulation drives the standalone run lifecycle (initialize / run /
+        # finalize, and the objective function built on it). Summa-Actors replaces
+        # that orchestration with the job and GRU actors, and does not build the
+        # summa_init it depends on.
+        ${DRIVER_DIR}/summa_simulation.f90
+        # summa_spinup is part of the same standalone lifecycle: it drives a shared
+        # spinup run through summa_simulation for the calibration driver.
+        ${DRIVER_DIR}/summa_spinup.f90)
 #=========================================================================================
 # COMPILE PART 3: Collect the subroutines into build groups depending on build type
 #=========================================================================================
-set(COMM_ALL ${NRPROC} ${HOOKUP} ${DATAMS} ${UTILMS})
-set(SUMMA_ALL ${NETCDF} ${PRELIM} ${MODRUN} ${SOLVER} ${DRIVER})
+set(COMM_ALL ${NRPROC} ${HOOKUP} ${DATAMS} ${SUMMA_DATA_TYPES} ${UTILMS})
+set(SUMMA_ALL ${NETCDF} ${PRELIM} ${MODRUN} ${SOLVER} ${SUMMA_TYPE} ${DRIVER})
 set(COMM_ALL ${COMM_ALL} ${DATAMS_ACTORS} ${INTERFACE})
 set(SUMMA_ALL ${SUMMA_ALL} ${SYS_INIT_INTERFACE} ${FILE_ACCESS_INTERFACE}
               ${JOB_INTERFACE} ${GRU_INTERFACE})
@@ -187,7 +221,8 @@ file(APPEND ${VERSIONFILE} "character(len=64), parameter     :: gitBranch = '${G
 file(APPEND ${VERSIONFILE} "character(len=64), parameter     :: gitHash = '${GITHASH}'")
 
 # Build SUMMA_NOAHMP Object
-add_library(SUMMA_NOAHMP OBJECT ${NOAHMP} ${NRUTIL})
+# nr_type.f90 was split out of NRUTIL into its own NRTYPE variable (PR #632)
+add_library(SUMMA_NOAHMP OBJECT ${NOAHMP} ${NRTYPE} ${NRUTIL})
 target_compile_options(SUMMA_NOAHMP PRIVATE ${FLAGS_NOAH})
 
 # Build SUMMA_COMM Object

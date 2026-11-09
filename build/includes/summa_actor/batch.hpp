@@ -14,6 +14,7 @@ class Batch {
     double write_time_;
     bool assigned_to_actor_;
     bool solved_;
+    int num_gru_failed_;  // failed GRUs, or -1 if the batch hit a fatal error
 
     std::string log_dir_; // Directory to write log files
 
@@ -25,6 +26,7 @@ class Batch {
     inline int getStartHRU() const { return start_hru_;}
     inline int getNumHRU() const { return num_hru_;}
     inline std::string getLogDir() const { return log_dir_; }
+    inline int getNumGruFailed() const { return num_gru_failed_; }
     double getRunTime();
     double getReadTime();
     double getWriteTime();
@@ -33,6 +35,7 @@ class Batch {
     std::string getBatchInfoString();
     // Setters
     inline void setLogDir(std::string log_dir) { log_dir_ = log_dir; }
+    inline void setNumGruFailed(int num_gru_failed) { num_gru_failed_ = num_gru_failed; }
     void updateRunTime(double run_time);
     void updateReadTime(double read_time);
     void updateWriteTime(double write_time);
@@ -57,6 +60,7 @@ class Batch {
                     inspector.field("write_time", batch.write_time_),
                     inspector.field("assigned_to_actor", batch.assigned_to_actor_),
                     inspector.field("solved", batch.solved_),
+                    inspector.field("num_gru_failed", batch.num_gru_failed_),
                     inspector.field("log_dir", batch.log_dir_));
     }
 };

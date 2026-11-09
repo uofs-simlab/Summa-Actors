@@ -10,6 +10,8 @@ module forcing_file_info
   public::read_forcingFile
   public::openForcingFile
   public::freeForcingFiles_fortran
+  public::f_findStartForcingFile
+  public::f_getStartForcingFile
 
     
   type,public :: forcingFileData
@@ -31,6 +33,7 @@ module forcing_file_info
   ! Module Data Structures (global to hrus that import this module)
   type(var_forc),allocatable,save,public  :: forcingDataStruct(:) ! forcingDataStruct(:)%var(:)%dataFromFile(:,:)
   type(dlength),allocatable,save,public   :: vecTime(:)
+  integer(i4b),save                       :: startForcingFile=1  ! forcing file holding the simulation start (set once by the file access actor)
   contains
 ! Initalize the fortran data structure and return the number of forcing files
 subroutine getNumFrocingFiles_fortran(num_forcing_files) &
@@ -118,7 +121,6 @@ subroutine read_forcingFile(iFile, startGRU, numGRU, err, message_r) &
   USE globalData,only:forc_meta 
   USE var_lookup,only:iLookTIME,iLookFORCE      ! named variables to define structure elements
   USE summaFileManager,only:FORCING_PATH        ! path of the forcing data file
-  USE globalData,only:ixHRUfile_min,ixHRUfile_max
 
   implicit none
   integer(c_int),intent(in)               :: iFile
@@ -219,7 +221,7 @@ subroutine read_forcingFile(iFile, startGRU, numGRU, err, message_r) &
 
     err=nf90_get_var(ncid,forcFileInfo(iFile)%data_id(iVar), &
                      forcingDataStruct(iFile)%var(iVar)%dataFromFile, &
-                     start=(/ixHRUfile_min,1/),count=(/nHRUlocal, nTimeSteps/))
+                     start=(/iHRU_global,1/),count=(/nHRUlocal, nTimeSteps/))
     if(err/=nf90_noerr)then; message=trim(message)//'problem reading forcing data: '//trim(varName)//'/'//trim(nf90_strerror(err)); call f_c_string_ptr(trim(message),message_r); return; endif
   end do
 
@@ -310,6 +312,78 @@ subroutine openForcingFile(forc_file,iFile,infile,ncId,err,message)
   end select
    
 end subroutine openForcingFile
+
+! Find the forcing file that contains the simulation start time (called once, before any GRU actor starts)
+subroutine f_findStartForcingFile(err, message_r) bind(C, name="f_findStartForcingFile")
+  USE netcdf                                              ! netcdf capability
+  USE netcdf_util_module,only:nc_file_open                ! open netcdf file
+  USE netcdf_util_module,only:nc_file_close               ! close netcdf file
+  USE time_utils_module,only:extractTime                  ! extract time info from units string
+  USE time_utils_module,only:compJulDay                   ! convert calendar date to julian day
+  USE multiconst,only:secprday                            ! number of seconds in a day
+  USE globalData,only:forcFileInfo                        ! forcing file information
+  USE globalData,only:data_step                           ! length of the data step (s)
+  USE globalData,only:dJulianStart                        ! julian day of start time of simulation
+  USE summaFileManager,only:FORCING_PATH                  ! path of the forcing data files
+  USE C_interface_module,only:f_c_string_ptr              ! convert fortran string to c string
+  implicit none
+  ! dummy variables
+  integer(c_int),intent(out)        :: err                ! error code
+  type(c_ptr),intent(out)           :: message_r          ! error message
+  ! local variables
+  character(len=256)                :: message,cmessage   ! error messages
+  character(len=256)                :: refTimeString      ! units string of the time variable
+  integer(i4b)                      :: iFile,ncid,varId   ! file index and netcdf ids
+  integer(i4b)                      :: iyyy,im,id,ih,imin ! reference date
+  integer(i4b)                      :: ih_tz,imin_tz      ! time zone information
+  real(dp)                          :: dsec,dsec_tz       ! seconds
+  real(dp)                          :: refJulDay_file     ! reference julian day of the file
+  real(dp)                          :: convTime2Days      ! factor to convert file time to days
+  real(dp)                          :: lastJulDay         ! julian day of the last step in the file
+  real(dp),parameter                :: verySmall=1.e-4_dp ! tolerance on julian day (days)
+
+  err=0; message='f_findStartForcingFile/'
+  call f_c_string_ptr(trim(message),message_r)
+
+  do iFile=1,size(forcFileInfo)
+    call nc_file_open(trim(FORCING_PATH)//trim(forcFileInfo(iFile)%filenmData),nf90_nowrite,ncid,err,cmessage)
+    if(err/=0)then; message=trim(message)//trim(cmessage); call f_c_string_ptr(trim(message),message_r); return; end if
+    err = nf90_inq_varid(ncid,'time',varId)
+    if(err==nf90_noerr) err = nf90_get_att(ncid,varId,'units',refTimeString)
+    if(err/=nf90_noerr)then; message=trim(message)//'cannot read time units/'//trim(nf90_strerror(err)); call f_c_string_ptr(trim(message),message_r); return; end if
+    call nc_file_close(ncid,err,cmessage)
+    if(err/=0)then; message=trim(message)//trim(cmessage); call f_c_string_ptr(trim(message),message_r); return; end if
+
+    call extractTime(refTimeString,iyyy,im,id,ih,imin,dsec,ih_tz,imin_tz,dsec_tz,err,cmessage)
+    if(err/=0)then; message=trim(message)//trim(cmessage); call f_c_string_ptr(trim(message),message_r); return; end if
+    call compjulday(iyyy,im,id,ih,imin,dsec,refJulDay_file,err,cmessage)
+    if(err/=0)then; message=trim(message)//trim(cmessage); call f_c_string_ptr(trim(message),message_r); return; end if
+    select case( trim( refTimeString(1:index(refTimeString,' ')) ) )
+      case('seconds'); convTime2Days=86400._dp
+      case('minutes'); convTime2Days=1440._dp
+      case('hours');   convTime2Days=24._dp
+      case('days');    convTime2Days=1._dp
+      case default; err=20; message=trim(message)//'unable to identify time units'; call f_c_string_ptr(trim(message),message_r); return
+    end select
+
+    lastJulDay = refJulDay_file + forcFileInfo(iFile)%firstJulDay/convTime2Days &
+                 + real(forcFileInfo(iFile)%nTimeSteps-1,dp)*data_step/secprday
+    if(dJulianStart < lastJulDay + verySmall)then
+      startForcingFile = iFile
+      return
+    end if
+  end do
+
+  err=20; message=trim(message)//'simulation start time is after the end of the last forcing file'
+  call f_c_string_ptr(trim(message),message_r)
+end subroutine f_findStartForcingFile
+
+! Return the forcing file that contains the simulation start time
+subroutine f_getStartForcingFile(iFile) bind(C, name="f_getStartForcingFile")
+  implicit none
+  integer(c_int),intent(out)        :: iFile              ! index of the forcing file holding the start time
+  iFile = startForcingFile
+end subroutine f_getStartForcingFile
 
 subroutine freeForcingFiles_fortran() bind(C, name="freeForcingFiles_fortran")
   USE globalData,only:forcFileInfo

@@ -12,6 +12,7 @@
 #include "gru_struc.hpp"
 #include "message_atoms.hpp"
 #include "summa_global_data.hpp"
+#include "summa_exit_code.hpp"
 
 
 class SummaActor {
@@ -49,6 +50,8 @@ class SummaActor {
     int createLogDirectory();
 
     void finalize();
+
+    void quitWithError();
 };
 
 
