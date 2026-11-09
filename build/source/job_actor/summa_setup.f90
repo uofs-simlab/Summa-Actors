@@ -76,10 +76,10 @@ contains
  USE mDecisions_module,only:mDecisions                       ! module to read model decisions
  USE ffile_info_module,only:ffile_info                       ! module to read information on forcing datafile
  USE read_attrb_module,only:read_attrb                       ! module to read local attributes
- USE read_pinit_module,only:read_pinit                       ! module to read initial model parameter values
+ USE read_parameter_defaults_module,only:read_parameter_defaults ! module to read initial model parameter values
  USE paramCheck_module,only:paramCheck                       ! module to check consistency of model parameters
- USE pOverwrite_module,only:pOverwrite                       ! module to overwrite default parameter values with info from the Noah tables
- USE param_override_module,only:read_param                   ! module to read model parameter sets
+ USE parameter_table_defaults_module,only:set_parameter_table_defaults ! module to overwrite default parameter values with info from the Noah tables
+ USE read_trial_parameters_module,only:read_trial_parameters ! module to read model parameter sets
  USE var_derive_module,only:fracFuture                       ! module to calculate the fraction of runoff in future time steps (time delay histogram)
  USE convertEnthalpyTemp_module,only:T2L_lookup_soil         ! module to calculate a look-up table for the soil temperature-enthalpy conversion
  USE module_sf_noahmplsm,only:read_mp_veg_parameters         ! module to read NOAH vegetation tables
@@ -254,11 +254,11 @@ contains
    case default; err=20; message=trim(message)//'unable to identify option for energy conservation'; return
  end select ! (option for energy conservation)
 
- call read_pinit(LOCALPARAM_INFO,.TRUE., absEnergyFac,mpar_meta,localParFallback,err,cmessage)
+ call read_parameter_defaults(LOCALPARAM_INFO,.TRUE., absEnergyFac,mpar_meta,localParFallback,err,cmessage)
  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
 
  ! read default values and constraints for model parameters (basin-average)
- call read_pinit(BASINPARAM_INFO,.FALSE.,absEnergyFac, bpar_meta,basinParFallback,err,cmessage)
+ call read_parameter_defaults(BASINPARAM_INFO,.FALSE.,absEnergyFac, bpar_meta,basinParFallback,err,cmessage)
  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
 
  ! *****************************************************************************
@@ -298,11 +298,11 @@ contains
    dparStruct%gru(iGRU)%hru(iHRU)%var(:) = localParFallback(:)%default_val         ! x%hru(:)%var(:)
 
    ! overwrite default model parameters with information from the Noah-MP tables
-   call pOverwrite(typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex),  &  ! vegetation category
-                   typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%soilTypeIndex), &  ! soil category
-                   trim(model_decisions(iLookDECISIONS%soilCatTbl)%cDecision),  &  ! classification system used for soils
-                   dparStruct%gru(iGRU)%hru(iHRU)%var,                          &  ! default model parameters
-                   err,cmessage)                                                   ! error control
+   call set_parameter_table_defaults(typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%vegTypeIndex),  &  ! vegetation category
+                                     typeStruct%gru(iGRU)%hru(iHRU)%var(iLookTYPE%soilTypeIndex), &  ! soil category
+                                     trim(model_decisions(iLookDECISIONS%soilCatTbl)%cDecision),  &  ! classification system used for soils
+                                     dparStruct%gru(iGRU)%hru(iHRU)%var,                          &  ! default model parameters
+                                     err,cmessage)                                                   ! error control
    if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
 
    ! copy over to the parameter structure (once per domain)
@@ -323,7 +323,7 @@ contains
  ! *****************************************************************************
  ! *** read trial model parameter values for each HRU, and populate initial data structures
  ! *****************************************************************************
- call read_param(nGRU,nHRU,nDOM,idStruct,mparStruct,bparStruct,err,cmessage)
+ call read_trial_parameters(nGRU,nHRU,nDOM,idStruct,mparStruct,bparStruct,summa1_struc%config%trial_param_names,err,cmessage)
  if(err/=0)then; message=trim(message)//trim(cmessage); return; endif
 
  ! *****************************************************************************
